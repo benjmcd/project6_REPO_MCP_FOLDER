@@ -136,9 +136,12 @@ from app.services.layer3_response_contract import (
 )
 from app.services.layer3_authority_rail import authority_rail as _authority_rail
 from app.services.layer3_preview_contract import (
-    material_preview_hash_contract as _material_preview_hash_contract,
     plan_preview_hash_contract as _plan_preview_hash_contract,
     preview_identity as _preview_identity,
+)
+from app.services.layer3_readiness_contract import (
+    EXECUTION_READINESS_SCHEMA_ID,
+    build_readiness_contract,
 )
 from app.services.layer3_qual_aps_execution import (
     ENGINE_FAMILY_QUAL_APS_DOCUMENT,
@@ -220,7 +223,6 @@ GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
 SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID = "layer3.sublayer_visualization_state.v1"
-EXECUTION_READINESS_SCHEMA_ID = "layer3.execution_readiness_contract.v1"
 EXECUTION_SELECTION_SCHEMA_ID = "layer3.execution_selection.v1"
 EXECUTION_SELECTION_STATE_SCHEMA_ID = "layer3.execution_selection_state.v1"
 EXECUTION_SELECTION_STATE = "execution_selected_not_started"
@@ -990,54 +992,6 @@ ASSOCIATED_COHORT_READINESS_IDENTITY_FIELDS = (
 EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES = frozenset(
     {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS, PASS_STATUS_FAILED}
 )
-READINESS_REQUIRED_GATES = (
-    "proof-manifest",
-    "state-model",
-    "preview-hash",
-    "idempotency",
-    "concurrency",
-    "revision-recovery",
-    "approved-plan-correction",
-    "output-taxonomy",
-    "source-breadth",
-    "execution-selection",
-    "analysis-execution-start",
-    "result-status",
-    "result-review",
-    "package-review-preview",
-    "package-construction",
-    "package-review-submit",
-    "handoff-export-prepare",
-    "aps-handoff-dispatch",
-    "external-export-download-prepare",
-    "external-export-download-deliver",
-    "browser-proof",
-)
-READINESS_IMPLEMENTED_GATES = (
-    "proof-manifest",
-    "state-model",
-    "preview-hash",
-    "idempotency",
-    "concurrency",
-    "execution-selection",
-    "analysis-execution-start",
-    "result-status",
-    "result-review",
-    "package-review-preview",
-    "package-construction",
-    "package-review-submit",
-    "handoff-export-prepare",
-    "aps-handoff-dispatch",
-    "external-export-download-prepare",
-    "external-export-download-deliver",
-)
-READINESS_DEFERRED_GATES = (
-    "revision-recovery",
-    "approved-plan-correction",
-    "output-taxonomy",
-    "source-breadth",
-    "browser-proof",
-)
 @dataclass(frozen=True)
 class Layer3WorkbenchError(ValueError):
     error_code: str
@@ -1605,133 +1559,11 @@ def _workbench_state_action_contract() -> dict[str, Any]:
 
 
 def readiness_contract() -> dict[str, Any]:
-    return {
-        **_base_response(EXECUTION_READINESS_SCHEMA_ID),
-        "execution_admitted": False,
-        "execution_enabled": False,
-        "execution_selection_admitted": True,
-        "execution_selection_endpoint": f"{API_ROOT}/execution/select",
-        "analysis_execution_admitted": False,
-        "analysis_execution_start_admitted": True,
-        "analysis_execution_start_endpoint": f"{API_ROOT}/execution/start",
-        "single_aps_doc_qualitative_execution_admitted": True,
-        "execution_result_status_admitted": True,
-        "execution_result_status_endpoint": f"{API_ROOT}/execution/result/status",
-        "execution_result_review_admitted": True,
-        "execution_result_review_endpoint": f"{API_ROOT}/execution/result/review",
-        "package_review_preview_admitted": True,
-        "package_review_preview_endpoint": f"{API_ROOT}/package/review/preview",
-        "package_construction_commit_admitted": True,
-        "package_construction_commit_endpoint": f"{API_ROOT}/package/review/commit",
-        "package_review_submit_admitted": True,
-        "package_review_submit_endpoint": f"{API_ROOT}/package/review/submit",
-        "handoff_export_prepare_admitted": True,
-        "handoff_export_prepare_endpoint": f"{API_ROOT}/handoff/export/prepare",
-        "aps_handoff_dispatch_admitted": True,
-        "aps_handoff_dispatch_endpoint": f"{API_ROOT}/handoff/aps/dispatch",
-        "external_export_download_prepare_admitted": True,
-        "external_export_download_prepare_endpoint": f"{API_ROOT}/handoff/export/download/prepare",
-        "external_export_download_deliver_admitted": True,
-        "external_export_download_deliver_endpoint": f"{API_ROOT}/handoff/export/download/deliver",
-        "internal_connector_dispatch_record_admitted": True,
-        "internal_connector_dispatch_record_endpoint": f"{API_ROOT}/handoff/connector/record",
-        "package_supersession_preview_admitted": True,
-        "package_supersession_preview_endpoint": f"{API_ROOT}/package/mutation/preview",
-        "replacement_package_set_authority_admitted": True,
-        "replacement_package_set_authority_endpoint": f"{API_ROOT}/package/replacement-set/record",
-        "package_supersession_commit_admitted": True,
-        "package_supersession_commit_endpoint": f"{API_ROOT}/package/supersession/commit",
-        "package_review_admitted": False,
-        "external_handoff_admitted": False,
-        "external_export_admitted": False,
-        "dispatch_admitted": False,
-        "readiness_state": "execution_readiness_blocked",
-        "required_gates": list(READINESS_REQUIRED_GATES),
-        "implemented_gates": list(READINESS_IMPLEMENTED_GATES),
-        "deferred_gates": list(READINESS_DEFERRED_GATES),
-        "state_model": _workbench_state_model(),
-        "state_action_contract": _workbench_state_action_contract(),
-        "preview_hash_contract": _plan_preview_hash_contract(),
-        "material_preview_hash_contract": _material_preview_hash_contract(),
-        "idempotency_contract": {
-            "schema_id": "layer3.idempotency_contract.v1",
-            "client_request_id_supported": True,
-            "client_request_id_required_current_slice": False,
-            "client_request_id_required_for_gate_b_decision": True,
-            "client_request_id_required_for_execution_selection": True,
-            "client_request_id_required_for_analysis_execution_start": True,
-            "client_request_id_required_for_execution_result_status": False,
-            "client_request_id_required_for_execution_result_review": True,
-            "client_request_id_required_for_package_review_preview": False,
-            "client_request_id_required_for_package_construction_commit": True,
-            "client_request_id_required_for_package_review_submit": True,
-            "client_request_id_required_for_handoff_export_prepare": True,
-            "client_request_id_required_for_aps_handoff_dispatch": True,
-            "client_request_id_required_for_external_export_download_prepare": True,
-            "client_request_id_required_for_external_export_download_deliver": True,
-            "client_request_id_required_for_package_supersession_preview": True,
-            "client_request_id_required_for_replacement_package_set_authority": True,
-            "client_request_id_required_for_package_supersession_commit": True,
-            "duplicate_gate_b_decision": "same required client_request_id, provided source context, provided material_preview_id, and decision manifest uses a durable Gate B idempotency claim and returns existing Gate B session; conflicts fail closed",
-            "gate_b_decision_idempotency_scope": "durable_claim_and_post_commit_retry",
-            "gate_b_decision_concurrent_duplicate_lock": True,
-            "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
-            "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
-            "duplicate_execution_selection": "same client_request_id and same approved plan returns existing selection; conflicts fail closed",
-            "duplicate_analysis_execution_start": "same client_request_id and same selected pass returns existing execution state; conflicts fail closed",
-            "duplicate_execution_result_status": "read-only status inspection does not create idempotency state",
-            "duplicate_execution_result_review": "same client_request_id and same selected pass returns existing review state; conflicts fail closed",
-            "duplicate_package_review_preview": "read-only package-review preview inspection does not create idempotency state",
-            "duplicate_package_construction_commit": "same client_request_id and same authority basis returns existing package rows; conflicts fail closed",
-            "duplicate_package_review_submit": "same authority basis and same operator decision returns existing package-review state; conflicts fail closed",
-            "duplicate_handoff_export_prepare": "same authority basis and same operator decision returns existing preparation state; conflicts fail closed",
-            "duplicate_aps_handoff_dispatch": "same client_request_id and same prepared-envelope authority returns existing APS handoff state; conflicts fail closed",
-            "duplicate_external_export_download_prepare": "same client_request_id and same APS handoff authority returns existing readiness state; conflicts fail closed",
-            "duplicate_external_export_download_deliver": "read-only delivery revalidates the recorded readiness descriptor and may re-stream the same existing artifact",
-            "duplicate_package_supersession_preview": "read-only package supersession preview recomputes the same package-set and downstream-dependency hash without persistence",
-            "duplicate_replacement_package_set_authority": "same client_request_id or authority basis returns existing replacement package-set authority; conflicts fail closed",
-            "duplicate_package_supersession_commit": "same client_request_id or commit basis returns existing immutable supersession lineage record; conflicts fail closed",
-            "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
-            "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
-        },
-        "concurrency_contract": {
-            "schema_id": "layer3.concurrency_contract.v1",
-            "approval_revision_mutual_exclusion": True,
-            "server_authority": "durable_session_row_lock_or_equivalent_transaction",
-            "browser_in_flight_lock_is_authoritative": False,
-            "execution_selection_uses_session_and_plan_locks": True,
-            "analysis_execution_start_uses_session_plan_and_pass_locks": True,
-            "execution_result_review_uses_session_and_pass_locks": True,
-            "package_review_preview_is_read_only": True,
-            "package_construction_commit_uses_session_plan_and_pass_locks": True,
-            "package_review_submit_uses_session_reconciliation_and_package_locks": True,
-            "handoff_export_prepare_uses_session_reconciliation_and_package_locks": True,
-            "aps_handoff_dispatch_uses_session_reconciliation_and_package_locks": True,
-            "external_export_download_prepare_uses_session_reconciliation_and_package_locks": True,
-            "external_export_download_deliver_uses_session_reconciliation_and_package_locks": True,
-            "package_supersession_preview_is_read_only": True,
-            "replacement_package_set_authority_uses_unique_request_and_basis": True,
-            "package_supersession_commit_uses_unique_request_and_basis": True,
-            "broad_analysis_execution_requires_later_freeze": True,
-        },
-        "deferred_decisions": {
-            "schema_id": "layer3.deferred_execution_decisions.v1",
-            "revision_recovery": "requires later freeze",
-            "approved_plan_correction": "requires later freeze",
-            "output_taxonomy": "requires later freeze before results or package UI",
-            "source_breadth": "requires later freeze before RAG/vector/upload/local-directory expansion",
-            "package_construction": "admitted only for selected-pass workbench commit; broader package construction still requires later freeze",
-            "package_review_submit": "admitted only for bounded decision recording over an already constructed workbench package set",
-            "aps_handoff_dispatch": "admitted only for server-side APS evidence-bundle handoff after handoff_export_prepared",
-            "external_export_download_prepare": "admitted only as a reference-only readiness descriptor after aps_handoff_dispatched; browser download remains disabled",
-            "external_export_download_deliver": "admitted only as same-origin streaming of the already validated APS evidence-bundle artifact after recorded readiness; public or signed URLs remain disabled",
-            "internal_connector_dispatch_record": "admitted only as response-safe internal dispatch intent record after associated-cohort external export/download readiness; external invocation and destination writes remain blocked",
-            "package_supersession_preview": "admitted only as read-only immutable package supersession preview; package row mutation, payload rewrite, and supersession commit remain blocked",
-            "replacement_package_set_authority": "admitted only as a durable metadata authority record; package row mutation, payload writes, and broad package mutation remain blocked",
-            "package_supersession_commit": "admitted only as a durable immutable lineage record; package row mutation, payload writes, and broad package mutation remain blocked",
-            "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
-        },
-    }
+    return build_readiness_contract(
+        api_root=API_ROOT,
+        state_model=_workbench_state_model(),
+        state_action_contract=_workbench_state_action_contract(),
+    )
 
 
 def bootstrap() -> dict[str, Any]:
