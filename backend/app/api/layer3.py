@@ -130,6 +130,36 @@ class Layer3GateCPreviewRequest(BaseModel):
     actor: str | None = None
 
 
+class Layer3ExecutionSelectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    operator_reason: str | None = None
+    execute: Any | None = None
+    execution: Any | None = None
+    run: Any | None = None
+    run_analysis: Any | None = None
+    start_execution: Any | None = None
+    analysis_run_id: Any | None = None
+    analysis_run_ids: Any | None = None
+    result_review: Any | None = None
+    results: Any | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    artifact_manifest: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -949,8 +979,8 @@ PLAN_REVISION_REQUEST_SCHEMA: dict[str, Any] = {
 
 EXECUTION_SELECTION_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known execution-selection fields; explicit execution/run/result/package/handoff fields remain fail-closed.",
+    "additionalProperties": False,
+    "description": "Strict execution-selection fields; explicit execution/run/result/package/handoff/source-widening fields remain fail-closed.",
     "required": ["client_request_id", "session_id", "analysis_plan_id", "preview_id", "preview_hash"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -958,6 +988,26 @@ EXECUTION_SELECTION_REQUEST_SCHEMA: dict[str, Any] = {
         "analysis_plan_id": {"type": "string"},
         "preview_id": {"type": "string"},
         "preview_hash": {"type": "string"},
+        "operator_reason": {"type": "string"},
+        "execute": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run_analysis": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "start_execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_run_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "results": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1513,8 +1563,11 @@ def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> 
     openapi_extra={"requestBody": _json_request_body(EXECUTION_SELECTION_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
-def post_execution_select(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.execution_selection(db, payload))
+def post_execution_select(
+    payload: Layer3ExecutionSelectionRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.execution_selection(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(

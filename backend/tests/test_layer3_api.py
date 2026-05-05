@@ -715,7 +715,7 @@ def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
     selection_request_schema = spec["paths"]["/api/v1/layer3/execution/select"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert selection_request_schema["additionalProperties"] is True
+    assert selection_request_schema["additionalProperties"] is False
     assert set(selection_request_schema["required"]) == {
         "client_request_id",
         "session_id",
@@ -723,6 +723,9 @@ def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
         "preview_id",
         "preview_hash",
     }
+    assert selection_request_schema["properties"]["operator_reason"]["type"] == "string"
+    assert selection_request_schema["properties"]["execution"]["description"].startswith("Known but non-admitted")
+    assert selection_request_schema["properties"]["rag_plan"]["description"].startswith("Known but non-admitted")
 
     selection_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/select", "post")
     assert selection_schema["title"] == "Layer3ExecutionSelectionResponse"
@@ -4128,6 +4131,24 @@ def test_layer3_api_execution_selection_prechecks_fail_closed(client: TestClient
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "analysis_execution_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"execution", "run_analysis"}
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-unknown-extra",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
 
     stale_preview = client.post(
         "/api/v1/layer3/execution/select",
