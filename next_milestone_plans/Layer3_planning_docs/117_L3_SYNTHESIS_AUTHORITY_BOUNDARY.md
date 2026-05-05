@@ -52,6 +52,7 @@ Do not treat Codesight route response summaries as exact current DTO truth. Read
 - The proof verifies no new `AnalysisArtifact`, `AnalysisRun`, `ConnectorRun`, `L3OutputPackage`, `L3PassRun`, or `L3ReconciliationRecord` rows are created, recorded readiness state is unchanged, and no `download_url`, `public_url`, `signed_url`, or `connector_run_id` headers are emitted.
 - Scope limit: this is delivery-path fail-closed proof only. It does not implement artifact cleanup, artifact reconstruction, provider/public URLs, connector dispatch, package mutation/reconstruction, signed-reference concurrency/revocation, source widening, or full mockup activation.
 - `backend/tests/test_layer3_model_exports.py` is the scoped live proof for the synthesis `CL11` model-discoverability gap. The `L3*` SQLAlchemy models are re-exported from `app.models`; this is import-surface cleanup only and does not change model definitions, schema, migrations, persistence behavior, routes, or runtime state.
+- `backend/tests/test_layer3_plan_revision_state.py` is the scoped live proof for the no-behavior-change `CL08` service-extraction follow-up around plan-revision state. `backend/app/services/layer3_plan_revision_state.py` owns the revision-control schema id, supported decisions, decision-to-terminal-state mapping, record builder, and session parser. This extraction does not admit revision recovery, approved-plan supersession, execution, result/package/handoff behavior, source widening, connector dispatch, or package mutation/reconstruction.
 
 ## Supported Next-Action Boundary
 

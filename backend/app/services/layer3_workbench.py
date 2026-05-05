@@ -69,6 +69,12 @@ from app.services.layer3_gate_b_state import (
     find_gate_b_idempotency_session,
     gate_b_idempotency_record,
 )
+from app.services.layer3_plan_revision_state import (
+    PLAN_REVISION_CONTROL_CONTEXT_KEY,
+    PLAN_REVISION_DECISIONS,
+    plan_revision_control_from_session as _plan_revision_control_from_session,
+    plan_revision_control_record,
+)
 from app.services.layer3_signed_reference_state import (
     SignedReferenceDurableState,
     SignedReferenceStateError,
@@ -276,11 +282,6 @@ ASSOCIATED_COHORT_DELIVERY_UI_UNAVAILABLE_STATE = (
 )
 ASSOCIATED_COHORT_DELIVERY_UI_READY_STATE = "associated_cohort_external_export_download_delivery_ui_ready"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
-PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
-PLAN_REVISION_STATE_BY_DECISION = {
-    "reject_current_preview": "plan_rejected",
-    "request_revision": "plan_revision_requested",
-}
 EXECUTION_RESULT_REVIEW_DECISIONS = frozenset({"approved", "changes_requested", "rejected", "blocked"})
 EXECUTION_RESULT_REVIEW_STATE_BY_DECISION = {
     "approved": EXECUTION_RESULT_REVIEW_APPROVED_STATE,
@@ -3465,17 +3466,6 @@ def _latest_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan | N
     )
 
 
-def _plan_revision_control_from_session(session: L3Session | None) -> dict[str, Any] | None:
-    if session is None:
-        return None
-    control = (session.summary_json or {}).get("plan_revision_control")
-    if not isinstance(control, dict):
-        return None
-    if control.get("schema_id") != "layer3.plan_revision_control.v1":
-        return None
-    return control
-
-
 def _plan_revision_control(db: Session, *, session_id: str) -> dict[str, Any] | None:
     session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
     return _plan_revision_control_from_session(session)
@@ -3904,24 +3894,20 @@ def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             next_allowed_actions=["refresh_plan_preview"],
         )
 
-    next_state = PLAN_REVISION_STATE_BY_DECISION[operator_decision]
     operator_note = str(payload.get("operator_note") or "").strip()
     gate_b_counts = _gate_b_summary_from_session(session)
     source_classes = _source_classes_from_plan_preview(expected_preview.get("plan_preview") or {})
-    control = {
-        "schema_id": "layer3.plan_revision_control.v1",
-        "state": next_state,
-        "source_preview_id": preview_id,
-        "source_preview_hash": preview_hash,
-        "operator_decision": operator_decision,
-        "operator_note_recorded": bool(operator_note),
-        "approval_available": False,
-        "execution_started": False,
-        "created_at": _utcnow_iso(),
-    }
+    control = plan_revision_control_record(
+        source_preview_id=preview_id,
+        source_preview_hash=preview_hash,
+        operator_decision=operator_decision,
+        operator_note=operator_note,
+        created_at=_utcnow_iso(),
+    )
+    next_state = str(control["state"])
     session.summary_json = {
         **_json_clone(session.summary_json),
-        "plan_revision_control": control,
+        PLAN_REVISION_CONTROL_CONTEXT_KEY: control,
     }
     db.commit()
 
