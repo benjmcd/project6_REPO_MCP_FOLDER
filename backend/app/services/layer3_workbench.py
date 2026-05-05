@@ -64,6 +64,11 @@ from app.services.layer3_package_entry import (
     Layer3PackageEntryError,
     materialize_workbench_package_commit,
 )
+from app.services.layer3_gate_b_state import (
+    GATE_B_IDEMPOTENCY_CONTEXT_KEY,
+    find_gate_b_idempotency_session,
+    gate_b_idempotency_record,
+)
 from app.services.layer3_signed_reference_state import (
     SignedReferenceDurableState,
     SignedReferenceStateError,
@@ -2770,47 +2775,6 @@ def _gate_b_decision_manifest_id(decision_manifest: dict[str, Any]) -> str:
     return _stable_id("gate-b", decision_manifest)
 
 
-def _gate_b_idempotency_record(
-    *,
-    client_request_id: str,
-    preflight_id: str,
-    source_set_id: str,
-    material_preview_id: str,
-    material_preview_hash: str,
-    gate_b_decision_manifest_id: str,
-) -> dict[str, Any]:
-    return {
-        "schema_id": "layer3.gate_b_idempotency.v1",
-        "client_request_id": client_request_id,
-        "preflight_id": preflight_id,
-        "source_set_id": source_set_id,
-        "material_preview_id": material_preview_id,
-        "material_preview_hash": material_preview_hash,
-        "gate_b_decision_manifest_id": gate_b_decision_manifest_id,
-    }
-
-
-def _gate_b_idempotency_from_session(session: L3Session) -> dict[str, Any] | None:
-    context = session.operator_context_json or {}
-    record = context.get("layer3_gate_b_idempotency_v1")
-    if not isinstance(record, dict):
-        return None
-    if record.get("schema_id") != "layer3.gate_b_idempotency.v1":
-        return None
-    return record
-
-
-def _find_gate_b_idempotency_session(db: Session, *, client_request_id: str) -> tuple[L3Session, dict[str, Any]] | None:
-    if not client_request_id:
-        return None
-    query = db.query(L3Session).order_by(L3Session.created_at.desc(), L3Session.session_id.desc())
-    for session in query.yield_per(100):
-        record = _gate_b_idempotency_from_session(session)
-        if record is not None and str(record.get("client_request_id") or "") == client_request_id:
-            return session, record
-    return None
-
-
 def _gate_b_response_from_session(
     *,
     request_id: str,
@@ -2945,7 +2909,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
     decision_manifest = _candidate_decision_manifest(decisions)
     gate_b_decision_manifest_id = _gate_b_decision_manifest_id(decision_manifest)
-    existing_idempotency = _find_gate_b_idempotency_session(db, client_request_id=request_id)
+    existing_idempotency = find_gate_b_idempotency_session(db, client_request_id=request_id)
     if existing_idempotency is not None:
         existing_session, existing_record = existing_idempotency
         if (
@@ -3040,7 +3004,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             operator_context={
                 "actor": payload.get("actor") or "operator",
                 "layer3_gate_b_decision_manifest_v1": decision_manifest,
-                "layer3_gate_b_idempotency_v1": _gate_b_idempotency_record(
+                GATE_B_IDEMPOTENCY_CONTEXT_KEY: gate_b_idempotency_record(
                     client_request_id=request_id,
                     preflight_id=preflight_id,
                     source_set_id=source_set_id,
