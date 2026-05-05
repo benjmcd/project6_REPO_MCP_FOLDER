@@ -270,6 +270,7 @@ ASSOCIATED_COHORT_DELIVERY_UI_UNAVAILABLE_STATE = (
 )
 ASSOCIATED_COHORT_DELIVERY_UI_READY_STATE = "associated_cohort_external_export_download_delivery_ui_ready"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
+STATE_ACTION_CONTRACT_SCHEMA_ID = "layer3.state_action_contract.v1"
 PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
 PLAN_REVISION_STATE_BY_DECISION = {
     "reject_current_preview": "plan_rejected",
@@ -1042,6 +1043,58 @@ READINESS_DEFERRED_GATES = (
     "source-breadth",
     "browser-proof",
 )
+STATE_ACTION_DEFERRED_CAPABILITIES = (
+    {
+        "capability": "qualitative_execution",
+        "admitted": False,
+        "reason": "requires_later_freeze",
+    },
+    {
+        "capability": "hybrid_execution",
+        "admitted": False,
+        "reason": "requires_later_freeze",
+    },
+    {
+        "capability": "rag_vector_retrieval",
+        "admitted": False,
+        "reason": "requires_source_breadth_freeze",
+    },
+    {
+        "capability": "local_upload_or_directory_source_expansion",
+        "admitted": False,
+        "reason": "requires_source_runtime_widening_freeze",
+    },
+    {
+        "capability": "provider_public_url",
+        "admitted": False,
+        "reason": "requires_later_delivery_boundary_freeze",
+    },
+    {
+        "capability": "connector_destination_dispatch",
+        "admitted": False,
+        "reason": "requires_later_delivery_boundary_freeze",
+    },
+    {
+        "capability": "package_mutation_reconstruction",
+        "admitted": False,
+        "reason": "requires_later_package_lifecycle_freeze",
+    },
+    {
+        "capability": "frontend_only_durable_state",
+        "admitted": False,
+        "reason": "server_authority_required",
+    },
+    {
+        "capability": "hidden_llm_planning",
+        "admitted": False,
+        "reason": "owner_service_plan_authority_required",
+    },
+    {
+        "capability": "auth_security_hardening",
+        "admitted": False,
+        "reason": "deferred_by_operator_instruction",
+    },
+)
 
 
 @dataclass(frozen=True)
@@ -1607,6 +1660,45 @@ def _workbench_state_model() -> dict[str, Any]:
     }
 
 
+def _workbench_state_action_contract() -> dict[str, Any]:
+    state_model = _workbench_state_model()
+    state_action_matrix = _json_clone(state_model["states"])
+    action_ids = sorted(
+        {
+            str(action)
+            for state in state_action_matrix
+            for action in state.get("allowed_next_actions", [])
+        }
+    )
+    return {
+        "schema_id": STATE_ACTION_CONTRACT_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "scope": "server_authoritative_workbench_states_and_actions",
+        "state_model_schema_id": state_model["schema_id"],
+        "authority_order": list(state_model["authority_order"]),
+        "gate_labels": list(GATE_LABELS),
+        "active_gate_labels": list(ACTIVE_GATES),
+        "unavailable_gate_labels": list(DOWNSTREAM_UNAVAILABLE),
+        "plan_preview_unavailable_gate_labels": list(PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE),
+        "state_count": len(state_action_matrix),
+        "states": [str(state["state"]) for state in state_action_matrix],
+        "action_ids": action_ids,
+        "state_action_matrix": state_action_matrix,
+        "decision_sets": {
+            "gate_b": list(GATE_B_DECISIONS),
+            "plan_revision": sorted(PLAN_REVISION_DECISIONS),
+            "execution_result_review": sorted(EXECUTION_RESULT_REVIEW_DECISIONS),
+            "package_review_submit": sorted(PACKAGE_REVIEW_SUBMIT_DECISIONS),
+            "handoff_export_prepare": sorted(HANDOFF_EXPORT_PREPARE_DECISIONS),
+            "aps_handoff_dispatch": [APS_HANDOFF_DISPATCH_OPERATOR_DECISION],
+            "external_export_download_prepare": [EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION],
+            "external_export_download_deliver": [EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION],
+        },
+        "terminal_pass_statuses": sorted(EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES),
+        "deferred_capabilities": _json_clone(STATE_ACTION_DEFERRED_CAPABILITIES),
+    }
+
+
 def _plan_preview_hash_contract() -> dict[str, Any]:
     return {
         "schema_id": PLAN_PREVIEW_HASH_SCHEMA_ID,
@@ -1679,6 +1771,7 @@ def readiness_contract() -> dict[str, Any]:
         "implemented_gates": list(READINESS_IMPLEMENTED_GATES),
         "deferred_gates": list(READINESS_DEFERRED_GATES),
         "state_model": _workbench_state_model(),
+        "state_action_contract": _workbench_state_action_contract(),
         "preview_hash_contract": _plan_preview_hash_contract(),
         "material_preview_hash_contract": _material_preview_hash_contract(),
         "idempotency_contract": {
@@ -1760,6 +1853,7 @@ def bootstrap() -> dict[str, Any]:
         "gate_labels": list(GATE_LABELS),
         "active_gate_labels": list(ACTIVE_GATES),
         "unavailable_gate_labels": list(DOWNSTREAM_UNAVAILABLE),
+        "state_action_contract": _workbench_state_action_contract(),
         "features": {
             "plan_preview": True,
             "plan_approval": True,
@@ -11588,6 +11682,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "aps_handoff_dispatch": aps_handoff_dispatch_state,
         "external_export_download": external_export_download_state,
         "sublayer_visualization": _session_sublayer_visualization_state(db, session_id=session_id),
+        "state_action_contract": _workbench_state_action_contract(),
         "downstream_unavailable": list(downstream_unavailable),
         "authority_rail": _authority_rail(
             session_id=session_id,
