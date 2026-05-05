@@ -1847,8 +1847,8 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "snapshot_target_ref: `project6-origin/main`",
             "functional_boundary_head: `93fe525b`",
             "functional_boundary_role: last runtime-affecting Layer 3 boundary captured in this snapshot",
-            "proof_snapshot_head: `369e4131`",
-            "latest_proof_boundary_pr: `#562`",
+            "proof_snapshot_head: `3418d429`",
+            "latest_proof_boundary_pr: `#564`",
             "not a self-updating current-main marker",
             "latest_functional_boundary_pr: `#556`",
             "docs_sync_reference_pr: `#551`",
@@ -1869,6 +1869,8 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "Merged main head after PR #548: e0183721.",
             "Pre-merge PR #550 checks: backend-layer3-api SUCCESS; test SUCCESS.",
             "Merged main head after PR #550: 4793d8d1.",
+            "PR #564 authority rail extraction proof",
+            "Merged main head after PR #564: 3418d429.",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -2507,11 +2509,17 @@ def _check_authority_rail_extraction(errors: list[str]) -> None:
         GOAL_AUDIT: (
             "authority rail extraction",
             "layer3_authority_rail.py",
+            "PR #564 established `backend/app/services/layer3_authority_rail.py`",
+            "3418d429",
+            "289 passed",
         ),
         CLOSEOUT_DOC: (
             "authority rail extraction",
             "layer3_authority_rail.py",
             "layer3.authority_rail.v1",
+            "PR #564 authority rail extraction proof",
+            "Merged main head after PR #564: 3418d429.",
+            "Focused authority-rail/response/workbench/API suite: 146 passed, 5 warnings.",
         ),
     }
     for path, terms in required_doc_terms.items():
