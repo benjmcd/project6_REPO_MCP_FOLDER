@@ -1,17 +1,19 @@
 # Layer 3 Merged-Main Closeout
 
-Status: current-main closeout after PR #538 merged at `project6-origin/main=329fc6d5`, later refreshed after PR #539 merged at `project6-origin/main=c44a8762`, refreshed again after PR #540 merged at `project6-origin/main=c23a48c1`, refreshed after PR #542 merged at `project6-origin/main=c134b581`, refreshed after PR #543 merged at `project6-origin/main=86c899c0`, and refreshed after PR #544 merged at `project6-origin/main=005ef212`.
+Status: bounded merged-main proof snapshot after PR #538 merged at `project6-origin/main=329fc6d5`, later refreshed after PR #539 merged at `project6-origin/main=c44a8762`, refreshed again after PR #540 merged at `project6-origin/main=c23a48c1`, refreshed after PR #542 merged at `project6-origin/main=c134b581`, refreshed after PR #543 merged at `project6-origin/main=86c899c0`, refreshed after PR #544 merged at `project6-origin/main=005ef212`, and proof-snapshot synchronized after PR #545 merged at `project6-origin/main=36526ee1`.
 
-This file is post-merge documentation/proof synchronization only. It does not replace live source/tests as authority. The package supersession preview row admits only the exact read-only preview route and does not admit broad package mutation/reconstruction. The qualitative/hybrid/RAG row admits only the exact single APS-document qualitative pass and does not admit broad qualitative, hybrid, RAG/vector, hidden LLM, source widening, connector, or package mutation behavior. The mockup truth-state row keeps mockups as target-state design/specification artifacts and does not admit full mockup activation.
+This file is post-merge documentation/proof synchronization only. It is a bounded snapshot, not an evergreen manifest, and it does not replace live source/tests as authority. The package supersession preview row admits only the exact read-only preview route and does not admit broad package mutation/reconstruction. The qualitative/hybrid/RAG row admits only the exact single APS-document qualitative pass and does not admit broad qualitative, hybrid, RAG/vector, hidden LLM, source widening, connector, or package mutation behavior. The mockup truth-state row keeps mockups as target-state design/specification artifacts and does not admit full mockup activation.
 
 ## Authority Snapshot
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
-- current_branch: `codex/l3-pr544-postmerge-doc-sync`
-- latest_merged_pr: `#544`
-- merged_main_head: `005ef212`
+- snapshot_target_ref: `project6-origin/main`
+- snapshot_target_head: `36526ee1`
+- snapshot_role: bounded proof snapshot after PR #545 docs/proof synchronization; not an evergreen current-main manifest
+- latest_functional_boundary_pr: `#544`
+- latest_docs_sync_pr: `#545`
 - current baseline ref: `project6-origin/main`
-- local authority was read from `project6-origin/main=005ef212` and must be rechecked if `project6-origin/main` moves.
+- local authority was read from `project6-origin/main=36526ee1` and must be rechecked if `project6-origin/main` moves.
 - known local caveat: `.omc/state/hud-state.json`, `.omc/state/hud-stdin-cache.json`, `.codesight/`, `.cursorrules`, `.github/copilot-instructions.md`, `CLAUDE.md`, and `codex.md` are local operator/sidecar state and are not implementation evidence.
 
 Authority order for this closeout:
@@ -153,6 +155,14 @@ Merged main head after PR #544: 005ef212753adf2feb859b28362a0bee3d7d72d1.
 Post-merge progress proof: Layer 3 progress state check: PASS.
 ```
 
+PR #545 docs/proof synchronization proof:
+
+```text
+Pre-merge PR #545 checks: backend-layer3-api SUCCESS; test SUCCESS.
+Merged main head after PR #545: 36526ee1.
+Post-merge progress proof: Layer 3 progress state check: PASS.
+```
+
 ## Merge-Readiness Boundary
 
 Merged as bounded current-main scope:
@@ -187,4 +197,4 @@ Not ready to claim:
 
 ## Next Decision
 
-After this post-PR544 docs/proof sync lands, any later runtime expansion must start with a separate implementation-entry freeze that selects exactly one currently deferred lane and proves live authority for it. Without that evidence, the next admissible work remains narrow proof/state/refactor hardening or docs/proof synchronization only.
+After this post-PR545 proof-snapshot sync, any later runtime expansion must start with a separate implementation-entry freeze that selects exactly one currently deferred lane and proves live authority for it. Without that evidence, the next admissible work remains narrow proof/state/refactor hardening or docs/proof synchronization only.
