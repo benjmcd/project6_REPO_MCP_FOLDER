@@ -575,10 +575,11 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "backend/tests/test_layer3_source_boundary.py",
         ],
         GOAL_AUDIT: [
-            "updated after `bd6e0f1c`",
+            "updated after `cb88d923`",
             "backend/app/services/layer3_source_boundary.py",
             "backend/tests/test_layer3_source_boundary.py",
             "does not widen source classes",
+            "255 passed",
         ],
     }
     for path, terms in required_doc_terms.items():
