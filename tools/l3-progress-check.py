@@ -13,6 +13,7 @@ BOARD = ROOT / "next_milestone_plans" / "layer3_progress_board.md"
 REFRESH_SPEC = ROOT / "next_milestone_plans" / "layer3_progress_refresh_spec.md"
 PROGRESS_PROMPT = ROOT / "next_milestone_plans" / "progress-prompt.md"
 PROOF_MANIFEST = ROOT / "next_milestone_plans" / "layer3_workbench_proof_manifest.json"
+PLAYWRIGHT_WORKFLOW = ROOT / ".github" / "workflows" / "playwright.yml"
 LOCAL_BOUNDARY = (
     ROOT
     / "next_milestone_plans"
@@ -351,9 +352,27 @@ def _check_progress_text_surfaces(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing local sync term: {term}")
 
 
+def _check_ci_layer3_backend_guardrail(errors: list[str]) -> None:
+    if not PLAYWRIGHT_WORKFLOW.exists():
+        errors.append(f"missing required workflow file: {_rel(PLAYWRIGHT_WORKFLOW)}")
+        return
+    text = PLAYWRIGHT_WORKFLOW.read_text(encoding="utf-8")
+    required = "python -m pytest ./backend/tests/test_layer3_*.py -q"
+    if required not in text:
+        errors.append(
+            "backend Layer 3 CI guardrail must run the focused test_layer3_*.py family"
+        )
+    old_single_file = "python -m pytest ./backend/tests/test_layer3_api.py -q"
+    if old_single_file in text:
+        errors.append("backend Layer 3 CI guardrail regressed to the single API test file")
+    required_name = "Run focused Layer 3 backend pytest guardrail"
+    if required_name not in text:
+        errors.append("backend Layer 3 CI guardrail step name must reflect focused coverage")
+
+
 def main() -> int:
     errors: list[str] = []
-    for path in (MANIFEST, BOARD, REFRESH_SPEC, PROGRESS_PROMPT, PROOF_MANIFEST):
+    for path in (MANIFEST, BOARD, REFRESH_SPEC, PROGRESS_PROMPT, PROOF_MANIFEST, PLAYWRIGHT_WORKFLOW):
         _require_file(path, errors)
 
     manifest = _load_json(MANIFEST, errors)
@@ -365,6 +384,7 @@ def main() -> int:
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
     _check_progress_text_surfaces(errors)
+    _check_ci_layer3_backend_guardrail(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
