@@ -130,6 +130,14 @@ from app.services.layer3_workbench_package_state import (
 )
 from app.services.layer3_state_action_contract import build_state_action_contract
 from app.services.layer3_state_model_contract import build_workbench_state_model
+from app.services.layer3_plan_flow_contract import (
+    EXECUTION_SELECTION_FORBIDDEN_FIELDS,
+    PLAN_APPROVAL_FORBIDDEN_FIELDS,
+    PLAN_REVISION_FORBIDDEN_FIELDS,
+    execution_selection_blocked_fields,
+    plan_approval_blocked_fields,
+    plan_revision_blocked_fields,
+)
 from app.services.layer3_execution_request_contract import (
     ANALYSIS_EXECUTION_START_ALLOWED_FIELDS,
     ANALYSIS_EXECUTION_START_FORBIDDEN_FIELDS,
@@ -383,56 +391,6 @@ EXECUTION_RESULT_REVIEW_ITEM_TYPES = frozenset(
         "contradiction",
         "unsupported_claim",
         "generated_narrative",
-    }
-)
-PLAN_APPROVAL_FORBIDDEN_FIELDS = frozenset(
-    {
-        "execute",
-        "execution",
-        "run",
-        "run_analysis",
-        "package",
-        "package_review",
-        "handoff",
-        "plan_edits",
-        "natural_language_plan",
-        "llm_plan",
-    }
-)
-PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(
-    {
-        "execution_started",
-        "create_pass_runs",
-        "pass_run_ids",
-        "artifact_manifest",
-        "result_review",
-        "qualitative_plan",
-        "hybrid_plan",
-        "rag_plan",
-        "vector_plan",
-    }
-)
-EXECUTION_SELECTION_FORBIDDEN_FIELDS = frozenset(
-    {
-        "execute",
-        "execution",
-        "run",
-        "run_analysis",
-        "start_execution",
-        "analysis_run_id",
-        "analysis_run_ids",
-        "result_review",
-        "results",
-        "package",
-        "package_review",
-        "handoff",
-        "artifact_manifest",
-        "local_upload",
-        "local_directory",
-        "rag_plan",
-        "vector_plan",
-        "qualitative_plan",
-        "hybrid_plan",
     }
 )
 PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS = (
@@ -2609,7 +2567,7 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             blocked_fields=["approval_scope"],
             next_allowed_actions=["use_owner_service_default"],
         )
-    forbidden = sorted(key for key in PLAN_APPROVAL_FORBIDDEN_FIELDS if key in payload)
+    forbidden = plan_approval_blocked_fields(payload)
     if forbidden:
         raise Layer3WorkbenchError(
             "execution_not_admitted",
@@ -2745,7 +2703,7 @@ def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             next_allowed_actions=["use_supported_revision_decision"],
         )
 
-    forbidden = sorted(key for key in PLAN_REVISION_FORBIDDEN_FIELDS if key in payload)
+    forbidden = plan_revision_blocked_fields(payload)
     if forbidden:
         raise Layer3WorkbenchError(
             "execution_not_admitted",
@@ -3524,7 +3482,7 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             next_allowed_actions=["submit_complete_execution_selection_request"],
         )
 
-    forbidden = sorted(key for key in EXECUTION_SELECTION_FORBIDDEN_FIELDS if key in payload)
+    forbidden = execution_selection_blocked_fields(payload)
     if forbidden:
         raise Layer3WorkbenchError(
             "analysis_execution_not_admitted",
