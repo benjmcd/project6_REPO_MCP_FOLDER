@@ -1356,6 +1356,90 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         _assert_workbench_error_responses(spec, path, method, statuses)
 
 
+@pytest.mark.parametrize(
+    ("service_name", "method", "path", "payload"),
+    [
+        ("preflight", "post", "/api/v1/layer3/preflight", {}),
+        ("source_preview", "post", "/api/v1/layer3/source-preview", {}),
+        ("material_preview", "post", "/api/v1/layer3/material-preview", {}),
+        ("aps_dataset_version_candidates", "get", "/api/v1/layer3/dataset-version-candidates?limit=1", None),
+        ("aps_content_document_candidates", "get", "/api/v1/layer3/aps-content-document-candidates?limit=1", None),
+        (
+            "gate_b_decision",
+            "post",
+            "/api/v1/layer3/gate-b/decision",
+            {
+                "client_request_id": "forced-boundary",
+                "candidate_decisions": [{"candidate_id": "c1", "decision": "approved"}],
+            },
+        ),
+        ("gate_c_preview", "post", "/api/v1/layer3/gate-c/preview", {"session_id": "session-forced"}),
+        ("plan_preview", "post", "/api/v1/layer3/plan/preview", {}),
+        (
+            "plan_approval",
+            "post",
+            "/api/v1/layer3/plan/approve",
+            {
+                "session_id": "session-forced",
+                "preview_id": "preview-forced",
+                "preview_hash": "hash-forced",
+                "operator_confirmation": True,
+            },
+        ),
+        ("plan_revision", "post", "/api/v1/layer3/plan/revise", {}),
+        ("execution_selection", "post", "/api/v1/layer3/execution/select", {}),
+        ("analysis_execution_start", "post", "/api/v1/layer3/execution/start", {}),
+        ("execution_result_status", "post", "/api/v1/layer3/execution/result/status", {}),
+        ("execution_result_review", "post", "/api/v1/layer3/execution/result/review", {}),
+        ("package_review_preview", "post", "/api/v1/layer3/package/review/preview", {}),
+        ("package_construction_commit", "post", "/api/v1/layer3/package/review/commit", {}),
+        ("package_review_submit", "post", "/api/v1/layer3/package/review/submit", {}),
+        ("handoff_export_prepare", "post", "/api/v1/layer3/handoff/export/prepare", {}),
+        ("aps_handoff_dispatch", "post", "/api/v1/layer3/handoff/aps/dispatch", {}),
+        ("external_export_download_prepare", "post", "/api/v1/layer3/handoff/export/download/prepare", {}),
+        (
+            "external_export_download_generate_signed_reference",
+            "post",
+            "/api/v1/layer3/handoff/export/download/signed-reference/generate",
+            {},
+        ),
+        ("session_summary", "get", "/api/v1/layer3/session/session-forced", None),
+    ],
+)
+def test_layer3_api_json_or_error_call_sites_return_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+    service_name: str,
+    method: str,
+    path: str,
+    payload: dict | None,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_api_boundary_error",
+            "Forced API boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_api_boundary"],
+        )
+
+    monkeypatch.setattr(layer3_workbench, service_name, _raise_forced_boundary_error)
+
+    response = client.get(path) if method == "get" else client.post(path, json=payload)
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_api_boundary_error",
+    )
+    assert body["message"] == "Forced API boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_api_boundary"]
+
+
 def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
