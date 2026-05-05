@@ -48,7 +48,6 @@ from app.services.layer3_pass_entry import (
     PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
     PASS_TYPE_ASSOCIATED_COHORT,
     PASS_TYPE_SINGLE_ITEM,
-    PLAN_PREVIEW_HASH_SCHEMA_ID,
     SOURCE_GATE_COHORT_DESC_FREEZE,
     Layer3PassEntryError,
     approve_pass_entry_plan,
@@ -136,6 +135,11 @@ from app.services.layer3_response_contract import (
     base_response as _base_response,
 )
 from app.services.layer3_authority_rail import authority_rail as _authority_rail
+from app.services.layer3_preview_contract import (
+    material_preview_hash_contract as _material_preview_hash_contract,
+    plan_preview_hash_contract as _plan_preview_hash_contract,
+    preview_identity as _preview_identity,
+)
 from app.services.layer3_qual_aps_execution import (
     ENGINE_FAMILY_QUAL_APS_DOCUMENT,
     Layer3QualApsExecutionError,
@@ -215,7 +219,6 @@ PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
-PLAN_PREVIEW_IDENTITY_SCHEMA_ID = "layer3.plan_preview_identity.v1"
 SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID = "layer3.sublayer_visualization_state.v1"
 EXECUTION_READINESS_SCHEMA_ID = "layer3.execution_readiness_contract.v1"
 EXECUTION_SELECTION_SCHEMA_ID = "layer3.execution_selection.v1"
@@ -987,37 +990,6 @@ ASSOCIATED_COHORT_READINESS_IDENTITY_FIELDS = (
 EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES = frozenset(
     {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS, PASS_STATUS_FAILED}
 )
-PLAN_PREVIEW_HASH_INCLUDED_INPUTS = (
-    "session_id",
-    "committed_gate_b_material_and_source_ids",
-    "committed_gate_c_analysis_set_unit_group_ids",
-    "owner_service_plan_version",
-    "admissible_and_excluded_set_payloads",
-    "planned_pass_payloads",
-    "deterministic_warning_codes",
-)
-PLAN_PREVIEW_HASH_EXCLUDED_INPUTS = (
-    "browser_render_order",
-    "local_ui_labels",
-    "non_semantic_timestamps",
-    "collapsed_or_expanded_ui_state",
-    "non_authoritative_explanatory_text",
-    "unpersisted_generated_alternatives",
-)
-MATERIAL_PREVIEW_HASH_INCLUDED_INPUTS = (
-    "candidate_id",
-    "source_class",
-    "source_ref",
-    "query_basis",
-    "provenance_ref",
-)
-MATERIAL_PREVIEW_HASH_EXCLUDED_INPUTS = (
-    "operator_decision",
-    "operator_reason",
-    "browser_render_order",
-    "local_ui_labels",
-    "expanded_or_collapsed_ui_state",
-)
 READINESS_REQUIRED_GATES = (
     "proof-manifest",
     "state-model",
@@ -1630,41 +1602,6 @@ def _workbench_state_action_contract() -> dict[str, Any]:
         package_supersession_commit_operator_decision="commit_package_supersession",
         terminal_pass_statuses=EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES,
     )
-
-
-def _plan_preview_hash_contract() -> dict[str, Any]:
-    return {
-        "schema_id": PLAN_PREVIEW_HASH_SCHEMA_ID,
-        "authority_source": "server_owner_service_preview",
-        "included_inputs": list(PLAN_PREVIEW_HASH_INCLUDED_INPUTS),
-        "excluded_inputs": list(PLAN_PREVIEW_HASH_EXCLUDED_INPUTS),
-        "mismatch_error_code": "preview_mismatch",
-        "mismatch_rule": "fail_closed_no_execution_or_artifact_writes",
-    }
-
-
-def _material_preview_hash_contract() -> dict[str, Any]:
-    return {
-        "schema_id": "layer3.material_preview_hash.v1",
-        "authority_source": "server_material_preview",
-        "included_inputs": list(MATERIAL_PREVIEW_HASH_INCLUDED_INPUTS),
-        "excluded_inputs": list(MATERIAL_PREVIEW_HASH_EXCLUDED_INPUTS),
-        "mismatch_error_code": "material_preview_mismatch",
-        "mismatch_rule": "fail_closed_no_session_or_artifact_writes",
-        "supplied_hash_required_current_slice": False,
-    }
-
-
-def _preview_identity(*, preview_id: str, preview_hash: str) -> dict[str, Any]:
-    return {
-        "schema_id": PLAN_PREVIEW_IDENTITY_SCHEMA_ID,
-        "preview_id": preview_id,
-        "preview_hash": preview_hash,
-        "preview_hash_schema_id": PLAN_PREVIEW_HASH_SCHEMA_ID,
-        "authority_source": "server_owner_service_preview",
-        "stale_preview_writes_blocked": True,
-        "mismatch_error_code": "preview_mismatch",
-    }
 
 
 def readiness_contract() -> dict[str, Any]:
