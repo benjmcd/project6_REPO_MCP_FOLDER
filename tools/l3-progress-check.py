@@ -77,6 +77,9 @@ PREVIEW_CONTRACT_SERVICE = (
 READINESS_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_readiness_contract.py"
 )
+BOOTSTRAP_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py"
+)
 CONNECTOR_DISPATCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_connector_dispatch_entry.py"
 )
@@ -112,6 +115,7 @@ LAYER3_WORKBENCH_ERROR_TEST = ROOT / "backend" / "tests" / "test_layer3_workbenc
 LAYER3_AUTHORITY_RAIL_TEST = ROOT / "backend" / "tests" / "test_layer3_authority_rail.py"
 LAYER3_PREVIEW_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_preview_contract.py"
 LAYER3_READINESS_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_readiness_contract.py"
+LAYER3_BOOTSTRAP_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py"
 LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
@@ -614,15 +618,17 @@ def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(LAYER3_API)} missing connector API term: {term}")
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    bootstrap_text = _read_required_text(BOOTSTRAP_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{bootstrap_text}"
     for term in (
         "CONNECTOR_DISPATCH_RECORDED_STATE = \"connector_dispatch_recorded\"",
         "\"internal_connector_dispatch_record\"",
         "\"internal_connector_dispatch_record_admitted\": True",
-        "\"internal_connector_dispatch_record_endpoint\": f\"{API_ROOT}/handoff/connector/record\"",
+        "\"internal_connector_dispatch_record_endpoint\": f\"{api_root}/handoff/connector/record\"",
         "\"dispatch_admitted\": False",
     ):
-        if term not in workbench_text:
-            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing connector readiness term: {term}")
+        if term not in contract_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} or {_rel(BOOTSTRAP_CONTRACT_SERVICE)} missing connector readiness term: {term}")
 
     test_text = _read_required_text(LAYER3_API_TEST, errors)
     for term in (
@@ -796,11 +802,12 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
-    contract_text = f"{workbench_text}\n{readiness_text}"
+    bootstrap_text = _read_required_text(BOOTSTRAP_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{readiness_text}\n{bootstrap_text}"
     for term in (
         "\"package_supersession_preview\"",
         "\"package_supersession_preview_admitted\": True",
-        "\"package_supersession_preview_endpoint\": f\"{API_ROOT}/package/mutation/preview\"",
+        "\"package_supersession_preview_endpoint\": f\"{api_root}/package/mutation/preview\"",
         "\"package_supersession_preview_is_read_only\": True",
         "\"rebuild_package\"",
         "\"package_payload\"",
@@ -1029,7 +1036,8 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
-    contract_text = f"{workbench_text}\n{readiness_text}"
+    bootstrap_text = _read_required_text(BOOTSTRAP_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{readiness_text}\n{bootstrap_text}"
     for term in (
         "\"package_supersession_commit\"",
         "\"commit_package_supersession\"",
@@ -1217,7 +1225,8 @@ def _check_package_replacement_set_freeze(errors: list[str]) -> None:
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
-    contract_text = f"{workbench_text}\n{readiness_text}"
+    bootstrap_text = _read_required_text(BOOTSTRAP_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{readiness_text}\n{bootstrap_text}"
     for term in (
         "\"replacement_package_set_authority\"",
         "\"record_replacement_package_set_authority\"",
@@ -1474,7 +1483,8 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
-    contract_text = f"{workbench_text}\n{readiness_text}"
+    bootstrap_text = _read_required_text(BOOTSTRAP_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{readiness_text}\n{bootstrap_text}"
     for term in (
         '"single_aps_doc_qualitative_execution_admitted": True',
         '"single_aps_doc_qualitative_execution": True',
@@ -1483,7 +1493,7 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
         '"rag_vector_retrieval": False',
     ):
         if term not in contract_text:
-            errors.append(f"{_rel(WORKBENCH_SERVICE)} or {_rel(READINESS_CONTRACT_SERVICE)} missing qualitative boundary term: {term}")
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} or {_rel(READINESS_CONTRACT_SERVICE)} or {_rel(BOOTSTRAP_CONTRACT_SERVICE)} missing qualitative boundary term: {term}")
 
     required_doc_terms = {
         QUAL_APS_FREEZE: [
@@ -1678,7 +1688,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded merged-main proof snapshot through PR #569 workbench error extraction.",
+            "Status: bounded merged-main proof snapshot through PR #569 workbench error extraction plus branch-local no-behavior-change bootstrap contract extraction record.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -1897,6 +1907,7 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "Merged main head after PR #568: 6b1a12f0.",
             "PR #569 workbench error extraction proof",
             "Merged main head after PR #569: 5e09187e.",
+            "Bootstrap contract extraction focused proof",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -2725,7 +2736,6 @@ def _check_readiness_contract_extraction(errors: list[str]) -> None:
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
         "from app.services.layer3_readiness_contract import",
-        "EXECUTION_READINESS_SCHEMA_ID",
         "build_readiness_contract",
         "def readiness_contract(",
         "return build_readiness_contract(",
@@ -2782,6 +2792,73 @@ def _check_readiness_contract_extraction(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing readiness contract extraction doc term: {term}")
+
+
+def _check_bootstrap_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(BOOTSTRAP_CONTRACT_SERVICE, errors)
+    for term in (
+        'BOOTSTRAP_SCHEMA_ID = "layer3.workbench_bootstrap.v1"',
+        "BOOTSTRAP_FEATURE_FLAGS",
+        "def build_bootstrap_contract(",
+        '"single_aps_doc_qualitative_execution": True',
+        '"broad_qualitative_execution": False',
+        '"rag_vector_retrieval": False',
+        '"dispatch": False',
+        '"dispatch_admitted": False',
+        '"readiness_endpoint": f"{api_root}/readiness"',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(BOOTSTRAP_CONTRACT_SERVICE)} missing bootstrap contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_bootstrap_contract import build_bootstrap_contract",
+        "def bootstrap(",
+        "return build_bootstrap_contract(",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing bootstrap contract extraction term: {term}")
+    if '**_base_response("layer3.workbench_bootstrap.v1")' in workbench_text:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns bootstrap base response literal")
+
+    test_text = _read_required_text(LAYER3_BOOTSTRAP_CONTRACT_TEST, errors)
+    for term in (
+        "test_layer3_bootstrap_contract_is_shared_without_behavior_change",
+        "build_bootstrap_contract(",
+        "direct_body == workbench_body",
+        'direct_body["features"]["broad_qualitative_execution"] is False',
+        'direct_body["execution_readiness"]["dispatch_admitted"] is False',
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_BOOTSTRAP_CONTRACT_TEST)} missing bootstrap contract test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "bootstrap contract extraction",
+            "layer3_bootstrap_contract.py",
+            "test_layer3_bootstrap_contract.py",
+        ),
+        GOAL_AUDIT: (
+            "bootstrap contract extraction",
+            "layer3_bootstrap_contract.py",
+            "test_layer3_bootstrap_contract.py",
+            "293 passed",
+            "does not change emitted bootstrap envelopes",
+        ),
+        CLOSEOUT_DOC: (
+            "bootstrap contract extraction",
+            "layer3_bootstrap_contract.py",
+            "layer3.workbench_bootstrap.v1",
+            "Bootstrap contract extraction focused proof",
+            "Focused bootstrap-contract suite: 1 passed.",
+            "Local focused Layer 3 backend suite: 293 passed, 4 warnings.",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing bootstrap contract extraction doc term: {term}")
 
 
 def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
@@ -2888,6 +2965,7 @@ def main() -> int:
         AUTHORITY_RAIL_SERVICE,
         PREVIEW_CONTRACT_SERVICE,
         READINESS_CONTRACT_SERVICE,
+        BOOTSTRAP_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
@@ -2909,6 +2987,7 @@ def main() -> int:
         LAYER3_AUTHORITY_RAIL_TEST,
         LAYER3_PREVIEW_CONTRACT_TEST,
         LAYER3_READINESS_CONTRACT_TEST,
+        LAYER3_BOOTSTRAP_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
@@ -2947,6 +3026,7 @@ def main() -> int:
     _check_authority_rail_extraction(errors)
     _check_preview_contract_extraction(errors)
     _check_readiness_contract_extraction(errors)
+    _check_bootstrap_contract_extraction(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
