@@ -980,6 +980,20 @@ PLAN_PREVIEW_HASH_EXCLUDED_INPUTS = (
     "non_authoritative_explanatory_text",
     "unpersisted_generated_alternatives",
 )
+MATERIAL_PREVIEW_HASH_INCLUDED_INPUTS = (
+    "candidate_id",
+    "source_class",
+    "source_ref",
+    "query_basis",
+    "provenance_ref",
+)
+MATERIAL_PREVIEW_HASH_EXCLUDED_INPUTS = (
+    "operator_decision",
+    "operator_reason",
+    "browser_render_order",
+    "local_ui_labels",
+    "expanded_or_collapsed_ui_state",
+)
 READINESS_REQUIRED_GATES = (
     "proof-manifest",
     "state-model",
@@ -1604,6 +1618,18 @@ def _plan_preview_hash_contract() -> dict[str, Any]:
     }
 
 
+def _material_preview_hash_contract() -> dict[str, Any]:
+    return {
+        "schema_id": "layer3.material_preview_hash.v1",
+        "authority_source": "server_material_preview",
+        "included_inputs": list(MATERIAL_PREVIEW_HASH_INCLUDED_INPUTS),
+        "excluded_inputs": list(MATERIAL_PREVIEW_HASH_EXCLUDED_INPUTS),
+        "mismatch_error_code": "material_preview_mismatch",
+        "mismatch_rule": "fail_closed_no_session_or_artifact_writes",
+        "supplied_hash_required_current_slice": False,
+    }
+
+
 def _preview_identity(*, preview_id: str, preview_hash: str) -> dict[str, Any]:
     return {
         "schema_id": PLAN_PREVIEW_IDENTITY_SCHEMA_ID,
@@ -1654,10 +1680,12 @@ def readiness_contract() -> dict[str, Any]:
         "deferred_gates": list(READINESS_DEFERRED_GATES),
         "state_model": _workbench_state_model(),
         "preview_hash_contract": _plan_preview_hash_contract(),
+        "material_preview_hash_contract": _material_preview_hash_contract(),
         "idempotency_contract": {
             "schema_id": "layer3.idempotency_contract.v1",
             "client_request_id_supported": True,
             "client_request_id_required_current_slice": False,
+            "client_request_id_required_for_gate_b_decision": False,
             "client_request_id_required_for_execution_selection": True,
             "client_request_id_required_for_analysis_execution_start": True,
             "client_request_id_required_for_execution_result_status": False,
@@ -1669,6 +1697,9 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_for_aps_handoff_dispatch": True,
             "client_request_id_required_for_external_export_download_prepare": True,
             "client_request_id_required_for_external_export_download_deliver": True,
+            "duplicate_gate_b_decision": "same client_request_id, provided source context, provided material_preview_id, and decision manifest returns existing Gate B session; conflicts fail closed",
+            "gate_b_decision_idempotency_scope": "post_commit_retry_only",
+            "gate_b_decision_concurrent_duplicate_lock": False,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
             "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
             "duplicate_execution_selection": "same client_request_id and same approved plan returns existing selection; conflicts fail closed",
@@ -2576,6 +2607,42 @@ def _aps_content_document_material_candidates(
     return candidates
 
 
+def _material_candidate_basis_from_preview(candidate: dict[str, Any]) -> dict[str, str]:
+    candidate_id = str(candidate.get("candidate_id") or "").strip()
+    source_class = str(candidate.get("source_class") or "").strip()
+    return {
+        "candidate_id": candidate_id,
+        "source_class": source_class,
+        "source_ref": str(candidate.get("source_ref") or "").strip(),
+        "query_basis": str(candidate.get("query_basis") or "").strip(),
+        "provenance_ref": str(candidate.get("provenance_ref") or "").strip(),
+    }
+
+
+def _material_candidate_basis_from_decision(
+    *, candidate_id: str, source_class: str, decision_basis: dict[str, Any]
+) -> dict[str, str]:
+    return {
+        "candidate_id": candidate_id,
+        "source_class": source_class,
+        "source_ref": str(decision_basis.get("source_ref") or "").strip(),
+        "query_basis": str(decision_basis.get("query_basis") or "").strip(),
+        "provenance_ref": str(decision_basis.get("provenance_ref") or "").strip(),
+    }
+
+
+def _material_preview_basis(candidate_bases: list[dict[str, str]]) -> dict[str, Any]:
+    return {
+        "schema_id": "layer3.material_preview_basis.v1",
+        "schema_version": SCHEMA_VERSION,
+        "items": sorted(_json_clone(candidate_bases), key=lambda item: item["candidate_id"]),
+    }
+
+
+def _material_preview_hash(candidate_bases: list[dict[str, str]]) -> str:
+    return hashlib.sha256(_canonical_json_bytes(_material_preview_basis(candidate_bases))).hexdigest()
+
+
 def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     source_ids = [str(item) for item in payload.get("source_candidate_ids") or []]
@@ -2650,9 +2717,13 @@ def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict
             }
         )
     preview_id = _stable_id("material-preview", [item["candidate_id"] for item in candidates])
+    material_preview_hash = _material_preview_hash(
+        [_material_candidate_basis_from_preview(candidate) for candidate in candidates]
+    )
     return {
         **_base_response("layer3.material_preview_result.v1", request_id=request_id),
         "material_preview_id": preview_id,
+        "material_preview_hash": material_preview_hash,
         "material_candidates": candidates,
         "partial_retrieval": False,
         "authority_rail": _authority_rail(
@@ -2670,16 +2741,117 @@ def _gate_b_counts(decisions: list[dict[str, Any]]) -> dict[str, int]:
 
 
 def _candidate_decision_manifest(decisions: list[dict[str, Any]]) -> dict[str, Any]:
-    return {"schema_id": "layer3.gate_b_decision_manifest.v1", "schema_version": SCHEMA_VERSION, "items": _json_clone(decisions)}
+    ordered = sorted(_json_clone(decisions), key=lambda item: str(item.get("candidate_id") or ""))
+    return {"schema_id": "layer3.gate_b_decision_manifest.v1", "schema_version": SCHEMA_VERSION, "items": ordered}
+
+
+def _gate_b_decision_manifest_id(decision_manifest: dict[str, Any]) -> str:
+    return _stable_id("gate-b", decision_manifest)
+
+
+def _gate_b_idempotency_record(
+    *,
+    client_request_id: str,
+    preflight_id: str,
+    source_set_id: str,
+    material_preview_id: str,
+    material_preview_hash: str,
+    gate_b_decision_manifest_id: str,
+) -> dict[str, Any]:
+    return {
+        "schema_id": "layer3.gate_b_idempotency.v1",
+        "client_request_id": client_request_id,
+        "preflight_id": preflight_id,
+        "source_set_id": source_set_id,
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "gate_b_decision_manifest_id": gate_b_decision_manifest_id,
+    }
+
+
+def _gate_b_idempotency_from_session(session: L3Session) -> dict[str, Any] | None:
+    context = session.operator_context_json or {}
+    record = context.get("layer3_gate_b_idempotency_v1")
+    if not isinstance(record, dict):
+        return None
+    if record.get("schema_id") != "layer3.gate_b_idempotency.v1":
+        return None
+    return record
+
+
+def _find_gate_b_idempotency_session(db: Session, *, client_request_id: str) -> tuple[L3Session, dict[str, Any]] | None:
+    if not client_request_id:
+        return None
+    query = db.query(L3Session).order_by(L3Session.created_at.desc(), L3Session.session_id.desc())
+    for session in query.yield_per(100):
+        record = _gate_b_idempotency_from_session(session)
+        if record is not None and str(record.get("client_request_id") or "") == client_request_id:
+            return session, record
+    return None
+
+
+def _gate_b_response_from_session(
+    *,
+    request_id: str,
+    status: str,
+    session: L3Session,
+    manifest: L3SelectionManifest,
+    decision_manifest: dict[str, Any],
+) -> dict[str, Any]:
+    decisions = [item for item in decision_manifest.get("items") or [] if isinstance(item, dict)]
+    counts = _gate_b_counts(decisions)
+    hints = manifest.source_plane_hints_json or {}
+    material_preview_hash = _material_preview_hash(
+        [
+            (
+                item.get("material_preview_basis")
+                if isinstance(item.get("material_preview_basis"), dict)
+                else _material_candidate_basis_from_decision(
+                    candidate_id=str(item.get("candidate_id") or "").strip(),
+                    source_class=str(item.get("source_class") or "").strip(),
+                    decision_basis=item.get("decision_basis") if isinstance(item.get("decision_basis"), dict) else {},
+                )
+            )
+            for item in decisions
+        ]
+    )
+    return {
+        **_base_response("layer3.gate_b_decision_result.v1", request_id=request_id),
+        "status": status,
+        "session_id": session.session_id,
+        "selection_manifest_id": manifest.selection_manifest_id,
+        "material_preview_hash": material_preview_hash,
+        "gate_b_decision_manifest_id": _gate_b_decision_manifest_id(decision_manifest),
+        "approved_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "approved"],
+        "denied_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "denied"],
+        "isolated_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "isolated"],
+        "flagged_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "flagged"],
+        "next_state": "gate_c_preview_ready",
+        "authority_rail": _authority_rail(
+            session_id=session.session_id,
+            preflight_id=str(hints.get("preflight_id") or "none"),
+            source_set_id=str(hints.get("source_set_id") or "none"),
+            current_gate="gate_c",
+            persistence_mode="durable_layer3_control",
+            source_classes=sorted({item["source_class"] for item in decisions if item["decision"] == "approved"}),
+            counts=counts,
+        ),
+    }
 
 
 def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
-    request_id = str(payload.get("client_request_id") or uuid_str())
+    request_id = str(payload.get("client_request_id") or "").strip() or uuid_str()
+    preflight_id = str(payload.get("preflight_id") or "").strip()
+    source_set_id = str(payload.get("source_set_id") or "").strip()
+    material_preview_id = str(payload.get("material_preview_id") or "").strip()
+    supplied_material_preview_hash = str(payload.get("material_preview_hash") or "").strip()
     raw_decisions = payload.get("candidate_decisions") or []
     if not isinstance(raw_decisions, list) or not raw_decisions:
         raise Layer3WorkbenchError("no_approved_material", "At least one Gate B decision is required.", status="blocked")
 
     decisions: list[dict[str, Any]] = []
+    material_candidate_bases: list[dict[str, str]] = []
+    seen_candidate_ids: set[str] = set()
     for raw in raw_decisions:
         if not isinstance(raw, dict):
             raise Layer3WorkbenchError("invalid_material_candidate", "Gate B decision entries must be objects.")
@@ -2689,6 +2861,13 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         reason = str(raw.get("operator_reason") or "").strip()
         if source_class is None:
             raise Layer3WorkbenchError("invalid_material_candidate", f"Unknown material candidate: {candidate_id}.")
+        if candidate_id in seen_candidate_ids:
+            raise Layer3WorkbenchError(
+                "duplicate_material_candidate_decision",
+                f"Material candidate '{candidate_id}' was submitted more than once.",
+                blocked_fields=["candidate_decisions.candidate_id"],
+            )
+        seen_candidate_ids.add(candidate_id)
         if decision not in GATE_B_DECISIONS:
             raise Layer3WorkbenchError("invalid_material_candidate", f"Unsupported Gate B decision: {decision}.")
         if decision in {"denied", "isolated", "flagged"} and not reason:
@@ -2704,6 +2883,12 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
         payload_basis = decision_basis.get("payload") if isinstance(decision_basis.get("payload"), dict) else {}
         load_summary = decision_basis.get("load_summary") if isinstance(decision_basis.get("load_summary"), dict) else {}
+        material_preview_basis = _material_candidate_basis_from_decision(
+            candidate_id=candidate_id,
+            source_class=source_class,
+            decision_basis=decision_basis,
+        )
+        material_candidate_bases.append(material_preview_basis)
         decisions.append(
             {
                 "candidate_id": candidate_id,
@@ -2711,6 +2896,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 "decision": decision,
                 "operator_reason": reason,
                 "decision_basis": _json_clone(decision_basis),
+                "material_preview_basis": _json_clone(material_preview_basis),
                 "source_identity": _json_clone(source_identity),
                 "source_provenance": _json_clone(source_provenance),
                 "payload": _json_clone(payload_basis),
@@ -2719,6 +2905,64 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     approved = [item for item in decisions if item["decision"] == "approved"]
+    material_preview_hash = _material_preview_hash(material_candidate_bases)
+    if supplied_material_preview_hash and supplied_material_preview_hash != material_preview_hash:
+        raise Layer3WorkbenchError(
+            "material_preview_mismatch",
+            "material_preview_hash does not match the submitted Gate B candidate decisions.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["material_preview_hash", "candidate_decisions"],
+            next_allowed_actions=["refresh_material_preview"],
+        )
+    decision_manifest = _candidate_decision_manifest(decisions)
+    gate_b_decision_manifest_id = _gate_b_decision_manifest_id(decision_manifest)
+    existing_idempotency = _find_gate_b_idempotency_session(db, client_request_id=request_id)
+    if existing_idempotency is not None:
+        existing_session, existing_record = existing_idempotency
+        if (
+            str(existing_record.get("preflight_id") or "") == preflight_id
+            and str(existing_record.get("source_set_id") or "") == source_set_id
+            and str(existing_record.get("material_preview_id") or "") == material_preview_id
+            and str(existing_record.get("material_preview_hash") or material_preview_hash) == material_preview_hash
+            and str(existing_record.get("gate_b_decision_manifest_id") or "") == gate_b_decision_manifest_id
+        ):
+            existing_manifest = db.get(L3SelectionManifest, existing_session.selection_manifest_id)
+            if existing_manifest is None:
+                raise Layer3WorkbenchError(
+                    "gate_b_idempotency_state_inconsistent",
+                    f"Layer 3 session '{existing_session.session_id}' is missing its selection manifest.",
+                    status="conflict",
+                    http_status=409,
+                )
+            existing_decision_manifest = (
+                (existing_session.operator_context_json or {}).get("layer3_gate_b_decision_manifest_v1")
+            )
+            if (
+                not isinstance(existing_decision_manifest, dict)
+                or _gate_b_decision_manifest_id(existing_decision_manifest) != gate_b_decision_manifest_id
+            ):
+                raise Layer3WorkbenchError(
+                    "gate_b_idempotency_state_inconsistent",
+                    f"Layer 3 session '{existing_session.session_id}' has inconsistent Gate B idempotency state.",
+                    status="conflict",
+                    http_status=409,
+                )
+            return _gate_b_response_from_session(
+                request_id=request_id,
+                status="already_committed",
+                session=existing_session,
+                manifest=existing_manifest,
+                decision_manifest=existing_decision_manifest,
+            )
+        raise Layer3WorkbenchError(
+            "idempotency_conflict",
+            "client_request_id already committed Gate B for different material decisions.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id"],
+        )
+
     if not approved:
         raise Layer3WorkbenchError(
             "no_approved_material",
@@ -2728,7 +2972,6 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     counts = _gate_b_counts(decisions)
-    decision_manifest = _candidate_decision_manifest(decisions)
     manifest_items = []
     for item in approved:
         short_id = hashlib.sha256(item["candidate_id"].encode("utf-8")).hexdigest()[:12]
@@ -2760,13 +3003,24 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         SessionEntryRequest(
             manifest_items=manifest_items,
             source_plane_hints={
-                "preflight_id": payload.get("preflight_id"),
-                "source_set_id": payload.get("source_set_id"),
+                "preflight_id": preflight_id,
+                "source_set_id": source_set_id,
                 "source_classes": sorted({item["source_class"] for item in approved}),
             },
             commit_reason=str(payload.get("commit_reason") or "operator_gate_b_decision"),
             entry_route_context={"route": ROUTE, "api_root": API_ROOT, "slice": "workbench_first_slice"},
-            operator_context={"actor": payload.get("actor") or "operator", "layer3_gate_b_decision_manifest_v1": decision_manifest},
+            operator_context={
+                "actor": payload.get("actor") or "operator",
+                "layer3_gate_b_decision_manifest_v1": decision_manifest,
+                "layer3_gate_b_idempotency_v1": _gate_b_idempotency_record(
+                    client_request_id=request_id,
+                    preflight_id=preflight_id,
+                    source_set_id=source_set_id,
+                    material_preview_id=material_preview_id,
+                    material_preview_hash=material_preview_hash,
+                    gate_b_decision_manifest_id=gate_b_decision_manifest_id,
+                ),
+            },
             summary={"current_gate": "gate_c", "gate_b_summary_v1": counts},
         ),
     )
@@ -2800,26 +3054,13 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
     finalize_session(db, session=session)
     db.commit()
-    return {
-        **_base_response("layer3.gate_b_decision_result.v1", request_id=request_id),
-        "session_id": session.session_id,
-        "selection_manifest_id": manifest.selection_manifest_id,
-        "gate_b_decision_manifest_id": _stable_id("gate-b", decision_manifest),
-        "approved_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "approved"],
-        "denied_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "denied"],
-        "isolated_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "isolated"],
-        "flagged_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "flagged"],
-        "next_state": "gate_c_preview_ready",
-        "authority_rail": _authority_rail(
-            session_id=session.session_id,
-            preflight_id=str(payload.get("preflight_id") or "none"),
-            source_set_id=str(payload.get("source_set_id") or "none"),
-            current_gate="gate_c",
-            persistence_mode="durable_layer3_control",
-            source_classes=sorted({item["source_class"] for item in approved}),
-            counts=counts,
-        ),
-    }
+    return _gate_b_response_from_session(
+        request_id=request_id,
+        status="ok",
+        session=session,
+        manifest=manifest,
+        decision_manifest=decision_manifest,
+    )
 
 
 def _load_session(db: Session, session_id: str) -> L3Session:
