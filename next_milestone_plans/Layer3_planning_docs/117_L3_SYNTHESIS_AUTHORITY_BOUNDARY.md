@@ -97,21 +97,21 @@ The synthesis-supported direction after the already-landed proof/state/refactor 
 - correct stale labels that could cause future overclaims;
 - preserve fail-closed deferred capability markers;
 - keep `replacement_package_artifact_authority_only` planning-only until a later implementation-entry freeze chooses exactly one artifact authority mode;
-- keep `replacement_package_artifact_manifest_only` planning-only until a later implementation PR proves server-side manifest verification without payload generation or package-row creation;
+- keep `replacement_package_artifact_manifest_only` live only as the exact server-verified manifest-only runtime with no payload generation, payload write, package-row mutation, replacement package row creation, or rendered mutation controls;
 - defer broad feature activation until a separate freeze and proof plan admit exactly one lane.
 
 This note blocks broad activation from mockup, progress, or Codesight evidence alone.
 
 ## Merged-Main Verification Recheck
 
-- Current merged-main authority after PR #584: `project6-origin/main` at `9cdd1e88`.
-- This recheck is current-main proof through the bounded PR #584 plan-flow request contract extraction merge. It does not claim any deferred broad capability beyond the admitted Layer 3 surfaces listed here.
-- `python -m pytest $files -q`, where `$files` is the local `backend/tests/test_layer3_*.py` set, passed with `304 passed, 4 warnings`.
+- Latest merged-main authority rechecked before this guardrail correction: `project6-origin/main` at `996d7bb1` after PR #589.
+- This recheck is current-main proof through the bounded PR #588 package artifact manifest-only runtime plus PR #589 proof-metadata drift hardening. It does not claim any deferred broad capability beyond the admitted Layer 3 surfaces listed here.
+- `python -m pytest $files -q`, where `$files` is the local `backend/tests/test_layer3*.py` set, passed with `310 passed, 4 warnings`.
 - `python .\tools\l3-progress-check.py` passed with `Layer 3 progress state check: PASS`.
 - Historical PR #535 browser recovery proof is retained: `npx playwright test layer3-workbench.spec.js --project=chromium` passed with `12 passed`.
 - Historical PR #535 headed browser recovery proof is retained: `npx playwright test layer3-workbench.spec.js --project=chromium --headed` passed with `12 passed`.
-- PR #568, PR #569, PR #580, PR #582, and PR #584 checks passed before merge: `backend-layer3-api` and `test`.
-- This note relies on pre-merge PR checks plus local post-merge source/test/progress proof against `9cdd1e88`; it does not claim a separate post-merge `main` workflow run.
+- PR #568, PR #569, PR #580, PR #582, PR #584, PR #588, and PR #589 checks passed before merge: `backend-layer3-api` and `test`.
+- This note relies on pre-merge PR checks plus local post-merge source/test/progress proof against `996d7bb1`; it does not claim a separate post-merge `main` workflow run.
 - The remaining local working-tree noise during post-merge audit was limited to out-of-scope local sidecars and `.omc/state/*`.
 
 This recheck validates the merged current-main bounded state/action, session-status migration constraint alignment, frontend recovery with state/action contract signature invalidation, service-extraction including response envelope, authority rail, preview hash/identity, readiness contract, workbench error extraction, bootstrap contract extraction, state-model contract extraction, plan-flow request contract extraction, execution request/result contract extraction, external export/download contract extraction, handoff/export and APS handoff contract extraction, and package review/construction/submit contract extraction, DTO/error-boundary including the preflight, plan-preview, source-preview, material-preview, API envelope, and qualitative owner-service error boundaries, package-hash, same-origin signed-reference service proof, single APS-document qualitative execution, package artifact manifest-only verification, and fail-closed proof posture. It does not implement or newly admit broad execution, generic connector/destination dispatch, package mutation/reconstruction beyond exact read-only `package_supersession_preview_only`, metadata-only `replacement_package_set_authority`, lineage-only `package_supersession_commit_entry`, and manifest-only `replacement_package_artifact_manifest_only`, broad source/upload expansion, broad qualitative/hybrid/RAG execution, provider/public URLs, full mockup activation, or authentication/security hardening. Existing bounded APS owner-service dispatch, package construction/submit, same-origin delivery, same-origin signed-reference behavior, single APS-document qualitative execution, and replacement package artifact manifest-only verification must not be relabeled as those broader deferred categories.

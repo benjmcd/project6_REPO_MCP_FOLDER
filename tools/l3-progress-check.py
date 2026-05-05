@@ -1530,6 +1530,8 @@ def _check_package_replacement_artifact_manifest_freeze(errors: list[str]) -> No
             "replacement_package_artifact_manifest_only",
             "live runtime is bounded to `/api/v1/layer3/package/replacement-artifact/manifest/record`",
             "backend/tests/test_layer3_replacement_package_artifact_manifest.py",
+            "keep `replacement_package_artifact_manifest_only` live only as the exact server-verified manifest-only runtime",
+            "Latest merged-main authority rechecked before this guardrail correction: `project6-origin/main` at `996d7bb1` after PR #589.",
         ),
         GOAL_AUDIT: (
             "Doc `129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md` remains the implementation-entry planning authority",
@@ -1566,6 +1568,14 @@ def _check_package_replacement_artifact_manifest_freeze(errors: list[str]) -> No
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing package artifact manifest freeze term: {term}")
+        if path == SYNTHESIS_BOUNDARY:
+            for stale_term in (
+                "keep `replacement_package_artifact_manifest_only` planning-only until a later implementation PR",
+                "Current merged-main authority after PR #584",
+                "proof against `9cdd1e88`",
+            ):
+                if stale_term in text:
+                    errors.append(f"{_rel(path)} contains stale package artifact manifest guardrail term: {stale_term}")
 
     proof_manifest = _load_json(PROOF_MANIFEST, errors)
     if isinstance(proof_manifest, dict):
