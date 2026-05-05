@@ -1161,6 +1161,10 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
     assert dispatch_request_schema["properties"]["operator_decision"]["enum"] == ["dispatch_aps_handoff"]
     _assert_string_array_or_string_map_schema(dispatch_request_schema["properties"]["payload_refs"])
     _assert_string_array_or_string_map_schema(dispatch_request_schema["properties"]["payload_hashes"])
+    assert dispatch_request_schema["properties"]["connector_dispatch"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert dispatch_request_schema["properties"]["download_url"]["description"].startswith("Known but non-admitted")
 
     dispatch_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/aps/dispatch", "post")
     assert dispatch_schema["title"] == "Layer3ApsHandoffDispatchResponse"
@@ -8551,6 +8555,17 @@ def test_layer3_api_aps_handoff_dispatch_prechecks_fail_closed(
         response = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
         assert response.status_code == expected_status
         assert response.json()["error_code"] == expected_error
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={**base_payload, "destination_connector": "not-admitted"},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
 
     db = client.layer3_session_factory()
     try:
