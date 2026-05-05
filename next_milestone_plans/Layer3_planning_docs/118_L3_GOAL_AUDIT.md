@@ -1,6 +1,6 @@
 # Layer 3 Goal Audit
 
-Status: branch-local completion audit for `codex/l3-frontend-session-recovery`, updated through `a672b71d`.
+Status: branch-local completion audit for `codex/l3-frontend-session-recovery`, updated through `b9feb42a`.
 
 This file is not an implementation freeze and does not admit new runtime behavior. It maps the active goal to current local evidence so future work does not confuse implemented bounded slices with still-blocked broad capabilities.
 
