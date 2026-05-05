@@ -804,6 +804,8 @@ def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
         "preview_hash",
     }
     assert status_request_schema["properties"]["operator_view_mode"]["enum"] == ["status_only"]
+    assert status_request_schema["properties"]["result_review"]["description"].startswith("Known but non-admitted")
+    assert status_request_schema["properties"]["runtime_db_write"]["description"].startswith("Known but non-admitted")
 
     status_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/result/status", "post")
     assert status_schema["title"] == "Layer3ExecutionResultStatusResponse"
@@ -9344,6 +9346,31 @@ def test_layer3_api_execution_result_status_prechecks_fail_closed(client: TestCl
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "execution_result_status_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"package_review", "rerun", "result_review"}
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3PassRun).count() == 1
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
 
     unsupported_view = client.post(
         "/api/v1/layer3/execution/result/status",

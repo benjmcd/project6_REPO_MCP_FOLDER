@@ -221,6 +221,42 @@ class Layer3AnalysisExecutionStartRequest(BaseModel):
     schema_widening: Any | None = None
 
 
+class Layer3ExecutionResultStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    analysis_run_id: str | None = None
+    operator_view_mode: str | None = None
+    approve_result: Any | None = None
+    reject_result: Any | None = None
+    result_review: Any | None = None
+    result_decision: Any | None = None
+    edited_findings: Any | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    cancel: Any | None = None
+    run_all: Any | None = None
+    batch: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+    approved_plan_supersession: Any | None = None
+    schema_migration: Any | None = None
+    runtime_db_write: Any | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -1131,6 +1167,7 @@ ANALYSIS_EXECUTION_START_REQUEST_SCHEMA: dict[str, Any] = {
 EXECUTION_RESULT_STATUS_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
+    "description": "Strict status-only result inspection fields; explicit review/package/handoff/source-widening fields remain fail-closed.",
     "required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -1141,6 +1178,29 @@ EXECUTION_RESULT_STATUS_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "analysis_run_id": {"type": "string"},
         "operator_view_mode": {"type": "string", "enum": ["status_only"]},
+        "approve_result": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "reject_result": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_decision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run_all": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "batch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "approved_plan_supersession": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1692,10 +1752,10 @@ def post_execution_start(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_execution_result_status(
-    payload: dict[str, Any],
+    payload: Layer3ExecutionResultStatusRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.execution_result_status(db, payload))
+    return _json_or_error(lambda: layer3_workbench.execution_result_status(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
