@@ -39,6 +39,9 @@ STATE_ACTION_CONTRACT = (
 STATE_MODEL_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_state_model_contract.py"
 )
+PLAN_FLOW_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_plan_flow_contract.py"
+)
 EXECUTION_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
 )
@@ -133,6 +136,9 @@ LAYER3_READINESS_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_readi
 LAYER3_BOOTSTRAP_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py"
 LAYER3_STATE_MODEL_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_state_model_contract.py"
+)
+LAYER3_PLAN_FLOW_CONTRACT_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_plan_flow_contract.py"
 )
 LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
@@ -3066,6 +3072,86 @@ def _check_execution_request_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing execution request contract extraction doc term: {term}")
 
 
+def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(PLAN_FLOW_CONTRACT_SERVICE, errors)
+    for term in (
+        "PLAN_APPROVAL_FORBIDDEN_FIELDS = frozenset(",
+        "PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(",
+        "EXECUTION_SELECTION_FORBIDDEN_FIELDS = frozenset(",
+        "def plan_approval_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "def plan_revision_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "def execution_selection_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        '"llm_plan"',
+        '"create_pass_runs"',
+        '"start_execution"',
+        '"local_upload"',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PLAN_FLOW_CONTRACT_SERVICE)} missing plan-flow contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_plan_flow_contract import (",
+        "PLAN_APPROVAL_FORBIDDEN_FIELDS",
+        "PLAN_REVISION_FORBIDDEN_FIELDS",
+        "EXECUTION_SELECTION_FORBIDDEN_FIELDS",
+        "forbidden = plan_approval_blocked_fields(payload)",
+        "forbidden = plan_revision_blocked_fields(payload)",
+        "forbidden = execution_selection_blocked_fields(payload)",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing plan-flow contract extraction term: {term}")
+    for stale_term in (
+        "PLAN_APPROVAL_FORBIDDEN_FIELDS = frozenset(",
+        "PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(",
+        "EXECUTION_SELECTION_FORBIDDEN_FIELDS = frozenset(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns plan-flow contract term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_PLAN_FLOW_CONTRACT_TEST, errors)
+    for term in (
+        "test_plan_flow_contract_is_shared_without_behavior_change",
+        "test_plan_flow_contract_blocks_same_fields_as_legacy_logic",
+        "layer3_workbench.PLAN_APPROVAL_FORBIDDEN_FIELDS",
+        "contract.plan_approval_blocked_fields(approval_payload)",
+        "contract.plan_revision_blocked_fields(revision_payload)",
+        "contract.execution_selection_blocked_fields(selection_payload)",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_PLAN_FLOW_CONTRACT_TEST)} missing plan-flow contract test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "branch-local scoped proof for the no-behavior-change plan-flow request contract extraction",
+            "layer3_plan_flow_contract.py",
+            "test_layer3_plan_flow_contract.py",
+            "does not change plan approval, plan revision, or execution selection blocked-field behavior",
+        ),
+        GOAL_AUDIT: (
+            "branch-local plan-flow request contract extraction",
+            "layer3_plan_flow_contract.py",
+            "test_layer3_plan_flow_contract.py",
+            "does not change plan approval, plan revision, or execution selection forbidden-field contracts, blocked-field behavior, emitted plan-flow responses, execution behavior, or any deferred broad capability",
+            "it remains branch-local until merged",
+        ),
+        CLOSEOUT_DOC: (
+            "Branch-local plan-flow request contract extraction proof",
+            "layer3_plan_flow_contract.py",
+            "test_layer3_plan_flow_contract.py",
+            "Focused plan-flow-contract suite: 2 passed.",
+            "Focused plan-flow API regression: 3 passed, 124 deselected, 3 warnings.",
+            "Local focused Layer 3 backend suite: 304 passed, 4 warnings.",
+            "No broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing plan-flow contract extraction doc term: {term}")
+
+
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
     for term in (
@@ -3499,6 +3585,7 @@ def main() -> int:
     _check_readiness_contract_extraction(errors)
     _check_bootstrap_contract_extraction(errors)
     _check_state_model_contract_extraction(errors)
+    _check_plan_flow_contract_extraction(errors)
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
