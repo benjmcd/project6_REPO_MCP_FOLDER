@@ -6,6 +6,8 @@ Repo comparison authority: project6-origin/main at baa8ae7dd19373829fb2cf5e0954c
 Authority recheck: project6-origin refs/heads/main matched the local project6-origin/main ref during this review.
 Write scope: this file only.
 
+Post-synthesis authority note: use `next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` before converting any mockup concept into implementation scope. This mockup spec remains target-state/design-intent authority only; it does not activate broad execution, qualitative/hybrid/RAG, provider/public URL support, connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, hidden LLM planning, frontend-only durable state, or full mockup behavior.
+
 1. Purpose
 
 This document captures the intended Layer 3 frontend, workflow, and backend interaction model expressed by the current mockups in C:\Users\benny\Downloads\layer3mockups.

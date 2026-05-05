@@ -64,6 +64,17 @@ from app.services.layer3_package_entry import (
     Layer3PackageEntryError,
     materialize_workbench_package_commit,
 )
+from app.services.layer3_gate_b_state import (
+    GATE_B_IDEMPOTENCY_CONTEXT_KEY,
+    find_gate_b_idempotency_session,
+    gate_b_idempotency_record,
+)
+from app.services.layer3_plan_revision_state import (
+    PLAN_REVISION_CONTROL_CONTEXT_KEY,
+    PLAN_REVISION_DECISIONS,
+    plan_revision_control_from_session as _plan_revision_control_from_session,
+    plan_revision_control_record,
+)
 from app.services.layer3_signed_reference_state import (
     SignedReferenceDurableState,
     SignedReferenceStateError,
@@ -85,6 +96,14 @@ from app.services.layer3_session_entry import (
     finalize_session,
     record_retrieval_event,
 )
+from app.services.layer3_source_boundary import (
+    SUPPORTED_SOURCE_CLASSES,
+    UNSUPPORTED_SOURCE_CLASSES,
+    requested_source_classes as _requested_source_classes,
+    source_class_from_material_candidate_id as _source_class_from_material_candidate_id,
+    source_class_from_source_candidate_id as _source_class_from_source_candidate_id,
+    unsupported_requested as _unsupported_requested,
+)
 from app.services.layer3_typing_entry import (
     SUPPORTED_TYPING_RULES,
     Layer3TypingEntryError,
@@ -105,18 +124,17 @@ from app.services.layer3_workbench_package_state import (
     packages_with_kinds,
     unexpected_package_kinds as package_state_unexpected_package_kinds,
 )
+from app.services.layer3_state_action_contract import build_state_action_contract
+from app.services.layer3_qual_aps_execution import (
+    ENGINE_FAMILY_QUAL_APS_DOCUMENT,
+    Layer3QualApsExecutionError,
+    execute_single_aps_doc_qualitative_pass,
+    is_single_aps_doc_qualitative_planned_pass,
+)
 
 SCHEMA_VERSION = 1
 ROUTE = "/review/layer3"
 API_ROOT = "/api/v1/layer3"
-SUPPORTED_SOURCE_CLASSES = ("dataset_version", "aps_content_document")
-UNSUPPORTED_SOURCE_CLASSES = (
-    "rag_vector_index",
-    "arbitrary_local_directory",
-    "broad_file_upload",
-    "web_connector",
-    "unbounded_runtime_db",
-)
 APS_ADMITTED_TABLE_SOURCE_FAMILIES = (
     {
         "parser_family": "csv_table",
@@ -270,12 +288,6 @@ ASSOCIATED_COHORT_DELIVERY_UI_UNAVAILABLE_STATE = (
 )
 ASSOCIATED_COHORT_DELIVERY_UI_READY_STATE = "associated_cohort_external_export_download_delivery_ui_ready"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
-STATE_ACTION_CONTRACT_SCHEMA_ID = "layer3.state_action_contract.v1"
-PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
-PLAN_REVISION_STATE_BY_DECISION = {
-    "reject_current_preview": "plan_rejected",
-    "request_revision": "plan_revision_requested",
-}
 EXECUTION_RESULT_REVIEW_DECISIONS = frozenset({"approved", "changes_requested", "rejected", "blocked"})
 EXECUTION_RESULT_REVIEW_STATE_BY_DECISION = {
     "approved": EXECUTION_RESULT_REVIEW_APPROVED_STATE,
@@ -1043,60 +1055,6 @@ READINESS_DEFERRED_GATES = (
     "source-breadth",
     "browser-proof",
 )
-STATE_ACTION_DEFERRED_CAPABILITIES = (
-    {
-        "capability": "qualitative_execution",
-        "admitted": False,
-        "reason": "requires_later_freeze",
-    },
-    {
-        "capability": "hybrid_execution",
-        "admitted": False,
-        "reason": "requires_later_freeze",
-    },
-    {
-        "capability": "rag_vector_retrieval",
-        "admitted": False,
-        "reason": "requires_source_breadth_freeze",
-    },
-    {
-        "capability": "local_upload_or_directory_source_expansion",
-        "admitted": False,
-        "reason": "requires_source_runtime_widening_freeze",
-    },
-    {
-        "capability": "provider_public_url",
-        "admitted": False,
-        "reason": "requires_later_delivery_boundary_freeze",
-    },
-    {
-        "capability": "connector_destination_dispatch",
-        "admitted": False,
-        "reason": "requires_later_delivery_boundary_freeze",
-    },
-    {
-        "capability": "package_mutation_reconstruction",
-        "admitted": False,
-        "reason": "requires_later_package_lifecycle_freeze",
-    },
-    {
-        "capability": "frontend_only_durable_state",
-        "admitted": False,
-        "reason": "server_authority_required",
-    },
-    {
-        "capability": "hidden_llm_planning",
-        "admitted": False,
-        "reason": "owner_service_plan_authority_required",
-    },
-    {
-        "capability": "auth_security_hardening",
-        "admitted": False,
-        "reason": "deferred_by_operator_instruction",
-    },
-)
-
-
 @dataclass(frozen=True)
 class Layer3WorkbenchError(ValueError):
     error_code: str
@@ -1661,42 +1619,23 @@ def _workbench_state_model() -> dict[str, Any]:
 
 
 def _workbench_state_action_contract() -> dict[str, Any]:
-    state_model = _workbench_state_model()
-    state_action_matrix = _json_clone(state_model["states"])
-    action_ids = sorted(
-        {
-            str(action)
-            for state in state_action_matrix
-            for action in state.get("allowed_next_actions", [])
-        }
+    return build_state_action_contract(
+        state_model=_workbench_state_model(),
+        schema_version=SCHEMA_VERSION,
+        gate_labels=GATE_LABELS,
+        active_gate_labels=ACTIVE_GATES,
+        unavailable_gate_labels=DOWNSTREAM_UNAVAILABLE,
+        plan_preview_unavailable_gate_labels=PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE,
+        gate_b_decisions=GATE_B_DECISIONS,
+        plan_revision_decisions=PLAN_REVISION_DECISIONS,
+        execution_result_review_decisions=EXECUTION_RESULT_REVIEW_DECISIONS,
+        package_review_submit_decisions=PACKAGE_REVIEW_SUBMIT_DECISIONS,
+        handoff_export_prepare_decisions=HANDOFF_EXPORT_PREPARE_DECISIONS,
+        aps_handoff_dispatch_operator_decision=APS_HANDOFF_DISPATCH_OPERATOR_DECISION,
+        external_export_download_operator_decision=EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION,
+        external_export_download_delivery_operator_decision=EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
+        terminal_pass_statuses=EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES,
     )
-    return {
-        "schema_id": STATE_ACTION_CONTRACT_SCHEMA_ID,
-        "schema_version": SCHEMA_VERSION,
-        "scope": "server_authoritative_workbench_states_and_actions",
-        "state_model_schema_id": state_model["schema_id"],
-        "authority_order": list(state_model["authority_order"]),
-        "gate_labels": list(GATE_LABELS),
-        "active_gate_labels": list(ACTIVE_GATES),
-        "unavailable_gate_labels": list(DOWNSTREAM_UNAVAILABLE),
-        "plan_preview_unavailable_gate_labels": list(PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE),
-        "state_count": len(state_action_matrix),
-        "states": [str(state["state"]) for state in state_action_matrix],
-        "action_ids": action_ids,
-        "state_action_matrix": state_action_matrix,
-        "decision_sets": {
-            "gate_b": list(GATE_B_DECISIONS),
-            "plan_revision": sorted(PLAN_REVISION_DECISIONS),
-            "execution_result_review": sorted(EXECUTION_RESULT_REVIEW_DECISIONS),
-            "package_review_submit": sorted(PACKAGE_REVIEW_SUBMIT_DECISIONS),
-            "handoff_export_prepare": sorted(HANDOFF_EXPORT_PREPARE_DECISIONS),
-            "aps_handoff_dispatch": [APS_HANDOFF_DISPATCH_OPERATOR_DECISION],
-            "external_export_download_prepare": [EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION],
-            "external_export_download_deliver": [EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION],
-        },
-        "terminal_pass_statuses": sorted(EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES),
-        "deferred_capabilities": _json_clone(STATE_ACTION_DEFERRED_CAPABILITIES),
-    }
 
 
 def _plan_preview_hash_contract() -> dict[str, Any]:
@@ -1744,6 +1683,7 @@ def readiness_contract() -> dict[str, Any]:
         "analysis_execution_admitted": False,
         "analysis_execution_start_admitted": True,
         "analysis_execution_start_endpoint": f"{API_ROOT}/execution/start",
+        "single_aps_doc_qualitative_execution_admitted": True,
         "execution_result_status_admitted": True,
         "execution_result_status_endpoint": f"{API_ROOT}/execution/result/status",
         "execution_result_review_admitted": True,
@@ -1778,7 +1718,7 @@ def readiness_contract() -> dict[str, Any]:
             "schema_id": "layer3.idempotency_contract.v1",
             "client_request_id_supported": True,
             "client_request_id_required_current_slice": False,
-            "client_request_id_required_for_gate_b_decision": False,
+            "client_request_id_required_for_gate_b_decision": True,
             "client_request_id_required_for_execution_selection": True,
             "client_request_id_required_for_analysis_execution_start": True,
             "client_request_id_required_for_execution_result_status": False,
@@ -1790,7 +1730,7 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_for_aps_handoff_dispatch": True,
             "client_request_id_required_for_external_export_download_prepare": True,
             "client_request_id_required_for_external_export_download_deliver": True,
-            "duplicate_gate_b_decision": "same client_request_id, provided source context, provided material_preview_id, and decision manifest returns existing Gate B session; conflicts fail closed",
+            "duplicate_gate_b_decision": "same required client_request_id, provided source context, provided material_preview_id, and decision manifest returns existing Gate B session; conflicts fail closed",
             "gate_b_decision_idempotency_scope": "post_commit_retry_only",
             "gate_b_decision_concurrent_duplicate_lock": False,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
@@ -1869,7 +1809,8 @@ def bootstrap() -> dict[str, Any]:
             "external_export_download_prepare": True,
             "external_export_download_deliver": True,
             "analysis_execution": False,
-            "qualitative_execution": False,
+            "single_aps_doc_qualitative_execution": True,
+            "broad_qualitative_execution": False,
             "hybrid_execution": False,
             "rag_vector_retrieval": False,
             "package_review": False,
@@ -1924,17 +1865,6 @@ def bootstrap() -> dict[str, Any]:
 def _manual_constraints(payload: dict[str, Any]) -> dict[str, Any]:
     value = payload.get("manual_constraints") or {}
     return value if isinstance(value, dict) else {}
-
-
-def _requested_source_classes(manual_constraints: dict[str, Any]) -> list[str]:
-    source_classes = manual_constraints.get("source_classes") or []
-    if not source_classes:
-        return list(SUPPORTED_SOURCE_CLASSES)
-    return [str(item) for item in source_classes]
-
-
-def _unsupported_requested(classes: list[str]) -> list[str]:
-    return [item for item in classes if item not in SUPPORTED_SOURCE_CLASSES]
 
 
 def preflight(payload: dict[str, Any]) -> dict[str, Any]:
@@ -2031,20 +1961,6 @@ def source_preview(payload: dict[str, Any]) -> dict[str, Any]:
             source_classes=requested,
         ),
     }
-
-
-def _source_class_from_source_candidate_id(source_candidate_id: str) -> str | None:
-    for source_class in SUPPORTED_SOURCE_CLASSES:
-        if source_candidate_id.startswith(f"src-{source_class}-"):
-            return source_class
-    return None
-
-
-def _source_class_from_material_candidate_id(candidate_id: str) -> str | None:
-    for source_class in SUPPORTED_SOURCE_CLASSES:
-        if candidate_id.startswith(f"mat-{source_class}-"):
-            return source_class
-    return None
 
 
 def _requested_dataset_version_ids(payload: dict[str, Any]) -> list[str]:
@@ -2843,47 +2759,6 @@ def _gate_b_decision_manifest_id(decision_manifest: dict[str, Any]) -> str:
     return _stable_id("gate-b", decision_manifest)
 
 
-def _gate_b_idempotency_record(
-    *,
-    client_request_id: str,
-    preflight_id: str,
-    source_set_id: str,
-    material_preview_id: str,
-    material_preview_hash: str,
-    gate_b_decision_manifest_id: str,
-) -> dict[str, Any]:
-    return {
-        "schema_id": "layer3.gate_b_idempotency.v1",
-        "client_request_id": client_request_id,
-        "preflight_id": preflight_id,
-        "source_set_id": source_set_id,
-        "material_preview_id": material_preview_id,
-        "material_preview_hash": material_preview_hash,
-        "gate_b_decision_manifest_id": gate_b_decision_manifest_id,
-    }
-
-
-def _gate_b_idempotency_from_session(session: L3Session) -> dict[str, Any] | None:
-    context = session.operator_context_json or {}
-    record = context.get("layer3_gate_b_idempotency_v1")
-    if not isinstance(record, dict):
-        return None
-    if record.get("schema_id") != "layer3.gate_b_idempotency.v1":
-        return None
-    return record
-
-
-def _find_gate_b_idempotency_session(db: Session, *, client_request_id: str) -> tuple[L3Session, dict[str, Any]] | None:
-    if not client_request_id:
-        return None
-    query = db.query(L3Session).order_by(L3Session.created_at.desc(), L3Session.session_id.desc())
-    for session in query.yield_per(100):
-        record = _gate_b_idempotency_from_session(session)
-        if record is not None and str(record.get("client_request_id") or "") == client_request_id:
-            return session, record
-    return None
-
-
 def _gate_b_response_from_session(
     *,
     request_id: str,
@@ -2934,7 +2809,14 @@ def _gate_b_response_from_session(
 
 
 def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
-    request_id = str(payload.get("client_request_id") or "").strip() or uuid_str()
+    request_id = str(payload.get("client_request_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for Gate B idempotency.",
+            status="blocked",
+            blocked_fields=["client_request_id"],
+        )
     preflight_id = str(payload.get("preflight_id") or "").strip()
     source_set_id = str(payload.get("source_set_id") or "").strip()
     material_preview_id = str(payload.get("material_preview_id") or "").strip()
@@ -3011,7 +2893,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
     decision_manifest = _candidate_decision_manifest(decisions)
     gate_b_decision_manifest_id = _gate_b_decision_manifest_id(decision_manifest)
-    existing_idempotency = _find_gate_b_idempotency_session(db, client_request_id=request_id)
+    existing_idempotency = find_gate_b_idempotency_session(db, client_request_id=request_id)
     if existing_idempotency is not None:
         existing_session, existing_record = existing_idempotency
         if (
@@ -3028,6 +2910,15 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     f"Layer 3 session '{existing_session.session_id}' is missing its selection manifest.",
                     status="conflict",
                     http_status=409,
+                )
+            if existing_manifest.session_id != existing_session.session_id:
+                raise Layer3WorkbenchError(
+                    "selection_manifest_mismatch",
+                    "A matching Gate B idempotency record points at a manifest owned by a different session.",
+                    status="conflict",
+                    http_status=409,
+                    blocked_fields=["selection_manifest_id"],
+                    next_allowed_actions=["inspect_session_manifest_state"],
                 )
             existing_decision_manifest = (
                 (existing_session.operator_context_json or {}).get("layer3_gate_b_decision_manifest_v1")
@@ -3106,7 +2997,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             operator_context={
                 "actor": payload.get("actor") or "operator",
                 "layer3_gate_b_decision_manifest_v1": decision_manifest,
-                "layer3_gate_b_idempotency_v1": _gate_b_idempotency_record(
+                GATE_B_IDEMPOTENCY_CONTEXT_KEY: gate_b_idempotency_record(
                     client_request_id=request_id,
                     preflight_id=preflight_id,
                     source_set_id=source_set_id,
@@ -3164,15 +3055,37 @@ def _load_session(db: Session, session_id: str) -> L3Session:
     return session
 
 
-def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[str]:
+def _latest_selection_manifest_for_session(db: Session, *, session: L3Session) -> L3SelectionManifest:
     manifest = (
         db.query(L3SelectionManifest)
-        .filter(L3SelectionManifest.session_id == session_id)
+        .filter(L3SelectionManifest.session_id == session.session_id)
         .order_by(L3SelectionManifest.committed_at.desc())
         .first()
     )
     if manifest is None:
-        return []
+        raise Layer3WorkbenchError(
+            "selection_manifest_missing",
+            f"Layer 3 session '{session.session_id}' has no selection manifest.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["selection_manifest_id"],
+            next_allowed_actions=["inspect_session_manifest_state"],
+        )
+    if str(session.selection_manifest_id or "") != str(manifest.selection_manifest_id or ""):
+        raise Layer3WorkbenchError(
+            "selection_manifest_mismatch",
+            "Layer 3 session selection_manifest_id does not match the server-owned manifest row.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["selection_manifest_id"],
+            next_allowed_actions=["inspect_session_manifest_state"],
+        )
+    return manifest
+
+
+def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[str]:
+    session = _load_session(db, session_id)
+    manifest = _latest_selection_manifest_for_session(db, session=session)
     hints = manifest.source_plane_hints_json or {}
     hinted_classes = hints.get("source_classes")
     if isinstance(hinted_classes, list):
@@ -3565,17 +3478,6 @@ def _latest_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan | N
         .order_by(L3AnalysisPlan.created_at.desc(), L3AnalysisPlan.analysis_plan_id.asc())
         .first()
     )
-
-
-def _plan_revision_control_from_session(session: L3Session | None) -> dict[str, Any] | None:
-    if session is None:
-        return None
-    control = (session.summary_json or {}).get("plan_revision_control")
-    if not isinstance(control, dict):
-        return None
-    if control.get("schema_id") != "layer3.plan_revision_control.v1":
-        return None
-    return control
 
 
 def _plan_revision_control(db: Session, *, session_id: str) -> dict[str, Any] | None:
@@ -4006,24 +3908,20 @@ def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             next_allowed_actions=["refresh_plan_preview"],
         )
 
-    next_state = PLAN_REVISION_STATE_BY_DECISION[operator_decision]
     operator_note = str(payload.get("operator_note") or "").strip()
     gate_b_counts = _gate_b_summary_from_session(session)
     source_classes = _source_classes_from_plan_preview(expected_preview.get("plan_preview") or {})
-    control = {
-        "schema_id": "layer3.plan_revision_control.v1",
-        "state": next_state,
-        "source_preview_id": preview_id,
-        "source_preview_hash": preview_hash,
-        "operator_decision": operator_decision,
-        "operator_note_recorded": bool(operator_note),
-        "approval_available": False,
-        "execution_started": False,
-        "created_at": _utcnow_iso(),
-    }
+    control = plan_revision_control_record(
+        source_preview_id=preview_id,
+        source_preview_hash=preview_hash,
+        operator_decision=operator_decision,
+        operator_note=operator_note,
+        created_at=_utcnow_iso(),
+    )
+    next_state = str(control["state"])
     session.summary_json = {
         **_json_clone(session.summary_json),
-        "plan_revision_control": control,
+        PLAN_REVISION_CONTROL_CONTEXT_KEY: control,
     }
     db.commit()
 
@@ -4166,6 +4064,31 @@ def _output_metadata_summary(pass_run: L3PassRun) -> tuple[dict[str, Any] | None
             "cohort_shape": payload.get("cohort_shape"),
             "requested_method_name": payload.get("requested_method_name"),
             "requested_method_source": payload.get("requested_method_source"),
+            "engine_family": payload.get("engine_family"),
+            "pass_type": payload.get("pass_type"),
+            "source_shape": payload.get("source_shape"),
+            "material_snapshot_id": payload.get("material_snapshot_id"),
+            "analysis_unit_id": payload.get("analysis_unit_id"),
+            "content_id": (
+                payload.get("content_id")
+                or (
+                    payload.get("document_identity", {}).get("content_id")
+                    if isinstance(payload.get("document_identity"), dict)
+                    else None
+                )
+            ),
+            "chunk_ids": (
+                list(payload.get("chunk_summary", {}).get("chunk_ids"))
+                if isinstance(payload.get("chunk_summary"), dict)
+                and isinstance(payload.get("chunk_summary", {}).get("chunk_ids"), list)
+                else None
+            ),
+            "chunk_hashes": (
+                list(payload.get("chunk_summary", {}).get("chunk_hashes"))
+                if isinstance(payload.get("chunk_summary"), dict)
+                and isinstance(payload.get("chunk_summary", {}).get("chunk_hashes"), list)
+                else None
+            ),
         },
         None,
     )
@@ -4277,6 +4200,23 @@ def _ensure_result_review_source_admitted(
     raise Layer3WorkbenchError(
         "associated_cohort_result_review_not_admitted",
         "Execution result-review is admitted only for exact selected-pass descriptive associated-cohort result/status output.",
+        status="blocked",
+        http_status=409,
+        next_allowed_actions=["inspect_execution_result_status"],
+    )
+
+
+def _raise_if_qualitative_aps_downstream_not_admitted(
+    *,
+    status_body: dict[str, Any],
+    action_label: str,
+    error_code: str,
+) -> None:
+    if status_body.get("engine_family") != ENGINE_FAMILY_QUAL_APS_DOCUMENT:
+        return
+    raise Layer3WorkbenchError(
+        error_code,
+        f"{action_label} is not admitted for the single APS-document qualitative execution slice.",
         status="blocked",
         http_status=409,
         next_allowed_actions=["inspect_execution_result_status"],
@@ -5100,15 +5040,31 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
             status="conflict",
             http_status=409,
         )
-    if pass_run.engine_family != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS or str(planned_pass.get("engine_family") or "") != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS:
+    qualitative_aps_pass = is_single_aps_doc_qualitative_planned_pass(
+        pass_run=pass_run,
+        planned_pass=planned_pass,
+    )
+    wrapped_quantitative_pass = (
+        pass_run.engine_family == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+        and str(planned_pass.get("engine_family") or "") == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+    )
+    if not wrapped_quantitative_pass and not qualitative_aps_pass:
         raise Layer3WorkbenchError(
             "unsupported_analysis_execution_engine",
-            "This execution-start slice admits only wrapped quantitative pass runs.",
+            "This execution-start slice admits only wrapped quantitative pass runs or the frozen single APS-document qualitative pass.",
             status="conflict",
             http_status=409,
         )
     planned_pass_type = str(planned_pass.get("pass_type") or pass_run.pass_type)
-    if planned_pass_type not in {PASS_TYPE_SINGLE_ITEM, PASS_TYPE_ASSOCIATED_COHORT}:
+    if qualitative_aps_pass:
+        if planned_pass_type != PASS_TYPE_SINGLE_ITEM:
+            raise Layer3WorkbenchError(
+                "unsupported_analysis_execution_source_breadth",
+                "Single APS-document qualitative execution admits only one selected single-item pass run.",
+                status="conflict",
+                http_status=409,
+            )
+    elif planned_pass_type not in {PASS_TYPE_SINGLE_ITEM, PASS_TYPE_ASSOCIATED_COHORT}:
         raise Layer3WorkbenchError(
             "unsupported_analysis_execution_source_breadth",
             "This execution-start slice admits only selected single-item pass runs or exact descriptive associated-cohort pass runs.",
@@ -5146,13 +5102,21 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
         )
 
     try:
-        execute_selected_pass_run(
-            db,
-            pass_run=pass_run,
-            planned_pass=planned_pass,
-            client_request_id=request_id,
-        )
-    except Layer3PassEntryError as exc:
+        if qualitative_aps_pass:
+            execute_single_aps_doc_qualitative_pass(
+                db,
+                pass_run=pass_run,
+                planned_pass=planned_pass,
+                client_request_id=request_id,
+            )
+        else:
+            execute_selected_pass_run(
+                db,
+                pass_run=pass_run,
+                planned_pass=planned_pass,
+                client_request_id=request_id,
+            )
+    except (Layer3PassEntryError, Layer3QualApsExecutionError) as exc:
         raise Layer3WorkbenchError(
             "analysis_execution_start_not_admitted",
             str(exc),
@@ -5394,10 +5358,18 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
             status="conflict",
             http_status=409,
         )
-    if pass_run.engine_family != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS or str(planned_pass.get("engine_family") or "") != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS:
+    qualitative_aps_pass = is_single_aps_doc_qualitative_planned_pass(
+        pass_run=pass_run,
+        planned_pass=planned_pass,
+    )
+    wrapped_quantitative_pass = (
+        pass_run.engine_family == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+        and str(planned_pass.get("engine_family") or "") == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+    )
+    if not wrapped_quantitative_pass and not qualitative_aps_pass:
         raise Layer3WorkbenchError(
             "unsupported_execution_result_status_engine",
-            "This result/status slice admits only wrapped quantitative pass runs.",
+            "This result/status slice admits only wrapped quantitative pass runs or the frozen single APS-document qualitative pass.",
             status="conflict",
             http_status=409,
         )
@@ -5406,7 +5378,15 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
         planned_pass=planned_pass,
         pass_run=pass_run,
     )
-    if planned_pass_type != PASS_TYPE_SINGLE_ITEM and not associated_cohort_descriptive:
+    if qualitative_aps_pass:
+        if planned_pass_type != PASS_TYPE_SINGLE_ITEM:
+            raise Layer3WorkbenchError(
+                "unsupported_execution_result_status_source_breadth",
+                "Single APS-document qualitative result/status admits only one selected single-item pass run.",
+                status="conflict",
+                http_status=409,
+            )
+    elif planned_pass_type != PASS_TYPE_SINGLE_ITEM and not associated_cohort_descriptive:
         raise Layer3WorkbenchError(
             "unsupported_execution_result_status_source_breadth",
             "This result/status slice admits only selected single-item pass runs or exact descriptive associated-cohort pass runs.",
@@ -6857,6 +6837,11 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_qualitative_aps_downstream_not_admitted(
+        status_body=status_body,
+        action_label="Package-review preview",
+        error_code="qualitative_aps_package_review_preview_not_admitted",
+    )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).first()
@@ -7127,6 +7112,11 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_qualitative_aps_downstream_not_admitted(
+        status_body=status_body,
+        action_label="Package construction commit",
+        error_code="qualitative_aps_package_construction_commit_not_admitted",
+    )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     analysis_plan = (
@@ -11568,14 +11558,7 @@ def _external_export_download_prepare_summary(
 
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
-    manifest = (
-        db.query(L3SelectionManifest)
-        .filter(L3SelectionManifest.session_id == session_id)
-        .order_by(L3SelectionManifest.committed_at.desc())
-        .first()
-    )
-    if manifest is None:
-        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' has no selection manifest.", http_status=404)
+    manifest = _latest_selection_manifest_for_session(db, session=session)
 
     typing_record_count = db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count()
     analysis_unit_count = db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count()

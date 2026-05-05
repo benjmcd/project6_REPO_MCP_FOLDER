@@ -31,6 +31,11 @@ def upgrade() -> None:
         sa.Column("operator_context_json", sa.JSON(), nullable=False),
         sa.Column("summary_json", sa.JSON(), nullable=False),
         sa.PrimaryKeyConstraint("session_id"),
+        sa.CheckConstraint(
+            "status IN ('active_loading', 'active_planning', 'active_execution', 'completed', "
+            "'completed_with_warnings', 'failed')",
+            name="ck_l3_session_status",
+        ),
     )
     create_table_idempotent(
         "l3_selection_manifest",

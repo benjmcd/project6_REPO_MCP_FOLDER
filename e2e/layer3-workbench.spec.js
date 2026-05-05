@@ -130,6 +130,66 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
 });
 
+test('Layer 3 workbench restores Gate B drafts and server session anchors across reloads', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+
+  const materialResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/material-preview')
+  ));
+  await page.locator('#layer3-intent').fill('Protect Gate B draft and recover server session.');
+  await page.locator('#run-preflight').click();
+  const material = await expectJson(await materialResponsePromise);
+  expect(material.material_candidates.length).toBeGreaterThan(1);
+
+  const rows = page.locator('#material-ledger-body tr[data-candidate-id]');
+  await rows.nth(1).locator('.decision-select').selectOption('denied');
+  await rows.nth(1).locator('.reason-input').fill('Reload recovery draft proof.');
+
+  const draftBeforeReload = await page.evaluate(() => JSON.parse(
+    sessionStorage.getItem('layer3_workbench_gate_b_draft_v1'),
+  ));
+  expect(draftBeforeReload.schema_id).toBe('layer3.gate_b_draft_snapshot.v1');
+  expect(draftBeforeReload.draft_authority).toBe('browser_restore_only_server_revalidated_on_commit');
+  expect(draftBeforeReload.material_preview_hash).toBe(material.material_preview_hash);
+  expect(draftBeforeReload.client_request_id).toBeTruthy();
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#material-ledger-body tr[data-candidate-id]')).toHaveCount(material.material_candidates.length);
+  await expect(page.locator('#material-ledger-body tr[data-candidate-id]').nth(1).locator('.decision-select')).toHaveValue('denied');
+  await expect(page.locator('#material-ledger-body tr[data-candidate-id]').nth(1).locator('.reason-input')).toHaveValue('Reload recovery draft proof.');
+
+  const gateBRequestPromise = page.waitForRequest((request) => (
+    request.url().includes('/api/v1/layer3/gate-b/decision') && request.method() === 'POST'
+  ));
+  const gateBResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/gate-b/decision')
+  ));
+  await page.locator('#gate-b-submit').click();
+  const gateBRequest = await gateBRequestPromise;
+  const gateBPayload = gateBRequest.postDataJSON();
+  expect(gateBPayload.client_request_id).toBe(draftBeforeReload.client_request_id);
+  expect(gateBPayload.material_preview_hash).toBe(material.material_preview_hash);
+  const gateB = await expectJson(await gateBResponsePromise);
+  expect(gateB.status).toBe('ok');
+
+  const storageAfterCommit = await page.evaluate(() => ({
+    draft: sessionStorage.getItem('layer3_workbench_gate_b_draft_v1'),
+    recovery: JSON.parse(localStorage.getItem('layer3_workbench_session_recovery_v1')),
+  }));
+  expect(storageAfterCommit.draft).toBeNull();
+  expect(storageAfterCommit.recovery.schema_id).toBe('layer3.browser_session_recovery.v1');
+  expect(storageAfterCommit.recovery.session_id).toBe(gateB.session_id);
+
+  const sessionResponsePromise = page.waitForResponse((response) => (
+    response.url().includes(`/api/v1/layer3/session/${gateB.session_id}`)
+  ));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const session = await expectJson(await sessionResponsePromise);
+  expect(session.session_id).toBe(gateB.session_id);
+  await expect(page.locator('#authority-rail')).toContainText(gateB.session_id);
+  await expect(page.locator('#gate-c-preview')).toBeEnabled();
+});
+
 test('Layer 3 workbench keeps page-level scrolling and step navigation across viewports', async ({ page }) => {
   const stepTargets = [
     ['intent', 'intent-band'],

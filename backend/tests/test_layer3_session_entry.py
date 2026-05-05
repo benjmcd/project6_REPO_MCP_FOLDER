@@ -1,21 +1,26 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 import sys
 from pathlib import Path
 
-from sqlalchemy import create_engine
+import pytest
+from sqlalchemy import CheckConstraint, create_engine
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 os.environ["DB_INIT_MODE"] = "none"
 
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
+SESSION_ENTRY_MIGRATION = BACKEND / "alembic" / "versions" / "0012_layer3_session_entry.py"
 
 from app.db.session import Base
 from app.models.models import (
+    L3_SESSION_STATUS_VALUES,
     L3Descriptor,
     L3MaterialSnapshot,
     L3RetrievalEvent,
@@ -23,6 +28,14 @@ from app.models.models import (
     L3Session,
 )
 from app.services.layer3_session_entry import (
+    SESSION_STATUS_ACTIVE_EXECUTION,
+    SESSION_STATUS_ACTIVE_LOADING,
+    SESSION_STATUS_ACTIVE_PLANNING,
+    SESSION_STATUS_COMPLETED,
+    SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+    SESSION_STATUS_FAILED,
+    SESSION_STATUS_VALUES,
+    TERMINAL_SESSION_STATUS_VALUES,
     SessionEntryRequest,
     SnapshotMaterial,
     commit_selection,
@@ -30,6 +43,74 @@ from app.services.layer3_session_entry import (
     finalize_session,
     record_retrieval_event,
 )
+
+
+def test_layer3_session_status_vocabulary_is_canonical():
+    assert SESSION_STATUS_VALUES == frozenset(L3_SESSION_STATUS_VALUES) == frozenset(
+        {
+            SESSION_STATUS_ACTIVE_LOADING,
+            SESSION_STATUS_ACTIVE_PLANNING,
+            SESSION_STATUS_ACTIVE_EXECUTION,
+            SESSION_STATUS_COMPLETED,
+            SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+            SESSION_STATUS_FAILED,
+        }
+    )
+    assert TERMINAL_SESSION_STATUS_VALUES == frozenset(
+        {
+            SESSION_STATUS_COMPLETED,
+            SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+            SESSION_STATUS_FAILED,
+        }
+    )
+    assert TERMINAL_SESSION_STATUS_VALUES < SESSION_STATUS_VALUES
+
+
+def test_layer3_session_status_model_default_uses_canonical_active_state():
+    db = _make_session()
+    try:
+        session = L3Session(selection_manifest_id="manifest-default")
+        db.add(session)
+        db.commit()
+        db.refresh(session)
+
+        assert session.status == SESSION_STATUS_ACTIVE_LOADING
+    finally:
+        db.close()
+
+
+def test_layer3_session_status_check_constraint_rejects_unknown_status():
+    db = _make_session()
+    try:
+        db.add(L3Session(selection_manifest_id="manifest-invalid", status="draft_created"))
+        with pytest.raises(IntegrityError):
+            db.commit()
+    finally:
+        db.close()
+
+
+def test_layer3_session_entry_migration_defines_status_check_constraint(monkeypatch):
+    spec = importlib.util.spec_from_file_location("layer3_session_entry_migration", SESSION_ENTRY_MIGRATION)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    created_tables = []
+
+    def capture_create_table(name, *elements):
+        created_tables.append((name, elements))
+
+    monkeypatch.setattr(module, "create_table_idempotent", capture_create_table)
+    module.upgrade()
+
+    session_elements = next(elements for name, elements in created_tables if name == "l3_session")
+    constraints = [element for element in session_elements if isinstance(element, CheckConstraint)]
+    constraint = next(element for element in constraints if element.name == "ck_l3_session_status")
+    constraint_sql = str(constraint.sqltext)
+    assert "status IN" in constraint_sql
+    for status in L3_SESSION_STATUS_VALUES:
+        assert status in constraint_sql
 
 
 def _make_session():

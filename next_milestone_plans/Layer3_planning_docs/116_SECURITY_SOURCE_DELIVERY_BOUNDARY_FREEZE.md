@@ -149,7 +149,7 @@ Accepted wording:
 The following remain unavailable and must not be activated by this slice:
 
 - broad execution
-- qualitative execution
+- broad qualitative execution outside the admitted single APS-document qualitative pass
 - hybrid execution
 - RAG retrieval
 - vector retrieval
@@ -187,7 +187,7 @@ Block before claiming nonlocal/public readiness:
 - provider/public URL fields enabled;
 - connector/destination dispatch enabled;
 - source expansion beyond `dataset_version` and `aps_content_document`;
-- qualitative/hybrid/RAG execution enabled;
+- broad qualitative/hybrid/RAG execution enabled outside the admitted single APS-document qualitative pass;
 - package mutation/reconstruction enabled;
 - hidden LLM planning introduced into any Layer 3 decision path.
 
@@ -227,7 +227,7 @@ Not allowed as immediate next slices from this freeze:
 - provider/public URL implementation;
 - connector/destination dispatch;
 - broad upload/source expansion;
-- qualitative/hybrid/RAG execution;
+- broad qualitative/hybrid/RAG execution;
 - package mutation/reconstruction;
 - full mockup activation.
 
@@ -291,7 +291,7 @@ Correct these claims when encountered:
 | `/sources/upload` is covered by Layer 3 source trust. | `/sources/upload` is a separate source-ingest boundary and needs auth/proxy plus upload hardening before nonlocal exposure. |
 | Provider/public URLs are pre-wired and ready. | Provider/public URLs remain blocked and must not be enabled without a separate freeze/contract/proof slice. |
 | Connector/destination dispatch is implied by response fields. | Connector/destination dispatch remains blocked; false response fields are not implementation admission. |
-| Qualitative/hybrid/RAG execution is authorized by mockups. | Mockups are target-state only; current flags/docs keep those capabilities deferred. |
+| Qualitative/hybrid/RAG execution is authorized by mockups. | Mockups are target-state only; current flags/docs admit only the exact single APS-document qualitative pass and keep broad qualitative, hybrid, and RAG/vector capabilities deferred. |
 | Integration signed-reference tests prove concurrency safety. | Existing integration tests prove important lifecycle basics; dedicated concurrency and revocation proof is still required. |
 
 ## Final Self-Audit Checklist

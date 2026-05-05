@@ -3,7 +3,18 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
@@ -12,6 +23,22 @@ from app.db.session import Base
 
 def uuid_str() -> str:
     return str(uuid.uuid4())
+
+
+L3_SESSION_STATUS_ACTIVE_LOADING = "active_loading"
+L3_SESSION_STATUS_ACTIVE_PLANNING = "active_planning"
+L3_SESSION_STATUS_ACTIVE_EXECUTION = "active_execution"
+L3_SESSION_STATUS_COMPLETED = "completed"
+L3_SESSION_STATUS_COMPLETED_WITH_WARNINGS = "completed_with_warnings"
+L3_SESSION_STATUS_FAILED = "failed"
+L3_SESSION_STATUS_VALUES = (
+    L3_SESSION_STATUS_ACTIVE_LOADING,
+    L3_SESSION_STATUS_ACTIVE_PLANNING,
+    L3_SESSION_STATUS_ACTIVE_EXECUTION,
+    L3_SESSION_STATUS_COMPLETED,
+    L3_SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+    L3_SESSION_STATUS_FAILED,
+)
 
 
 class TimestampMixin:
@@ -741,12 +768,18 @@ class DatasetRow(Base):
 
 class L3Session(Base):
     __tablename__ = "l3_session"
+    __table_args__ = (
+        CheckConstraint(
+            f"status IN ({', '.join(repr(status) for status in L3_SESSION_STATUS_VALUES)})",
+            name="ck_l3_session_status",
+        ),
+    )
 
     session_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    status: Mapped[str] = mapped_column(String(64), nullable=False, default="draft_created")
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default=L3_SESSION_STATUS_ACTIVE_LOADING)
     selection_manifest_id: Mapped[str] = mapped_column(String(36), nullable=False)
     entry_route_context_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     operator_context_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
