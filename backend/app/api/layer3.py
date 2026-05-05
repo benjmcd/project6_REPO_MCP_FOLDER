@@ -119,6 +119,17 @@ class Layer3GateBDecisionRequest(BaseModel):
     commit_reason: str | None = None
 
 
+class Layer3GateCPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    session_id: str
+    commit_typing: bool | None = None
+    actor: str | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -877,8 +888,8 @@ GATE_B_DECISION_REQUEST_SCHEMA: dict[str, Any] = {
 
 GATE_C_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known Gate C preview fields; commit_typing controls owner-service materialization.",
+    "additionalProperties": False,
+    "description": "Strict Gate C preview fields; commit_typing controls owner-service materialization.",
     "required": ["session_id"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.gate_c_preview_request.v1"]},
@@ -1439,8 +1450,11 @@ def post_gate_b_decision(
     openapi_extra={"requestBody": _json_request_body(GATE_C_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
-def post_gate_c_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.gate_c_preview(db, payload))
+def post_gate_c_preview(
+    payload: Layer3GateCPreviewRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.gate_c_preview(db, payload.model_dump(exclude_none=True)))
 
 
 @router.post(

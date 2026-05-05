@@ -28,8 +28,10 @@ from app.models.models import (
     AnalysisArtifact,
     AnalysisRun,
     ConnectorRun,
+    L3AnalysisGroup,
     L3AnalysisPlan,
     L3AnalysisSet,
+    L3AnalysisUnit,
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
@@ -37,6 +39,7 @@ from app.models.models import (
     L3SignedReferenceAuditEvent,
     L3SignedReferenceReceipt,
     L3SignedReferenceToken,
+    L3TypingRecord,
 )
 from app.services import (
     dataframe_io,
@@ -583,7 +586,7 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
     gate_c_request_schema = spec["paths"]["/api/v1/layer3/gate-c/preview"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert gate_c_request_schema["additionalProperties"] is True
+    assert gate_c_request_schema["additionalProperties"] is False
     assert set(gate_c_request_schema["required"]) == {"session_id"}
     assert gate_c_request_schema["properties"]["commit_typing"]["type"] == "boolean"
 
@@ -3265,7 +3268,10 @@ def test_layer3_api_gate_b_rejects_extra_fields_before_session_mutation(client: 
 
     assert rejected.status_code == 422
     detail = rejected.json()["detail"]
-    assert any(item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "execute"] for item in detail)
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "execute"]
+        for item in detail
+    )
     assert any(
         item.get("type") == "extra_forbidden"
         and item.get("loc") == ["body", "candidate_decisions", 0, "analysis_run_id"]
@@ -3353,6 +3359,66 @@ def test_layer3_api_gate_b_duplicate_client_request_id_is_idempotent(client: Tes
 
     with client.layer3_session_factory() as db:
         assert db.query(L3Session).count() == 1
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+
+
+def test_layer3_api_gate_c_rejects_extra_fields_before_typing_mutation(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+    gate_b = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-before-strict-gate-c",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": first["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": first["source_ref"],
+                        "query_basis": first["query_basis"],
+                        "provenance_ref": first["provenance_ref"],
+                    },
+                }
+            ],
+            "actor": "pytest",
+        },
+    ).json()
+
+    rejected = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={
+            "client_request_id": "api-gate-c-strict-extra",
+            "session_id": gate_b["session_id"],
+            "commit_typing": True,
+            "analysis_run_id": "run-should-not-be-accepted",
+            "execute": True,
+        },
+    )
+
+    assert rejected.status_code == 422
+    detail = rejected.json()["detail"]
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "analysis_run_id"]
+        for item in detail
+    )
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "execute"]
+        for item in detail
+    )
+    with client.layer3_session_factory() as db:
+        assert db.query(L3Session).count() == 1
+        assert db.query(L3TypingRecord).count() == 0
+        assert db.query(L3AnalysisUnit).count() == 0
+        assert db.query(L3AnalysisGroup).count() == 0
+        assert db.query(L3AnalysisSet).count() == 0
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
         assert db.query(AnalysisArtifact).count() == 0
