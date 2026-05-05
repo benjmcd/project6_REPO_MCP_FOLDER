@@ -44,6 +44,7 @@ from app.models.models import (
 from app.services import (
     dataframe_io,
     layer3_connector_dispatch_entry,
+    layer3_package_mutation_entry,
     layer3_pass_entry as layer3_pass_entry_module,
     layer3_workbench,
 )
@@ -1339,6 +1340,76 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
     } <= set(prepare_schema["required"])
     assert "delivery_ui" in prepare_schema["properties"]
 
+    supersession_request_schema = spec["paths"]["/api/v1/layer3/package/mutation/preview"]["post"]["requestBody"][
+        "content"
+    ]["application/json"]["schema"]
+    assert supersession_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_preview_hash",
+        "operator_decision",
+    } == set(supersession_request_schema["required"])
+    assert supersession_request_schema["properties"]["operator_decision"]["enum"] == [
+        "preview_package_supersession"
+    ]
+    assert supersession_request_schema["properties"]["package_payload"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert supersession_request_schema["properties"]["provider_public_url"]["description"].startswith(
+        "Known but non-admitted"
+    )
+
+    supersession_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/mutation/preview", "post")
+    assert supersession_schema["title"] == "Layer3PackageSupersessionPreviewResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "analysis_run_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "operator_decision",
+        "package_supersession_preview_mode",
+        "package_supersession_preview_hash",
+        "package_set_hash",
+        "package_rows",
+        "downstream_dependencies",
+        "downstream_dependency_detected",
+        "immutable_package_rule_enforced",
+        "package_row_mutation_enabled",
+        "package_payload_rewrite_enabled",
+        "package_supersession_commit_enabled",
+        "database_write_enabled",
+        "filesystem_write_enabled",
+        "broad_package_mutation_enabled",
+        "source_widening_enabled",
+        "connector_dispatch_enabled",
+        "provider_public_url_enabled",
+        "qualitative_hybrid_rag_execution_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(supersession_schema["required"])
+
     record_request_schema = spec["paths"]["/api/v1/layer3/handoff/connector/record"]["post"]["requestBody"][
         "content"
     ]["application/json"]["schema"]
@@ -1455,6 +1526,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/package/review/preview", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/review/commit", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/review/submit", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/package/mutation/preview", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/prepare", "post"): ("400", "404", "409"),
@@ -1587,6 +1659,40 @@ def test_layer3_connector_dispatch_record_api_boundary_returns_workbench_error_e
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_connector_record_boundary"]
+
+
+def test_layer3_package_supersession_preview_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_package_supersession_preview_boundary_error",
+            "Forced package supersession preview boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_package_supersession_preview_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_package_mutation_entry,
+        "preview_package_supersession",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post("/api/v1/layer3/package/mutation/preview", json={})
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_package_supersession_preview_boundary_error",
+    )
+    assert body["message"] == "Forced package supersession preview boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_package_supersession_preview_boundary"]
 
 
 def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
@@ -2395,6 +2501,49 @@ def _submit_quant_package_review(
     )
 
 
+def _package_supersession_preview_payload(
+    *,
+    request_id: str,
+    session_id: str,
+    approval_body: dict,
+    selection_body: dict,
+    review_body: dict,
+    commit_body: dict,
+    start_body: dict | None = None,
+    submit_body: dict | None = None,
+    prepare_body: dict | None = None,
+    dispatch_body: dict | None = None,
+    readiness_body: dict | None = None,
+    connector_body: dict | None = None,
+) -> dict:
+    payload = {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "analysis_run_id": (start_body or {}).get("analysis_run_id"),
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+        "package_kinds": commit_body["package_kinds"],
+        "payload_refs": commit_body["payload_refs"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "preview_package_supersession",
+    }
+    if submit_body is not None:
+        payload["package_review_submit_record_ref"] = submit_body["submit_record_ref"]
+    if prepare_body is not None:
+        payload["handoff_export_record_ref"] = prepare_body["prepare_record_ref"]
+    if dispatch_body is not None:
+        payload["aps_handoff_record_ref"] = dispatch_body["aps_handoff_record_ref"]
+    if readiness_body is not None:
+        payload["external_export_download_record_ref"] = readiness_body["external_export_download_record_ref"]
+    if connector_body is not None:
+        payload["connector_dispatch_record_ref"] = connector_body["connector_dispatch_record_ref"]
+    return {key: value for key, value in payload.items() if value is not None}
+
+
 def _handoff_export_prepare_payload(
     *,
     request_id: str,
@@ -3134,6 +3283,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["external_export_download_prepare"] is True
     assert bootstrap_body["features"]["external_export_download_deliver"] is True
     assert bootstrap_body["features"]["internal_connector_dispatch_record"] is True
+    assert bootstrap_body["features"]["package_supersession_preview"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -3170,6 +3320,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         bootstrap_body["execution_readiness"]["internal_connector_dispatch_record_endpoint"]
         == "/api/v1/layer3/handoff/connector/record"
     )
+    assert bootstrap_body["execution_readiness"]["package_supersession_preview_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["package_supersession_preview_endpoint"]
+        == "/api/v1/layer3/package/mutation/preview"
+    )
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_export_admitted"] is False
@@ -3205,6 +3360,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["external_export_download_deliver_endpoint"] == "/api/v1/layer3/handoff/export/download/deliver"
     assert readiness_body["internal_connector_dispatch_record_admitted"] is True
     assert readiness_body["internal_connector_dispatch_record_endpoint"] == "/api/v1/layer3/handoff/connector/record"
+    assert readiness_body["package_supersession_preview_admitted"] is True
+    assert readiness_body["package_supersession_preview_endpoint"] == "/api/v1/layer3/package/mutation/preview"
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["external_handoff_admitted"] is False
     assert readiness_body["external_export_admitted"] is False
@@ -3215,6 +3372,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "analysis_execution_start" in readiness_body["state_action_contract"]["action_ids"]
     assert "external_export_download_deliver" in readiness_body["state_action_contract"]["action_ids"]
     assert "internal_connector_dispatch_record" in readiness_body["state_action_contract"]["action_ids"]
+    assert "package_supersession_preview" in readiness_body["state_action_contract"]["action_ids"]
     admitted_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["admitted_capabilities"]
     }
@@ -3229,6 +3387,12 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         admitted_capabilities["internal_dispatch_record_only"]["owner_service"]
         == "backend/app/services/layer3_connector_dispatch_entry.py"
     )
+    assert admitted_capabilities["package_supersession_preview_only"]["admitted"] is True
+    assert admitted_capabilities["package_supersession_preview_only"]["source_gate"] == "122_PACKAGE_MUTATION_FREEZE"
+    assert (
+        admitted_capabilities["package_supersession_preview_only"]["owner_service"]
+        == "backend/app/services/layer3_package_mutation_entry.py"
+    )
     deferred_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["deferred_capabilities"]
     }
@@ -3236,6 +3400,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert deferred_capabilities["broad_qualitative_execution"]["admitted"] is False
     assert deferred_capabilities["provider_public_url"]["admitted"] is False
     assert deferred_capabilities["connector_destination_dispatch"]["admitted"] is False
+    assert deferred_capabilities["package_mutation_reconstruction"]["admitted"] is False
     assert deferred_capabilities["auth_security_hardening"]["reason"] == "deferred_by_operator_instruction"
     assert readiness_body["preview_hash_contract"]["schema_id"] == "layer3.plan_preview_hash.v1"
     assert readiness_body["material_preview_hash_contract"]["schema_id"] == "layer3.material_preview_hash.v1"
@@ -3243,6 +3408,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["idempotency_contract"]["client_request_id_supported"] is True
     assert readiness_body["idempotency_contract"]["client_request_id_required_current_slice"] is False
     assert readiness_body["idempotency_contract"]["client_request_id_required_for_gate_b_decision"] is True
+    assert readiness_body["idempotency_contract"]["client_request_id_required_for_package_supersession_preview"] is True
+    assert "duplicate_package_supersession_preview" in readiness_body["idempotency_contract"]
     assert "duplicate_gate_b_decision" in readiness_body["idempotency_contract"]
     assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "post_commit_retry_only"
     assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is False
@@ -8436,6 +8603,399 @@ def test_layer3_api_external_export_download_prepare_records_reference_only_desc
         "destination_selection",
         "generic_downstream_dispatch",
     ]
+
+
+def test_layer3_api_package_supersession_preview_inspects_immutable_package_set_without_side_effects(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        _preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(client, tmp_path, request_id="api-package-supersession-preview-success")
+    payload = _package_supersession_preview_payload(
+        request_id="api-package-supersession-preview-success-preview",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+    )
+
+    def files_under_tmp() -> set[str]:
+        return {str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file()}
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        reconciliation_before = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json
+        )
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    preview = client.post("/api/v1/layer3/package/mutation/preview", json=payload)
+    assert preview.status_code == 200, preview.json()
+    body = preview.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.package_supersession_preview.v1"
+    assert body["status"] == "previewed"
+    assert body["session_id"] == session_id
+    assert body["analysis_plan_id"] == approval_body["analysis_plan_id"]
+    assert body["pass_run_id"] == selection_body["pass_run_ids"][0]
+    assert body["package_review_preview_hash"] == commit_body["package_review_preview_hash"]
+    assert body["reconciliation_record_id"] == commit_body["reconciliation_record_id"]
+    assert body["output_package_ids"] == payload["output_package_ids"]
+    assert body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["payload_refs"] == commit_body["payload_refs"]
+    assert body["payload_hashes"] == commit_body["payload_hashes"]
+    assert body["operator_decision"] == "preview_package_supersession"
+    assert body["package_supersession_preview_mode"] == "package_supersession_preview_only"
+    assert body["package_rows"] == [
+        {
+            "output_package_id": package["output_package_id"],
+            "package_kind": package["package_kind"],
+            "status": package["status"],
+            "payload_ref": package["payload_ref"],
+            "payload_hash": package["payload_hash"],
+        }
+        for package in commit_body["output_packages"]
+    ]
+    assert body["downstream_dependencies"] == []
+    assert body["downstream_dependency_detected"] is False
+    assert body["immutable_package_rule_enforced"] is True
+    assert body["package_row_mutation_enabled"] is False
+    assert body["package_payload_rewrite_enabled"] is False
+    assert body["package_supersession_commit_enabled"] is False
+    assert body["database_write_enabled"] is False
+    assert body["filesystem_write_enabled"] is False
+    assert body["broad_package_mutation_enabled"] is False
+    assert body["source_widening_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["provider_public_url_enabled"] is False
+    assert body["qualitative_hybrid_rag_execution_enabled"] is False
+    assert body["downstream_unavailable"] == [
+        "package_row_mutation",
+        "package_payload_rewrite",
+        "package_supersession_commit",
+        "provider_public_url",
+        "connector_destination_dispatch",
+        "source_upload_expansion",
+        "broad_qualitative_hybrid_rag_execution",
+        "full_mockup_activation",
+    ]
+    for forbidden_key in (
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "rebuild_package",
+        "provider_public_url",
+        "public_url",
+        "signed_url",
+        "download_url",
+        "connector_key",
+        "connector_run_id",
+    ):
+        assert forbidden_key not in body
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        reconciliation_after = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json
+        )
+        assert reconciliation_after == reconciliation_before
+        assert "package_supersession_preview" not in reconciliation_after
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+
+    replay = client.post("/api/v1/layer3/package/mutation/preview", json=payload)
+    assert replay.status_code == 200, replay.json()
+    assert replay.json()["package_supersession_preview_hash"] == body["package_supersession_preview_hash"]
+    assert replay.json()["package_set_hash"] == body["package_set_hash"]
+
+    reordered = client.post(
+        "/api/v1/layer3/package/mutation/preview",
+        json={
+            **payload,
+            "client_request_id": "api-package-supersession-preview-reordered",
+            "output_package_ids": list(reversed(payload["output_package_ids"])),
+            "package_kinds": list(reversed(payload["package_kinds"])),
+            "payload_refs": list(reversed(payload["payload_refs"])),
+            "payload_hashes": list(reversed(payload["payload_hashes"])),
+        },
+    )
+    assert reordered.status_code == 200, reordered.json()
+    assert reordered.json()["output_package_ids"] == payload["output_package_ids"]
+    assert reordered.json()["package_supersession_preview_hash"] == body["package_supersession_preview_hash"]
+
+
+def test_layer3_api_package_supersession_preview_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/package/mutation/preview",
+        json={"client_request_id": "api-package-supersession-preview-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) >= {
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_preview_hash",
+        "operator_decision",
+    }
+
+    (
+        session_id,
+        _preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_payload,
+        submit_body,
+    ) = _submit_quant_package_review(client, tmp_path, request_id="api-package-supersession-preview-prechecks")
+    base_payload = _package_supersession_preview_payload(
+        request_id="api-package-supersession-preview-prechecks-preview",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+    )
+    missing_downstream_ref = dict(base_payload)
+    missing_downstream_ref.pop("package_review_submit_record_ref")
+    cases = [
+        (
+            {**base_payload, "package_payload": {"unsafe": True}},
+            400,
+            "package_supersession_preview_scope_not_admitted",
+        ),
+        (
+            {**base_payload, "provider_public_url": "https://example.invalid/package.json"},
+            400,
+            "package_supersession_preview_scope_not_admitted",
+        ),
+        (
+            {**base_payload, "operator_decision": "commit_package_supersession"},
+            400,
+            "unsupported_package_supersession_preview_decision",
+        ),
+        (
+            {**base_payload, "package_review_preview_hash": "stale-preview-hash"},
+            409,
+            "package_supersession_preview_package_review_preview_hash_mismatch",
+        ),
+        (
+            {**base_payload, "payload_hashes": ["stale-hash", *base_payload["payload_hashes"][1:]]},
+            409,
+            "package_supersession_preview_payload_hashes_mismatch",
+        ),
+        (
+            missing_downstream_ref,
+            409,
+            "package_supersession_preview_package_review_submit_record_ref_required",
+        ),
+        (
+            {**base_payload, "package_review_submit_record_ref": "stale-submit-ref"},
+            409,
+            "package_supersession_preview_package_review_submit_record_ref_mismatch",
+        ),
+    ]
+    for payload, expected_status, expected_error in cases:
+        response = client.post("/api/v1/layer3/package/mutation/preview", json=payload)
+        assert response.status_code == expected_status, response.json()
+        assert response.json()["error_code"] == expected_error
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/package/mutation/preview",
+        json={**base_payload, "package_supersession_commit": True},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "package_supersession_commit"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        assert "package_supersession_preview" not in reconciliation.summary_json
+    finally:
+        db.close()
+
+
+def test_layer3_api_package_supersession_preview_detects_downstream_dependencies(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-package-supersession-preview-downstream",
+    )
+    connector_payload = _connector_dispatch_record_payload(
+        request_id="api-package-supersession-preview-downstream-connector",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+    )
+    connector = client.post("/api/v1/layer3/handoff/connector/record", json=connector_payload)
+    assert connector.status_code == 200, connector.json()
+    connector_body = connector.json()
+    payload = _package_supersession_preview_payload(
+        request_id="api-package-supersession-preview-downstream-preview",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+        connector_body=connector_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+    finally:
+        db.close()
+
+    preview = client.post("/api/v1/layer3/package/mutation/preview", json=payload)
+    assert preview.status_code == 200, preview.json()
+    body = preview.json()
+    assert body["downstream_dependency_detected"] is True
+    assert [dependency["state_key"] for dependency in body["downstream_dependencies"]] == [
+        "package_review_submit",
+        "handoff_export_prepare",
+        "aps_handoff_dispatch",
+        "external_export_download_prepare",
+        "connector_dispatch_record",
+    ]
+    assert body["package_supersession_commit_enabled"] is False
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+    finally:
+        db.close()
+
+    missing_handoff_ref = dict(payload)
+    missing_handoff_ref.pop("handoff_export_record_ref")
+    missing_handoff = client.post("/api/v1/layer3/package/mutation/preview", json=missing_handoff_ref)
+    assert missing_handoff.status_code == 409
+    assert missing_handoff.json()["error_code"] == "package_supersession_preview_handoff_export_record_ref_required"
+
+    stale_connector_ref = client.post(
+        "/api/v1/layer3/package/mutation/preview",
+        json={**payload, "connector_dispatch_record_ref": "stale-connector-record"},
+    )
+    assert stale_connector_ref.status_code == 409
+    assert (
+        stale_connector_ref.json()["error_code"]
+        == "package_supersession_preview_connector_dispatch_record_ref_mismatch"
+    )
 
 
 def test_layer3_api_connector_dispatch_record_records_internal_receipt_without_side_effects(

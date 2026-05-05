@@ -348,6 +348,7 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
     assert contract["decision_sets"]["external_export_download_deliver"] == [
         "deliver_external_export_download"
     ]
+    assert contract["decision_sets"]["package_supersession_preview"] == ["preview_package_supersession"]
 
     admitted_capabilities = {item["capability"]: item for item in contract["admitted_capabilities"]}
     assert admitted_capabilities["single_aps_doc_qualitative_execution"]["admitted"] is True
@@ -359,6 +360,14 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
         admitted_capabilities["single_aps_doc_qualitative_execution"]["owner_service"]
         == "backend/app/services/layer3_qual_aps_execution.py"
     )
+    assert admitted_capabilities["internal_dispatch_record_only"]["admitted"] is True
+    assert admitted_capabilities["internal_dispatch_record_only"]["source_gate"] == "121_CONNECTOR_DISPATCH_ENTRY_FREEZE"
+    assert admitted_capabilities["package_supersession_preview_only"]["admitted"] is True
+    assert admitted_capabilities["package_supersession_preview_only"]["source_gate"] == "122_PACKAGE_MUTATION_FREEZE"
+    assert (
+        admitted_capabilities["package_supersession_preview_only"]["owner_service"]
+        == "backend/app/services/layer3_package_mutation_entry.py"
+    )
 
     deferred_capabilities = {item["capability"]: item for item in contract["deferred_capabilities"]}
     assert "qualitative_execution" not in deferred_capabilities
@@ -368,6 +377,7 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
     assert deferred_capabilities["rag_vector_retrieval"]["admitted"] is False
     assert deferred_capabilities["provider_public_url"]["admitted"] is False
     assert deferred_capabilities["connector_destination_dispatch"]["admitted"] is False
+    assert deferred_capabilities["package_mutation_reconstruction"]["admitted"] is False
     assert deferred_capabilities["auth_security_hardening"]["reason"] == "deferred_by_operator_instruction"
     assert not set(deferred_capabilities).intersection(contract["action_ids"])
     assert not set(admitted_capabilities).intersection(contract["action_ids"])

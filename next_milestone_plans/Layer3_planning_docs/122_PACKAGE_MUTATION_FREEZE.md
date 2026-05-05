@@ -1,17 +1,17 @@
 # Layer 3 Package Mutation Freeze
 
-Status: implementation-entry freeze only for package mutation/reconstruction lifecycle after PR #538 merged at `project6-origin/main=329fc6d5`.
+Status: implementation-entry freeze plus bounded runtime contract for `package_supersession_preview_only` on branch `codex/l3-package-supersession-preview` from `project6-origin/main=c44a8762`.
 
-This artifact selects the first safe package mutation/reconstruction entry mode, but it does not implement runtime behavior. It does not add an API route, service, model, migration, package row update, payload rewrite, payload deletion, handoff/export change, connector dispatch, source expansion, qualitative/hybrid/RAG execution, rendered control, full mockup activation, or authentication/security work.
+This artifact selects and governs the first safe package mutation/reconstruction entry mode. Runtime implementation scope is limited to `/api/v1/layer3/package/mutation/preview` and `backend/app/services/layer3_package_mutation_entry.py`. It does not add a commit route, model, migration, package row update, payload rewrite, payload deletion, handoff/export change, connector dispatch, source expansion, qualitative/hybrid/RAG execution, rendered control, full mockup activation, or authentication/security work.
 
 ## Authority Snapshot
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
-- planning_branch: `codex/l3-package-mutation-freeze`
+- implementation_branch: `codex/l3-package-supersession-preview`
 - baseline_ref: `project6-origin/main`
-- baseline_commit: `329fc6d5`
+- baseline_commit: `c44a8762`
 - source gates: `105_deferred-gates.md`, `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`, `118_L3_GOAL_AUDIT.md`, `120_L3_CLOSEOUT.md`, package construction docs `50`/`51` and `88`/`89`, and connector entry doc `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md`
-- source code checked: `backend/app/services/layer3_state_action_contract.py`, `backend/app/services/layer3_workbench.py`, focused Layer 3 API tests, and package construction planning docs
+- source code checked: `backend/app/services/layer3_state_action_contract.py`, `backend/app/services/layer3_workbench.py`, `backend/app/services/layer3_package_mutation_entry.py`, `backend/app/api/layer3.py`, focused Layer 3 API tests, and package construction planning docs
 - local caveat: `.omc/state/*` and local sidecars are operator/tooling state and are not evidence for this freeze
 
 ## Decision
@@ -20,7 +20,7 @@ The first package mutation/reconstruction lane must use exactly this mode:
 
 - selected_package_lifecycle_mode: `package_supersession_preview_only`
 
-This mode is a future read-only server preview of a possible immutable package supersession. It may compare an existing package set, existing payload refs, existing payload hashes, and existing downstream receipts against a proposed reconstruction intent. It must not mutate, overwrite, delete, rebuild, replace, or append package payload bytes or package rows.
+This mode is a read-only server preview of a possible immutable package supersession. It compares an existing package set, existing payload refs, existing payload hashes, and existing downstream receipts against a proposed reconstruction intent. It must not mutate, overwrite, delete, rebuild, replace, or append package payload bytes or package rows.
 
 The immutable package rule is frozen here:
 
@@ -50,24 +50,24 @@ Runtime mutation before an immutable supersession rule would be fragile because 
 
 The narrow preview-only mode reduces this risk by forcing future work to prove package identity, downstream dependency detection, and supersession semantics before any package bytes or package rows can change.
 
-## Future Implementation Scope
+## Runtime Implementation Scope
 
-A later implementation PR may implement only:
+This implementation may include only:
 
-- owner service: `backend/app/services/layer3_package_mutation_entry.py` or a directly owned helper under the package-entry service family if live audit proves that is narrower
-- API route: at most one preview route, expected as `/api/v1/layer3/package/mutation/preview`
+- owner service: `backend/app/services/layer3_package_mutation_entry.py`
+- API route: exactly one preview route, `/api/v1/layer3/package/mutation/preview`
 - request schema: strict Pydantic request model with `extra="forbid"`
 - response schema: response-safe `layer3.package_supersession_preview.v1`
 - mode: `package_supersession_preview_only`
-- persistence: none, unless a later freeze separately admits a durable preview record
+- persistence: none
 - write behavior: no database writes and no filesystem writes
 - authority source: existing package construction rows, existing reconciliation record, existing payload refs/hashes, and existing downstream state only
 
 This freeze does not admit a commit route. If preview proof later shows a commit is needed, that commit requires a separate freeze with model/migration and downstream invalidation or lineage rules.
 
-## Required Future Preview Request Fields
+## Required Preview Request Fields
 
-A future preview request must require:
+The preview request must require:
 
 - `client_request_id`
 - `session_id`
@@ -88,9 +88,9 @@ A future preview request must require:
 
 `operator_decision` must be exactly `preview_package_supersession`.
 
-## Forbidden Future Preview Request Fields
+## Forbidden Preview Request Fields
 
-A future request must reject these before service execution:
+The request must reject these before mutation or downstream side effects:
 
 - `package_payload`
 - `package_variant_content`
@@ -133,7 +133,7 @@ A future request must reject these before service execution:
 
 ## Positive Invariants
 
-The future implementation is acceptable only when:
+The implementation is acceptable only when:
 
 - `package_supersession_preview_only` is the only admitted package mutation/reconstruction entry mode.
 - Broad `package_mutation_reconstruction` remains unadmitted until a separate commit freeze exists.
@@ -166,13 +166,13 @@ The future implementation must prove no accidental:
 - full mockup activation
 - authentication/security scope reopening
 
-## Runtime Test Plan For A Later Code Slice
+## Runtime Test Plan
 
-A later implementation must include focused backend/API tests proving:
+This implementation must include focused backend/API tests proving:
 
 - missing package authority fails closed before service execution;
 - stale package ids, payload refs, payload hashes, package-review submit refs, handoff/export refs, APS handoff refs, external export/download refs, and connector dispatch refs fail closed;
-- forbidden package mutation, package rewrite, source, connector, provider, schema, runtime, qualitative, hybrid, RAG, and mockup fields are rejected before service execution;
+- forbidden package mutation, package rewrite, source, connector, provider, schema, runtime, qualitative, hybrid, RAG, and mockup fields are rejected before mutation or downstream side effects;
 - correct preview request returns a response-safe `layer3.package_supersession_preview.v1` body without persistence;
 - duplicate preview requests are deterministic;
 - no `L3OutputPackage`, `L3ReconciliationRecord`, `AnalysisArtifact`, `AnalysisRun`, `L3PassRun`, connector, source, handoff/export, delivery, provider URL, or payload file side effect occurs;
@@ -182,14 +182,16 @@ Browser proof is not required unless the implementation admits rendered package 
 
 ## Current Slice Validation
 
-This docs/proof slice is accepted when:
+This runtime slice is accepted when:
 
 - this file exists and contains `selected_package_lifecycle_mode: package_supersession_preview_only`;
-- `105_deferred-gates.md` and `118_L3_GOAL_AUDIT.md` mention this freeze without claiming runtime implementation;
-- `backend/app/services/layer3_state_action_contract.py` keeps `package_mutation_reconstruction` deferred and absent from admitted capabilities;
+- `105_deferred-gates.md` and `118_L3_GOAL_AUDIT.md` distinguish exact read-only preview runtime from broad package mutation/reconstruction;
+- `backend/app/services/layer3_state_action_contract.py` admits only `package_supersession_preview_only` and keeps `package_mutation_reconstruction` deferred;
+- `backend/app/services/layer3_package_mutation_entry.py` implements `package_supersession_preview_only` with no database writes and no filesystem writes;
+- `backend/app/api/layer3.py` exposes only `/api/v1/layer3/package/mutation/preview` for this mode;
 - `backend/app/services/layer3_workbench.py` still treats `package_payload`, `package_variant_content`, `rewrite_output`, and `rebuild_package` as forbidden downstream fields;
-- `backend/tests/test_layer3_api.py` still contains fail-closed proof for package payload/rewrite fields on existing package and downstream routes;
-- `tools/l3-progress-check.py` requires this freeze and still verifies runtime package mutation/reconstruction remains unadmitted;
+- `backend/tests/test_layer3_api.py` contains success, downstream-dependency, no-side-effect, API-boundary, and fail-closed proof for this exact preview route;
+- `tools/l3-progress-check.py` requires this runtime contract and still verifies package mutation/reconstruction commit remains unadmitted;
 - `python .\tools\l3-progress-check.py` passes;
 - `git diff --check` reports no whitespace errors.
 

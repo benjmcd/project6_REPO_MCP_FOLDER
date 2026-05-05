@@ -46,6 +46,9 @@ WORKBENCH_SERVICE = (
 CONNECTOR_DISPATCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_connector_dispatch_entry.py"
 )
+PACKAGE_MUTATION_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_package_mutation_entry.py"
+)
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
 SIGNED_REFERENCE_STATE_TEST = (
@@ -576,13 +579,15 @@ def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
 def _check_package_mutation_freeze(errors: list[str]) -> None:
     freeze_text = _read_required_text(PACKAGE_MUTATION_FREEZE, errors)
     required_freeze_terms = [
-        "Status: implementation-entry freeze only for package mutation/reconstruction lifecycle",
+        "Status: implementation-entry freeze plus bounded runtime contract for `package_supersession_preview_only`",
         "selected_package_lifecycle_mode: `package_supersession_preview_only`",
         "immutable_package_rule: existing `L3OutputPackage` rows and package payload files are immutable",
-        "This artifact selects the first safe package mutation/reconstruction entry mode, but it does not implement runtime behavior.",
+        "Runtime implementation scope is limited to `/api/v1/layer3/package/mutation/preview`",
+        "backend/app/services/layer3_package_mutation_entry.py",
+        "layer3.package_supersession_preview.v1",
         "no database writes and no filesystem writes",
         "operator_decision` must be exactly `preview_package_supersession`",
-        "must reject these before service execution",
+        "must reject these before mutation or downstream side effects",
         "- `package_payload`",
         "- `package_variant_content`",
         "- `rewrite_output`",
@@ -609,20 +614,20 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
     required_doc_terms = {
         DEFERRED_GATES: [
             "122_PACKAGE_MUTATION_FREEZE.md",
-            "`package_supersession_preview_only` as the first package mutation/reconstruction entry candidate",
-            "runtime package mutation/reconstruction remains not admitted",
+            "`package_supersession_preview_only` runtime is live only as a read-only preview",
+            "runtime package mutation/reconstruction commit remains not admitted",
             "no database writes, no package payload writes, and no in-place mutation",
         ],
         GOAL_AUDIT: [
             "122_PACKAGE_MUTATION_FREEZE.md",
-            "Entry freeze selected; runtime not implemented and remains blocked",
-            "First eligible candidate is `package_supersession_preview_only`",
+            "Read-only supersession preview implementation is live and tested",
+            "Only `package_supersession_preview_only` is admitted",
             "Existing bounded package construction/submit is not package mutation",
         ],
         CLOSEOUT_DOC: [
             "122_PACKAGE_MUTATION_FREEZE.md",
             "package_supersession_preview_only",
-            "The freeze does not add a route, service, model, migration, row update, payload rewrite, or UI control.",
+            "Read-only preview route is live; package mutation/reconstruction commit remains blocked.",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -648,11 +653,90 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
         errors.append("package_mutation_reconstruction must remain admitted false for the preview-only freeze")
     if "package_mutation_reconstruction" in admitted:
         errors.append("package_mutation_reconstruction must not appear in admitted capabilities for the preview-only freeze")
-    if "package_supersession_preview_only" in admitted:
-        errors.append("package_supersession_preview_only must not be admitted by this docs/proof freeze")
+    preview = admitted.get("package_supersession_preview_only")
+    if preview is None:
+        errors.append("admitted capabilities missing package_supersession_preview_only")
+    else:
+        if preview.get("admitted") is not True:
+            errors.append("package_supersession_preview_only must be admitted true")
+        if preview.get("source_gate") != "122_PACKAGE_MUTATION_FREEZE":
+            errors.append("package_supersession_preview_only source_gate drifted")
+        if preview.get("owner_service") != "backend/app/services/layer3_package_mutation_entry.py":
+            errors.append("package_supersession_preview_only owner_service drifted")
+        blocked = preview.get("blocked_downstream")
+        if not isinstance(blocked, list):
+            errors.append("package_supersession_preview_only missing blocked_downstream list")
+        else:
+            for term in (
+                "package_mutation_reconstruction",
+                "package_row_mutation",
+                "package_payload_rewrite",
+                "package_supersession_commit",
+                "provider_public_url",
+                "connector_destination_dispatch",
+                "local_upload_or_directory_source_expansion",
+                "broad_qualitative_execution",
+                "hybrid_execution",
+                "rag_vector_retrieval",
+                "full_mockup_activation",
+            ):
+                if term not in blocked:
+                    errors.append(f"package_supersession_preview_only blocked_downstream missing {term}")
+
+    package_mutation_text = _read_required_text(PACKAGE_MUTATION_SERVICE, errors)
+    for term in (
+        "PACKAGE_SUPERSESSION_PREVIEW_MODE = \"package_supersession_preview_only\"",
+        "PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION = \"preview_package_supersession\"",
+        "PACKAGE_SUPERSESSION_PREVIEW_FORBIDDEN_FIELDS",
+        "package_supersession_preview_scope_not_admitted",
+        "package_supersession_preview_requires_complete_package_set",
+        "package_supersession_preview_payload_refs_unavailable",
+        "package_supersession_preview_package_review_submit_record_ref_required",
+        "\"package_row_mutation_enabled\": False",
+        "\"package_payload_rewrite_enabled\": False",
+        "\"package_supersession_commit_enabled\": False",
+        "\"database_write_enabled\": False",
+        "\"filesystem_write_enabled\": False",
+        "\"broad_package_mutation_enabled\": False",
+        "\"source_widening_enabled\": False",
+        "\"connector_dispatch_enabled\": False",
+        "\"provider_public_url_enabled\": False",
+        "\"qualitative_hybrid_rag_execution_enabled\": False",
+    ):
+        if term not in package_mutation_text:
+            errors.append(f"{_rel(PACKAGE_MUTATION_SERVICE)} missing package supersession preview proof term: {term}")
+    for term in (
+        "db.add(",
+        "db.commit(",
+        "L3OutputPackage(",
+        "L3ReconciliationRecord(",
+        "AnalysisArtifact(",
+        "AnalysisRun(",
+        "L3PassRun(",
+        "ConnectorRun(",
+        "write_bytes(",
+    ):
+        if term in package_mutation_text:
+            errors.append(f"{_rel(PACKAGE_MUTATION_SERVICE)} contains forbidden mutation/creation term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "Layer3PackageSupersessionPreviewRequest",
+        "Layer3PackageSupersessionPreviewResponse",
+        "PACKAGE_SUPERSESSION_PREVIEW_REQUEST_SCHEMA",
+        "\"/package/mutation/preview\"",
+        "preview_package_supersession",
+        "\"package_payload\": {\"description\": \"Known but non-admitted; service rejects fail-closed.\"}",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing package supersession preview API term: {term}")
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
+        "\"package_supersession_preview\"",
+        "\"package_supersession_preview_admitted\": True",
+        "\"package_supersession_preview_endpoint\": f\"{API_ROOT}/package/mutation/preview\"",
+        "\"package_supersession_preview_is_read_only\": True",
         "\"rebuild_package\"",
         "\"package_payload\"",
         "\"package_variant_content\"",
@@ -667,6 +751,13 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
 
     test_text = _read_required_text(LAYER3_API_TEST, errors)
     for term in (
+        "test_layer3_api_package_supersession_preview_inspects_immutable_package_set_without_side_effects",
+        "test_layer3_api_package_supersession_preview_prechecks_fail_closed",
+        "test_layer3_api_package_supersession_preview_detects_downstream_dependencies",
+        "test_layer3_package_supersession_preview_api_boundary_returns_workbench_error_envelope",
+        "package_supersession_preview_scope_not_admitted",
+        "package_supersession_preview_package_review_submit_record_ref_required",
+        "package_supersession_preview_connector_dispatch_record_ref_mismatch",
         "package_construction_commit_scope_not_admitted",
         "package_review_submit_scope_not_admitted",
         "package_review_preview_scope_not_admitted",
@@ -1235,6 +1326,7 @@ def main() -> int:
         SOURCE_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
+        PACKAGE_MUTATION_SERVICE,
         SOURCE_BOUNDARY_TEST,
         SESSION_ENTRY_TEST,
         SIGNED_REFERENCE_STATE_SERVICE,
