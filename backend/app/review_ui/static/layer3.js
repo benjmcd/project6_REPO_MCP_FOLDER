@@ -596,6 +596,68 @@ function stateActionContractSchemaId(source = null) {
     return source?.state_action_contract?.schema_id || State.bootstrap?.state_action_contract?.schema_id || null;
 }
 
+function sortedStringList(values) {
+    return Array.isArray(values) ? values.map(String).sort() : [];
+}
+
+function stableStringify(value) {
+    if (Array.isArray(value)) {
+        return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+    }
+    if (value && typeof value === 'object') {
+        return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+    }
+    return JSON.stringify(value ?? null);
+}
+
+function capabilitySignatureItems(values) {
+    return (Array.isArray(values) ? values : [])
+        .map((item) => ({
+            admitted: item?.admitted ?? null,
+            blocked_downstream: sortedStringList(item?.blocked_downstream),
+            capability: item?.capability || null,
+            owner_service: item?.owner_service || null,
+            reason: item?.reason || null,
+            source_gate: item?.source_gate || null,
+        }))
+        .sort((left, right) => String(left.capability).localeCompare(String(right.capability)));
+}
+
+function stateActionMatrixSignatureItems(values) {
+    return (Array.isArray(values) ? values : [])
+        .map((item) => ({
+            allowed_next_actions: sortedStringList(item?.allowed_next_actions),
+            authority_source: item?.authority_source || null,
+            forbidden_downstream_actions: sortedStringList(item?.forbidden_downstream_actions),
+            state: item?.state || null,
+        }))
+        .sort((left, right) => String(left.state).localeCompare(String(right.state)));
+}
+
+function decisionSetSignatureItems(value) {
+    const decisions = value && typeof value === 'object' ? value : {};
+    return Object.fromEntries(
+        Object.keys(decisions).sort().map((key) => [key, sortedStringList(decisions[key])]),
+    );
+}
+
+function stateActionContractSignature(source = null) {
+    const contract = source?.state_action_contract || State.bootstrap?.state_action_contract || null;
+    if (!contract?.schema_id) return null;
+    return stableStringify({
+        action_ids: sortedStringList(contract.action_ids),
+        admitted_capabilities: capabilitySignatureItems(contract.admitted_capabilities),
+        decision_sets: decisionSetSignatureItems(contract.decision_sets),
+        deferred_capabilities: capabilitySignatureItems(contract.deferred_capabilities),
+        schema_id: contract.schema_id,
+        schema_version: contract.schema_version ?? null,
+        state_action_matrix: stateActionMatrixSignatureItems(contract.state_action_matrix),
+        state_count: contract.state_count ?? null,
+        state_model_schema_id: contract.state_model_schema_id || null,
+        states: sortedStringList(contract.states),
+    });
+}
+
 function sameStringList(left, right) {
     const leftValues = [...(left || [])].map(String).sort();
     const rightValues = [...(right || [])].map(String).sort();
@@ -626,6 +688,7 @@ function persistSessionRecoveryAnchor(source) {
         selection_manifest_id: State.sessionSummary?.selection_manifest_id || State.gateB?.selection_manifest_id || null,
         current_gate: State.sessionSummary?.current_gate || currentAuthorityRail()?.current_gate || null,
         state_action_contract_schema_id: stateActionContractSchemaId(State.sessionSummary),
+        state_action_contract_signature: stateActionContractSignature(State.sessionSummary),
         source,
         updated_at: new Date().toISOString(),
     };
@@ -642,11 +705,10 @@ function loadSessionRecoveryAnchor() {
         storageRemove(localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY);
         return null;
     }
-    const currentContract = stateActionContractSchemaId();
+    const currentContract = stateActionContractSignature();
     if (
         currentContract
-        && anchor.state_action_contract_schema_id
-        && anchor.state_action_contract_schema_id !== currentContract
+        && anchor.state_action_contract_signature !== currentContract
     ) {
         storageRemove(localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY);
         addEvent('Stored session recovery anchor skipped after contract change.');
@@ -660,8 +722,8 @@ async function recoverSessionFromStorage() {
     if (!anchor) return false;
     try {
         const summary = await getJson(`/session/${encodeURIComponent(anchor.session_id)}`);
-        const currentContract = stateActionContractSchemaId();
-        const summaryContract = stateActionContractSchemaId(summary);
+        const currentContract = stateActionContractSignature();
+        const summaryContract = stateActionContractSignature(summary);
         if (currentContract && summaryContract && currentContract !== summaryContract) {
             clearSessionRecoveryAnchor();
             addEvent('Stored session recovery anchor no longer matches the server contract.');
@@ -728,6 +790,7 @@ function buildGateBDraftSnapshot() {
         draft_authority: 'browser_restore_only_server_revalidated_on_commit',
         client_request_id: clientRequestId,
         state_action_contract_schema_id: stateActionContractSchemaId(),
+        state_action_contract_signature: stateActionContractSignature(),
         expires_at: gateBDraftExpiresAt(),
         ...currentGateBDraftIdentity(),
         preflight: State.preflight,
@@ -755,11 +818,10 @@ function restoreGateBDraftSnapshot() {
         storageRemove(sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY);
         return false;
     }
-    const currentContract = stateActionContractSchemaId();
+    const currentContract = stateActionContractSignature();
     if (
         currentContract
-        && draft.state_action_contract_schema_id
-        && draft.state_action_contract_schema_id !== currentContract
+        && draft.state_action_contract_signature !== currentContract
     ) {
         storageRemove(sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY);
         addEvent('Gate B draft skipped after contract change.');

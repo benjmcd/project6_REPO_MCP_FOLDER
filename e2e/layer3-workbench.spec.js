@@ -130,6 +130,33 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
 });
 
+test('Layer 3 workbench clears schema-id-only Gate B drafts after contract signature hardening', async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('layer3_workbench_gate_b_draft_v1', JSON.stringify({
+      schema_id: 'layer3.gate_b_draft_snapshot.v1',
+      schema_version: 1,
+      draft_authority: 'browser_restore_only_server_revalidated_on_commit',
+      client_request_id: 'stale-schema-id-only-draft',
+      state_action_contract_schema_id: 'layer3.state_action_contract.v1',
+      expires_at: new Date(Date.now() + (60 * 60 * 1000)).toISOString(),
+      material_preview_id: 'stale-material-preview',
+      material_preview_hash: 'stale-hash',
+      candidate_ids: ['stale-candidate'],
+      material_preview: {
+        material_preview_id: 'stale-material-preview',
+        material_preview_hash: 'stale-hash',
+        material_candidates: [{ candidate_id: 'stale-candidate' }],
+      },
+    }));
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+
+  await expect.poll(() => page.evaluate(() => (
+    sessionStorage.getItem('layer3_workbench_gate_b_draft_v1')
+  ))).toBeNull();
+});
+
 test('Layer 3 workbench restores Gate B drafts and server session anchors across reloads', async ({ page }) => {
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
 
@@ -150,6 +177,8 @@ test('Layer 3 workbench restores Gate B drafts and server session anchors across
   ));
   expect(draftBeforeReload.schema_id).toBe('layer3.gate_b_draft_snapshot.v1');
   expect(draftBeforeReload.draft_authority).toBe('browser_restore_only_server_revalidated_on_commit');
+  expect(draftBeforeReload.state_action_contract_schema_id).toBe('layer3.state_action_contract.v1');
+  expect(draftBeforeReload.state_action_contract_signature).toContain('"schema_id":"layer3.state_action_contract.v1"');
   expect(draftBeforeReload.material_preview_hash).toBe(material.material_preview_hash);
   expect(draftBeforeReload.client_request_id).toBeTruthy();
 
@@ -179,6 +208,8 @@ test('Layer 3 workbench restores Gate B drafts and server session anchors across
   expect(storageAfterCommit.draft).toBeNull();
   expect(storageAfterCommit.recovery.schema_id).toBe('layer3.browser_session_recovery.v1');
   expect(storageAfterCommit.recovery.session_id).toBe(gateB.session_id);
+  expect(storageAfterCommit.recovery.state_action_contract_schema_id).toBe('layer3.state_action_contract.v1');
+  expect(storageAfterCommit.recovery.state_action_contract_signature).toContain('"schema_id":"layer3.state_action_contract.v1"');
 
   const sessionResponsePromise = page.waitForResponse((response) => (
     response.url().includes(`/api/v1/layer3/session/${gateB.session_id}`)
