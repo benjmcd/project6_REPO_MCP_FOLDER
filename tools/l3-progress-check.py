@@ -71,6 +71,9 @@ AUTHORITY_RAIL_SERVICE = (
 PREVIEW_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_preview_contract.py"
 )
+READINESS_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_readiness_contract.py"
+)
 CONNECTOR_DISPATCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_connector_dispatch_entry.py"
 )
@@ -104,6 +107,7 @@ LAYER3_PAGE_TEST = ROOT / "backend" / "tests" / "test_layer3_page.py"
 LAYER3_RESPONSE_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_response_contract.py"
 LAYER3_AUTHORITY_RAIL_TEST = ROOT / "backend" / "tests" / "test_layer3_authority_rail.py"
 LAYER3_PREVIEW_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_preview_contract.py"
+LAYER3_READINESS_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_readiness_contract.py"
 LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
@@ -787,6 +791,8 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(LAYER3_API)} missing package supersession preview API term: {term}")
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{readiness_text}"
     for term in (
         "\"package_supersession_preview\"",
         "\"package_supersession_preview_admitted\": True",
@@ -801,8 +807,8 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
         "\"handoff_export_amendment\"",
         "\"aps_handoff_amendment\"",
     ):
-        if term not in workbench_text:
-            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing package mutation blocked-field term: {term}")
+        if term not in contract_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} or {_rel(READINESS_CONTRACT_SERVICE)} missing package mutation blocked-field term: {term}")
 
     test_text = _read_required_text(LAYER3_API_TEST, errors)
     for term in (
@@ -1018,6 +1024,8 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(LAYER3_API)} missing package supersession commit API term: {term}")
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{readiness_text}"
     for term in (
         "\"package_supersession_commit\"",
         "\"commit_package_supersession\"",
@@ -1028,8 +1036,8 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         "\"package_supersession_commit_uses_unique_request_and_basis\": True",
         "durable immutable lineage record",
     ):
-        if term not in workbench_text:
-            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing package supersession commit workbench term: {term}")
+        if term not in contract_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} or {_rel(READINESS_CONTRACT_SERVICE)} missing package supersession commit workbench term: {term}")
 
     state_contract_text = _read_required_text(STATE_ACTION_CONTRACT, errors)
     for term in (
@@ -1204,6 +1212,8 @@ def _check_package_replacement_set_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(LAYER3_API)} missing replacement authority API term: {term}")
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{readiness_text}"
     for term in (
         "\"replacement_package_set_authority\"",
         "\"record_replacement_package_set_authority\"",
@@ -1214,8 +1224,8 @@ def _check_package_replacement_set_freeze(errors: list[str]) -> None:
         "record_replacement_package_set_authority",
         "package row mutation, payload writes, and broad package mutation remain blocked",
     ):
-        if term not in workbench_text:
-            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing replacement authority workbench term: {term}")
+        if term not in contract_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} or {_rel(READINESS_CONTRACT_SERVICE)} missing replacement authority workbench term: {term}")
 
     admitted = _capability_map(
         _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors),
@@ -1459,6 +1469,8 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
             errors.append(f"{_rel(QUAL_APS_TEST)} missing qualitative owner-service error proof term: {term}")
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{readiness_text}"
     for term in (
         '"single_aps_doc_qualitative_execution_admitted": True',
         '"single_aps_doc_qualitative_execution": True',
@@ -1466,8 +1478,8 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
         '"hybrid_execution": False',
         '"rag_vector_retrieval": False',
     ):
-        if term not in workbench_text:
-            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing qualitative boundary term: {term}")
+        if term not in contract_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} or {_rel(READINESS_CONTRACT_SERVICE)} missing qualitative boundary term: {term}")
 
     required_doc_terms = {
         QUAL_APS_FREEZE: [
@@ -1662,7 +1674,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded merged-main proof snapshot.",
+            "Status: bounded merged-main proof snapshot plus current no-behavior-change readiness contract extraction record.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -2554,7 +2566,6 @@ def _check_preview_contract_extraction(errors: list[str]) -> None:
     for term in (
         "from app.services.layer3_preview_contract import",
         "plan_preview_hash_contract as _plan_preview_hash_contract",
-        "material_preview_hash_contract as _material_preview_hash_contract",
         "preview_identity as _preview_identity",
     ):
         if term not in workbench_text:
@@ -2608,6 +2619,78 @@ def _check_preview_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing preview contract extraction doc term: {term}")
 
 
+def _check_readiness_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
+    for term in (
+        'EXECUTION_READINESS_SCHEMA_ID = "layer3.execution_readiness_contract.v1"',
+        "READINESS_REQUIRED_GATES = (",
+        "READINESS_IMPLEMENTED_GATES = (",
+        "READINESS_DEFERRED_GATES = (",
+        "def build_readiness_contract(",
+        "plan_preview_hash_contract()",
+        "material_preview_hash_contract()",
+        '"dispatch_admitted": False',
+        '"source_breadth": "requires later freeze before RAG/vector/upload/local-directory expansion"',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(READINESS_CONTRACT_SERVICE)} missing readiness contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_readiness_contract import",
+        "EXECUTION_READINESS_SCHEMA_ID",
+        "build_readiness_contract",
+        "def readiness_contract(",
+        "return build_readiness_contract(",
+        "state_model=_workbench_state_model()",
+        "state_action_contract=_workbench_state_action_contract()",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing readiness contract extraction term: {term}")
+    for stale_term in (
+        "READINESS_REQUIRED_GATES = (",
+        "READINESS_IMPLEMENTED_GATES = (",
+        "READINESS_DEFERRED_GATES = (",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns readiness contract term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_READINESS_CONTRACT_TEST, errors)
+    for term in (
+        "test_layer3_readiness_contract_is_shared_without_behavior_change",
+        "build_readiness_contract(",
+        "direct_body == workbench_body",
+        'assert direct["dispatch_admitted"] is False',
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_READINESS_CONTRACT_TEST)} missing readiness contract test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "readiness contract extraction",
+            "layer3_readiness_contract.py",
+            "test_layer3_readiness_contract.py",
+        ),
+        GOAL_AUDIT: (
+            "readiness contract extraction",
+            "layer3_readiness_contract.py",
+            "test_layer3_readiness_contract.py",
+            "does not change emitted readiness contracts",
+        ),
+        CLOSEOUT_DOC: (
+            "readiness contract extraction",
+            "layer3_readiness_contract.py",
+            "layer3.execution_readiness_contract.v1",
+            "Readiness contract extraction keeps the shared readiness contract outside the workbench without changing emitted readiness envelopes",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing readiness contract extraction doc term: {term}")
+
+
 def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     required_terms = {
         MODELS: [
@@ -2635,9 +2718,11 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
             "claim_gate_b_idempotency",
             "complete_gate_b_idempotency_claim",
             "find_gate_b_idempotency_claim",
+            "gate_b_idempotency_in_progress",
+        ],
+        READINESS_CONTRACT_SERVICE: [
             "\"gate_b_decision_idempotency_scope\": \"durable_claim_and_post_commit_retry\"",
             "\"gate_b_decision_concurrent_duplicate_lock\": True",
-            "gate_b_idempotency_in_progress",
         ],
         GATE_B_STATE_TEST: [
             "test_gate_b_idempotency_migration_defines_durable_unique_claim",
@@ -2708,6 +2793,7 @@ def main() -> int:
         RESPONSE_CONTRACT_SERVICE,
         AUTHORITY_RAIL_SERVICE,
         PREVIEW_CONTRACT_SERVICE,
+        READINESS_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
@@ -2727,6 +2813,7 @@ def main() -> int:
         LAYER3_RESPONSE_CONTRACT_TEST,
         LAYER3_AUTHORITY_RAIL_TEST,
         LAYER3_PREVIEW_CONTRACT_TEST,
+        LAYER3_READINESS_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
@@ -2763,6 +2850,7 @@ def main() -> int:
     _check_response_contract_extraction(errors)
     _check_authority_rail_extraction(errors)
     _check_preview_contract_extraction(errors)
+    _check_readiness_contract_extraction(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
