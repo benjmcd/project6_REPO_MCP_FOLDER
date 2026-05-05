@@ -2,7 +2,7 @@
 
 ## Status
 
-Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, broad connector/destination dispatch, package mutation/reconstruction commit, broad source/upload expansion, broad qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation. The exact `internal_dispatch_record_only` runtime is live only as an internal record and does not change the broader deferred gates. Doc `122_PACKAGE_MUTATION_FREEZE.md` now governs a live `package_supersession_preview_only` runtime only as a read-only preview with no database writes, no package payload writes, and no in-place mutation. Doc `123_SOURCE_EXPANSION_FREEZE.md` freezes `supported_source_classes_only`; source upload, local directory, broad file upload, web connector, RAG/vector, and unbounded runtime DB source expansion remain blocked. Doc `124_QUAL_HYBRID_RAG_FREEZE.md` freezes `single_aps_doc_qualitative_pass_only`; broad qualitative execution, qualitative cohort execution, comparative execution, cross-document synthesis, hybrid execution, RAG/vector retrieval, hidden LLM planning, and qualitative package/handoff/export remain blocked.
+Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, broad connector/destination dispatch, package mutation/reconstruction commit, broad source/upload expansion, broad qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation. The exact `internal_dispatch_record_only` runtime is live only as an internal record and does not change the broader deferred gates. Doc `122_PACKAGE_MUTATION_FREEZE.md` now governs a live `package_supersession_preview_only` runtime only as a read-only preview with no database writes, no package payload writes, and no in-place mutation. Doc `123_SOURCE_EXPANSION_FREEZE.md` freezes `supported_source_classes_only`; source upload, local directory, broad file upload, web connector, RAG/vector, and unbounded runtime DB source expansion remain blocked. Doc `124_QUAL_HYBRID_RAG_FREEZE.md` freezes `single_aps_doc_qualitative_pass_only`; broad qualitative execution, qualitative cohort execution, comparative execution, cross-document synthesis, hybrid execution, RAG/vector retrieval, hidden LLM planning, and qualitative package/handoff/export remain blocked. Doc `125_MOCKUP_TRUTH_STATE_FREEZE.md` freezes `mockups_target_state_only`; full mockup activation and frontend-only durable state remain blocked.
 
 Current-main decision freeze for the remaining requested deferred categories after PR `#499`, PR `#513`, and PR `#514` rendered signed-reference UI slice in `104_signed-ui.md`.
 
@@ -17,6 +17,8 @@ Current-main docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH
 Current-main docs `114_QUAL_APS_EXEC_FREEZE.md`, `115_QUAL_APS_EXEC_CONTRACT.md`, `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md`, and `124_QUAL_HYBRID_RAG_FREEZE.md` freeze and narrow qualitative APS content document execution to the one initial `single_aps_doc_qualitative_pass` mode. That exact mode is implemented on current main; broader qualitative execution, qualitative cohort execution, comparative execution, cross-document synthesis, hybrid execution, RAG/vector execution, qualitative package/handoff/export, and hidden LLM planning remain not admitted.
 
 Current-main doc `122_PACKAGE_MUTATION_FREEZE.md` freezes package mutation/reconstruction commit as not runtime-admitted and selects the exact `package_supersession_preview_only` runtime as the first eligible implementation-entry candidate. This read-only route does not admit package payload rewrite, package row mutation, package reconstruction commit, editable package variants, provider/public URLs, connector/destination dispatch, source widening, qualitative/hybrid/RAG execution, schema/model/migration changes, full mockup activation, or authentication/security work.
+
+Current-main doc `125_MOCKUP_TRUTH_STATE_FREEZE.md` freezes tracked mockup artifacts as target-state design/specification inputs only. The mockup files do not admit rendered controls, browser-local persistence, frontend-only durable state, broad execution, source widening, connector/destination dispatch, provider/public URL support, package mutation/reconstruction, broad qualitative/hybrid/RAG execution, hidden LLM planning, or full mockup activation.
 
 This file does not implement deferred broad behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
@@ -126,6 +128,21 @@ Any broader qualitative implementation cannot begin until these are specified:
 - tests proving DatasetVersion quantitative execution is not reused accidentally for qualitative content.
 
 The currently live APS content document path includes selection, trace, material preview, typing/display support, theme alignment, and the exact single-document qualitative execution pass. Current tests prove APS content documents can be listed, previewed, traced, snapshotted, typed as qualitative document chunks, executed through `single_aps_doc_qualitative_pass` without `AnalysisRun` or `DatasetVersion`, and blocked from qualitative package/handoff/export broadening.
+
+## Mockup Truth State
+
+Current decision: `125_MOCKUP_TRUTH_STATE_FREEZE.md` admits no runtime behavior and keeps mockups as target-state design/specification artifacts only.
+
+Full mockup activation cannot begin until these are specified:
+
+- exact live route, API, and owner service to be changed;
+- server-owned state authority for any persisted UI state;
+- proof that frontend state is recovery/cache only and not durable authority;
+- exact controls being activated, with deferred controls still disabled;
+- headed and headless browser proof for every activated rendered state;
+- negative proof that mockup activation does not widen source, execution, connector, provider, package, or auth/security scope.
+
+This lane must not be folded into source expansion, qualitative/RAG execution, provider/public URL, connector dispatch, package mutation, or frontend-only durable state work.
 
 ## Common Stop Conditions
 
