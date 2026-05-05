@@ -3,6 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 
+SOURCE_BOUNDARY_CONTRACT_SCHEMA_ID = "layer3.source_boundary_contract.v1"
+SOURCE_BOUNDARY_MODE = "supported_source_classes_only"
+
 SUPPORTED_SOURCE_CLASSES = ("dataset_version", "aps_content_document")
 UNSUPPORTED_SOURCE_CLASSES = (
     "rag_vector_index",
@@ -10,6 +13,25 @@ UNSUPPORTED_SOURCE_CLASSES = (
     "broad_file_upload",
     "web_connector",
     "unbounded_runtime_db",
+)
+SOURCE_EXPANSION_DEFERRED_CAPABILITIES = (
+    "local_upload_or_directory_source_expansion",
+    "broad_file_upload_source_expansion",
+    "web_connector_source_expansion",
+    "rag_vector_retrieval",
+    "unbounded_runtime_db_source_expansion",
+)
+SOURCE_BOUNDARY_FORBIDDEN_RUNTIME_FIELDS = (
+    "source_upload",
+    "local_upload",
+    "local_directory",
+    "rag_vector_index",
+    "rag_plan",
+    "vector_plan",
+    "web_connector",
+    "runtime_db_write",
+    "source_expansion",
+    "schema_widening",
 )
 
 
@@ -36,3 +58,21 @@ def source_class_from_material_candidate_id(candidate_id: str) -> str | None:
         if candidate_id.startswith(f"mat-{source_class}-"):
             return source_class
     return None
+
+
+def source_boundary_contract() -> dict[str, Any]:
+    return {
+        "schema_id": SOURCE_BOUNDARY_CONTRACT_SCHEMA_ID,
+        "mode": SOURCE_BOUNDARY_MODE,
+        "supported_source_classes": list(SUPPORTED_SOURCE_CLASSES),
+        "unsupported_source_classes": list(UNSUPPORTED_SOURCE_CLASSES),
+        "deferred_capabilities": list(SOURCE_EXPANSION_DEFERRED_CAPABILITIES),
+        "forbidden_runtime_fields": list(SOURCE_BOUNDARY_FORBIDDEN_RUNTIME_FIELDS),
+        "source_upload_enabled": False,
+        "local_directory_enabled": False,
+        "broad_file_upload_enabled": False,
+        "web_connector_enabled": False,
+        "rag_vector_enabled": False,
+        "unbounded_runtime_db_enabled": False,
+        "requires_later_freeze": True,
+    }

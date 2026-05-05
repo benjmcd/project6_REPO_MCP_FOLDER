@@ -27,6 +27,7 @@ QUAL_APS_ENTRY_FREEZE = PLANNING_DOCS / "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md"
 CLOSEOUT_DOC = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
 CONNECTOR_ENTRY_FREEZE = PLANNING_DOCS / "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md"
 PACKAGE_MUTATION_FREEZE = PLANNING_DOCS / "122_PACKAGE_MUTATION_FREEZE.md"
+SOURCE_EXPANSION_FREEZE = PLANNING_DOCS / "123_SOURCE_EXPANSION_FREEZE.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -895,6 +896,12 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
     unsupported = _load_literal_assignment(
         SOURCE_BOUNDARY_SERVICE, "UNSUPPORTED_SOURCE_CLASSES", errors
     )
+    deferred_capabilities = _load_literal_assignment(
+        SOURCE_BOUNDARY_SERVICE, "SOURCE_EXPANSION_DEFERRED_CAPABILITIES", errors
+    )
+    forbidden_fields = _load_literal_assignment(
+        SOURCE_BOUNDARY_SERVICE, "SOURCE_BOUNDARY_FORBIDDEN_RUNTIME_FIELDS", errors
+    )
 
     expected_supported = ("dataset_version", "aps_content_document")
     expected_unsupported = (
@@ -903,6 +910,25 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
         "broad_file_upload",
         "web_connector",
         "unbounded_runtime_db",
+    )
+    expected_deferred = (
+        "local_upload_or_directory_source_expansion",
+        "broad_file_upload_source_expansion",
+        "web_connector_source_expansion",
+        "rag_vector_retrieval",
+        "unbounded_runtime_db_source_expansion",
+    )
+    expected_forbidden_fields = (
+        "source_upload",
+        "local_upload",
+        "local_directory",
+        "rag_vector_index",
+        "rag_plan",
+        "vector_plan",
+        "web_connector",
+        "runtime_db_write",
+        "source_expansion",
+        "schema_widening",
     )
     if supported != expected_supported:
         errors.append(
@@ -914,13 +940,33 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "source boundary unsupported classes drifted: "
             f"expected {expected_unsupported!r}, found {unsupported!r}"
         )
+    if deferred_capabilities != expected_deferred:
+        errors.append(
+            "source expansion deferred capabilities drifted: "
+            f"expected {expected_deferred!r}, found {deferred_capabilities!r}"
+        )
+    if forbidden_fields != expected_forbidden_fields:
+        errors.append(
+            "source boundary forbidden runtime fields drifted: "
+            f"expected {expected_forbidden_fields!r}, found {forbidden_fields!r}"
+        )
 
     service_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
     for term in (
+        "SOURCE_BOUNDARY_CONTRACT_SCHEMA_ID = \"layer3.source_boundary_contract.v1\"",
+        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_only\"",
         "def requested_source_classes(",
         "def unsupported_requested(",
         "def source_class_from_source_candidate_id(",
         "def source_class_from_material_candidate_id(",
+        "def source_boundary_contract(",
+        "\"source_upload_enabled\": False",
+        "\"local_directory_enabled\": False",
+        "\"broad_file_upload_enabled\": False",
+        "\"web_connector_enabled\": False",
+        "\"rag_vector_enabled\": False",
+        "\"unbounded_runtime_db_enabled\": False",
+        "\"requires_later_freeze\": True",
     ):
         if term not in service_text:
             errors.append(f"{_rel(SOURCE_BOUNDARY_SERVICE)} missing helper: {term}")
@@ -944,19 +990,39 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             )
 
     test_text = _read_required_text(SOURCE_BOUNDARY_TEST, errors)
-    for term in expected_supported + expected_unsupported:
+    for term in expected_supported + expected_unsupported + expected_deferred + expected_forbidden_fields:
         if term not in test_text:
             errors.append(f"{_rel(SOURCE_BOUNDARY_TEST)} missing source class proof term: {term}")
+    if "test_source_boundary_contract_keeps_deferred_source_expansion_fail_closed" not in test_text:
+        errors.append(f"{_rel(SOURCE_BOUNDARY_TEST)} missing source boundary contract proof")
 
     required_doc_terms = {
+        SOURCE_EXPANSION_FREEZE: [
+            "Status: source expansion implementation-entry freeze for supported-source-only runtime",
+            "selected_source_expansion_mode: `supported_source_classes_only`",
+            "layer3.source_boundary_contract.v1",
+            "source_upload_enabled: `False`",
+            "local_directory_enabled: `False`",
+            "web_connector_enabled: `False`",
+            "rag_vector_enabled: `False`",
+            "unbounded_runtime_db_enabled: `False`",
+            "No source upload, local directory ingestion, broad file upload, web connector source, RAG/vector retrieval, or unbounded runtime DB source is admitted.",
+        ],
+        DEFERRED_GATES: [
+            "123_SOURCE_EXPANSION_FREEZE.md",
+            "supported_source_classes_only",
+            "source upload, local directory, broad file upload, web connector, RAG/vector, and unbounded runtime DB source expansion remain blocked",
+        ],
         SYNTHESIS_BOUNDARY: [
             "backend/app/services/layer3_source_boundary.py",
             "SUPPORTED_SOURCE_CLASSES",
             "UNSUPPORTED_SOURCE_CLASSES",
+            "123_SOURCE_EXPANSION_FREEZE.md",
             "backend/tests/test_layer3_source_boundary.py",
         ],
         GOAL_AUDIT: [
             "current-main completion audit after PR #538 merged",
+            "123_SOURCE_EXPANSION_FREEZE.md",
             "backend/app/services/layer3_source_boundary.py",
             "backend/tests/test_layer3_source_boundary.py",
             "does not widen source classes",
@@ -964,6 +1030,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
         ],
         CLOSEOUT_DOC: [
             "Status: current-main closeout after PR #538 merged at `project6-origin/main=329fc6d5`",
+            "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
             "post-merge `main` workflow",
@@ -1320,6 +1387,7 @@ def main() -> int:
         CLOSEOUT_DOC,
         CONNECTOR_ENTRY_FREEZE,
         PACKAGE_MUTATION_FREEZE,
+        SOURCE_EXPANSION_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         LAYER3_API,
