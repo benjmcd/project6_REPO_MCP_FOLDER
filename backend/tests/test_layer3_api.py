@@ -32,6 +32,7 @@ from app.models.models import (
     L3AnalysisPlan,
     L3AnalysisSet,
     L3AnalysisUnit,
+    L3GateBIdempotencyKey,
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
@@ -3417,8 +3418,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["idempotency_contract"]["client_request_id_required_for_package_supersession_preview"] is True
     assert "duplicate_package_supersession_preview" in readiness_body["idempotency_contract"]
     assert "duplicate_gate_b_decision" in readiness_body["idempotency_contract"]
-    assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "post_commit_retry_only"
-    assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is False
+    assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "durable_claim_and_post_commit_retry"
+    assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is True
     assert "preview-hash" in readiness_body["implemented_gates"]
     assert "analysis-execution-start" in readiness_body["implemented_gates"]
     assert "result-status" in readiness_body["implemented_gates"]
@@ -4094,6 +4095,11 @@ def test_layer3_api_gate_b_duplicate_client_request_id_is_idempotent(client: Tes
 
     with client.layer3_session_factory() as db:
         assert db.query(L3Session).count() == 1
+        claim = db.query(L3GateBIdempotencyKey).one()
+        assert claim.client_request_id == "api-gate-b-idempotent"
+        assert claim.status == "committed"
+        assert claim.session_id == committed_body["session_id"]
+        assert claim.selection_manifest_id == committed_body["selection_manifest_id"]
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
         assert db.query(AnalysisArtifact).count() == 0

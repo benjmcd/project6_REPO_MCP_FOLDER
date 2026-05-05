@@ -30,6 +30,7 @@ from app.models.models import (
     L3AnalysisSet,
     L3AnalysisUnit,
     L3Descriptor,
+    L3GateBIdempotencyKey,
     L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,

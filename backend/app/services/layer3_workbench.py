@@ -66,7 +66,13 @@ from app.services.layer3_package_entry import (
 )
 from app.services.layer3_gate_b_state import (
     GATE_B_IDEMPOTENCY_CONTEXT_KEY,
+    GATE_B_IDEMPOTENCY_STATUS_COMMITTED,
+    claim_gate_b_idempotency,
+    complete_gate_b_idempotency_claim,
+    find_gate_b_idempotency_claim,
     find_gate_b_idempotency_session,
+    gate_b_idempotency_claim_matches,
+    gate_b_idempotency_from_session,
     gate_b_idempotency_record,
 )
 from app.services.layer3_plan_revision_state import (
@@ -1765,9 +1771,9 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_for_external_export_download_prepare": True,
             "client_request_id_required_for_external_export_download_deliver": True,
             "client_request_id_required_for_package_supersession_preview": True,
-            "duplicate_gate_b_decision": "same required client_request_id, provided source context, provided material_preview_id, and decision manifest returns existing Gate B session; conflicts fail closed",
-            "gate_b_decision_idempotency_scope": "post_commit_retry_only",
-            "gate_b_decision_concurrent_duplicate_lock": False,
+            "duplicate_gate_b_decision": "same required client_request_id, provided source context, provided material_preview_id, and decision manifest uses a durable Gate B idempotency claim and returns existing Gate B session; conflicts fail closed",
+            "gate_b_decision_idempotency_scope": "durable_claim_and_post_commit_retry",
+            "gate_b_decision_concurrent_duplicate_lock": True,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
             "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
             "duplicate_execution_selection": "same client_request_id and same approved plan returns existing selection; conflicts fail closed",
@@ -2938,6 +2944,47 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
     decision_manifest = _candidate_decision_manifest(decisions)
     gate_b_decision_manifest_id = _gate_b_decision_manifest_id(decision_manifest)
+
+    def existing_gate_b_response(existing_session: L3Session, existing_record: dict[str, Any]) -> dict[str, Any]:
+        existing_manifest = db.get(L3SelectionManifest, existing_session.selection_manifest_id)
+        if existing_manifest is None:
+            raise Layer3WorkbenchError(
+                "gate_b_idempotency_state_inconsistent",
+                f"Layer 3 session '{existing_session.session_id}' is missing its selection manifest.",
+                status="conflict",
+                http_status=409,
+            )
+        if existing_manifest.session_id != existing_session.session_id:
+            raise Layer3WorkbenchError(
+                "selection_manifest_mismatch",
+                "A matching Gate B idempotency record points at a manifest owned by a different session.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["selection_manifest_id"],
+                next_allowed_actions=["inspect_session_manifest_state"],
+            )
+        existing_decision_manifest = (existing_session.operator_context_json or {}).get(
+            "layer3_gate_b_decision_manifest_v1"
+        )
+        if (
+            not isinstance(existing_decision_manifest, dict)
+            or _gate_b_decision_manifest_id(existing_decision_manifest) != gate_b_decision_manifest_id
+            or str(existing_record.get("gate_b_decision_manifest_id") or "") != gate_b_decision_manifest_id
+        ):
+            raise Layer3WorkbenchError(
+                "gate_b_idempotency_state_inconsistent",
+                f"Layer 3 session '{existing_session.session_id}' has inconsistent Gate B idempotency state.",
+                status="conflict",
+                http_status=409,
+            )
+        return _gate_b_response_from_session(
+            request_id=request_id,
+            status="already_committed",
+            session=existing_session,
+            manifest=existing_manifest,
+            decision_manifest=existing_decision_manifest,
+        )
+
     existing_idempotency = find_gate_b_idempotency_session(db, client_request_id=request_id)
     if existing_idempotency is not None:
         existing_session, existing_record = existing_idempotency
@@ -2948,43 +2995,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             and str(existing_record.get("material_preview_hash") or material_preview_hash) == material_preview_hash
             and str(existing_record.get("gate_b_decision_manifest_id") or "") == gate_b_decision_manifest_id
         ):
-            existing_manifest = db.get(L3SelectionManifest, existing_session.selection_manifest_id)
-            if existing_manifest is None:
-                raise Layer3WorkbenchError(
-                    "gate_b_idempotency_state_inconsistent",
-                    f"Layer 3 session '{existing_session.session_id}' is missing its selection manifest.",
-                    status="conflict",
-                    http_status=409,
-                )
-            if existing_manifest.session_id != existing_session.session_id:
-                raise Layer3WorkbenchError(
-                    "selection_manifest_mismatch",
-                    "A matching Gate B idempotency record points at a manifest owned by a different session.",
-                    status="conflict",
-                    http_status=409,
-                    blocked_fields=["selection_manifest_id"],
-                    next_allowed_actions=["inspect_session_manifest_state"],
-                )
-            existing_decision_manifest = (
-                (existing_session.operator_context_json or {}).get("layer3_gate_b_decision_manifest_v1")
-            )
-            if (
-                not isinstance(existing_decision_manifest, dict)
-                or _gate_b_decision_manifest_id(existing_decision_manifest) != gate_b_decision_manifest_id
-            ):
-                raise Layer3WorkbenchError(
-                    "gate_b_idempotency_state_inconsistent",
-                    f"Layer 3 session '{existing_session.session_id}' has inconsistent Gate B idempotency state.",
-                    status="conflict",
-                    http_status=409,
-                )
-            return _gate_b_response_from_session(
-                request_id=request_id,
-                status="already_committed",
-                session=existing_session,
-                manifest=existing_manifest,
-                decision_manifest=existing_decision_manifest,
-            )
+            return existing_gate_b_response(existing_session, existing_record)
         raise Layer3WorkbenchError(
             "idempotency_conflict",
             "client_request_id already committed Gate B for different material decisions.",
@@ -2993,12 +3004,88 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             blocked_fields=["client_request_id"],
         )
 
+    def existing_claim_response(existing_claim) -> dict[str, Any]:
+        if gate_b_idempotency_claim_matches(
+            existing_claim,
+            client_request_id=request_id,
+            preflight_id=preflight_id,
+            source_set_id=source_set_id,
+            material_preview_id=material_preview_id,
+            material_preview_hash=material_preview_hash,
+            gate_b_decision_manifest_id=gate_b_decision_manifest_id,
+        ):
+            if existing_claim.status != GATE_B_IDEMPOTENCY_STATUS_COMMITTED:
+                raise Layer3WorkbenchError(
+                    "gate_b_idempotency_in_progress",
+                    "client_request_id is already claiming a Gate B decision.",
+                    status="conflict",
+                    http_status=409,
+                    blocked_fields=["client_request_id"],
+                    next_allowed_actions=["retry_gate_b_decision"],
+                )
+            if not existing_claim.session_id:
+                raise Layer3WorkbenchError(
+                    "gate_b_idempotency_state_inconsistent",
+                    "Committed Gate B idempotency claim is missing its session.",
+                    status="conflict",
+                    http_status=409,
+                )
+            existing_session = db.get(L3Session, existing_claim.session_id)
+            if existing_session is None:
+                raise Layer3WorkbenchError(
+                    "gate_b_idempotency_state_inconsistent",
+                    "Committed Gate B idempotency claim points at a missing session.",
+                    status="conflict",
+                    http_status=409,
+                )
+            existing_record = gate_b_idempotency_from_session(existing_session)
+            if existing_record is None:
+                raise Layer3WorkbenchError(
+                    "gate_b_idempotency_state_inconsistent",
+                    "Committed Gate B idempotency claim points at a session missing its idempotency record.",
+                    status="conflict",
+                    http_status=409,
+                )
+            return existing_gate_b_response(existing_session, existing_record)
+        raise Layer3WorkbenchError(
+            "idempotency_conflict",
+            "client_request_id already claimed Gate B for different material decisions.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id"],
+        )
+
+    preexisting_claim = find_gate_b_idempotency_claim(db, client_request_id=request_id)
+    if preexisting_claim is not None:
+        return existing_claim_response(preexisting_claim)
+
     if not approved:
         raise Layer3WorkbenchError(
             "no_approved_material",
             "At least one material candidate must be approved before Gate C.",
             status="blocked",
             next_allowed_actions=["approve_material", "revise_sources"],
+        )
+
+    gate_b_claim, existing_claim = claim_gate_b_idempotency(
+        db,
+        client_request_id=request_id,
+        preflight_id=preflight_id,
+        source_set_id=source_set_id,
+        material_preview_id=material_preview_id,
+        material_preview_hash=material_preview_hash,
+        gate_b_decision_manifest_id=gate_b_decision_manifest_id,
+    )
+    if existing_claim is not None:
+        return existing_claim_response(existing_claim)
+    if gate_b_claim is None:
+        raise Layer3WorkbenchError(
+            "gate_b_idempotency_state_persist_failed",
+            "Gate B idempotency claim could not be persisted.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["retry_gate_b_decision"],
         )
 
     counts = _gate_b_counts(decisions)
@@ -3054,6 +3141,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             summary={"current_gate": "gate_c", "gate_b_summary_v1": counts},
         ),
     )
+    complete_gate_b_idempotency_claim(gate_b_claim, session=session, manifest=manifest)
     descriptors = expand_descriptors(db, session=session, manifest=manifest)
     for descriptor, item in zip(descriptors, approved, strict=True):
         record_retrieval_event(
