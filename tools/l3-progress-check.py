@@ -39,6 +39,9 @@ PACKAGE_REPLACEMENT_ARTIFACT_FREEZE = (
 PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE = (
     PLANNING_DOCS / "129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md"
 )
+PACKAGE_REPLACEMENT_NAMESPACE_FREEZE = (
+    PLANNING_DOCS / "130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md"
+)
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -71,6 +74,9 @@ REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION = (
 )
 PACKAGE_SUPERSESSION_COMMIT_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0019_layer3_package_supersession_commit.py"
+)
+PACKAGE_ENTRY_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0015_layer3_package_entry.py"
 )
 REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0020_layer3_replacement_package_artifact_manifest.py"
@@ -748,7 +754,7 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
         CLOSEOUT_DOC: [
             "122_PACKAGE_MUTATION_FREEZE.md",
             "package_supersession_preview_only",
-            "Read-only preview route is live; replacement package-set metadata authority is live; package supersession commit lineage route is live; package replacement artifact authority is planning/control only; package replacement artifact manifest-only verification is live; broad package mutation/reconstruction remains blocked.",
+            "Read-only preview route is live; replacement package-set metadata authority is live; package supersession commit lineage route is live; package replacement artifact authority is planning/control only; package replacement artifact manifest-only verification is live; package replacement namespace rows are planning/control only; broad package mutation/reconstruction remains blocked.",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -1426,19 +1432,19 @@ def _check_package_replacement_artifact_freeze(errors: list[str]) -> None:
         GOAL_AUDIT: (
             "Doc `128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md` is planning/control only.",
             "planning-only `replacement_package_artifact_authority_only`",
-            "future package lifecycle freeze for replacement package artifact generation or replacement package row namespace",
+            "future package lifecycle freeze for replacement package artifact generation",
         ),
         CLOSEOUT_DOC: (
             "package replacement artifact authority row is planning/control only",
             "128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md",
             "replacement_package_artifact_authority_only",
-            "Doc `128` remains planning/control authority for any later artifact generation or replacement package row namespace.",
+            "planning-only prerequisite for artifact generation",
         ),
         MANIFEST: (
             "128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md",
             "replacement_package_artifact_authority_only",
             "Docs 122, 126, 127, and 129 govern the current package lifecycle runtimes only",
-            "blocks replacement package artifact generation and replacement package row creation",
+            "blocks replacement package artifact generation until a later freeze names that surface",
         ),
         BOARD: (
             "Current package planning/control correction",
@@ -1531,7 +1537,7 @@ def _check_package_replacement_artifact_manifest_freeze(errors: list[str]) -> No
             "live runtime is bounded to `/api/v1/layer3/package/replacement-artifact/manifest/record`",
             "backend/tests/test_layer3_replacement_package_artifact_manifest.py",
             "keep `replacement_package_artifact_manifest_only` live only as the exact server-verified manifest-only runtime",
-            "Latest merged-main authority rechecked before this guardrail correction: `project6-origin/main` at `996d7bb1` after PR #589.",
+            "Latest merged-main authority rechecked before this namespace freeze: `project6-origin/main` at `f4698f7c` after PR #590.",
         ),
         GOAL_AUDIT: (
             "Doc `129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md` remains the implementation-entry planning authority",
@@ -1714,6 +1720,147 @@ def _check_package_replacement_artifact_manifest_freeze(errors: list[str]) -> No
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing package artifact manifest runtime term: {term}")
+
+
+def _check_package_replacement_namespace_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(PACKAGE_REPLACEMENT_NAMESPACE_FREEZE, errors)
+    required_freeze_terms = (
+        "# Layer 3 Replacement Package Namespace Freeze",
+        "Status: planning/control freeze only for `replacement_package_namespace_rows`",
+        "baseline_commit: `f4698f7cdc1cb1ddd01511eb47de5ad37f1b8b56`",
+        "current output package model: `backend/app/models/models.py` `L3OutputPackage`",
+        "current uniqueness blocker: `uq_l3_output_package_session_kind`",
+        "selected_future_package_lifecycle_mode: `replacement_package_namespace_rows`",
+        "selected_namespace_design: `separate_replacement_output_package_table`",
+        "future owner surface: package namespace authority only; no payload generation or payload rewrite",
+        "This is not live runtime.",
+        "separate replacement table",
+        "must not weaken, remove, or reinterpret `uq_l3_output_package_session_kind`",
+        "existing `L3OutputPackage` rows remain immutable source authority",
+        "replacement package row authority uses a separate table",
+        "replacement row creation is impossible without an existing verified replacement artifact manifest",
+        "replacement row creation is impossible without existing package supersession lineage",
+        "runtime behavior",
+        "replacement `L3OutputPackage` row creation in the source table",
+        "weakening or removing `uq_l3_output_package_session_kind`",
+        "package payload creation, rewrite, overwrite, deletion, or reconstruction",
+        "connector/destination dispatch changes",
+        "provider/public URL support",
+        "source/upload/local-directory/RAG/vector expansion",
+        "qualitative/hybrid/RAG execution",
+        "`L3PassRun` creation",
+        "`AnalysisRun` creation",
+        "`AnalysisArtifact` creation",
+        "`L3ReconciliationRecord` creation, update, or deletion",
+        "frontend-only durable state",
+        "hidden LLM planning",
+        "full mockup activation",
+        "authentication/security hardening",
+        "tools/l3-progress-check.py` fails closed if this freeze is missing",
+    )
+    for term in required_freeze_terms:
+        if term not in freeze_text:
+            errors.append(f"{_rel(PACKAGE_REPLACEMENT_NAMESPACE_FREEZE)} missing package namespace freeze term: {term}")
+
+    required_doc_terms = {
+        DEFERRED_GATES: (
+            "130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md",
+            "selected_namespace_design: separate_replacement_output_package_table",
+            "preserving `uq_l3_output_package_session_kind`",
+            "creating no rows, routes, payloads, models, migrations, UI",
+        ),
+        SYNTHESIS_BOUNDARY: (
+            "130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md",
+            "replacement_package_namespace_rows",
+            "preserves the existing `L3OutputPackage` source-row authority",
+            "keep `replacement_package_namespace_rows` planning/control only",
+            "uq_l3_output_package_session_kind",
+        ),
+        GOAL_AUDIT: (
+            "Doc `130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md` is planning/control only.",
+            "`selected_namespace_design: separate_replacement_output_package_table`",
+            "planning-only `replacement_package_namespace_rows`",
+            "future package lifecycle freeze for replacement package artifact generation",
+        ),
+        CLOSEOUT_DOC: (
+            "package replacement namespace row is planning/control only",
+            "selected_namespace_design: separate_replacement_output_package_table",
+            "planning/control-only replacement package namespace rows freeze",
+            "uq_l3_output_package_session_kind",
+        ),
+        MANIFEST: (
+            "package_replacement_namespace_freeze",
+            "replacement_package_namespace_rows",
+            "selected_namespace_design",
+            "separate_replacement_output_package_table",
+            "\"live_behavior_change\": false",
+            "uq_l3_output_package_session_kind",
+        ),
+        BOARD: (
+            "Current package namespace planning/control correction",
+            "Package replacement namespace freeze",
+            "replacement_package_namespace_rows",
+            "uq_l3_output_package_session_kind",
+        ),
+        PROOF_MANIFEST: (
+            "package_replacement_namespace_freeze_proof",
+            "latest_package_replacement_namespace_freeze_branch",
+            "codex/l3-package-namespace-freeze",
+            "replacement_package_namespace_rows",
+            "uq_l3_output_package_session_kind",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package namespace freeze term: {term}")
+
+    models_text = _read_required_text(MODELS, errors)
+    for term in (
+        "class L3OutputPackage",
+        "UniqueConstraint(\"session_id\", \"package_kind\", name=\"uq_l3_output_package_session_kind\")",
+    ):
+        if term not in models_text:
+            errors.append(f"{_rel(MODELS)} missing source output-package namespace term: {term}")
+    for forbidden in (
+        "class L3ReplacementOutputPackage",
+        "class L3ReplacementPackageRow",
+        "class L3OutputPackageReplacement",
+    ):
+        if forbidden in models_text:
+            errors.append(f"{_rel(MODELS)} contains live replacement package namespace model term: {forbidden}")
+
+    package_entry_migration_text = _read_required_text(PACKAGE_ENTRY_MIGRATION, errors)
+    for term in (
+        "\"l3_output_package\"",
+        "sa.UniqueConstraint(\"session_id\", \"package_kind\", name=\"uq_l3_output_package_session_kind\")",
+    ):
+        if term not in package_entry_migration_text:
+            errors.append(f"{_rel(PACKAGE_ENTRY_MIGRATION)} missing source output-package migration term: {term}")
+
+    admitted = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors),
+        "STATE_ACTION_ADMITTED_CAPABILITIES",
+        errors,
+    )
+    deferred = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_DEFERRED_CAPABILITIES", errors),
+        "STATE_ACTION_DEFERRED_CAPABILITIES",
+        errors,
+    )
+    for capability in (
+        "replacement_package_namespace_rows",
+        "replacement_output_package_rows",
+        "package_mutation_reconstruction",
+    ):
+        if capability in admitted:
+            errors.append(f"{capability} must not be admitted by package namespace planning/control freeze")
+    package_mutation = deferred.get("package_mutation_reconstruction")
+    if package_mutation is None:
+        errors.append("deferred capabilities missing package_mutation_reconstruction")
+    elif package_mutation.get("admitted") is not False:
+        errors.append("package_mutation_reconstruction must remain admitted false after package namespace freeze")
 
 
 def _check_qualitative_capability_boundary(errors: list[str]) -> None:
@@ -2083,7 +2230,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice.",
+            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice and package replacement namespace planning/control freeze.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -3880,8 +4027,10 @@ def main() -> int:
         PACKAGE_REPLACEMENT_SET_FREEZE,
         PACKAGE_REPLACEMENT_ARTIFACT_FREEZE,
         PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE,
+        PACKAGE_REPLACEMENT_NAMESPACE_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
+        PACKAGE_ENTRY_MIGRATION,
         GATE_B_IDEMPOTENCY_MIGRATION,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION,
         PACKAGE_SUPERSESSION_COMMIT_MIGRATION,
@@ -3950,6 +4099,7 @@ def main() -> int:
     _check_package_replacement_set_freeze(errors)
     _check_package_replacement_artifact_freeze(errors)
     _check_package_replacement_artifact_manifest_freeze(errors)
+    _check_package_replacement_namespace_freeze(errors)
     _check_qualitative_capability_boundary(errors)
     _check_source_boundary_contract(errors)
     _check_mockup_truth_state_boundary(errors)
