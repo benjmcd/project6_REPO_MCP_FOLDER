@@ -811,6 +811,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         "future response schema: `layer3.package_supersession_commit.v1`",
         "future operator decision: `commit_package_supersession`",
         "a dedicated supersession lineage model/migration",
+        "current admitted package lifecycle runtimes: `package_supersession_preview_only` and `replacement_package_set_authority`",
         "`operator_decision` must be exactly `commit_package_supersession`",
         "no runtime route, service, model, migration, UI control, package row mutation, package payload write, or package commit behavior is added by this slice",
         "package supersession commit runtime",
@@ -838,6 +839,8 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
             "126_PACKAGE_COMMIT_FREEZE.md",
             "package supersession commit entry remains docs/proof-only",
             "adds no commit route, service, model, migration, package row mutation",
+            "replacement package-set authority merged after PR #554 at `project6-origin/main=24826369`",
+            "`single_aps_doc_qualitative_execution`, `internal_dispatch_record_only`, `package_supersession_preview_only`, and `replacement_package_set_authority` are current-main exact admitted capabilities",
         ],
         CLOSEOUT_DOC: [
             "Package supersession commit entry freeze",
