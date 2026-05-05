@@ -42,6 +42,9 @@ SIGNED_REFERENCE_STATE_SERVICE = (
 WORKBENCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
 )
+CONNECTOR_DISPATCH_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_connector_dispatch_entry.py"
+)
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
 SIGNED_REFERENCE_STATE_TEST = (
@@ -409,8 +412,9 @@ def _check_local_boundary(errors: list[str]) -> None:
 def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
     entry_text = _read_required_text(CONNECTOR_ENTRY_FREEZE, errors)
     required_entry_terms = [
-        "Status: implementation-entry freeze only for `internal_dispatch_record_only`",
+        "Status: implementation-entry freeze plus bounded runtime contract for `internal_dispatch_record_only`",
         "selected_dispatch_mode: `internal_dispatch_record_only`",
+        "Runtime implementation scope is limited to `/api/v1/layer3/handoff/connector/record`",
         "- external connector invocation",
         "- destination write",
         "- connector-run creation",
@@ -420,6 +424,9 @@ def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
         "- qualitative/hybrid/RAG execution",
         "- full mockup activation",
         "L3ReconciliationRecord.summary_json",
+        "backend/app/services/layer3_connector_dispatch_entry.py",
+        "layer3.connector_dispatch_record.v1",
+        "connector_dispatch_recorded",
         "operator_decision` must be exactly `record_internal_connector_dispatch`",
         "must reject these before service mutation",
         "authentication/security scope reopening",
@@ -431,17 +438,18 @@ def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
     required_doc_terms = {
         DEFERRED_GATES: [
             "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md",
-            "`internal_dispatch_record_only` as the next implementation-entry candidate",
-            "Runtime implementation is not admitted by this file",
+            "`internal_dispatch_record_only` runtime is live only as an internal record",
+            "`connector_destination_dispatch` remains deferred",
             "`single_named_connector_dispatch` and `single_named_destination_dispatch` remain blocked",
         ],
         GOAL_AUDIT: [
             "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md",
-            "implementation-entry freeze selected for the next narrow lane",
-            "Only `internal_dispatch_record_only` is selected for a future code slice",
+            "Internal record-only implementation is live and tested",
+            "Only `internal_dispatch_record_only` is admitted",
             "External connector invocation, destination writes, generic downstream dispatch",
         ],
         CLOSEOUT_DOC: [
+            "Internal connector dispatch record",
             "generic connector/destination dispatch",
             "package mutation/reconstruction",
             "broad source/upload expansion",
@@ -468,9 +476,100 @@ def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
     if connector is None:
         errors.append("deferred capabilities missing connector_destination_dispatch")
     elif connector.get("admitted") is not False:
-        errors.append("connector_destination_dispatch must remain admitted false until runtime code is added")
+        errors.append("connector_destination_dispatch must remain admitted false after exact internal record runtime")
     if "connector_destination_dispatch" in admitted:
-        errors.append("connector_destination_dispatch must not appear in admitted capabilities for the entry-freeze slice")
+        errors.append("connector_destination_dispatch must not appear in admitted capabilities for the internal record slice")
+    internal = admitted.get("internal_dispatch_record_only")
+    if internal is None:
+        errors.append("admitted capabilities missing internal_dispatch_record_only")
+    else:
+        if internal.get("admitted") is not True:
+            errors.append("internal_dispatch_record_only must be admitted true")
+        if internal.get("source_gate") != "121_CONNECTOR_DISPATCH_ENTRY_FREEZE":
+            errors.append("internal_dispatch_record_only source_gate drifted")
+        if internal.get("owner_service") != "backend/app/services/layer3_connector_dispatch_entry.py":
+            errors.append("internal_dispatch_record_only owner_service drifted")
+        blocked = internal.get("blocked_downstream")
+        if not isinstance(blocked, list):
+            errors.append("internal_dispatch_record_only missing blocked_downstream list")
+        else:
+            for term in (
+                "connector_destination_dispatch",
+                "single_named_connector_dispatch",
+                "single_named_destination_dispatch",
+                "provider_public_url",
+                "package_mutation_reconstruction",
+                "local_upload_or_directory_source_expansion",
+                "broad_qualitative_execution",
+                "hybrid_execution",
+                "rag_vector_retrieval",
+                "full_mockup_activation",
+            ):
+                if term not in blocked:
+                    errors.append(f"internal_dispatch_record_only blocked_downstream missing {term}")
+
+    service_text = _read_required_text(CONNECTOR_DISPATCH_SERVICE, errors)
+    for term in (
+        "CONNECTOR_DISPATCH_RECORD_MODE = \"internal_dispatch_record_only\"",
+        "CONNECTOR_DISPATCH_RECORD_OPERATOR_DECISION = \"record_internal_connector_dispatch\"",
+        "CONNECTOR_DISPATCH_RECORD_STATE = \"connector_dispatch_recorded\"",
+        "CONNECTOR_DISPATCH_RECORD_FORBIDDEN_FIELDS",
+        "connector_dispatch_record_scope_not_admitted",
+        "connector_dispatch_record_already_recorded",
+        "connector_dispatch_record_source_not_admitted",
+        "\"connector_dispatch_record\": record_state",
+        "PASS_TYPE_ASSOCIATED_COHORT",
+        "PASS_SCOPE_QUANT_ASSOCIATED_COHORT",
+        "\"external_connector_invocation_enabled\": False",
+        "\"destination_write_enabled\": False",
+        "\"connector_run_created\": False",
+        "\"package_mutation_enabled\": False",
+        "\"source_widening_enabled\": False",
+        "\"qualitative_hybrid_rag_execution_enabled\": False",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(CONNECTOR_DISPATCH_SERVICE)} missing connector runtime proof term: {term}")
+    forbidden_service_terms = ("db.add(", "ConnectorRun(", "AnalysisRun(", "L3PassRun(", "L3OutputPackage(")
+    for term in forbidden_service_terms:
+        if term in service_text:
+            errors.append(f"{_rel(CONNECTOR_DISPATCH_SERVICE)} contains forbidden creation term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "Layer3ConnectorDispatchRecordRequest",
+        "Layer3ConnectorDispatchRecordResponse",
+        "CONNECTOR_DISPATCH_RECORD_REQUEST_SCHEMA",
+        "\"/handoff/connector/record\"",
+        "record_internal_connector_dispatch",
+        "\"connector_key\": {\"description\": \"Known but non-admitted; service rejects fail-closed.\"}",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing connector API term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "CONNECTOR_DISPATCH_RECORDED_STATE = \"connector_dispatch_recorded\"",
+        "\"internal_connector_dispatch_record\"",
+        "\"internal_connector_dispatch_record_admitted\": True",
+        "\"internal_connector_dispatch_record_endpoint\": f\"{API_ROOT}/handoff/connector/record\"",
+        "\"dispatch_admitted\": False",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing connector readiness term: {term}")
+
+    test_text = _read_required_text(LAYER3_API_TEST, errors)
+    for term in (
+        "test_layer3_api_connector_dispatch_record_records_internal_receipt_without_side_effects",
+        "test_layer3_api_connector_dispatch_record_prechecks_fail_closed",
+        "test_layer3_connector_dispatch_record_api_boundary_returns_workbench_error_envelope",
+        "connector_dispatch_record_already_recorded",
+        "connector_dispatch_record_source_not_admitted",
+        "ConnectorRun).count()",
+        "L3PassRun).count()",
+        "L3OutputPackage).count()",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_API_TEST)} missing connector proof term: {term}")
 
 
 def _check_qualitative_capability_boundary(errors: list[str]) -> None:
@@ -1027,6 +1126,7 @@ def main() -> int:
         LAYER3_API,
         SOURCE_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
+        CONNECTOR_DISPATCH_SERVICE,
         SOURCE_BOUNDARY_TEST,
         SESSION_ENTRY_TEST,
         SIGNED_REFERENCE_STATE_SERVICE,

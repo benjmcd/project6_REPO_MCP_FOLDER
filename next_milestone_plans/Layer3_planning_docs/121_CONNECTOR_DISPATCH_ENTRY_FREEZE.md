@@ -1,17 +1,18 @@
 # Layer 3 Connector Dispatch Entry Freeze
 
-Status: implementation-entry freeze only for `internal_dispatch_record_only` after PR #536 merged at `project6-origin/main=ee40c7c2`.
+Status: implementation-entry freeze plus bounded runtime contract for `internal_dispatch_record_only` after PR #537 merged at `project6-origin/main=4646a98b`.
 
-This artifact selects the first connector/destination dispatch implementation mode, but it does not implement runtime behavior. It does not create a route, connector run, destination write, provider/public URL, package mutation, source expansion, qualitative/hybrid/RAG execution, rendered control, queue, retry, cancellation, model, migration, or full mockup activation.
+This artifact selects the first connector/destination dispatch implementation mode and now governs the bounded runtime slice for that exact mode. Runtime implementation scope is limited to `/api/v1/layer3/handoff/connector/record` and `backend/app/services/layer3_connector_dispatch_entry.py`. It does not create a connector run, destination write, provider/public URL, package mutation, source expansion, qualitative/hybrid/RAG execution, rendered control, queue, retry, cancellation, model, migration, or full mockup activation.
 
 ## Authority Snapshot
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
 - planning_branch: `codex/l3-next-roadmap-slice`
+- implementation_branch: `codex/l3-connector-record-impl`
 - baseline_ref: `project6-origin/main`
 - baseline_commit: `ee40c7c2`
 - source gates: `105_deferred-gates.md`, `112_CONNECTOR_DISPATCH_FREEZE.md`, `113_CONNECTOR_DISPATCH_CONTRACT.md`, `116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md`, `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`, `118_L3_GOAL_AUDIT.md`, and `120_L3_CLOSEOUT.md`
-- source code checked: `backend/app/services/layer3_state_action_contract.py`, `backend/app/services/layer3_workbench.py`, `backend/app/api/layer3.py`, `backend/app/models/models.py`, and focused Layer 3 tests
+- source code checked: `backend/app/services/layer3_connector_dispatch_entry.py`, `backend/app/services/layer3_state_action_contract.py`, `backend/app/services/layer3_workbench.py`, `backend/app/api/layer3.py`, `backend/app/models/models.py`, and focused Layer 3 tests
 - local caveat: `.omc/state/*` and local sidecars are operator/tooling state and are not evidence for this freeze
 
 ## Decision
@@ -20,7 +21,7 @@ The first connector/destination dispatch lane must use exactly this mode:
 
 - selected_dispatch_mode: `internal_dispatch_record_only`
 
-This mode records an operator-approved dispatch intent and response-safe receipt inside the existing Layer 3 control plane. It does not invoke an external connector, write to a destination, create a connector-run row, generate a provider/public URL, mutate package bytes, widen source classes, or activate mockup-only controls.
+This mode records an operator-approved dispatch intent and response-safe receipt inside the existing Layer 3 control plane. The runtime record uses response schema `layer3.connector_dispatch_record.v1`, persists state schema `layer3.connector_dispatch_record_state.v1`, and reaches terminal state `connector_dispatch_recorded` under `L3ReconciliationRecord.summary_json["connector_dispatch_record"]`. It does not invoke an external connector, write to a destination, create a connector-run row, generate a provider/public URL, mutate package bytes, widen source classes, or activate mockup-only controls.
 
 The other candidate modes remain blocked:
 
@@ -33,12 +34,12 @@ The active roadmap asks for connector/destination dispatch, but current repo aut
 
 `internal_dispatch_record_only` is selected because it can prove the authority chain, request shape, receipt shape, idempotency, and fail-closed boundaries before any external destination is involved. This reduces risk before later package mutation, broad source expansion, qualitative/hybrid/RAG execution, or full mockup activation can be considered.
 
-## Future Implementation Scope
+## Runtime Implementation Scope
 
-The next code slice may implement only:
+The bounded runtime slice may implement only:
 
 - owner service: `backend/app/services/layer3_connector_dispatch_entry.py`
-- API route: one new route under `backend/app/api/layer3.py`, tentatively `/handoff/connector/record`
+- API route: one new route under `backend/app/api/layer3.py`, `/handoff/connector/record`
 - request schema: strict Pydantic request model with `extra="forbid"`
 - response schema: response-safe `layer3.connector_dispatch_record.v1`
 - state key: `connector_dispatch_record` in an existing `L3ReconciliationRecord.summary_json`
@@ -47,7 +48,7 @@ The next code slice may implement only:
 - terminal state: `connector_dispatch_recorded`
 - idempotency basis: fresh `client_request_id` plus session, plan, pass, package, handoff/export, APS handoff, external export/download readiness, delivery, artifact ref/hash/size, and signed-reference authority when supplied
 
-The next code slice must fail closed if no existing `L3ReconciliationRecord` is present. It must not create a new schema/model/migration or new `L3ReconciliationRecord` row as part of this first connector entry lane.
+The code slice must fail closed if no existing `L3ReconciliationRecord` is present. It must not create a new schema/model/migration or new `L3ReconciliationRecord` row as part of this first connector entry lane.
 
 ## Required Request Fields
 
@@ -117,10 +118,10 @@ A future request must reject these before service mutation:
 
 ## Positive Invariants
 
-The future implementation is acceptable only when:
+The implementation is acceptable only when:
 
 - `internal_dispatch_record_only` is the only admitted connector entry mode.
-- The existing state/action contract still keeps broad `connector_destination_dispatch` unadmitted until this exact internal record action is separately added and tested.
+- The existing state/action contract still keeps broad `connector_destination_dispatch` unadmitted while separately admitting and testing exact `internal_dispatch_record_only`.
 - The record binds to the existing associated-cohort APS evidence-bundle authority chain.
 - The receipt exposes only response-safe fields.
 - Duplicate `client_request_id` returns the existing record or fails closed in a specified way.
@@ -128,7 +129,7 @@ The future implementation is acceptable only when:
 
 ## Negative Invariants
 
-The future implementation must prove no accidental:
+The implementation must prove no accidental:
 
 - external connector invocation
 - destination write
@@ -149,13 +150,13 @@ The future implementation must prove no accidental:
 - full mockup activation
 - authentication/security scope reopening
 
-## Test Plan For The Next Code Slice
+## Runtime Test Plan
 
-The next implementation must include focused backend/API tests proving:
+The implementation must include focused backend/API tests proving:
 
 - missing required authority fails closed before service mutation;
 - forbidden connector/destination/provider/package/source fields return validation errors before service mutation;
-- correct internal record request creates or returns a response-safe receipt in existing `L3ReconciliationRecord.summary_json`;
+- correct internal record request creates or returns a response-safe `layer3.connector_dispatch_record.v1` receipt in existing `L3ReconciliationRecord.summary_json`;
 - duplicate `client_request_id` is deterministic;
 - stale artifact hash/size and wrong session fail closed;
 - no `ConnectorRun`, `AnalysisRun`, `L3PassRun`, `L3OutputPackage`, provider URL, destination write, package mutation, source widening, or qualitative/RAG side effect occurs;
@@ -165,11 +166,14 @@ Browser proof is not required unless the implementation admits rendered connecto
 
 ## Current Slice Validation
 
-This docs/proof slice is accepted when:
+This implementation/proof slice is accepted when:
 
 - this file exists and contains `selected_dispatch_mode: internal_dispatch_record_only`;
-- `105_deferred-gates.md` and `118_L3_GOAL_AUDIT.md` mention this entry freeze without claiming runtime implementation;
-- `tools/l3-progress-check.py` requires this entry freeze and still verifies broad connector/destination dispatch remains unadmitted;
+- `backend/app/services/layer3_connector_dispatch_entry.py` records only `internal_dispatch_record_only`;
+- `backend/app/api/layer3.py` exposes only `/handoff/connector/record` for this lane;
+- `backend/tests/test_layer3_api.py` proves success, duplicate idempotency, stale authority rejection, non-associated-cohort rejection, forbidden field rejection, and no connector/package/pass/run side effects;
+- `105_deferred-gates.md` and `118_L3_GOAL_AUDIT.md` mention this exact internal record runtime without claiming broad connector/destination dispatch;
+- `tools/l3-progress-check.py` requires this entry/runtime proof and still verifies broad connector/destination dispatch remains unadmitted;
 - `python .\tools\l3-progress-check.py` passes;
 - `git diff --check` reports no whitespace errors.
 
