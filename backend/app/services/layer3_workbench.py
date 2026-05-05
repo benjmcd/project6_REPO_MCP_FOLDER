@@ -134,6 +134,7 @@ from app.services.layer3_response_contract import (
     LAYER3_SCHEMA_VERSION as SCHEMA_VERSION,
     base_response as _base_response,
 )
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 from app.services.layer3_authority_rail import authority_rail as _authority_rail
 from app.services.layer3_preview_contract import (
     plan_preview_hash_contract as _plan_preview_hash_contract,
@@ -993,17 +994,6 @@ EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES = frozenset(
     {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS, PASS_STATUS_FAILED}
 )
 @dataclass(frozen=True)
-class Layer3WorkbenchError(ValueError):
-    error_code: str
-    message: str
-    status: str = "invalid"
-    http_status: int = 400
-    recoverable: bool = True
-    blocked_fields: list[str] = field(default_factory=list)
-    next_allowed_actions: list[str] = field(default_factory=list)
-
-
-@dataclass(frozen=True)
 class ExternalExportDownloadDelivery:
     artifact_path: Path
     media_type: str
@@ -1052,17 +1042,6 @@ def _urlsafe_b64encode(data: bytes) -> str:
 def _urlsafe_b64decode(value: str) -> bytes:
     padding = "=" * (-len(value) % 4)
     return base64.urlsafe_b64decode(f"{value}{padding}".encode("ascii"))
-
-
-def workbench_error_response(exc: Layer3WorkbenchError, *, request_id: str | None = None) -> dict[str, Any]:
-    return {
-        **_base_response("layer3.workbench_error.v1", request_id=request_id, status=exc.status),
-        "error_code": exc.error_code,
-        "message": exc.message,
-        "recoverable": exc.recoverable,
-        "blocked_fields": list(exc.blocked_fields),
-        "next_allowed_actions": list(exc.next_allowed_actions),
-    }
 
 
 def _workbench_state_model() -> dict[str, Any]:

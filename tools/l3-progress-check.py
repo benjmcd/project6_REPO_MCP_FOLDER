@@ -65,6 +65,9 @@ WORKBENCH_SERVICE = (
 RESPONSE_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_response_contract.py"
 )
+WORKBENCH_ERROR_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_workbench_error.py"
+)
 AUTHORITY_RAIL_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_authority_rail.py"
 )
@@ -105,6 +108,7 @@ SIGNED_REFERENCE_STATE_TEST = (
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 LAYER3_PAGE_TEST = ROOT / "backend" / "tests" / "test_layer3_page.py"
 LAYER3_RESPONSE_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_response_contract.py"
+LAYER3_WORKBENCH_ERROR_TEST = ROOT / "backend" / "tests" / "test_layer3_workbench_error.py"
 LAYER3_AUTHORITY_RAIL_TEST = ROOT / "backend" / "tests" / "test_layer3_authority_rail.py"
 LAYER3_PREVIEW_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_preview_contract.py"
 LAYER3_READINESS_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_readiness_contract.py"
@@ -1674,7 +1678,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded merged-main proof snapshot plus current no-behavior-change readiness contract extraction record.",
+            "Status: bounded merged-main proof snapshot plus current no-behavior-change readiness and workbench error contract extraction records.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -2490,6 +2494,79 @@ def _check_response_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing response contract extraction doc term: {term}")
 
 
+def _check_workbench_error_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(WORKBENCH_ERROR_SERVICE, errors)
+    for term in (
+        "class Layer3WorkbenchError(ValueError):",
+        "def workbench_error_response(",
+        'base_response("layer3.workbench_error.v1"',
+        '"error_code": exc.error_code',
+        '"blocked_fields": list(exc.blocked_fields)',
+        '"next_allowed_actions": list(exc.next_allowed_actions)',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(WORKBENCH_ERROR_SERVICE)} missing workbench error term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_workbench_error import Layer3WorkbenchError",
+        "raise Layer3WorkbenchError",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing workbench error extraction term: {term}")
+    for stale_term in (
+        "class Layer3WorkbenchError(ValueError):",
+        "def workbench_error_response(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns workbench error term: {stale_term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response",
+        "content=workbench_error_response(exc)",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing workbench error extraction term: {term}")
+    if "from app.services.layer3_workbench import Layer3WorkbenchError" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} still imports Layer3WorkbenchError from layer3_workbench")
+
+    test_text = _read_required_text(LAYER3_WORKBENCH_ERROR_TEST, errors)
+    for term in (
+        "test_layer3_workbench_error_contract_is_shared_without_behavior_change",
+        "Layer3WorkbenchError(",
+        "workbench_error_response(exc, request_id=\"fixed-request\")",
+        '"schema_id": "layer3.workbench_error.v1"',
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_ERROR_TEST)} missing workbench error test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "workbench error extraction",
+            "layer3_workbench_error.py",
+            "test_layer3_workbench_error.py",
+        ),
+        GOAL_AUDIT: (
+            "workbench error extraction",
+            "layer3_workbench_error.py",
+            "test_layer3_workbench_error.py",
+            "does not change emitted error envelopes",
+        ),
+        CLOSEOUT_DOC: (
+            "workbench error extraction",
+            "layer3_workbench_error.py",
+            "layer3.workbench_error.v1",
+            "Workbench error extraction keeps the shared error envelope outside the workbench without changing emitted error envelopes",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing workbench error extraction doc term: {term}")
+
+
 def _check_authority_rail_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(AUTHORITY_RAIL_SERVICE, errors)
     for term in (
@@ -2791,6 +2868,7 @@ def main() -> int:
         MOCKUP_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
         RESPONSE_CONTRACT_SERVICE,
+        WORKBENCH_ERROR_SERVICE,
         AUTHORITY_RAIL_SERVICE,
         PREVIEW_CONTRACT_SERVICE,
         READINESS_CONTRACT_SERVICE,
@@ -2811,6 +2889,7 @@ def main() -> int:
         LAYER3_API_TEST,
         LAYER3_PAGE_TEST,
         LAYER3_RESPONSE_CONTRACT_TEST,
+        LAYER3_WORKBENCH_ERROR_TEST,
         LAYER3_AUTHORITY_RAIL_TEST,
         LAYER3_PREVIEW_CONTRACT_TEST,
         LAYER3_READINESS_CONTRACT_TEST,
@@ -2848,6 +2927,7 @@ def main() -> int:
         _check_qualitative_progress_sync(manifest, errors)
     _check_state_action_contract_frontend_signature(errors)
     _check_response_contract_extraction(errors)
+    _check_workbench_error_extraction(errors)
     _check_authority_rail_extraction(errors)
     _check_preview_contract_extraction(errors)
     _check_readiness_contract_extraction(errors)
