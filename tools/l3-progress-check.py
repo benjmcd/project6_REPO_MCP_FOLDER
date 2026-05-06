@@ -1899,7 +1899,7 @@ def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
         "CONNECTOR_DISPATCH_RECORD_REQUEST_SCHEMA",
         "\"/handoff/connector/record\"",
         "record_internal_connector_dispatch",
-        "\"connector_key\": {\"description\": \"Known but non-admitted; service rejects fail-closed.\"}",
+        "\"connector_key\": _forbidden_request_field_schema()",
     ):
         if term not in api_text:
             errors.append(f"{_rel(LAYER3_API)} missing connector API term: {term}")
@@ -2083,7 +2083,7 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
         "PACKAGE_SUPERSESSION_PREVIEW_REQUEST_SCHEMA",
         "\"/package/mutation/preview\"",
         "preview_package_supersession",
-        "\"package_payload\": {\"description\": \"Known but non-admitted; service rejects fail-closed.\"}",
+        "\"package_payload\": _forbidden_request_field_schema()",
     ):
         if term not in api_text:
             errors.append(f"{_rel(LAYER3_API)} missing package supersession preview API term: {term}")
@@ -2321,7 +2321,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         "PACKAGE_SUPERSESSION_COMMIT_REQUEST_SCHEMA",
         "\"/package/supersession/commit\"",
         "commit_package_supersession",
-        "\"replacement_output_package_ids\": {\"description\": \"Known but non-admitted; service rejects fail-closed.\"}",
+        "\"replacement_output_package_ids\": _forbidden_request_field_schema()",
     ):
         if term not in api_text:
             errors.append(f"{_rel(LAYER3_API)} missing package supersession commit API term: {term}")
@@ -2509,8 +2509,8 @@ def _check_package_replacement_set_freeze(errors: list[str]) -> None:
         "REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SCHEMA",
         "\"/package/replacement-set/record\"",
         "record_replacement_package_set_authority",
-        "\"package_payload\": {\"description\": \"Known but non-admitted; service rejects fail-closed.\"}",
-        "\"package_supersession_commit\": {\"description\": \"Known but non-admitted; service rejects fail-closed.\"}",
+        "\"package_payload\": _forbidden_request_field_schema()",
+        "\"package_supersession_commit\": _forbidden_request_field_schema()",
     ):
         if term not in api_text:
             errors.append(f"{_rel(LAYER3_API)} missing replacement authority API term: {term}")
