@@ -45,6 +45,12 @@ PACKAGE_REPLACEMENT_NAMESPACE_FREEZE = (
 PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE = (
     PLANNING_DOCS / "131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE.md"
 )
+PLAN_REVISION_RECOVERY_FREEZE = (
+    PLANNING_DOCS / "132_PLAN_REVISION_RECOVERY_FREEZE.md"
+)
+PLAN_REVISION_RECOVERY_CONTRACT = (
+    PLANNING_DOCS / "133_PLAN_REVISION_RECOVERY_CONTRACT.md"
+)
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -341,7 +347,7 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
 def _check_package_namespace_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "3f238652f909e31e371be86fdfa31d7833e6236e"
+    expected_commit = "b8b1c000e85a0ae119139d5b7328e68437d143eb"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -354,7 +360,7 @@ def _check_package_namespace_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR593 package namespace runtime "
+                f"{name} must identify the post-PR594 package namespace progress "
                 f"base commit {expected_commit}"
             )
 
@@ -373,7 +379,7 @@ def _check_package_namespace_progress_sync(
             continue
         for term in (
             expected_commit,
-            "after PR #593 package namespace runtime",
+            "after PR #594 package namespace progress proof",
             "without runtime behavior changes",
         ):
             if term not in source:
@@ -576,6 +582,146 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
     for term in blocked_allowed:
         if term in allowed_text:
             errors.append(f"next_allowed_actions still includes blocked near-term option: {term}")
+
+
+def _check_plan_revision_recovery_freeze(manifest: dict[str, Any], errors: list[str]) -> None:
+    freeze_text = _read_required_text(PLAN_REVISION_RECOVERY_FREEZE, errors)
+    contract_text = _read_required_text(PLAN_REVISION_RECOVERY_CONTRACT, errors)
+
+    required_freeze_terms = [
+        "Status: planning/control freeze only for `plan_revision_recovery_lifecycle`",
+        "selected_future_lifecycle_mode: `plan_revision_recovery_lifecycle`",
+        "selected_recovery_posture: `server_authorized_preview_refresh_only`",
+        "No runtime behavior is admitted by this document.",
+        "must not reopen, replace, supersede, or delete an already approved `L3AnalysisPlan`",
+        "plan_rejected",
+        "plan_revision_requested",
+        "allowed_next_actions: []",
+        "frontend-only durable state",
+        "authentication/security hardening",
+    ]
+    for term in required_freeze_terms:
+        if term not in freeze_text:
+            errors.append(f"{_rel(PLAN_REVISION_RECOVERY_FREEZE)} missing recovery freeze term: {term}")
+
+    required_contract_terms = [
+        "Status: planning/control API and state contract for `132_PLAN_REVISION_RECOVERY_FREEZE.md`",
+        "POST /api/v1/layer3/plan/revision/recover",
+        "layer3.plan_revision_recovery_request.v1",
+        "recover_for_preview_refresh",
+        "layer3.plan_revision_recovery_result.v1",
+        "plan_revision_recovery_not_available",
+        "plan_revision_state_mismatch",
+        "plan_already_approved",
+        "pass_runs_already_exist",
+        "frontend-only durable state",
+        "authentication/security hardening",
+    ]
+    for term in required_contract_terms:
+        if term not in contract_text:
+            errors.append(f"{_rel(PLAN_REVISION_RECOVERY_CONTRACT)} missing recovery contract term: {term}")
+
+    required_doc_terms = {
+        DEFERRED_GATES: [
+            "132_PLAN_REVISION_RECOVERY_FREEZE.md",
+            "133_PLAN_REVISION_RECOVERY_CONTRACT.md",
+            "planning/control only for `plan_revision_recovery_lifecycle`",
+            "do not implement runtime recovery",
+        ],
+        SYNTHESIS_BOUNDARY: [
+            "132_PLAN_REVISION_RECOVERY_FREEZE.md",
+            "133_PLAN_REVISION_RECOVERY_CONTRACT.md",
+            "planning/control only for `plan_revision_recovery_lifecycle`",
+            "do not make runtime recovery live",
+        ],
+        GOAL_AUDIT: [
+            "132_PLAN_REVISION_RECOVERY_FREEZE.md",
+            "Plan revision recovery lifecycle",
+            "Planning/control only; not live",
+            "readiness keeps `revision-recovery` deferred",
+        ],
+        CLOSEOUT_DOC: [
+            "planning/control plan revision recovery freeze",
+            "plan_revision_recovery_lifecycle",
+            "Not runtime recovery",
+            "not approved-plan supersession",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing revision recovery term: {term}")
+
+    next_required = manifest.get("next_required_decision")
+    if not isinstance(next_required, str):
+        errors.append("manifest next_required_decision missing for revision recovery freeze")
+    else:
+        for term in (
+            "After docs 132/133",
+            "plan_revision_recovery_lifecycle planning/control only",
+            "separate implementation-entry freeze",
+            "terminal pre-approval revision-control state",
+        ):
+            if term not in next_required:
+                errors.append(f"manifest next_required_decision missing revision recovery term: {term}")
+
+    slices = manifest.get("layer3_workbench_slices")
+    if not isinstance(slices, list):
+        errors.append("layer3_workbench_slices missing for revision recovery freeze")
+    else:
+        matches = [
+            item
+            for item in slices
+            if isinstance(item, dict)
+            and item.get("slice_id") == "plan-revision-recovery-lifecycle-freeze"
+        ]
+        if len(matches) != 1:
+            errors.append(
+                "layer3_workbench_slices must contain exactly one "
+                "plan-revision-recovery-lifecycle-freeze record"
+            )
+        else:
+            item = matches[0]
+            if item.get("main_state") != "planning_only_plan_revision_recovery_lifecycle_freeze":
+                errors.append("revision recovery slice must be planning_only_plan_revision_recovery_lifecycle_freeze")
+            docs = item.get("governing_docs")
+            if not isinstance(docs, list):
+                errors.append("revision recovery slice missing governing_docs")
+            else:
+                for doc in (
+                    "next_milestone_plans/Layer3_planning_docs/132_PLAN_REVISION_RECOVERY_FREEZE.md",
+                    "next_milestone_plans/Layer3_planning_docs/133_PLAN_REVISION_RECOVERY_CONTRACT.md",
+                    "tools/l3-progress-check.py",
+                ):
+                    if doc not in docs:
+                        errors.append(f"revision recovery slice governing_docs missing {doc}")
+            explicit_non_goals = item.get("explicit_non_goals")
+            if not isinstance(explicit_non_goals, list):
+                errors.append("revision recovery slice missing explicit_non_goals")
+            else:
+                for blocked in (
+                    "runtime recovery implementation",
+                    "approved-plan reopening, cancellation, deletion, replacement, or supersession",
+                    "L3PassRun creation",
+                    "AnalysisRun creation",
+                    "connector/destination dispatch",
+                    "broad qualitative/hybrid/RAG execution",
+                    "authentication/security hardening",
+                ):
+                    if blocked not in explicit_non_goals:
+                        errors.append(f"revision recovery explicit_non_goals missing {blocked}")
+
+    state_model_text = _read_required_text(STATE_MODEL_CONTRACT_SERVICE, errors)
+    for state in ("plan_rejected", "plan_revision_requested"):
+        marker = f'"state": "{state}"'
+        location = state_model_text.find(marker)
+        if location == -1:
+            errors.append(f"state model missing revision terminal state {state}")
+            continue
+        window = state_model_text[location : location + 350]
+        if '"allowed_next_actions": []' not in window:
+            errors.append(f"state model must keep {state} terminal until recovery runtime is admitted")
 
 
 def _check_referenced_paths(manifest: dict[str, Any], errors: list[str]) -> None:
@@ -2586,7 +2732,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice, package replacement namespace planning/control freeze, package replacement namespace implementation-entry freeze, and bounded package replacement namespace runtime.",
+            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice, package replacement namespace planning/control freeze, package replacement namespace implementation-entry freeze, bounded package replacement namespace runtime, and planning/control plan revision recovery freeze.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -4452,6 +4598,7 @@ def main() -> int:
         _check_package_namespace_progress_sync(manifest, errors)
         _check_summary_counts(manifest, errors)
         _check_current_decision(manifest, errors)
+        _check_plan_revision_recovery_freeze(manifest, errors)
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
     _check_connector_dispatch_entry_freeze(errors)
