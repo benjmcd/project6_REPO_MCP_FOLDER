@@ -76,8 +76,14 @@ from app.services.layer3_gate_b_state import (
 from app.services.layer3_plan_revision_state import (
     PLAN_REVISION_CONTROL_CONTEXT_KEY,
     PLAN_REVISION_DECISIONS,
+    PLAN_REVISION_RECOVERY_DECISION,
     plan_revision_control_from_session as _plan_revision_control_from_session,
+    plan_revision_recovery_from_session as _plan_revision_recovery_from_session,
     plan_revision_control_record,
+)
+from app.services.layer3_plan_revision_recovery import (
+    plan_revision_recovery_preview_marker as _plan_revision_recovery_preview_marker,
+    recover_plan_revision_for_preview_refresh as _recover_plan_revision_for_preview_refresh,
 )
 from app.services.layer3_signed_reference_state import (
     SignedReferenceDurableState,
@@ -596,6 +602,7 @@ def _workbench_state_action_contract() -> dict[str, Any]:
         plan_preview_unavailable_gate_labels=PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE,
         gate_b_decisions=GATE_B_DECISIONS,
         plan_revision_decisions=PLAN_REVISION_DECISIONS,
+        plan_revision_recovery_decisions=(PLAN_REVISION_RECOVERY_DECISION,),
         execution_result_review_decisions=EXECUTION_RESULT_REVIEW_DECISIONS,
         package_review_submit_decisions=PACKAGE_REVIEW_SUBMIT_DECISIONS,
         handoff_export_prepare_decisions=HANDOFF_EXPORT_PREPARE_DECISIONS,
@@ -2346,7 +2353,26 @@ def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
     analysis_plan = _latest_analysis_plan(db, session_id=session_id)
     pass_run_count = db.query(L3PassRun).filter(L3PassRun.session_id == session_id).count()
     if analysis_plan is None:
+        session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
+        recovery = _plan_revision_recovery_from_session(session)
         preview = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
+        if recovery is not None:
+            return {
+                "schema_id": "layer3.plan_approval_readiness.v1",
+                "available": False,
+                "approved": False,
+                "blocked_reason": "plan_preview_refresh_required",
+                "analysis_plan_id": None,
+                "plan_status": None,
+                "approved_by_operator": False,
+                "approved_at": None,
+                "approved_set_count": preview["admitted_set_count"],
+                "excluded_set_count": preview["excluded_set_count"],
+                "planned_pass_count": preview["planned_pass_count"],
+                "pass_run_count": pass_run_count,
+                "preview_refresh_required": True,
+                "plan_revision_recovery_id": recovery.get("recovery_id"),
+            }
         return {
             "schema_id": "layer3.plan_approval_readiness.v1",
             "available": preview["available"],
@@ -2382,9 +2408,29 @@ def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
 
 
 def _plan_revision_summary(db: Session, *, session_id: str) -> dict[str, Any]:
-    control = _plan_revision_control(db, session_id=session_id)
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
+    control = _plan_revision_control_from_session(session)
     if control is None:
+        recovery = _plan_revision_recovery_from_session(session)
         preview = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
+        if recovery is not None:
+            return {
+                "schema_id": "layer3.plan_revision_readiness.v1",
+                "available": preview["available"],
+                "state": recovery.get("state"),
+                "blocked_reason": preview["blocked_reason"],
+                "source_revision_state": recovery.get("source_revision_state"),
+                "source_preview_id": recovery.get("source_preview_id"),
+                "source_preview_hash": recovery.get("source_preview_hash"),
+                "operator_decision": recovery.get("operator_decision"),
+                "operator_note_recorded": bool(recovery.get("operator_note_recorded")),
+                "approval_available": False,
+                "execution_started": False,
+                "preview_refresh_required": True,
+                "recovered": True,
+                "recovery_id": recovery.get("recovery_id"),
+                "created_at": recovery.get("created_at"),
+            }
         return {
             "schema_id": "layer3.plan_revision_readiness.v1",
             "available": preview["available"],
@@ -2512,6 +2558,9 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         "warnings": [dict(item) for item in owner_preview.warnings],
         "owner_service_basis": dict(owner_preview.owner_service_basis),
     }
+    recovery_marker = _plan_revision_recovery_preview_marker(_plan_revision_recovery_from_session(session))
+    if recovery_marker is not None:
+        plan_preview_payload["revision_recovery"] = recovery_marker
     preview_id = _stable_id("plan-preview", {"session_id": session_id, "plan_preview": plan_preview_payload})
     return {
         **_base_response("layer3.plan_preview_result.v1", request_id=request_id),
@@ -2804,6 +2853,10 @@ def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         "downstream_unavailable": list(PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE),
         "plan_revision_control": control,
     }
+
+
+def plan_revision_recovery(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    return _recover_plan_revision_for_preview_refresh(db, payload)
 
 
 def _execution_selection_from_session(session: L3Session | None) -> dict[str, Any] | None:
@@ -10406,6 +10459,48 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     plan_preview_readiness = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
     plan_approval_readiness = _plan_approval_summary(db, session_id=session_id)
     plan_revision_readiness = _plan_revision_summary(db, session_id=session_id)
+    active_revision_control = _plan_revision_control_from_session(session)
+    recorded_revision_recovery = _plan_revision_recovery_from_session(session)
+    if recorded_revision_recovery is not None:
+        plan_revision_recovery_state = {
+            "schema_id": "layer3.plan_revision_recovery_readiness.v1",
+            "available": False,
+            "state": recorded_revision_recovery.get("state"),
+            "blocked_reason": "plan_preview_refresh_required",
+            "source_revision_state": recorded_revision_recovery.get("source_revision_state"),
+            "source_preview_id": recorded_revision_recovery.get("source_preview_id"),
+            "source_preview_hash": recorded_revision_recovery.get("source_preview_hash"),
+            "preview_refresh_required": True,
+            "approval_available": False,
+            "execution_started": False,
+            "recovery_id": recorded_revision_recovery.get("recovery_id"),
+        }
+    elif active_revision_control is not None:
+        plan_revision_recovery_state = {
+            "schema_id": "layer3.plan_revision_recovery_readiness.v1",
+            "available": True,
+            "state": active_revision_control.get("state"),
+            "blocked_reason": None,
+            "source_revision_state": active_revision_control.get("state"),
+            "source_preview_id": active_revision_control.get("source_preview_id"),
+            "source_preview_hash": active_revision_control.get("source_preview_hash"),
+            "preview_refresh_required": False,
+            "approval_available": False,
+            "execution_started": False,
+        }
+    else:
+        plan_revision_recovery_state = {
+            "schema_id": "layer3.plan_revision_recovery_readiness.v1",
+            "available": False,
+            "state": None,
+            "blocked_reason": "plan_revision_recovery_not_available",
+            "source_revision_state": None,
+            "source_preview_id": None,
+            "source_preview_hash": None,
+            "preview_refresh_required": False,
+            "approval_available": False,
+            "execution_started": False,
+        }
     execution_selection_readiness = _execution_selection_summary(db, session_id=session_id)
     analysis_execution_start_state = (session.summary_json or {}).get("analysis_execution_start")
     execution_result_review_state = (session.summary_json or {}).get("execution_result_review")
@@ -10492,6 +10587,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "plan_preview": plan_preview_readiness,
         "plan_approval": plan_approval_readiness,
         "plan_revision": plan_revision_readiness,
+        "plan_revision_recovery": plan_revision_recovery_state,
         "execution_selection": execution_selection_readiness,
         "analysis_execution_start": analysis_execution_start_state,
         "execution_result_review": execution_result_review_state,

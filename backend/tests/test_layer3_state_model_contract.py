@@ -5,7 +5,7 @@ from app.services.layer3_state_model_contract import (
 )
 
 
-def test_layer3_state_model_contract_is_shared_without_behavior_change() -> None:
+def test_layer3_state_model_contract_is_shared() -> None:
     direct_state_model = build_workbench_state_model(
         state_names=layer3_workbench.WORKBENCH_STATE_MODEL_STATE_NAMES
     )
@@ -21,3 +21,6 @@ def test_layer3_state_model_contract_is_shared_without_behavior_change() -> None
         state["state"] == "external_export_download_delivery_ready"
         for state in readiness_state_model["states"]
     )
+    state_by_name = {state["state"]: state for state in readiness_state_model["states"]}
+    assert state_by_name["plan_rejected"]["allowed_next_actions"] == ["plan_revision_recover"]
+    assert state_by_name["plan_revision_requested"]["allowed_next_actions"] == ["plan_revision_recover"]
