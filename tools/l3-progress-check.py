@@ -6958,28 +6958,22 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                 "scope.latest_package_identity_map_extraction_branch must be 'codex/l3-package-identity-maps'"
             )
         identity_map_pr = proof_scope.get("latest_package_identity_map_extraction_pr")
-        if identity_map_pr != "pending" and not (
-            isinstance(identity_map_pr, str) and re.fullmatch(r"#\d+", identity_map_pr)
-        ):
+        if identity_map_pr != "#663":
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_identity_map_extraction_pr must be 'pending' or a PR number"
+                "scope.latest_package_identity_map_extraction_pr must be '#663'"
             )
         identity_map_head = proof_scope.get("latest_package_identity_map_extraction_head_commit")
-        if identity_map_head != "pending" and not (
-            isinstance(identity_map_head, str) and re.fullmatch(r"[0-9a-f]{40}", identity_map_head)
-        ):
+        if identity_map_head != "e41ba5cfed255d1ab4bc3c1e1bb9e77c445c259d":
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_identity_map_extraction_head_commit must be 'pending' or a 40-character commit"
+                "scope.latest_package_identity_map_extraction_head_commit must match PR #663 head commit"
             )
         identity_map_merge = proof_scope.get("latest_package_identity_map_extraction_merge_commit")
-        if identity_map_merge != "pending" and not (
-            isinstance(identity_map_merge, str) and re.fullmatch(r"[0-9a-f]{40}", identity_map_merge)
-        ):
+        if identity_map_merge != "a3e9305a716fd9a07c5d0340ce54dd85ece7fa44":
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_identity_map_extraction_merge_commit must be 'pending' or a 40-character commit"
+                "scope.latest_package_identity_map_extraction_merge_commit must match PR #663 merge commit"
             )
         if proof_scope.get("latest_package_identity_map_extraction_live_behavior_change") is not False:
             errors.append(
@@ -6989,6 +6983,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         identity_map_summary = proof_scope.get("latest_package_identity_map_extraction_summary")
         for term in (
             "package identity map extraction",
+            "PR #663",
+            "merge commit a3e9305a716fd9a07c5d0340ce54dd85ece7fa44",
             "review_package_ref_map",
             "review_package_hash_map",
             "without activating package mutation/reconstruction",
@@ -7010,6 +7006,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "legacy_package_review_submit_record_ref",
             "latest_package_identity_map_extraction_branch",
             "package_identity_map_extraction",
+            "PR #663/merge commit a3e9305a",
             "review_package_ref_map",
             "without activating package mutation/reconstruction",
         ),
@@ -7019,8 +7016,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "Package submit state helper extraction",
             "package_review_submit_downstream_unavailable",
             "Package identity map extraction",
+            "PR `#663`, merge commit `a3e9305a`",
             "review_package_hash_map",
-            "without changing package-review preview behavior",
+            "without changing package handoff/export identity-map behavior",
         ),
     }.items():
         text = _read_required_text(path, errors)
