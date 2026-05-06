@@ -87,6 +87,9 @@ HANDOFF_CONTRACT_SERVICE = (
 PACKAGE_REVIEW_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_package_review_contract.py"
 )
+WORKBENCH_PACKAGE_STATE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_workbench_package_state.py"
+)
 EXTERNAL_EXPORT_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_export_contract.py"
 )
@@ -205,6 +208,9 @@ LAYER3_HANDOFF_CONTRACT_TEST = (
 )
 LAYER3_PACKAGE_REVIEW_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_package_review_contract.py"
+)
+LAYER3_WORKBENCH_PACKAGE_STATE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_workbench_package_state.py"
 )
 LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_external_export_contract.py"
@@ -5247,6 +5253,28 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         if term not in test_text:
             errors.append(f"{_rel(LAYER3_PACKAGE_REVIEW_CONTRACT_TEST)} missing package review contract test term: {term}")
 
+    package_state_text = _read_required_text(WORKBENCH_PACKAGE_STATE_SERVICE, errors)
+    for term in (
+        "def packages_in_kind_order(",
+        "def packages_with_kinds(",
+        "def dispatched_package_id(",
+        "def unexpected_package_kinds(",
+        "def canonical_payload_values(",
+    ):
+        if term not in package_state_text:
+            errors.append(f"{_rel(WORKBENCH_PACKAGE_STATE_SERVICE)} missing package-state helper term: {term}")
+
+    package_state_test_text = _read_required_text(LAYER3_WORKBENCH_PACKAGE_STATE_TEST, errors)
+    for term in (
+        "test_packages_in_kind_order_returns_canonical_order",
+        "test_packages_with_kinds_filters_without_mutating_order",
+        "test_dispatched_package_id_requires_dispatched_state_and_expected_kind",
+        "test_unexpected_package_kinds_allows_source_kinds_and_exact_dispatched_aps_package",
+        "test_canonical_payload_values_accepts_list_and_dict_identity_forms",
+    ):
+        if term not in package_state_test_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
+
     required_doc_terms = {
         SYNTHESIS_BOUNDARY: (
             "package review/construction/submit contract extraction",
@@ -5266,6 +5294,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "PR #580 package review/construction/submit contract extraction proof",
             "layer3_package_review_contract.py",
             "test_layer3_package_review_contract.py",
+            "test_layer3_workbench_package_state.py",
+            "package-state helper proof",
             "proof_snapshot_head: `9cdd1e88`",
             "Focused package-review-contract suite: 2 passed.",
             "Focused package review API regression: 13 passed, 116 deselected, 4 warnings.",
@@ -5275,6 +5305,16 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "Post-merge full Layer 3 backend suite: 300 passed, 4 warnings.",
             "proof/refactor hardening through PR #584",
             "No package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.",
+        ),
+        MANIFEST: (
+            "test_layer3_workbench_package_state.py",
+            "package-state helper proof",
+            "without activating package mutation",
+        ),
+        BOARD: (
+            "test_layer3_workbench_package_state.py",
+            "package-state helper proof hardening",
+            "without activating package mutation/reconstruction",
         ),
     }
     for path, terms in required_doc_terms.items():
@@ -5517,6 +5557,8 @@ def main() -> int:
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
         LAYER3_PACKAGE_REVIEW_CONTRACT_TEST,
+        WORKBENCH_PACKAGE_STATE_SERVICE,
+        LAYER3_WORKBENCH_PACKAGE_STATE_TEST,
         LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
