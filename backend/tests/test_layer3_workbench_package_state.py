@@ -7,12 +7,16 @@ from app.services.layer3_workbench_package_state import (
     PACKAGE_REVIEW_PREVIEW_READY_STATE,
     PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
     active_downstream_unavailable,
+    canonical_payload_hashes,
+    canonical_payload_refs,
     canonical_payload_values,
     dispatched_package_id,
     package_review_candidate_projection,
     package_review_preview_summary,
+    packages_in_review_order,
     packages_in_kind_order,
     packages_with_kinds,
+    review_source_packages,
     review_state_is_admitted_associated_cohort,
     state_downstream_unavailable,
     unexpected_package_kinds,
@@ -204,6 +208,32 @@ def test_packages_with_kinds_filters_without_mutating_order() -> None:
     assert [package.output_package_id for package in filtered] == ["pkg-internal", "pkg-review"]
 
 
+def test_review_source_packages_filters_to_package_review_candidate_kinds() -> None:
+    packages = [
+        _package("canonical_internal", "pkg-internal", payload_ref="ref-internal", payload_hash="hash-internal"),
+        _package("debug", "pkg-debug", payload_ref="ref-debug", payload_hash="hash-debug"),
+        _package("review_facing", "pkg-review", payload_ref="ref-review", payload_hash="hash-review"),
+        _package("user_facing", "pkg-user", payload_ref="ref-user", payload_hash="hash-user"),
+    ]
+
+    filtered = review_source_packages(packages)
+
+    assert [package.output_package_id for package in filtered] == ["pkg-internal", "pkg-review", "pkg-user"]
+
+
+def test_packages_in_review_order_uses_package_review_candidate_order() -> None:
+    packages = [
+        _package("user_facing", "pkg-user", payload_ref="ref-user", payload_hash="hash-user"),
+        _package("review_facing", "pkg-review", payload_ref="ref-review", payload_hash="hash-review"),
+        _package("canonical_internal", "pkg-internal", payload_ref="ref-internal", payload_hash="hash-internal"),
+    ]
+
+    ordered = packages_in_review_order(packages)
+
+    assert [package.package_kind for package in ordered] == list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    assert [package.output_package_id for package in ordered] == ["pkg-internal", "pkg-user", "pkg-review"]
+
+
 def test_dispatched_package_id_requires_dispatched_state_and_expected_kind() -> None:
     dispatch_state = {
         "aps_handoff_state": "aps_handoff_dispatched",
@@ -293,6 +323,42 @@ def test_canonical_payload_values_accepts_list_and_dict_identity_forms() -> None
             packages=packages,
             package_kinds=package_kinds,
             package_attr="payload_hash",
+        )
+        is None
+    )
+
+
+def test_canonical_payload_hashes_and_refs_use_review_package_identity_forms() -> None:
+    packages = [
+        _package("canonical_internal", "pkg-internal", payload_ref="ref-internal", payload_hash="hash-internal"),
+        _package("review_facing", "pkg-review", payload_ref="ref-review", payload_hash="hash-review"),
+        _package("user_facing", "pkg-user", payload_ref="ref-user", payload_hash="hash-user"),
+    ]
+
+    assert canonical_payload_hashes(
+        payload_hashes={
+            "canonical_internal": "hash-internal",
+            "user_facing": "hash-user",
+            "review_facing": "hash-review",
+        },
+        packages=packages,
+    ) == ["hash-internal", "hash-user", "hash-review"]
+    assert canonical_payload_refs(
+        payload_refs={
+            "pkg-internal": "ref-internal",
+            "pkg-user": "ref-user",
+            "pkg-review": "ref-review",
+        },
+        packages=packages,
+    ) == ["ref-internal", "ref-user", "ref-review"]
+    assert (
+        canonical_payload_hashes(
+            payload_hashes={
+                "canonical_internal": "hash-internal",
+                "user_facing": "wrong",
+                "review_facing": "hash-review",
+            },
+            packages=packages,
         )
         is None
     )

@@ -165,6 +165,14 @@ def packages_with_kinds(
     return [package for package in packages if package.package_kind in source_kinds]
 
 
+def packages_in_review_order(packages: list[L3OutputPackage]) -> list[L3OutputPackage]:
+    return packages_in_kind_order(packages, package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+
+
+def review_source_packages(packages: list[L3OutputPackage]) -> list[L3OutputPackage]:
+    return packages_with_kinds(packages, package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+
+
 def dispatched_package_id(
     dispatch_state: dict[str, Any] | None,
     *,
@@ -228,3 +236,29 @@ def canonical_payload_values(
         if normalized == by_id:
             return expected_values
     return None
+
+
+def canonical_payload_hashes(
+    *,
+    payload_hashes: Any,
+    packages: list[L3OutputPackage],
+) -> list[str] | None:
+    return canonical_payload_values(
+        values=payload_hashes,
+        packages=packages,
+        package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
+        package_attr="payload_hash",
+    )
+
+
+def canonical_payload_refs(
+    *,
+    payload_refs: Any,
+    packages: list[L3OutputPackage],
+) -> list[str] | None:
+    return canonical_payload_values(
+        values=payload_refs,
+        packages=packages,
+        package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
+        package_attr="payload_ref",
+    )

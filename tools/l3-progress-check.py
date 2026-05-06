@@ -6441,6 +6441,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "package_review_preview_summary(",
         "package_review_candidate_projection(",
         "review_state_is_admitted_associated_cohort(",
+        "packages_in_review_order as _packages_in_review_order",
+        "review_source_packages as _review_source_packages",
+        "canonical_payload_hashes as _canonical_payload_hashes",
+        "canonical_payload_refs as _canonical_payload_refs",
         "blocked_payload_fields = package_review_preview_blocked_fields(payload)",
         "blocked_payload_fields = package_construction_commit_blocked_fields(payload)",
         "blocked_payload_fields = package_review_submit_blocked_fields(payload)",
@@ -6462,6 +6466,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def _package_review_preview_summary(",
         "def _package_review_candidate_projection(",
         "def _review_state_is_admitted_associated_cohort(",
+        "def _packages_in_review_order(",
+        "def _review_source_packages(",
+        "def _canonical_payload_hashes(",
+        "def _canonical_payload_refs(",
     ):
         if stale_term in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns package review contract term: {stale_term}")
@@ -6490,6 +6498,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def package_review_preview_summary(",
         "def package_review_candidate_projection(",
         "def review_state_is_admitted_associated_cohort(",
+        "def packages_in_review_order(",
+        "def review_source_packages(",
+        "def canonical_payload_hashes(",
+        "def canonical_payload_refs(",
     ):
         if term not in package_state_text:
             errors.append(f"{_rel(WORKBENCH_PACKAGE_STATE_SERVICE)} missing package-state helper term: {term}")
@@ -6506,6 +6518,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "test_package_review_preview_summary_preserves_approved_projection_and_clones_source_ids",
         "test_package_review_preview_summary_uses_cohort_downstream_for_admitted_associated_cohort",
         "test_review_state_is_admitted_associated_cohort_requires_exact_source_authority",
+        "test_review_source_packages_filters_to_package_review_candidate_kinds",
+        "test_packages_in_review_order_uses_package_review_candidate_order",
+        "test_canonical_payload_hashes_and_refs_use_review_package_identity_forms",
     ):
         if term not in package_state_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
@@ -6581,6 +6596,43 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_package_review_preview_state_extraction_summary "
                     f"missing package preview state extraction term: {term}"
                 )
+        if proof_scope.get("latest_package_review_package_set_helper_extraction_branch") != (
+            "codex/l3-package-summary-state"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_review_package_set_helper_extraction_branch "
+                "must be 'codex/l3-package-summary-state'"
+            )
+        package_set_pr = proof_scope.get("latest_package_review_package_set_helper_extraction_pr")
+        if package_set_pr != "pending" and not (
+            isinstance(package_set_pr, str) and re.fullmatch(r"#\d+", package_set_pr)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_review_package_set_helper_extraction_pr "
+                "must be 'pending' or a PR number"
+            )
+        if proof_scope.get("latest_package_review_package_set_helper_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_review_package_set_helper_extraction_live_behavior_change must be False"
+            )
+        package_set_summary = proof_scope.get("latest_package_review_package_set_helper_extraction_summary")
+        for term in (
+            "package-set helper extraction",
+            "packages_in_review_order",
+            "review_source_packages",
+            "canonical_payload_hashes",
+            "canonical_payload_refs",
+            "without activating package mutation/reconstruction",
+        ):
+            if not isinstance(package_set_summary, str) or term not in package_set_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_package_review_package_set_helper_extraction_summary "
+                    f"missing package set helper extraction term: {term}"
+                )
 
     required_doc_terms = {
         SYNTHESIS_BOUNDARY: (
@@ -6620,10 +6672,12 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "f1cba09a84a47d0095a7fd682b835316ebde5496",
             "latest_workbench_package_state_helper_proof_pr",
             "latest_package_review_preview_state_extraction_branch",
+            "latest_package_review_package_set_helper_extraction_branch",
             "c1448bbd799c003b172514da1b04ac70495a4dca",
             "test_layer3_workbench_package_state.py",
             "package-state helper proof",
             "package-review preview state extraction",
+            "package-set helper extraction",
             "without activating package mutation",
         ),
         BOARD: (
@@ -6632,6 +6686,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "test_layer3_workbench_package_state.py",
             "package-state helper proof hardening",
             "package-review preview state extraction",
+            "package-set helper extraction",
             "without activating package mutation/reconstruction",
         ),
     }
