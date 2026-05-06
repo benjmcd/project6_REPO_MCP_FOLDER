@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Current main now includes PR #609 no-behavior-change APS source-family extraction after PR #607 package-state helper proof hardening, PR #605 direct owner-service proof for the bounded plan_revision_recovery_preview_refresh_entry runtime, direct owner-service proof for approved_plan_cancel_without_replacement, PR #634 preflight manual_constraints request-boundary hardening for forbidden sentinel fields, PR #635 no-behavior-change plan-preview source-class extraction, PR #636 no-behavior-change approved-plan payload projection extraction, and PR #637 no-behavior-change plan-flow state lookup extraction. Broader approved-plan correction modes and all deferred broad capabilities remain blocked. This status retains the package artifact manifest runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, the package replacement artifact manifest-only runtime proof boundary, and the external post-PR609 synthesis/adjudication reference at C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md.",
+  "status": "Current main now includes PR #609 no-behavior-change APS source-family extraction after PR #607 package-state helper proof hardening, PR #605 direct owner-service proof for the bounded plan_revision_recovery_preview_refresh_entry runtime, direct owner-service proof for approved_plan_cancel_without_replacement, PR #634 preflight manual_constraints request-boundary hardening for forbidden sentinel fields, PR #635 no-behavior-change plan-preview source-class extraction, PR #636 no-behavior-change approved-plan payload projection extraction, and PR #637 no-behavior-change plan-flow state lookup extraction. PR #638 extends the same no-behavior-change posture with plan-flow readiness summary extraction. Broader approved-plan correction modes and all deferred broad capabilities remain blocked. This status retains the package artifact manifest runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, the package replacement artifact manifest-only runtime proof boundary, and the external post-PR609 synthesis/adjudication reference at C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md.",
   "scope": {
     "source_branch": "codex/l3-synth-ref-sync",
     "merged_pr": "#609",
@@ -38,6 +38,11 @@
     "latest_plan_flow_state_lookup_extraction_commit": "8df929be",
     "latest_plan_flow_state_lookup_extraction_live_behavior_change": false,
     "latest_plan_flow_state_lookup_extraction_summary": "PR #637 moves latest analysis-plan lookup ordering and active plan-revision-control lookup from backend/app/services/layer3_workbench.py into backend/app/services/layer3_plan_flow_state.py. Workbench delegates through the existing _latest_analysis_plan and _plan_revision_control aliases, and backend/tests/test_layer3_plan_flow_state.py proves ordering, recovery-state filtering, and delegation. It admits no route, DTO, model, migration, UI, execution, package, connector, provider/public URL, source expansion, qualitative/hybrid/RAG, full mockup, auth/security, or broad workbench behavior.",
+    "latest_plan_flow_readiness_summary_extraction_branch": "codex/l3-plan-flow-readiness-extract",
+    "latest_plan_flow_readiness_summary_extraction_pr": "#638",
+    "latest_plan_flow_readiness_summary_extraction_commit": "d5e782c4",
+    "latest_plan_flow_readiness_summary_extraction_live_behavior_change": false,
+    "latest_plan_flow_readiness_summary_extraction_summary": "PR #638 moves plan-preview readiness, plan-approval summary, and plan-revision summary projection helpers from backend/app/services/layer3_workbench.py into backend/app/services/layer3_plan_flow_readiness.py. Workbench delegates through the existing _plan_preview_readiness, _plan_approval_summary, and _plan_revision_summary aliases, and backend/tests/test_layer3_plan_flow_readiness.py proves cancelled-plan readiness, approved-plan cancellation clone/delegation, and plan-revision-control summary delegation. It admits no route, DTO, model, migration, UI, execution, package, connector, provider/public URL, source expansion, qualitative/hybrid/RAG, full mockup, auth/security, or broad workbench behavior.",
     "synthesis_adjudication_reference": "C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md",
     "synthesis_adjudication_next_actions": [
       "progress/proof refresh first",
@@ -3776,11 +3781,13 @@
     ]
   },
   "plan_flow_request_contract_extraction_current_boundary_proof": {
-    "scope": "Current-main proof classification for no-behavior-change plan-flow request contract extraction after PR #584, extended by PR #635 plan-preview source-class derivation extraction, PR #636 approved-plan payload projection extraction, and PR #637 plan-flow state lookup extraction.",
+    "scope": "Current-main proof classification for no-behavior-change plan-flow request contract extraction after PR #584, extended by PR #635 plan-preview source-class derivation extraction, PR #636 approved-plan payload projection extraction, PR #637 plan-flow state lookup extraction, and PR #638 plan-flow readiness summary extraction.",
     "files_changed": [
       "backend/app/services/layer3_plan_flow_contract.py",
+      "backend/app/services/layer3_plan_flow_readiness.py",
       "backend/app/services/layer3_workbench.py",
       "backend/tests/test_layer3_plan_flow_contract.py",
+      "backend/tests/test_layer3_plan_flow_readiness.py",
       "tools/l3-progress-check.py",
       "next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md",
       "next_milestone_plans/Layer3_planning_docs/118_L3_GOAL_AUDIT.md",
@@ -3791,13 +3798,16 @@
       "PR #635 extends the same extraction posture by moving plan-preview source-class derivation into backend/app/services/layer3_plan_flow_contract.py without changing emitted authority-rail source_classes.",
       "PR #636 extends the same extraction posture by moving approved-plan set/pass payload projection into backend/app/services/layer3_plan_flow_contract.py without changing approved-plan payload semantics.",
       "PR #637 adds backend/app/services/layer3_plan_flow_state.py for latest analysis-plan ordering and active plan-revision-control lookup without changing workbench state semantics.",
+      "PR #638 adds backend/app/services/layer3_plan_flow_readiness.py for plan-preview readiness, plan-approval summary, and plan-revision summary projections without changing emitted workbench summary semantics.",
       "backend/app/services/layer3_plan_flow_contract.py owns plan approval, plan revision, and execution selection forbidden-field constants and blocked-field helper functions.",
       "backend/app/services/layer3_plan_flow_contract.py owns source_classes_from_plan_preview for the existing plan-preview, plan-approval, and plan-revision authority-rail projection.",
       "backend/app/services/layer3_plan_flow_contract.py owns approved_set_payload and approved_planned_pass_payload for the existing plan-approval projection.",
       "backend/app/services/layer3_plan_flow_state.py owns latest_analysis_plan and plan_revision_control_for_session for the existing plan-flow state lookup behavior.",
-      "backend/app/services/layer3_workbench.py imports those helpers and no longer owns the extracted plan-flow request constants, plan-preview source-class helper, approved-plan payload projection helpers, or state lookup helpers.",
+      "backend/app/services/layer3_plan_flow_readiness.py owns plan_preview_readiness, plan_approval_summary, and plan_revision_summary for the existing plan-flow readiness projection behavior.",
+      "backend/app/services/layer3_workbench.py imports those helpers and no longer owns the extracted plan-flow request constants, plan-preview source-class helper, approved-plan payload projection helpers, state lookup helpers, or readiness summary helpers.",
       "backend/tests/test_layer3_plan_flow_contract.py proves shared constants/helpers preserve the previous blocked-field behavior, source-class derivation/delegation, and approved-plan payload projection/delegation.",
-      "backend/tests/test_layer3_plan_flow_state.py proves latest plan ordering, recovery-state filtering, and workbench delegation."
+      "backend/tests/test_layer3_plan_flow_state.py proves latest plan ordering, recovery-state filtering, and workbench delegation.",
+      "backend/tests/test_layer3_plan_flow_readiness.py proves cancelled-plan readiness, approved-plan cancellation clone/delegation, and plan-revision-control summary delegation."
     ],
     "non_goals": [
       "runtime behavior change",

@@ -4940,12 +4940,17 @@ def _check_plan_error_extraction(errors: list[str]) -> None:
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
         "from app.services.layer3_plan_errors import plan_approval_workbench_error, plan_preview_workbench_error",
-        "blocked_reason = plan_preview_workbench_error(exc).error_code",
         "raise plan_preview_workbench_error(exc) from exc",
         "raise plan_approval_workbench_error(exc) from exc",
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing plan-error extraction delegation term: {term}")
+    readiness_text = _read_required_text(PLAN_FLOW_READINESS_SERVICE, errors)
+    if "blocked_reason = plan_preview_workbench_error(exc).error_code" not in readiness_text:
+        errors.append(
+            f"{_rel(PLAN_FLOW_READINESS_SERVICE)} missing plan-error extraction delegation term: "
+            "blocked_reason = plan_preview_workbench_error(exc).error_code"
+        )
     for stale_term in (
         "def _plan_preview_error(",
         "def _plan_approval_error(",
@@ -5715,8 +5720,8 @@ def _check_plan_flow_readiness_extraction(errors: list[str]) -> None:
             "test_layer3_plan_flow_readiness.py",
             "does not admit route, DTO, model, migration, UI, execution, package, connector",
         ),
-        PROGRESS_MANIFEST: (
-            "merged_live_plan_flow_readiness_summary_extraction",
+        MANIFEST: (
+            "plan_flow_readiness_summary_extraction_pr638",
             "plan-flow readiness summary extraction",
             "layer3_plan_flow_readiness.py",
             "test_layer3_plan_flow_readiness.py",
