@@ -6079,6 +6079,11 @@ def _check_execution_selection_summary_extraction(errors: list[str]) -> None:
         "PLAN_STATUS_APPROVED",
         "execution_selection_already_exists",
         "pass_runs_already_exist",
+        "EXECUTION_SELECTION_SCHEMA_ID = \"layer3.execution_selection.v1\"",
+        "def execution_selection_response(",
+        "base_response(EXECUTION_SELECTION_SCHEMA_ID",
+        "preview_identity(preview_id=preview_id, preview_hash=preview_hash)",
+        "execution_state_for_pass_runs(pass_runs)",
     ):
         if term not in service_text:
             errors.append(f"{_rel(EXECUTION_SELECTION_SERVICE)} missing execution selection summary term: {term}")
@@ -6087,6 +6092,8 @@ def _check_execution_selection_summary_extraction(errors: list[str]) -> None:
     for term in (
         "from app.services.layer3_execution_selection import (",
         "EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE",
+        "EXECUTION_SELECTION_SCHEMA_ID",
+        "execution_selection_response as _execution_selection_response",
         "execution_selection_summary as _execution_selection_summary",
     ):
         if term not in workbench_text:
@@ -6094,6 +6101,7 @@ def _check_execution_selection_summary_extraction(errors: list[str]) -> None:
     for stale_term in (
         "EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = (\"results\", \"package\", \"handoff\")",
         "def _execution_selection_summary(",
+        "def _execution_selection_response(",
     ):
         if stale_term in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns execution selection summary term: {stale_term}")
@@ -6103,7 +6111,10 @@ def _check_execution_selection_summary_extraction(errors: list[str]) -> None:
         "test_execution_selection_summary_reports_available_approved_plan",
         "test_execution_selection_summary_preserves_existing_selection_projection",
         "test_execution_selection_summary_preserves_blocked_reasons",
+        "test_execution_selection_response_preserves_workbench_projection",
         "layer3_workbench._execution_selection_summary",
+        "layer3_workbench._execution_selection_response",
+        "EXECUTION_PASS_COMPLETED_STATE",
         "pass_runs_already_exist",
     ):
         if term not in test_text:
@@ -6112,19 +6123,24 @@ def _check_execution_selection_summary_extraction(errors: list[str]) -> None:
     for path, terms in {
         BOARD: (
             "execution selection summary extraction",
+            "execution selection response extraction",
             "layer3_execution_selection.py",
             "test_layer3_execution_selection.py",
             "does not admit route, DTO, model, migration, UI, execution behavior",
         ),
         MANIFEST: (
             "execution_selection_summary_extraction_pr",
+            "execution_selection_response_extraction_pr",
             "execution selection summary extraction",
+            "execution selection response extraction",
             "layer3_execution_selection.py",
             "test_layer3_execution_selection.py",
         ),
         PROOF_MANIFEST: (
             "latest_execution_selection_summary_extraction_branch",
+            "latest_execution_selection_response_extraction_branch",
             "latest_execution_selection_summary_extraction_live_behavior_change",
+            "latest_execution_selection_response_extraction_live_behavior_change",
             "backend/app/services/layer3_execution_selection.py",
             "backend/tests/test_layer3_execution_selection.py",
         ),

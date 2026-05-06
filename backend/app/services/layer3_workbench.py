@@ -78,6 +78,8 @@ from app.services.layer3_execution_review import (
 )
 from app.services.layer3_execution_selection import (
     EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE,
+    EXECUTION_SELECTION_SCHEMA_ID,
+    execution_selection_response as _execution_selection_response,
     execution_selection_summary as _execution_selection_summary,
 )
 from app.services.layer3_plan_errors import plan_approval_workbench_error, plan_preview_workbench_error
@@ -283,7 +285,6 @@ DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
-EXECUTION_SELECTION_SCHEMA_ID = "layer3.execution_selection.v1"
 ANALYSIS_EXECUTION_START_SCHEMA_ID = "layer3.analysis_execution_start.v1"
 EXECUTION_RESULT_STATUS_SCHEMA_ID = "layer3.execution_result_status.v1"
 EXECUTION_RESULT_REVIEW_SCHEMA_ID = "layer3.execution_result_review.v1"
@@ -2642,32 +2643,6 @@ def _execution_result_review_response(
         "source_gate": review_state.get("source_gate"),
         "source_dataset_version_ids": _json_clone(review_state.get("source_dataset_version_ids") or []),
         "cohort_shape": review_state.get("cohort_shape"),
-    }
-
-
-def _execution_selection_response(
-    *,
-    request_id: str,
-    status: str,
-    session_id: str,
-    analysis_plan_id: str,
-    preview_id: str,
-    preview_hash: str,
-    pass_runs: list[L3PassRun],
-) -> dict[str, Any]:
-    analysis_run_ids = [value for pass_run in pass_runs if (value := _pass_run_analysis_run_id(pass_run))]
-    return {
-        **_base_response(EXECUTION_SELECTION_SCHEMA_ID, request_id=request_id, status=status),
-        "session_id": session_id,
-        "analysis_plan_id": analysis_plan_id,
-        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
-        "pass_run_ids": [pass_run.pass_run_id for pass_run in pass_runs],
-        "pass_run_count": len(pass_runs),
-        "execution_started": any(_pass_run_execution_started(pass_run) for pass_run in pass_runs),
-        "analysis_run_ids": analysis_run_ids,
-        "pass_run_statuses": {pass_run.pass_run_id: pass_run.status for pass_run in pass_runs},
-        "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
-        "next_state": _execution_state_for_pass_runs(pass_runs),
     }
 
 
