@@ -6732,12 +6732,28 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                 "must be 'codex/l3-package-source-projection'"
             )
         source_projection_pr = proof_scope.get("latest_package_source_projection_extraction_pr")
-        if source_projection_pr != "pending" and not (
-            isinstance(source_projection_pr, str) and re.fullmatch(r"#\d+", source_projection_pr)
+        if source_projection_pr != "#655":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_source_projection_extraction_pr must be '#655'"
+            )
+        if (
+            proof_scope.get("latest_package_source_projection_extraction_head_commit")
+            != "dd616519bf6b10fb6e1a0e81eaad9d6facaa7fc6"
         ):
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_source_projection_extraction_pr must be 'pending' or a PR number"
+                "scope.latest_package_source_projection_extraction_head_commit must be "
+                "'dd616519bf6b10fb6e1a0e81eaad9d6facaa7fc6'"
+            )
+        if (
+            proof_scope.get("latest_package_source_projection_extraction_merge_commit")
+            != "0c797452fd66886f277424171956e6f9e75063fc"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_source_projection_extraction_merge_commit must be "
+                "'0c797452fd66886f277424171956e6f9e75063fc'"
             )
         if proof_scope.get("latest_package_source_projection_extraction_live_behavior_change") is not False:
             errors.append(
@@ -6746,6 +6762,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             )
         source_projection_summary = proof_scope.get("latest_package_source_projection_extraction_summary")
         for term in (
+            "PR #655",
+            "merge commit 0c797452fd66886f277424171956e6f9e75063fc",
             "package source projection extraction",
             "package_source_shape",
             "package_source_dataset_version_ids",
@@ -6800,6 +6818,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "latest_package_reconciliation_state_extraction_branch",
             "latest_package_source_projection_extraction_branch",
             "PR #653/merge commit 39ed6564",
+            "PR #655/merge commit 0c797452",
             "c1448bbd799c003b172514da1b04ac70495a4dca",
             "test_layer3_workbench_package_state.py",
             "package-state helper proof",
@@ -6819,6 +6838,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "reconciliation state extraction",
             "package source projection extraction",
             "merge commit `39ed6564`",
+            "merge commit `0c797452`",
             "without activating package mutation/reconstruction",
         ),
     }
