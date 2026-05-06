@@ -84,6 +84,7 @@ PLAN_FLOW_READINESS_SERVICE = (
 )
 SUBLAYER_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_sublayer_state.py"
 EXECUTION_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_state.py"
+EXECUTION_OUTPUT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_output.py"
 EXECUTION_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
 )
@@ -234,6 +235,7 @@ LAYER3_PLAN_FLOW_READINESS_TEST = (
 )
 LAYER3_SUBLAYER_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_sublayer_state.py"
 LAYER3_EXECUTION_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_state.py"
+LAYER3_EXECUTION_OUTPUT_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_output.py"
 LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
 )
@@ -5930,6 +5932,67 @@ def _check_execution_state_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing execution state extraction doc term: {term}")
 
 
+def _check_execution_output_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(EXECUTION_OUTPUT_SERVICE, errors)
+    for term in (
+        "def output_metadata_summary(pass_run: L3PassRun) -> tuple[dict[str, Any] | None, str | None]:",
+        "output_payload_ref_missing",
+        "output_metadata_file_missing",
+        "output_metadata_unreadable",
+        "output_metadata_malformed",
+        "artifact_refs_json",
+        "source_dataset_version_ids_json",
+        "chunk_summary",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(EXECUTION_OUTPUT_SERVICE)} missing execution output extraction term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_execution_output import output_metadata_summary as _output_metadata_summary",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing execution output delegation term: {term}")
+    if "def _output_metadata_summary(" in workbench_text:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns execution output metadata projection")
+
+    test_text = _read_required_text(LAYER3_EXECUTION_OUTPUT_TEST, errors)
+    for term in (
+        "test_output_metadata_summary_preserves_missing_and_invalid_error_semantics",
+        "test_output_metadata_summary_preserves_workbench_projection",
+        "layer3_workbench._output_metadata_summary",
+        "output_metadata_file_missing",
+        "output_metadata_malformed",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_EXECUTION_OUTPUT_TEST)} missing execution output proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "execution output metadata extraction",
+            "layer3_execution_output.py",
+            "test_layer3_execution_output.py",
+            "does not admit route, DTO, model, migration, UI, execution behavior",
+        ),
+        MANIFEST: (
+            "execution_output_metadata_extraction_pr",
+            "execution output metadata extraction",
+            "layer3_execution_output.py",
+            "test_layer3_execution_output.py",
+        ),
+        PROOF_MANIFEST: (
+            "latest_execution_output_metadata_extraction_branch",
+            "latest_execution_output_metadata_extraction_live_behavior_change",
+            "backend/app/services/layer3_execution_output.py",
+            "backend/tests/test_layer3_execution_output.py",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing execution output extraction doc term: {term}")
+
+
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
     for term in (
@@ -6550,6 +6613,7 @@ def main() -> int:
         PLAN_FLOW_READINESS_SERVICE,
         SUBLAYER_STATE_SERVICE,
         EXECUTION_STATE_SERVICE,
+        EXECUTION_OUTPUT_SERVICE,
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
@@ -6585,6 +6649,7 @@ def main() -> int:
         LAYER3_PLAN_FLOW_READINESS_TEST,
         LAYER3_SUBLAYER_STATE_TEST,
         LAYER3_EXECUTION_STATE_TEST,
+        LAYER3_EXECUTION_OUTPUT_TEST,
         LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
@@ -6655,6 +6720,7 @@ def main() -> int:
     _check_plan_flow_readiness_extraction(errors)
     _check_sublayer_state_extraction(errors)
     _check_execution_state_extraction(errors)
+    _check_execution_output_extraction(errors)
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
