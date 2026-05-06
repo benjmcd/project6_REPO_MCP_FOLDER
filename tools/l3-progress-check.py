@@ -90,6 +90,9 @@ PACKAGE_REVIEW_CONTRACT_SERVICE = (
 WORKBENCH_PACKAGE_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench_package_state.py"
 )
+PLAN_ERROR_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_plan_errors.py"
+)
 EXTERNAL_EXPORT_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_export_contract.py"
 )
@@ -222,6 +225,7 @@ LAYER3_PACKAGE_REVIEW_CONTRACT_TEST = (
 LAYER3_WORKBENCH_PACKAGE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_workbench_package_state.py"
 )
+LAYER3_PLAN_ERROR_TEST = ROOT / "backend" / "tests" / "test_layer3_plan_errors.py"
 LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_external_export_contract.py"
 )
@@ -4845,6 +4849,48 @@ def _check_workbench_error_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing workbench error extraction doc term: {term}")
 
 
+def _check_plan_error_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(PLAN_ERROR_SERVICE, errors)
+    for term in (
+        "def plan_preview_workbench_error(",
+        "def plan_approval_workbench_error(",
+        "Layer3PassEntryError",
+        "Layer3WorkbenchError",
+        '"operator_confirmation_required"',
+        'blocked_fields=["operator_confirmation"]',
+        'next_allowed_actions=["confirm_plan_approval"]',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PLAN_ERROR_SERVICE)} missing plan-error extraction term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_plan_errors import plan_approval_workbench_error, plan_preview_workbench_error",
+        "blocked_reason = plan_preview_workbench_error(exc).error_code",
+        "raise plan_preview_workbench_error(exc) from exc",
+        "raise plan_approval_workbench_error(exc) from exc",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing plan-error extraction delegation term: {term}")
+    for stale_term in (
+        "def _plan_preview_error(",
+        "def _plan_approval_error(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns plan-error extraction term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_PLAN_ERROR_TEST, errors)
+    for term in (
+        "test_plan_preview_workbench_error_mapping_is_preserved",
+        "test_plan_approval_workbench_error_mapping_is_preserved",
+        "owner_service_error",
+        "operator_confirmation_required",
+        "pass_runs_already_exist",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_PLAN_ERROR_TEST)} missing plan-error extraction proof term: {term}")
+
+
 def _check_authority_rail_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(AUTHORITY_RAIL_SERVICE, errors)
     for term in (
@@ -5970,6 +6016,8 @@ def main() -> int:
         LAYER3_PACKAGE_REVIEW_CONTRACT_TEST,
         WORKBENCH_PACKAGE_STATE_SERVICE,
         LAYER3_WORKBENCH_PACKAGE_STATE_TEST,
+        PLAN_ERROR_SERVICE,
+        LAYER3_PLAN_ERROR_TEST,
         LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
@@ -6018,6 +6066,7 @@ def main() -> int:
     _check_state_action_contract_frontend_signature(errors)
     _check_response_contract_extraction(errors)
     _check_workbench_error_extraction(errors)
+    _check_plan_error_extraction(errors)
     _check_authority_rail_extraction(errors)
     _check_preview_contract_extraction(errors)
     _check_readiness_contract_extraction(errors)

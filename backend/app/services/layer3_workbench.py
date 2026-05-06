@@ -54,6 +54,7 @@ from app.services.layer3_pass_entry import (
     execute_selected_pass_run,
     preview_pass_entry,
 )
+from app.services.layer3_plan_errors import plan_approval_workbench_error, plan_preview_workbench_error
 from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_REVIEW_FACING,
@@ -2241,7 +2242,7 @@ def _plan_preview_readiness(db: Session, *, session_id: str, include_owner_servi
             excluded_set_count = len(owner_preview.excluded_sets)
             planned_pass_count = len(owner_preview.planned_passes)
         except Layer3PassEntryError as exc:
-            blocked_reason = _plan_preview_error(exc).error_code
+            blocked_reason = plan_preview_workbench_error(exc).error_code
     return {
         "schema_id": "layer3.plan_preview_readiness.v1",
         "available": blocked_reason is None,
@@ -2411,47 +2412,6 @@ def _source_classes_from_plan_preview(plan_preview: dict[str, Any]) -> list[str]
     return sorted(source_classes)
 
 
-def _plan_preview_error(exc: Layer3PassEntryError) -> Layer3WorkbenchError:
-    message = str(exc)
-    if "was not found" in message:
-        return Layer3WorkbenchError("session_not_found", message, http_status=404)
-    if "must be finalized" in message:
-        return Layer3WorkbenchError("gate_c_not_committed", message, status="blocked", http_status=409)
-    if "already has analysis plans" in message or "already has pass runs" in message:
-        return Layer3WorkbenchError("plan_already_materialized", message, status="conflict", http_status=409)
-    if "has no analysis sets" in message:
-        return Layer3WorkbenchError("no_analysis_sets", message, status="blocked", http_status=409)
-    if "has no admissible analysis sets" in message:
-        return Layer3WorkbenchError("no_admissible_plan", message, status="blocked", http_status=409)
-    return Layer3WorkbenchError(
-        "owner_service_error",
-        message,
-        status="failed",
-        http_status=500,
-        recoverable=False,
-    )
-
-
-def _plan_approval_error(exc: Layer3PassEntryError) -> Layer3WorkbenchError:
-    message = str(exc)
-    if "preview hash mismatch" in message:
-        return Layer3WorkbenchError("preview_mismatch", message, status="conflict", http_status=409)
-    if "operator confirmation" in message:
-        return Layer3WorkbenchError(
-            "operator_confirmation_required",
-            message,
-            status="blocked",
-            http_status=400,
-            blocked_fields=["operator_confirmation"],
-            next_allowed_actions=["confirm_plan_approval"],
-        )
-    if "already has analysis plans" in message:
-        return Layer3WorkbenchError("plan_already_materialized", message, status="conflict", http_status=409)
-    if "already has pass runs" in message:
-        return Layer3WorkbenchError("pass_runs_already_exist", message, status="conflict", http_status=409)
-    return _plan_preview_error(exc)
-
-
 def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     session_id = str(payload.get("session_id") or "").strip()
@@ -2483,7 +2443,7 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     try:
         owner_preview = preview_pass_entry(db, session_id=session_id)
     except Layer3PassEntryError as exc:
-        raise _plan_preview_error(exc) from exc
+        raise plan_preview_workbench_error(exc) from exc
 
     plan_preview_payload = {
         "schema_id": "layer3.plan_preview_payload.v1",
@@ -2637,7 +2597,7 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         db.commit()
     except Layer3PassEntryError as exc:
         db.rollback()
-        raise _plan_approval_error(exc) from exc
+        raise plan_approval_workbench_error(exc) from exc
 
     session = _load_session(db, session_id)
     gate_b_counts = _gate_b_summary_from_session(session)
