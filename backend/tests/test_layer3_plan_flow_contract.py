@@ -125,3 +125,49 @@ def test_workbench_delegates_plan_preview_source_classes_to_contract() -> None:
     assert layer3_workbench._source_classes_from_plan_preview(plan_preview) == (
         contract.source_classes_from_plan_preview(plan_preview)
     )
+
+
+def test_approved_plan_payload_helpers_clone_and_mark_approval_state() -> None:
+    approved_set = {
+        "analysis_set_id": "set-1",
+        "readiness": "preview_only",
+        "nested": {"source": "aps"},
+    }
+    planned_pass = {
+        "planned_pass_id": "pass-1",
+        "preview_only": True,
+        "nested": {"method": "descriptive_summary"},
+    }
+
+    set_payload = contract.approved_set_payload(approved_set)
+    pass_payload = contract.approved_planned_pass_payload(planned_pass)
+
+    assert set_payload == {
+        "analysis_set_id": "set-1",
+        "readiness": "approved",
+        "nested": {"source": "aps"},
+    }
+    assert pass_payload == {
+        "planned_pass_id": "pass-1",
+        "approval_only": True,
+        "execution_status": "not_started",
+        "nested": {"method": "descriptive_summary"},
+    }
+
+    set_payload["nested"]["source"] = "mutated"
+    pass_payload["nested"]["method"] = "mutated"
+    assert approved_set["nested"]["source"] == "aps"
+    assert planned_pass["nested"]["method"] == "descriptive_summary"
+    assert "preview_only" not in pass_payload
+
+
+def test_workbench_delegates_approved_plan_payload_helpers_to_contract() -> None:
+    approved_set = {"analysis_set_id": "set-1"}
+    planned_pass = {"planned_pass_id": "pass-1", "preview_only": True}
+
+    assert layer3_workbench._approved_set_payload(approved_set) == contract.approved_set_payload(
+        approved_set
+    )
+    assert layer3_workbench._approved_planned_pass_payload(
+        planned_pass
+    ) == contract.approved_planned_pass_payload(planned_pass)
