@@ -364,6 +364,7 @@ No broad execution, package mutation/reconstruction, package payload rewrite, so
 Gate C override unavailable DTO boundary proof:
 
 ```text
+PR #614 / merge commit 840a86fb.
 Files: backend/app/api/layer3.py; backend/tests/test_layer3_api.py.
 Focused override request-boundary suite: 3 passed, 135 deselected, 3 warnings.
 Full focused Layer 3 backend suite: 342 passed, 4 warnings.

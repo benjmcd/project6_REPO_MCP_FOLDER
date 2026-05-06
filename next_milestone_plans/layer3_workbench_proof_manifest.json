@@ -4374,7 +4374,9 @@
     "latest_approved_plan_cancel_downstream_state_hardening_merge_commit": "01023e82",
     "latest_gate_c_override_unavailable_request_contract_branch": "codex/l3-gatec-dto",
     "latest_gate_c_override_unavailable_request_contract_base_commit": "2a8d97618b4fd0bcf37e125234954c62fa703b65",
-    "latest_gate_c_override_unavailable_request_contract_summary": "Gate C override remains explicitly unavailable for known metadata fields and now rejects unknown capability-shaped request fields before the unavailable-response service runs; it does not admit typing override persistence, execution, hidden LLM planning, provider/public URLs, connector/destination dispatch, package mutation/reconstruction, source widening, broad qualitative/hybrid/RAG behavior, full mockup activation, or auth/security behavior."
+    "latest_gate_c_override_unavailable_request_contract_summary": "PR #614/merge commit 840a86fb records that Gate C override remains explicitly unavailable for known metadata fields and now rejects unknown capability-shaped request fields before the unavailable-response service runs; it does not admit typing override persistence, execution, hidden LLM planning, provider/public URLs, connector/destination dispatch, package mutation/reconstruction, source widening, broad qualitative/hybrid/RAG behavior, full mockup activation, or auth/security behavior.",
+    "latest_gate_c_override_unavailable_request_contract_pr": "#614",
+    "latest_gate_c_override_unavailable_request_contract_merge_commit": "840a86fb"
   },
   "approved_plan_cancel_downstream_state_hardening_proof": {
     "scope": "Runtime hardening proof for approved_plan_cancel_without_replacement only; broader approved-plan correction modes remain blocked.",
@@ -4452,6 +4454,9 @@
       "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest @tests -q",
       "python .\\tools\\l3-progress-check.py",
       "git diff --check"
-    ]
+    ],
+    "implementation_pr": "#614",
+    "merge_commit": "840a86fb",
+    "post_merge_authority": "project6-origin/main at 840a86fb"
   }
 }

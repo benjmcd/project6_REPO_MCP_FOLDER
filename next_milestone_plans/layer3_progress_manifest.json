@@ -5942,6 +5942,9 @@
       "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest @tests -q",
       "python .\\tools\\l3-progress-check.py",
       "git diff --check"
-    ]
+    ],
+    "implementation_pr": "#614",
+    "merge_commit": "840a86fb",
+    "post_merge_authority": "project6-origin/main at 840a86fb"
   }
 }
