@@ -4242,22 +4242,27 @@ def _check_gate_c_override_request_guard(errors: list[str]) -> None:
         "Layer3GateCOverrideUnavailableRequest",
         "test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response",
         "Signed-reference raw dict routes are auth/security/delivery-adjacent and remain deferred",
+        "\"implementation_pr\": \"#614\"",
+        "\"merge_commit\": \"840a86fb\"",
     ):
         if term not in proof_text:
             errors.append(f"{_rel(PROOF_MANIFEST)} missing Gate C override request proof term: {term}")
 
     required_doc_terms = {
         SYNTHESIS_BOUNDARY: [
+            "PR #614 / merge commit `840a86fb`",
             "Layer3GateCOverrideUnavailableRequest",
             "test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response",
             "Gate C override unavailable DTO boundary",
         ],
         GOAL_AUDIT: [
+            "PR #614 / merge commit `840a86fb`",
             "Layer3GateCOverrideUnavailableRequest",
             "test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response",
             "Gate C override unavailable DTO hardening",
         ],
         CLOSEOUT_DOC: [
+            "PR #614 / merge commit 840a86fb",
             "Gate C override unavailable DTO boundary proof",
             "Focused override request-boundary suite: 3 passed",
             "No typing override persistence",
