@@ -885,11 +885,11 @@ def _check_plan_revision_recovery_entry_freeze(
         errors.append(f"{_rel(PROOF_MANIFEST)} scope missing for revision recovery runtime")
     else:
         expected_top_scope = {
-            "merged_pr": "#605",
-            "merge_commit": "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
-            "source_branch": "codex/l3-pr605-proof-sync",
-            "base_commit": "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
-            "source_base_commit": "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
+            "merged_pr": "#607",
+            "merge_commit": "f1cba09a84a47d0095a7fd682b835316ebde5496",
+            "source_branch": "codex/l3-pr607-package-state-sync",
+            "base_commit": "f1cba09a84a47d0095a7fd682b835316ebde5496",
+            "source_base_commit": "f1cba09a84a47d0095a7fd682b835316ebde5496",
         }
         for key, value in expected_top_scope.items():
             if proof_scope.get(key) != value:
@@ -928,16 +928,16 @@ def _check_plan_revision_recovery_entry_freeze(
 
     seed_checkout_hint = _nested(manifest, "artifact_scope", "seed_checkout_hint")
     if not isinstance(seed_checkout_hint, str):
-        errors.append("artifact_scope.seed_checkout_hint must be present for PR #605 proof sync")
+        errors.append("artifact_scope.seed_checkout_hint must be present for PR #607 proof sync")
     else:
         for term in (
-            "codex/l3-pr605-proof-sync",
-            "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
-            "PR #605 plan revision recovery service proof merge",
+            "codex/l3-pr607-package-state-sync",
+            "f1cba09a84a47d0095a7fd682b835316ebde5496",
+            "PR #607 package-state helper proof merge",
             "current-main proof/progress metadata sync only",
         ):
             if term not in seed_checkout_hint:
-                errors.append(f"artifact_scope.seed_checkout_hint missing PR #605 sync term: {term}")
+                errors.append(f"artifact_scope.seed_checkout_hint missing PR #607 sync term: {term}")
 
     top_level = manifest.get("plan_revision_recovery_runtime")
     if not isinstance(top_level, dict):
@@ -3672,7 +3672,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice, package replacement namespace planning/control freeze, package replacement namespace implementation-entry freeze, bounded package replacement namespace runtime, planning/control plan revision recovery freeze, PR #599 bounded plan revision recovery preview-refresh runtime, planning/control approved-plan correction freeze, and implementation-entry approved-plan cancel-without-replacement freeze.",
+            "Status: bounded proof snapshot through PR #607 package-state helper proof hardening after PR #584 plan-flow request contract extraction",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -3861,8 +3861,8 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "snapshot_target_ref: `project6-origin/main`",
             "functional_boundary_head: `93fe525b`",
             "functional_boundary_role: last runtime-affecting Layer 3 boundary captured in this snapshot",
-            "proof_snapshot_head: `9cdd1e88`",
-            "latest_proof_boundary_pr: `#584`",
+            "proof_snapshot_head: `f1cba09a84a47d0095a7fd682b835316ebde5496`",
+            "latest_proof_boundary_pr: `#607`",
             "not a self-updating current-main marker",
             "latest_functional_boundary_pr: `#556`",
             "docs_sync_reference_pr: `#551`",
@@ -4901,7 +4901,7 @@ def _check_state_model_contract_extraction(errors: list[str]) -> None:
             "PR #573 state-model contract extraction proof",
             "layer3_state_model_contract.py",
             "layer3.workbench_state_model.v1",
-            "proof_snapshot_head: `9cdd1e88`",
+            "proof_snapshot_head: `f1cba09a84a47d0095a7fd682b835316ebde5496`",
             "State-model contract extraction focused proof",
             "Focused state-model-contract suite: 1 passed.",
             "Local focused Layer 3 backend suite: 294 passed, 4 warnings.",
@@ -4989,14 +4989,14 @@ def _check_execution_request_contract_extraction(errors: list[str]) -> None:
             "PR #582 execution request/result contract extraction proof",
             "layer3_execution_request_contract.py",
             "test_layer3_execution_request_contract.py",
-            "proof_snapshot_head: `9cdd1e88`",
+            "proof_snapshot_head: `f1cba09a84a47d0095a7fd682b835316ebde5496`",
             "Focused execution-request-contract suite: 2 passed.",
             "Focused execution request API regression: 11 passed, 118 deselected, 4 warnings.",
             "Local focused Layer 3 backend suite: 302 passed, 4 warnings.",
             "Pre-merge PR #582 checks: backend-layer3-api SUCCESS; test SUCCESS.",
             "Merged main head after PR #582: 5391af4e.",
             "Post-merge full Layer 3 backend suite: 302 passed, 4 warnings.",
-            "proof/refactor hardening through PR #584",
+            "proof/refactor hardening through PR #607",
             "No broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.",
         ),
     }
@@ -5076,14 +5076,14 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
             "PR #584 plan-flow request contract extraction proof",
             "layer3_plan_flow_contract.py",
             "test_layer3_plan_flow_contract.py",
-            "proof_snapshot_head: `9cdd1e88`",
+            "proof_snapshot_head: `f1cba09a84a47d0095a7fd682b835316ebde5496`",
             "Focused plan-flow-contract suite: 2 passed.",
             "Focused plan-flow API regression: 3 passed, 124 deselected, 3 warnings.",
             "Local focused Layer 3 backend suite: 304 passed, 4 warnings.",
             "Pre-merge PR #584 checks: backend-layer3-api SUCCESS; test SUCCESS.",
             "Merged main head after PR #584: 9cdd1e88.",
             "Post-merge full Layer 3 backend suite: 304 passed, 4 warnings.",
-            "proof/refactor hardening through PR #584",
+            "proof/refactor hardening through PR #607",
             "No broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.",
         ),
         MANIFEST: (
@@ -5180,14 +5180,14 @@ def _check_handoff_contract_extraction(errors: list[str]) -> None:
             "PR #578 handoff/export and APS handoff contract extraction proof",
             "layer3_handoff_contract.py",
             "test_layer3_handoff_contract.py",
-            "proof_snapshot_head: `9cdd1e88`",
+            "proof_snapshot_head: `f1cba09a84a47d0095a7fd682b835316ebde5496`",
             "Focused handoff-contract suite: 2 passed.",
             "Focused handoff API regression: 18 passed, 111 deselected, 4 warnings.",
             "Local focused Layer 3 backend suite: 298 passed, 4 warnings.",
             "Pre-merge PR #578 checks: backend-layer3-api SUCCESS; test SUCCESS.",
             "Merged main head after PR #578: df2a5c14.",
             "Post-merge full Layer 3 backend suite: 298 passed, 4 warnings.",
-            "proof/refactor hardening through PR #584",
+            "proof/refactor hardening through PR #607",
             "No broad `layer3_workbench.py` rewrite and no behavior change beyond extracted ownership.",
         ),
     }
@@ -5275,6 +5275,36 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         if term not in package_state_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
 
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    proof_scope = proof_manifest.get("scope") if isinstance(proof_manifest, dict) else None
+    if not isinstance(proof_scope, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} scope missing for package-state helper proof")
+    else:
+        expected_package_state_scope = {
+            "latest_workbench_package_state_helper_proof_branch": "codex/l3-package-state-proof",
+            "latest_workbench_package_state_helper_proof_pr": "#607",
+            "latest_workbench_package_state_helper_proof_base_commit": "a5bd14f0b35e1aa7d35fdafe1f9b2b4d5ff90105",
+            "latest_workbench_package_state_helper_proof_head_commit": "c1448bbd799c003b172514da1b04ac70495a4dca",
+            "latest_workbench_package_state_helper_proof_merge_commit": "f1cba09a84a47d0095a7fd682b835316ebde5496",
+            "latest_workbench_package_state_helper_proof_live_behavior_change": False,
+        }
+        for key, value in expected_package_state_scope.items():
+            if proof_scope.get(key) != value:
+                errors.append(f"{_rel(PROOF_MANIFEST)} scope.{key} must be {value!r}")
+        proof_summary = proof_scope.get("latest_workbench_package_state_helper_proof_summary")
+        for term in (
+            "PR #607",
+            "package ordering",
+            "canonical payload matching",
+            "without changing package behavior",
+            "activating package mutation/reconstruction",
+        ):
+            if not isinstance(proof_summary, str) or term not in proof_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} scope.latest_workbench_package_state_helper_proof_summary "
+                    f"missing package-state proof term: {term}"
+                )
+
     required_doc_terms = {
         SYNTHESIS_BOUNDARY: (
             "package review/construction/submit contract extraction",
@@ -5296,22 +5326,30 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "test_layer3_package_review_contract.py",
             "test_layer3_workbench_package_state.py",
             "package-state helper proof",
-            "proof_snapshot_head: `9cdd1e88`",
+            "proof_snapshot_head: `f1cba09a84a47d0095a7fd682b835316ebde5496`",
+            "PR #607 package-state helper proof hardening",
+            "project6-origin/main=f1cba09a84a47d0095a7fd682b835316ebde5496",
             "Focused package-review-contract suite: 2 passed.",
             "Focused package review API regression: 13 passed, 116 deselected, 4 warnings.",
             "Local focused Layer 3 backend suite: 300 passed, 4 warnings.",
             "Pre-merge PR #580 checks: backend-layer3-api SUCCESS; test SUCCESS.",
             "Merged main head after PR #580: 6b817f94.",
             "Post-merge full Layer 3 backend suite: 300 passed, 4 warnings.",
-            "proof/refactor hardening through PR #584",
+            "proof/refactor hardening through PR #607",
             "No package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.",
         ),
         MANIFEST: (
+            "PR #607",
+            "f1cba09a84a47d0095a7fd682b835316ebde5496",
+            "latest_workbench_package_state_helper_proof_pr",
+            "c1448bbd799c003b172514da1b04ac70495a4dca",
             "test_layer3_workbench_package_state.py",
             "package-state helper proof",
             "without activating package mutation",
         ),
         BOARD: (
+            "PR `#607`",
+            "f1cba09a84a47d0095a7fd682b835316ebde5496",
             "test_layer3_workbench_package_state.py",
             "package-state helper proof hardening",
             "without activating package mutation/reconstruction",
@@ -5388,9 +5426,9 @@ def _check_external_export_contract_extraction(errors: list[str]) -> None:
             "PR #575 external export/download contract extraction proof",
             "layer3_external_export_contract.py",
             "test_layer3_external_export_contract.py",
-            "proof_snapshot_head: `9cdd1e88`",
+            "proof_snapshot_head: `f1cba09a84a47d0095a7fd682b835316ebde5496`",
             "PR #575 external export/download contract extraction proof",
-            "proof/refactor hardening through PR #584",
+            "proof/refactor hardening through PR #607",
             "external export/download contract extraction;",
             "Focused external-export-contract suite: 2 passed.",
             "Pre-merge PR #575 checks: backend-layer3-api SUCCESS; test SUCCESS.",
