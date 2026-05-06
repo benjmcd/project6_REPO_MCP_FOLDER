@@ -217,13 +217,16 @@ from app.services.layer3_workbench_package_state import (
     aps_handoff_dispatch_from_reconciliation as _aps_handoff_dispatch_from_reconciliation,
     canonical_payload_hashes as _canonical_payload_hashes,
     canonical_payload_refs as _canonical_payload_refs,
+    cohort_package_construction_source as _is_cohort_package_construction_source,
     dispatched_package_id,
     external_export_download_prepare_from_reconciliation as _external_export_download_prepare_from_reconciliation,
     handoff_export_prepare_from_reconciliation as _handoff_export_prepare_from_reconciliation,
+    legacy_package_review_submit_record_ref as _legacy_package_review_submit_record_ref,
     package_owner_compatibility as _package_owner_compatibility,
     package_review_candidate_projection,
     package_review_preview_hash as _package_review_preview_hash,
     package_review_preview_summary,
+    package_review_submit_downstream_unavailable as _package_review_submit_downstream_unavailable,
     package_review_submit_from_reconciliation as _package_review_submit_from_reconciliation,
     package_source_dataset_version_ids as _package_source_dataset_version_ids,
     package_source_shape as _package_source_shape,
@@ -414,32 +417,6 @@ HANDOFF_EXPORT_PREPARE_NOTE_REQUIRED_DECISIONS = frozenset({"hold", "decline", "
 APS_HANDOFF_DISPATCH_OPERATOR_DECISION = "dispatch_aps_handoff"
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_external_export_download"
-PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS = (
-    "schema_id",
-    "session_id",
-    "analysis_plan_id",
-    "pass_run_id",
-    "preview_id",
-    "preview_hash",
-    "analysis_run_id",
-    "result_review_record_ref",
-    "package_review_preview_hash",
-    "reconciliation_record_id",
-    "output_package_ids",
-    "package_kinds",
-    "payload_hashes",
-    "operator_decision",
-    "decision_notes",
-)
-PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS = (
-    "pass_type",
-    "pass_scope",
-    "method",
-    "source_gate",
-    "package_construction_source_gate",
-    "source_shape",
-    "source_dataset_version_ids",
-)
 PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
     "handoff",
@@ -3616,20 +3593,6 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
     )
 
 
-def _legacy_package_review_submit_record_ref(
-    *,
-    submit_basis: dict[str, Any],
-    existing_submit: dict[str, Any],
-) -> str | None:
-    authority_basis = existing_submit.get("authority_basis")
-    if not isinstance(authority_basis, dict):
-        return None
-    if any(field in authority_basis for field in PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS):
-        return None
-    legacy_basis = {field: submit_basis[field] for field in PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS}
-    return _stable_id("l3-package-review-submit", legacy_basis)
-
-
 def _dispatched_aps_handoff_package_id(dispatch_state: dict[str, Any] | None) -> str | None:
     return dispatched_package_id(
         dispatch_state,
@@ -3650,22 +3613,6 @@ def _unexpected_package_kinds(
         aps_dispatched_state=APS_HANDOFF_DISPATCHED_STATE,
         aps_package_kind=PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
     )
-
-
-def _is_cohort_package_construction_source(source_gate: Any) -> bool:
-    return str(source_gate or "") == SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
-
-
-def _package_review_submit_downstream_unavailable(
-    package_review_state: str | None,
-    *,
-    associated_cohort_submit: bool = False,
-) -> tuple[str, ...]:
-    if associated_cohort_submit:
-        return COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
-    if package_review_state == PACKAGE_REVIEW_APPROVED_STATE:
-        return HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
-    return PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
 
 
 def _active_package_downstream_unavailable(

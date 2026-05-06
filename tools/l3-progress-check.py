@@ -6537,6 +6537,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def package_source_shape(",
         "def package_source_dataset_version_ids(",
         "def package_owner_compatibility(",
+        "def legacy_package_review_submit_record_ref(",
+        "def cohort_package_construction_source(",
+        "def package_review_submit_downstream_unavailable(",
     ):
         if term not in package_state_text:
             errors.append(f"{_rel(WORKBENCH_PACKAGE_STATE_SERVICE)} missing package-state helper term: {term}")
@@ -6565,6 +6568,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "test_package_owner_compatibility_reports_missing_gate_d_inputs_for_default_preview",
         "test_package_owner_compatibility_reports_ready_default_preview_without_calling_owner_service",
         "test_package_owner_compatibility_associated_cohort_preview_skips_gate_d_inputs",
+        "test_legacy_package_review_submit_record_ref_preserves_legacy_identity_basis",
+        "test_legacy_package_review_submit_record_ref_rejects_missing_or_provenance_authority",
+        "test_cohort_package_construction_source_requires_exact_source_gate",
+        "test_package_review_submit_downstream_unavailable_preserves_state_priority",
     ):
         if term not in package_state_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
@@ -6887,17 +6894,75 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_package_owner_compatibility_extraction_summary "
                     f"missing package owner compatibility extraction term: {term}"
                 )
+        if proof_scope.get("latest_package_submit_state_helper_extraction_branch") != (
+            "codex/l3-package-submit-state"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_state_helper_extraction_branch "
+                "must be 'codex/l3-package-submit-state'"
+            )
+        submit_state_pr = proof_scope.get("latest_package_submit_state_helper_extraction_pr")
+        if submit_state_pr != "pending" and not (
+            isinstance(submit_state_pr, str) and re.fullmatch(r"#\d+", submit_state_pr)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_state_helper_extraction_pr must be 'pending' or a PR number"
+            )
+        submit_state_head = proof_scope.get("latest_package_submit_state_helper_extraction_head_commit")
+        if submit_state_head != "pending" and not (
+            isinstance(submit_state_head, str) and re.fullmatch(r"[0-9a-f]{40}", submit_state_head)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_state_helper_extraction_head_commit "
+                "must be 'pending' or a 40-character commit"
+            )
+        submit_state_merge = proof_scope.get("latest_package_submit_state_helper_extraction_merge_commit")
+        if submit_state_merge != "pending" and not (
+            isinstance(submit_state_merge, str) and re.fullmatch(r"[0-9a-f]{40}", submit_state_merge)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_state_helper_extraction_merge_commit "
+                "must be 'pending' or a 40-character commit"
+            )
+        if proof_scope.get("latest_package_submit_state_helper_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_state_helper_extraction_live_behavior_change must be False"
+            )
+        submit_state_summary = proof_scope.get("latest_package_submit_state_helper_extraction_summary")
+        for term in (
+            "package submit state helper extraction",
+            "legacy_package_review_submit_record_ref",
+            "cohort_package_construction_source",
+            "package_review_submit_downstream_unavailable",
+            "without activating package mutation/reconstruction",
+        ):
+            if not isinstance(submit_state_summary, str) or term not in submit_state_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_package_submit_state_helper_extraction_summary "
+                    f"missing package submit state helper extraction term: {term}"
+                )
 
     for path, terms in {
         MANIFEST: (
             "latest_package_owner_compatibility_extraction_branch",
             "package_owner_compatibility_extraction",
             "package_owner_compatibility",
+            "latest_package_submit_state_helper_extraction_branch",
+            "package_submit_state_helper_extraction",
+            "legacy_package_review_submit_record_ref",
             "without activating package mutation/reconstruction",
         ),
         BOARD: (
             "Package owner compatibility extraction",
             "package_owner_compatibility",
+            "Package submit state helper extraction",
+            "package_review_submit_downstream_unavailable",
             "without changing package-review preview behavior",
         ),
     }.items():

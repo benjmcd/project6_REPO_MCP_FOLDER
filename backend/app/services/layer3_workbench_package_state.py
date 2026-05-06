@@ -7,6 +7,7 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_REVIEW_FACING,
     PACKAGE_KIND_USER_FACING,
+    SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
 )
 from app.services.layer3_pass_entry import (
     COHORT_REQUESTED_METHOD_SOURCE,
@@ -39,6 +40,42 @@ PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
     PACKAGE_KIND_REVIEW_FACING,
 )
 PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID = "layer3.package_review_submit_state.v1"
+PACKAGE_REVIEW_APPROVED_STATE = "package_review_approved"
+PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS = (
+    "schema_id",
+    "session_id",
+    "analysis_plan_id",
+    "pass_run_id",
+    "preview_id",
+    "preview_hash",
+    "analysis_run_id",
+    "result_review_record_ref",
+    "package_review_preview_hash",
+    "reconciliation_record_id",
+    "output_package_ids",
+    "package_kinds",
+    "payload_hashes",
+    "operator_decision",
+    "decision_notes",
+)
+PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS = (
+    "pass_type",
+    "pass_scope",
+    "method",
+    "source_gate",
+    "package_construction_source_gate",
+    "source_shape",
+    "source_dataset_version_ids",
+)
+PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = ("handoff", "export")
+COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = (
+    "handoff",
+    "export",
+    "aps_handoff",
+    "external_export_download",
+    "connector",
+)
+HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = ("aps_handoff", "external_export", "downstream_dispatch")
 HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = "layer3.handoff_export_prepare_state.v1"
 APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_download_prepare_state.v1"
@@ -236,6 +273,36 @@ def package_owner_compatibility(
             else "Current workbench state lacks full Gate D package-entry inputs; candidate projection remains preview-only."
         ),
     }
+
+
+def legacy_package_review_submit_record_ref(
+    *,
+    submit_basis: dict[str, Any],
+    existing_submit: dict[str, Any],
+) -> str | None:
+    authority_basis = existing_submit.get("authority_basis")
+    if not isinstance(authority_basis, dict):
+        return None
+    if any(field in authority_basis for field in PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS):
+        return None
+    legacy_basis = {field: submit_basis[field] for field in PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS}
+    return stable_id("l3-package-review-submit", legacy_basis)
+
+
+def cohort_package_construction_source(source_gate: Any) -> bool:
+    return str(source_gate or "") == SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
+
+
+def package_review_submit_downstream_unavailable(
+    package_review_state: str | None,
+    *,
+    associated_cohort_submit: bool = False,
+) -> tuple[str, ...]:
+    if associated_cohort_submit:
+        return COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+    if package_review_state == PACKAGE_REVIEW_APPROVED_STATE:
+        return HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
+    return PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
 
 
 def package_review_candidate_projection(*, package_commit_enabled: bool = True) -> list[dict[str, Any]]:
