@@ -19,7 +19,10 @@ from app.db.session import Base
 from app.models.models import L3AnalysisPlan, L3PassRun, L3Session
 from app.services import layer3_execution_selection as execution_selection
 from app.services import layer3_workbench
-from app.services.layer3_execution_state import EXECUTION_SELECTION_STATE_SCHEMA_ID
+from app.services.layer3_execution_state import (
+    EXECUTION_PASS_COMPLETED_STATE,
+    EXECUTION_SELECTION_STATE_SCHEMA_ID,
+)
 from app.services.layer3_pass_entry import (
     ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS,
     PASS_STATUS_COMPLETED,
@@ -91,6 +94,55 @@ def _pass_run(
         output_payload_ref=None,
         summary_json=summary_json or {},
     )
+
+
+def _without_server_time(response: dict) -> dict:
+    return {key: value for key, value in response.items() if key != "server_time"}
+
+
+def test_execution_selection_response_preserves_workbench_projection() -> None:
+    pass_runs = [
+        _pass_run(
+            "session-selection-response",
+            "plan-selection-response",
+            "pass-run-response-a",
+            status=PASS_STATUS_COMPLETED,
+            summary_json={"analysis_run_id": "analysis-run-response-a"},
+        ),
+        _pass_run(
+            "session-selection-response",
+            "plan-selection-response",
+            "pass-run-response-b",
+            status=PASS_STATUS_COMPLETED,
+        ),
+    ]
+
+    response = execution_selection.execution_selection_response(
+        request_id="request-selection-response",
+        status="selected",
+        session_id="session-selection-response",
+        analysis_plan_id="plan-selection-response",
+        preview_id="preview-selection-response",
+        preview_hash="hash-selection-response",
+        pass_runs=pass_runs,
+    )
+    workbench_response = layer3_workbench._execution_selection_response(
+        request_id="request-selection-response",
+        status="selected",
+        session_id="session-selection-response",
+        analysis_plan_id="plan-selection-response",
+        preview_id="preview-selection-response",
+        preview_hash="hash-selection-response",
+        pass_runs=pass_runs,
+    )
+
+    assert _without_server_time(response) == _without_server_time(workbench_response)
+    assert response["schema_id"] == "layer3.execution_selection.v1"
+    assert response["pass_run_ids"] == ["pass-run-response-a", "pass-run-response-b"]
+    assert response["analysis_run_ids"] == ["analysis-run-response-a"]
+    assert response["execution_started"] is True
+    assert response["downstream_unavailable"] == ["results", "package", "handoff"]
+    assert response["next_state"] == EXECUTION_PASS_COMPLETED_STATE
 
 
 def test_execution_selection_summary_reports_available_approved_plan(db_session) -> None:
