@@ -179,6 +179,65 @@ def package_review_preview_hash(
     )
 
 
+def package_owner_compatibility(
+    *,
+    session: Any,
+    pass_run: Any,
+    output_metadata_summary: dict[str, Any],
+    review_state: dict[str, Any],
+    approved_review_state: str,
+    associated_cohort_preview: bool = False,
+) -> dict[str, Any]:
+    session_summary = session.summary_json or {}
+    pass_summary = pass_run.summary_json or {}
+    required_inputs = {
+        "selected_pass_output_metadata": output_metadata_summary.get("readable") is True,
+        "approved_result_review": review_state.get("review_state") == approved_review_state,
+    }
+    if not associated_cohort_preview:
+        required_inputs = {
+            "phase1a_loading_closure": isinstance(session_summary.get("phase1a_loading_closure"), dict),
+            "pass_entry": isinstance(session_summary.get("pass_entry"), dict),
+            **required_inputs,
+        }
+    missing_inputs = sorted(key for key, present in required_inputs.items() if not present)
+    construction_compatible = bool(not missing_inputs)
+    return {
+        "schema_id": "layer3.package_owner_compatibility.v1",
+        "owner_service": "layer3_package_entry.materialize_package_entry",
+        "assessment_basis": [
+            "existing_gate_d_package_owner_service_contract",
+            "current_workbench_selected_pass_result_review_state",
+            "read_only_selected_pass_output_metadata",
+        ],
+        "materialize_package_entry_callable": False,
+        "workbench_package_commit_callable": construction_compatible,
+        "preview_candidate_projection_compatible": True,
+        "construction_compatible_with_current_workbench_state": construction_compatible,
+        "missing_owner_service_inputs": missing_inputs,
+        "selected_pass_status": pass_run.status,
+        "pass_type": pass_run.pass_type,
+        "pass_scope": output_metadata_summary.get("pass_scope") or pass_summary.get("pass_scope"),
+        "source_gate": output_metadata_summary.get("source_gate") or pass_summary.get("source_gate"),
+        "source_preview_id": pass_summary.get("source_preview_id"),
+        "source_preview_hash": pass_summary.get("source_preview_hash"),
+        "status": (
+            "associated_cohort_construction_preconditions_satisfied"
+            if associated_cohort_preview and construction_compatible
+            else "construction_preconditions_satisfied_but_call_deferred"
+            if construction_compatible
+            else "construction_preconditions_missing"
+        ),
+        "reason": (
+            "Associated-cohort package construction is admitted for this exact approved descriptive cohort review."
+            if associated_cohort_preview and construction_compatible
+            else "Current state can be assessed against the owner service, but this endpoint remains read-only."
+            if construction_compatible
+            else "Current workbench state lacks full Gate D package-entry inputs; candidate projection remains preview-only."
+        ),
+    }
+
+
 def package_review_candidate_projection(*, package_commit_enabled: bool = True) -> list[dict[str, Any]]:
     readiness_reason = (
         "candidate family is eligible for bounded package construction commit"
