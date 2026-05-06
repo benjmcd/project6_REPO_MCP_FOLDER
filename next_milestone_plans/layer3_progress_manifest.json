@@ -5942,7 +5942,10 @@
       "python -m pytest .\\backend\\tests\\test_layer3_plan_pass_status_constraints.py -q",
       "python .\\tools\\l3-progress-check.py",
       "git diff --check"
-    ]
+    ],
+    "implementation_pr": "#616",
+    "merge_commit": "652df83e",
+    "post_merge_authority": "project6-origin/main at 652df83e"
   },
   "gate_c_override_unavailable_request_contract": {
     "mode": "gate_c_override_unavailable_request_boundary",
