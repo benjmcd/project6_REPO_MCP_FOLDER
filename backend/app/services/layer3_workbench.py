@@ -82,6 +82,11 @@ from app.services.layer3_execution_selection import (
     execution_selection_response as _execution_selection_response,
     execution_selection_summary as _execution_selection_summary,
 )
+from app.services.layer3_execution_start import (
+    ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE,
+    ANALYSIS_EXECUTION_START_SCHEMA_ID,
+    analysis_execution_start_response as _analysis_execution_start_response,
+)
 from app.services.layer3_plan_errors import plan_approval_workbench_error, plan_preview_workbench_error
 from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
@@ -285,7 +290,6 @@ DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
-ANALYSIS_EXECUTION_START_SCHEMA_ID = "layer3.analysis_execution_start.v1"
 EXECUTION_RESULT_STATUS_SCHEMA_ID = "layer3.execution_result_status.v1"
 EXECUTION_RESULT_REVIEW_SCHEMA_ID = "layer3.execution_result_review.v1"
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.package_review_preview.v1"
@@ -415,7 +419,6 @@ PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS = (
     "source_shape",
     "source_dataset_version_ids",
 )
-ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = ("result_review", "package", "handoff")
 EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE = ("package", "handoff", "package_review")
 PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
@@ -2335,35 +2338,6 @@ def plan_revision_recovery(db: Session, payload: dict[str, Any]) -> dict[str, An
 
 def approved_plan_cancel(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     return _cancel_approved_plan_without_replacement(db, payload)
-
-
-def _analysis_execution_start_response(
-    *,
-    request_id: str,
-    status: str,
-    session_id: str,
-    analysis_plan_id: str,
-    preview_id: str,
-    preview_hash: str,
-    pass_run: L3PassRun,
-) -> dict[str, Any]:
-    summary = pass_run.summary_json or {}
-    return {
-        **_base_response(ANALYSIS_EXECUTION_START_SCHEMA_ID, request_id=request_id, status=status),
-        "session_id": session_id,
-        "analysis_plan_id": analysis_plan_id,
-        "pass_run_id": pass_run.pass_run_id,
-        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
-        "execution_started": _pass_run_execution_started(pass_run),
-        "analysis_run_id": _pass_run_analysis_run_id(pass_run),
-        "pass_run_status": pass_run.status,
-        "output_payload_ref": pass_run.output_payload_ref,
-        "downstream_unavailable": list(ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE),
-        "next_state": _execution_state_for_pass_runs([pass_run]),
-        "engine_family": pass_run.engine_family,
-        "selected_method_name": summary.get("selected_method_name"),
-        "dataset_version_id": summary.get("dataset_version_id"),
-    }
 
 
 def _planned_pass_admits_associated_cohort_descriptive(
