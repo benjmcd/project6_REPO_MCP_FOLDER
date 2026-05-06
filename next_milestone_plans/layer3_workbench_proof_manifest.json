@@ -4376,7 +4376,52 @@
     "latest_gate_c_override_unavailable_request_contract_base_commit": "2a8d97618b4fd0bcf37e125234954c62fa703b65",
     "latest_gate_c_override_unavailable_request_contract_summary": "PR #614/merge commit 840a86fb records that Gate C override remains explicitly unavailable for known metadata fields and now rejects unknown capability-shaped request fields before the unavailable-response service runs; it does not admit typing override persistence, execution, hidden LLM planning, provider/public URLs, connector/destination dispatch, package mutation/reconstruction, source widening, broad qualitative/hybrid/RAG behavior, full mockup activation, or auth/security behavior.",
     "latest_gate_c_override_unavailable_request_contract_pr": "#614",
-    "latest_gate_c_override_unavailable_request_contract_merge_commit": "840a86fb"
+    "latest_gate_c_override_unavailable_request_contract_merge_commit": "840a86fb",
+    "latest_plan_pass_status_constraint_alignment_branch": "codex/l3-status-ck",
+    "latest_plan_pass_status_constraint_alignment_base_commit": "8ca47d4d",
+    "latest_plan_pass_status_constraint_alignment_summary": "Fresh schema/model status constraints align L3AnalysisPlan.status and L3PassRun.status with the repo-live status vocabulary through ck_l3_analysis_plan_status, ck_l3_pass_run_status, backend/app/models/models.py, backend/alembic/versions/0014_layer3_pass_entry.py, and backend/tests/test_layer3_plan_pass_status_constraints.py. No retrofit migration for already-upgraded SQLite databases is included, and no route, DTO, service, UI, source, package, handoff, export, connector, provider, qualitative, mockup, or auth/security activation is admitted."
+  },
+  "plan_pass_status_constraint_alignment_proof": {
+    "scope": "Fresh schema/model status constraint proof for L3AnalysisPlan.status and L3PassRun.status only.",
+    "implementation_branch": "codex/l3-status-ck",
+    "base_commit": "8ca47d4d",
+    "live_behavior_change": true,
+    "model": "backend/app/models/models.py",
+    "migration": "backend/alembic/versions/0014_layer3_pass_entry.py",
+    "proof_test": "backend/tests/test_layer3_plan_pass_status_constraints.py",
+    "constraints": [
+      "ck_l3_analysis_plan_status",
+      "ck_l3_pass_run_status"
+    ],
+    "authority_basis": [
+      "Repo-live services use L3AnalysisPlan.status values formed, approved, and cancelled.",
+      "Repo-live pass-entry/workbench services use L3PassRun.status values planned, selected_not_started, running, completed, completed_with_warnings, and failed.",
+      "The model metadata and fresh 0014 migration now carry named check constraints for those vocabularies.",
+      "The proof test asserts invalid plan/pass statuses raise IntegrityError, verifies the model vocabularies match the existing pass-entry and approved-plan-cancel owner-service constants, and inspects the fresh migration table elements for both named constraints."
+    ],
+    "non_goals": [
+      "No retrofit migration for already-upgraded SQLite databases",
+      "approved-plan supersession, replacement, reopening, or deletion",
+      "approved-plan cancellation semantic changes",
+      "L3PassRun creation beyond existing flows",
+      "AnalysisRun creation",
+      "output/package/handoff/export artifact creation",
+      "source/schema/runtime widening beyond these two check constraints",
+      "connector/destination dispatch",
+      "provider/public URL support",
+      "broad qualitative/hybrid/RAG execution",
+      "frontend-only durable state",
+      "hidden LLM planning",
+      "full mockup activation",
+      "authentication/security hardening",
+      "broad package mutation/reconstruction"
+    ],
+    "required_tests": [
+      "python -m py_compile .\\backend\\app\\models\\models.py .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_plan_pass_status_constraints.py -q",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ]
   },
   "approved_plan_cancel_downstream_state_hardening_proof": {
     "scope": "Runtime hardening proof for approved_plan_cancel_without_replacement only; broader approved-plan correction modes remain blocked.",
