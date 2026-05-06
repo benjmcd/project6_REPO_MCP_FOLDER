@@ -6053,7 +6053,7 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
         if term not in board_text:
             errors.append(f"{_rel(BOARD)} missing Gate B summary extraction board term: {term}")
     for stale_term in (
-        "Branch-local proof/refactor continuation",
+        "Branch-local proof/refactor continuation: branch `codex/l3-gate-b-material-basis-extract`",
         "| Gate B material/decision basis extraction | in-progress no-behavior-change refactor/proof |",
         "branch `codex/l3-gate-b-material-basis-extract`, base `8509a6f0`",
     ):
