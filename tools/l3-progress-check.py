@@ -6438,6 +6438,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "PACKAGE_REVIEW_SUBMIT_FORBIDDEN_FIELDS",
         "PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID",
         "PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS",
+        "PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID",
+        "HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID",
+        "APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID",
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID",
         "package_review_preview_summary(",
         "package_review_candidate_projection(",
         "review_state_is_admitted_associated_cohort(",
@@ -6445,6 +6449,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "review_source_packages as _review_source_packages",
         "canonical_payload_hashes as _canonical_payload_hashes",
         "canonical_payload_refs as _canonical_payload_refs",
+        "package_review_submit_from_reconciliation as _package_review_submit_from_reconciliation",
+        "handoff_export_prepare_from_reconciliation as _handoff_export_prepare_from_reconciliation",
+        "aps_handoff_dispatch_from_reconciliation as _aps_handoff_dispatch_from_reconciliation",
+        "external_export_download_prepare_from_reconciliation as _external_export_download_prepare_from_reconciliation",
         "blocked_payload_fields = package_review_preview_blocked_fields(payload)",
         "blocked_payload_fields = package_construction_commit_blocked_fields(payload)",
         "blocked_payload_fields = package_review_submit_blocked_fields(payload)",
@@ -6470,6 +6478,14 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def _review_source_packages(",
         "def _canonical_payload_hashes(",
         "def _canonical_payload_refs(",
+        "PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID = \"layer3.package_review_submit_state.v1\"",
+        "HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = \"layer3.handoff_export_prepare_state.v1\"",
+        "APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = \"layer3.aps_handoff_dispatch_state.v1\"",
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = \"layer3.external_export_download_prepare_state.v1\"",
+        "def _package_review_submit_from_reconciliation(",
+        "def _handoff_export_prepare_from_reconciliation(",
+        "def _aps_handoff_dispatch_from_reconciliation(",
+        "def _external_export_download_prepare_from_reconciliation(",
     ):
         if stale_term in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns package review contract term: {stale_term}")
@@ -6502,6 +6518,15 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def review_source_packages(",
         "def canonical_payload_hashes(",
         "def canonical_payload_refs(",
+        "PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID = \"layer3.package_review_submit_state.v1\"",
+        "HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = \"layer3.handoff_export_prepare_state.v1\"",
+        "APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = \"layer3.aps_handoff_dispatch_state.v1\"",
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = \"layer3.external_export_download_prepare_state.v1\"",
+        "def reconciliation_state(",
+        "def package_review_submit_from_reconciliation(",
+        "def handoff_export_prepare_from_reconciliation(",
+        "def aps_handoff_dispatch_from_reconciliation(",
+        "def external_export_download_prepare_from_reconciliation(",
     ):
         if term not in package_state_text:
             errors.append(f"{_rel(WORKBENCH_PACKAGE_STATE_SERVICE)} missing package-state helper term: {term}")
@@ -6521,6 +6546,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "test_review_source_packages_filters_to_package_review_candidate_kinds",
         "test_packages_in_review_order_uses_package_review_candidate_order",
         "test_canonical_payload_hashes_and_refs_use_review_package_identity_forms",
+        "test_reconciliation_state_requires_dict_and_matching_schema",
+        "test_package_reconciliation_state_readers_preserve_matching_states",
+        "test_package_reconciliation_state_readers_reject_wrong_schema",
     ):
         if term not in package_state_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
@@ -6633,6 +6661,42 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_package_review_package_set_helper_extraction_summary "
                     f"missing package set helper extraction term: {term}"
                 )
+        if proof_scope.get("latest_package_reconciliation_state_extraction_branch") != (
+            "codex/l3-package-reconciliation-state"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_reconciliation_state_extraction_branch "
+                "must be 'codex/l3-package-reconciliation-state'"
+            )
+        reconciliation_state_pr = proof_scope.get("latest_package_reconciliation_state_extraction_pr")
+        if reconciliation_state_pr != "pending" and not (
+            isinstance(reconciliation_state_pr, str) and re.fullmatch(r"#\d+", reconciliation_state_pr)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_reconciliation_state_extraction_pr must be 'pending' or a PR number"
+            )
+        if proof_scope.get("latest_package_reconciliation_state_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_reconciliation_state_extraction_live_behavior_change must be False"
+            )
+        reconciliation_state_summary = proof_scope.get("latest_package_reconciliation_state_extraction_summary")
+        for term in (
+            "reconciliation state extraction",
+            "package_review_submit_from_reconciliation",
+            "handoff_export_prepare_from_reconciliation",
+            "aps_handoff_dispatch_from_reconciliation",
+            "external_export_download_prepare_from_reconciliation",
+            "without activating package mutation/reconstruction",
+        ):
+            if not isinstance(reconciliation_state_summary, str) or term not in reconciliation_state_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_package_reconciliation_state_extraction_summary "
+                    f"missing reconciliation state extraction term: {term}"
+                )
 
     required_doc_terms = {
         SYNTHESIS_BOUNDARY: (
@@ -6673,11 +6737,13 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "latest_workbench_package_state_helper_proof_pr",
             "latest_package_review_preview_state_extraction_branch",
             "latest_package_review_package_set_helper_extraction_branch",
+            "latest_package_reconciliation_state_extraction_branch",
             "c1448bbd799c003b172514da1b04ac70495a4dca",
             "test_layer3_workbench_package_state.py",
             "package-state helper proof",
             "package-review preview state extraction",
             "package-set helper extraction",
+            "reconciliation state extraction",
             "without activating package mutation",
         ),
         BOARD: (
@@ -6687,6 +6753,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "package-state helper proof hardening",
             "package-review preview state extraction",
             "package-set helper extraction",
+            "reconciliation state extraction",
             "without activating package mutation/reconstruction",
         ),
     }
