@@ -38,6 +38,8 @@ from app.services.layer3_workbench_package_state import (
     packages_in_kind_order,
     packages_with_kinds,
     reconciliation_state,
+    review_package_hash_map,
+    review_package_ref_map,
     review_source_packages,
     review_state_is_admitted_associated_cohort,
     state_downstream_unavailable,
@@ -555,6 +557,25 @@ def test_packages_in_review_order_uses_package_review_candidate_order() -> None:
 
     assert [package.package_kind for package in ordered] == list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
     assert [package.output_package_id for package in ordered] == ["pkg-internal", "pkg-user", "pkg-review"]
+
+
+def test_review_package_identity_maps_use_package_review_order_and_string_values() -> None:
+    packages = [
+        _package("user_facing", "pkg-user", payload_ref="ref-user", payload_hash="hash-user"),
+        _package("canonical_internal", "pkg-internal", payload_ref="ref-internal", payload_hash="hash-internal"),
+        _package("review_facing", "pkg-review", payload_ref="", payload_hash=""),
+    ]
+
+    assert review_package_ref_map(packages) == {
+        "canonical_internal": "ref-internal",
+        "user_facing": "ref-user",
+        "review_facing": "",
+    }
+    assert review_package_hash_map(packages) == {
+        "canonical_internal": "hash-internal",
+        "user_facing": "hash-user",
+        "review_facing": "",
+    }
 
 
 def test_dispatched_package_id_requires_dispatched_state_and_expected_kind() -> None:

@@ -6540,6 +6540,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def legacy_package_review_submit_record_ref(",
         "def cohort_package_construction_source(",
         "def package_review_submit_downstream_unavailable(",
+        "def review_package_ref_map(",
+        "def review_package_hash_map(",
     ):
         if term not in package_state_text:
             errors.append(f"{_rel(WORKBENCH_PACKAGE_STATE_SERVICE)} missing package-state helper term: {term}")
@@ -6572,6 +6574,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "test_legacy_package_review_submit_record_ref_rejects_missing_or_provenance_authority",
         "test_cohort_package_construction_source_requires_exact_source_gate",
         "test_package_review_submit_downstream_unavailable_preserves_state_priority",
+        "test_review_package_identity_maps_use_package_review_order_and_string_values",
     ):
         if term not in package_state_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
@@ -6947,6 +6950,55 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_package_submit_state_helper_extraction_summary "
                     f"missing package submit state helper extraction term: {term}"
                 )
+        if proof_scope.get("latest_package_identity_map_extraction_branch") != (
+            "codex/l3-package-identity-maps"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_identity_map_extraction_branch must be 'codex/l3-package-identity-maps'"
+            )
+        identity_map_pr = proof_scope.get("latest_package_identity_map_extraction_pr")
+        if identity_map_pr != "pending" and not (
+            isinstance(identity_map_pr, str) and re.fullmatch(r"#\d+", identity_map_pr)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_identity_map_extraction_pr must be 'pending' or a PR number"
+            )
+        identity_map_head = proof_scope.get("latest_package_identity_map_extraction_head_commit")
+        if identity_map_head != "pending" and not (
+            isinstance(identity_map_head, str) and re.fullmatch(r"[0-9a-f]{40}", identity_map_head)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_identity_map_extraction_head_commit must be 'pending' or a 40-character commit"
+            )
+        identity_map_merge = proof_scope.get("latest_package_identity_map_extraction_merge_commit")
+        if identity_map_merge != "pending" and not (
+            isinstance(identity_map_merge, str) and re.fullmatch(r"[0-9a-f]{40}", identity_map_merge)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_identity_map_extraction_merge_commit must be 'pending' or a 40-character commit"
+            )
+        if proof_scope.get("latest_package_identity_map_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_identity_map_extraction_live_behavior_change must be False"
+            )
+        identity_map_summary = proof_scope.get("latest_package_identity_map_extraction_summary")
+        for term in (
+            "package identity map extraction",
+            "review_package_ref_map",
+            "review_package_hash_map",
+            "without activating package mutation/reconstruction",
+        ):
+            if not isinstance(identity_map_summary, str) or term not in identity_map_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_package_identity_map_extraction_summary "
+                    f"missing package identity map extraction term: {term}"
+                )
 
     for path, terms in {
         MANIFEST: (
@@ -6956,6 +7008,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "latest_package_submit_state_helper_extraction_branch",
             "package_submit_state_helper_extraction",
             "legacy_package_review_submit_record_ref",
+            "latest_package_identity_map_extraction_branch",
+            "package_identity_map_extraction",
+            "review_package_ref_map",
             "without activating package mutation/reconstruction",
         ),
         BOARD: (
@@ -6963,6 +7018,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "package_owner_compatibility",
             "Package submit state helper extraction",
             "package_review_submit_downstream_unavailable",
+            "Package identity map extraction",
+            "review_package_hash_map",
             "without changing package-review preview behavior",
         ),
     }.items():
