@@ -734,6 +734,55 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
         "plan_revision_control",
     } <= set(revision_schema["required"])
 
+    recovery_request_schema = spec["paths"]["/api/v1/layer3/plan/revision/recover"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert recovery_request_schema["additionalProperties"] is False
+    assert set(recovery_request_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "source_revision_state",
+        "source_preview_id",
+        "source_preview_hash",
+        "operator_decision",
+    }
+    assert recovery_request_schema["properties"]["schema_id"]["enum"] == [
+        "layer3.plan_revision_recovery_request.v1"
+    ]
+    assert recovery_request_schema["properties"]["operator_decision"]["enum"] == ["recover_for_preview_refresh"]
+    assert recovery_request_schema["properties"]["source_revision_state"]["enum"] == [
+        "plan_rejected",
+        "plan_revision_requested",
+    ]
+    assert recovery_request_schema["properties"]["execute"]["description"].startswith("Known but non-admitted")
+    assert recovery_request_schema["properties"]["provider_public_url"]["description"].startswith(
+        "Known but non-admitted"
+    )
+
+    recovery_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/revision/recover", "post")
+    assert recovery_schema["title"] == "Layer3PlanRevisionRecoveryResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "source_revision_state",
+        "next_state",
+        "preview_refresh_required",
+        "approval_available",
+        "execution_started",
+        "recovery_lifecycle_only",
+        "source_preview_id",
+        "source_preview_hash",
+        "operator_decision",
+        "operator_note_recorded",
+        "authority_rail",
+        "downstream_unavailable",
+        "plan_revision_recovery",
+    } <= set(recovery_schema["required"])
+
 
 def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
@@ -1848,6 +1897,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/plan/preview", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/plan/approve", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/plan/revise", "post"): ("400", "404", "409", "500"),
+        ("/api/v1/layer3/plan/revision/recover", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/execution/select", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/execution/start", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/execution/result/status", "post"): ("400", "404", "409"),
@@ -1910,6 +1960,19 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
             },
         ),
         ("plan_revision", "post", "/api/v1/layer3/plan/revise", {}),
+        (
+            "plan_revision_recovery",
+            "post",
+            "/api/v1/layer3/plan/revision/recover",
+            {
+                "client_request_id": "forced-recovery-boundary",
+                "session_id": "session-forced",
+                "source_revision_state": "plan_rejected",
+                "source_preview_id": "preview-forced",
+                "source_preview_hash": "hash-forced",
+                "operator_decision": "recover_for_preview_refresh",
+            },
+        ),
         ("execution_selection", "post", "/api/v1/layer3/execution/select", {}),
         ("analysis_execution_start", "post", "/api/v1/layer3/execution/start", {}),
         ("execution_result_status", "post", "/api/v1/layer3/execution/result/status", {}),
@@ -3809,6 +3872,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["package_supersession_commit"] is True
     assert bootstrap_body["features"]["replacement_package_artifact_manifest"] is True
     assert bootstrap_body["features"]["replacement_package_namespace"] is True
+    assert bootstrap_body["features"]["plan_revision_recovery"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -3870,6 +3934,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         bootstrap_body["execution_readiness"]["replacement_package_namespace_endpoint"]
         == "/api/v1/layer3/package/replacement-namespace/record"
     )
+    assert bootstrap_body["execution_readiness"]["plan_revision_recovery_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["plan_revision_recovery_endpoint"]
+        == "/api/v1/layer3/plan/revision/recover"
+    )
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_export_admitted"] is False
@@ -3927,6 +3996,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         readiness_body["replacement_package_namespace_endpoint"]
         == "/api/v1/layer3/package/replacement-namespace/record"
     )
+    assert readiness_body["plan_revision_recovery_admitted"] is True
+    assert readiness_body["plan_revision_recovery_endpoint"] == "/api/v1/layer3/plan/revision/recover"
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["external_handoff_admitted"] is False
     assert readiness_body["external_export_admitted"] is False
@@ -3941,6 +4012,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "record_replacement_package_set_authority" in readiness_body["state_action_contract"]["action_ids"]
     assert "package_supersession_commit" in readiness_body["state_action_contract"]["action_ids"]
     assert "replacement_package_namespace" in readiness_body["state_action_contract"]["action_ids"]
+    assert "plan_revision_recover" in readiness_body["state_action_contract"]["action_ids"]
     admitted_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["admitted_capabilities"]
     }
@@ -3982,6 +4054,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         admitted_capabilities["replacement_package_namespace_rows"]["owner_service"]
         == "backend/app/services/layer3_replacement_package_namespace.py"
     )
+    assert admitted_capabilities["plan_revision_recovery_preview_refresh_entry"]["admitted"] is True
+    assert (
+        admitted_capabilities["plan_revision_recovery_preview_refresh_entry"]["owner_service"]
+        == "backend/app/services/layer3_plan_revision_recovery.py"
+    )
     deferred_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["deferred_capabilities"]
     }
@@ -4007,14 +4084,18 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         readiness_body["idempotency_contract"]["client_request_id_required_for_replacement_package_namespace"]
         is True
     )
+    assert readiness_body["idempotency_contract"]["client_request_id_required_for_plan_revision_recovery"] is True
     assert "duplicate_package_supersession_preview" in readiness_body["idempotency_contract"]
     assert "duplicate_replacement_package_set_authority" in readiness_body["idempotency_contract"]
     assert "duplicate_package_supersession_commit" in readiness_body["idempotency_contract"]
     assert "duplicate_replacement_package_namespace" in readiness_body["idempotency_contract"]
+    assert "duplicate_plan_revision_recovery" in readiness_body["idempotency_contract"]
     assert (
         readiness_body["concurrency_contract"]["replacement_package_namespace_uses_unique_request_basis_and_manifest_kind"]
         is True
     )
+    assert readiness_body["concurrency_contract"]["plan_revision_recovery_uses_session_lock"] is True
+    assert readiness_body["concurrency_contract"]["plan_revision_recovery_is_preview_refresh_only"] is True
     assert "duplicate_gate_b_decision" in readiness_body["idempotency_contract"]
     assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "durable_claim_and_post_commit_retry"
     assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is True
@@ -4026,7 +4107,10 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "aps-handoff-dispatch" in readiness_body["implemented_gates"]
     assert "external-export-download-prepare" in readiness_body["implemented_gates"]
     assert "external-export-download-deliver" in readiness_body["implemented_gates"]
-    assert "revision-recovery" in readiness_body["deferred_gates"]
+    assert "revision-recovery" in readiness_body["implemented_gates"]
+    assert "revision-recovery" not in readiness_body["deferred_gates"]
+    assert readiness_body["plan_revision_recovery_admitted"] is True
+    assert readiness_body["plan_revision_recovery_endpoint"] == "/api/v1/layer3/plan/revision/recover"
     states = {item["state"] for item in readiness_body["state_model"]["states"]}
     assert {
         "plan_preview_ready",
@@ -5347,6 +5431,314 @@ def test_layer3_api_plan_revision_request_revision_prechecks(client: TestClient,
         assert db.query(L3AnalysisPlan).count() == 0
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+@pytest.mark.parametrize(
+    ("operator_decision", "expected_state"),
+    [
+        ("reject_current_preview", "plan_rejected"),
+        ("request_revision", "plan_revision_requested"),
+    ],
+)
+def test_layer3_api_plan_revision_recovery_restores_preview_refresh_only(
+    client: TestClient,
+    tmp_path,
+    operator_decision: str,
+    expected_state: str,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": f"api-plan-recovery-{operator_decision}-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    ).json()
+    revision = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": f"api-plan-recovery-{operator_decision}-revision",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_decision": operator_decision,
+        },
+    )
+    assert revision.status_code == 200
+
+    recovery_payload = {
+        "schema_id": "layer3.plan_revision_recovery_request.v1",
+        "client_request_id": f"api-plan-recovery-{operator_decision}",
+        "session_id": session_id,
+        "source_revision_state": expected_state,
+        "source_preview_id": preview["preview_id"],
+        "source_preview_hash": preview["preview_hash"],
+        "operator_decision": "recover_for_preview_refresh",
+        "operator_note": "Return to server preview refresh only.",
+    }
+    recovery = client.post("/api/v1/layer3/plan/revision/recover", json=recovery_payload)
+    assert recovery.status_code == 200
+    recovery_body = recovery.json()
+    _assert_common_response_envelope(recovery_body)
+    assert recovery_body["schema_id"] == "layer3.plan_revision_recovery_result.v1"
+    assert recovery_body["source_revision_state"] == expected_state
+    assert recovery_body["next_state"] == "gate_c_typing_committed"
+    assert recovery_body["preview_refresh_required"] is True
+    assert recovery_body["approval_available"] is False
+    assert recovery_body["execution_started"] is False
+    assert recovery_body["recovery_lifecycle_only"] is True
+    assert recovery_body["operator_decision"] == "recover_for_preview_refresh"
+    assert recovery_body["operator_note_recorded"] is True
+    assert recovery_body["downstream_unavailable"] == ["execution", "results", "package", "handoff"]
+    assert recovery_body["authority_rail"]["persistence_mode"] == "plan_revision_recovery"
+    assert recovery_body["authority_rail"]["execution_enabled"] is False
+    assert recovery_body["authority_rail"]["package_review_enabled"] is False
+    assert recovery_body["plan_revision_recovery"]["source_preview_id"] == preview["preview_id"]
+
+    duplicate = client.post("/api/v1/layer3/plan/revision/recover", json=recovery_payload)
+    assert duplicate.status_code == 200
+    assert duplicate.json()["plan_revision_recovery"]["recovery_id"] == recovery_body["plan_revision_recovery"]["recovery_id"]
+
+    stale_approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": f"api-plan-recovery-{operator_decision}-stale-approval",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert stale_approval.status_code == 409
+    assert stale_approval.json()["error_code"] == "preview_mismatch"
+
+    refreshed_preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": f"api-plan-recovery-{operator_decision}-refreshed-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert refreshed_preview.status_code == 200
+    refreshed_preview_body = refreshed_preview.json()
+    assert refreshed_preview_body["preview_id"] != preview["preview_id"]
+    assert refreshed_preview_body["preview_hash"] == preview["preview_hash"]
+    assert (
+        refreshed_preview_body["plan_preview"]["revision_recovery"]["recovery_id"]
+        == recovery_body["plan_revision_recovery"]["recovery_id"]
+    )
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["plan_revision"]["recovered"] is True
+    assert summary_body["plan_revision_recovery"]["state"] == "plan_preview_refresh_required"
+    assert summary_body["plan_revision_recovery"]["available"] is False
+    assert summary_body["plan_approval"]["available"] is False
+    assert summary_body["plan_approval"]["blocked_reason"] == "plan_preview_refresh_required"
+
+    db = client.layer3_session_factory()
+    try:
+        session = db.get(L3Session, session_id)
+        assert session is not None
+        assert session.summary_json["plan_revision_control"]["state"] == expected_state
+        assert session.summary_json["plan_revision_control"]["recovery_state"] == "plan_preview_refresh_required"
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+        assert db.query(ConnectorRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_plan_revision_recovery_prechecks_fail_closed(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    no_revision = client.post(
+        "/api/v1/layer3/plan/revision/recover",
+        json={
+            "client_request_id": "api-plan-recovery-no-revision",
+            "session_id": session_id,
+            "source_revision_state": "plan_rejected",
+            "source_preview_id": "missing-preview",
+            "source_preview_hash": "missing-hash",
+            "operator_decision": "recover_for_preview_refresh",
+        },
+    )
+    assert no_revision.status_code == 409
+    assert no_revision.json()["error_code"] == "plan_revision_recovery_not_available"
+
+    forbidden = client.post(
+        "/api/v1/layer3/plan/revision/recover",
+        json={
+            "client_request_id": "api-plan-recovery-forbidden",
+            "session_id": session_id,
+            "source_revision_state": "plan_rejected",
+            "source_preview_id": "missing-preview",
+            "source_preview_hash": "missing-hash",
+            "operator_decision": "recover_for_preview_refresh",
+            "execute": True,
+            "provider_public_url": "https://example.invalid/object",
+        },
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "execution_not_admitted"
+    assert forbidden.json()["blocked_fields"] == ["execute", "provider_public_url"]
+
+    unsupported = client.post(
+        "/api/v1/layer3/plan/revision/recover",
+        json={
+            "client_request_id": "api-plan-recovery-unsupported",
+            "session_id": session_id,
+            "source_revision_state": "plan_rejected",
+            "source_preview_id": "missing-preview",
+            "source_preview_hash": "missing-hash",
+            "operator_decision": "recover_and_approve",
+        },
+    )
+    assert unsupported.status_code == 400
+    assert unsupported.json()["error_code"] == "unsupported_revision_recovery_decision"
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-recovery-prechecks-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    ).json()
+    revision = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-recovery-prechecks-revision",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_decision": "request_revision",
+        },
+    )
+    assert revision.status_code == 200
+
+    state_mismatch = client.post(
+        "/api/v1/layer3/plan/revision/recover",
+        json={
+            "client_request_id": "api-plan-recovery-state-mismatch",
+            "session_id": session_id,
+            "source_revision_state": "plan_rejected",
+            "source_preview_id": preview["preview_id"],
+            "source_preview_hash": preview["preview_hash"],
+            "operator_decision": "recover_for_preview_refresh",
+        },
+    )
+    assert state_mismatch.status_code == 409
+    assert state_mismatch.json()["error_code"] == "plan_revision_state_mismatch"
+
+    preview_mismatch = client.post(
+        "/api/v1/layer3/plan/revision/recover",
+        json={
+            "client_request_id": "api-plan-recovery-preview-mismatch",
+            "session_id": session_id,
+            "source_revision_state": "plan_revision_requested",
+            "source_preview_id": preview["preview_id"],
+            "source_preview_hash": "stale-preview-hash",
+            "operator_decision": "recover_for_preview_refresh",
+        },
+    )
+    assert preview_mismatch.status_code == 409
+    assert preview_mismatch.json()["error_code"] == "preview_mismatch"
+
+    db = client.layer3_session_factory()
+    try:
+        analysis_set = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).first()
+        assert analysis_set is not None
+        db.add(
+            L3AnalysisPlan(
+                analysis_plan_id="manual-recovery-approved-plan",
+                session_id=session_id,
+                analysis_set_ids_json=[analysis_set.analysis_set_id],
+                status="approved",
+                approved_by_operator=True,
+                plan_json={"approval_only": True, "execution_started": False},
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    approved_blocked = client.post(
+        "/api/v1/layer3/plan/revision/recover",
+        json={
+            "client_request_id": "api-plan-recovery-approved-plan",
+            "session_id": session_id,
+            "source_revision_state": "plan_rejected",
+            "source_preview_id": preview["preview_id"],
+            "source_preview_hash": preview["preview_hash"],
+            "operator_decision": "recover_for_preview_refresh",
+        },
+    )
+    assert approved_blocked.status_code == 409
+    assert approved_blocked.json()["error_code"] == "plan_already_approved"
+
+    db = client.layer3_session_factory()
+    try:
+        analysis_set = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).first()
+        assert analysis_set is not None
+        db.add(
+            L3PassRun(
+                pass_run_id="manual-recovery-pass-run",
+                session_id=session_id,
+                analysis_plan_id="manual-recovery-approved-plan",
+                analysis_set_id=analysis_set.analysis_set_id,
+                pass_type="single_item",
+                engine_family="wrapped_quantitative_analysis",
+                status="selected_not_started",
+                input_payload_ref="memory://manual-recovery-pass-run/input",
+                summary_json={"execution_started": False},
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    pass_runs_blocked = client.post(
+        "/api/v1/layer3/plan/revision/recover",
+        json={
+            "client_request_id": "api-plan-recovery-pass-runs",
+            "session_id": session_id,
+            "source_revision_state": "plan_rejected",
+            "source_preview_id": preview["preview_id"],
+            "source_preview_hash": preview["preview_hash"],
+            "operator_decision": "recover_for_preview_refresh",
+        },
+    )
+    assert pass_runs_blocked.status_code == 409
+    assert pass_runs_blocked.json()["error_code"] == "pass_runs_already_exist"
+
+    db = client.layer3_session_factory()
+    try:
+        session = db.get(L3Session, session_id)
+        assert session is not None
+        assert "plan_revision_recovery" not in (session.summary_json or {})
     finally:
         db.close()
 

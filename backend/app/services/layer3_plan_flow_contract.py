@@ -30,6 +30,19 @@ PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(
         "vector_plan",
     }
 )
+PLAN_REVISION_RECOVERY_FORBIDDEN_FIELDS = PLAN_REVISION_FORBIDDEN_FIELDS | frozenset(
+    {
+        "approve_plan",
+        "approved_plan_supersession",
+        "delete_approved_plan",
+        "analysis_run_id",
+        "package_mutation",
+        "connector_dispatch",
+        "provider_public_url",
+        "source_expansion",
+        "browser_persisted_state",
+    }
+)
 EXECUTION_SELECTION_FORBIDDEN_FIELDS = frozenset(
     {
         "execute",
@@ -61,6 +74,10 @@ def plan_approval_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
 
 def plan_revision_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
     return sorted(key for key in PLAN_REVISION_FORBIDDEN_FIELDS if key in payload)
+
+
+def plan_revision_recovery_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
+    return sorted(key for key in PLAN_REVISION_RECOVERY_FORBIDDEN_FIELDS if key in payload)
 
 
 def execution_selection_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
