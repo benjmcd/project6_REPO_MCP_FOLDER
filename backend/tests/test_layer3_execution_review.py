@@ -191,3 +191,77 @@ def test_result_review_trace_summary_preserves_workbench_projection() -> None:
     assert trace_summary["selected_method_name"] == "fallback-method"
     assert trace_summary["source_dataset_version_ids"] == ["dataset-version-summary"]
     assert trace_summary["reviewed_item_count"] == 1
+
+
+def test_execution_result_review_response_preserves_workbench_projection() -> None:
+    pass_run = _pass_run()
+    review_state = {
+        "review_state": "execution_result_review_approved",
+        "operator_decision": "approved",
+        "review_record_ref": "layer3://review/pass-run-review",
+        "trace_summary": {"reviewed_item_count": 1, "nested": {"stable": True}},
+        "reviewed_output_items": [{"item_ref": "item-1", "trace_status": "resolved"}],
+        "unresolved_trace_count": 0,
+        "review_notes": "Reviewed and traceable.",
+        "pass_type": PASS_TYPE_SINGLE_ITEM,
+        "pass_scope": "single_item",
+        "selected_method_name": "cross_correlation",
+        "source_gate": "source-gate-review",
+        "source_dataset_version_ids": ["dataset-version-output"],
+        "cohort_shape": "single_item",
+    }
+
+    assert layer3_workbench._execution_result_review_response is execution_review.execution_result_review_response
+
+    response = execution_review.execution_result_review_response(
+        request_id="request-review-response",
+        status="recorded",
+        session_id=pass_run.session_id,
+        analysis_plan_id=pass_run.analysis_plan_id,
+        preview_id="preview-review",
+        preview_hash="hash-review",
+        pass_run=pass_run,
+        analysis_run_id="analysis-run-review",
+        review_state=review_state,
+    )
+
+    assert response["schema_id"] == execution_review.EXECUTION_RESULT_REVIEW_SCHEMA_ID
+    assert response["status"] == "recorded"
+    assert response["request_id"] == "request-review-response"
+    assert response["session_id"] == pass_run.session_id
+    assert response["analysis_plan_id"] == pass_run.analysis_plan_id
+    assert response["pass_run_id"] == pass_run.pass_run_id
+    assert response["preview_identity"]["schema_id"] == "layer3.plan_preview_identity.v1"
+    assert response["preview_identity"]["preview_id"] == "preview-review"
+    assert response["preview_identity"]["preview_hash"] == "hash-review"
+    assert response["preview_identity"]["authority_source"] == "server_owner_service_preview"
+    assert response["preview_identity"]["stale_preview_writes_blocked"] is True
+    assert response["analysis_run_id"] == "analysis-run-review"
+    assert response["result_status_available"] is True
+    assert response["result_review_enabled"] is True
+    assert response["review_state"] == "execution_result_review_approved"
+    assert response["operator_decision"] == "approved"
+    assert response["review_record_ref"] == "layer3://review/pass-run-review"
+    assert response["trace_summary"] == review_state["trace_summary"]
+    assert response["reviewed_output_items"] == review_state["reviewed_output_items"]
+    assert response["unresolved_trace_count"] == 0
+    assert response["package_review_enabled"] is False
+    assert response["handoff_enabled"] is False
+    assert response["downstream_unavailable"] == list(
+        execution_review.EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE
+    )
+    assert response["review_notes_recorded"] is True
+    assert response["engine_family"] == pass_run.engine_family
+    assert response["pass_type"] == PASS_TYPE_SINGLE_ITEM
+    assert response["pass_scope"] == "single_item"
+    assert response["selected_method_name"] == "cross_correlation"
+    assert response["source_gate"] == "source-gate-review"
+    assert response["source_dataset_version_ids"] == ["dataset-version-output"]
+    assert response["cohort_shape"] == "single_item"
+
+    review_state["trace_summary"]["nested"]["stable"] = False
+    review_state["reviewed_output_items"][0]["trace_status"] = "mutated"
+    review_state["source_dataset_version_ids"].append("mutated-dataset")
+    assert response["trace_summary"]["nested"]["stable"] is True
+    assert response["reviewed_output_items"][0]["trace_status"] == "resolved"
+    assert response["source_dataset_version_ids"] == ["dataset-version-output"]
