@@ -670,6 +670,27 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     assert approval_request_schema["properties"]["operator_confirmation"] == {"type": "boolean", "enum": [True]}
     assert approval_request_schema["properties"]["approval_scope"]["enum"] == ["owner_service_default"]
 
+    cancel_request_schema = spec["paths"]["/api/v1/layer3/plan/approved/cancel"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert cancel_request_schema["additionalProperties"] is False
+    assert set(cancel_request_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "source_preview_id",
+        "source_preview_hash",
+        "operator_decision",
+    }
+    assert cancel_request_schema["properties"]["schema_id"]["enum"] == ["layer3.approved_plan_cancel_request.v1"]
+    assert cancel_request_schema["properties"]["operator_decision"]["enum"] == [
+        "cancel_approved_plan_without_replacement"
+    ]
+    assert cancel_request_schema["properties"]["replacement_plan"]["description"].startswith("Known but non-admitted")
+    assert cancel_request_schema["properties"]["provider_public_url"]["description"].startswith(
+        "Known but non-admitted"
+    )
+
     revision_request_schema = spec["paths"]["/api/v1/layer3/plan/revise"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
@@ -695,6 +716,34 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
         "authority_rail",
         "approved_plan",
     } <= set(approval_schema["required"])
+
+    cancel_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/approved/cancel", "post")
+    assert cancel_schema["title"] == "Layer3ApprovedPlanCancelResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "next_state",
+        "approved_plan_cancelled",
+        "approval_available",
+        "execution_started",
+        "replacement_plan_created",
+        "analysis_plan_id",
+        "plan_status",
+        "previous_plan_status",
+        "approved_by_operator",
+        "approved_at",
+        "source_preview_id",
+        "source_preview_hash",
+        "operator_decision",
+        "operator_note_recorded",
+        "authority_rail",
+        "downstream_unavailable",
+        "approved_plan_cancel",
+    } <= set(cancel_schema["required"])
 
     revision_request_schema = spec["paths"]["/api/v1/layer3/plan/revise"]["post"]["requestBody"]["content"][
         "application/json"
@@ -1896,6 +1945,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/gate-c/preview", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/plan/preview", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/plan/approve", "post"): ("400", "404", "409", "500"),
+        ("/api/v1/layer3/plan/approved/cancel", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/plan/revise", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/plan/revision/recover", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/execution/select", "post"): ("400", "404", "409"),
@@ -1971,6 +2021,19 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
                 "source_preview_id": "preview-forced",
                 "source_preview_hash": "hash-forced",
                 "operator_decision": "recover_for_preview_refresh",
+            },
+        ),
+        (
+            "approved_plan_cancel",
+            "post",
+            "/api/v1/layer3/plan/approved/cancel",
+            {
+                "client_request_id": "forced-approved-plan-cancel",
+                "session_id": "session-forced",
+                "analysis_plan_id": "plan-forced",
+                "source_preview_id": "preview-forced",
+                "source_preview_hash": "hash-forced",
+                "operator_decision": "cancel_approved_plan_without_replacement",
             },
         ),
         ("execution_selection", "post", "/api/v1/layer3/execution/select", {}),
@@ -2344,6 +2407,7 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "plan_preview",
         "plan_approval",
         "plan_revision",
+        "approved_plan_cancel",
         "execution_selection",
         "analysis_execution_start",
         "execution_result_review",
@@ -3873,6 +3937,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["replacement_package_artifact_manifest"] is True
     assert bootstrap_body["features"]["replacement_package_namespace"] is True
     assert bootstrap_body["features"]["plan_revision_recovery"] is True
+    assert bootstrap_body["features"]["approved_plan_cancel"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -3939,6 +4004,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         bootstrap_body["execution_readiness"]["plan_revision_recovery_endpoint"]
         == "/api/v1/layer3/plan/revision/recover"
     )
+    assert bootstrap_body["execution_readiness"]["approved_plan_cancel_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["approved_plan_cancel_endpoint"]
+        == "/api/v1/layer3/plan/approved/cancel"
+    )
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_export_admitted"] is False
@@ -3998,6 +4068,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     )
     assert readiness_body["plan_revision_recovery_admitted"] is True
     assert readiness_body["plan_revision_recovery_endpoint"] == "/api/v1/layer3/plan/revision/recover"
+    assert readiness_body["approved_plan_cancel_admitted"] is True
+    assert readiness_body["approved_plan_cancel_endpoint"] == "/api/v1/layer3/plan/approved/cancel"
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["external_handoff_admitted"] is False
     assert readiness_body["external_export_admitted"] is False
@@ -4013,6 +4085,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "package_supersession_commit" in readiness_body["state_action_contract"]["action_ids"]
     assert "replacement_package_namespace" in readiness_body["state_action_contract"]["action_ids"]
     assert "plan_revision_recover" in readiness_body["state_action_contract"]["action_ids"]
+    assert "approved_plan_cancel" in readiness_body["state_action_contract"]["action_ids"]
+    assert "inspect_approved_plan_cancel" in readiness_body["state_action_contract"]["action_ids"]
     admitted_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["admitted_capabilities"]
     }
@@ -4059,6 +4133,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         admitted_capabilities["plan_revision_recovery_preview_refresh_entry"]["owner_service"]
         == "backend/app/services/layer3_plan_revision_recovery.py"
     )
+    assert admitted_capabilities["approved_plan_cancel_without_replacement"]["admitted"] is True
+    assert (
+        admitted_capabilities["approved_plan_cancel_without_replacement"]["owner_service"]
+        == "backend/app/services/layer3_approved_plan_correction.py"
+    )
     deferred_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["deferred_capabilities"]
     }
@@ -4085,17 +4164,21 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         is True
     )
     assert readiness_body["idempotency_contract"]["client_request_id_required_for_plan_revision_recovery"] is True
+    assert readiness_body["idempotency_contract"]["client_request_id_required_for_approved_plan_cancel"] is True
     assert "duplicate_package_supersession_preview" in readiness_body["idempotency_contract"]
     assert "duplicate_replacement_package_set_authority" in readiness_body["idempotency_contract"]
     assert "duplicate_package_supersession_commit" in readiness_body["idempotency_contract"]
     assert "duplicate_replacement_package_namespace" in readiness_body["idempotency_contract"]
     assert "duplicate_plan_revision_recovery" in readiness_body["idempotency_contract"]
+    assert "duplicate_approved_plan_cancel" in readiness_body["idempotency_contract"]
     assert (
         readiness_body["concurrency_contract"]["replacement_package_namespace_uses_unique_request_basis_and_manifest_kind"]
         is True
     )
     assert readiness_body["concurrency_contract"]["plan_revision_recovery_uses_session_lock"] is True
     assert readiness_body["concurrency_contract"]["plan_revision_recovery_is_preview_refresh_only"] is True
+    assert readiness_body["concurrency_contract"]["approved_plan_cancel_uses_session_and_plan_locks"] is True
+    assert readiness_body["concurrency_contract"]["approved_plan_cancel_without_replacement_only"] is True
     assert "duplicate_gate_b_decision" in readiness_body["idempotency_contract"]
     assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "durable_claim_and_post_commit_retry"
     assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is True
@@ -4108,13 +4191,17 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "external-export-download-prepare" in readiness_body["implemented_gates"]
     assert "external-export-download-deliver" in readiness_body["implemented_gates"]
     assert "revision-recovery" in readiness_body["implemented_gates"]
+    assert "approved-plan-cancel" in readiness_body["implemented_gates"]
     assert "revision-recovery" not in readiness_body["deferred_gates"]
     assert readiness_body["plan_revision_recovery_admitted"] is True
     assert readiness_body["plan_revision_recovery_endpoint"] == "/api/v1/layer3/plan/revision/recover"
+    assert readiness_body["approved_plan_cancel_admitted"] is True
+    assert readiness_body["approved_plan_cancel_endpoint"] == "/api/v1/layer3/plan/approved/cancel"
     states = {item["state"] for item in readiness_body["state_model"]["states"]}
     assert {
         "plan_preview_ready",
         "plan_approved",
+        "approved_plan_cancelled",
         "plan_revision_requested",
         "execution_pass_completed",
         "execution_result_status_available",
@@ -5431,6 +5518,273 @@ def test_layer3_api_plan_revision_request_revision_prechecks(client: TestClient,
         assert db.query(L3AnalysisPlan).count() == 0
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_approved_plan_cancel_without_replacement_updates_existing_plan_only(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    session_id, preview_body, approval_body = _approve_quant_plan(client, tmp_path)
+    payload = {
+        "schema_id": "layer3.approved_plan_cancel_request.v1",
+        "client_request_id": "api-approved-plan-cancel-success",
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "source_preview_id": preview_body["preview_id"],
+        "source_preview_hash": preview_body["preview_hash"],
+        "operator_decision": "cancel_approved_plan_without_replacement",
+        "operator_note": "Cancel before execution selection.",
+    }
+
+    cancel = client.post("/api/v1/layer3/plan/approved/cancel", json=payload)
+    assert cancel.status_code == 200
+    cancel_body = cancel.json()
+    _assert_common_response_envelope(cancel_body)
+    assert cancel_body["schema_id"] == "layer3.approved_plan_cancel_result.v1"
+    assert cancel_body["next_state"] == "approved_plan_cancelled"
+    assert cancel_body["approved_plan_cancelled"] is True
+    assert cancel_body["approval_available"] is False
+    assert cancel_body["execution_started"] is False
+    assert cancel_body["replacement_plan_created"] is False
+    assert cancel_body["analysis_plan_id"] == approval_body["analysis_plan_id"]
+    assert cancel_body["previous_plan_status"] == "approved"
+    assert cancel_body["plan_status"] == "cancelled"
+    assert cancel_body["source_preview_id"] == preview_body["preview_id"]
+    assert cancel_body["source_preview_hash"] == preview_body["preview_hash"]
+    assert cancel_body["downstream_unavailable"] == ["execution", "results", "package", "handoff"]
+    assert cancel_body["authority_rail"]["persistence_mode"] == "approved_plan_cancel"
+    assert cancel_body["authority_rail"]["execution_enabled"] is False
+    assert cancel_body["authority_rail"]["package_review_enabled"] is False
+    assert cancel_body["approved_plan_cancel"]["operator_note_recorded"] is True
+
+    duplicate = client.post("/api/v1/layer3/plan/approved/cancel", json=payload)
+    assert duplicate.status_code == 200
+    assert duplicate.json()["approved_plan_cancel"]["cancellation_id"] == cancel_body["approved_plan_cancel"]["cancellation_id"]
+
+    execution_selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-approved-plan-cancel-selection",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert execution_selection.status_code == 409
+    assert execution_selection.json()["error_code"] == "no_approved_plan"
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["plan_preview"]["available"] is False
+    assert summary_body["plan_preview"]["blocked_reason"] == "approved_plan_cancelled"
+    assert summary_body["plan_approval"]["approved"] is False
+    assert summary_body["plan_approval"]["blocked_reason"] == "approved_plan_cancelled"
+    assert summary_body["approved_plan_cancel"]["state"] == "approved_plan_cancelled"
+    assert summary_body["approved_plan_cancel"]["cancelled"] is True
+    assert summary_body["execution_selection"]["available"] is False
+    assert summary_body["execution_selection"]["blocked_reason"] == "no_approved_plan"
+
+    db = client.layer3_session_factory()
+    try:
+        session = db.get(L3Session, session_id)
+        assert session is not None
+        assert session.summary_json["approved_plan_cancel"]["cancellation_id"] == cancel_body["approved_plan_cancel"]["cancellation_id"]
+        plans = db.query(L3AnalysisPlan).all()
+        assert len(plans) == 1
+        stored_plan = plans[0]
+        assert stored_plan.analysis_plan_id == approval_body["analysis_plan_id"]
+        assert stored_plan.status == "cancelled"
+        assert stored_plan.approved_by_operator is True
+        assert stored_plan.plan_json["approved_plan_cancel"]["cancellation_id"] == cancel_body["approved_plan_cancel"]["cancellation_id"]
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+        assert db.query(ConnectorRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_approved_plan_cancel_prechecks_fail_closed(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        no_plan_session_id = "api-approved-plan-cancel-no-plan-session"
+        db.add(
+            L3Session(
+                session_id=no_plan_session_id,
+                selection_manifest_id="api-approved-plan-cancel-no-plan-manifest",
+                summary_json={},
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    no_plan = client.post(
+        "/api/v1/layer3/plan/approved/cancel",
+        json={
+            "client_request_id": "api-approved-plan-cancel-no-plan",
+            "session_id": no_plan_session_id,
+            "analysis_plan_id": "missing-plan",
+            "source_preview_id": "missing-preview",
+            "source_preview_hash": "missing-hash",
+            "operator_decision": "cancel_approved_plan_without_replacement",
+        },
+    )
+    assert no_plan.status_code == 409
+    assert no_plan.json()["error_code"] == "no_approved_plan"
+
+    session_id, preview_body, approval_body = _approve_quant_plan(client, tmp_path)
+    forbidden = client.post(
+        "/api/v1/layer3/plan/approved/cancel",
+        json={
+            "client_request_id": "api-approved-plan-cancel-forbidden",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "source_preview_id": preview_body["preview_id"],
+            "source_preview_hash": preview_body["preview_hash"],
+            "operator_decision": "cancel_approved_plan_without_replacement",
+            "replacement_plan": {"mode": "not-admitted"},
+            "approved_plan_supersession": True,
+            "provider_public_url": "https://example.invalid/object",
+        },
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "approved_plan_correction_not_admitted"
+    assert forbidden.json()["blocked_fields"] == [
+        "approved_plan_supersession",
+        "provider_public_url",
+        "replacement_plan",
+    ]
+
+    unsupported = client.post(
+        "/api/v1/layer3/plan/approved/cancel",
+        json={
+            "client_request_id": "api-approved-plan-cancel-unsupported",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "source_preview_id": preview_body["preview_id"],
+            "source_preview_hash": preview_body["preview_hash"],
+            "operator_decision": "supersede_approved_plan",
+        },
+    )
+    assert unsupported.status_code == 400
+    assert unsupported.json()["error_code"] == "unsupported_approved_plan_cancel_decision"
+
+    stale_plan = client.post(
+        "/api/v1/layer3/plan/approved/cancel",
+        json={
+            "client_request_id": "api-approved-plan-cancel-stale-plan",
+            "session_id": session_id,
+            "analysis_plan_id": "stale-plan",
+            "source_preview_id": preview_body["preview_id"],
+            "source_preview_hash": preview_body["preview_hash"],
+            "operator_decision": "cancel_approved_plan_without_replacement",
+        },
+    )
+    assert stale_plan.status_code == 409
+    assert stale_plan.json()["error_code"] == "approved_plan_mismatch"
+
+    stale_preview = client.post(
+        "/api/v1/layer3/plan/approved/cancel",
+        json={
+            "client_request_id": "api-approved-plan-cancel-stale-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "source_preview_id": preview_body["preview_id"],
+            "source_preview_hash": "stale-preview-hash",
+            "operator_decision": "cancel_approved_plan_without_replacement",
+        },
+    )
+    assert stale_preview.status_code == 409
+    assert stale_preview.json()["error_code"] == "preview_mismatch"
+
+    db = client.layer3_session_factory()
+    try:
+        stored_plan = db.query(L3AnalysisPlan).one()
+        assert stored_plan.status == "approved"
+        db.add(
+            L3AnalysisPlan(
+                analysis_plan_id="manual-second-approved-plan",
+                session_id=session_id,
+                analysis_set_ids_json=list(stored_plan.analysis_set_ids_json),
+                status="approved",
+                approved_by_operator=True,
+                approved_at=stored_plan.approved_at,
+                plan_json=dict(stored_plan.plan_json),
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    multiple = client.post(
+        "/api/v1/layer3/plan/approved/cancel",
+        json={
+            "client_request_id": "api-approved-plan-cancel-multiple",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "source_preview_id": preview_body["preview_id"],
+            "source_preview_hash": preview_body["preview_hash"],
+            "operator_decision": "cancel_approved_plan_without_replacement",
+        },
+    )
+    assert multiple.status_code == 409
+    assert multiple.json()["error_code"] == "multiple_approved_plans"
+
+    db = client.layer3_session_factory()
+    try:
+        db.query(L3AnalysisPlan).filter(L3AnalysisPlan.analysis_plan_id == "manual-second-approved-plan").delete()
+        analysis_set = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).first()
+        assert analysis_set is not None
+        db.add(
+            L3PassRun(
+                pass_run_id="manual-cancel-pass-run",
+                session_id=session_id,
+                analysis_plan_id=approval_body["analysis_plan_id"],
+                analysis_set_id=analysis_set.analysis_set_id,
+                pass_type="single_item",
+                engine_family="wrapped_quantitative_analysis",
+                status="selected_not_started",
+                input_payload_ref="memory://manual-cancel-pass-run/input",
+                summary_json={"execution_started": False},
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    pass_runs = client.post(
+        "/api/v1/layer3/plan/approved/cancel",
+        json={
+            "client_request_id": "api-approved-plan-cancel-pass-runs",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "source_preview_id": preview_body["preview_id"],
+            "source_preview_hash": preview_body["preview_hash"],
+            "operator_decision": "cancel_approved_plan_without_replacement",
+        },
+    )
+    assert pass_runs.status_code == 409
+    assert pass_runs.json()["error_code"] == "pass_runs_already_exist"
+
+    db = client.layer3_session_factory()
+    try:
+        session = db.get(L3Session, session_id)
+        assert session is not None
+        assert "approved_plan_cancel" not in (session.summary_json or {})
+        plans = db.query(L3AnalysisPlan).order_by(L3AnalysisPlan.analysis_plan_id.asc()).all()
+        assert {plan.status for plan in plans} == {"approved"}
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+        assert db.query(ConnectorRun).count() == 0
     finally:
         db.close()
 

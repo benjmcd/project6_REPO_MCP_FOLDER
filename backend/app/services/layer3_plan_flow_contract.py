@@ -43,6 +43,21 @@ PLAN_REVISION_RECOVERY_FORBIDDEN_FIELDS = PLAN_REVISION_FORBIDDEN_FIELDS | froze
         "browser_persisted_state",
     }
 )
+APPROVED_PLAN_CANCEL_FORBIDDEN_FIELDS = PLAN_REVISION_RECOVERY_FORBIDDEN_FIELDS | frozenset(
+    {
+        "replacement_plan",
+        "reopen_approved_plan",
+        "approved_plan_replacement",
+        "create_pass_runs",
+        "start_execution",
+        "destination_connector",
+        "destination",
+        "local_upload",
+        "local_directory",
+        "frontend_state",
+        "hidden_llm_plan",
+    }
+)
 EXECUTION_SELECTION_FORBIDDEN_FIELDS = frozenset(
     {
         "execute",
@@ -78,6 +93,10 @@ def plan_revision_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
 
 def plan_revision_recovery_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
     return sorted(key for key in PLAN_REVISION_RECOVERY_FORBIDDEN_FIELDS if key in payload)
+
+
+def approved_plan_cancel_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
+    return sorted(key for key in APPROVED_PLAN_CANCEL_FORBIDDEN_FIELDS if key in payload)
 
 
 def execution_selection_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
