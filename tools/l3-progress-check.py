@@ -54,6 +54,9 @@ PLAN_REVISION_RECOVERY_CONTRACT = (
 PLAN_REVISION_RECOVERY_ENTRY_FREEZE = (
     PLANNING_DOCS / "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md"
 )
+APPROVED_PLAN_CORRECTION_FREEZE = (
+    PLANNING_DOCS / "135_APPROVED_PLAN_CORRECTION_FREEZE.md"
+)
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -350,7 +353,7 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
 def _check_latest_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "1e74a739a07623b7d91d405d946e6b1d221be6ff"
+    expected_commit = "55d90f869d1f1e49127bc1dd2e1269d056f702aa"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -363,8 +366,8 @@ def _check_latest_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR599 current-main revision recovery "
-                f"runtime merge commit {expected_commit}"
+                f"{name} must identify the post-PR600 current-main approved-plan "
+                f"correction freeze base commit {expected_commit}"
             )
 
     for name, source in (
@@ -378,16 +381,16 @@ def _check_latest_progress_sync(
         ),
     ):
         if not isinstance(source, str):
-            errors.append(f"{name} must be present after PR599 progress/proof sync")
+            errors.append(f"{name} must be present after PR600 approved-plan correction freeze")
             continue
         for term in (
             expected_commit,
-            "after PR #599",
-            "post-merge progress/proof sync",
-            "docs/proof/checker metadata only",
+            "after PR #600",
+            "approved-plan correction freeze",
+            "no runtime behavior changes",
         ):
             if term not in source:
-                errors.append(f"{name} missing post-PR599 progress/proof sync term: {term}")
+                errors.append(f"{name} missing approved-plan correction freeze term: {term}")
 
     namespace_runtime = manifest.get("package_replacement_namespace_runtime")
     if not isinstance(namespace_runtime, dict):
@@ -556,9 +559,9 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
     else:
         required_terms = [
             "defer remaining authentication/security",
-            "After the bounded plan_revision_recovery_preview_refresh_entry runtime",
-            "post-runtime proof/state drift checking",
-            "approved-plan cancellation/supersession freeze",
+            "After doc 135 freezes approved_plan_correction_lifecycle",
+            "implementation-entry freeze for exactly one approved-plan correction mode",
+            "approved-plan cancellation/supersession runtime",
         ]
         for term in required_terms:
             if term not in next_required:
@@ -827,23 +830,20 @@ def _check_plan_revision_recovery_entry_freeze(
     if not isinstance(proof_scope, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} scope missing for revision recovery runtime")
     else:
-        expected_scope = {
-            "source_branch": "codex/l3-revision-recovery-runtime",
-            "merged_pr": "#599",
-            "merge_commit": "1e74a739a07623b7d91d405d946e6b1d221be6ff",
-            "base_commit": "47aef2ee13e173121c3738e63bafbe86e360c280",
-            "source_base_commit": "47aef2ee13e173121c3738e63bafbe86e360c280",
-            "live_behavior_change": True,
+        expected_runtime_scope = {
+            "latest_plan_revision_recovery_runtime_branch": "codex/l3-revision-recovery-runtime",
+            "latest_plan_revision_recovery_runtime_pr": "#599",
+            "latest_plan_revision_recovery_runtime_merge_commit": "1e74a739a07623b7d91d405d946e6b1d221be6ff",
+            "latest_plan_revision_recovery_runtime_base_commit": "47aef2ee13e173121c3738e63bafbe86e360c280",
+            "latest_plan_revision_recovery_runtime_head_commit": "51e5abcbcdd2070c47b3aeba73032db081be41f7",
+            "latest_plan_revision_recovery_runtime_live_behavior_change": True,
         }
-        for key, value in expected_scope.items():
+        for key, value in expected_runtime_scope.items():
             if proof_scope.get(key) != value:
                 errors.append(f"{_rel(PROOF_MANIFEST)} scope.{key} must be {value!r}")
-        purpose = proof_scope.get("purpose")
-        summary = proof_scope.get("live_behavior_change_summary")
-        if not isinstance(purpose, str) or "merged bounded runtime proof" not in purpose:
-            errors.append(f"{_rel(PROOF_MANIFEST)} scope.purpose must describe revision recovery runtime")
-        if not isinstance(summary, str) or "bounded preview-refresh recovery" not in summary:
-            errors.append(f"{_rel(PROOF_MANIFEST)} scope.live_behavior_change_summary must describe runtime behavior")
+        latest_summary = proof_scope.get("latest_plan_revision_recovery_runtime_summary")
+        if not isinstance(latest_summary, str) or "Bounded runtime for plan_revision_recovery_preview_refresh_entry" not in latest_summary:
+            errors.append(f"{_rel(PROOF_MANIFEST)} scope.latest_plan_revision_recovery_runtime_summary must describe runtime behavior")
 
     top_level = manifest.get("plan_revision_recovery_runtime")
     if not isinstance(top_level, dict):
@@ -1013,6 +1013,150 @@ def _check_plan_revision_recovery_entry_freeze(
         errors.append("readiness contract must expose admitted revision-recovery runtime")
     if '"plan_revision_recovery": True' not in bootstrap_text:
         errors.append("bootstrap contract must expose plan_revision_recovery feature flag")
+
+
+def _check_approved_plan_correction_freeze(
+    manifest: dict[str, Any], errors: list[str]
+) -> None:
+    freeze_text = _read_required_text(APPROVED_PLAN_CORRECTION_FREEZE, errors)
+    required_freeze_terms = [
+        "Status: planning/control freeze only for `approved_plan_correction_lifecycle`",
+        "selected_future_lifecycle_mode: `approved_plan_correction_lifecycle`",
+        "selected_current_posture: `approved_plan_correction_not_admitted`",
+        "approved_plan_cancel_without_replacement",
+        "approved_plan_supersession_preview_only",
+        "No runtime behavior is admitted by this document.",
+        "approved-plan cancellation, reopening, replacement, deletion, and supersession remain unavailable",
+    ]
+    for term in required_freeze_terms:
+        if term not in freeze_text:
+            errors.append(f"{_rel(APPROVED_PLAN_CORRECTION_FREEZE)} missing approved-plan correction freeze term: {term}")
+
+    required_doc_terms = {
+        DEFERRED_GATES: [
+            "135_APPROVED_PLAN_CORRECTION_FREEZE.md",
+            "approved_plan_correction_lifecycle",
+            "approved-plan cancellation, reopening, replacement, deletion, and supersession remain not admitted",
+        ],
+        SYNTHESIS_BOUNDARY: [
+            "135_APPROVED_PLAN_CORRECTION_FREEZE.md",
+            "approved_plan_correction_lifecycle",
+            "planning/control only",
+            "no `L3AnalysisPlan` mutation",
+        ],
+        GOAL_AUDIT: [
+            "Approved plan correction lifecycle",
+            "Planning/control freeze only",
+            "approved_plan_correction",
+            "approved_plan_supersession",
+        ],
+        CLOSEOUT_DOC: [
+            "planning/control approved-plan correction freeze",
+            "135_APPROVED_PLAN_CORRECTION_FREEZE.md",
+            "No approved-plan cancellation, reopening, replacement, deletion, or supersession is live.",
+        ],
+        BOARD: [
+            "Current approved-plan correction planning/control freeze",
+            "approved_plan_correction_lifecycle",
+            "81 structured records",
+            "Approved plan correction freeze",
+        ],
+        PROOF_MANIFEST: [
+            "approved_plan_correction_freeze_proof",
+            "latest_approved_plan_correction_freeze_branch",
+            "55d90f869d1f1e49127bc1dd2e1269d056f702aa",
+            "approved_plan_correction_lifecycle",
+            "No runtime behavior changes",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing approved-plan correction term: {term}")
+
+    readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
+    plan_flow_text = _read_required_text(PLAN_FLOW_CONTRACT_SERVICE, errors)
+    for term in (
+        '"approved_plan_correction": "requires later freeze"',
+        '"revision_recovery": "admitted only as preview-refresh recovery',
+    ):
+        if term not in readiness_text:
+            errors.append(f"{_rel(READINESS_CONTRACT_SERVICE)} missing approved-plan correction readiness term: {term}")
+    if '"approved_plan_supersession"' not in plan_flow_text:
+        errors.append(f"{_rel(PLAN_FLOW_CONTRACT_SERVICE)} must keep approved_plan_supersession forbidden")
+
+    top_level = manifest.get("approved_plan_correction_freeze")
+    if not isinstance(top_level, dict):
+        errors.append("manifest missing approved_plan_correction_freeze object")
+    else:
+        expected = {
+            "mode": "approved_plan_correction_lifecycle",
+            "source_gate": "135_APPROVED_PLAN_CORRECTION_FREEZE",
+            "live_behavior_change": False,
+            "planning_branch": "codex/l3-approved-plan-supersession-freeze",
+            "base_commit": "55d90f869d1f1e49127bc1dd2e1269d056f702aa",
+            "selected_current_posture": "approved_plan_correction_not_admitted",
+        }
+        for key, value in expected.items():
+            if top_level.get(key) != value:
+                errors.append(f"approved_plan_correction_freeze.{key} must be {value!r}")
+        blocked_scope = top_level.get("blocked_scope")
+        if not isinstance(blocked_scope, list):
+            errors.append("approved_plan_correction_freeze.blocked_scope must be a list")
+        else:
+            for blocked in (
+                "runtime behavior",
+                "route/API changes",
+                "approved-plan cancellation, reopening, replacement, deletion, or supersession",
+                "L3AnalysisPlan creation, update, or deletion",
+                "L3PassRun creation, update, cancellation, or deletion",
+                "AnalysisRun creation, update, cancellation, or deletion",
+                "output/package/handoff/export artifact creation",
+                "connector/destination dispatch",
+                "source/schema/runtime widening",
+                "authentication/security hardening",
+            ):
+                if blocked not in blocked_scope:
+                    errors.append(f"approved_plan_correction_freeze.blocked_scope missing {blocked}")
+
+    slices = manifest.get("layer3_workbench_slices")
+    if not isinstance(slices, list):
+        errors.append("layer3_workbench_slices missing for approved-plan correction freeze")
+    else:
+        matches = [
+            item
+            for item in slices
+            if isinstance(item, dict)
+            and item.get("slice_id") == "approved-plan-correction-freeze"
+        ]
+        if len(matches) != 1:
+            errors.append("layer3_workbench_slices must contain exactly one approved-plan-correction-freeze record")
+        else:
+            item = matches[0]
+            if item.get("main_state") != "planning_only_approved_plan_correction_lifecycle":
+                errors.append("approved-plan correction slice must remain planning_only_approved_plan_correction_lifecycle")
+            if item.get("base_commit") != "55d90f869d1f1e49127bc1dd2e1269d056f702aa":
+                errors.append("approved-plan correction slice base_commit must identify PR #600 merge")
+            counting_rule = item.get("counting_rule")
+            if not isinstance(counting_rule, str) or "planning-only workbench slice" not in counting_rule:
+                errors.append("approved-plan correction slice counting_rule must classify the slice as planning-only")
+            docs = item.get("governing_docs")
+            if not isinstance(docs, list):
+                errors.append("approved-plan correction slice missing governing_docs")
+            else:
+                for doc in (
+                    "next_milestone_plans/Layer3_planning_docs/135_APPROVED_PLAN_CORRECTION_FREEZE.md",
+                    "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
+                    "next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md",
+                    "next_milestone_plans/Layer3_planning_docs/118_L3_GOAL_AUDIT.md",
+                    "next_milestone_plans/Layer3_planning_docs/120_L3_CLOSEOUT.md",
+                    "backend/app/services/layer3_readiness_contract.py",
+                    "backend/app/services/layer3_plan_flow_contract.py",
+                    "tools/l3-progress-check.py",
+                ):
+                    if doc not in docs:
+                        errors.append(f"approved-plan correction governing_docs missing {doc}")
 
 
 def _check_referenced_paths(manifest: dict[str, Any], errors: list[str]) -> None:
@@ -3023,7 +3167,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice, package replacement namespace planning/control freeze, package replacement namespace implementation-entry freeze, bounded package replacement namespace runtime, planning/control plan revision recovery freeze, and PR #599 bounded plan revision recovery preview-refresh runtime.",
+            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice, package replacement namespace planning/control freeze, package replacement namespace implementation-entry freeze, bounded package replacement namespace runtime, planning/control plan revision recovery freeze, PR #599 bounded plan revision recovery preview-refresh runtime, and planning/control approved-plan correction freeze.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -4825,6 +4969,7 @@ def main() -> int:
         PLAN_REVISION_RECOVERY_FREEZE,
         PLAN_REVISION_RECOVERY_CONTRACT,
         PLAN_REVISION_RECOVERY_ENTRY_FREEZE,
+        APPROVED_PLAN_CORRECTION_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         PACKAGE_ENTRY_MIGRATION,
@@ -4894,6 +5039,7 @@ def main() -> int:
         _check_current_decision(manifest, errors)
         _check_plan_revision_recovery_freeze(manifest, errors)
         _check_plan_revision_recovery_entry_freeze(manifest, errors)
+        _check_approved_plan_correction_freeze(manifest, errors)
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
     _check_connector_dispatch_entry_freeze(errors)
