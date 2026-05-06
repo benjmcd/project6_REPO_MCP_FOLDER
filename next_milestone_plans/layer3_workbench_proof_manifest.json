@@ -68,6 +68,11 @@
     "latest_execution_result_review_extraction_commit": "f5145d03",
     "latest_execution_result_review_extraction_live_behavior_change": false,
     "latest_execution_result_review_extraction_summary": "PR #643 moves result-review state lookup, reviewed-item normalization, and trace-summary projection from backend/app/services/layer3_workbench.py into backend/app/services/layer3_execution_review.py. Workbench delegates through existing private aliases, and backend/tests/test_layer3_execution_review.py proves state lookup, trace normalization, fail-closed malformed/oversized reviewed-item errors, and trace-summary fallback parity. It admits no route, DTO, model, migration, UI, execution behavior, package, connector/destination, source/upload expansion, provider/public URL support, qualitative/hybrid/RAG activation, full mockup activation, auth/security behavior, frontend-only durable state, hidden LLM planning, package mutation/reconstruction, or broad workbench behavior.",
+    "latest_execution_selection_summary_extraction_branch": "codex/l3-execution-selection-summary",
+    "latest_execution_selection_summary_extraction_pr": "#644",
+    "latest_execution_selection_summary_extraction_commit": "f6a19213",
+    "latest_execution_selection_summary_extraction_live_behavior_change": false,
+    "latest_execution_selection_summary_extraction_summary": "PR #644 moves read-only execution-selection readiness summary projection from backend/app/services/layer3_workbench.py into backend/app/services/layer3_execution_selection.py. Workbench delegates through the existing _execution_selection_summary alias, and backend/tests/test_layer3_execution_selection.py proves available approved-plan summary, existing-selection summary, and blocked-reason parity. It admits no route, DTO, model, migration, UI, execution behavior, package, connector/destination, source/upload expansion, provider/public URL support, qualitative/hybrid/RAG activation, full mockup activation, auth/security behavior, frontend-only durable state, hidden LLM planning, package mutation/reconstruction, or broad workbench behavior.",
     "synthesis_adjudication_reference": "C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md",
     "synthesis_adjudication_next_actions": [
       "progress/proof refresh first",

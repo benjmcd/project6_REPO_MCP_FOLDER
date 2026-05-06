@@ -76,6 +76,10 @@ from app.services.layer3_execution_review import (
     normalize_result_review_items as _normalize_result_review_items,
     result_review_trace_summary as _result_review_trace_summary,
 )
+from app.services.layer3_execution_selection import (
+    EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE,
+    execution_selection_summary as _execution_selection_summary,
+)
 from app.services.layer3_plan_errors import plan_approval_workbench_error, plan_preview_workbench_error
 from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
@@ -410,7 +414,6 @@ PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS = (
     "source_shape",
     "source_dataset_version_ids",
 )
-EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = ("result_review", "package", "handoff")
 EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE = ("package", "handoff", "package_review")
@@ -2665,77 +2668,6 @@ def _execution_selection_response(
         "pass_run_statuses": {pass_run.pass_run_id: pass_run.status for pass_run in pass_runs},
         "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
         "next_state": _execution_state_for_pass_runs(pass_runs),
-    }
-
-
-def _execution_selection_summary(db: Session, *, session_id: str) -> dict[str, Any]:
-    session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
-    selection = _execution_selection_from_session(session)
-    pass_runs = _execution_selection_pass_runs(db, session_id=session_id)
-    if selection is not None:
-        analysis_run_ids = [value for pass_run in pass_runs if (value := _pass_run_analysis_run_id(pass_run))]
-        return {
-            "schema_id": "layer3.execution_selection_readiness.v1",
-            "available": False,
-            "selected": True,
-            "state": selection.get("state") or _execution_state_for_pass_runs(pass_runs),
-            "blocked_reason": "execution_selection_already_exists",
-            "analysis_plan_id": selection.get("analysis_plan_id"),
-            "source_preview_id": selection.get("source_preview_id"),
-            "source_preview_hash": selection.get("source_preview_hash"),
-            "pass_run_ids": [pass_run.pass_run_id for pass_run in pass_runs],
-            "pass_run_count": len(pass_runs),
-            "execution_started": any(_pass_run_execution_started(pass_run) for pass_run in pass_runs),
-            "analysis_run_ids": analysis_run_ids,
-            "pass_run_statuses": {pass_run.pass_run_id: pass_run.status for pass_run in pass_runs},
-            "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
-            "selected_at": selection.get("selected_at"),
-        }
-
-    analysis_plan_id = None
-    source_preview_id = None
-    source_preview_hash = None
-    if (revision_control := _plan_revision_control(db, session_id=session_id)) is not None:
-        blocked_reason = str(revision_control.get("state") or "plan_revision_recorded")
-    else:
-        approved_plans = (
-            db.query(L3AnalysisPlan)
-            .filter(
-                L3AnalysisPlan.session_id == session_id,
-                L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
-                L3AnalysisPlan.approved_by_operator.is_(True),
-            )
-            .all()
-        )
-        if not approved_plans:
-            blocked_reason = "no_approved_plan"
-        elif len(approved_plans) > 1:
-            blocked_reason = "multiple_approved_plans"
-        elif pass_runs:
-            blocked_reason = "pass_runs_already_exist"
-        else:
-            approved_plan = approved_plans[0]
-            plan_json = approved_plan.plan_json or {}
-            analysis_plan_id = approved_plan.analysis_plan_id
-            source_preview_id = plan_json.get("source_preview_id")
-            source_preview_hash = plan_json.get("source_preview_hash")
-            blocked_reason = None
-
-    return {
-        "schema_id": "layer3.execution_selection_readiness.v1",
-        "available": blocked_reason is None,
-        "selected": False,
-        "state": None,
-        "blocked_reason": blocked_reason,
-        "analysis_plan_id": analysis_plan_id,
-        "source_preview_id": source_preview_id,
-        "source_preview_hash": source_preview_hash,
-        "pass_run_ids": [],
-        "pass_run_count": len(pass_runs),
-        "execution_started": False,
-        "analysis_run_ids": [],
-        "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
-        "selected_at": None,
     }
 
 
