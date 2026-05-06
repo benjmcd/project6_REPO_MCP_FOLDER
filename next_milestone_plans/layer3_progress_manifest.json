@@ -6,7 +6,7 @@
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout only when the manifest declares an open or branch-only milestone.",
-    "seed_checkout_hint": "C:/Users/benny/Downloads/worktree_for_audits on codex/l3-plan-revision-recovery-service-proof, anchored to project6-origin/main at b399de4e5388cd96492dde50f98c90c6713af789 after PR #604 approved-plan cancel service proof merge; this branch records direct owner-service proof hardening for the plan revision recovery preview-refresh runtime.",
+    "seed_checkout_hint": "C:/Users/benny/Downloads/worktree_for_audits on codex/l3-pr605-proof-sync, anchored to project6-origin/main at db7c7a0811a8e1a1343a4b285dec050a03e4361b after PR #605 plan revision recovery service proof merge; this branch records current-main proof/progress metadata sync only.",
     "snapshot_date": "2026-05-05",
     "snapshot_base_main_commit": "9bb11820bc5b12292cbc43d1a2c326e61df80d2e",
     "snapshot_base_main_commit_source": "project6-origin/main at 9bb11820bc5b12292cbc43d1a2c326e61df80d2e after PR #602 approved-plan cancel entry freeze; local branch codex/l3-approved-plan-cancel-runtime records the approved-plan cancel runtime for exactly approved_plan_cancel_without_replacement. The proof-hardening branch starts after PR #603 at c08c66c6d81ad26b0ff15387ab616161aa3b231f.",
@@ -5646,9 +5646,9 @@
     "persistence": "existing L3Session.summary_json only",
     "accepted_scope": "server-authorized preview-refresh recovery from pre-approval terminal revision-control states with fresh preview identity required before approval",
     "service_proof": [
-      "backend/tests/test_layer3_plan_revision_recovery.py covers direct owner-service recovery, duplicate idempotency, preview marker creation, and existing-summary-only mutation.",
-      "backend/tests/test_layer3_plan_revision_recovery.py asserts forbidden-field, state-mismatch, preview-mismatch, approved-plan, and pass-run prechecks fail closed before recovery mutation.",
-      "backend/tests/test_layer3_plan_revision_recovery.py asserts zero downstream AnalysisRun, AnalysisArtifact, L3OutputPackage, L3ReconciliationRecord, and ConnectorRun rows."
+      "PR #605 `backend/tests/test_layer3_plan_revision_recovery.py` covers direct owner-service recovery, duplicate idempotency, preview marker creation, owner authority row-count stability, and existing-summary-only mutation.",
+      "PR #605 `backend/tests/test_layer3_plan_revision_recovery.py` asserts forbidden-field, state-mismatch, preview-mismatch, approved-plan, and pass-run prechecks fail closed before recovery mutation.",
+      "PR #605 `backend/tests/test_layer3_plan_revision_recovery.py` asserts zero downstream AnalysisRun, AnalysisArtifact, L3OutputPackage, L3ReconciliationRecord, and ConnectorRun rows."
     ],
     "blocked_scope": [
       "approved-plan reopening, cancellation, deletion, replacement, or supersession",
