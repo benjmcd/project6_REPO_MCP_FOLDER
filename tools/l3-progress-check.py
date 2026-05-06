@@ -6844,30 +6844,28 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                 "must be 'codex/l3-package-owner-compatibility'"
             )
         owner_compat_pr = proof_scope.get("latest_package_owner_compatibility_extraction_pr")
-        if owner_compat_pr != "pending" and not (
-            isinstance(owner_compat_pr, str) and re.fullmatch(r"#\d+", owner_compat_pr)
-        ):
+        if owner_compat_pr != "#659":
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_owner_compatibility_extraction_pr must be 'pending' or a PR number"
+                "scope.latest_package_owner_compatibility_extraction_pr must be '#659'"
             )
-        owner_compat_head = proof_scope.get("latest_package_owner_compatibility_extraction_head_commit")
-        if owner_compat_head != "pending" and not (
-            isinstance(owner_compat_head, str) and re.fullmatch(r"[0-9a-f]{40}", owner_compat_head)
+        if (
+            proof_scope.get("latest_package_owner_compatibility_extraction_head_commit")
+            != "64c31111015bdaf3e5d096c0ae678c611f260b1d"
         ):
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
                 "scope.latest_package_owner_compatibility_extraction_head_commit "
-                "must be 'pending' or a 40-character commit"
+                "must be '64c31111015bdaf3e5d096c0ae678c611f260b1d'"
             )
-        owner_compat_merge = proof_scope.get("latest_package_owner_compatibility_extraction_merge_commit")
-        if owner_compat_merge != "pending" and not (
-            isinstance(owner_compat_merge, str) and re.fullmatch(r"[0-9a-f]{40}", owner_compat_merge)
+        if (
+            proof_scope.get("latest_package_owner_compatibility_extraction_merge_commit")
+            != "f435b5b00662646c44081f38e6e2328183ceeaf6"
         ):
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
                 "scope.latest_package_owner_compatibility_extraction_merge_commit "
-                "must be 'pending' or a 40-character commit"
+                "must be 'f435b5b00662646c44081f38e6e2328183ceeaf6'"
             )
         if proof_scope.get("latest_package_owner_compatibility_extraction_live_behavior_change") is not False:
             errors.append(
@@ -6876,6 +6874,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             )
         owner_compat_summary = proof_scope.get("latest_package_owner_compatibility_extraction_summary")
         for term in (
+            "PR #659",
+            "merge commit f435b5b00662646c44081f38e6e2328183ceeaf6",
             "package owner compatibility extraction",
             "package_owner_compatibility",
             "read-only owner-service compatibility projection",
