@@ -223,6 +223,8 @@ from app.services.layer3_workbench_package_state import (
     package_review_candidate_projection,
     package_review_preview_summary,
     package_review_submit_from_reconciliation as _package_review_submit_from_reconciliation,
+    package_source_dataset_version_ids as _package_source_dataset_version_ids,
+    package_source_shape as _package_source_shape,
     packages_in_review_order as _packages_in_review_order,
     review_source_packages as _review_source_packages,
     review_state_is_admitted_associated_cohort,
@@ -3670,38 +3672,6 @@ def _package_owner_compatibility(
             else "Current workbench state lacks full Gate D package-entry inputs; candidate projection remains preview-only."
         ),
     }
-
-
-def _package_source_shape(
-    *,
-    output_metadata_summary: dict[str, Any],
-    pass_summary: dict[str, Any],
-) -> str | None:
-    cohort_shape = str(output_metadata_summary.get("cohort_shape") or pass_summary.get("cohort_shape") or "").strip()
-    if cohort_shape:
-        return cohort_shape
-    dataset_version_id = str(
-        output_metadata_summary.get("dataset_version_id") or pass_summary.get("dataset_version_id") or ""
-    ).strip()
-    if dataset_version_id:
-        return "dataset_version"
-    return None
-
-
-def _package_source_dataset_version_ids(
-    *,
-    output_metadata_summary: dict[str, Any],
-    pass_summary: dict[str, Any],
-) -> list[str]:
-    source_dataset_version_ids = output_metadata_summary.get("source_dataset_version_ids")
-    if not isinstance(source_dataset_version_ids, list):
-        source_dataset_version_ids = pass_summary.get("source_dataset_version_ids_json")
-    if isinstance(source_dataset_version_ids, list) and source_dataset_version_ids:
-        return [str(item) for item in source_dataset_version_ids if str(item or "").strip()]
-    dataset_version_id = str(
-        output_metadata_summary.get("dataset_version_id") or pass_summary.get("dataset_version_id") or ""
-    ).strip()
-    return [dataset_version_id] if dataset_version_id else []
 
 
 def _package_review_preview_hash(
