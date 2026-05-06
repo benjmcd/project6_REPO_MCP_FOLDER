@@ -83,6 +83,7 @@ PLAN_FLOW_READINESS_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_plan_flow_readiness.py"
 )
 SUBLAYER_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_sublayer_state.py"
+EXECUTION_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_state.py"
 EXECUTION_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
 )
@@ -232,6 +233,7 @@ LAYER3_PLAN_FLOW_READINESS_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_plan_flow_readiness.py"
 )
 LAYER3_SUBLAYER_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_sublayer_state.py"
+LAYER3_EXECUTION_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_state.py"
 LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
 )
@@ -5848,6 +5850,86 @@ def _check_sublayer_state_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing sublayer state extraction doc term: {term}")
 
 
+def _check_execution_state_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(EXECUTION_STATE_SERVICE, errors)
+    for term in (
+        "EXECUTION_SELECTION_STATE_SCHEMA_ID = \"layer3.execution_selection_state.v1\"",
+        "ANALYSIS_EXECUTION_START_STATE_SCHEMA_ID = \"layer3.analysis_execution_start_state.v1\"",
+        "def execution_selection_from_session(",
+        "def execution_selection_pass_runs(db: Session, *, session_id: str) -> list[L3PassRun]:",
+        "def pass_run_analysis_run_id(",
+        "def pass_run_execution_started(",
+        "def execution_state_for_pass_runs(",
+        "def analysis_execution_start_from_pass_run(",
+        "PASS_STATUS_SELECTED_NOT_STARTED",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(EXECUTION_STATE_SERVICE)} missing execution state extraction term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_execution_state import (",
+        "analysis_execution_start_from_pass_run as _analysis_execution_start_from_pass_run",
+        "execution_selection_from_session as _execution_selection_from_session",
+        "execution_selection_pass_runs as _execution_selection_pass_runs",
+        "execution_state_for_pass_runs as _execution_state_for_pass_runs",
+        "pass_run_analysis_run_id as _pass_run_analysis_run_id",
+        "pass_run_execution_started as _pass_run_execution_started",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing execution state delegation term: {term}")
+    for stale_term in (
+        "EXECUTION_SELECTION_STATE_SCHEMA_ID =",
+        "ANALYSIS_EXECUTION_START_STATE_SCHEMA_ID =",
+        "EXECUTION_PASS_RUNNING_STATE =",
+        "def _execution_selection_from_session(",
+        "def _execution_selection_pass_runs(",
+        "def _pass_run_analysis_run_id(",
+        "def _pass_run_execution_started(",
+        "def _execution_state_for_pass_runs(",
+        "def _analysis_execution_start_from_pass_run(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns execution state term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_EXECUTION_STATE_TEST, errors)
+    for term in (
+        "test_execution_selection_from_session_preserves_workbench_projection",
+        "test_pass_run_projection_helpers_preserve_existing_state_semantics",
+        "test_analysis_execution_start_from_pass_run_preserves_workbench_projection",
+        "test_execution_selection_pass_runs_orders_by_creation_then_id",
+        "layer3_workbench._execution_state_for_pass_runs",
+        "layer3_workbench._execution_selection_pass_runs",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_EXECUTION_STATE_TEST)} missing execution state proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "execution state extraction",
+            "layer3_execution_state.py",
+            "test_layer3_execution_state.py",
+            "does not admit route, DTO, model, migration, UI, execution behavior",
+        ),
+        MANIFEST: (
+            "execution_state_extraction_pr",
+            "execution state extraction",
+            "layer3_execution_state.py",
+            "test_layer3_execution_state.py",
+        ),
+        PROOF_MANIFEST: (
+            "latest_execution_state_extraction_branch",
+            "latest_execution_state_extraction_live_behavior_change",
+            "backend/app/services/layer3_execution_state.py",
+            "backend/tests/test_layer3_execution_state.py",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing execution state extraction doc term: {term}")
+
+
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
     for term in (
@@ -6467,6 +6549,7 @@ def main() -> int:
         PLAN_FLOW_STATE_SERVICE,
         PLAN_FLOW_READINESS_SERVICE,
         SUBLAYER_STATE_SERVICE,
+        EXECUTION_STATE_SERVICE,
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
@@ -6501,6 +6584,7 @@ def main() -> int:
         LAYER3_PLAN_FLOW_STATE_TEST,
         LAYER3_PLAN_FLOW_READINESS_TEST,
         LAYER3_SUBLAYER_STATE_TEST,
+        LAYER3_EXECUTION_STATE_TEST,
         LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
@@ -6570,6 +6654,7 @@ def main() -> int:
     _check_plan_flow_state_extraction(errors)
     _check_plan_flow_readiness_extraction(errors)
     _check_sublayer_state_extraction(errors)
+    _check_execution_state_extraction(errors)
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
