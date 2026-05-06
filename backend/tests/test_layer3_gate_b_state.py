@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import os
 import sys
@@ -31,21 +32,31 @@ from app.models.models import (
 from app.services import layer3_workbench
 from app.services.layer3_gate_b_state import (
     GATE_B_DECISIONS,
+    GATE_B_DECISION_MANIFEST_SCHEMA_ID,
     GATE_B_IDEMPOTENCY_CONTEXT_KEY,
     GATE_B_IDEMPOTENCY_SCHEMA_ID,
     GATE_B_IDEMPOTENCY_STATUS_CLAIMED,
     GATE_B_IDEMPOTENCY_STATUS_COMMITTED,
+    MATERIAL_PREVIEW_BASIS_SCHEMA_ID,
+    candidate_decision_manifest,
     claim_gate_b_idempotency,
     complete_gate_b_idempotency_claim,
     find_gate_b_idempotency_claim,
     find_gate_b_idempotency_session,
     gate_b_counts,
+    gate_b_decision_manifest_id,
     gate_b_idempotency_claim_matches,
     gate_b_idempotency_from_session,
     gate_b_idempotency_record,
     gate_b_idempotency_request_hash,
     gate_b_summary_from_session,
+    material_candidate_basis_from_decision,
+    material_candidate_basis_from_preview,
+    material_preview_basis,
+    material_preview_hash,
 )
+from app.services.layer3_response_contract import LAYER3_SCHEMA_VERSION
+from app.services.layer3_utils import stable_json_bytes
 from app.services.layer3_workbench import Layer3WorkbenchError
 
 
@@ -168,6 +179,87 @@ def test_gate_b_summary_from_session_falls_back_to_decision_manifest() -> None:
         "isolated": 0,
         "flagged": 1,
     }
+
+
+def test_material_candidate_basis_helpers_preserve_workbench_projection_and_defaults() -> None:
+    preview_candidate = {
+        "candidate_id": " mat-1 ",
+        "source_class": " dataset_version ",
+        "source_ref": " source:1 ",
+        "query_basis": " revenue ",
+        "provenance_ref": " prov:1 ",
+        "ignored": "not part of the hash basis",
+    }
+
+    assert material_candidate_basis_from_preview(preview_candidate) == {
+        "candidate_id": "mat-1",
+        "source_class": "dataset_version",
+        "source_ref": "source:1",
+        "query_basis": "revenue",
+        "provenance_ref": "prov:1",
+    }
+    assert material_candidate_basis_from_decision(
+        candidate_id="mat-2",
+        source_class="aps_content_document",
+        decision_basis={"source_ref": " doc:2 "},
+    ) == {
+        "candidate_id": "mat-2",
+        "source_class": "aps_content_document",
+        "source_ref": "doc:2",
+        "query_basis": "",
+        "provenance_ref": "",
+    }
+
+
+def test_material_preview_basis_sorts_clones_and_hashes_canonically() -> None:
+    candidate_bases = [
+        {
+            "candidate_id": "mat-b",
+            "source_class": "aps_content_document",
+            "source_ref": "doc:b",
+            "query_basis": "revenue",
+            "provenance_ref": "prov:b",
+        },
+        {
+            "candidate_id": "mat-a",
+            "source_class": "dataset_version",
+            "source_ref": "dataset:a",
+            "query_basis": "revenue",
+            "provenance_ref": "prov:a",
+        },
+    ]
+
+    basis = material_preview_basis(candidate_bases)
+    original_hash = material_preview_hash(candidate_bases)
+
+    assert basis["schema_id"] == MATERIAL_PREVIEW_BASIS_SCHEMA_ID
+    assert basis["schema_version"] == LAYER3_SCHEMA_VERSION
+    assert [item["candidate_id"] for item in basis["items"]] == ["mat-a", "mat-b"]
+    candidate_bases[0]["source_ref"] = "mutated-after-basis"
+    assert basis["items"][1]["source_ref"] == "doc:b"
+    assert material_preview_hash(list(reversed(candidate_bases))) == material_preview_hash(candidate_bases)
+    assert material_preview_hash(candidate_bases) != original_hash
+    expected_hash = hashlib.sha256(stable_json_bytes(material_preview_basis(candidate_bases))).hexdigest()
+    assert material_preview_hash(candidate_bases) == expected_hash
+
+
+def test_candidate_decision_manifest_sorts_clones_and_builds_stable_id() -> None:
+    decisions = [
+        {"candidate_id": "mat-b", "decision": "denied", "operator_reason": "out", "decision_basis": {"x": 2}},
+        {"candidate_id": "mat-a", "decision": "approved", "operator_reason": "", "decision_basis": {"x": 1}},
+    ]
+
+    manifest = candidate_decision_manifest(decisions)
+
+    assert manifest["schema_id"] == GATE_B_DECISION_MANIFEST_SCHEMA_ID
+    assert manifest["schema_version"] == LAYER3_SCHEMA_VERSION
+    assert [item["candidate_id"] for item in manifest["items"]] == ["mat-a", "mat-b"]
+    manifest_id = gate_b_decision_manifest_id(manifest)
+    assert manifest_id.startswith("gate-b-")
+    assert gate_b_decision_manifest_id(candidate_decision_manifest(list(reversed(decisions)))) == manifest_id
+    decisions[0]["decision_basis"]["x"] = "mutated-after-manifest"
+    assert manifest["items"][1]["decision_basis"]["x"] == 2
+    assert gate_b_decision_manifest_id(candidate_decision_manifest(list(reversed(decisions)))) != manifest_id
 
 
 def test_find_gate_b_idempotency_session_returns_matching_record(db_session) -> None:

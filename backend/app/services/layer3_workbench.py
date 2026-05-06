@@ -69,15 +69,20 @@ from app.services.layer3_gate_b_state import (
     GATE_B_DECISIONS,
     GATE_B_IDEMPOTENCY_CONTEXT_KEY,
     GATE_B_IDEMPOTENCY_STATUS_COMMITTED,
+    candidate_decision_manifest as build_candidate_decision_manifest,
     claim_gate_b_idempotency,
     complete_gate_b_idempotency_claim,
     find_gate_b_idempotency_claim,
     find_gate_b_idempotency_session,
     gate_b_counts,
+    gate_b_decision_manifest_id as build_gate_b_decision_manifest_id,
     gate_b_idempotency_claim_matches,
     gate_b_idempotency_from_session,
     gate_b_idempotency_record,
     gate_b_summary_from_session,
+    material_candidate_basis_from_decision as gate_b_material_candidate_basis_from_decision,
+    material_candidate_basis_from_preview as gate_b_material_candidate_basis_from_preview,
+    material_preview_hash as compute_material_preview_hash,
 )
 from app.services.layer3_plan_revision_state import (
     PLAN_REVISION_CONTROL_CONTEXT_KEY,
@@ -1323,42 +1328,6 @@ def _aps_content_document_material_candidates(
     return candidates
 
 
-def _material_candidate_basis_from_preview(candidate: dict[str, Any]) -> dict[str, str]:
-    candidate_id = str(candidate.get("candidate_id") or "").strip()
-    source_class = str(candidate.get("source_class") or "").strip()
-    return {
-        "candidate_id": candidate_id,
-        "source_class": source_class,
-        "source_ref": str(candidate.get("source_ref") or "").strip(),
-        "query_basis": str(candidate.get("query_basis") or "").strip(),
-        "provenance_ref": str(candidate.get("provenance_ref") or "").strip(),
-    }
-
-
-def _material_candidate_basis_from_decision(
-    *, candidate_id: str, source_class: str, decision_basis: dict[str, Any]
-) -> dict[str, str]:
-    return {
-        "candidate_id": candidate_id,
-        "source_class": source_class,
-        "source_ref": str(decision_basis.get("source_ref") or "").strip(),
-        "query_basis": str(decision_basis.get("query_basis") or "").strip(),
-        "provenance_ref": str(decision_basis.get("provenance_ref") or "").strip(),
-    }
-
-
-def _material_preview_basis(candidate_bases: list[dict[str, str]]) -> dict[str, Any]:
-    return {
-        "schema_id": "layer3.material_preview_basis.v1",
-        "schema_version": SCHEMA_VERSION,
-        "items": sorted(_json_clone(candidate_bases), key=lambda item: item["candidate_id"]),
-    }
-
-
-def _material_preview_hash(candidate_bases: list[dict[str, str]]) -> str:
-    return hashlib.sha256(_canonical_json_bytes(_material_preview_basis(candidate_bases))).hexdigest()
-
-
 def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     source_ids = [str(item) for item in payload.get("source_candidate_ids") or []]
@@ -1433,13 +1402,13 @@ def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict
             }
         )
     preview_id = _stable_id("material-preview", [item["candidate_id"] for item in candidates])
-    material_preview_hash = _material_preview_hash(
-        [_material_candidate_basis_from_preview(candidate) for candidate in candidates]
+    material_hash = compute_material_preview_hash(
+        [gate_b_material_candidate_basis_from_preview(candidate) for candidate in candidates]
     )
     return {
         **_base_response("layer3.material_preview_result.v1", request_id=request_id),
         "material_preview_id": preview_id,
-        "material_preview_hash": material_preview_hash,
+        "material_preview_hash": material_hash,
         "material_candidates": candidates,
         "partial_retrieval": False,
         "authority_rail": _authority_rail(
@@ -1450,15 +1419,6 @@ def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict
             source_classes=sorted({item["source_class"] for item in candidates}),
         ),
     }
-
-
-def _candidate_decision_manifest(decisions: list[dict[str, Any]]) -> dict[str, Any]:
-    ordered = sorted(_json_clone(decisions), key=lambda item: str(item.get("candidate_id") or ""))
-    return {"schema_id": "layer3.gate_b_decision_manifest.v1", "schema_version": SCHEMA_VERSION, "items": ordered}
-
-
-def _gate_b_decision_manifest_id(decision_manifest: dict[str, Any]) -> str:
-    return _stable_id("gate-b", decision_manifest)
 
 
 def _gate_b_response_from_session(
@@ -1472,12 +1432,12 @@ def _gate_b_response_from_session(
     decisions = [item for item in decision_manifest.get("items") or [] if isinstance(item, dict)]
     counts = gate_b_counts(decisions)
     hints = manifest.source_plane_hints_json or {}
-    material_preview_hash = _material_preview_hash(
+    material_hash = compute_material_preview_hash(
         [
             (
                 item.get("material_preview_basis")
                 if isinstance(item.get("material_preview_basis"), dict)
-                else _material_candidate_basis_from_decision(
+                else gate_b_material_candidate_basis_from_decision(
                     candidate_id=str(item.get("candidate_id") or "").strip(),
                     source_class=str(item.get("source_class") or "").strip(),
                     decision_basis=item.get("decision_basis") if isinstance(item.get("decision_basis"), dict) else {},
@@ -1491,8 +1451,8 @@ def _gate_b_response_from_session(
         "status": status,
         "session_id": session.session_id,
         "selection_manifest_id": manifest.selection_manifest_id,
-        "material_preview_hash": material_preview_hash,
-        "gate_b_decision_manifest_id": _gate_b_decision_manifest_id(decision_manifest),
+        "material_preview_hash": material_hash,
+        "gate_b_decision_manifest_id": build_gate_b_decision_manifest_id(decision_manifest),
         "approved_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "approved"],
         "denied_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "denied"],
         "isolated_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "isolated"],
@@ -1561,7 +1521,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
         payload_basis = decision_basis.get("payload") if isinstance(decision_basis.get("payload"), dict) else {}
         load_summary = decision_basis.get("load_summary") if isinstance(decision_basis.get("load_summary"), dict) else {}
-        material_preview_basis = _material_candidate_basis_from_decision(
+        material_preview_basis = gate_b_material_candidate_basis_from_decision(
             candidate_id=candidate_id,
             source_class=source_class,
             decision_basis=decision_basis,
@@ -1583,7 +1543,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     approved = [item for item in decisions if item["decision"] == "approved"]
-    material_preview_hash = _material_preview_hash(material_candidate_bases)
+    material_preview_hash = compute_material_preview_hash(material_candidate_bases)
     if supplied_material_preview_hash and supplied_material_preview_hash != material_preview_hash:
         raise Layer3WorkbenchError(
             "material_preview_mismatch",
@@ -1593,8 +1553,8 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             blocked_fields=["material_preview_hash", "candidate_decisions"],
             next_allowed_actions=["refresh_material_preview"],
         )
-    decision_manifest = _candidate_decision_manifest(decisions)
-    gate_b_decision_manifest_id = _gate_b_decision_manifest_id(decision_manifest)
+    decision_manifest = build_candidate_decision_manifest(decisions)
+    gate_b_decision_manifest_id = build_gate_b_decision_manifest_id(decision_manifest)
 
     def existing_gate_b_response(existing_session: L3Session, existing_record: dict[str, Any]) -> dict[str, Any]:
         existing_manifest = db.get(L3SelectionManifest, existing_session.selection_manifest_id)
@@ -1619,7 +1579,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
         if (
             not isinstance(existing_decision_manifest, dict)
-            or _gate_b_decision_manifest_id(existing_decision_manifest) != gate_b_decision_manifest_id
+            or build_gate_b_decision_manifest_id(existing_decision_manifest) != gate_b_decision_manifest_id
             or str(existing_record.get("gate_b_decision_manifest_id") or "") != gate_b_decision_manifest_id
         ):
             raise Layer3WorkbenchError(

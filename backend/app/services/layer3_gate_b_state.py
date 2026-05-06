@@ -12,9 +12,12 @@ from app.models.models import (
     L3SelectionManifest,
     L3Session,
 )
-from app.services.layer3_utils import stable_hash, utcnow
+from app.services.layer3_response_contract import LAYER3_SCHEMA_VERSION as SCHEMA_VERSION
+from app.services.layer3_utils import json_clone, stable_hash, stable_id, utcnow
 
 GATE_B_IDEMPOTENCY_SCHEMA_ID = "layer3.gate_b_idempotency.v1"
+GATE_B_DECISION_MANIFEST_SCHEMA_ID = "layer3.gate_b_decision_manifest.v1"
+MATERIAL_PREVIEW_BASIS_SCHEMA_ID = "layer3.material_preview_basis.v1"
 GATE_B_IDEMPOTENCY_CONTEXT_KEY = "layer3_gate_b_idempotency_v1"
 GATE_B_IDEMPOTENCY_STATUS_CLAIMED = L3_GATE_B_IDEMPOTENCY_STATUS_CLAIMED
 GATE_B_IDEMPOTENCY_STATUS_COMMITTED = L3_GATE_B_IDEMPOTENCY_STATUS_COMMITTED
@@ -52,6 +55,51 @@ def gate_b_summary_from_session(session: L3Session) -> dict[str, int]:
         return {decision: int(counts.get(decision, 0)) for decision in GATE_B_DECISIONS}
     decisions = ((session.operator_context_json or {}).get("layer3_gate_b_decision_manifest_v1") or {}).get("items") or []
     return gate_b_counts([item for item in decisions if isinstance(item, dict)])
+
+
+def material_candidate_basis_from_preview(candidate: dict[str, Any]) -> dict[str, str]:
+    candidate_id = str(candidate.get("candidate_id") or "").strip()
+    source_class = str(candidate.get("source_class") or "").strip()
+    return {
+        "candidate_id": candidate_id,
+        "source_class": source_class,
+        "source_ref": str(candidate.get("source_ref") or "").strip(),
+        "query_basis": str(candidate.get("query_basis") or "").strip(),
+        "provenance_ref": str(candidate.get("provenance_ref") or "").strip(),
+    }
+
+
+def material_candidate_basis_from_decision(
+    *, candidate_id: str, source_class: str, decision_basis: dict[str, Any]
+) -> dict[str, str]:
+    return {
+        "candidate_id": candidate_id,
+        "source_class": source_class,
+        "source_ref": str(decision_basis.get("source_ref") or "").strip(),
+        "query_basis": str(decision_basis.get("query_basis") or "").strip(),
+        "provenance_ref": str(decision_basis.get("provenance_ref") or "").strip(),
+    }
+
+
+def material_preview_basis(candidate_bases: list[dict[str, str]]) -> dict[str, Any]:
+    return {
+        "schema_id": MATERIAL_PREVIEW_BASIS_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "items": sorted(json_clone(candidate_bases), key=lambda item: item["candidate_id"]),
+    }
+
+
+def material_preview_hash(candidate_bases: list[dict[str, str]]) -> str:
+    return stable_hash(material_preview_basis(candidate_bases))
+
+
+def candidate_decision_manifest(decisions: list[dict[str, Any]]) -> dict[str, Any]:
+    ordered = sorted(json_clone(decisions), key=lambda item: str(item.get("candidate_id") or ""))
+    return {"schema_id": GATE_B_DECISION_MANIFEST_SCHEMA_ID, "schema_version": SCHEMA_VERSION, "items": ordered}
+
+
+def gate_b_decision_manifest_id(decision_manifest: dict[str, Any]) -> str:
+    return stable_id("gate-b", decision_manifest)
 
 
 def gate_b_idempotency_request_hash(
