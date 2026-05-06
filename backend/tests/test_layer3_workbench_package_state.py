@@ -1,13 +1,28 @@
 from types import SimpleNamespace
 
 from app.services.layer3_workbench_package_state import (
+    COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
+    PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
+    PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
+    PACKAGE_REVIEW_PREVIEW_READY_STATE,
+    PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
     active_downstream_unavailable,
     canonical_payload_values,
     dispatched_package_id,
+    package_review_candidate_projection,
+    package_review_preview_summary,
     packages_in_kind_order,
     packages_with_kinds,
+    review_state_is_admitted_associated_cohort,
     state_downstream_unavailable,
     unexpected_package_kinds,
+)
+from app.services.layer3_pass_entry import (
+    COHORT_REQUESTED_METHOD_SOURCE,
+    COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+    PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+    PASS_TYPE_ASSOCIATED_COHORT,
+    SOURCE_GATE_COHORT_DESC_FREEZE,
 )
 
 
@@ -18,6 +33,21 @@ def _package(package_kind: str, output_package_id: str, *, payload_ref: str, pay
         payload_ref=payload_ref,
         payload_hash=payload_hash,
     )
+
+
+def _approved_review_state() -> dict[str, object]:
+    return {
+        "review_state": "execution_result_review_approved",
+        "operator_decision": "approved",
+        "unresolved_trace_count": 0,
+        "review_record_ref": "review-ref",
+        "pass_type": "single_pass",
+        "pass_scope": "quant_single_dataset",
+        "selected_method_name": "summary_stats",
+        "source_gate": "gate_d",
+        "source_dataset_version_ids": ["dataset-v1"],
+        "cohort_shape": "single_dataset",
+    }
 
 
 def test_state_downstream_unavailable_prefers_explicit_non_empty_state() -> None:
@@ -53,6 +83,101 @@ def test_active_downstream_unavailable_falls_back_to_default_stage() -> None:
         default_state={},
         default_fallback=("default",),
     ) == ("default",)
+
+
+def test_package_review_candidate_projection_preserves_candidate_contract() -> None:
+    enabled_projection = package_review_candidate_projection(package_commit_enabled=True)
+    disabled_projection = package_review_candidate_projection(package_commit_enabled=False)
+
+    assert [candidate["package_kind"] for candidate in enabled_projection] == list(
+        PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS
+    )
+    assert all(candidate["preview_only"] is True for candidate in enabled_projection)
+    assert all(candidate["package_commit_enabled"] is True for candidate in enabled_projection)
+    assert all(candidate["package_review_submit_enabled"] is False for candidate in enabled_projection)
+    assert all(candidate["handoff_enabled"] is False for candidate in enabled_projection)
+    assert all(candidate["package_commit_enabled"] is False for candidate in disabled_projection)
+    assert {
+        candidate["readiness_reason"]
+        for candidate in enabled_projection
+    } == {"candidate family is eligible for bounded package construction commit"}
+    assert {
+        candidate["readiness_reason"]
+        for candidate in disabled_projection
+    } == {"candidate family is preview-only for associated-cohort review; package construction is deferred"}
+
+
+def test_package_review_preview_summary_reports_unavailable_without_review_state() -> None:
+    summary = package_review_preview_summary(
+        None,
+        approved_review_state="execution_result_review_approved",
+    )
+
+    assert summary["schema_id"] == PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID
+    assert summary["available"] is False
+    assert summary["state"] is None
+    assert summary["package_review_preview_enabled"] is False
+    assert summary["package_commit_enabled"] is False
+    assert summary["candidate_package_kinds"] == []
+    assert summary["source_dataset_version_ids"] == []
+    assert summary["downstream_unavailable"] == list(PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE)
+
+
+def test_package_review_preview_summary_preserves_approved_projection_and_clones_source_ids() -> None:
+    review_state = _approved_review_state()
+    source_ids = review_state["source_dataset_version_ids"]
+
+    summary = package_review_preview_summary(
+        review_state,
+        approved_review_state="execution_result_review_approved",
+    )
+
+    assert summary["available"] is True
+    assert summary["state"] == PACKAGE_REVIEW_PREVIEW_READY_STATE
+    assert summary["result_review_state"] == "execution_result_review_approved"
+    assert summary["result_review_record_ref"] == "review-ref"
+    assert summary["candidate_package_kinds"] == package_review_candidate_projection(package_commit_enabled=True)
+    assert summary["downstream_unavailable"] == list(PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE)
+    assert summary["source_dataset_version_ids"] == ["dataset-v1"]
+    assert summary["source_dataset_version_ids"] is not source_ids
+
+
+def test_package_review_preview_summary_uses_cohort_downstream_for_admitted_associated_cohort() -> None:
+    review_state = {
+        **_approved_review_state(),
+        "pass_type": PASS_TYPE_ASSOCIATED_COHORT,
+        "pass_scope": PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+        "selected_method_name": "descriptive_summary",
+        "source_gate": SOURCE_GATE_COHORT_DESC_FREEZE,
+        "source_dataset_version_ids": ["dataset-v1", "dataset-v2"],
+        "cohort_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+        "requested_method_name": "descriptive_summary",
+        "requested_method_source": COHORT_REQUESTED_METHOD_SOURCE,
+    }
+
+    summary = package_review_preview_summary(
+        review_state,
+        approved_review_state="execution_result_review_approved",
+    )
+
+    assert review_state_is_admitted_associated_cohort(review_state) is True
+    assert summary["available"] is True
+    assert summary["downstream_unavailable"] == list(COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE)
+
+
+def test_review_state_is_admitted_associated_cohort_requires_exact_source_authority() -> None:
+    review_state = {
+        **_approved_review_state(),
+        "pass_type": PASS_TYPE_ASSOCIATED_COHORT,
+        "pass_scope": PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+        "selected_method_name": "descriptive_summary",
+        "source_gate": SOURCE_GATE_COHORT_DESC_FREEZE,
+        "source_dataset_version_ids": ["dataset-v1"],
+        "cohort_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+        "requested_method_name": "descriptive_summary",
+    }
+
+    assert review_state_is_admitted_associated_cohort(review_state) is False
 
 
 def test_packages_in_kind_order_returns_canonical_order() -> None:
