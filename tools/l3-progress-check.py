@@ -347,10 +347,10 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
         errors.append("snapshot commit fields disagree: " + detail)
 
 
-def _check_package_namespace_progress_sync(
+def _check_latest_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "47aef2ee13e173121c3738e63bafbe86e360c280"
+    expected_commit = "1e74a739a07623b7d91d405d946e6b1d221be6ff"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -363,8 +363,8 @@ def _check_package_namespace_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR598 revision recovery runtime "
-                f"base commit {expected_commit}"
+                f"{name} must identify the post-PR599 current-main revision recovery "
+                f"runtime merge commit {expected_commit}"
             )
 
     for name, source in (
@@ -378,15 +378,16 @@ def _check_package_namespace_progress_sync(
         ),
     ):
         if not isinstance(source, str):
-            errors.append(f"{name} must be present after package namespace runtime sync")
+            errors.append(f"{name} must be present after PR599 progress/proof sync")
             continue
         for term in (
             expected_commit,
-            "after PR #598",
-            "bounded preview-refresh recovery runtime",
+            "after PR #599",
+            "post-merge progress/proof sync",
+            "docs/proof/checker metadata only",
         ):
             if term not in source:
-                errors.append(f"{name} missing post-PR598 revision recovery runtime term: {term}")
+                errors.append(f"{name} missing post-PR599 progress/proof sync term: {term}")
 
     namespace_runtime = manifest.get("package_replacement_namespace_runtime")
     if not isinstance(namespace_runtime, dict):
@@ -807,7 +808,10 @@ def _check_plan_revision_recovery_entry_freeze(
         PROOF_MANIFEST: [
             "plan_revision_recovery_runtime_proof",
             "latest_plan_revision_recovery_runtime_branch",
-            "47aef2ee13e173121c3738e63bafbe86e360c280",
+            "latest_plan_revision_recovery_runtime_pr",
+            "#599",
+            "51e5abcbcdd2070c47b3aeba73032db081be41f7",
+            "1e74a739a07623b7d91d405d946e6b1d221be6ff",
             "Bounded runtime for plan_revision_recovery_preview_refresh_entry",
             "summary-state recovery metadata",
         ],
@@ -825,6 +829,8 @@ def _check_plan_revision_recovery_entry_freeze(
     else:
         expected_scope = {
             "source_branch": "codex/l3-revision-recovery-runtime",
+            "merged_pr": "#599",
+            "merge_commit": "1e74a739a07623b7d91d405d946e6b1d221be6ff",
             "base_commit": "47aef2ee13e173121c3738e63bafbe86e360c280",
             "source_base_commit": "47aef2ee13e173121c3738e63bafbe86e360c280",
             "live_behavior_change": True,
@@ -834,7 +840,7 @@ def _check_plan_revision_recovery_entry_freeze(
                 errors.append(f"{_rel(PROOF_MANIFEST)} scope.{key} must be {value!r}")
         purpose = proof_scope.get("purpose")
         summary = proof_scope.get("live_behavior_change_summary")
-        if not isinstance(purpose, str) or "bounded runtime proof readiness" not in purpose:
+        if not isinstance(purpose, str) or "merged bounded runtime proof" not in purpose:
             errors.append(f"{_rel(PROOF_MANIFEST)} scope.purpose must describe revision recovery runtime")
         if not isinstance(summary, str) or "bounded preview-refresh recovery" not in summary:
             errors.append(f"{_rel(PROOF_MANIFEST)} scope.live_behavior_change_summary must describe runtime behavior")
@@ -852,6 +858,10 @@ def _check_plan_revision_recovery_entry_freeze(
             "request_dto": "Layer3PlanRevisionRecoveryRequest",
             "response_dto": "Layer3PlanRevisionRecoveryResponse",
             "persistence": "existing L3Session.summary_json only",
+            "implementation_pr": "#599",
+            "implementation_base_commit": "47aef2ee13e173121c3738e63bafbe86e360c280",
+            "implementation_head_commit": "51e5abcbcdd2070c47b3aeba73032db081be41f7",
+            "implementation_merge_commit": "1e74a739a07623b7d91d405d946e6b1d221be6ff",
         }
         for key, value in expected.items():
             if top_level.get(key) != value:
@@ -907,6 +917,15 @@ def _check_plan_revision_recovery_entry_freeze(
                     "revision recovery runtime slice must be "
                     "live_bounded_plan_revision_recovery_preview_refresh_runtime"
                 )
+            if "#599" not in item.get("key_prs", []):
+                errors.append("revision recovery runtime slice key_prs must include #599")
+            if item.get("merge_commit") != "1e74a739a07623b7d91d405d946e6b1d221be6ff":
+                errors.append("revision recovery runtime slice merge_commit must identify PR #599 merge")
+            counting_rule = item.get("counting_rule")
+            if not isinstance(counting_rule, str) or "live bounded workbench slice" not in counting_rule:
+                errors.append("revision recovery runtime slice counting_rule must classify the slice as live bounded")
+            elif "Counts as one planning-only" in counting_rule:
+                errors.append("revision recovery runtime slice counting_rule must not classify the merged runtime as planning-only")
             docs = item.get("governing_docs")
             if not isinstance(docs, list):
                 errors.append("revision recovery runtime slice missing governing_docs")
@@ -3004,7 +3023,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice, package replacement namespace planning/control freeze, package replacement namespace implementation-entry freeze, bounded package replacement namespace runtime, planning/control plan revision recovery freeze, and bounded plan revision recovery preview-refresh runtime.",
+            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice, package replacement namespace planning/control freeze, package replacement namespace implementation-entry freeze, bounded package replacement namespace runtime, planning/control plan revision recovery freeze, and PR #599 bounded plan revision recovery preview-refresh runtime.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -4870,7 +4889,7 @@ def main() -> int:
     _load_json(PROOF_MANIFEST, errors)
     if manifest:
         _check_snapshot_consistency(manifest, errors)
-        _check_package_namespace_progress_sync(manifest, errors)
+        _check_latest_progress_sync(manifest, errors)
         _check_summary_counts(manifest, errors)
         _check_current_decision(manifest, errors)
         _check_plan_revision_recovery_freeze(manifest, errors)
