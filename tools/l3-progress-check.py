@@ -82,6 +82,7 @@ PLAN_FLOW_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_plan_f
 PLAN_FLOW_READINESS_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_plan_flow_readiness.py"
 )
+SUBLAYER_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_sublayer_state.py"
 EXECUTION_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
 )
@@ -230,6 +231,7 @@ LAYER3_PLAN_FLOW_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_plan_flo
 LAYER3_PLAN_FLOW_READINESS_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_plan_flow_readiness.py"
 )
+LAYER3_SUBLAYER_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_sublayer_state.py"
 LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
 )
@@ -5767,6 +5769,85 @@ def _check_plan_flow_readiness_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing plan-flow readiness extraction doc term: {term}")
 
 
+def _check_sublayer_state_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(SUBLAYER_STATE_SERVICE, errors)
+    for term in (
+        "SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID = \"layer3.sublayer_visualization_state.v1\"",
+        "def snapshot_projection(",
+        "def serialize_typing_record(",
+        "def serialize_analysis_unit(",
+        "def serialize_analysis_group(",
+        "def serialize_analysis_set(",
+        "def session_sublayer_visualization_state(db: Session, *, session_id: str) -> dict[str, Any]:",
+        "\"authority_source\": \"read_only_persisted_layer3_rows\"",
+        "\"no_side_effects\": True",
+        "latest_analysis_plan(db, session_id=session_id)",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SUBLAYER_STATE_SERVICE)} missing sublayer state extraction term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_sublayer_state import (",
+        "serialize_analysis_group as _serialize_analysis_group",
+        "serialize_analysis_set as _serialize_analysis_set",
+        "serialize_analysis_unit as _serialize_analysis_unit",
+        "serialize_typing_record as _serialize_typing_record",
+        "session_sublayer_visualization_state as _session_sublayer_visualization_state",
+        "snapshot_projection as _snapshot_projection",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing sublayer state delegation term: {term}")
+    for stale_term in (
+        "SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID =",
+        "def _snapshot_projection(",
+        "def _serialize_typing_record(",
+        "def _serialize_analysis_unit(",
+        "def _serialize_analysis_group(",
+        "def _serialize_analysis_set(",
+        "def _session_sublayer_visualization_state(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns sublayer state term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_SUBLAYER_STATE_TEST, errors)
+    for term in (
+        "test_snapshot_projection_reports_unsupported_shape_without_side_effects",
+        "test_session_sublayer_visualization_state_preserves_workbench_projection",
+        "layer3_workbench._snapshot_projection",
+        "layer3_workbench._session_sublayer_visualization_state",
+        "SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID",
+        "analysis-run-sublayer-state",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_SUBLAYER_STATE_TEST)} missing sublayer state proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "sublayer visualization state extraction",
+            "layer3_sublayer_state.py",
+            "test_layer3_sublayer_state.py",
+            "does not admit route, DTO, model, migration, UI, execution",
+        ),
+        MANIFEST: (
+            "sublayer_visualization_state_extraction_pr",
+            "sublayer visualization state extraction",
+            "layer3_sublayer_state.py",
+            "test_layer3_sublayer_state.py",
+        ),
+        PROOF_MANIFEST: (
+            "latest_sublayer_visualization_state_extraction_branch",
+            "latest_sublayer_visualization_state_extraction_live_behavior_change",
+            "backend/app/services/layer3_sublayer_state.py",
+            "backend/tests/test_layer3_sublayer_state.py",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing sublayer state extraction doc term: {term}")
+
+
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
     for term in (
@@ -6385,6 +6466,7 @@ def main() -> int:
         STATE_MODEL_CONTRACT_SERVICE,
         PLAN_FLOW_STATE_SERVICE,
         PLAN_FLOW_READINESS_SERVICE,
+        SUBLAYER_STATE_SERVICE,
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
@@ -6418,6 +6500,7 @@ def main() -> int:
         LAYER3_STATE_MODEL_CONTRACT_TEST,
         LAYER3_PLAN_FLOW_STATE_TEST,
         LAYER3_PLAN_FLOW_READINESS_TEST,
+        LAYER3_SUBLAYER_STATE_TEST,
         LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
@@ -6486,6 +6569,7 @@ def main() -> int:
     _check_plan_flow_contract_extraction(errors)
     _check_plan_flow_state_extraction(errors)
     _check_plan_flow_readiness_extraction(errors)
+    _check_sublayer_state_extraction(errors)
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
