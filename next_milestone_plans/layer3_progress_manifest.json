@@ -4852,7 +4852,7 @@
       "unlocks": []
     }
   ],
-  "next_required_decision": "After the bounded plan_revision_recovery_preview_refresh_entry runtime, do not proceed to approved-plan supersession, execution, package/handoff/export, connector/destination dispatch, provider/public URLs, broad source/upload expansion, broad qualitative/hybrid/RAG execution, full mockup activation, auth/security behavior, or broad package mutation/reconstruction without a separate freeze and proof plan.",
+  "next_required_decision": "After the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and PR #612 downstream-state hardening, do not proceed to approved-plan supersession, execution, package/handoff/export, connector/destination dispatch, provider/public URLs, broad source/upload expansion, broad qualitative/hybrid/RAG execution, full mockup activation, auth/security behavior, or broad package mutation/reconstruction without a separate freeze and proof plan.",
   "deferred_scope": [
     "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the landed bounded export-package handoff and exact-run gate-hardening lane",
     "package-derived context implementation beyond the landed bounded handoff slice",
@@ -5901,6 +5901,9 @@
       "full mockup activation",
       "authentication/security hardening",
       "broad package mutation/reconstruction"
-    ]
+    ],
+    "implementation_pr": "#612",
+    "merge_commit": "01023e82",
+    "post_merge_authority": "project6-origin/main at 01023e82"
   }
 }
