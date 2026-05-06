@@ -5953,8 +5953,16 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
         ],
         GATE_B_STATE_SERVICE: [
             'GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")',
+            'GATE_B_DECISION_MANIFEST_SCHEMA_ID = "layer3.gate_b_decision_manifest.v1"',
+            'MATERIAL_PREVIEW_BASIS_SCHEMA_ID = "layer3.material_preview_basis.v1"',
             "def gate_b_counts(",
             "def gate_b_summary_from_session(",
+            "def material_candidate_basis_from_preview(",
+            "def material_candidate_basis_from_decision(",
+            "def material_preview_basis(",
+            "def material_preview_hash(",
+            "def candidate_decision_manifest(",
+            "def gate_b_decision_manifest_id(",
             "claim_gate_b_idempotency",
             "complete_gate_b_idempotency_claim",
             "gate_b_idempotency_claim_matches",
@@ -5962,11 +5970,16 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
             "L3GateBIdempotencyKey",
         ],
         WORKBENCH_SERVICE: [
+            "candidate_decision_manifest as build_candidate_decision_manifest",
             "claim_gate_b_idempotency",
             "complete_gate_b_idempotency_claim",
             "find_gate_b_idempotency_claim",
             "gate_b_counts",
+            "gate_b_decision_manifest_id as build_gate_b_decision_manifest_id",
             "gate_b_summary_from_session",
+            "material_candidate_basis_from_decision as gate_b_material_candidate_basis_from_decision",
+            "material_candidate_basis_from_preview as gate_b_material_candidate_basis_from_preview",
+            "material_preview_hash as compute_material_preview_hash",
             "gate_b_idempotency_in_progress",
         ],
         READINESS_CONTRACT_SERVICE: [
@@ -5977,6 +5990,9 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
             "test_gate_b_counts_preserve_workbench_decision_vocabulary",
             "test_gate_b_summary_from_session_prefers_summary_json_counts",
             "test_gate_b_summary_from_session_falls_back_to_decision_manifest",
+            "test_material_candidate_basis_helpers_preserve_workbench_projection_and_defaults",
+            "test_material_preview_basis_sorts_clones_and_hashes_canonically",
+            "test_candidate_decision_manifest_sorts_clones_and_builds_stable_id",
             "test_gate_b_idempotency_migration_defines_durable_unique_claim",
             "test_gate_b_idempotency_claim_round_trips_and_matches",
             "test_gate_b_decision_concurrent_duplicate_client_request_id_uses_durable_claim",
@@ -6008,6 +6024,12 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     for stale_term in (
         "def _gate_b_counts(",
         "def _gate_b_summary_from_session(",
+        "def _material_candidate_basis_from_preview(",
+        "def _material_candidate_basis_from_decision(",
+        "def _material_preview_basis(",
+        "def _material_preview_hash(",
+        "def _candidate_decision_manifest(",
+        "def _gate_b_decision_manifest_id(",
         "GATE_B_DECISIONS = (\"approved\", \"denied\", \"isolated\", \"flagged\")",
     ):
         if stale_term in workbench_text:
@@ -6023,6 +6045,10 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
         "decision counts, and session-summary reconstruction",
         "without changing emitted Gate B, Gate C, plan, or session-summary count behavior",
         "does not admit execution behavior, route, DTO, model, migration, UI, package, connector, provider, source, qualitative/RAG, mockup, or auth/security behavior",
+        "Gate B material/decision basis extraction",
+        "branch `codex/l3-gate-b-material-basis-extract`, base `8509a6f0`",
+        "material-preview hash basis, candidate-decision manifest, and Gate B decision manifest ID construction",
+        "| Gate B material/decision basis extraction | in-progress no-behavior-change refactor/proof |",
     ):
         if term not in board_text:
             errors.append(f"{_rel(BOARD)} missing Gate B summary extraction board term: {term}")
