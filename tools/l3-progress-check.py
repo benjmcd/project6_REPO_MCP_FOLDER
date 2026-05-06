@@ -6536,6 +6536,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def external_export_download_prepare_from_reconciliation(",
         "def package_source_shape(",
         "def package_source_dataset_version_ids(",
+        "def package_owner_compatibility(",
     ):
         if term not in package_state_text:
             errors.append(f"{_rel(WORKBENCH_PACKAGE_STATE_SERVICE)} missing package-state helper term: {term}")
@@ -6561,6 +6562,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "test_package_source_shape_prefers_cohort_shape_then_dataset_version",
         "test_package_source_dataset_version_ids_prefers_list_then_dataset_version",
         "test_package_review_preview_hash_uses_stable_identity_basis",
+        "test_package_owner_compatibility_reports_missing_gate_d_inputs_for_default_preview",
+        "test_package_owner_compatibility_reports_ready_default_preview_without_calling_owner_service",
+        "test_package_owner_compatibility_associated_cohort_preview_skips_gate_d_inputs",
     ):
         if term not in package_state_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
@@ -6831,6 +6835,76 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_package_review_preview_hash_extraction_summary "
                     f"missing package-review preview hash extraction term: {term}"
                 )
+        if proof_scope.get("latest_package_owner_compatibility_extraction_branch") != (
+            "codex/l3-package-owner-compatibility"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_owner_compatibility_extraction_branch "
+                "must be 'codex/l3-package-owner-compatibility'"
+            )
+        owner_compat_pr = proof_scope.get("latest_package_owner_compatibility_extraction_pr")
+        if owner_compat_pr != "pending" and not (
+            isinstance(owner_compat_pr, str) and re.fullmatch(r"#\d+", owner_compat_pr)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_owner_compatibility_extraction_pr must be 'pending' or a PR number"
+            )
+        owner_compat_head = proof_scope.get("latest_package_owner_compatibility_extraction_head_commit")
+        if owner_compat_head != "pending" and not (
+            isinstance(owner_compat_head, str) and re.fullmatch(r"[0-9a-f]{40}", owner_compat_head)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_owner_compatibility_extraction_head_commit "
+                "must be 'pending' or a 40-character commit"
+            )
+        owner_compat_merge = proof_scope.get("latest_package_owner_compatibility_extraction_merge_commit")
+        if owner_compat_merge != "pending" and not (
+            isinstance(owner_compat_merge, str) and re.fullmatch(r"[0-9a-f]{40}", owner_compat_merge)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_owner_compatibility_extraction_merge_commit "
+                "must be 'pending' or a 40-character commit"
+            )
+        if proof_scope.get("latest_package_owner_compatibility_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_owner_compatibility_extraction_live_behavior_change must be False"
+            )
+        owner_compat_summary = proof_scope.get("latest_package_owner_compatibility_extraction_summary")
+        for term in (
+            "package owner compatibility extraction",
+            "package_owner_compatibility",
+            "read-only owner-service compatibility projection",
+            "without activating package mutation/reconstruction",
+        ):
+            if not isinstance(owner_compat_summary, str) or term not in owner_compat_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_package_owner_compatibility_extraction_summary "
+                    f"missing package owner compatibility extraction term: {term}"
+                )
+
+    for path, terms in {
+        MANIFEST: (
+            "latest_package_owner_compatibility_extraction_branch",
+            "package_owner_compatibility_extraction",
+            "package_owner_compatibility",
+            "without activating package mutation/reconstruction",
+        ),
+        BOARD: (
+            "Package owner compatibility extraction",
+            "package_owner_compatibility",
+            "without changing package-review preview behavior",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package owner compatibility extraction term: {term}")
 
     required_doc_terms = {
         SYNTHESIS_BOUNDARY: (
