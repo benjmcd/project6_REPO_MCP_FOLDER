@@ -5556,6 +5556,9 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         MANIFEST: (
             "PR #584/commit 9cdd1e88 as no-behavior-change plan-flow request contract extraction proof",
             "merged_live_bounded_plan_flow_request_contract_extraction",
+            "merged_live_plan_preview_source_class_extraction",
+            "PR #635 as a no-behavior-change plan-preview source-class extraction",
+            "source_classes_from_plan_preview",
             "Post-PR584 sync: local git verified project6-origin/main at 9cdd1e88593d21e269d00dda50eae98ab852d219",
             "Post-PR584 current-main progress/proof sync",
             "does not admit broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior",
@@ -5563,6 +5566,8 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         BOARD: (
             "Plan-flow request contract extraction",
             "PR `#584`/commit `9cdd1e88`",
+            "PR `#635` extends the same no-behavior-change plan-flow contract extraction posture",
+            "_source_classes_from_plan_preview",
             "backend/app/services/layer3_plan_flow_contract.py",
             "merged live no-behavior-change refactor/proof",
             "full focused Layer 3 suite with `304 passed, 4 warnings`",
@@ -5570,6 +5575,9 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         PROOF_MANIFEST: (
             "no-behavior-change plan-flow request contract extraction proof from PR #584",
             "latest_plan_flow_request_contract_extraction_pr",
+            "latest_plan_preview_source_class_extraction_pr",
+            "PR #635 moves plan-preview source-class derivation",
+            "source_classes_from_plan_preview",
             "plan_flow_request_contract_extraction_current_boundary_proof",
             "9cdd1e88593d21e269d00dda50eae98ab852d219",
             "no-behavior-change plan-flow request contract extraction proof",
