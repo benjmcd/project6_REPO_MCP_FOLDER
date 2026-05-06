@@ -88,6 +88,7 @@ EXECUTION_OUTPUT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execu
 EXECUTION_REVIEW_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_review.py"
 EXECUTION_SELECTION_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_selection.py"
 EXECUTION_START_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_start.py"
+EXECUTION_STATUS_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_status.py"
 EXECUTION_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
 )
@@ -242,6 +243,7 @@ LAYER3_EXECUTION_OUTPUT_TEST = ROOT / "backend" / "tests" / "test_layer3_executi
 LAYER3_EXECUTION_REVIEW_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_review.py"
 LAYER3_EXECUTION_SELECTION_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_selection.py"
 LAYER3_EXECUTION_START_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_start.py"
+LAYER3_EXECUTION_STATUS_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_status.py"
 LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
 )
@@ -6224,6 +6226,86 @@ def _check_execution_start_response_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing execution start response doc term: {term}")
 
 
+def _check_execution_status_response_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(EXECUTION_STATUS_SERVICE, errors)
+    for term in (
+        "EXECUTION_RESULT_STATUS_SCHEMA_ID = \"layer3.execution_result_status.v1\"",
+        "EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = (\"result_review\", \"package\", \"handoff\")",
+        "def execution_result_status_response(",
+        "base_response(EXECUTION_RESULT_STATUS_SCHEMA_ID",
+        "analysis_execution_start_from_pass_run(pass_run)",
+        "pass_run_analysis_run_id(pass_run)",
+        "PASS_STATUS_COMPLETED_WITH_WARNINGS",
+        "PASS_STATUS_FAILED",
+        "EXECUTION_RESULT_STATUS_AVAILABLE_STATE",
+        "EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE",
+        "EXECUTION_RESULT_STATUS_BLOCKED_STATE",
+        "operator_view_mode",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(EXECUTION_STATUS_SERVICE)} missing execution status response term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_execution_status import (",
+        "EXECUTION_RESULT_STATUS_AVAILABLE_STATE",
+        "EXECUTION_RESULT_STATUS_BLOCKED_STATE",
+        "EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE",
+        "EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE",
+        "EXECUTION_RESULT_STATUS_SCHEMA_ID",
+        "execution_result_status_response as _execution_result_status_response",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing execution status delegation term: {term}")
+    for stale_term in (
+        "EXECUTION_RESULT_STATUS_SCHEMA_ID = \"layer3.execution_result_status.v1\"",
+        "EXECUTION_RESULT_STATUS_AVAILABLE_STATE = \"execution_result_status_available\"",
+        "EXECUTION_RESULT_STATUS_BLOCKED_STATE = \"execution_result_status_blocked\"",
+        "EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE = \"execution_result_status_missing_output\"",
+        "EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = (\"result_review\", \"package\", \"handoff\")",
+        "def _execution_result_status_response(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns execution status response term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_EXECUTION_STATUS_TEST, errors)
+    for term in (
+        "test_execution_result_status_response_preserves_workbench_available_projection",
+        "test_execution_result_status_response_preserves_failed_projection",
+        "layer3_workbench._execution_result_status_response",
+        "execution_result_status_available",
+        "execution_result_status_blocked",
+        "payload://pass-run-status-response/output",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_EXECUTION_STATUS_TEST)} missing execution status proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "execution result/status response extraction",
+            "layer3_execution_status.py",
+            "test_layer3_execution_status.py",
+            "does not admit route, DTO, model, migration, UI, execution behavior",
+        ),
+        MANIFEST: (
+            "execution_result_status_response_extraction_pr",
+            "execution result/status response extraction",
+            "layer3_execution_status.py",
+            "test_layer3_execution_status.py",
+        ),
+        PROOF_MANIFEST: (
+            "latest_execution_result_status_response_extraction_branch",
+            "latest_execution_result_status_response_extraction_live_behavior_change",
+            "backend/app/services/layer3_execution_status.py",
+            "backend/tests/test_layer3_execution_status.py",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing execution status response doc term: {term}")
+
+
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
     for term in (
@@ -6848,6 +6930,7 @@ def main() -> int:
         EXECUTION_REVIEW_SERVICE,
         EXECUTION_SELECTION_SERVICE,
         EXECUTION_START_SERVICE,
+        EXECUTION_STATUS_SERVICE,
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
@@ -6887,6 +6970,7 @@ def main() -> int:
         LAYER3_EXECUTION_REVIEW_TEST,
         LAYER3_EXECUTION_SELECTION_TEST,
         LAYER3_EXECUTION_START_TEST,
+        LAYER3_EXECUTION_STATUS_TEST,
         LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
@@ -6961,6 +7045,7 @@ def main() -> int:
     _check_execution_review_extraction(errors)
     _check_execution_selection_summary_extraction(errors)
     _check_execution_start_response_extraction(errors)
+    _check_execution_status_response_extraction(errors)
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
