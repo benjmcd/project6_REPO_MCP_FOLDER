@@ -1,15 +1,15 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Layer 3 proof readiness through package replacement artifact manifest-only runtime, package namespace planning/control and implementation-entry proof, bounded package replacement namespace runtime proof, current-main plan revision recovery lifecycle planning/control proof from PR #595, and branch-local plan revision recovery preview-refresh implementation-entry freeze proof from doc 134; retains no-behavior-change plan-flow request contract extraction proof from PR #584",
+  "status": "Layer 3 proof readiness through package replacement artifact manifest-only runtime, package namespace planning/control and implementation-entry proof, bounded package replacement namespace runtime proof, current-main plan revision recovery lifecycle planning/control proof from PR #595, and current-main plan revision recovery preview-refresh implementation-entry freeze proof from PR #597/doc 134; retains no-behavior-change plan-flow request contract extraction proof from PR #584",
   "scope": {
-    "source_branch": "codex/l3-revision-recovery-entry-freeze",
+    "source_branch": "codex/l3-revision-recovery-entry-progress-sync",
     "merged_pr": "",
     "merge_commit": "",
     "base_remote": "project6-origin/main",
-    "base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
-    "source_base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
-    "purpose": "Record branch-local proof readiness for the plan revision recovery preview-refresh implementation-entry freeze. Doc 134 selects `plan_revision_recovery_preview_refresh_entry` route/service/DTO/schema-id shape for a later runtime PR only; runtime recovery, approved-plan supersession, execution, package/handoff/export, connector/destination dispatch, source widening, broad qualitative/hybrid/RAG, full mockup activation, auth/security behavior, and broad package mutation/reconstruction remain blocked. It also retains no-behavior-change plan-flow request contract extraction proof from PR #584 and the prior package namespace runtime proof as historical nested scope fields.",
+    "base_commit": "53c69a81b185eb0368e362d600e77b29fbe1bbd5",
+    "source_base_commit": "53c69a81b185eb0368e362d600e77b29fbe1bbd5",
+    "purpose": "Record post-PR597 current-main proof readiness for the plan revision recovery preview-refresh implementation-entry freeze. Doc 134 selects `plan_revision_recovery_preview_refresh_entry` route/service/DTO/schema-id shape for a later runtime PR only; runtime recovery, approved-plan supersession, execution, package/handoff/export, connector/destination dispatch, source widening, broad qualitative/hybrid/RAG, full mockup activation, auth/security behavior, and broad package mutation/reconstruction remain blocked. It also retains no-behavior-change plan-flow request contract extraction proof from PR #584 and the prior package namespace runtime proof as historical nested scope fields.",
     "live_behavior_change": false,
     "live_behavior_change_summary": "This slice admits no runtime behavior. It freezes only the future `plan_revision_recovery_preview_refresh_entry` implementation shape for a server-authorized preview refresh from terminal pre-approval revision-control states while keeping `plan_rejected` and `plan_revision_requested` terminal with `allowed_next_actions: []` until a later runtime PR proves otherwise.",
     "latest_package_replacement_artifact_freeze_branch": "codex/l3-package-artifact-authority-freeze",
@@ -314,9 +314,12 @@
     "latest_plan_revision_recovery_freeze_live_behavior_change": false,
     "latest_plan_revision_recovery_freeze_summary": "PR #595 merged docs 132/133 as planning/control authority for `plan_revision_recovery_lifecycle` only. It freezes the future server-authorized preview-refresh recovery question from terminal pre-approval revision-control states and admits no runtime recovery, approved-plan supersession, execution, package/handoff/export behavior, connector/destination dispatch, source widening, broad qualitative/hybrid/RAG behavior, full mockup activation, or auth/security behavior.",
     "latest_plan_revision_recovery_entry_freeze_branch": "codex/l3-revision-recovery-entry-freeze",
+    "latest_plan_revision_recovery_entry_freeze_pr": "#597",
     "latest_plan_revision_recovery_entry_freeze_base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
+    "latest_plan_revision_recovery_entry_freeze_merge_commit": "53c69a81b185eb0368e362d600e77b29fbe1bbd5",
+    "latest_plan_revision_recovery_entry_freeze_head_commit": "3d1c132a668a98a4b8040c0e23879313db6beadb",
     "latest_plan_revision_recovery_entry_freeze_live_behavior_change": false,
-    "latest_plan_revision_recovery_entry_freeze_summary": "Doc 134 freezes `plan_revision_recovery_preview_refresh_entry` as implementation-entry only. It selects a later route/service/DTO/schema-id shape for server-authorized preview refresh while keeping runtime recovery, approved-plan supersession, execution, package/handoff/export, connector/destination, source widening, broad qualitative/hybrid/RAG, full mockup, auth/security behavior, and broad package mutation/reconstruction blocked."
+    "latest_plan_revision_recovery_entry_freeze_summary": "PR #597 merged doc 134 as current-main implementation-entry authority for `plan_revision_recovery_preview_refresh_entry` only. It selects a later route/service/DTO/schema-id shape for server-authorized preview refresh while keeping runtime recovery, approved-plan supersession, execution, package/handoff/export, connector/destination, source widening, broad qualitative/hybrid/RAG, full mockup, auth/security behavior, and broad package mutation/reconstruction blocked."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -3968,9 +3971,12 @@
     ]
   },
   "plan_revision_recovery_entry_freeze_proof": {
-    "scope": "Implementation-entry proof for `plan_revision_recovery_preview_refresh_entry` under doc 134; no runtime recovery is admitted.",
+    "scope": "Current-main implementation-entry proof for `plan_revision_recovery_preview_refresh_entry` under PR #597/doc 134; no runtime recovery is admitted.",
     "planning_branch": "codex/l3-revision-recovery-entry-freeze",
+    "planning_pr": "#597",
     "base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
+    "merge_commit": "53c69a81b185eb0368e362d600e77b29fbe1bbd5",
+    "head_commit": "3d1c132a668a98a4b8040c0e23879313db6beadb",
     "live_behavior_change": false,
     "files_changed": [
       "next_milestone_plans/Layer3_planning_docs/134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
@@ -3984,7 +3990,7 @@
       "tools/l3-progress-check.py"
     ],
     "authority_basis": [
-      "Current branch starts at project6-origin/main 4809ac0aa61aac3a51a92f4070ff1d92d67591c5 after PR #596 revision recovery progress proof.",
+      "PR #597 merged doc 134 at project6-origin/main 53c69a81b185eb0368e362d600e77b29fbe1bbd5.",
       "Docs 132/133 remain planning/control authority for `plan_revision_recovery_lifecycle` only.",
       "`backend/app/services/layer3_state_model_contract.py` keeps `plan_rejected` and `plan_revision_requested` terminal with `allowed_next_actions: []`.",
       "Readiness still treats `revision-recovery` as deferred until a later runtime PR admits recovery."
