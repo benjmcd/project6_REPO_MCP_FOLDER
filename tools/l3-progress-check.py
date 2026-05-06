@@ -350,7 +350,7 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
 def _check_package_namespace_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "4809ac0aa61aac3a51a92f4070ff1d92d67591c5"
+    expected_commit = "53c69a81b185eb0368e362d600e77b29fbe1bbd5"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -363,7 +363,7 @@ def _check_package_namespace_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR596 revision recovery entry "
+                f"{name} must identify the post-PR597 revision recovery entry "
                 f"base commit {expected_commit}"
             )
 
@@ -382,11 +382,11 @@ def _check_package_namespace_progress_sync(
             continue
         for term in (
             expected_commit,
-            "after PR #596 revision recovery progress proof",
+            "after PR #597 revision recovery entry freeze",
             "without runtime behavior changes",
         ):
             if term not in source:
-                errors.append(f"{name} missing post-PR596 revision recovery entry term: {term}")
+                errors.append(f"{name} missing post-PR597 revision recovery entry term: {term}")
 
     namespace_runtime = manifest.get("package_replacement_namespace_runtime")
     if not isinstance(namespace_runtime, dict):
@@ -792,7 +792,8 @@ def _check_plan_revision_recovery_entry_freeze(
             "still admits no runtime recovery",
         ],
         BOARD: [
-            "Branch-local plan revision recovery entry freeze",
+            "Current plan revision recovery entry freeze",
+            "PR `#597`",
             "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
             "POST /api/v1/layer3/plan/revision/recover",
             "Plan revision recovery preview-refresh entry freeze",
@@ -801,8 +802,8 @@ def _check_plan_revision_recovery_entry_freeze(
         PROOF_MANIFEST: [
             "plan_revision_recovery_entry_freeze_proof",
             "latest_plan_revision_recovery_entry_freeze_branch",
-            "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
-            "implementation-entry only",
+            "53c69a81b185eb0368e362d600e77b29fbe1bbd5",
+            "current-main implementation-entry",
             "no runtime recovery",
         ],
     }
@@ -818,9 +819,9 @@ def _check_plan_revision_recovery_entry_freeze(
         errors.append(f"{_rel(PROOF_MANIFEST)} scope missing for revision recovery entry freeze")
     else:
         expected_scope = {
-            "source_branch": "codex/l3-revision-recovery-entry-freeze",
-            "base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
-            "source_base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
+            "source_branch": "codex/l3-revision-recovery-entry-progress-sync",
+            "base_commit": "53c69a81b185eb0368e362d600e77b29fbe1bbd5",
+            "source_base_commit": "53c69a81b185eb0368e362d600e77b29fbe1bbd5",
             "live_behavior_change": False,
         }
         for key, value in expected_scope.items():
@@ -828,7 +829,7 @@ def _check_plan_revision_recovery_entry_freeze(
                 errors.append(f"{_rel(PROOF_MANIFEST)} scope.{key} must be {value!r}")
         purpose = proof_scope.get("purpose")
         summary = proof_scope.get("live_behavior_change_summary")
-        if not isinstance(purpose, str) or "plan revision recovery preview-refresh" not in purpose:
+        if not isinstance(purpose, str) or "post-PR597 current-main proof readiness" not in purpose:
             errors.append(f"{_rel(PROOF_MANIFEST)} scope.purpose must describe revision recovery entry")
         if not isinstance(summary, str) or "admits no runtime behavior" not in summary:
             errors.append(f"{_rel(PROOF_MANIFEST)} scope.live_behavior_change_summary must deny runtime behavior")
@@ -845,6 +846,8 @@ def _check_plan_revision_recovery_entry_freeze(
             "future_owner_service": "backend/app/services/layer3_plan_revision_recovery.py",
             "request_dto": "Layer3PlanRevisionRecoveryRequest",
             "response_dto": "Layer3PlanRevisionRecoveryResponse",
+            "implementation_entry_pr": "#597",
+            "implementation_entry_merge_commit": "53c69a81b185eb0368e362d600e77b29fbe1bbd5",
         }
         for key, value in expected.items():
             if top_level.get(key) != value:
