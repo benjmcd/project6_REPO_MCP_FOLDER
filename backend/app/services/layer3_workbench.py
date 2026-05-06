@@ -10471,7 +10471,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     else:
         cancel_available = bool(
             plan_approval_readiness.get("approved")
-            and plan_approval_readiness.get("plan_status") == "approved"
+            and plan_approval_readiness.get("plan_status") == PLAN_STATUS_APPROVED
             and plan_approval_readiness.get("pass_run_count") == 0
         )
         cancel_plan = _latest_analysis_plan(db, session_id=session_id) if cancel_available else None
