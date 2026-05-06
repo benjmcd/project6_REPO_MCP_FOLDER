@@ -418,6 +418,24 @@ def test_preflight_fails_closed_on_missing_intent_and_unsupported_sources() -> N
     assert unsupported.value.error_code == "unsupported_source_class"
     assert unsupported.value.next_allowed_actions == ["choose_supported_sources"]
 
+    with pytest.raises(Layer3WorkbenchError) as forbidden:
+        layer3_workbench.preflight(
+            {
+                "natural_language_intent": "Review material.",
+                "manual_constraints": {
+                    "source_classes": ["dataset_version"],
+                    "local_upload": {"path": "not-admitted"},
+                    "date_bounds": {"provider_public_url": "https://example.invalid/export"},
+                },
+            }
+        )
+    assert forbidden.value.error_code == "preflight_manual_constraint_scope_not_admitted"
+    assert forbidden.value.blocked_fields == [
+        "manual_constraints.date_bounds.provider_public_url",
+        "manual_constraints.local_upload",
+    ]
+    assert forbidden.value.next_allowed_actions == ["remove_non_admitted_manual_constraints"]
+
 
 def test_preview_shapes_keep_owner_service_and_planning_shape_separate() -> None:
     preflight, source, material = _preflight_source_material()
