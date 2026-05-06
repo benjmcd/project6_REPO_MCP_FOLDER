@@ -34,7 +34,7 @@ from app.models.models import (
     L3PassRun,
     L3Session,
 )
-from app.services.layer3_approved_plan_correction import APPROVED_PLAN_CANCELLED_STATUS
+from app.services.layer3_approved_plan_correction import APPROVED_PLAN_APPROVED_STATUS, APPROVED_PLAN_CANCELLED_STATUS
 from app.services.layer3_pass_entry import (
     PASS_STATUS_COMPLETED,
     PASS_STATUS_COMPLETED_WITH_WARNINGS,
@@ -172,6 +172,7 @@ def test_layer3_plan_and_pass_status_vocabularies_match_owner_services():
     )
     assert L3_ANALYSIS_PLAN_STATUS_FORMED == PLAN_STATUS_FORMED
     assert L3_ANALYSIS_PLAN_STATUS_APPROVED == PLAN_STATUS_APPROVED
+    assert L3_ANALYSIS_PLAN_STATUS_APPROVED == APPROVED_PLAN_APPROVED_STATUS
     assert L3_ANALYSIS_PLAN_STATUS_CANCELLED == APPROVED_PLAN_CANCELLED_STATUS
 
     assert L3_PASS_RUN_STATUS_VALUES == (

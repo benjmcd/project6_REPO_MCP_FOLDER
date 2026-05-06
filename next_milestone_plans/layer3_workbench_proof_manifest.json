@@ -4379,13 +4379,16 @@
     "latest_gate_c_override_unavailable_request_contract_merge_commit": "840a86fb",
     "latest_plan_pass_status_constraint_alignment_branch": "codex/l3-status-ck",
     "latest_plan_pass_status_constraint_alignment_base_commit": "8ca47d4d",
-    "latest_plan_pass_status_constraint_alignment_summary": "PR #616/merge commit 652df83e records fresh schema/model status constraints for L3AnalysisPlan.status and L3PassRun.status with the repo-live status vocabulary through ck_l3_analysis_plan_status, ck_l3_pass_run_status, backend/app/models/models.py, backend/alembic/versions/0014_layer3_pass_entry.py, and backend/tests/test_layer3_plan_pass_status_constraints.py. PR #618/merge commit c5ae1b8f then aliases the pass-entry and approved-plan-cancel owner-service constants to the model-owned status constants. PR #620/merge commit 93215740 then aliases the workbench plan/pass status usage to those owner-service constants. No retrofit migration for already-upgraded SQLite databases is included, and no route, DTO, service, UI, source, package, handoff, export, connector, provider, qualitative, mockup, or auth/security activation is admitted.",
+    "latest_plan_pass_status_constraint_alignment_summary": "PR #616/merge commit 652df83e records fresh schema/model status constraints for L3AnalysisPlan.status and L3PassRun.status with the repo-live status vocabulary through ck_l3_analysis_plan_status, ck_l3_pass_run_status, backend/app/models/models.py, backend/alembic/versions/0014_layer3_pass_entry.py, and backend/tests/test_layer3_plan_pass_status_constraints.py. PR #618/merge commit c5ae1b8f then aliases the pass-entry and approved-plan-cancel owner-service constants to the model-owned status constants. PR #620/merge commit 93215740 then aliases the workbench plan/pass status usage to those owner-service constants. codex/l3-approved-status-alias further removes residual raw approved-plan status comparisons from approved-plan cancellation and workbench cancel-readiness without behavior expansion. No retrofit migration for already-upgraded SQLite databases is included, and no route, DTO, service, UI, source, package, handoff, export, connector, provider, qualitative, mockup, or auth/security activation is admitted.",
     "latest_plan_pass_status_constraint_alignment_pr": "#616",
     "latest_plan_pass_status_constraint_alignment_merge_commit": "652df83e",
     "latest_plan_pass_status_owner_service_alias_pr": "#618",
     "latest_plan_pass_status_owner_service_alias_merge_commit": "c5ae1b8f",
     "latest_workbench_status_alias_pr": "#620",
-    "latest_workbench_status_alias_merge_commit": "93215740"
+    "latest_workbench_status_alias_merge_commit": "93215740",
+    "latest_residual_approved_status_alias_branch": "codex/l3-approved-status-alias",
+    "latest_residual_approved_status_alias_base_commit": "bc27937e",
+    "latest_residual_approved_status_alias_scope": "No-behavior-change aliasing of backend/app/services/layer3_approved_plan_correction.py L3AnalysisPlan.status approved filter and backend/app/services/layer3_workbench.py approved-plan cancel-readiness plan_status comparison."
   },
   "plan_pass_status_constraint_alignment_proof": {
     "scope": "Fresh schema/model status constraint proof for L3AnalysisPlan.status and L3PassRun.status only.",
@@ -4405,6 +4408,7 @@
       "The model metadata and fresh 0014 migration now carry named check constraints for those vocabularies.",
       "The pass-entry and approved-plan-cancel owner-service constants now alias the model-owned status constants instead of duplicating the status literals.",
       "The workbench now uses the owner-service constants for approved-plan checks, cancelled-plan checks, and selected-pass shell status instead of duplicating those plan/pass status literals.",
+      "codex/l3-approved-status-alias removes the remaining approved-plan cancellation owner-service approved-status filter literal and the workbench approved-plan cancel-readiness plan_status literal, and updates the progress checker to fail closed if those exact literals return.",
       "The proof test asserts invalid plan/pass statuses raise IntegrityError, verifies the model vocabularies match the existing pass-entry and approved-plan-cancel owner-service constants, and inspects the fresh migration table elements for both named constraints."
     ],
     "non_goals": [
@@ -4425,7 +4429,7 @@
       "broad package mutation/reconstruction"
     ],
     "required_tests": [
-      "python -m py_compile .\\backend\\app\\models\\models.py .\\tools\\l3-progress-check.py",
+      "python -m py_compile .\\backend\\app\\models\\models.py .\\backend\\app\\services\\layer3_approved_plan_correction.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\tests\\test_layer3_plan_pass_status_constraints.py .\\tools\\l3-progress-check.py",
       "python -m pytest .\\backend\\tests\\test_layer3_plan_pass_status_constraints.py -q",
       "python .\\tools\\l3-progress-check.py",
       "git diff --check"
@@ -4438,7 +4442,9 @@
     "owner_service_alias_post_merge_authority": "project6-origin/main at c5ae1b8f",
     "workbench_status_alias_pr": "#620",
     "workbench_status_alias_merge_commit": "93215740",
-    "workbench_status_alias_post_merge_authority": "project6-origin/main at 93215740"
+    "workbench_status_alias_post_merge_authority": "project6-origin/main at 93215740",
+    "residual_approved_status_alias_branch": "codex/l3-approved-status-alias",
+    "residual_approved_status_alias_base_commit": "bc27937e"
   },
   "approved_plan_cancel_downstream_state_hardening_proof": {
     "scope": "Runtime hardening proof for approved_plan_cancel_without_replacement only; broader approved-plan correction modes remain blocked.",

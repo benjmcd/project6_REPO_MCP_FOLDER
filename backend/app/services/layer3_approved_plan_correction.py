@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.models.models import (
+    L3_ANALYSIS_PLAN_STATUS_APPROVED,
     L3_ANALYSIS_PLAN_STATUS_CANCELLED,
     L3AnalysisPlan,
     L3OutputPackage,
@@ -25,6 +26,7 @@ APPROVED_PLAN_CANCEL_STATE_SCHEMA_ID = "layer3.approved_plan_cancel_state.v1"
 APPROVED_PLAN_CANCEL_CONTEXT_KEY = "approved_plan_cancel"
 APPROVED_PLAN_CANCEL_DECISION = "cancel_approved_plan_without_replacement"
 APPROVED_PLAN_CANCEL_NEXT_STATE = "approved_plan_cancelled"
+APPROVED_PLAN_APPROVED_STATUS = L3_ANALYSIS_PLAN_STATUS_APPROVED
 APPROVED_PLAN_CANCELLED_STATUS = L3_ANALYSIS_PLAN_STATUS_CANCELLED
 APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package", "handoff")
 GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
@@ -226,7 +228,7 @@ def cancel_approved_plan_without_replacement(db: Session, payload: dict[str, Any
         db.query(L3AnalysisPlan)
         .filter(
             L3AnalysisPlan.session_id == session_id,
-            L3AnalysisPlan.status == "approved",
+            L3AnalysisPlan.status == APPROVED_PLAN_APPROVED_STATUS,
             L3AnalysisPlan.approved_by_operator.is_(True),
         )
         .with_for_update()
