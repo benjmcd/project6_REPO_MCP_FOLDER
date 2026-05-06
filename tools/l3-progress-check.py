@@ -6046,12 +6046,28 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
         "without changing emitted Gate B, Gate C, plan, or session-summary count behavior",
         "does not admit execution behavior, route, DTO, model, migration, UI, package, connector, provider, source, qualitative/RAG, mockup, or auth/security behavior",
         "Gate B material/decision basis extraction",
-        "branch `codex/l3-gate-b-material-basis-extract`, base `8509a6f0`",
+        "PR `#632`, commit `56f2ea7b`, merge commit `58f33a33`",
         "material-preview hash basis, candidate-decision manifest, and Gate B decision manifest ID construction",
-        "| Gate B material/decision basis extraction | in-progress no-behavior-change refactor/proof |",
+        "| Gate B material/decision basis extraction | current-main no-behavior-change refactor/proof |",
     ):
         if term not in board_text:
             errors.append(f"{_rel(BOARD)} missing Gate B summary extraction board term: {term}")
+    for stale_term in (
+        "Branch-local proof/refactor continuation: branch `codex/l3-gate-b-material-basis-extract`",
+        "| Gate B material/decision basis extraction | in-progress no-behavior-change refactor/proof |",
+        "branch `codex/l3-gate-b-material-basis-extract`, base `8509a6f0`",
+    ):
+        if stale_term in board_text:
+            errors.append(f"{_rel(BOARD)} still contains stale Gate B material basis branch-local term: {stale_term}")
+    for path in (MANIFEST, PROOF_MANIFEST):
+        text = _read_required_text(path, errors)
+        for stale_term in (
+            "branch_local_gate_b_material",
+            "Branch codex/l3-gate-b-material-basis-extract, base 8509a6f0",
+            "Branch-local no-behavior-change Gate B extraction",
+        ):
+            if stale_term in text:
+                errors.append(f"{_rel(path)} still contains stale Gate B material basis branch-local term: {stale_term}")
 
 
 def main() -> int:
