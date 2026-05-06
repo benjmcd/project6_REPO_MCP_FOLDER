@@ -5952,6 +5952,9 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
             "ck_l3_gate_b_idempotency_status",
         ],
         GATE_B_STATE_SERVICE: [
+            'GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")',
+            "def gate_b_counts(",
+            "def gate_b_summary_from_session(",
             "claim_gate_b_idempotency",
             "complete_gate_b_idempotency_claim",
             "gate_b_idempotency_claim_matches",
@@ -5962,6 +5965,8 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
             "claim_gate_b_idempotency",
             "complete_gate_b_idempotency_claim",
             "find_gate_b_idempotency_claim",
+            "gate_b_counts",
+            "gate_b_summary_from_session",
             "gate_b_idempotency_in_progress",
         ],
         READINESS_CONTRACT_SERVICE: [
@@ -5969,6 +5974,9 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
             "\"gate_b_decision_concurrent_duplicate_lock\": True",
         ],
         GATE_B_STATE_TEST: [
+            "test_gate_b_counts_preserve_workbench_decision_vocabulary",
+            "test_gate_b_summary_from_session_prefers_summary_json_counts",
+            "test_gate_b_summary_from_session_falls_back_to_decision_manifest",
             "test_gate_b_idempotency_migration_defines_durable_unique_claim",
             "test_gate_b_idempotency_claim_round_trips_and_matches",
             "test_gate_b_decision_concurrent_duplicate_client_request_id_uses_durable_claim",
@@ -5995,6 +6003,28 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing Gate B durable idempotency term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for stale_term in (
+        "def _gate_b_counts(",
+        "def _gate_b_summary_from_session(",
+        "GATE_B_DECISIONS = (\"approved\", \"denied\", \"isolated\", \"flagged\")",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns Gate B summary helper term: {stale_term}")
+
+    board_text = _read_required_text(BOARD, errors)
+    for term in (
+        "Gate B summary state extraction",
+        "branch `codex/l3-gate-b-summary-extract`, base `56254fcc`",
+        "layer3_gate_b_state.py",
+        "test_layer3_gate_b_state.py",
+        "decision counts, and session-summary reconstruction",
+        "without changing emitted Gate B, Gate C, plan, or session-summary count behavior",
+        "does not admit execution behavior, route, DTO, model, migration, UI, package, connector, provider, source, qualitative/RAG, mockup, or auth/security behavior",
+    ):
+        if term not in board_text:
+            errors.append(f"{_rel(BOARD)} missing Gate B summary extraction board term: {term}")
 
 
 def main() -> int:
