@@ -98,6 +98,9 @@ HANDOFF_CONTRACT_SERVICE = (
 PACKAGE_REVIEW_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_package_review_contract.py"
 )
+PACKAGE_SUBMIT_RESPONSE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_package_submit_response.py"
+)
 WORKBENCH_PACKAGE_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench_package_state.py"
 )
@@ -252,6 +255,9 @@ LAYER3_HANDOFF_CONTRACT_TEST = (
 )
 LAYER3_PACKAGE_REVIEW_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_package_review_contract.py"
+)
+LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_package_submit_response.py"
 )
 LAYER3_WORKBENCH_PACKAGE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_workbench_package_state.py"
@@ -6579,6 +6585,47 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         if term not in package_state_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
 
+    package_submit_response_text = _read_required_text(PACKAGE_SUBMIT_RESPONSE_SERVICE, errors)
+    for term in (
+        "PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = \"layer3.package_review_submit.v1\"",
+        "COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = \"layer3.cohort_package_review_submit.v1\"",
+        "def package_review_submit_response(",
+        "base_response(PACKAGE_REVIEW_SUBMIT_SCHEMA_ID",
+        "preview_identity(preview_id=preview_id, preview_hash=preview_hash)",
+        "packages_in_review_order(packages)",
+        "package_review_submit_downstream_unavailable(",
+        "authority_rail(",
+    ):
+        if term not in package_submit_response_text:
+            errors.append(f"{_rel(PACKAGE_SUBMIT_RESPONSE_SERVICE)} missing package submit response term: {term}")
+    for term in (
+        "from app.services.layer3_package_submit_response import (",
+        "COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID",
+        "PACKAGE_REVIEW_SUBMIT_SCHEMA_ID",
+        "package_review_submit_response as _package_review_submit_response",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing package submit response delegation term: {term}")
+    for stale_term in (
+        "PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = \"layer3.package_review_submit.v1\"",
+        "COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = \"layer3.cohort_package_review_submit.v1\"",
+        "def _package_review_submit_response(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns package submit response term: {stale_term}")
+    package_submit_response_test_text = _read_required_text(LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST, errors)
+    for term in (
+        "test_package_review_submit_response_preserves_workbench_projection",
+        "test_package_review_submit_response_preserves_cohort_schema_and_blocks_export",
+        "layer3_workbench._package_review_submit_response",
+        "COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE",
+        "HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE",
+    ):
+        if term not in package_submit_response_test_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST)} missing package submit response proof term: {term}"
+            )
+
     proof_manifest = _load_json(PROOF_MANIFEST, errors)
     proof_scope = proof_manifest.get("scope") if isinstance(proof_manifest, dict) else None
     if not isinstance(proof_scope, dict):
@@ -6995,6 +7042,55 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_package_identity_map_extraction_summary "
                     f"missing package identity map extraction term: {term}"
                 )
+        if proof_scope.get("latest_package_submit_response_extraction_branch") != (
+            "codex/l3-package-submit-response"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_response_extraction_branch must be 'codex/l3-package-submit-response'"
+            )
+        submit_response_pr = proof_scope.get("latest_package_submit_response_extraction_pr")
+        if submit_response_pr != "pending" and not (
+            isinstance(submit_response_pr, str) and re.fullmatch(r"#\d+", submit_response_pr)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_response_extraction_pr must be 'pending' or a PR number"
+            )
+        submit_response_head = proof_scope.get("latest_package_submit_response_extraction_head_commit")
+        if submit_response_head != "pending" and not (
+            isinstance(submit_response_head, str) and re.fullmatch(r"[0-9a-f]{40}", submit_response_head)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_response_extraction_head_commit must be 'pending' or a 40-character commit"
+            )
+        submit_response_merge = proof_scope.get("latest_package_submit_response_extraction_merge_commit")
+        if submit_response_merge != "pending" and not (
+            isinstance(submit_response_merge, str) and re.fullmatch(r"[0-9a-f]{40}", submit_response_merge)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_response_extraction_merge_commit must be 'pending' or a 40-character commit"
+            )
+        if proof_scope.get("latest_package_submit_response_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_submit_response_extraction_live_behavior_change must be False"
+            )
+        submit_response_summary = proof_scope.get("latest_package_submit_response_extraction_summary")
+        for term in (
+            "package submit response extraction",
+            "package_review_submit_response",
+            "layer3_package_submit_response.py",
+            "without activating package mutation/reconstruction",
+        ):
+            if not isinstance(submit_response_summary, str) or term not in submit_response_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_package_submit_response_extraction_summary "
+                    f"missing package submit response extraction term: {term}"
+                )
 
     for path, terms in {
         MANIFEST: (
@@ -7008,6 +7104,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "package_identity_map_extraction",
             "PR #663/merge commit a3e9305a",
             "review_package_ref_map",
+            "latest_package_submit_response_extraction_branch",
+            "package_submit_response_extraction",
+            "layer3_package_submit_response.py",
             "without activating package mutation/reconstruction",
         ),
         BOARD: (
@@ -7019,6 +7118,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "PR `#663`, merge commit `a3e9305a`",
             "review_package_hash_map",
             "without changing package handoff/export identity-map behavior",
+            "Package submit response extraction",
+            "layer3_package_submit_response.py",
+            "without changing package-review submit response behavior",
         ),
     }.items():
         text = _read_required_text(path, errors)
@@ -7484,6 +7586,7 @@ def main() -> int:
         EXECUTION_STATUS_SERVICE,
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
+        PACKAGE_SUBMIT_RESPONSE_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
@@ -7526,6 +7629,7 @@ def main() -> int:
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
         LAYER3_PACKAGE_REVIEW_CONTRACT_TEST,
+        LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST,
         WORKBENCH_PACKAGE_STATE_SERVICE,
         LAYER3_WORKBENCH_PACKAGE_STATE_TEST,
         PLAN_ERROR_SERVICE,
