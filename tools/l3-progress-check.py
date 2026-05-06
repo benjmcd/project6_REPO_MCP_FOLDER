@@ -6016,7 +6016,8 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     board_text = _read_required_text(BOARD, errors)
     for term in (
         "Gate B summary state extraction",
-        "branch `codex/l3-gate-b-summary-extract`, base `56254fcc`",
+        "PR `#630`, commit `a71e3cf5`",
+        "| Gate B summary state extraction | current-main no-behavior-change refactor/proof |",
         "layer3_gate_b_state.py",
         "test_layer3_gate_b_state.py",
         "decision counts, and session-summary reconstruction",
