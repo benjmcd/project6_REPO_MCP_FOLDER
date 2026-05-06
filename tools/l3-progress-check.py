@@ -4096,6 +4096,24 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
             errors.append(f"{_rel(LAYER3_API_TEST)} missing preflight request guard test term: {term}")
 
     required_doc_terms = {
+        BOARD: [
+            "PR `#634` hardens the preflight `manual_constraints` request contract",
+            "backend/app/services/layer3_preflight_request_contract.py",
+            "preflight_manual_constraint_scope_not_admitted",
+            "admits no L3PassRun or AnalysisRun creation",
+        ],
+        MANIFEST: [
+            "merged_live_preflight_manual_constraints_request_contract",
+            "PR #634 implements bounded API request-contract hardening",
+            "layer3_preflight_request_contract.py owns manual-constraint normalization",
+            "preflight_manual_constraint_scope_not_admitted",
+        ],
+        PROOF_MANIFEST: [
+            "preflight_manual_constraints_request_contract_proof",
+            "latest_preflight_manual_constraints_request_contract_pr",
+            "backend/tests/test_layer3_preflight_request_contract.py",
+            "no L3PassRun, AnalysisRun, or L3OutputPackage side effects",
+        ],
         SYNTHESIS_BOUNDARY: [
             "Layer3PreflightRequest",
             "test_layer3_api_preflight_rejects_extra_fields_before_service_execution",
