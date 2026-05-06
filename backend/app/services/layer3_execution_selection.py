@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models.models import L3AnalysisPlan, L3Session
+from app.models.models import L3AnalysisPlan, L3PassRun, L3Session
 from app.services.layer3_execution_state import (
     execution_selection_from_session,
     execution_selection_pass_runs,
@@ -14,7 +14,10 @@ from app.services.layer3_execution_state import (
 )
 from app.services.layer3_pass_entry import PLAN_STATUS_APPROVED
 from app.services.layer3_plan_flow_state import plan_revision_control_for_session
+from app.services.layer3_preview_contract import preview_identity
+from app.services.layer3_response_contract import base_response
 
+EXECUTION_SELECTION_SCHEMA_ID = "layer3.execution_selection.v1"
 EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 
 
@@ -88,4 +91,32 @@ def execution_selection_summary(db: Session, *, session_id: str) -> dict[str, An
         "analysis_run_ids": [],
         "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
         "selected_at": None,
+    }
+
+
+def execution_selection_response(
+    *,
+    request_id: str,
+    status: str,
+    session_id: str,
+    analysis_plan_id: str,
+    preview_id: str,
+    preview_hash: str,
+    pass_runs: list[L3PassRun],
+) -> dict[str, Any]:
+    analysis_run_ids = [
+        value for pass_run in pass_runs if (value := pass_run_analysis_run_id(pass_run))
+    ]
+    return {
+        **base_response(EXECUTION_SELECTION_SCHEMA_ID, request_id=request_id, status=status),
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "preview_identity": preview_identity(preview_id=preview_id, preview_hash=preview_hash),
+        "pass_run_ids": [pass_run.pass_run_id for pass_run in pass_runs],
+        "pass_run_count": len(pass_runs),
+        "execution_started": any(pass_run_execution_started(pass_run) for pass_run in pass_runs),
+        "analysis_run_ids": analysis_run_ids,
+        "pass_run_statuses": {pass_run.pass_run_id: pass_run.status for pass_run in pass_runs},
+        "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
+        "next_state": execution_state_for_pass_runs(pass_runs),
     }
