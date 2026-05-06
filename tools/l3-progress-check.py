@@ -63,6 +63,9 @@ APPROVED_PLAN_CANCEL_ENTRY_FREEZE = (
 APPROVED_PLAN_CORRECTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_approved_plan_correction.py"
 )
+APPROVED_PLAN_CORRECTION_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_approved_plan_correction.py"
+)
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -572,7 +575,7 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         errors.append("layer3_workbench_current_decision.next_required_decision must be a non-empty string")
     else:
         required_terms = [
-            "After the approved_plan_cancel_without_replacement runtime",
+            "After direct approved_plan_cancel_without_replacement owner-service proof hardening",
             "keep remaining authentication/security",
             "approved-plan supersession runtime",
             "no-behavior-change service extraction",
@@ -598,7 +601,7 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         "progress/proof/state drift checker",
         "state/action contract drift checker",
         "preview hash/idempotency follow-up",
-        "post-runtime proof hardening for approved_plan_cancel_without_replacement",
+        "approved-plan cancel owner-service proof maintenance only if fresh drift appears",
         "no-behavior-change service extraction",
         "future implementation-entry freeze",
     ]
@@ -1427,6 +1430,7 @@ def _check_approved_plan_cancel_runtime(
     readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
     bootstrap_text = _read_required_text(BOOTSTRAP_CONTRACT_SERVICE, errors)
     api_test_text = _read_required_text(LAYER3_API_TEST, errors)
+    service_test_text = _read_required_text(APPROVED_PLAN_CORRECTION_TEST, errors)
 
     required_terms_by_surface = {
         APPROVED_PLAN_CORRECTION_SERVICE: (
@@ -1490,6 +1494,20 @@ def _check_approved_plan_cancel_runtime(
             "db.query(AnalysisArtifact).count() == 0",
             "db.query(L3OutputPackage).count() == 0",
         ),
+        APPROVED_PLAN_CORRECTION_TEST: (
+            "test_cancel_approved_plan_without_replacement_updates_existing_plan_only_and_is_idempotent",
+            "test_cancel_approved_plan_without_replacement_rejects_non_admitted_fields_before_mutation",
+            "test_cancel_approved_plan_without_replacement_prechecks_fail_closed_before_mutation",
+            "test_approved_plan_cancel_from_session_requires_current_schema",
+            "cancel_approved_plan_without_replacement",
+            "approved_plan_cancel_from_session",
+            "db.query(L3PassRun).count() == 0",
+            "db.query(AnalysisRun).count() == 0",
+            "db.query(AnalysisArtifact).count() == 0",
+            "db.query(L3OutputPackage).count() == 0",
+            "db.query(L3ReconciliationRecord).count() == 0",
+            "db.query(ConnectorRun).count() == 0",
+        ),
     }
     text_by_surface = {
         APPROVED_PLAN_CORRECTION_SERVICE: service_text,
@@ -1501,6 +1519,7 @@ def _check_approved_plan_cancel_runtime(
         READINESS_CONTRACT_SERVICE: readiness_text,
         BOOTSTRAP_CONTRACT_SERVICE: bootstrap_text,
         LAYER3_API_TEST: api_test_text,
+        APPROVED_PLAN_CORRECTION_TEST: service_test_text,
     }
     for path, terms in required_terms_by_surface.items():
         text = text_by_surface[path]
@@ -5349,6 +5368,7 @@ def main() -> int:
         APPROVED_PLAN_CORRECTION_FREEZE,
         APPROVED_PLAN_CANCEL_ENTRY_FREEZE,
         APPROVED_PLAN_CORRECTION_SERVICE,
+        APPROVED_PLAN_CORRECTION_TEST,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         PACKAGE_ENTRY_MIGRATION,
