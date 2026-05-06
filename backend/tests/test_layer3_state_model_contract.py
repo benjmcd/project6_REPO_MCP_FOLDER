@@ -22,5 +22,12 @@ def test_layer3_state_model_contract_is_shared() -> None:
         for state in readiness_state_model["states"]
     )
     state_by_name = {state["state"]: state for state in readiness_state_model["states"]}
+    assert state_by_name["plan_approved"]["allowed_next_actions"] == [
+        "approved_plan_cancel",
+        "execution_select",
+    ]
+    assert state_by_name["approved_plan_cancelled"]["allowed_next_actions"] == [
+        "inspect_approved_plan_cancel"
+    ]
     assert state_by_name["plan_rejected"]["allowed_next_actions"] == ["plan_revision_recover"]
     assert state_by_name["plan_revision_requested"]["allowed_next_actions"] == ["plan_revision_recover"]

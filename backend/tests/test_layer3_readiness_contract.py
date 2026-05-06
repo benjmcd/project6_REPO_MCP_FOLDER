@@ -38,7 +38,14 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["dispatch_admitted"] is False
     assert direct["plan_revision_recovery_admitted"] is True
     assert direct["plan_revision_recovery_endpoint"] == "/api/v1/layer3/plan/revision/recover"
+    assert direct["approved_plan_cancel_admitted"] is True
+    assert direct["approved_plan_cancel_endpoint"] == "/api/v1/layer3/plan/approved/cancel"
+    assert direct["idempotency_contract"]["client_request_id_required_for_approved_plan_cancel"] is True
+    assert direct["concurrency_contract"]["approved_plan_cancel_without_replacement_only"] is True
     assert direct["deferred_decisions"]["source_breadth"] == (
         "requires later freeze before RAG/vector/upload/local-directory expansion"
     )
     assert direct["deferred_decisions"]["revision_recovery"].startswith("admitted only as preview-refresh recovery")
+    assert direct["deferred_decisions"]["approved_plan_correction"].startswith(
+        "only approved_plan_cancel_without_replacement is admitted"
+    )

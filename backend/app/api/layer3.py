@@ -87,6 +87,10 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     replacement_package_artifact_manifest_endpoint: str
     replacement_package_namespace_admitted: bool
     replacement_package_namespace_endpoint: str
+    plan_revision_recovery_admitted: bool
+    plan_revision_recovery_endpoint: str
+    approved_plan_cancel_admitted: bool
+    approved_plan_cancel_endpoint: str
     package_review_admitted: bool
     external_handoff_admitted: bool
     external_export_admitted: bool
@@ -126,6 +130,37 @@ class Layer3PlanApprovalRequest(BaseModel):
     preview_hash: str
     operator_confirmation: bool
     approval_scope: str | None = None
+
+
+class Layer3ApprovedPlanCancelRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    session_id: str
+    analysis_plan_id: str
+    source_preview_id: str
+    source_preview_hash: str
+    operator_decision: str
+    operator_note: str | None = None
+    approved_plan_supersession: Any | None = None
+    replacement_plan: Any | None = None
+    reopen_approved_plan: Any | None = None
+    delete_approved_plan: Any | None = None
+    create_pass_runs: Any | None = None
+    execution: Any | None = None
+    analysis_run_id: Any | None = None
+    package_mutation: Any | None = None
+    connector_dispatch: Any | None = None
+    provider_public_url: Any | None = None
+    source_expansion: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+    frontend_state: Any | None = None
+    hidden_llm_plan: Any | None = None
 
 
 class Layer3PlanPreviewRequest(BaseModel):
@@ -1213,6 +1248,27 @@ class Layer3PlanApprovalResponse(Layer3BaseResponse):
     approved_plan: dict[str, Any]
 
 
+class Layer3ApprovedPlanCancelResponse(Layer3BaseResponse):
+    session_id: str
+    next_state: str
+    approved_plan_cancelled: bool
+    approval_available: bool
+    execution_started: bool
+    replacement_plan_created: bool
+    analysis_plan_id: str
+    plan_status: str
+    previous_plan_status: str
+    approved_by_operator: bool
+    approved_at: str | None
+    source_preview_id: str
+    source_preview_hash: str
+    operator_decision: str
+    operator_note_recorded: bool
+    authority_rail: dict[str, Any]
+    downstream_unavailable: list[str]
+    approved_plan_cancel: dict[str, Any]
+
+
 class Layer3PlanRevisionResponse(Layer3BaseResponse):
     session_id: str
     next_state: str
@@ -2170,6 +2226,49 @@ PLAN_APPROVAL_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "operator_confirmation": {"type": "boolean", "enum": [True]},
         "approval_scope": {"type": "string", "enum": ["owner_service_default"]},
+    },
+}
+
+
+APPROVED_PLAN_CANCEL_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": "Strict approved-plan cancellation fields; only cancel-without-replacement before pass-run creation is admitted.",
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "source_preview_id",
+        "source_preview_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.approved_plan_cancel_request.v1"]},
+        "schema_version": {"type": "integer"},
+        "client_request_id": {"type": "string", "minLength": 1},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "source_preview_id": {"type": "string"},
+        "source_preview_hash": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["cancel_approved_plan_without_replacement"]},
+        "operator_note": {"type": "string"},
+        "approved_plan_supersession": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "replacement_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "reopen_approved_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "delete_approved_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_pass_runs": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_run_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_mutation": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_dispatch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "provider_public_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "frontend_state": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hidden_llm_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -3479,6 +3578,7 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     plan_approval: dict[str, Any]
     plan_revision: dict[str, Any]
     plan_revision_recovery: dict[str, Any]
+    approved_plan_cancel: dict[str, Any]
     execution_selection: dict[str, Any]
     analysis_execution_start: dict[str, Any]
     execution_result_review: dict[str, Any]
@@ -3658,6 +3758,19 @@ def post_plan_approve(
             payload.model_dump(exclude_none=True),
         )
     )
+
+
+@router.post(
+    "/plan/approved/cancel",
+    response_model=Layer3ApprovedPlanCancelResponse,
+    openapi_extra={"requestBody": _json_request_body(APPROVED_PLAN_CANCEL_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409, 500),
+)
+def post_plan_approved_cancel(
+    payload: Layer3ApprovedPlanCancelRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.approved_plan_cancel(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(

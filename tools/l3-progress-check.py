@@ -60,6 +60,9 @@ APPROVED_PLAN_CORRECTION_FREEZE = (
 APPROVED_PLAN_CANCEL_ENTRY_FREEZE = (
     PLANNING_DOCS / "136_APPROVED_PLAN_CANCEL_ENTRY_FREEZE.md"
 )
+APPROVED_PLAN_CORRECTION_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_approved_plan_correction.py"
+)
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -356,7 +359,7 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
 def _check_latest_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "d60b01aabf394ee36f4fbcffb13e932d931e996c"
+    expected_commit = "9bb11820bc5b12292cbc43d1a2c326e61df80d2e"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -369,8 +372,8 @@ def _check_latest_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR601 current-main approved-plan "
-                f"correction freeze base commit before cancel entry freeze {expected_commit}"
+                f"{name} must identify the post-PR602 current-main approved-plan "
+                f"cancel entry freeze base commit before cancel runtime {expected_commit}"
             )
 
     for name, source in (
@@ -384,16 +387,16 @@ def _check_latest_progress_sync(
         ),
     ):
         if not isinstance(source, str):
-            errors.append(f"{name} must be present after PR601 approved-plan correction freeze")
+            errors.append(f"{name} must be present after PR602 approved-plan cancel entry freeze")
             continue
         for term in (
             expected_commit,
-            "after PR #601",
-            "approved-plan cancel entry freeze",
-            "no runtime behavior changes",
+            "after PR #602",
+            "approved-plan cancel runtime",
+            "codex/l3-approved-plan-cancel-runtime",
         ):
             if term not in source:
-                errors.append(f"{name} missing approved-plan cancel entry freeze term: {term}")
+                errors.append(f"{name} missing approved-plan cancel runtime term: {term}")
 
     namespace_runtime = manifest.get("package_replacement_namespace_runtime")
     if not isinstance(namespace_runtime, dict):
@@ -485,6 +488,14 @@ def _check_latest_progress_sync(
         ):
             if stale in summary:
                 errors.append(f"{name} still describes namespace runtime as implementation-entry: {stale}")
+        for term in (
+            "bounded live `approved_plan_cancel_without_replacement` runtime",
+            "POST /api/v1/layer3/plan/approved/cancel",
+            "existing approved `L3AnalysisPlan` row",
+            "no replacement plan",
+        ):
+            if term not in summary:
+                errors.append(f"{name} missing approved-plan cancel runtime sync term: {term}")
 
 
 def _check_summary_counts(manifest: dict[str, Any], errors: list[str]) -> None:
@@ -561,14 +572,22 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         errors.append("layer3_workbench_current_decision.next_required_decision must be a non-empty string")
     else:
         required_terms = [
-            "After doc 136 selects approved_plan_cancel_without_replacement",
+            "After the approved_plan_cancel_without_replacement runtime",
             "keep remaining authentication/security",
-            "future runtime implementation for exactly approved_plan_cancel_without_replacement",
             "approved-plan supersession runtime",
+            "no-behavior-change service extraction",
+            "proof/state drift checker",
         ]
         for term in required_terms:
             if term not in next_required:
                 errors.append(f"next_required_decision missing local near-term direction term: {term}")
+        stale_terms = [
+            "future runtime implementation for exactly approved_plan_cancel_without_replacement",
+            "approved_plan_cancel_without_replacement as implementation-entry only",
+        ]
+        for term in stale_terms:
+            if term in next_required:
+                errors.append(f"next_required_decision still contains stale cancel-runtime wording: {term}")
 
     allowed_actions = decision.get("next_allowed_actions")
     if not isinstance(allowed_actions, list) or not allowed_actions:
@@ -579,8 +598,7 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         "progress/proof/state drift checker",
         "state/action contract drift checker",
         "preview hash/idempotency follow-up",
-        "plan_revision_recovery_preview_refresh_entry",
-        "future runtime implementation for exactly approved_plan_cancel_without_replacement",
+        "post-runtime proof hardening for approved_plan_cancel_without_replacement",
         "no-behavior-change service extraction",
         "future implementation-entry freeze",
     ]
@@ -598,6 +616,12 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
     for term in blocked_allowed:
         if term in allowed_text:
             errors.append(f"next_allowed_actions still includes blocked near-term option: {term}")
+    stale_allowed = [
+        "future runtime implementation for exactly approved_plan_cancel_without_replacement",
+    ]
+    for term in stale_allowed:
+        if term in allowed_text:
+            errors.append(f"next_allowed_actions still treats approved-plan cancel runtime as future: {term}")
 
 
 def _check_plan_revision_recovery_freeze(manifest: dict[str, Any], errors: list[str]) -> None:
@@ -1039,24 +1063,26 @@ def _check_approved_plan_correction_freeze(
         DEFERRED_GATES: [
             "135_APPROVED_PLAN_CORRECTION_FREEZE.md",
             "approved_plan_correction_lifecycle",
-            "approved-plan cancellation, reopening, replacement, deletion, and supersession remain not admitted",
+            "broader `approved_plan_correction_lifecycle`",
+            "approved-plan reopening, replacement, deletion, supersession",
         ],
         SYNTHESIS_BOUNDARY: [
             "135_APPROVED_PLAN_CORRECTION_FREEZE.md",
             "approved_plan_correction_lifecycle",
             "planning/control only",
-            "no `L3AnalysisPlan` mutation",
+            "replacement-plan creation",
         ],
         GOAL_AUDIT: [
             "Approved plan correction lifecycle",
-            "Planning/control freeze plus implementation-entry cancel-without-replacement contract only",
-            "approved_plan_correction",
-            "approved_plan_supersession",
+            "Exact cancel-without-replacement runtime is live",
+            "broader correction lifecycle remains blocked",
+            "supersession",
         ],
         CLOSEOUT_DOC: [
             "planning/control approved-plan correction freeze",
             "135_APPROVED_PLAN_CORRECTION_FREEZE.md",
-            "No approved-plan cancellation runtime, reopening, replacement, deletion, or supersession is live.",
+            "Exact approved-plan cancel-without-replacement runtime live",
+            "broader correction lifecycle blocked",
         ],
         BOARD: [
             "Current approved-plan correction planning/control freeze",
@@ -1068,7 +1094,7 @@ def _check_approved_plan_correction_freeze(
             "latest_approved_plan_correction_freeze_branch",
             "55d90f869d1f1e49127bc1dd2e1269d056f702aa",
             "approved_plan_correction_lifecycle",
-            "No runtime behavior changes",
+            "approved_plan_cancel_runtime_proof",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -1080,7 +1106,7 @@ def _check_approved_plan_correction_freeze(
     readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
     plan_flow_text = _read_required_text(PLAN_FLOW_CONTRACT_SERVICE, errors)
     for term in (
-        '"approved_plan_correction": "requires later freeze"',
+        '"approved_plan_correction": "only approved_plan_cancel_without_replacement is admitted',
         '"revision_recovery": "admitted only as preview-refresh recovery',
     ):
         if term not in readiness_text:
@@ -1193,31 +1219,32 @@ def _check_approved_plan_cancel_entry_freeze(
         SYNTHESIS_BOUNDARY: [
             "136_APPROVED_PLAN_CANCEL_ENTRY_FREEZE.md",
             "approved_plan_cancel_without_replacement",
-            "implementation-entry only",
-            "no runtime state write",
+            "entry freeze",
+            "bounded runtime",
         ],
         GOAL_AUDIT: [
             "136_APPROVED_PLAN_CANCEL_ENTRY_FREEZE.md",
-            "Planning/control freeze plus implementation-entry cancel-without-replacement contract only",
-            "future `approved_plan_cancel_without_replacement`",
-            "No approved-plan cancellation runtime",
+            "approved_plan_cancel_without_replacement",
+            "runtime is live",
+            "no approved-plan supersession",
         ],
         CLOSEOUT_DOC: [
-            "implementation-entry approved-plan cancel-without-replacement freeze",
+            "approved-plan cancel-without-replacement runtime",
             "136_APPROVED_PLAN_CANCEL_ENTRY_FREEZE.md",
-            "No approved-plan cancellation runtime",
+            "supersession",
         ],
         BOARD: [
-            "Current approved-plan cancel entry freeze",
-            "82 structured records",
-            "Approved plan cancel entry freeze",
+            "Current approved-plan cancel runtime",
+            "83 structured records",
+            "Approved plan cancel runtime",
             "approved_plan_cancel_without_replacement",
         ],
         PROOF_MANIFEST: [
             "approved_plan_cancel_entry_freeze_proof",
+            "approved_plan_cancel_runtime_proof",
             "latest_approved_plan_cancel_entry_freeze_branch",
             "codex/l3-approved-plan-cancel-entry-freeze",
-            "No runtime behavior changes",
+            "codex/l3-approved-plan-cancel-runtime",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -1231,7 +1258,7 @@ def _check_approved_plan_cancel_entry_freeze(
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     models_text = _read_required_text(MODELS, errors)
     for term in (
-        '"approved_plan_correction": "requires later freeze"',
+        '"approved_plan_cancel": "admitted only as cancellation without replacement of the current approved plan before pass-run creation"',
         '"revision_recovery": "admitted only as preview-refresh recovery',
     ):
         if term not in readiness_text:
@@ -1239,7 +1266,7 @@ def _check_approved_plan_cancel_entry_freeze(
     if '"approved_plan_supersession"' not in plan_flow_text:
         errors.append(f"{_rel(PLAN_FLOW_CONTRACT_SERVICE)} must keep approved_plan_supersession forbidden")
     for term in (
-        '"plan_already_approved"',
+        '"approved_plan_cancelled"',
         '"pass_runs_already_exist"',
         'L3AnalysisPlan.status == "approved"',
         "L3AnalysisPlan.approved_by_operator.is_(True)",
@@ -1339,6 +1366,183 @@ def _check_approved_plan_cancel_entry_freeze(
                 ):
                     if doc not in docs:
                         errors.append(f"approved-plan cancel entry governing_docs missing {doc}")
+
+
+def _check_approved_plan_cancel_runtime(
+    manifest: dict[str, Any], errors: list[str]
+) -> None:
+    runtime = manifest.get("approved_plan_cancel_runtime")
+    if not isinstance(runtime, dict):
+        errors.append("manifest missing approved_plan_cancel_runtime object")
+    else:
+        expected = {
+            "mode": "approved_plan_cancel_without_replacement",
+            "source_gate": "136_APPROVED_PLAN_CANCEL_ENTRY_FREEZE",
+            "live_behavior_change": True,
+            "implementation_branch": "codex/l3-approved-plan-cancel-runtime",
+            "base_commit": "9bb11820bc5b12292cbc43d1a2c326e61df80d2e",
+            "route": "/api/v1/layer3/plan/approved/cancel",
+            "owner_service": "backend/app/services/layer3_approved_plan_correction.py",
+            "request_dto": "Layer3ApprovedPlanCancelRequest",
+            "response_dto": "Layer3ApprovedPlanCancelResponse",
+            "request_schema_id": "layer3.approved_plan_cancel_request.v1",
+            "response_schema_id": "layer3.approved_plan_cancel_result.v1",
+            "state_schema_id": "layer3.approved_plan_cancel_state.v1",
+            "next_state": "approved_plan_cancelled",
+            "plan_status": "cancelled",
+        }
+        for key, value in expected.items():
+            if runtime.get(key) != value:
+                errors.append(f"approved_plan_cancel_runtime.{key} must be {value!r}")
+        for key in ("positive_proof", "negative_proof", "blocked_scope", "governing_docs"):
+            if not isinstance(runtime.get(key), list) or not runtime.get(key):
+                errors.append(f"approved_plan_cancel_runtime.{key} must be a non-empty list")
+        blocked_scope = runtime.get("blocked_scope") if isinstance(runtime.get("blocked_scope"), list) else []
+        for blocked in (
+            "replacement plan creation",
+            "approved-plan supersession, replacement, reopening, or deletion",
+            "L3AnalysisPlan creation",
+            "L3PassRun creation",
+            "AnalysisRun creation",
+            "output/package/handoff/export artifact creation",
+            "connector/destination dispatch",
+            "source/schema/runtime widening",
+            "provider/public URL support",
+            "broad qualitative/hybrid/RAG execution",
+            "frontend-only durable state",
+            "hidden LLM planning",
+            "full mockup activation",
+            "authentication/security hardening",
+            "broad package mutation/reconstruction",
+        ):
+            if blocked not in blocked_scope:
+                errors.append(f"approved_plan_cancel_runtime.blocked_scope missing {blocked}")
+
+    service_text = _read_required_text(APPROVED_PLAN_CORRECTION_SERVICE, errors)
+    api_text = _read_required_text(LAYER3_API, errors)
+    plan_flow_text = _read_required_text(PLAN_FLOW_CONTRACT_SERVICE, errors)
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    state_action_text = _read_required_text(STATE_ACTION_CONTRACT, errors)
+    state_model_text = _read_required_text(STATE_MODEL_CONTRACT_SERVICE, errors)
+    readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
+    bootstrap_text = _read_required_text(BOOTSTRAP_CONTRACT_SERVICE, errors)
+    api_test_text = _read_required_text(LAYER3_API_TEST, errors)
+
+    required_terms_by_surface = {
+        APPROVED_PLAN_CORRECTION_SERVICE: (
+            "cancel_approved_plan_without_replacement",
+            "APPROVED_PLAN_CANCEL_REQUEST_SCHEMA_ID",
+            "APPROVED_PLAN_CANCEL_RESULT_SCHEMA_ID",
+            "APPROVED_PLAN_CANCEL_STATE_SCHEMA_ID",
+            "APPROVED_PLAN_CANCEL_NEXT_STATE",
+            "APPROVED_PLAN_CANCELLED_STATUS",
+            "approved_plan_cancel_blocked_fields",
+            "with_for_update()",
+            "pass_runs_already_exist",
+            "multiple_approved_plans",
+            "replacement_plan_created",
+        ),
+        LAYER3_API: (
+            "Layer3ApprovedPlanCancelRequest",
+            "Layer3ApprovedPlanCancelResponse",
+            "APPROVED_PLAN_CANCEL_REQUEST_SCHEMA",
+            '"/plan/approved/cancel"',
+            "layer3_workbench.approved_plan_cancel",
+        ),
+        PLAN_FLOW_CONTRACT_SERVICE: (
+            "APPROVED_PLAN_CANCEL_FORBIDDEN_FIELDS",
+            "approved_plan_cancel_blocked_fields",
+            '"approved_plan_supersession"',
+            '"replacement_plan"',
+        ),
+        WORKBENCH_SERVICE: (
+            "approved_plan_cancel",
+            "approved_plan_cancelled",
+            "APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE",
+        ),
+        STATE_ACTION_CONTRACT: (
+            "approved_plan_cancel_without_replacement",
+            "approved_plan_cancel",
+            "backend/app/services/layer3_approved_plan_correction.py",
+        ),
+        STATE_MODEL_CONTRACT_SERVICE: (
+            "approved_plan_cancelled",
+            "inspect_approved_plan_cancel",
+            '"approved_plan_cancel", "execution_select"',
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "approved_plan_cancel_admitted",
+            "approved_plan_cancel_endpoint",
+            "client_request_id_required_for_approved_plan_cancel",
+            "duplicate_approved_plan_cancel",
+            "approved_plan_cancel_uses_session_and_plan_locks",
+            "approved_plan_cancel_without_replacement_only",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"approved_plan_cancel": True',
+            "approved_plan_cancel_admitted",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_approved_plan_cancel_without_replacement_updates_existing_plan_only",
+            "test_layer3_api_approved_plan_cancel_prechecks_fail_closed",
+            "db.query(L3PassRun).count() == 0",
+            "db.query(AnalysisRun).count() == 0",
+            "db.query(AnalysisArtifact).count() == 0",
+            "db.query(L3OutputPackage).count() == 0",
+        ),
+    }
+    text_by_surface = {
+        APPROVED_PLAN_CORRECTION_SERVICE: service_text,
+        LAYER3_API: api_text,
+        PLAN_FLOW_CONTRACT_SERVICE: plan_flow_text,
+        WORKBENCH_SERVICE: workbench_text,
+        STATE_ACTION_CONTRACT: state_action_text,
+        STATE_MODEL_CONTRACT_SERVICE: state_model_text,
+        READINESS_CONTRACT_SERVICE: readiness_text,
+        BOOTSTRAP_CONTRACT_SERVICE: bootstrap_text,
+        LAYER3_API_TEST: api_test_text,
+    }
+    for path, terms in required_terms_by_surface.items():
+        text = text_by_surface[path]
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing approved-plan cancel runtime term: {term}")
+
+    forbidden_service_terms = (
+        "AnalysisRun(",
+        "AnalysisArtifact(",
+        "L3OutputPackage(",
+        "L3ReconciliationRecord(",
+        "ConnectorRun(",
+        "materialize_pass_entry",
+        "materialize_package_entry",
+        "provider_public",
+    )
+    for term in forbidden_service_terms:
+        if term in service_text:
+            errors.append(f"{_rel(APPROVED_PLAN_CORRECTION_SERVICE)} contains forbidden runtime expansion term: {term}")
+
+    slices = manifest.get("layer3_workbench_slices")
+    if not isinstance(slices, list):
+        errors.append("layer3_workbench_slices missing for approved-plan cancel runtime")
+    else:
+        matches = [
+            item
+            for item in slices
+            if isinstance(item, dict)
+            and item.get("slice_id") == "approved-plan-cancel-runtime"
+        ]
+        if len(matches) != 1:
+            errors.append("layer3_workbench_slices must contain exactly one approved-plan-cancel-runtime record")
+        else:
+            item = matches[0]
+            if item.get("main_state") != "live_bounded_approved_plan_cancel_without_replacement_runtime":
+                errors.append("approved-plan cancel runtime slice must be live_bounded approved-plan cancel runtime")
+            if item.get("base_commit") != "9bb11820bc5b12292cbc43d1a2c326e61df80d2e":
+                errors.append("approved-plan cancel runtime slice base_commit must identify PR #602 merge")
+            counting_rule = item.get("counting_rule")
+            if not isinstance(counting_rule, str) or "live bounded workbench slice" not in counting_rule:
+                errors.append("approved-plan cancel runtime slice counting_rule must classify the slice as live bounded")
 
 
 def _check_referenced_paths(manifest: dict[str, Any], errors: list[str]) -> None:
@@ -3961,15 +4165,6 @@ def _check_ci_layer3_backend_guardrail(errors: list[str]) -> None:
 
 def _check_qualitative_progress_sync(manifest: dict[str, Any], errors: list[str]) -> None:
     live_state = "merged_live_bounded_single_aps_doc_qualitative_execution"
-    decision = manifest.get("layer3_workbench_current_decision")
-    if not isinstance(decision, dict):
-        return
-    if decision.get("state") != live_state:
-        errors.append(
-            "layer3_workbench_current_decision must classify exact single APS-doc "
-            "qualitative execution as current-main bounded behavior"
-        )
-
     state_model = manifest.get("state_model")
     if not isinstance(state_model, dict) or live_state not in state_model:
         errors.append(f"state_model missing {live_state}")
@@ -5153,6 +5348,7 @@ def main() -> int:
         PLAN_REVISION_RECOVERY_ENTRY_FREEZE,
         APPROVED_PLAN_CORRECTION_FREEZE,
         APPROVED_PLAN_CANCEL_ENTRY_FREEZE,
+        APPROVED_PLAN_CORRECTION_SERVICE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         PACKAGE_ENTRY_MIGRATION,
@@ -5224,6 +5420,7 @@ def main() -> int:
         _check_plan_revision_recovery_entry_freeze(manifest, errors)
         _check_approved_plan_correction_freeze(manifest, errors)
         _check_approved_plan_cancel_entry_freeze(manifest, errors)
+        _check_approved_plan_cancel_runtime(manifest, errors)
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
     _check_connector_dispatch_entry_freeze(errors)

@@ -85,6 +85,13 @@ from app.services.layer3_plan_revision_recovery import (
     plan_revision_recovery_preview_marker as _plan_revision_recovery_preview_marker,
     recover_plan_revision_for_preview_refresh as _recover_plan_revision_for_preview_refresh,
 )
+from app.services.layer3_approved_plan_correction import (
+    APPROVED_PLAN_CANCEL_DECISION,
+    APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE,
+    APPROVED_PLAN_CANCEL_NEXT_STATE,
+    cancel_approved_plan_without_replacement as _cancel_approved_plan_without_replacement,
+    approved_plan_cancel_from_session as _approved_plan_cancel_from_session,
+)
 from app.services.layer3_signed_reference_state import (
     SignedReferenceDurableState,
     SignedReferenceStateError,
@@ -137,9 +144,11 @@ from app.services.layer3_workbench_package_state import (
 from app.services.layer3_state_action_contract import build_state_action_contract
 from app.services.layer3_state_model_contract import build_workbench_state_model
 from app.services.layer3_plan_flow_contract import (
+    APPROVED_PLAN_CANCEL_FORBIDDEN_FIELDS,
     EXECUTION_SELECTION_FORBIDDEN_FIELDS,
     PLAN_APPROVAL_FORBIDDEN_FIELDS,
     PLAN_REVISION_FORBIDDEN_FIELDS,
+    approved_plan_cancel_blocked_fields,
     execution_selection_blocked_fields,
     plan_approval_blocked_fields,
     plan_revision_blocked_fields,
@@ -603,6 +612,7 @@ def _workbench_state_action_contract() -> dict[str, Any]:
         gate_b_decisions=GATE_B_DECISIONS,
         plan_revision_decisions=PLAN_REVISION_DECISIONS,
         plan_revision_recovery_decisions=(PLAN_REVISION_RECOVERY_DECISION,),
+        approved_plan_cancel_decisions=(APPROVED_PLAN_CANCEL_DECISION,),
         execution_result_review_decisions=EXECUTION_RESULT_REVIEW_DECISIONS,
         package_review_submit_decisions=PACKAGE_REVIEW_SUBMIT_DECISIONS,
         handoff_export_prepare_decisions=HANDOFF_EXPORT_PREPARE_DECISIONS,
@@ -2310,7 +2320,8 @@ def _plan_preview_readiness(db: Session, *, session_id: str, include_owner_servi
     elif analysis_set_count == 0:
         blocked_reason = "no_analysis_sets"
     elif analysis_plan_count > 0 or pass_run_count > 0:
-        blocked_reason = "plan_already_materialized"
+        latest_plan = _latest_analysis_plan(db, session_id=session_id)
+        blocked_reason = "approved_plan_cancelled" if latest_plan is not None and latest_plan.status == "cancelled" else "plan_already_materialized"
     elif (revision_control := _plan_revision_control(db, session_id=session_id)) is not None:
         blocked_reason = str(revision_control.get("state") or "plan_revision_recorded")
     elif include_owner_service:
@@ -2389,6 +2400,28 @@ def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
         }
     plan_json = analysis_plan.plan_json or {}
     approved = bool(analysis_plan.approved_by_operator)
+    cancelled = analysis_plan.status == "cancelled"
+    if cancelled:
+        cancellation = plan_json.get("approved_plan_cancel") if isinstance(plan_json.get("approved_plan_cancel"), dict) else None
+        return {
+            "schema_id": "layer3.plan_approval_readiness.v1",
+            "available": False,
+            "approved": False,
+            "blocked_reason": "approved_plan_cancelled",
+            "analysis_plan_id": analysis_plan.analysis_plan_id,
+            "plan_status": analysis_plan.status,
+            "approved_by_operator": approved,
+            "approved_at": analysis_plan.approved_at.isoformat() if analysis_plan.approved_at else None,
+            "approved_set_count": len(analysis_plan.analysis_set_ids_json or []),
+            "excluded_set_count": len(plan_json.get("excluded_sets_json") or []),
+            "planned_pass_count": len(plan_json.get("planned_passes_json") or []),
+            "pass_run_count": pass_run_count,
+            "approval_only": bool(plan_json.get("approval_only")),
+            "execution_started": bool(plan_json.get("execution_started")),
+            "approved_plan_cancelled": True,
+            "approval_available": False,
+            "approved_plan_cancel": _json_clone(cancellation) if cancellation is not None else None,
+        }
     return {
         "schema_id": "layer3.plan_approval_readiness.v1",
         "available": False,
@@ -2640,7 +2673,10 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
     existing_plan = _latest_analysis_plan(db, session_id=session_id)
     if existing_plan is not None:
-        if bool(existing_plan.approved_by_operator):
+        if existing_plan.status == "cancelled":
+            error_code = "approved_plan_cancelled"
+            message = f"Layer 3 session '{session_id}' has a cancelled approved analysis plan."
+        elif bool(existing_plan.approved_by_operator):
             error_code = "plan_already_approved"
             message = f"Layer 3 session '{session_id}' already has an approved analysis plan."
         else:
@@ -2857,6 +2893,10 @@ def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
 
 def plan_revision_recovery(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     return _recover_plan_revision_for_preview_refresh(db, payload)
+
+
+def approved_plan_cancel(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    return _cancel_approved_plan_without_replacement(db, payload)
 
 
 def _execution_selection_from_session(session: L3Session | None) -> dict[str, Any] | None:
@@ -10461,6 +10501,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     plan_revision_readiness = _plan_revision_summary(db, session_id=session_id)
     active_revision_control = _plan_revision_control_from_session(session)
     recorded_revision_recovery = _plan_revision_recovery_from_session(session)
+    recorded_approved_plan_cancel = _approved_plan_cancel_from_session(session)
     if recorded_revision_recovery is not None:
         plan_revision_recovery_state = {
             "schema_id": "layer3.plan_revision_recovery_readiness.v1",
@@ -10500,6 +10541,45 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
             "preview_refresh_required": False,
             "approval_available": False,
             "execution_started": False,
+        }
+    if recorded_approved_plan_cancel is not None:
+        approved_plan_cancel_state = {
+            "schema_id": "layer3.approved_plan_cancel_readiness.v1",
+            "available": False,
+            "cancelled": True,
+            "state": recorded_approved_plan_cancel.get("state"),
+            "blocked_reason": "approved_plan_cancelled",
+            "analysis_plan_id": recorded_approved_plan_cancel.get("analysis_plan_id"),
+            "source_preview_id": recorded_approved_plan_cancel.get("source_preview_id"),
+            "source_preview_hash": recorded_approved_plan_cancel.get("source_preview_hash"),
+            "cancellation_id": recorded_approved_plan_cancel.get("cancellation_id"),
+            "approval_available": False,
+            "execution_started": False,
+            "replacement_plan_created": False,
+            "downstream_unavailable": list(APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE),
+        }
+    else:
+        cancel_available = bool(
+            plan_approval_readiness.get("approved")
+            and plan_approval_readiness.get("plan_status") == "approved"
+            and plan_approval_readiness.get("pass_run_count") == 0
+        )
+        cancel_plan = _latest_analysis_plan(db, session_id=session_id) if cancel_available else None
+        cancel_plan_json = cancel_plan.plan_json if cancel_plan is not None else {}
+        approved_plan_cancel_state = {
+            "schema_id": "layer3.approved_plan_cancel_readiness.v1",
+            "available": cancel_available,
+            "cancelled": False,
+            "state": "plan_approved" if cancel_available else None,
+            "blocked_reason": None if cancel_available else "approved_plan_cancel_not_available",
+            "analysis_plan_id": plan_approval_readiness.get("analysis_plan_id") if cancel_available else None,
+            "source_preview_id": cancel_plan_json.get("source_preview_id"),
+            "source_preview_hash": cancel_plan_json.get("source_preview_hash"),
+            "cancellation_id": None,
+            "approval_available": False,
+            "execution_started": False,
+            "replacement_plan_created": False,
+            "downstream_unavailable": list(APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE),
         }
     execution_selection_readiness = _execution_selection_summary(db, session_id=session_id)
     analysis_execution_start_state = (session.summary_json or {}).get("analysis_execution_start")
@@ -10567,7 +10647,11 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         else (
         EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE
         if selection_active
-        else (PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE if typing_committed else DOWNSTREAM_UNAVAILABLE)
+        else (
+            APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE
+            if recorded_approved_plan_cancel is not None
+            else (PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE if typing_committed else DOWNSTREAM_UNAVAILABLE)
+        )
         )
     )
 
@@ -10588,6 +10672,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "plan_approval": plan_approval_readiness,
         "plan_revision": plan_revision_readiness,
         "plan_revision_recovery": plan_revision_recovery_state,
+        "approved_plan_cancel": approved_plan_cancel_state,
         "execution_selection": execution_selection_readiness,
         "analysis_execution_start": analysis_execution_start_state,
         "execution_result_review": execution_result_review_state,
