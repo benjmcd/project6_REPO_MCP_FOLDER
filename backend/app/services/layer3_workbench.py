@@ -71,7 +71,10 @@ from app.services.layer3_execution_state import (
 from app.services.layer3_execution_errors import analysis_execution_start_workbench_error
 from app.services.layer3_execution_output import output_metadata_summary as _output_metadata_summary
 from app.services.layer3_execution_review import (
+    EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE,
+    EXECUTION_RESULT_REVIEW_SCHEMA_ID,
     EXECUTION_RESULT_REVIEW_STATE_SCHEMA_ID,
+    execution_result_review_response as _execution_result_review_response,
     execution_result_review_from_pass_run as _execution_result_review_from_pass_run,
     normalize_result_review_items as _normalize_result_review_items,
     result_review_trace_summary as _result_review_trace_summary,
@@ -298,7 +301,6 @@ DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
-EXECUTION_RESULT_REVIEW_SCHEMA_ID = "layer3.execution_result_review.v1"
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.package_review_preview.v1"
 PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID = "layer3.package_review_preview_state.v1"
 PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.package_construction_commit.v1"
@@ -423,7 +425,6 @@ PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS = (
     "source_shape",
     "source_dataset_version_ids",
 )
-EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE = ("package", "handoff", "package_review")
 PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
     "handoff",
@@ -2522,47 +2523,6 @@ def _associated_cohort_readiness_submit_state_admitted(
         and len(source_dataset_version_ids) > 0
         and source_dataset_version_ids == list(output_metadata_summary.get("source_dataset_version_ids") or [])
     )
-
-
-def _execution_result_review_response(
-    *,
-    request_id: str,
-    status: str,
-    session_id: str,
-    analysis_plan_id: str,
-    preview_id: str,
-    preview_hash: str,
-    pass_run: L3PassRun,
-    analysis_run_id: str | None,
-    review_state: dict[str, Any],
-) -> dict[str, Any]:
-    return {
-        **_base_response(EXECUTION_RESULT_REVIEW_SCHEMA_ID, request_id=request_id, status=status),
-        "session_id": session_id,
-        "analysis_plan_id": analysis_plan_id,
-        "pass_run_id": pass_run.pass_run_id,
-        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
-        "analysis_run_id": analysis_run_id,
-        "result_status_available": True,
-        "result_review_enabled": True,
-        "review_state": review_state["review_state"],
-        "operator_decision": review_state["operator_decision"],
-        "review_record_ref": review_state["review_record_ref"],
-        "trace_summary": _json_clone(review_state["trace_summary"]),
-        "reviewed_output_items": _json_clone(review_state.get("reviewed_output_items") or []),
-        "unresolved_trace_count": int(review_state.get("unresolved_trace_count") or 0),
-        "package_review_enabled": False,
-        "handoff_enabled": False,
-        "downstream_unavailable": list(EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE),
-        "review_notes_recorded": bool(str(review_state.get("review_notes") or "").strip()),
-        "engine_family": pass_run.engine_family,
-        "pass_type": review_state.get("pass_type"),
-        "pass_scope": review_state.get("pass_scope"),
-        "selected_method_name": review_state.get("selected_method_name"),
-        "source_gate": review_state.get("source_gate"),
-        "source_dataset_version_ids": _json_clone(review_state.get("source_dataset_version_ids") or []),
-        "cohort_shape": review_state.get("cohort_shape"),
-    }
 
 
 def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
