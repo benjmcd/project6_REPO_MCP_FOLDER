@@ -20,6 +20,7 @@ from app.services.layer3_workbench_package_state import (
     dispatched_package_id,
     external_export_download_prepare_from_reconciliation,
     handoff_export_prepare_from_reconciliation,
+    package_owner_compatibility,
     package_review_candidate_projection,
     package_review_preview_hash,
     package_review_preview_summary,
@@ -349,6 +350,87 @@ def test_package_review_preview_hash_uses_stable_identity_basis() -> None:
             output_metadata_summary=output_metadata_summary,
         )
         == f"l3-package-preview-{expected_digest}"
+    )
+
+
+def test_package_owner_compatibility_reports_missing_gate_d_inputs_for_default_preview() -> None:
+    compatibility = package_owner_compatibility(
+        session=SimpleNamespace(summary_json={}),
+        pass_run=SimpleNamespace(
+            summary_json={"pass_scope": "pass-scope", "source_gate": "pass-source-gate"},
+            status="completed",
+            pass_type="single_pass",
+        ),
+        output_metadata_summary={"readable": True},
+        review_state={"review_state": "execution_result_review_approved"},
+        approved_review_state="execution_result_review_approved",
+    )
+
+    assert compatibility["schema_id"] == "layer3.package_owner_compatibility.v1"
+    assert compatibility["materialize_package_entry_callable"] is False
+    assert compatibility["workbench_package_commit_callable"] is False
+    assert compatibility["construction_compatible_with_current_workbench_state"] is False
+    assert compatibility["missing_owner_service_inputs"] == ["pass_entry", "phase1a_loading_closure"]
+    assert compatibility["pass_scope"] == "pass-scope"
+    assert compatibility["source_gate"] == "pass-source-gate"
+    assert compatibility["status"] == "construction_preconditions_missing"
+
+
+def test_package_owner_compatibility_reports_ready_default_preview_without_calling_owner_service() -> None:
+    compatibility = package_owner_compatibility(
+        session=SimpleNamespace(
+            summary_json={
+                "phase1a_loading_closure": {"closed": True},
+                "pass_entry": {"pass_entry_id": "entry-1"},
+            }
+        ),
+        pass_run=SimpleNamespace(
+            summary_json={
+                "pass_scope": "pass-scope",
+                "source_gate": "pass-source-gate",
+                "source_preview_id": "preview-1",
+                "source_preview_hash": "hash-1",
+            },
+            status="completed",
+            pass_type="single_pass",
+        ),
+        output_metadata_summary={
+            "readable": True,
+            "pass_scope": "metadata-scope",
+            "source_gate": "metadata-source-gate",
+        },
+        review_state={"review_state": "execution_result_review_approved"},
+        approved_review_state="execution_result_review_approved",
+    )
+
+    assert compatibility["workbench_package_commit_callable"] is True
+    assert compatibility["construction_compatible_with_current_workbench_state"] is True
+    assert compatibility["missing_owner_service_inputs"] == []
+    assert compatibility["pass_scope"] == "metadata-scope"
+    assert compatibility["source_gate"] == "metadata-source-gate"
+    assert compatibility["source_preview_id"] == "preview-1"
+    assert compatibility["source_preview_hash"] == "hash-1"
+    assert compatibility["status"] == "construction_preconditions_satisfied_but_call_deferred"
+    assert compatibility["reason"] == (
+        "Current state can be assessed against the owner service, but this endpoint remains read-only."
+    )
+
+
+def test_package_owner_compatibility_associated_cohort_preview_skips_gate_d_inputs() -> None:
+    compatibility = package_owner_compatibility(
+        session=SimpleNamespace(summary_json={}),
+        pass_run=SimpleNamespace(summary_json={}, status="completed", pass_type=PASS_TYPE_ASSOCIATED_COHORT),
+        output_metadata_summary={"readable": True},
+        review_state={"review_state": "execution_result_review_approved"},
+        approved_review_state="execution_result_review_approved",
+        associated_cohort_preview=True,
+    )
+
+    assert compatibility["workbench_package_commit_callable"] is True
+    assert compatibility["missing_owner_service_inputs"] == []
+    assert compatibility["status"] == "associated_cohort_construction_preconditions_satisfied"
+    assert compatibility["reason"] == (
+        "Associated-cohort package construction is admitted for this exact approved descriptive cohort review."
     )
 
 
