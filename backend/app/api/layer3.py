@@ -19,6 +19,7 @@ from app.services import (
     layer3_replacement_package_set_authority,
     layer3_workbench,
 )
+from app.services.layer3_preflight_request_contract import PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS
 from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response
 
 router = APIRouter()
@@ -2095,6 +2096,10 @@ PREFLIGHT_REQUEST_SCHEMA: dict[str, Any] = {
                 "required_artifacts": {"type": "array", "items": {"type": "string"}},
                 "conflict": {"type": "boolean"},
                 "conflicts": {"type": "array", "items": {"type": "string"}},
+                **{
+                    field: _forbidden_request_field_schema()
+                    for field in sorted(PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS)
+                },
             },
         },
         "actor": {"type": "string"},
