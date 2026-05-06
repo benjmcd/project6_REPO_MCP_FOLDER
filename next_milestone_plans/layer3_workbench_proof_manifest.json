@@ -4334,9 +4334,9 @@
     ],
     "authority_basis": [
       "Doc 136 selected exactly approved_plan_cancel_without_replacement before runtime implementation.",
-      "The service mutates only the existing approved L3AnalysisPlan and existing L3Session summary JSON after exact plan/preview authority validation.",
+      "The service mutates only the existing approved L3AnalysisPlan and existing L3Session summary JSON after exact plan/preview authority validation and after same-session pass-run/reconciliation/package blockers are absent.",
       "API tests prove route success, idempotent duplicate, fail-closed prechecks, and no downstream rows/artifacts.",
-      "Service tests directly prove owner-service success, idempotent duplicate, current-schema session-state extraction, fail-closed prechecks before mutation, and no downstream rows/artifacts."
+      "Service tests directly prove owner-service success, idempotent duplicate, current-schema session-state extraction, fail-closed prechecks before mutation, same-session orphan reconciliation/package state fail-closed behavior, and no downstream rows/artifacts."
     ],
     "non_goals": [
       "replacement plan creation",
@@ -4362,6 +4362,49 @@
       "python .\\tools\\l3-progress-check.py",
       "git diff --check",
       "negative-surface scan for AnalysisRun, L3PassRun creation, package/handoff/export, connector, provider/public URL, source widening, qualitative/hybrid/RAG, auth/security, and package mutation terms"
+    ]
+  },
+  "latest_workbench_truth": {
+    "latest_approved_plan_cancel_downstream_state_hardening_branch": "codex/l3-cancel-proof",
+    "latest_approved_plan_cancel_downstream_state_hardening_base_commit": "9585f49dc54a5dff3a4da8bfe83d2fd137dc08cc",
+    "latest_approved_plan_cancel_downstream_state_hardening_live_behavior_change": true,
+    "latest_approved_plan_cancel_downstream_state_hardening_summary": "Approved-plan cancel now fails closed with downstream_state_already_exists when same-session L3ReconciliationRecord/L3OutputPackage state exists before cancellation mutation; the proof remains bounded to cancel_approved_plan_without_replacement and does not admit supersession, replacement, execution, package mutation, connector/destination dispatch, provider/public URL, source widening, qualitative/hybrid/RAG, full mockup, or auth/security behavior.",
+    "latest_approved_plan_cancel_service_proof_summary": ""
+  },
+  "approved_plan_cancel_downstream_state_hardening_proof": {
+    "scope": "Runtime hardening proof for approved_plan_cancel_without_replacement only; broader approved-plan correction modes remain blocked.",
+    "implementation_branch": "codex/l3-cancel-proof",
+    "base_commit": "9585f49dc54a5dff3a4da8bfe83d2fd137dc08cc",
+    "live_behavior_change": true,
+    "owner_service": "backend/app/services/layer3_approved_plan_correction.py",
+    "proof_test": "backend/tests/test_layer3_approved_plan_correction.py::test_cancel_approved_plan_without_replacement_rejects_orphan_downstream_package_state_before_mutation",
+    "authority_basis": [
+      "The synthesis/adjudication evidence identified approved-plan cancel orphan/downstream proof as needs-recheck rather than an accepted proven invariant.",
+      "Repo-live models show L3ReconciliationRecord and L3OutputPackage are session-keyed downstream package state that can exist independently of L3PassRun.",
+      "The owner service now raises downstream_state_already_exists before cancellation mutation if same-session reconciliation/output package state exists.",
+      "The new service proof seeds same-session orphan reconciliation/output package state, asserts the fail-closed error, and verifies approved_plan_cancel state is not written."
+    ],
+    "non_goals": [
+      "approved-plan supersession, replacement, reopening, or deletion",
+      "replacement plan creation",
+      "L3PassRun creation",
+      "AnalysisRun creation",
+      "output/package/handoff/export artifact creation",
+      "connector/destination dispatch",
+      "source/schema/runtime widening",
+      "provider/public URL support",
+      "broad qualitative/hybrid/RAG execution",
+      "frontend-only durable state",
+      "hidden LLM planning",
+      "full mockup activation",
+      "authentication/security hardening",
+      "broad package mutation/reconstruction"
+    ],
+    "required_tests": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_approved_plan_correction.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_approved_plan_correction.py -q",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
     ]
   }
 }

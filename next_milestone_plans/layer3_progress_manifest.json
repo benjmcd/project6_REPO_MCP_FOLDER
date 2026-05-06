@@ -3249,7 +3249,7 @@
     {
       "slice_id": "approved-plan-cancel-runtime",
       "main_state": "live_bounded_approved_plan_cancel_without_replacement_runtime",
-      "counting_rule": "Count as one live bounded workbench slice because it adds a server-authoritative approved-plan cancellation route for exactly cancellation without replacement while preserving all downstream no-go surfaces.",
+      "counting_rule": "Count as one live bounded workbench slice because it adds a server-authoritative approved-plan cancellation route for exactly cancellation without replacement while failing closed on pre-existing same-session downstream package state and preserving all downstream no-go surfaces.",
       "base_commit": "9bb11820bc5b12292cbc43d1a2c326e61df80d2e",
       "source_branch": "codex/l3-approved-plan-cancel-runtime",
       "source_gate": "136_APPROVED_PLAN_CANCEL_ENTRY_FREEZE",
@@ -3269,6 +3269,7 @@
       ],
       "negative_proof": [
         "No L3PassRun rows are created by cancellation.",
+        "Same-session orphan L3ReconciliationRecord/L3OutputPackage state fails closed before cancellation mutation.",
         "No AnalysisRun or AnalysisArtifact rows are created by cancellation.",
         "No output/package/handoff/export artifacts are created by cancellation.",
         "Forbidden broad correction/source/provider/connector/package/mockup/auth fields fail closed before mutation."
@@ -5810,11 +5811,11 @@
     "authority_basis": [
       "Doc 136 selected exactly approved_plan_cancel_without_replacement as the implementation-entry correction mode.",
       "The route requires session id, analysis plan id, source preview id/hash, operator decision, and client_request_id.",
-      "The service locks the session and plan rows, verifies exactly one current approved plan, rejects pass-run existence, and validates the stored preview identity before mutation.",
-      "Cancellation writes only existing approved-plan/session JSON-bearing state and status; it creates no replacement plan or downstream rows/artifacts."
+      "The service locks the session and plan rows, verifies exactly one current approved plan, rejects pass-run existence and same-session reconciliation/output package state, and validates the stored preview identity before mutation.",
+      "Cancellation writes only existing approved-plan/session JSON-bearing state and status; it creates no replacement plan or downstream rows/artifacts and does not proceed over existing same-session downstream package state."
     ],
     "positive_proof": [
-      "backend/tests/test_layer3_approved_plan_correction.py covers direct owner-service cancellation, duplicate idempotency, current-schema session-state extraction, and existing-plan-only mutation.",
+      "backend/tests/test_layer3_approved_plan_correction.py covers direct owner-service cancellation, duplicate idempotency, current-schema session-state extraction, existing-plan-only mutation, and same-session orphan reconciliation/package state fail-closed behavior.",
       "backend/tests/test_layer3_api.py covers successful cancellation, duplicate idempotency, summary state, and blocked downstream execution selection.",
       "backend/tests/test_layer3_api.py covers no-plan, wrong decision, stale preview, forbidden field, pass-run, and duplicate-conflict prechecks.",
       "contract tests cover readiness/bootstrap/state-model/plan-flow state for approved-plan cancel."
@@ -5822,6 +5823,7 @@
     "negative_proof": [
       "backend/tests/test_layer3_approved_plan_correction.py asserts forbidden-field and precheck failures leave approved_plan_cancel absent from session/plan JSON and preserve approved status.",
       "Success path asserts zero L3PassRun, AnalysisRun, AnalysisArtifact, L3OutputPackage, and L3ReconciliationRecord rows.",
+      "Owner-service proof asserts same-session orphan L3ReconciliationRecord/L3OutputPackage state raises downstream_state_already_exists before cancellation mutation.",
       "Precheck failures assert no approved_plan_cancel summary state is written and approved plans remain approved.",
       "Service-level surface scan forbids replacement package, connector, provider/public URL, materialize_pass_entry, and materialize_package_entry terms."
     ],
@@ -5864,6 +5866,41 @@
       "backend/tests/test_layer3_readiness_contract.py",
       "backend/tests/test_layer3_bootstrap_contract.py",
       "tools/l3-progress-check.py"
+    ]
+  },
+  "approved_plan_cancel_downstream_state_hardening": {
+    "mode": "approved_plan_cancel_without_replacement",
+    "hardening_scope": "same-session downstream reconciliation/output package state blocker before approved-plan cancellation mutation",
+    "implementation_branch": "codex/l3-cancel-proof",
+    "base_commit": "9585f49dc54a5dff3a4da8bfe83d2fd137dc08cc",
+    "live_behavior_change": true,
+    "owner_service": "backend/app/services/layer3_approved_plan_correction.py",
+    "proof_test": "backend/tests/test_layer3_approved_plan_correction.py::test_cancel_approved_plan_without_replacement_rejects_orphan_downstream_package_state_before_mutation",
+    "error_code": "downstream_state_already_exists",
+    "blocked_state": [
+      "L3ReconciliationRecord",
+      "L3OutputPackage"
+    ],
+    "preserved_behavior": [
+      "pass_runs_already_exist remains the error for existing same-session L3PassRun rows",
+      "successful cancellation still writes only existing L3AnalysisPlan and L3Session JSON-bearing state",
+      "idempotent duplicate cancellation still returns the same cancellation state when no downstream blocker exists"
+    ],
+    "non_goals": [
+      "approved-plan supersession, replacement, reopening, or deletion",
+      "replacement plan creation",
+      "L3PassRun creation",
+      "AnalysisRun creation",
+      "output/package/handoff/export artifact creation",
+      "connector/destination dispatch",
+      "source/schema/runtime widening",
+      "provider/public URL support",
+      "broad qualitative/hybrid/RAG execution",
+      "frontend-only durable state",
+      "hidden LLM planning",
+      "full mockup activation",
+      "authentication/security hardening",
+      "broad package mutation/reconstruction"
     ]
   }
 }
