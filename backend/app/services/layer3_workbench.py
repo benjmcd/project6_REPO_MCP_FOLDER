@@ -87,6 +87,14 @@ from app.services.layer3_execution_start import (
     ANALYSIS_EXECUTION_START_SCHEMA_ID,
     analysis_execution_start_response as _analysis_execution_start_response,
 )
+from app.services.layer3_execution_status import (
+    EXECUTION_RESULT_STATUS_AVAILABLE_STATE,
+    EXECUTION_RESULT_STATUS_BLOCKED_STATE,
+    EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE,
+    EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE,
+    EXECUTION_RESULT_STATUS_SCHEMA_ID,
+    execution_result_status_response as _execution_result_status_response,
+)
 from app.services.layer3_plan_errors import plan_approval_workbench_error, plan_preview_workbench_error
 from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
@@ -290,7 +298,6 @@ DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
-EXECUTION_RESULT_STATUS_SCHEMA_ID = "layer3.execution_result_status.v1"
 EXECUTION_RESULT_REVIEW_SCHEMA_ID = "layer3.execution_result_review.v1"
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.package_review_preview.v1"
 PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID = "layer3.package_review_preview_state.v1"
@@ -309,9 +316,6 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_downl
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID = "layer3.external_export_download_signed_reference.v1"
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_SCHEMA_ID = "layer3.external_export_download_signed_reference_use.v1"
-EXECUTION_RESULT_STATUS_AVAILABLE_STATE = "execution_result_status_available"
-EXECUTION_RESULT_STATUS_BLOCKED_STATE = "execution_result_status_blocked"
-EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE = "execution_result_status_missing_output"
 EXECUTION_RESULT_REVIEW_READY_STATE = "execution_result_review_ready"
 EXECUTION_RESULT_REVIEW_APPROVED_STATE = "execution_result_review_approved"
 EXECUTION_RESULT_REVIEW_CHANGES_REQUESTED_STATE = "execution_result_review_changes_requested"
@@ -419,7 +423,6 @@ PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS = (
     "source_shape",
     "source_dataset_version_ids",
 )
-EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = ("result_review", "package", "handoff")
 EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE = ("package", "handoff", "package_review")
 PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
@@ -2519,64 +2522,6 @@ def _associated_cohort_readiness_submit_state_admitted(
         and len(source_dataset_version_ids) > 0
         and source_dataset_version_ids == list(output_metadata_summary.get("source_dataset_version_ids") or [])
     )
-
-
-def _execution_result_status_response(
-    *,
-    request_id: str | None,
-    status: str,
-    session_id: str,
-    analysis_plan_id: str,
-    preview_id: str,
-    preview_hash: str,
-    pass_run: L3PassRun,
-    analysis_run: AnalysisRun | None,
-    output_metadata_summary: dict[str, Any] | None,
-    output_metadata_error: str | None,
-) -> dict[str, Any]:
-    summary = pass_run.summary_json or {}
-    planned_pass = summary.get("planned_pass")
-    if not isinstance(planned_pass, dict):
-        planned_pass = {}
-    start_state = _analysis_execution_start_from_pass_run(pass_run)
-    pass_error = summary.get("error") or ((start_state or {}).get("error"))
-    return {
-        **_base_response(EXECUTION_RESULT_STATUS_SCHEMA_ID, request_id=request_id, status=status),
-        "session_id": session_id,
-        "analysis_plan_id": analysis_plan_id,
-        "pass_run_id": pass_run.pass_run_id,
-        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
-        "execution_started": bool(start_state) or bool(summary.get("execution_started")),
-        "analysis_run_id": _pass_run_analysis_run_id(pass_run),
-        "analysis_run_status": analysis_run.status if analysis_run is not None else None,
-        "pass_run_status": pass_run.status,
-        "output_payload_ref": pass_run.output_payload_ref,
-        "output_metadata_summary": output_metadata_summary,
-        "output_metadata_error": output_metadata_error,
-        "warnings_present": pass_run.status == PASS_STATUS_COMPLETED_WITH_WARNINGS,
-        "error_present": pass_run.status == PASS_STATUS_FAILED or bool(pass_error),
-        "error_message": str(pass_error) if pass_error else None,
-        "result_status_available": status == "available",
-        "result_review_enabled": False,
-        "package_review_enabled": False,
-        "handoff_enabled": False,
-        "downstream_unavailable": list(EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE),
-        "next_state": (
-            EXECUTION_RESULT_STATUS_AVAILABLE_STATE
-            if status == "available"
-            else (
-                EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE
-                if status == "missing_output_metadata"
-                else EXECUTION_RESULT_STATUS_BLOCKED_STATE
-            )
-        ),
-        "operator_view_mode": "status_only",
-        "engine_family": pass_run.engine_family,
-        "pass_type": pass_run.pass_type,
-        "pass_scope": summary.get("pass_scope") or planned_pass.get("pass_scope"),
-        "selected_method_name": summary.get("selected_method_name"),
-        "dataset_version_id": summary.get("dataset_version_id"),
-    }
 
 
 def _execution_result_review_response(
