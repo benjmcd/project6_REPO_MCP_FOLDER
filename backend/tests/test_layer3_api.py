@@ -13712,8 +13712,11 @@ def test_layer3_api_preflight_rejects_forbidden_manual_constraint_sentinels(
             "natural_language_intent": "Review deterministic Layer 3 material.",
             "manual_constraints": {
                 "source_classes": ["dataset_version"],
+                "connector_destination_dispatch": True,
                 "local_upload": {"path": "not-admitted"},
+                "package_mutation_reconstruction": {"enabled": True},
                 "date_bounds": {"provider_public_url": "https://example.invalid/export"},
+                "topics": [{"full_mockup_activation": True}],
             },
         },
     )
@@ -13723,8 +13726,11 @@ def test_layer3_api_preflight_rejects_forbidden_manual_constraint_sentinels(
     assert body["schema_id"] == "layer3.workbench_error.v1"
     assert body["error_code"] == "preflight_manual_constraint_scope_not_admitted"
     assert body["blocked_fields"] == [
+        "manual_constraints.connector_destination_dispatch",
         "manual_constraints.date_bounds.provider_public_url",
         "manual_constraints.local_upload",
+        "manual_constraints.package_mutation_reconstruction",
+        "manual_constraints.topics[0].full_mockup_activation",
     ]
     assert body["next_allowed_actions"] == ["remove_non_admitted_manual_constraints"]
     db = client.layer3_session_factory()
