@@ -86,6 +86,7 @@ SUBLAYER_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_sublaye
 EXECUTION_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_state.py"
 EXECUTION_OUTPUT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_output.py"
 EXECUTION_REVIEW_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_review.py"
+EXECUTION_SELECTION_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_selection.py"
 EXECUTION_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
 )
@@ -238,6 +239,7 @@ LAYER3_SUBLAYER_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_sublayer_
 LAYER3_EXECUTION_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_state.py"
 LAYER3_EXECUTION_OUTPUT_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_output.py"
 LAYER3_EXECUTION_REVIEW_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_review.py"
+LAYER3_EXECUTION_SELECTION_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_selection.py"
 LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
 )
@@ -6066,6 +6068,73 @@ def _check_execution_review_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing execution review extraction doc term: {term}")
 
 
+def _check_execution_selection_summary_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(EXECUTION_SELECTION_SERVICE, errors)
+    for term in (
+        "EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = (\"results\", \"package\", \"handoff\")",
+        "def execution_selection_summary(db: Session, *, session_id: str) -> dict[str, Any]:",
+        "execution_selection_from_session(session)",
+        "execution_selection_pass_runs(db, session_id=session_id)",
+        "plan_revision_control_for_session(db, session_id=session_id)",
+        "PLAN_STATUS_APPROVED",
+        "execution_selection_already_exists",
+        "pass_runs_already_exist",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(EXECUTION_SELECTION_SERVICE)} missing execution selection summary term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_execution_selection import (",
+        "EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE",
+        "execution_selection_summary as _execution_selection_summary",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing execution selection delegation term: {term}")
+    for stale_term in (
+        "EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = (\"results\", \"package\", \"handoff\")",
+        "def _execution_selection_summary(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns execution selection summary term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_EXECUTION_SELECTION_TEST, errors)
+    for term in (
+        "test_execution_selection_summary_reports_available_approved_plan",
+        "test_execution_selection_summary_preserves_existing_selection_projection",
+        "test_execution_selection_summary_preserves_blocked_reasons",
+        "layer3_workbench._execution_selection_summary",
+        "pass_runs_already_exist",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_EXECUTION_SELECTION_TEST)} missing execution selection summary proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "execution selection summary extraction",
+            "layer3_execution_selection.py",
+            "test_layer3_execution_selection.py",
+            "does not admit route, DTO, model, migration, UI, execution behavior",
+        ),
+        MANIFEST: (
+            "execution_selection_summary_extraction_pr",
+            "execution selection summary extraction",
+            "layer3_execution_selection.py",
+            "test_layer3_execution_selection.py",
+        ),
+        PROOF_MANIFEST: (
+            "latest_execution_selection_summary_extraction_branch",
+            "latest_execution_selection_summary_extraction_live_behavior_change",
+            "backend/app/services/layer3_execution_selection.py",
+            "backend/tests/test_layer3_execution_selection.py",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing execution selection summary doc term: {term}")
+
+
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
     for term in (
@@ -6688,6 +6757,7 @@ def main() -> int:
         EXECUTION_STATE_SERVICE,
         EXECUTION_OUTPUT_SERVICE,
         EXECUTION_REVIEW_SERVICE,
+        EXECUTION_SELECTION_SERVICE,
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
@@ -6725,6 +6795,7 @@ def main() -> int:
         LAYER3_EXECUTION_STATE_TEST,
         LAYER3_EXECUTION_OUTPUT_TEST,
         LAYER3_EXECUTION_REVIEW_TEST,
+        LAYER3_EXECUTION_SELECTION_TEST,
         LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
@@ -6797,6 +6868,7 @@ def main() -> int:
     _check_execution_state_extraction(errors)
     _check_execution_output_extraction(errors)
     _check_execution_review_extraction(errors)
+    _check_execution_selection_summary_extraction(errors)
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
