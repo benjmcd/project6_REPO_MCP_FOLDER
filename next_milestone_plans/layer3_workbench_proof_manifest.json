@@ -4379,7 +4379,7 @@
     "latest_gate_c_override_unavailable_request_contract_merge_commit": "840a86fb",
     "latest_plan_pass_status_constraint_alignment_branch": "codex/l3-status-ck",
     "latest_plan_pass_status_constraint_alignment_base_commit": "8ca47d4d",
-    "latest_plan_pass_status_constraint_alignment_summary": "PR #616/merge commit 652df83e records fresh schema/model status constraints for L3AnalysisPlan.status and L3PassRun.status with the repo-live status vocabulary through ck_l3_analysis_plan_status, ck_l3_pass_run_status, backend/app/models/models.py, backend/alembic/versions/0014_layer3_pass_entry.py, and backend/tests/test_layer3_plan_pass_status_constraints.py. PR #618/merge commit c5ae1b8f then aliases the pass-entry and approved-plan-cancel owner-service constants to the model-owned status constants. PR #620/merge commit 93215740 then aliases the workbench plan/pass status usage to those owner-service constants. codex/l3-approved-status-alias further removes residual raw approved-plan status comparisons from approved-plan cancellation and workbench cancel-readiness without behavior expansion. No retrofit migration for already-upgraded SQLite databases is included, and no route, DTO, service, UI, source, package, handoff, export, connector, provider, qualitative, mockup, or auth/security activation is admitted.",
+    "latest_plan_pass_status_constraint_alignment_summary": "PR #616/merge commit 652df83e records fresh schema/model status constraints for L3AnalysisPlan.status and L3PassRun.status with the repo-live status vocabulary through ck_l3_analysis_plan_status, ck_l3_pass_run_status, backend/app/models/models.py, backend/alembic/versions/0014_layer3_pass_entry.py, and backend/tests/test_layer3_plan_pass_status_constraints.py. PR #618/merge commit c5ae1b8f then aliases the pass-entry and approved-plan-cancel owner-service constants to the model-owned status constants. PR #620/merge commit 93215740 then aliases the workbench plan/pass status usage to those owner-service constants. PR #622/merge commit cb2a7251 then removes residual raw approved-plan status comparisons from approved-plan cancellation and workbench cancel-readiness without behavior expansion. No retrofit migration for already-upgraded SQLite databases is included, and no route, DTO, service, UI, source, package, handoff, export, connector, provider, qualitative, mockup, or auth/security activation is admitted.",
     "latest_plan_pass_status_constraint_alignment_pr": "#616",
     "latest_plan_pass_status_constraint_alignment_merge_commit": "652df83e",
     "latest_plan_pass_status_owner_service_alias_pr": "#618",
@@ -4388,7 +4388,9 @@
     "latest_workbench_status_alias_merge_commit": "93215740",
     "latest_residual_approved_status_alias_branch": "codex/l3-approved-status-alias",
     "latest_residual_approved_status_alias_base_commit": "bc27937e",
-    "latest_residual_approved_status_alias_scope": "No-behavior-change aliasing of backend/app/services/layer3_approved_plan_correction.py L3AnalysisPlan.status approved filter and backend/app/services/layer3_workbench.py approved-plan cancel-readiness plan_status comparison."
+    "latest_residual_approved_status_alias_scope": "No-behavior-change aliasing of backend/app/services/layer3_approved_plan_correction.py L3AnalysisPlan.status approved filter and backend/app/services/layer3_workbench.py approved-plan cancel-readiness plan_status comparison.",
+    "latest_residual_approved_status_alias_pr": "#622",
+    "latest_residual_approved_status_alias_merge_commit": "cb2a7251"
   },
   "plan_pass_status_constraint_alignment_proof": {
     "scope": "Fresh schema/model status constraint proof for L3AnalysisPlan.status and L3PassRun.status only.",
@@ -4444,7 +4446,10 @@
     "workbench_status_alias_merge_commit": "93215740",
     "workbench_status_alias_post_merge_authority": "project6-origin/main at 93215740",
     "residual_approved_status_alias_branch": "codex/l3-approved-status-alias",
-    "residual_approved_status_alias_base_commit": "bc27937e"
+    "residual_approved_status_alias_base_commit": "bc27937e",
+    "residual_approved_status_alias_pr": "#622",
+    "residual_approved_status_alias_merge_commit": "cb2a7251",
+    "residual_approved_status_alias_post_merge_authority": "project6-origin/main at cb2a7251"
   },
   "approved_plan_cancel_downstream_state_hardening_proof": {
     "scope": "Runtime hardening proof for approved_plan_cancel_without_replacement only; broader approved-plan correction modes remain blocked.",

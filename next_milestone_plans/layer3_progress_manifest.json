@@ -5950,6 +5950,9 @@
     "residual_approved_status_alias_branch": "codex/l3-approved-status-alias",
     "residual_approved_status_alias_base_commit": "bc27937e",
     "residual_approved_status_alias_scope": "No-behavior-change residual raw approved-plan status literal replacement in backend/app/services/layer3_approved_plan_correction.py and backend/app/services/layer3_workbench.py, with proof/checker hardening.",
+    "residual_approved_status_alias_pr": "#622",
+    "residual_approved_status_alias_merge_commit": "cb2a7251",
+    "residual_approved_status_alias_post_merge_authority": "project6-origin/main at cb2a7251",
     "required_tests": [
       "python -m py_compile .\\backend\\app\\models\\models.py .\\backend\\app\\services\\layer3_approved_plan_correction.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\tests\\test_layer3_plan_pass_status_constraints.py .\\tools\\l3-progress-check.py",
       "python -m pytest .\\backend\\tests\\test_layer3_plan_pass_status_constraints.py -q",
