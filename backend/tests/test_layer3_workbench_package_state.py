@@ -4,10 +4,14 @@ from types import SimpleNamespace
 
 from app.services.layer3_workbench_package_state import (
     COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
+    COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
+    HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE,
     PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
     PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
     PACKAGE_REVIEW_PREVIEW_READY_STATE,
     PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
+    PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
+    PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS,
     APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
     EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
     HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
@@ -17,13 +21,16 @@ from app.services.layer3_workbench_package_state import (
     canonical_payload_hashes,
     canonical_payload_refs,
     canonical_payload_values,
+    cohort_package_construction_source,
     dispatched_package_id,
     external_export_download_prepare_from_reconciliation,
     handoff_export_prepare_from_reconciliation,
+    legacy_package_review_submit_record_ref,
     package_owner_compatibility,
     package_review_candidate_projection,
     package_review_preview_hash,
     package_review_preview_summary,
+    package_review_submit_downstream_unavailable,
     package_review_submit_from_reconciliation,
     package_source_dataset_version_ids,
     package_source_shape,
@@ -432,6 +439,72 @@ def test_package_owner_compatibility_associated_cohort_preview_skips_gate_d_inpu
     assert compatibility["reason"] == (
         "Associated-cohort package construction is admitted for this exact approved descriptive cohort review."
     )
+
+
+def test_legacy_package_review_submit_record_ref_preserves_legacy_identity_basis() -> None:
+    submit_basis = {
+        "schema_id": "layer3.package_review_submit.v1",
+        "session_id": "session-1",
+        "analysis_plan_id": "plan-1",
+        "pass_run_id": "pass-1",
+        "preview_id": "preview-1",
+        "preview_hash": "preview-hash",
+        "analysis_run_id": "analysis-1",
+        "result_review_record_ref": "review-ref",
+        "package_review_preview_hash": "package-preview-hash",
+        "reconciliation_record_id": "reconciliation-1",
+        "output_package_ids": ["pkg-1", "pkg-2"],
+        "package_kinds": ["canonical_internal", "user_facing"],
+        "payload_hashes": ["hash-1", "hash-2"],
+        "operator_decision": "approved",
+        "decision_notes": "ready",
+        "pass_type": "single_pass",
+        "source_gate": "new-provenance-field",
+    }
+    legacy_basis = {
+        field: submit_basis[field]
+        for field in PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS
+    }
+    expected_digest = hashlib.sha256(
+        json.dumps(legacy_basis, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ).hexdigest()[:16]
+
+    assert legacy_package_review_submit_record_ref(
+        submit_basis=submit_basis,
+        existing_submit={"authority_basis": {"schema_id": "legacy"}},
+    ) == f"l3-package-review-submit-{expected_digest}"
+
+
+def test_legacy_package_review_submit_record_ref_rejects_missing_or_provenance_authority() -> None:
+    submit_basis = {field: field for field in PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS}
+
+    assert legacy_package_review_submit_record_ref(
+        submit_basis=submit_basis,
+        existing_submit={},
+    ) is None
+    assert legacy_package_review_submit_record_ref(
+        submit_basis=submit_basis,
+        existing_submit={"authority_basis": {"source_gate": "cohort"}},
+    ) is None
+
+
+def test_cohort_package_construction_source_requires_exact_source_gate() -> None:
+    assert cohort_package_construction_source("88_COHORT_PACKAGE_CONSTRUCTION_FREEZE") is True
+    assert cohort_package_construction_source("workbench_package_construction_freeze") is False
+    assert cohort_package_construction_source(None) is False
+
+
+def test_package_review_submit_downstream_unavailable_preserves_state_priority() -> None:
+    assert package_review_submit_downstream_unavailable(
+        "package_review_approved",
+        associated_cohort_submit=True,
+    ) == COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+    assert package_review_submit_downstream_unavailable(
+        "package_review_approved",
+    ) == HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
+    assert package_review_submit_downstream_unavailable(
+        "package_review_rejected",
+    ) == PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
 
 
 def test_packages_in_kind_order_returns_canonical_order() -> None:
