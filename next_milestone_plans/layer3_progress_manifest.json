@@ -6,7 +6,7 @@
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout only when the manifest declares an open or branch-only milestone.",
-    "seed_checkout_hint": "C:/Users/benny/Downloads/worktree_for_audits on codex/l3-approved-plan-cancel-service-proof, anchored to project6-origin/main at c08c66c6d81ad26b0ff15387ab616161aa3b231f after PR #603 approved-plan cancel runtime merge; this branch records direct owner-service proof hardening for that runtime.",
+    "seed_checkout_hint": "C:/Users/benny/Downloads/worktree_for_audits on codex/l3-plan-revision-recovery-service-proof, anchored to project6-origin/main at b399de4e5388cd96492dde50f98c90c6713af789 after PR #604 approved-plan cancel service proof merge; this branch records direct owner-service proof hardening for the plan revision recovery preview-refresh runtime.",
     "snapshot_date": "2026-05-05",
     "snapshot_base_main_commit": "9bb11820bc5b12292cbc43d1a2c326e61df80d2e",
     "snapshot_base_main_commit_source": "project6-origin/main at 9bb11820bc5b12292cbc43d1a2c326e61df80d2e after PR #602 approved-plan cancel entry freeze; local branch codex/l3-approved-plan-cancel-runtime records the approved-plan cancel runtime for exactly approved_plan_cancel_without_replacement. The proof-hardening branch starts after PR #603 at c08c66c6d81ad26b0ff15387ab616161aa3b231f.",
@@ -516,9 +516,9 @@
       "Keep L3PassRun, AnalysisRun, package/handoff/export artifact creation, connector/destination dispatch, provider/public URL support, source/schema/runtime widening, broad qualitative/hybrid/RAG behavior, full mockup activation, authentication/security hardening, and broad package mutation/reconstruction out.",
       "Before the next functional slice, preserve focused API/proof coverage for success, idempotent duplicate, stale authority, pass-run precheck, forbidden fields, and no-side-effect invariants."
     ],
-    "next_required_decision": "After direct approved_plan_cancel_without_replacement owner-service proof hardening, keep remaining authentication/security, provider/public URL, broad connector/destination dispatch, upload-security, signed-reference security hardening, broad qualitative/hybrid/RAG execution, broad source/runtime/schema widening, approved-plan supersession runtime, and package mutation/reconstruction work deferred. If work continues now, prefer proof/state drift checker, no-behavior-change service extraction, or a narrowly frozen next deferred lane only if fresh repo proof shows it outranks additional proof hardening.",
+    "next_required_decision": "After direct owner-service proof hardening for plan_revision_recovery_preview_refresh_entry and approved_plan_cancel_without_replacement, keep remaining authentication/security, provider/public URL, broad connector/destination dispatch, upload-security, signed-reference security hardening, broad qualitative/hybrid/RAG execution, broad source/runtime/schema widening, approved-plan supersession runtime, and package mutation/reconstruction work deferred. If work continues now, prefer proof/state drift checker, no-behavior-change service extraction, or a narrowly frozen next deferred lane only if fresh repo proof shows it outranks additional proof hardening.",
     "next_allowed_actions": [
-      "approved-plan cancel owner-service proof maintenance only if fresh drift appears, without adding supersession or replacement behavior",
+      "plan revision recovery or approved-plan cancel owner-service proof maintenance only if fresh drift appears, without adding supersession or replacement behavior",
       "progress/proof/state drift checker or progress-packet sync that remains validate-only or docs/proof-only",
       "state/action contract drift checker only if fresh proof shows contract drift",
       "preview hash/idempotency follow-up only if fresh proof finds a missed edge after merged PR #531 and later durable claim hardening",
@@ -3100,6 +3100,7 @@
         "tools/l3-progress-check.py",
         "backend/app/services/layer3_plan_revision_recovery.py",
         "backend/app/services/layer3_plan_revision_state.py",
+        "backend/tests/test_layer3_plan_revision_recovery.py",
         "backend/app/services/layer3_readiness_contract.py",
         "backend/app/services/layer3_bootstrap_contract.py",
         "backend/tests/test_layer3_plan_flow_contract.py",
@@ -5575,6 +5576,7 @@
     "backend/tests/test_layer3_replacement_package_namespace.py",
     "backend/app/services/layer3_plan_revision_recovery.py",
     "backend/app/services/layer3_plan_revision_state.py",
+    "backend/tests/test_layer3_plan_revision_recovery.py",
     "backend/app/services/layer3_plan_flow_contract.py",
     "backend/app/services/layer3_state_action_contract.py",
     "backend/app/services/layer3_state_model_contract.py",
@@ -5643,6 +5645,11 @@
     "preview_marker_schema_id": "layer3.plan_revision_recovery_preview_refresh.v1",
     "persistence": "existing L3Session.summary_json only",
     "accepted_scope": "server-authorized preview-refresh recovery from pre-approval terminal revision-control states with fresh preview identity required before approval",
+    "service_proof": [
+      "backend/tests/test_layer3_plan_revision_recovery.py covers direct owner-service recovery, duplicate idempotency, preview marker creation, and existing-summary-only mutation.",
+      "backend/tests/test_layer3_plan_revision_recovery.py asserts forbidden-field, state-mismatch, preview-mismatch, approved-plan, and pass-run prechecks fail closed before recovery mutation.",
+      "backend/tests/test_layer3_plan_revision_recovery.py asserts zero downstream AnalysisRun, AnalysisArtifact, L3OutputPackage, L3ReconciliationRecord, and ConnectorRun rows."
+    ],
     "blocked_scope": [
       "approved-plan reopening, cancellation, deletion, replacement, or supersession",
       "L3AnalysisPlan creation, update, or deletion",
