@@ -381,7 +381,7 @@ Files: backend/app/models/models.py; backend/alembic/versions/0014_layer3_pass_e
 Scope: fresh-schema/model status constraints only.
 The model metadata and fresh 0014 migration define ck_l3_analysis_plan_status and ck_l3_pass_run_status.
 The proof also checks the model-owned vocabularies against the existing pass-entry and approved-plan-cancel owner-service constants.
-The follow-up owner-service aliasing pass points those owner-service constants at the model-owned constants without changing behavior.
+PR #618 / merge commit c5ae1b8f points those owner-service constants at the model-owned constants without changing behavior.
 No retrofit migration for already-upgraded SQLite databases is included in this slice.
 Focused status-constraint proof: 5 passed.
 Full focused Layer 3 backend suite: 347 passed, 4 warnings.
