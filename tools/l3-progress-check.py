@@ -4890,6 +4890,18 @@ def _check_plan_error_extraction(errors: list[str]) -> None:
         if term not in test_text:
             errors.append(f"{_rel(LAYER3_PLAN_ERROR_TEST)} missing plan-error extraction proof term: {term}")
 
+    board_text = _read_required_text(BOARD, errors)
+    for term in (
+        "PR `#624`",
+        "f4b3ab80",
+        "layer3_plan_errors.py",
+        "test_layer3_plan_errors.py",
+        "no-behavior-change plan preview/approval error-mapping extraction proof",
+        "does not admit route, DTO, model, migration, UI, execution, package, connector, provider, source, qualitative/RAG, mockup, or auth/security behavior",
+    ):
+        if term not in board_text:
+            errors.append(f"{_rel(BOARD)} missing plan-error extraction board term: {term}")
+
 
 def _check_authority_rail_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(AUTHORITY_RAIL_SERVICE, errors)
