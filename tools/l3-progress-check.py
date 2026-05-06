@@ -6788,12 +6788,28 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                 "must be 'codex/l3-package-preview-hash'"
             )
         preview_hash_pr = proof_scope.get("latest_package_review_preview_hash_extraction_pr")
-        if preview_hash_pr != "pending" and not (
-            isinstance(preview_hash_pr, str) and re.fullmatch(r"#\d+", preview_hash_pr)
+        if preview_hash_pr != "#657":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_review_preview_hash_extraction_pr must be '#657'"
+            )
+        if (
+            proof_scope.get("latest_package_review_preview_hash_extraction_head_commit")
+            != "cf75c465ae31e03f5c9e25ab6b27ed8a725864cd"
         ):
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_review_preview_hash_extraction_pr must be 'pending' or a PR number"
+                "scope.latest_package_review_preview_hash_extraction_head_commit must be "
+                "'cf75c465ae31e03f5c9e25ab6b27ed8a725864cd'"
+            )
+        if (
+            proof_scope.get("latest_package_review_preview_hash_extraction_merge_commit")
+            != "0a77ab6edc43c6e9426bbc20d58e6ebb6b05a333"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_review_preview_hash_extraction_merge_commit must be "
+                "'0a77ab6edc43c6e9426bbc20d58e6ebb6b05a333'"
             )
         if proof_scope.get("latest_package_review_preview_hash_extraction_live_behavior_change") is not False:
             errors.append(
@@ -6802,6 +6818,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             )
         preview_hash_summary = proof_scope.get("latest_package_review_preview_hash_extraction_summary")
         for term in (
+            "PR #657",
+            "merge commit 0a77ab6edc43c6e9426bbc20d58e6ebb6b05a333",
             "package-review preview hash extraction",
             "package_review_preview_hash",
             "stable identity basis",
@@ -6858,6 +6876,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "latest_package_review_preview_hash_extraction_branch",
             "PR #653/merge commit 39ed6564",
             "PR #655/merge commit 0c797452",
+            "PR #657/merge commit 0a77ab6e",
             "c1448bbd799c003b172514da1b04ac70495a4dca",
             "test_layer3_workbench_package_state.py",
             "package-state helper proof",
@@ -6880,6 +6899,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "package-review preview hash extraction",
             "merge commit `39ed6564`",
             "merge commit `0c797452`",
+            "merge commit `0a77ab6e`",
             "without activating package mutation/reconstruction",
         ),
     }
