@@ -104,6 +104,9 @@ PACKAGE_SUBMIT_RESPONSE_SERVICE = (
 HANDOFF_EXPORT_RESPONSE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_handoff_export_response.py"
 )
+EXTERNAL_EXPORT_RESPONSE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_external_export_response.py"
+)
 WORKBENCH_PACKAGE_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench_package_state.py"
 )
@@ -264,6 +267,9 @@ LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST = (
 )
 LAYER3_HANDOFF_EXPORT_RESPONSE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_handoff_export_response.py"
+)
+LAYER3_EXTERNAL_EXPORT_RESPONSE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_external_export_response.py"
 )
 LAYER3_WORKBENCH_PACKAGE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_workbench_package_state.py"
@@ -6677,6 +6683,54 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             errors.append(
                 f"{_rel(LAYER3_HANDOFF_EXPORT_RESPONSE_TEST)} missing handoff response proof term: {term}"
             )
+    external_response_text = _read_required_text(EXTERNAL_EXPORT_RESPONSE_SERVICE, errors)
+    for term in (
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = \"layer3.external_export_download_prepare.v1\"",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = \"layer3.external_export_download_delivery_ui.v1\"",
+        "def external_export_download_prepare_response(",
+        "def associated_cohort_delivery_ui_state(",
+        "base_response(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID",
+        "preview_identity(preview_id=preview_id, preview_hash=preview_hash)",
+        "packages_in_review_order(packages)",
+        "authority_rail(",
+        "public_url_enabled",
+        "connector_dispatch_enabled",
+        "package_mutation_enabled",
+    ):
+        if term not in external_response_text:
+            errors.append(f"{_rel(EXTERNAL_EXPORT_RESPONSE_SERVICE)} missing external export response term: {term}")
+    for term in (
+        "from app.services.layer3_external_export_response import (",
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID",
+        "external_export_download_prepare_response as _external_export_download_prepare_response",
+        "associated_cohort_delivery_ui_state as _associated_cohort_delivery_ui_state",
+        "cohort_readiness_identity as _cohort_readiness_identity",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing external export response delegation term: {term}")
+    for stale_term in (
+        "def _external_export_download_prepare_response(",
+        "def _associated_cohort_delivery_ui_state(",
+        "def _cohort_readiness_identity(",
+        "**_base_response(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns external export response term: {stale_term}")
+    external_response_test_text = _read_required_text(LAYER3_EXTERNAL_EXPORT_RESPONSE_TEST, errors)
+    for term in (
+        "test_external_export_download_prepare_response_preserves_workbench_projection",
+        "test_external_export_download_prepare_response_preserves_cohort_delivery_ui_projection",
+        "layer3_workbench._external_export_download_prepare_response",
+        "EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID",
+        "public_url_enabled",
+        "connector_dispatch_enabled",
+        "package_mutation_enabled",
+    ):
+        if term not in external_response_test_text:
+            errors.append(
+                f"{_rel(LAYER3_EXTERNAL_EXPORT_RESPONSE_TEST)} missing external export response proof term: {term}"
+            )
 
     proof_manifest = _load_json(PROOF_MANIFEST, errors)
     proof_scope = proof_manifest.get("scope") if isinstance(proof_manifest, dict) else None
@@ -7190,6 +7244,59 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_handoff_export_prepare_response_extraction_summary "
                     f"missing handoff export response extraction term: {term}"
                 )
+        if proof_scope.get("latest_external_export_prepare_response_extraction_branch") != (
+            "codex/l3-external-export-response"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_prepare_response_extraction_branch "
+                "must be 'codex/l3-external-export-response'"
+            )
+        external_response_pr = proof_scope.get("latest_external_export_prepare_response_extraction_pr")
+        if external_response_pr != "#669":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_prepare_response_extraction_pr must be '#669'"
+            )
+        external_response_head = proof_scope.get("latest_external_export_prepare_response_extraction_head_commit")
+        if external_response_head != "b1270f4aed7b5d20aec7122705fe8774eabf69a3":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_prepare_response_extraction_head_commit "
+                "must match PR #669 head commit"
+            )
+        external_response_merge = proof_scope.get("latest_external_export_prepare_response_extraction_merge_commit")
+        if external_response_merge != "f6e51567009a077ea226e1d3b4147ac29b05e3bb":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_prepare_response_extraction_merge_commit "
+                "must match PR #669 merge commit"
+            )
+        if proof_scope.get("latest_external_export_prepare_response_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_prepare_response_extraction_live_behavior_change must be False"
+            )
+        external_response_summary = proof_scope.get(
+            "latest_external_export_prepare_response_extraction_summary"
+        )
+        for term in (
+            "external export/download prepare response extraction",
+            "PR #669",
+            "merge commit f6e51567009a077ea226e1d3b4147ac29b05e3bb",
+            "external_export_download_prepare_response",
+            "layer3_external_export_response.py",
+            "associated-cohort delivery UI projection",
+            "without activating provider/public URLs",
+            "connector/destination dispatch",
+            "package mutation/reconstruction",
+        ):
+            if not isinstance(external_response_summary, str) or term not in external_response_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_external_export_prepare_response_extraction_summary "
+                    f"missing external export response extraction term: {term}"
+                )
 
     for path, terms in {
         MANIFEST: (
@@ -7213,6 +7320,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "PR #667/merge commit dddb481a",
             "layer3_handoff_export_response.py",
             "broad handoff/export behavior",
+            "external_export_response_extraction",
+            "PR #669/merge commit f6e51567",
+            "layer3_external_export_response.py",
+            "provider/public URLs",
         ),
         BOARD: (
             "Package owner compatibility extraction",
@@ -7231,6 +7342,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "PR `#667`, merge commit `dddb481a`",
             "layer3_handoff_export_response.py",
             "without changing handoff/export prepare response behavior",
+            "External export/download prepare response extraction",
+            "PR `#669`, merge commit `f6e51567`",
+            "layer3_external_export_response.py",
+            "without changing external export/download prepare response behavior",
         ),
     }.items():
         text = _read_required_text(path, errors)
@@ -7698,6 +7813,7 @@ def main() -> int:
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         PACKAGE_SUBMIT_RESPONSE_SERVICE,
         HANDOFF_EXPORT_RESPONSE_SERVICE,
+        EXTERNAL_EXPORT_RESPONSE_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
@@ -7742,6 +7858,7 @@ def main() -> int:
         LAYER3_PACKAGE_REVIEW_CONTRACT_TEST,
         LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST,
         LAYER3_HANDOFF_EXPORT_RESPONSE_TEST,
+        LAYER3_EXTERNAL_EXPORT_RESPONSE_TEST,
         WORKBENCH_PACKAGE_STATE_SERVICE,
         LAYER3_WORKBENCH_PACKAGE_STATE_TEST,
         PLAN_ERROR_SERVICE,
