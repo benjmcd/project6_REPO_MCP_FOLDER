@@ -168,6 +168,8 @@ from app.services.layer3_plan_flow_contract import (
     EXECUTION_SELECTION_FORBIDDEN_FIELDS,
     PLAN_APPROVAL_FORBIDDEN_FIELDS,
     PLAN_REVISION_FORBIDDEN_FIELDS,
+    approved_planned_pass_payload as _approved_planned_pass_payload,
+    approved_set_payload as _approved_set_payload,
     approved_plan_cancel_blocked_fields,
     execution_selection_blocked_fields,
     plan_approval_blocked_fields,
@@ -2433,18 +2435,6 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         ),
         "plan_preview": plan_preview_payload,
     }
-
-
-def _approved_set_payload(item: dict[str, Any]) -> dict[str, Any]:
-    return {**_json_clone(item), "readiness": "approved"}
-
-
-def _approved_planned_pass_payload(item: dict[str, Any]) -> dict[str, Any]:
-    payload = _json_clone(item)
-    payload.pop("preview_only", None)
-    payload["approval_only"] = True
-    payload["execution_status"] = "not_started"
-    return payload
 
 
 def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:

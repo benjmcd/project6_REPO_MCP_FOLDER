@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
+from app.services.layer3_utils import json_clone
+
 
 PLAN_APPROVAL_FORBIDDEN_FIELDS = frozenset(
     {
@@ -111,3 +113,15 @@ def source_classes_from_plan_preview(plan_preview: Mapping[str, Any]) -> list[st
             for source_class in (source_summary or {}).get("source_classes") or []:
                 source_classes.add(str(source_class))
     return sorted(source_classes)
+
+
+def approved_set_payload(item: Mapping[str, Any]) -> dict[str, Any]:
+    return {**json_clone(item), "readiness": "approved"}
+
+
+def approved_planned_pass_payload(item: Mapping[str, Any]) -> dict[str, Any]:
+    payload = json_clone(item)
+    payload.pop("preview_only", None)
+    payload["approval_only"] = True
+    payload["execution_status"] = "not_started"
+    return payload
