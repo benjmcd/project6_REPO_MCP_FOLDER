@@ -47,6 +47,7 @@ from app.services.layer3_pass_entry import (
     PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
     PASS_TYPE_ASSOCIATED_COHORT,
     PASS_TYPE_SINGLE_ITEM,
+    PLAN_STATUS_APPROVED,
     SOURCE_GATE_COHORT_DESC_FREEZE,
     Layer3PassEntryError,
     approve_pass_entry_plan,
@@ -89,6 +90,7 @@ from app.services.layer3_approved_plan_correction import (
     APPROVED_PLAN_CANCEL_DECISION,
     APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE,
     APPROVED_PLAN_CANCEL_NEXT_STATE,
+    APPROVED_PLAN_CANCELLED_STATUS,
     cancel_approved_plan_without_replacement as _cancel_approved_plan_without_replacement,
     approved_plan_cancel_from_session as _approved_plan_cancel_from_session,
 )
@@ -2229,7 +2231,7 @@ def _plan_preview_readiness(db: Session, *, session_id: str, include_owner_servi
         blocked_reason = "no_analysis_sets"
     elif analysis_plan_count > 0 or pass_run_count > 0:
         latest_plan = _latest_analysis_plan(db, session_id=session_id)
-        blocked_reason = "approved_plan_cancelled" if latest_plan is not None and latest_plan.status == "cancelled" else "plan_already_materialized"
+        blocked_reason = "approved_plan_cancelled" if latest_plan is not None and latest_plan.status == APPROVED_PLAN_CANCELLED_STATUS else "plan_already_materialized"
     elif (revision_control := _plan_revision_control(db, session_id=session_id)) is not None:
         blocked_reason = str(revision_control.get("state") or "plan_revision_recorded")
     elif include_owner_service:
@@ -2308,7 +2310,7 @@ def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
         }
     plan_json = analysis_plan.plan_json or {}
     approved = bool(analysis_plan.approved_by_operator)
-    cancelled = analysis_plan.status == "cancelled"
+    cancelled = analysis_plan.status == APPROVED_PLAN_CANCELLED_STATUS
     if cancelled:
         cancellation = plan_json.get("approved_plan_cancel") if isinstance(plan_json.get("approved_plan_cancel"), dict) else None
         return {
@@ -2581,7 +2583,7 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
     existing_plan = _latest_analysis_plan(db, session_id=session_id)
     if existing_plan is not None:
-        if existing_plan.status == "cancelled":
+        if existing_plan.status == APPROVED_PLAN_CANCELLED_STATUS:
             error_code = "approved_plan_cancelled"
             message = f"Layer 3 session '{session_id}' has a cancelled approved analysis plan."
         elif bool(existing_plan.approved_by_operator):
@@ -3414,7 +3416,7 @@ def _execution_selection_summary(db: Session, *, session_id: str) -> dict[str, A
             db.query(L3AnalysisPlan)
             .filter(
                 L3AnalysisPlan.session_id == session_id,
-                L3AnalysisPlan.status == "approved",
+                L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
                 L3AnalysisPlan.approved_by_operator.is_(True),
             )
             .all()
@@ -3512,7 +3514,7 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         db.query(L3AnalysisPlan)
         .filter(
             L3AnalysisPlan.session_id == session_id,
-            L3AnalysisPlan.status == "approved",
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
             L3AnalysisPlan.approved_by_operator.is_(True),
         )
         .with_for_update()
@@ -3647,7 +3649,7 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             analysis_set_id=str(planned_pass.get("analysis_set_id")),
             pass_type=str(planned_pass.get("pass_type")),
             engine_family=str(planned_pass.get("engine_family") or "wrapped_quantitative_analysis"),
-            status="selected_not_started",
+            status=PASS_STATUS_SELECTED_NOT_STARTED,
             started_at=None,
             completed_at=None,
             input_payload_ref=f"layer3://execution-selection/{pass_run_id}/input",
@@ -3694,7 +3696,7 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
 
     return _execution_selection_response(
         request_id=request_id,
-        status="selected_not_started",
+        status=PASS_STATUS_SELECTED_NOT_STARTED,
         session_id=session_id,
         analysis_plan_id=analysis_plan_id,
         preview_id=preview_id,
@@ -3774,7 +3776,7 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
         db.query(L3AnalysisPlan)
         .filter(
             L3AnalysisPlan.session_id == session_id,
-            L3AnalysisPlan.status == "approved",
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
             L3AnalysisPlan.approved_by_operator.is_(True),
         )
         .with_for_update()
@@ -4098,7 +4100,7 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
         db.query(L3AnalysisPlan)
         .filter(
             L3AnalysisPlan.session_id == session_id,
-            L3AnalysisPlan.status == "approved",
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
             L3AnalysisPlan.approved_by_operator.is_(True),
         )
         .order_by(L3AnalysisPlan.created_at.desc(), L3AnalysisPlan.analysis_plan_id.asc())
@@ -5972,7 +5974,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
         .filter(
             L3AnalysisPlan.analysis_plan_id == analysis_plan_id,
             L3AnalysisPlan.session_id == session_id,
-            L3AnalysisPlan.status == "approved",
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
             L3AnalysisPlan.approved_by_operator.is_(True),
         )
         .with_for_update()

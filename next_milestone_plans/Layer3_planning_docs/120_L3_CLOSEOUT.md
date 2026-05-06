@@ -382,6 +382,7 @@ Scope: fresh-schema/model status constraints only.
 The model metadata and fresh 0014 migration define ck_l3_analysis_plan_status and ck_l3_pass_run_status.
 The proof also checks the model-owned vocabularies against the existing pass-entry and approved-plan-cancel owner-service constants.
 PR #618 / merge commit c5ae1b8f points those owner-service constants at the model-owned constants without changing behavior.
+The workbench status-alias follow-up points workbench plan/pass status checks and selected-pass shell creation at those owner-service constants without changing behavior.
 No retrofit migration for already-upgraded SQLite databases is included in this slice.
 Focused status-constraint proof: 5 passed.
 Full focused Layer 3 backend suite: 347 passed, 4 warnings.
