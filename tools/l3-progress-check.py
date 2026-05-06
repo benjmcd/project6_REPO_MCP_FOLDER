@@ -1381,7 +1381,7 @@ def _check_approved_plan_cancel_entry_freeze(
     for term in (
         '"approved_plan_cancelled"',
         '"pass_runs_already_exist"',
-        'L3AnalysisPlan.status == "approved"',
+        "L3AnalysisPlan.status == PLAN_STATUS_APPROVED",
         "L3AnalysisPlan.approved_by_operator.is_(True)",
         "approved_by_operator=True",
     ):
@@ -4334,6 +4334,7 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
     models_text = _read_required_text(MODELS, errors)
     pass_entry_text = _read_required_text(ROOT / "backend" / "app" / "services" / "layer3_pass_entry.py", errors)
     approved_plan_cancel_text = _read_required_text(APPROVED_PLAN_CORRECTION_SERVICE, errors)
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
         "L3_ANALYSIS_PLAN_STATUS_VALUES",
         "L3_PASS_RUN_STATUS_VALUES",
@@ -4358,6 +4359,20 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
         errors.append(
             "backend/app/services/layer3_approved_plan_correction.py missing cancelled-status model alias"
         )
+    for term in (
+        "PLAN_STATUS_APPROVED",
+        "APPROVED_PLAN_CANCELLED_STATUS",
+        "status=PASS_STATUS_SELECTED_NOT_STARTED",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing plan/pass status alias term: {term}")
+    for literal in (
+        'status == "approved"',
+        'status == "cancelled"',
+        'status="selected_not_started"',
+    ):
+        if literal in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} retains raw plan/pass status literal: {literal}")
 
     migration_text = _read_required_text(PASS_ENTRY_MIGRATION, errors)
     for term in (
