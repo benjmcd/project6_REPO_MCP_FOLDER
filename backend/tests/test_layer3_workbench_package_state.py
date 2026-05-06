@@ -21,6 +21,8 @@ from app.services.layer3_workbench_package_state import (
     package_review_candidate_projection,
     package_review_preview_summary,
     package_review_submit_from_reconciliation,
+    package_source_dataset_version_ids,
+    package_source_shape,
     packages_in_review_order,
     packages_in_kind_order,
     packages_with_kinds,
@@ -261,6 +263,51 @@ def test_review_state_is_admitted_associated_cohort_requires_exact_source_author
     }
 
     assert review_state_is_admitted_associated_cohort(review_state) is False
+
+
+def test_package_source_shape_prefers_cohort_shape_then_dataset_version() -> None:
+    assert (
+        package_source_shape(
+            output_metadata_summary={"cohort_shape": "aligned_wide_table", "dataset_version_id": "ignored"},
+            pass_summary={"cohort_shape": "pass_shape", "dataset_version_id": "pass-dataset"},
+        )
+        == "aligned_wide_table"
+    )
+    assert (
+        package_source_shape(
+            output_metadata_summary={},
+            pass_summary={"cohort_shape": "pass_shape", "dataset_version_id": "pass-dataset"},
+        )
+        == "pass_shape"
+    )
+    assert (
+        package_source_shape(
+            output_metadata_summary={"dataset_version_id": "dataset-v1"},
+            pass_summary={},
+        )
+        == "dataset_version"
+    )
+    assert package_source_shape(output_metadata_summary={}, pass_summary={}) is None
+
+
+def test_package_source_dataset_version_ids_prefers_list_then_dataset_version() -> None:
+    assert package_source_dataset_version_ids(
+        output_metadata_summary={"source_dataset_version_ids": ["dataset-v2", "", None, 7]},
+        pass_summary={"source_dataset_version_ids_json": ["ignored"]},
+    ) == ["dataset-v2", "7"]
+    assert package_source_dataset_version_ids(
+        output_metadata_summary={},
+        pass_summary={"source_dataset_version_ids_json": ["pass-v1", "pass-v2"]},
+    ) == ["pass-v1", "pass-v2"]
+    assert package_source_dataset_version_ids(
+        output_metadata_summary={"dataset_version_id": "dataset-v1"},
+        pass_summary={"dataset_version_id": "pass-dataset"},
+    ) == ["dataset-v1"]
+    assert package_source_dataset_version_ids(
+        output_metadata_summary={},
+        pass_summary={"dataset_version_id": "pass-dataset"},
+    ) == ["pass-dataset"]
+    assert package_source_dataset_version_ids(output_metadata_summary={}, pass_summary={}) == []
 
 
 def test_packages_in_kind_order_returns_canonical_order() -> None:
