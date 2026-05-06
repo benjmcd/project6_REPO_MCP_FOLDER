@@ -78,6 +78,7 @@ STATE_MODEL_CONTRACT_SERVICE = (
 PLAN_FLOW_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_plan_flow_contract.py"
 )
+PLAN_FLOW_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_plan_flow_state.py"
 EXECUTION_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
 )
@@ -222,6 +223,7 @@ LAYER3_STATE_MODEL_CONTRACT_TEST = (
 LAYER3_PLAN_FLOW_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_plan_flow_contract.py"
 )
+LAYER3_PLAN_FLOW_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_plan_flow_state.py"
 LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
 )
@@ -5566,11 +5568,14 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
             "merged_live_bounded_plan_flow_request_contract_extraction",
             "merged_live_plan_preview_source_class_extraction",
             "merged_live_approved_plan_payload_projection_extraction",
+            "merged_live_plan_flow_state_lookup_extraction",
             "PR #635 as a no-behavior-change plan-preview source-class extraction",
             "PR #636 as a no-behavior-change approved-plan payload projection extraction",
+            "PR #637 as a no-behavior-change plan-flow state lookup extraction",
             "source_classes_from_plan_preview",
             "approved_set_payload",
             "approved_planned_pass_payload",
+            "layer3_plan_flow_state.py",
             "Post-PR584 sync: local git verified project6-origin/main at 9cdd1e88593d21e269d00dda50eae98ab852d219",
             "Post-PR584 current-main progress/proof sync",
             "does not admit broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior",
@@ -5580,10 +5585,14 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
             "PR `#584`/commit `9cdd1e88`",
             "PR `#635` extends the same no-behavior-change plan-flow contract extraction posture",
             "PR `#636` continues the no-behavior-change plan-flow extraction posture",
+            "PR `#637` adds no-behavior-change plan-flow state lookup extraction proof",
             "_source_classes_from_plan_preview",
             "_approved_set_payload",
             "_approved_planned_pass_payload",
+            "_latest_analysis_plan",
+            "_plan_revision_control",
             "backend/app/services/layer3_plan_flow_contract.py",
+            "backend/app/services/layer3_plan_flow_state.py",
             "merged live no-behavior-change refactor/proof",
             "full focused Layer 3 suite with `304 passed, 4 warnings`",
         ),
@@ -5592,11 +5601,15 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
             "latest_plan_flow_request_contract_extraction_pr",
             "latest_plan_preview_source_class_extraction_pr",
             "latest_approved_plan_payload_projection_extraction_pr",
+            "latest_plan_flow_state_lookup_extraction_pr",
             "PR #635 moves plan-preview source-class derivation",
             "PR #636 moves approved-plan set/pass payload projection",
+            "PR #637 moves latest analysis-plan lookup ordering",
             "source_classes_from_plan_preview",
             "approved_set_payload",
             "approved_planned_pass_payload",
+            "latest_analysis_plan",
+            "plan_revision_control_for_session",
             "plan_flow_request_contract_extraction_current_boundary_proof",
             "9cdd1e88593d21e269d00dda50eae98ab852d219",
             "no-behavior-change plan-flow request contract extraction proof",
@@ -5607,6 +5620,44 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing plan-flow contract extraction doc term: {term}")
+
+
+def _check_plan_flow_state_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(PLAN_FLOW_STATE_SERVICE, errors)
+    for term in (
+        "def latest_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan | None:",
+        "def plan_revision_control_for_session(db: Session, *, session_id: str) -> dict[str, Any] | None:",
+        "L3AnalysisPlan.created_at.desc(), L3AnalysisPlan.analysis_plan_id.asc()",
+        "plan_revision_control_from_session(session)",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PLAN_FLOW_STATE_SERVICE)} missing plan-flow state term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_plan_flow_state import (",
+        "latest_analysis_plan as _latest_analysis_plan",
+        "plan_revision_control_for_session as _plan_revision_control",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing plan-flow state delegation term: {term}")
+    for stale_term in (
+        "def _latest_analysis_plan(",
+        "def _plan_revision_control(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns plan-flow state term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_PLAN_FLOW_STATE_TEST, errors)
+    for term in (
+        "test_latest_analysis_plan_preserves_workbench_ordering",
+        "test_plan_revision_control_for_session_filters_recovery_state",
+        "layer3_workbench._latest_analysis_plan",
+        "layer3_workbench._plan_revision_control",
+        "PLAN_REVISION_RECOVERY_STATE",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_PLAN_FLOW_STATE_TEST)} missing plan-flow state proof term: {term}")
 
 
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
@@ -6225,6 +6276,7 @@ def main() -> int:
         READINESS_CONTRACT_SERVICE,
         BOOTSTRAP_CONTRACT_SERVICE,
         STATE_MODEL_CONTRACT_SERVICE,
+        PLAN_FLOW_STATE_SERVICE,
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
@@ -6256,6 +6308,7 @@ def main() -> int:
         LAYER3_READINESS_CONTRACT_TEST,
         LAYER3_BOOTSTRAP_CONTRACT_TEST,
         LAYER3_STATE_MODEL_CONTRACT_TEST,
+        LAYER3_PLAN_FLOW_STATE_TEST,
         LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
@@ -6322,6 +6375,7 @@ def main() -> int:
     _check_bootstrap_contract_extraction(errors)
     _check_state_model_contract_extraction(errors)
     _check_plan_flow_contract_extraction(errors)
+    _check_plan_flow_state_extraction(errors)
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)

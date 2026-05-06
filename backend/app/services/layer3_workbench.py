@@ -176,6 +176,10 @@ from app.services.layer3_plan_flow_contract import (
     plan_revision_blocked_fields,
     source_classes_from_plan_preview as _source_classes_from_plan_preview,
 )
+from app.services.layer3_plan_flow_state import (
+    latest_analysis_plan as _latest_analysis_plan,
+    plan_revision_control_for_session as _plan_revision_control,
+)
 from app.services.layer3_execution_request_contract import (
     ANALYSIS_EXECUTION_START_ALLOWED_FIELDS,
     ANALYSIS_EXECUTION_START_FORBIDDEN_FIELDS,
@@ -2216,20 +2220,6 @@ def _plan_preview_readiness(db: Session, *, session_id: str, include_owner_servi
         "excluded_set_count": excluded_set_count,
         "planned_pass_count": planned_pass_count,
     }
-
-
-def _latest_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan | None:
-    return (
-        db.query(L3AnalysisPlan)
-        .filter(L3AnalysisPlan.session_id == session_id)
-        .order_by(L3AnalysisPlan.created_at.desc(), L3AnalysisPlan.analysis_plan_id.asc())
-        .first()
-    )
-
-
-def _plan_revision_control(db: Session, *, session_id: str) -> dict[str, Any] | None:
-    session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
-    return _plan_revision_control_from_session(session)
 
 
 def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
