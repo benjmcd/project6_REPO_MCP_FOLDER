@@ -347,7 +347,7 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
 def _check_package_namespace_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "b8b1c000e85a0ae119139d5b7328e68437d143eb"
+    expected_commit = "15c8ab17a42718da549974bea97073d5d4b940b4"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -360,7 +360,7 @@ def _check_package_namespace_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR594 package namespace progress "
+                f"{name} must identify the post-PR595 revision recovery progress "
                 f"base commit {expected_commit}"
             )
 
@@ -379,11 +379,11 @@ def _check_package_namespace_progress_sync(
             continue
         for term in (
             expected_commit,
-            "after PR #594 package namespace progress proof",
+            "after PR #595 plan revision recovery freeze",
             "without runtime behavior changes",
         ):
             if term not in source:
-                errors.append(f"{name} missing post-PR593 namespace sync term: {term}")
+                errors.append(f"{name} missing post-PR595 revision recovery sync term: {term}")
 
     namespace_runtime = manifest.get("package_replacement_namespace_runtime")
     if not isinstance(namespace_runtime, dict):
@@ -645,6 +645,20 @@ def _check_plan_revision_recovery_freeze(manifest: dict[str, Any], errors: list[
             "plan_revision_recovery_lifecycle",
             "Not runtime recovery",
             "not approved-plan supersession",
+        ],
+        BOARD: [
+            "Current plan revision recovery planning/control correction",
+            "PR `#595` merged `132_PLAN_REVISION_RECOVERY_FREEZE.md`",
+            "plan_revision_recovery_lifecycle",
+            "Plan revision recovery lifecycle freeze",
+            "allowed_next_actions: []",
+        ],
+        PROOF_MANIFEST: [
+            "plan_revision_recovery_freeze_proof",
+            "latest_plan_revision_recovery_freeze_pr",
+            "15c8ab17a42718da549974bea97073d5d4b940b4",
+            "planning/control authority for `plan_revision_recovery_lifecycle` only",
+            "no runtime recovery",
         ],
     }
     for path, terms in required_doc_terms.items():
