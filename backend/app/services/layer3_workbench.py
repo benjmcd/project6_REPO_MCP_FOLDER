@@ -231,6 +231,8 @@ from app.services.layer3_workbench_package_state import (
     package_source_dataset_version_ids as _package_source_dataset_version_ids,
     package_source_shape as _package_source_shape,
     packages_in_review_order as _packages_in_review_order,
+    review_package_hash_map as _package_hash_map,
+    review_package_ref_map as _package_ref_map,
     review_source_packages as _review_source_packages,
     review_state_is_admitted_associated_cohort,
     unexpected_package_kinds as package_state_unexpected_package_kinds,
@@ -3827,14 +3829,6 @@ def _aps_handoff_package_for_dispatch(
         )
         .one_or_none()
     )
-
-
-def _package_ref_map(packages: list[L3OutputPackage]) -> dict[str, str]:
-    return {package.package_kind: str(package.payload_ref or "") for package in _packages_in_review_order(packages)}
-
-
-def _package_hash_map(packages: list[L3OutputPackage]) -> dict[str, str]:
-    return {package.package_kind: str(package.payload_hash or "") for package in _packages_in_review_order(packages)}
 
 
 def _aps_handoff_dispatch_response(
