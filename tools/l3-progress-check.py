@@ -7050,28 +7050,22 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                 "scope.latest_package_submit_response_extraction_branch must be 'codex/l3-package-submit-response'"
             )
         submit_response_pr = proof_scope.get("latest_package_submit_response_extraction_pr")
-        if submit_response_pr != "pending" and not (
-            isinstance(submit_response_pr, str) and re.fullmatch(r"#\d+", submit_response_pr)
-        ):
+        if submit_response_pr != "#665":
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_submit_response_extraction_pr must be 'pending' or a PR number"
+                "scope.latest_package_submit_response_extraction_pr must be '#665'"
             )
         submit_response_head = proof_scope.get("latest_package_submit_response_extraction_head_commit")
-        if submit_response_head != "pending" and not (
-            isinstance(submit_response_head, str) and re.fullmatch(r"[0-9a-f]{40}", submit_response_head)
-        ):
+        if submit_response_head != "0f93aa075844e6c08f1fb80fe72e78c8ea3d9b20":
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_submit_response_extraction_head_commit must be 'pending' or a 40-character commit"
+                "scope.latest_package_submit_response_extraction_head_commit must match PR #665 head commit"
             )
         submit_response_merge = proof_scope.get("latest_package_submit_response_extraction_merge_commit")
-        if submit_response_merge != "pending" and not (
-            isinstance(submit_response_merge, str) and re.fullmatch(r"[0-9a-f]{40}", submit_response_merge)
-        ):
+        if submit_response_merge != "6eab6c4dc04ad3cddb677a7af4782d00f3e62f46":
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_submit_response_extraction_merge_commit must be 'pending' or a 40-character commit"
+                "scope.latest_package_submit_response_extraction_merge_commit must match PR #665 merge commit"
             )
         if proof_scope.get("latest_package_submit_response_extraction_live_behavior_change") is not False:
             errors.append(
@@ -7081,6 +7075,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         submit_response_summary = proof_scope.get("latest_package_submit_response_extraction_summary")
         for term in (
             "package submit response extraction",
+            "PR #665",
+            "merge commit 6eab6c4dc04ad3cddb677a7af4782d00f3e62f46",
             "package_review_submit_response",
             "layer3_package_submit_response.py",
             "without activating package mutation/reconstruction",
@@ -7106,6 +7102,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "review_package_ref_map",
             "latest_package_submit_response_extraction_branch",
             "package_submit_response_extraction",
+            "PR #665/merge commit 6eab6c4d",
             "layer3_package_submit_response.py",
             "without activating package mutation/reconstruction",
         ),
@@ -7119,6 +7116,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "review_package_hash_map",
             "without changing package handoff/export identity-map behavior",
             "Package submit response extraction",
+            "PR `#665`, merge commit `6eab6c4d`",
             "layer3_package_submit_response.py",
             "without changing package-review submit response behavior",
         ),
