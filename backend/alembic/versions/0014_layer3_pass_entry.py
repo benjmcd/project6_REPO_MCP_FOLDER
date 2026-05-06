@@ -30,6 +30,10 @@ def upgrade() -> None:
         sa.Column("plan_json", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("analysis_plan_id"),
+        sa.CheckConstraint(
+            "status IN ('formed', 'approved', 'cancelled')",
+            name="ck_l3_analysis_plan_status",
+        ),
     )
     create_table_idempotent(
         "l3_pass_run",
@@ -57,6 +61,11 @@ def upgrade() -> None:
         sa.Column("summary_json", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("pass_run_id"),
+        sa.CheckConstraint(
+            "status IN ('planned', 'selected_not_started', 'running', 'completed', "
+            "'completed_with_warnings', 'failed')",
+            name="ck_l3_pass_run_status",
+        ),
     )
 
 

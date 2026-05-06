@@ -45,6 +45,28 @@ L3_GATE_B_IDEMPOTENCY_STATUS_VALUES = (
     L3_GATE_B_IDEMPOTENCY_STATUS_CLAIMED,
     L3_GATE_B_IDEMPOTENCY_STATUS_COMMITTED,
 )
+L3_ANALYSIS_PLAN_STATUS_FORMED = "formed"
+L3_ANALYSIS_PLAN_STATUS_APPROVED = "approved"
+L3_ANALYSIS_PLAN_STATUS_CANCELLED = "cancelled"
+L3_ANALYSIS_PLAN_STATUS_VALUES = (
+    L3_ANALYSIS_PLAN_STATUS_FORMED,
+    L3_ANALYSIS_PLAN_STATUS_APPROVED,
+    L3_ANALYSIS_PLAN_STATUS_CANCELLED,
+)
+L3_PASS_RUN_STATUS_PLANNED = "planned"
+L3_PASS_RUN_STATUS_SELECTED_NOT_STARTED = "selected_not_started"
+L3_PASS_RUN_STATUS_RUNNING = "running"
+L3_PASS_RUN_STATUS_COMPLETED = "completed"
+L3_PASS_RUN_STATUS_COMPLETED_WITH_WARNINGS = "completed_with_warnings"
+L3_PASS_RUN_STATUS_FAILED = "failed"
+L3_PASS_RUN_STATUS_VALUES = (
+    L3_PASS_RUN_STATUS_PLANNED,
+    L3_PASS_RUN_STATUS_SELECTED_NOT_STARTED,
+    L3_PASS_RUN_STATUS_RUNNING,
+    L3_PASS_RUN_STATUS_COMPLETED,
+    L3_PASS_RUN_STATUS_COMPLETED_WITH_WARNINGS,
+    L3_PASS_RUN_STATUS_FAILED,
+)
 
 
 class TimestampMixin:
@@ -964,11 +986,17 @@ class L3AnalysisSet(Base, TimestampMixin):
 
 class L3AnalysisPlan(Base, TimestampMixin):
     __tablename__ = "l3_analysis_plan"
+    __table_args__ = (
+        CheckConstraint(
+            f"status IN ({', '.join(repr(status) for status in L3_ANALYSIS_PLAN_STATUS_VALUES)})",
+            name="ck_l3_analysis_plan_status",
+        ),
+    )
 
     analysis_plan_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
     analysis_set_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
-    status: Mapped[str] = mapped_column(String(64), nullable=False, default="formed")
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default=L3_ANALYSIS_PLAN_STATUS_FORMED)
     approved_by_operator: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     plan_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
@@ -978,6 +1006,12 @@ class L3AnalysisPlan(Base, TimestampMixin):
 
 class L3PassRun(Base, TimestampMixin):
     __tablename__ = "l3_pass_run"
+    __table_args__ = (
+        CheckConstraint(
+            f"status IN ({', '.join(repr(status) for status in L3_PASS_RUN_STATUS_VALUES)})",
+            name="ck_l3_pass_run_status",
+        ),
+    )
 
     pass_run_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
