@@ -4047,7 +4047,12 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
         "PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS = frozenset(",
         "def manual_constraints_from_payload(",
         "def preflight_manual_constraint_blocked_fields(",
+        "\"auth_security_hardening\"",
+        "\"connector_destination_dispatch\"",
+        "\"full_mockup_activation\"",
         "\"local_upload\"",
+        "\"local_upload_or_directory_source_expansion\"",
+        "\"package_mutation_reconstruction\"",
     ):
         if term not in contract_text:
             errors.append(f"{_rel(PREFLIGHT_REQUEST_CONTRACT_SERVICE)} missing preflight contract term: {term}")
@@ -4083,8 +4088,15 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
     for term in (
         "test_preflight_manual_constraints_preserve_known_open_shape",
         "test_preflight_manual_constraints_block_deferred_capability_sentinels_recursively",
+        "test_preflight_manual_constraints_block_every_state_action_deferred_capability",
+        "STATE_ACTION_DEFERRED_CAPABILITIES",
+        "manual_constraints.conflict.auth_security_hardening",
+        "manual_constraints.connector_destination_dispatch",
         "manual_constraints.date_bounds.provider_public_url",
+        "manual_constraints.package_mutation_reconstruction",
+        "manual_constraints.required_artifacts[0].local_upload_or_directory_source_expansion",
         "manual_constraints.topics[0].rag_plan",
+        "manual_constraints.topics[1].full_mockup_activation",
     ):
         if term not in contract_test_text:
             errors.append(f"{_rel(PREFLIGHT_REQUEST_CONTRACT_TEST)} missing preflight contract proof term: {term}")
@@ -4095,7 +4107,10 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
         "test_layer3_api_preflight_rejects_forbidden_manual_constraint_sentinels",
         "api-preflight-strict-extra",
         "api-preflight-forbidden-manual-constraints",
+        "connector_destination_dispatch",
+        "full_mockup_activation",
         "local_directory",
+        "package_mutation_reconstruction",
         "preflight_manual_constraint_scope_not_admitted",
         "extra_forbidden",
         "preflight service should not run when request validation rejects extra fields",
