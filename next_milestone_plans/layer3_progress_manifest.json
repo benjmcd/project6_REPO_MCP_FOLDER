@@ -5906,6 +5906,44 @@
     "merge_commit": "01023e82",
     "post_merge_authority": "project6-origin/main at 01023e82"
   },
+  "plan_pass_status_constraint_alignment": {
+    "mode": "fresh_schema_model_status_constraint_alignment",
+    "hardening_scope": "fresh schema/model status constraints only for L3AnalysisPlan.status and L3PassRun.status",
+    "implementation_branch": "codex/l3-status-ck",
+    "base_commit": "8ca47d4d",
+    "live_behavior_change": true,
+    "model": "backend/app/models/models.py",
+    "migration": "backend/alembic/versions/0014_layer3_pass_entry.py",
+    "proof_test": "backend/tests/test_layer3_plan_pass_status_constraints.py",
+    "constraints": [
+      "ck_l3_analysis_plan_status",
+      "ck_l3_pass_run_status"
+    ],
+    "allowed_plan_statuses": [
+      "formed",
+      "approved",
+      "cancelled"
+    ],
+    "allowed_pass_run_statuses": [
+      "planned",
+      "selected_not_started",
+      "running",
+      "completed",
+      "completed_with_warnings",
+      "failed"
+    ],
+    "scope_limits": [
+      "No retrofit migration for already-upgraded SQLite databases",
+      "no approved-plan cancellation semantic change",
+      "no route, DTO, service, UI, source, package, handoff, export, connector, provider, qualitative, mockup, or auth/security activation"
+    ],
+    "required_tests": [
+      "python -m py_compile .\\backend\\app\\models\\models.py .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_plan_pass_status_constraints.py -q",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ]
+  },
   "gate_c_override_unavailable_request_contract": {
     "mode": "gate_c_override_unavailable_request_boundary",
     "hardening_scope": "strict request DTO for the explicitly unavailable Gate C override endpoint",

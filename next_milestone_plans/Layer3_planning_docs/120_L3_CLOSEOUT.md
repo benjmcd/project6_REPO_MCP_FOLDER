@@ -373,6 +373,17 @@ The `/api/v1/layer3/gate-c/override` endpoint remains explicitly unavailable for
 No typing override persistence, execution, hidden LLM planning, provider/public URL support, connector/destination dispatch, package mutation/reconstruction, source widening, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.
 ```
 
+Plan/pass status constraint alignment proof:
+
+```text
+Files: backend/app/models/models.py; backend/alembic/versions/0014_layer3_pass_entry.py; backend/tests/test_layer3_plan_pass_status_constraints.py.
+Scope: fresh-schema/model status constraints only.
+The model metadata and fresh 0014 migration define ck_l3_analysis_plan_status and ck_l3_pass_run_status.
+The proof also checks the model-owned vocabularies against the existing pass-entry and approved-plan-cancel owner-service constants.
+No retrofit migration for already-upgraded SQLite databases is included in this slice.
+No approved-plan supersession/replacement/reopening/deletion, L3PassRun creation beyond existing flows, AnalysisRun creation, output/package/handoff/export artifact creation, source/runtime widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, broad package mutation/reconstruction, or auth/security behavior is admitted.
+```
+
 Package replacement artifact manifest-only runtime proof:
 
 ```text
@@ -412,6 +423,7 @@ Merged as bounded current-main scope:
 - source-preview DTO boundary hardening;
 - material-preview DTO boundary hardening;
 - Gate C override unavailable DTO boundary hardening;
+- plan/pass status constraint alignment;
 - source-boundary extraction and verifier guard;
 - single APS-document qualitative execution;
 - qualitative/hybrid/RAG boundary proof;

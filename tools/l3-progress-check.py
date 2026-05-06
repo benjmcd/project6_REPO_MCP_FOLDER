@@ -99,6 +99,9 @@ SESSION_ENTRY_MIGRATION = (
 GATE_B_IDEMPOTENCY_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0017_layer3_gate_b_idempotency.py"
 )
+PASS_ENTRY_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0014_layer3_pass_entry.py"
+)
 REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0018_layer3_replacement_package_set_authority.py"
 )
@@ -174,6 +177,9 @@ APS_SOURCE_FAMILY_TEST = ROOT / "backend" / "tests" / "test_layer3_aps_source_fa
 QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_mockup_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
+PLAN_PASS_STATUS_CONSTRAINT_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_plan_pass_status_constraints.py"
+)
 GATE_B_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_gate_b_state.py"
 REPLACEMENT_PACKAGE_SET_AUTHORITY_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_replacement_package_set_authority.py"
@@ -4324,6 +4330,106 @@ def _check_session_status_migration_constraint(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing session-status migration term: {term}")
 
 
+def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
+    models_text = _read_required_text(MODELS, errors)
+    for term in (
+        "L3_ANALYSIS_PLAN_STATUS_VALUES",
+        "L3_PASS_RUN_STATUS_VALUES",
+        "ck_l3_analysis_plan_status",
+        "ck_l3_pass_run_status",
+    ):
+        if term not in models_text:
+            errors.append(f"{_rel(MODELS)} missing plan/pass status model term: {term}")
+
+    migration_text = _read_required_text(PASS_ENTRY_MIGRATION, errors)
+    for term in (
+        "ck_l3_analysis_plan_status",
+        "ck_l3_pass_run_status",
+        "'formed'",
+        "'approved'",
+        "'cancelled'",
+        "'planned'",
+        "'selected_not_started'",
+        "'running'",
+        "'completed'",
+        "'completed_with_warnings'",
+        "'failed'",
+    ):
+        if term not in migration_text:
+            errors.append(f"{_rel(PASS_ENTRY_MIGRATION)} missing plan/pass status migration term: {term}")
+
+    test_text = _read_required_text(PLAN_PASS_STATUS_CONSTRAINT_TEST, errors)
+    for term in (
+        "test_layer3_plan_status_check_constraint_rejects_unknown_status",
+        "test_layer3_pass_run_status_check_constraint_rejects_unknown_status",
+        "test_layer3_plan_and_pass_status_vocabularies_match_owner_services",
+        "test_layer3_pass_entry_migration_defines_plan_and_pass_status_constraints",
+        "APPROVED_PLAN_CANCELLED_STATUS",
+        "PASS_STATUS_SELECTED_NOT_STARTED",
+        "L3_ANALYSIS_PLAN_STATUS_VALUES",
+        "L3_PASS_RUN_STATUS_VALUES",
+        "ck_l3_analysis_plan_status",
+        "ck_l3_pass_run_status",
+        "IntegrityError",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(PLAN_PASS_STATUS_CONSTRAINT_TEST)} missing plan/pass status proof term: {term}")
+
+    progress_text = _read_required_text(MANIFEST, errors)
+    proof_text = _read_required_text(PROOF_MANIFEST, errors)
+    for path, text, terms in (
+        (
+            MANIFEST,
+            progress_text,
+            (
+                "plan_pass_status_constraint_alignment",
+                "ck_l3_analysis_plan_status",
+                "ck_l3_pass_run_status",
+                "test_layer3_plan_pass_status_constraints.py",
+                "fresh schema/model status constraints only",
+            ),
+        ),
+        (
+            PROOF_MANIFEST,
+            proof_text,
+            (
+                "plan_pass_status_constraint_alignment_proof",
+                "ck_l3_analysis_plan_status",
+                "ck_l3_pass_run_status",
+                "test_layer3_plan_pass_status_constraints.py",
+                "No retrofit migration for already-upgraded SQLite databases",
+            ),
+        ),
+    ):
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing plan/pass status proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "test_layer3_plan_pass_status_constraints.py",
+            "ck_l3_analysis_plan_status",
+            "ck_l3_pass_run_status",
+            "fresh-schema/model status constraint",
+        ],
+        GOAL_AUDIT: [
+            "test_layer3_plan_pass_status_constraints.py",
+            "plan/pass status constraint alignment",
+            "No retrofit migration for already-upgraded SQLite databases",
+        ],
+        CLOSEOUT_DOC: [
+            "Plan/pass status constraint alignment proof",
+            "test_layer3_plan_pass_status_constraints.py",
+            "No retrofit migration for already-upgraded SQLite databases",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing plan/pass status doc term: {term}")
+
+
 def _check_progress_text_surfaces(errors: list[str]) -> None:
     required_by_file = {
         BOARD: [
@@ -5745,6 +5851,7 @@ def main() -> int:
         APPROVED_PLAN_CORRECTION_TEST,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
+        PASS_ENTRY_MIGRATION,
         PACKAGE_ENTRY_MIGRATION,
         GATE_B_IDEMPOTENCY_MIGRATION,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION,
@@ -5779,6 +5886,7 @@ def main() -> int:
         QUAL_APS_TEST,
         MOCKUP_BOUNDARY_TEST,
         SESSION_ENTRY_TEST,
+        PLAN_PASS_STATUS_CONSTRAINT_TEST,
         GATE_B_STATE_TEST,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_TEST,
         PACKAGE_SUPERSESSION_COMMIT_TEST,
@@ -5840,6 +5948,7 @@ def main() -> int:
     _check_material_preview_request_guard(errors)
     _check_gate_c_override_request_guard(errors)
     _check_session_status_migration_constraint(errors)
+    _check_plan_pass_status_migration_constraints(errors)
     _check_progress_text_surfaces(errors)
     _check_ci_layer3_backend_guardrail(errors)
     if manifest:
