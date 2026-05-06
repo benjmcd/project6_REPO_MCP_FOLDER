@@ -4424,6 +4424,8 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
                 "\"merge_commit\": \"652df83e\"",
                 "\"owner_service_constant_alignment_pr\": \"#618\"",
                 "\"owner_service_constant_alignment_merge_commit\": \"c5ae1b8f\"",
+                "\"workbench_status_constant_alignment_pr\": \"#620\"",
+                "\"workbench_status_constant_alignment_merge_commit\": \"93215740\"",
             ),
         ),
         (
@@ -4439,6 +4441,8 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
                 "\"merge_commit\": \"652df83e\"",
                 "\"owner_service_alias_pr\": \"#618\"",
                 "\"owner_service_alias_merge_commit\": \"c5ae1b8f\"",
+                "\"workbench_status_alias_pr\": \"#620\"",
+                "\"workbench_status_alias_merge_commit\": \"93215740\"",
             ),
         ),
     ):
@@ -4454,6 +4458,7 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
             "fresh-schema/model status constraint",
             "PR #616 / merge commit `652df83e`",
             "PR #618 / merge commit `c5ae1b8f`",
+            "PR #620 / merge commit `93215740`",
         ],
         GOAL_AUDIT: [
             "PR #616 / merge commit `652df83e`",
@@ -4464,6 +4469,7 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
         CLOSEOUT_DOC: [
             "PR #616 / merge commit 652df83e",
             "PR #618 / merge commit c5ae1b8f",
+            "PR #620 / merge commit 93215740",
             "Plan/pass status constraint alignment proof",
             "test_layer3_plan_pass_status_constraints.py",
             "Focused status-constraint proof: 5 passed",

@@ -5944,6 +5944,8 @@
     ],
     "owner_service_constant_alignment_pr": "#618",
     "owner_service_constant_alignment_merge_commit": "c5ae1b8f",
+    "workbench_status_constant_alignment_pr": "#620",
+    "workbench_status_constant_alignment_merge_commit": "93215740",
     "required_tests": [
       "python -m py_compile .\\backend\\app\\models\\models.py .\\tools\\l3-progress-check.py",
       "python -m pytest .\\backend\\tests\\test_layer3_plan_pass_status_constraints.py -q",
