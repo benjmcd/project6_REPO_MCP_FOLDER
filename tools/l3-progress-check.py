@@ -347,7 +347,7 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
 def _check_package_namespace_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "b8b1c000e85a0ae119139d5b7328e68437d143eb"
+    expected_commit = "15c8ab17a42718da549974bea97073d5d4b940b4"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -360,7 +360,7 @@ def _check_package_namespace_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR594 package namespace progress "
+                f"{name} must identify the post-PR595 revision recovery progress "
                 f"base commit {expected_commit}"
             )
 
@@ -379,11 +379,11 @@ def _check_package_namespace_progress_sync(
             continue
         for term in (
             expected_commit,
-            "after PR #594 package namespace progress proof",
+            "after PR #595 plan revision recovery freeze",
             "without runtime behavior changes",
         ):
             if term not in source:
-                errors.append(f"{name} missing post-PR593 namespace sync term: {term}")
+                errors.append(f"{name} missing post-PR595 revision recovery sync term: {term}")
 
     namespace_runtime = manifest.get("package_replacement_namespace_runtime")
     if not isinstance(namespace_runtime, dict):
