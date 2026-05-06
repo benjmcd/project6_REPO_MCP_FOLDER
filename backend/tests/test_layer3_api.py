@@ -349,6 +349,39 @@ def _assert_string_array_or_string_map_schema(schema: dict) -> None:
     ]
 
 
+def _assert_forbidden_request_field_schema(schema: dict, field: str) -> None:
+    property_schema = schema["properties"][field]
+    assert property_schema["description"].startswith("Known but non-admitted")
+    assert property_schema["not"] == {}
+
+
+def test_layer3_forbidden_sentinel_openapi_fields_are_impossible(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+    seen: set[tuple[str, str]] = set()
+    for path, path_item in spec["paths"].items():
+        post = path_item.get("post")
+        if not post:
+            continue
+        request_body = post.get("requestBody", {})
+        content = request_body.get("content", {})
+        schema = content.get("application/json", {}).get("schema")
+        if not isinstance(schema, dict):
+            continue
+        for field, property_schema in schema.get("properties", {}).items():
+            if not isinstance(property_schema, dict):
+                continue
+            description = property_schema.get("description")
+            if isinstance(description, str) and description.startswith("Known but non-admitted"):
+                _assert_forbidden_request_field_schema(schema, field)
+                seen.add((path, field))
+    assert {
+        ("/api/v1/layer3/plan/approved/cancel", "provider_public_url"),
+        ("/api/v1/layer3/execution/select", "rag_plan"),
+        ("/api/v1/layer3/package/review/commit", "package_payload"),
+        ("/api/v1/layer3/handoff/connector/record", "connector_key"),
+    } <= seen
+
+
 def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
