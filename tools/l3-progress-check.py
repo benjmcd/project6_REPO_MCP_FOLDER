@@ -4896,6 +4896,9 @@ def _check_plan_error_extraction(errors: list[str]) -> None:
         "f4b3ab80",
         "layer3_plan_errors.py",
         "test_layer3_plan_errors.py",
+        "| Plan error mapping extraction | current-main no-behavior-change refactor/proof |",
+        "PR `#624`, commit `f4b3ab80`",
+        "without changing emitted error codes, statuses, HTTP statuses, blocked fields, or next allowed actions",
         "no-behavior-change plan preview/approval error-mapping extraction proof",
         "does not admit route, DTO, model, migration, UI, execution, package, connector, provider, source, qualitative/RAG, mockup, or auth/security behavior",
     ):
