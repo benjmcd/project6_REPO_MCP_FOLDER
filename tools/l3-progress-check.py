@@ -839,6 +839,7 @@ def _check_plan_revision_recovery_entry_freeze(
             "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
             "plan_revision_recovery_preview_refresh_entry",
             "Bounded preview-refresh runtime live",
+            "PR `#605` merge commit `db7c7a0811a8e1a1343a4b285dec050a03e4361b`",
         ],
         BOARD: [
             "Plan revision recovery preview-refresh runtime",
@@ -846,7 +847,9 @@ def _check_plan_revision_recovery_entry_freeze(
             "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
             "POST /api/v1/layer3/plan/revision/recover",
             "backend/app/services/layer3_plan_revision_recovery.py",
-            "doc `134` runtime",
+            "PR `#605`",
+            "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
+            "doc `134` runtime, PR `#605` proof",
         ],
         PROOF_MANIFEST: [
             "plan_revision_recovery_runtime_proof",
@@ -857,6 +860,11 @@ def _check_plan_revision_recovery_entry_freeze(
             "1e74a739a07623b7d91d405d946e6b1d221be6ff",
             "Bounded runtime for plan_revision_recovery_preview_refresh_entry",
             "summary-state recovery metadata",
+            "latest_plan_revision_recovery_service_proof_pr",
+            "#605",
+            "95b597a22ac7fa89d0df27ae1e3952b2f691e065",
+            "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
+            "owner authority row-count stability",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -870,6 +878,16 @@ def _check_plan_revision_recovery_entry_freeze(
     if not isinstance(proof_scope, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} scope missing for revision recovery runtime")
     else:
+        expected_top_scope = {
+            "merged_pr": "#605",
+            "merge_commit": "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
+            "source_branch": "codex/l3-pr605-proof-sync",
+            "base_commit": "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
+            "source_base_commit": "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
+        }
+        for key, value in expected_top_scope.items():
+            if proof_scope.get(key) != value:
+                errors.append(f"{_rel(PROOF_MANIFEST)} scope.{key} must be {value!r}")
         expected_runtime_scope = {
             "latest_plan_revision_recovery_runtime_branch": "codex/l3-revision-recovery-runtime",
             "latest_plan_revision_recovery_runtime_pr": "#599",
@@ -884,6 +902,36 @@ def _check_plan_revision_recovery_entry_freeze(
         latest_summary = proof_scope.get("latest_plan_revision_recovery_runtime_summary")
         if not isinstance(latest_summary, str) or "Bounded runtime for plan_revision_recovery_preview_refresh_entry" not in latest_summary:
             errors.append(f"{_rel(PROOF_MANIFEST)} scope.latest_plan_revision_recovery_runtime_summary must describe runtime behavior")
+        expected_service_proof_scope = {
+            "latest_plan_revision_recovery_service_proof_branch": "codex/l3-plan-revision-recovery-service-proof",
+            "latest_plan_revision_recovery_service_proof_pr": "#605",
+            "latest_plan_revision_recovery_service_proof_base_commit": "b399de4e5388cd96492dde50f98c90c6713af789",
+            "latest_plan_revision_recovery_service_proof_head_commit": "95b597a22ac7fa89d0df27ae1e3952b2f691e065",
+            "latest_plan_revision_recovery_service_proof_merge_commit": "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
+            "latest_plan_revision_recovery_service_proof_live_behavior_change": False,
+        }
+        for key, value in expected_service_proof_scope.items():
+            if proof_scope.get(key) != value:
+                errors.append(f"{_rel(PROOF_MANIFEST)} scope.{key} must be {value!r}")
+        proof_summary = proof_scope.get("latest_plan_revision_recovery_service_proof_summary")
+        if not isinstance(proof_summary, str) or "owner authority row-count stability" not in proof_summary:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} scope.latest_plan_revision_recovery_service_proof_summary "
+                "must describe PR #605 owner-service proof hardening"
+            )
+
+    seed_checkout_hint = _nested(manifest, "artifact_scope", "seed_checkout_hint")
+    if not isinstance(seed_checkout_hint, str):
+        errors.append("artifact_scope.seed_checkout_hint must be present for PR #605 proof sync")
+    else:
+        for term in (
+            "codex/l3-pr605-proof-sync",
+            "db7c7a0811a8e1a1343a4b285dec050a03e4361b",
+            "PR #605 plan revision recovery service proof merge",
+            "current-main proof/progress metadata sync only",
+        ):
+            if term not in seed_checkout_hint:
+                errors.append(f"artifact_scope.seed_checkout_hint missing PR #605 sync term: {term}")
 
     top_level = manifest.get("plan_revision_recovery_runtime")
     if not isinstance(top_level, dict):
@@ -922,6 +970,19 @@ def _check_plan_revision_recovery_entry_freeze(
             ):
                 if blocked not in blocked_scope:
                     errors.append(f"plan_revision_recovery_runtime.blocked_scope missing {blocked}")
+        service_proof = top_level.get("service_proof")
+        if not isinstance(service_proof, list):
+            errors.append("plan_revision_recovery_runtime.service_proof must be a list after PR #605")
+        else:
+            service_proof_text = "\n".join(str(item) for item in service_proof)
+            for term in (
+                "PR #605",
+                "owner authority row-count stability",
+                "forbidden-field",
+                "zero downstream AnalysisRun",
+            ):
+                if term not in service_proof_text:
+                    errors.append(f"plan_revision_recovery_runtime.service_proof missing PR #605 term: {term}")
 
     next_required = manifest.get("next_required_decision")
     if not isinstance(next_required, str):
