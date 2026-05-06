@@ -4399,6 +4399,7 @@
       "Repo-live services use L3AnalysisPlan.status values formed, approved, and cancelled.",
       "Repo-live pass-entry/workbench services use L3PassRun.status values planned, selected_not_started, running, completed, completed_with_warnings, and failed.",
       "The model metadata and fresh 0014 migration now carry named check constraints for those vocabularies.",
+      "The pass-entry and approved-plan-cancel owner-service constants now alias the model-owned status constants instead of duplicating the status literals.",
       "The proof test asserts invalid plan/pass statuses raise IntegrityError, verifies the model vocabularies match the existing pass-entry and approved-plan-cancel owner-service constants, and inspects the fresh migration table elements for both named constraints."
     ],
     "non_goals": [
