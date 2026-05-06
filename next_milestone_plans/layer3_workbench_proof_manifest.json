@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Current main now includes PR #609 no-behavior-change APS source-family extraction after PR #607 package-state helper proof hardening, PR #605 direct owner-service proof for the bounded plan_revision_recovery_preview_refresh_entry runtime, and direct owner-service proof for approved_plan_cancel_without_replacement. Broader approved-plan correction modes and all deferred broad capabilities remain blocked. This status retains the package artifact manifest runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, the package replacement artifact manifest-only runtime proof boundary, and the external post-PR609 synthesis/adjudication reference at C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md.",
+  "status": "Current main now includes PR #609 no-behavior-change APS source-family extraction after PR #607 package-state helper proof hardening, PR #605 direct owner-service proof for the bounded plan_revision_recovery_preview_refresh_entry runtime, direct owner-service proof for approved_plan_cancel_without_replacement, and PR #634 preflight manual_constraints request-boundary hardening for forbidden sentinel fields. Broader approved-plan correction modes and all deferred broad capabilities remain blocked. This status retains the package artifact manifest runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, the package replacement artifact manifest-only runtime proof boundary, and the external post-PR609 synthesis/adjudication reference at C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md.",
   "scope": {
     "source_branch": "codex/l3-synth-ref-sync",
     "merged_pr": "#609",
@@ -18,6 +18,11 @@
     "latest_gate_b_material_basis_merge_commit": "58f33a33",
     "latest_gate_b_material_basis_live_behavior_change": false,
     "latest_gate_b_material_basis_summary": "Current-main no-behavior-change Gate B extraction that moves the existing material-preview hash basis, candidate-decision manifest, and Gate B decision manifest ID construction from `layer3_workbench.py` into `layer3_gate_b_state.py` with focused owner-service proof. It changes no route, DTO, model, migration, UI, execution, package, connector, provider/public URL, source, qualitative/RAG, mockup, auth/security, or broad workbench behavior.",
+    "latest_preflight_manual_constraints_request_contract_branch": "codex/l3-preflight-manual-constraints-contract",
+    "latest_preflight_manual_constraints_request_contract_pr": "#634",
+    "latest_preflight_manual_constraints_request_contract_commit": "e7077851",
+    "latest_preflight_manual_constraints_request_contract_live_behavior_change": true,
+    "latest_preflight_manual_constraints_request_contract_summary": "PR #634 hardens preflight manual_constraints by moving manual-constraint normalization plus recursive forbidden sentinel detection into backend/app/services/layer3_preflight_request_contract.py, delegating from layer3_workbench.py, rejecting preflight_manual_constraint_scope_not_admitted before normalized intent cloning, and documenting the nested non-admitted fields in backend/app/api/layer3.py. It admits no execution, AnalysisRun/L3PassRun creation, package/handoff/export artifacts, source/schema/runtime widening, qualitative/hybrid/RAG activation, provider/public URLs, connector/destination dispatch, frontend-only durable state, hidden LLM planning, package mutation/reconstruction, auth/security behavior, full mockup activation, or broad workbench behavior.",
     "synthesis_adjudication_reference": "C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md",
     "synthesis_adjudication_next_actions": [
       "progress/proof refresh first",
@@ -4551,5 +4556,53 @@
     "implementation_pr": "#614",
     "merge_commit": "840a86fb",
     "post_merge_authority": "project6-origin/main at 840a86fb"
+  },
+  "preflight_manual_constraints_request_contract_proof": {
+    "scope": "Request-boundary hardening proof for preflight manual_constraints forbidden sentinel fields only.",
+    "implementation_branch": "codex/l3-preflight-manual-constraints-contract",
+    "base_commit": "59c4e43a03857f0b1bb31b26640e5ebba8032d7d",
+    "head_commit": "e7077851",
+    "implementation_pr": "#634",
+    "live_behavior_change": true,
+    "route": "/api/v1/layer3/preflight",
+    "owner_service": "backend/app/services/layer3_preflight_request_contract.py",
+    "workbench_delegate": "backend/app/services/layer3_workbench.py",
+    "api_schema": "backend/app/api/layer3.py::PREFLIGHT_REQUEST_SCHEMA",
+    "proof_tests": [
+      "backend/tests/test_layer3_preflight_request_contract.py",
+      "backend/tests/test_layer3_workbench.py::test_preflight_fails_closed_on_missing_intent_and_unsupported_sources",
+      "backend/tests/test_layer3_api.py::test_layer3_api_preflight_rejects_forbidden_manual_constraint_sentinels",
+      "backend/tests/test_layer3_api.py::test_layer3_first_slice_preview_openapi_contracts"
+    ],
+    "authority_basis": [
+      "The synthesis/adjudication evidence ranked API request-contract hardening for forbidden sentinel fields before broad feature admission.",
+      "Repo-live preflight accepted manual_constraints as an open dict and cloned arbitrary nested keys into normalized_intent.",
+      "The owner service now preserves flexible inert manual context while recursively rejecting known deferred capability sentinel keys before normalized intent cloning.",
+      "API proof verifies the error shape, blocked manual_constraints paths, and no L3PassRun, AnalysisRun, or L3OutputPackage side effects."
+    ],
+    "non_goals": [
+      "closing manual_constraints to only known allowed fields",
+      "L3PassRun creation",
+      "AnalysisRun creation",
+      "output/package/handoff/export artifact creation",
+      "source/schema/runtime widening",
+      "qualitative/hybrid/RAG activation",
+      "provider/public URL support",
+      "connector/destination dispatch",
+      "frontend-only durable state",
+      "hidden LLM planning",
+      "package mutation/reconstruction",
+      "authentication/security hardening",
+      "broad workbench rewrite",
+      "full mockup activation"
+    ],
+    "required_tests": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_preflight_request_contract.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\api\\layer3.py .\\backend\\tests\\test_layer3_preflight_request_contract.py .\\backend\\tests\\test_layer3_workbench.py .\\backend\\tests\\test_layer3_api.py .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_preflight_request_contract.py .\\backend\\tests\\test_layer3_workbench.py .\\backend\\tests\\test_layer3_api.py -q",
+      "python .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "git diff --check"
+    ]
   }
 }

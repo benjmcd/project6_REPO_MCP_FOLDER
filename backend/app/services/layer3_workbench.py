@@ -137,6 +137,10 @@ from app.services.layer3_source_boundary import (
     source_class_from_source_candidate_id as _source_class_from_source_candidate_id,
     unsupported_requested as _unsupported_requested,
 )
+from app.services.layer3_preflight_request_contract import (
+    manual_constraints_from_payload as _manual_constraints,
+    preflight_manual_constraint_blocked_fields,
+)
 from app.services.layer3_typing_entry import (
     SUPPORTED_TYPING_RULES,
     Layer3TypingEntryError,
@@ -606,11 +610,6 @@ def bootstrap() -> dict[str, Any]:
     )
 
 
-def _manual_constraints(payload: dict[str, Any]) -> dict[str, Any]:
-    value = payload.get("manual_constraints") or {}
-    return value if isinstance(value, dict) else {}
-
-
 def preflight(payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     intent = str(payload.get("natural_language_intent") or "").strip()
@@ -622,6 +621,15 @@ def preflight(payload: dict[str, Any]) -> dict[str, Any]:
             status="blocked",
             blocked_fields=["natural_language_intent"],
             next_allowed_actions=["edit_intent"],
+        )
+    blocked_manual_constraints = preflight_manual_constraint_blocked_fields(manual_constraints)
+    if blocked_manual_constraints:
+        raise Layer3WorkbenchError(
+            "preflight_manual_constraint_scope_not_admitted",
+            "Manual constraints include non-admitted Layer 3 capability sentinel fields.",
+            status="blocked",
+            blocked_fields=blocked_manual_constraints,
+            next_allowed_actions=["remove_non_admitted_manual_constraints"],
         )
     if manual_constraints.get("conflict") is True or manual_constraints.get("conflicts"):
         raise Layer3WorkbenchError(

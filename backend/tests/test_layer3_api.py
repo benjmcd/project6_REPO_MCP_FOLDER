@@ -443,6 +443,10 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
     assert preflight_request_schema["properties"]["manual_constraints"]["properties"]["source_classes"]["items"][
         "enum"
     ] == ["dataset_version", "aps_content_document"]
+    manual_constraint_properties = preflight_request_schema["properties"]["manual_constraints"]["properties"]
+    for field in ("local_upload", "provider_public_url", "rag_plan"):
+        assert manual_constraint_properties[field]["description"].startswith("Known but non-admitted")
+        assert manual_constraint_properties[field]["not"] == {}
 
     preflight_schema = _openapi_response_schema(spec, "/api/v1/layer3/preflight", "post")
     assert preflight_schema["title"] == "Layer3PreflightResponse"
@@ -13696,6 +13700,40 @@ def test_layer3_api_error_shape_and_override_unavailable(client: TestClient) -> 
     assert override.status_code == 409
     assert override.json()["schema_id"] == "layer3.typing_override_unavailable.v1"
     assert override.json()["error_code"] == "override_unavailable"
+
+
+def test_layer3_api_preflight_rejects_forbidden_manual_constraint_sentinels(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-preflight-forbidden-manual-constraints",
+            "natural_language_intent": "Review deterministic Layer 3 material.",
+            "manual_constraints": {
+                "source_classes": ["dataset_version"],
+                "local_upload": {"path": "not-admitted"},
+                "date_bounds": {"provider_public_url": "https://example.invalid/export"},
+            },
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "preflight_manual_constraint_scope_not_admitted"
+    assert body["blocked_fields"] == [
+        "manual_constraints.date_bounds.provider_public_url",
+        "manual_constraints.local_upload",
+    ]
+    assert body["next_allowed_actions"] == ["remove_non_admitted_manual_constraints"]
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        db.close()
 
 
 def test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response(
