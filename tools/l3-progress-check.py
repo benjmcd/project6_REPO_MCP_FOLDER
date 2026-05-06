@@ -4387,6 +4387,8 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
                 "ck_l3_pass_run_status",
                 "test_layer3_plan_pass_status_constraints.py",
                 "fresh schema/model status constraints only",
+                "\"implementation_pr\": \"#616\"",
+                "\"merge_commit\": \"652df83e\"",
             ),
         ),
         (
@@ -4398,6 +4400,8 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
                 "ck_l3_pass_run_status",
                 "test_layer3_plan_pass_status_constraints.py",
                 "No retrofit migration for already-upgraded SQLite databases",
+                "\"implementation_pr\": \"#616\"",
+                "\"merge_commit\": \"652df83e\"",
             ),
         ),
     ):
@@ -4411,15 +4415,19 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
             "ck_l3_analysis_plan_status",
             "ck_l3_pass_run_status",
             "fresh-schema/model status constraint",
+            "PR #616 / merge commit `652df83e`",
         ],
         GOAL_AUDIT: [
+            "PR #616 / merge commit `652df83e`",
             "test_layer3_plan_pass_status_constraints.py",
             "plan/pass status constraint alignment",
             "No retrofit migration for already-upgraded SQLite databases",
         ],
         CLOSEOUT_DOC: [
+            "PR #616 / merge commit 652df83e",
             "Plan/pass status constraint alignment proof",
             "test_layer3_plan_pass_status_constraints.py",
+            "Focused status-constraint proof: 5 passed",
             "No retrofit migration for already-upgraded SQLite databases",
         ],
     }
