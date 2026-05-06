@@ -79,6 +79,9 @@ PLAN_FLOW_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_plan_flow_contract.py"
 )
 PLAN_FLOW_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_plan_flow_state.py"
+PLAN_FLOW_READINESS_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_plan_flow_readiness.py"
+)
 EXECUTION_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
 )
@@ -224,6 +227,9 @@ LAYER3_PLAN_FLOW_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_plan_flow_contract.py"
 )
 LAYER3_PLAN_FLOW_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_plan_flow_state.py"
+LAYER3_PLAN_FLOW_READINESS_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_plan_flow_readiness.py"
+)
 LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
 )
@@ -5660,6 +5666,75 @@ def _check_plan_flow_state_extraction(errors: list[str]) -> None:
             errors.append(f"{_rel(LAYER3_PLAN_FLOW_STATE_TEST)} missing plan-flow state proof term: {term}")
 
 
+def _check_plan_flow_readiness_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(PLAN_FLOW_READINESS_SERVICE, errors)
+    for term in (
+        "def plan_preview_readiness(",
+        "def plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:",
+        "def plan_revision_summary(db: Session, *, session_id: str) -> dict[str, Any]:",
+        "preview_pass_entry(db, session_id=session_id)",
+        "plan_revision_control_for_session(db, session_id=session_id)",
+        "json_clone(cancellation) if cancellation is not None else None",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PLAN_FLOW_READINESS_SERVICE)} missing plan-flow readiness term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_plan_flow_readiness import (",
+        "plan_approval_summary as _plan_approval_summary",
+        "plan_preview_readiness as _plan_preview_readiness",
+        "plan_revision_summary as _plan_revision_summary",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing plan-flow readiness delegation term: {term}")
+    for stale_term in (
+        "def _plan_preview_readiness(",
+        "def _plan_approval_summary(",
+        "def _plan_revision_summary(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns plan-flow readiness term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_PLAN_FLOW_READINESS_TEST, errors)
+    for term in (
+        "test_plan_preview_readiness_blocks_cancelled_plan_and_workbench_delegates",
+        "test_plan_approval_summary_clones_cancel_state_and_workbench_delegates",
+        "test_plan_revision_summary_uses_control_record_and_workbench_delegates",
+        "layer3_workbench._plan_preview_readiness",
+        "layer3_workbench._plan_approval_summary",
+        "layer3_workbench._plan_revision_summary",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_PLAN_FLOW_READINESS_TEST)} missing plan-flow readiness proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "plan-flow readiness summary extraction",
+            "layer3_plan_flow_readiness.py",
+            "test_layer3_plan_flow_readiness.py",
+            "does not admit route, DTO, model, migration, UI, execution, package, connector",
+        ),
+        PROGRESS_MANIFEST: (
+            "merged_live_plan_flow_readiness_summary_extraction",
+            "plan-flow readiness summary extraction",
+            "layer3_plan_flow_readiness.py",
+            "test_layer3_plan_flow_readiness.py",
+        ),
+        PROOF_MANIFEST: (
+            "latest_plan_flow_readiness_summary_extraction_branch",
+            "latest_plan_flow_readiness_summary_extraction_live_behavior_change",
+            "plan-flow readiness summary extraction",
+            "backend/app/services/layer3_plan_flow_readiness.py",
+            "backend/tests/test_layer3_plan_flow_readiness.py",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing plan-flow readiness extraction doc term: {term}")
+
+
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
     for term in (
@@ -6277,6 +6352,7 @@ def main() -> int:
         BOOTSTRAP_CONTRACT_SERVICE,
         STATE_MODEL_CONTRACT_SERVICE,
         PLAN_FLOW_STATE_SERVICE,
+        PLAN_FLOW_READINESS_SERVICE,
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
@@ -6309,6 +6385,7 @@ def main() -> int:
         LAYER3_BOOTSTRAP_CONTRACT_TEST,
         LAYER3_STATE_MODEL_CONTRACT_TEST,
         LAYER3_PLAN_FLOW_STATE_TEST,
+        LAYER3_PLAN_FLOW_READINESS_TEST,
         LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
@@ -6376,6 +6453,7 @@ def main() -> int:
     _check_state_model_contract_extraction(errors)
     _check_plan_flow_contract_extraction(errors)
     _check_plan_flow_state_extraction(errors)
+    _check_plan_flow_readiness_extraction(errors)
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
