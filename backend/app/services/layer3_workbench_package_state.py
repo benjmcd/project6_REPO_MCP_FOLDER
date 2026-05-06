@@ -417,6 +417,14 @@ def packages_in_review_order(packages: list[L3OutputPackage]) -> list[L3OutputPa
     return packages_in_kind_order(packages, package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
 
 
+def review_package_ref_map(packages: list[L3OutputPackage]) -> dict[str, str]:
+    return {package.package_kind: str(package.payload_ref or "") for package in packages_in_review_order(packages)}
+
+
+def review_package_hash_map(packages: list[L3OutputPackage]) -> dict[str, str]:
+    return {package.package_kind: str(package.payload_hash or "") for package in packages_in_review_order(packages)}
+
+
 def review_source_packages(packages: list[L3OutputPackage]) -> list[L3OutputPackage]:
     return packages_with_kinds(packages, package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
 
