@@ -4121,20 +4121,32 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
     required_doc_terms = {
         BOARD: [
             "PR `#634` hardens the preflight `manual_constraints` request contract",
+            "PR `#639` closes the residual exact deferred-sentinel gap",
+            "STATE_ACTION_DEFERRED_CAPABILITIES",
             "backend/app/services/layer3_preflight_request_contract.py",
+            "connector_destination_dispatch",
+            "package_mutation_reconstruction",
+            "full_mockup_activation",
+            "auth_security_hardening",
             "preflight_manual_constraint_scope_not_admitted",
             "admits no L3PassRun or AnalysisRun creation",
         ],
         MANIFEST: [
             "merged_live_preflight_manual_constraints_request_contract",
+            "preflight_exact_deferred_sentinel_hardening_pr639",
             "PR #634 implements bounded API request-contract hardening",
+            "PR #639 closes the residual PR #634 preflight manual_constraints gap",
+            "STATE_ACTION_DEFERRED_CAPABILITIES",
             "layer3_preflight_request_contract.py owns manual-constraint normalization",
             "preflight_manual_constraint_scope_not_admitted",
         ],
         PROOF_MANIFEST: [
             "preflight_manual_constraints_request_contract_proof",
             "latest_preflight_manual_constraints_request_contract_pr",
+            "latest_preflight_exact_deferred_sentinel_hardening_pr",
+            "latest_preflight_exact_deferred_sentinel_hardening_summary",
             "backend/tests/test_layer3_preflight_request_contract.py",
+            "STATE_ACTION_DEFERRED_CAPABILITIES",
             "no L3PassRun, AnalysisRun, or L3OutputPackage side effects",
         ],
         SYNTHESIS_BOUNDARY: [
