@@ -6670,12 +6670,28 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                 "must be 'codex/l3-package-reconciliation-state'"
             )
         reconciliation_state_pr = proof_scope.get("latest_package_reconciliation_state_extraction_pr")
-        if reconciliation_state_pr != "pending" and not (
-            isinstance(reconciliation_state_pr, str) and re.fullmatch(r"#\d+", reconciliation_state_pr)
+        if reconciliation_state_pr != "#653":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_reconciliation_state_extraction_pr must be '#653'"
+            )
+        if (
+            proof_scope.get("latest_package_reconciliation_state_extraction_head_commit")
+            != "fe547dfd89e848bd933158a9183582f5a9f03915"
         ):
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_reconciliation_state_extraction_pr must be 'pending' or a PR number"
+                "scope.latest_package_reconciliation_state_extraction_head_commit must be "
+                "'fe547dfd89e848bd933158a9183582f5a9f03915'"
+            )
+        if (
+            proof_scope.get("latest_package_reconciliation_state_extraction_merge_commit")
+            != "39ed6564171373ad21789291813b8e3711debe98"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_reconciliation_state_extraction_merge_commit must be "
+                "'39ed6564171373ad21789291813b8e3711debe98'"
             )
         if proof_scope.get("latest_package_reconciliation_state_extraction_live_behavior_change") is not False:
             errors.append(
@@ -6684,6 +6700,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             )
         reconciliation_state_summary = proof_scope.get("latest_package_reconciliation_state_extraction_summary")
         for term in (
+            "PR #653",
+            "merge commit 39ed6564171373ad21789291813b8e3711debe98",
             "reconciliation state extraction",
             "package_review_submit_from_reconciliation",
             "handoff_export_prepare_from_reconciliation",
@@ -6738,6 +6756,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "latest_package_review_preview_state_extraction_branch",
             "latest_package_review_package_set_helper_extraction_branch",
             "latest_package_reconciliation_state_extraction_branch",
+            "PR #653/merge commit 39ed6564",
             "c1448bbd799c003b172514da1b04ac70495a4dca",
             "test_layer3_workbench_package_state.py",
             "package-state helper proof",
@@ -6754,6 +6773,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "package-review preview state extraction",
             "package-set helper extraction",
             "reconciliation state extraction",
+            "merge commit `39ed6564`",
             "without activating package mutation/reconstruction",
         ),
     }
