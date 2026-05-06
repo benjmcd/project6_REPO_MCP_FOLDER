@@ -646,6 +646,20 @@ def _check_plan_revision_recovery_freeze(manifest: dict[str, Any], errors: list[
             "Not runtime recovery",
             "not approved-plan supersession",
         ],
+        BOARD: [
+            "Current plan revision recovery planning/control correction",
+            "PR `#595` merged `132_PLAN_REVISION_RECOVERY_FREEZE.md`",
+            "plan_revision_recovery_lifecycle",
+            "Plan revision recovery lifecycle freeze",
+            "allowed_next_actions: []",
+        ],
+        PROOF_MANIFEST: [
+            "plan_revision_recovery_freeze_proof",
+            "latest_plan_revision_recovery_freeze_pr",
+            "15c8ab17a42718da549974bea97073d5d4b940b4",
+            "planning/control authority for `plan_revision_recovery_lifecycle` only",
+            "no runtime recovery",
+        ],
     }
     for path, terms in required_doc_terms.items():
         text = _read_required_text(path, errors)
