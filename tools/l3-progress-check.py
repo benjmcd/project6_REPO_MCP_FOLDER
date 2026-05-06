@@ -128,6 +128,9 @@ MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
 )
+PREFLIGHT_REQUEST_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_preflight_request_contract.py"
+)
 APS_SOURCE_FAMILY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_aps_source_family.py"
 )
@@ -179,6 +182,9 @@ REPLACEMENT_PACKAGE_NAMESPACE_SERVICE = (
 QUAL_APS_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_mockup_boundary.py"
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
+PREFLIGHT_REQUEST_CONTRACT_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_preflight_request_contract.py"
+)
 APS_SOURCE_FAMILY_TEST = ROOT / "backend" / "tests" / "test_layer3_aps_source_family.py"
 QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_mockup_boundary.py"
@@ -4027,6 +4033,17 @@ def _check_signed_reference_state_guard(errors: list[str]) -> None:
 
 
 def _check_preflight_request_guard(errors: list[str]) -> None:
+    contract_text = _read_required_text(PREFLIGHT_REQUEST_CONTRACT_SERVICE, errors)
+    for term in (
+        "PREFLIGHT_MANUAL_CONSTRAINT_ALLOWED_FIELDS = frozenset(",
+        "PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS = frozenset(",
+        "def manual_constraints_from_payload(",
+        "def preflight_manual_constraint_blocked_fields(",
+        "\"local_upload\"",
+    ):
+        if term not in contract_text:
+            errors.append(f"{_rel(PREFLIGHT_REQUEST_CONTRACT_SERVICE)} missing preflight contract term: {term}")
+
     api_text = _read_required_text(LAYER3_API, errors)
     for term in (
         "class Layer3PreflightRequest(BaseModel):",
@@ -4034,17 +4051,44 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
         "PREFLIGHT_REQUEST_SCHEMA: dict[str, Any] = {",
         "\"additionalProperties\": False",
         "source-widening fields are rejected before service execution",
+        "PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS",
         "payload: Layer3PreflightRequest",
         "layer3_workbench.preflight(payload.model_dump(exclude_none=True))",
     ):
         if term not in api_text:
             errors.append(f"{_rel(LAYER3_API)} missing preflight request guard term: {term}")
 
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_preflight_request_contract import",
+        "manual_constraints_from_payload as _manual_constraints",
+        "preflight_manual_constraint_blocked_fields",
+        "preflight_manual_constraint_scope_not_admitted",
+        "remove_non_admitted_manual_constraints",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing preflight contract delegation term: {term}")
+    if "def _manual_constraints(" in workbench_text:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns preflight manual constraints helper")
+
+    contract_test_text = _read_required_text(PREFLIGHT_REQUEST_CONTRACT_TEST, errors)
+    for term in (
+        "test_preflight_manual_constraints_preserve_known_open_shape",
+        "test_preflight_manual_constraints_block_deferred_capability_sentinels_recursively",
+        "manual_constraints.date_bounds.provider_public_url",
+        "manual_constraints.topics[0].rag_plan",
+    ):
+        if term not in contract_test_text:
+            errors.append(f"{_rel(PREFLIGHT_REQUEST_CONTRACT_TEST)} missing preflight contract proof term: {term}")
+
     test_text = _read_required_text(LAYER3_API_TEST, errors)
     for term in (
         "test_layer3_api_preflight_rejects_extra_fields_before_service_execution",
+        "test_layer3_api_preflight_rejects_forbidden_manual_constraint_sentinels",
         "api-preflight-strict-extra",
+        "api-preflight-forbidden-manual-constraints",
         "local_directory",
+        "preflight_manual_constraint_scope_not_admitted",
         "extra_forbidden",
         "preflight service should not run when request validation rejects extra fields",
     ):
@@ -4052,6 +4096,24 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
             errors.append(f"{_rel(LAYER3_API_TEST)} missing preflight request guard test term: {term}")
 
     required_doc_terms = {
+        BOARD: [
+            "PR `#634` hardens the preflight `manual_constraints` request contract",
+            "backend/app/services/layer3_preflight_request_contract.py",
+            "preflight_manual_constraint_scope_not_admitted",
+            "admits no L3PassRun or AnalysisRun creation",
+        ],
+        MANIFEST: [
+            "merged_live_preflight_manual_constraints_request_contract",
+            "PR #634 implements bounded API request-contract hardening",
+            "layer3_preflight_request_contract.py owns manual-constraint normalization",
+            "preflight_manual_constraint_scope_not_admitted",
+        ],
+        PROOF_MANIFEST: [
+            "preflight_manual_constraints_request_contract_proof",
+            "latest_preflight_manual_constraints_request_contract_pr",
+            "backend/tests/test_layer3_preflight_request_contract.py",
+            "no L3PassRun, AnalysisRun, or L3OutputPackage side effects",
+        ],
         SYNTHESIS_BOUNDARY: [
             "Layer3PreflightRequest",
             "test_layer3_api_preflight_rejects_extra_fields_before_service_execution",
@@ -6119,6 +6181,7 @@ def main() -> int:
         MODELS,
         GATE_B_STATE_SERVICE,
         SOURCE_BOUNDARY_SERVICE,
+        PREFLIGHT_REQUEST_CONTRACT_SERVICE,
         APS_SOURCE_FAMILY_SERVICE,
         QUAL_APS_SERVICE,
         MOCKUP_BOUNDARY_SERVICE,
@@ -6140,6 +6203,7 @@ def main() -> int:
         REPLACEMENT_PACKAGE_NAMESPACE_SERVICE,
         LAYER3_JS,
         SOURCE_BOUNDARY_TEST,
+        PREFLIGHT_REQUEST_CONTRACT_TEST,
         APS_SOURCE_FAMILY_TEST,
         QUAL_APS_TEST,
         MOCKUP_BOUNDARY_TEST,
