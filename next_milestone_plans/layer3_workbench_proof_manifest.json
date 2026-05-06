@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Current main now includes PR #609 no-behavior-change APS source-family extraction after PR #607 package-state helper proof hardening, PR #605 direct owner-service proof for the bounded plan_revision_recovery_preview_refresh_entry runtime, direct owner-service proof for approved_plan_cancel_without_replacement, PR #634 preflight manual_constraints request-boundary hardening for forbidden sentinel fields, and PR #635 no-behavior-change plan-preview source-class extraction. Broader approved-plan correction modes and all deferred broad capabilities remain blocked. This status retains the package artifact manifest runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, the package replacement artifact manifest-only runtime proof boundary, and the external post-PR609 synthesis/adjudication reference at C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md.",
+  "status": "Current main now includes PR #609 no-behavior-change APS source-family extraction after PR #607 package-state helper proof hardening, PR #605 direct owner-service proof for the bounded plan_revision_recovery_preview_refresh_entry runtime, direct owner-service proof for approved_plan_cancel_without_replacement, PR #634 preflight manual_constraints request-boundary hardening for forbidden sentinel fields, PR #635 no-behavior-change plan-preview source-class extraction, and PR #636 no-behavior-change approved-plan payload projection extraction. Broader approved-plan correction modes and all deferred broad capabilities remain blocked. This status retains the package artifact manifest runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, the package replacement artifact manifest-only runtime proof boundary, and the external post-PR609 synthesis/adjudication reference at C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md.",
   "scope": {
     "source_branch": "codex/l3-synth-ref-sync",
     "merged_pr": "#609",
@@ -28,6 +28,11 @@
     "latest_plan_preview_source_class_extraction_commit": "030a7534",
     "latest_plan_preview_source_class_extraction_live_behavior_change": false,
     "latest_plan_preview_source_class_extraction_summary": "PR #635 moves plan-preview source-class derivation for authority rails from backend/app/services/layer3_workbench.py into backend/app/services/layer3_plan_flow_contract.py. Workbench delegates through the existing _source_classes_from_plan_preview alias at the existing plan-preview, plan-approval, and plan-revision call sites, and backend/tests/test_layer3_plan_flow_contract.py proves sorted/deduplicated string projection plus delegation. It admits no route, DTO, model, migration, UI, execution, package, connector, provider/public URL, source expansion, qualitative/hybrid/RAG, full mockup, auth/security, or broad workbench behavior.",
+    "latest_approved_plan_payload_projection_extraction_branch": "codex/l3-plan-approval-payload-extract",
+    "latest_approved_plan_payload_projection_extraction_pr": "#636",
+    "latest_approved_plan_payload_projection_extraction_commit": "2d9b64a1",
+    "latest_approved_plan_payload_projection_extraction_live_behavior_change": false,
+    "latest_approved_plan_payload_projection_extraction_summary": "PR #636 moves approved-plan set/pass payload projection from backend/app/services/layer3_workbench.py into backend/app/services/layer3_plan_flow_contract.py. Workbench delegates through the existing _approved_set_payload and _approved_planned_pass_payload aliases at the existing plan-approval call site, and backend/tests/test_layer3_plan_flow_contract.py proves clone/no-mutation behavior, approval-state marking, preview-only removal, and delegation. It admits no route, DTO, model, migration, UI, execution, package, connector, provider/public URL, source expansion, qualitative/hybrid/RAG, full mockup, auth/security, or broad workbench behavior.",
     "synthesis_adjudication_reference": "C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md",
     "synthesis_adjudication_next_actions": [
       "progress/proof refresh first",
@@ -3766,7 +3771,7 @@
     ]
   },
   "plan_flow_request_contract_extraction_current_boundary_proof": {
-    "scope": "Current-main proof classification for no-behavior-change plan-flow request contract extraction after PR #584, extended by PR #635 plan-preview source-class derivation extraction.",
+    "scope": "Current-main proof classification for no-behavior-change plan-flow request contract extraction after PR #584, extended by PR #635 plan-preview source-class derivation extraction and PR #636 approved-plan payload projection extraction.",
     "files_changed": [
       "backend/app/services/layer3_plan_flow_contract.py",
       "backend/app/services/layer3_workbench.py",
@@ -3779,10 +3784,12 @@
     "authority_basis": [
       "PR #584 merged at 9cdd1e88593d21e269d00dda50eae98ab852d219 before this proof-surface alignment.",
       "PR #635 extends the same extraction posture by moving plan-preview source-class derivation into backend/app/services/layer3_plan_flow_contract.py without changing emitted authority-rail source_classes.",
+      "PR #636 extends the same extraction posture by moving approved-plan set/pass payload projection into backend/app/services/layer3_plan_flow_contract.py without changing approved-plan payload semantics.",
       "backend/app/services/layer3_plan_flow_contract.py owns plan approval, plan revision, and execution selection forbidden-field constants and blocked-field helper functions.",
       "backend/app/services/layer3_plan_flow_contract.py owns source_classes_from_plan_preview for the existing plan-preview, plan-approval, and plan-revision authority-rail projection.",
-      "backend/app/services/layer3_workbench.py imports those helpers and no longer owns the extracted plan-flow request constants or plan-preview source-class helper.",
-      "backend/tests/test_layer3_plan_flow_contract.py proves shared constants/helpers preserve the previous blocked-field behavior and source-class derivation/delegation."
+      "backend/app/services/layer3_plan_flow_contract.py owns approved_set_payload and approved_planned_pass_payload for the existing plan-approval projection.",
+      "backend/app/services/layer3_workbench.py imports those helpers and no longer owns the extracted plan-flow request constants, plan-preview source-class helper, or approved-plan payload projection helpers.",
+      "backend/tests/test_layer3_plan_flow_contract.py proves shared constants/helpers preserve the previous blocked-field behavior, source-class derivation/delegation, and approved-plan payload projection/delegation."
     ],
     "non_goals": [
       "runtime behavior change",
