@@ -101,6 +101,9 @@ PACKAGE_REVIEW_CONTRACT_SERVICE = (
 PACKAGE_SUBMIT_RESPONSE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_package_submit_response.py"
 )
+HANDOFF_EXPORT_RESPONSE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_handoff_export_response.py"
+)
 WORKBENCH_PACKAGE_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench_package_state.py"
 )
@@ -258,6 +261,9 @@ LAYER3_PACKAGE_REVIEW_CONTRACT_TEST = (
 )
 LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_package_submit_response.py"
+)
+LAYER3_HANDOFF_EXPORT_RESPONSE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_handoff_export_response.py"
 )
 LAYER3_WORKBENCH_PACKAGE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_workbench_package_state.py"
@@ -6625,6 +6631,52 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             errors.append(
                 f"{_rel(LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST)} missing package submit response proof term: {term}"
             )
+    handoff_response_text = _read_required_text(HANDOFF_EXPORT_RESPONSE_SERVICE, errors)
+    for term in (
+        "HANDOFF_EXPORT_PREPARE_SCHEMA_ID = \"layer3.handoff_export_prepare.v1\"",
+        "COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = \"layer3.cohort_handoff_export_prepare.v1\"",
+        "def handoff_export_prepare_response(",
+        "base_response(HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
+        "preview_identity(preview_id=preview_id, preview_hash=preview_hash)",
+        "packages_in_review_order(packages)",
+        "authority_rail(",
+        "external_handoff_enabled",
+        "external_export_enabled",
+        "dispatch_enabled",
+        "COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID",
+    ):
+        if term not in handoff_response_text:
+            errors.append(f"{_rel(HANDOFF_EXPORT_RESPONSE_SERVICE)} missing handoff response term: {term}")
+    for term in (
+        "from app.services.layer3_handoff_export_response import (",
+        "COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
+        "HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
+        "handoff_export_prepare_response as _handoff_export_prepare_response",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing handoff response delegation term: {term}")
+    for stale_term in (
+        "def _handoff_export_prepare_response(",
+        "**_base_response(HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
+        "body[\"schema_id\"] = COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns handoff response term: {stale_term}")
+    handoff_response_test_text = _read_required_text(LAYER3_HANDOFF_EXPORT_RESPONSE_TEST, errors)
+    for term in (
+        "test_handoff_export_prepare_response_preserves_workbench_projection",
+        "test_handoff_export_prepare_response_preserves_cohort_schema_and_provenance",
+        "layer3_workbench._handoff_export_prepare_response",
+        "HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE",
+        "COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
+        "external_handoff_enabled",
+        "external_export_enabled",
+        "dispatch_enabled",
+    ):
+        if term not in handoff_response_test_text:
+            errors.append(
+                f"{_rel(LAYER3_HANDOFF_EXPORT_RESPONSE_TEST)} missing handoff response proof term: {term}"
+            )
 
     proof_manifest = _load_json(PROOF_MANIFEST, errors)
     proof_scope = proof_manifest.get("scope") if isinstance(proof_manifest, dict) else None
@@ -7087,6 +7139,57 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_package_submit_response_extraction_summary "
                     f"missing package submit response extraction term: {term}"
                 )
+        if proof_scope.get("latest_handoff_export_prepare_response_extraction_branch") != (
+            "codex/l3-handoff-export-prepare-response"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_handoff_export_prepare_response_extraction_branch "
+                "must be 'codex/l3-handoff-export-prepare-response'"
+            )
+        handoff_response_pr = proof_scope.get("latest_handoff_export_prepare_response_extraction_pr")
+        if handoff_response_pr != "#667":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_handoff_export_prepare_response_extraction_pr must be '#667'"
+            )
+        handoff_response_head = proof_scope.get("latest_handoff_export_prepare_response_extraction_head_commit")
+        if handoff_response_head != "20608d1917e1c85d43699f78519712bb65d62f0d":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_handoff_export_prepare_response_extraction_head_commit "
+                "must match PR #667 head commit"
+            )
+        handoff_response_merge = proof_scope.get("latest_handoff_export_prepare_response_extraction_merge_commit")
+        if handoff_response_merge != "dddb481af930b9af260488d2bb4a357982b32aa7":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_handoff_export_prepare_response_extraction_merge_commit "
+                "must match PR #667 merge commit"
+            )
+        if proof_scope.get("latest_handoff_export_prepare_response_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_handoff_export_prepare_response_extraction_live_behavior_change must be False"
+            )
+        handoff_response_summary = proof_scope.get(
+            "latest_handoff_export_prepare_response_extraction_summary"
+        )
+        for term in (
+            "handoff export prepare response extraction",
+            "PR #667",
+            "merge commit dddb481af930b9af260488d2bb4a357982b32aa7",
+            "handoff_export_prepare_response",
+            "layer3_handoff_export_response.py",
+            "without activating package mutation/reconstruction",
+            "broad handoff/export behavior",
+        ):
+            if not isinstance(handoff_response_summary, str) or term not in handoff_response_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_handoff_export_prepare_response_extraction_summary "
+                    f"missing handoff export response extraction term: {term}"
+                )
 
     for path, terms in {
         MANIFEST: (
@@ -7105,6 +7208,11 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "PR #665/merge commit 6eab6c4d",
             "layer3_package_submit_response.py",
             "without activating package mutation/reconstruction",
+            "latest_handoff_export_prepare_response_extraction_branch",
+            "handoff_export_prepare_response_extraction",
+            "PR #667/merge commit dddb481a",
+            "layer3_handoff_export_response.py",
+            "broad handoff/export behavior",
         ),
         BOARD: (
             "Package owner compatibility extraction",
@@ -7119,6 +7227,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "PR `#665`, merge commit `6eab6c4d`",
             "layer3_package_submit_response.py",
             "without changing package-review submit response behavior",
+            "Handoff export prepare response extraction",
+            "PR `#667`, merge commit `dddb481a`",
+            "layer3_handoff_export_response.py",
+            "without changing handoff/export prepare response behavior",
         ),
     }.items():
         text = _read_required_text(path, errors)
@@ -7585,6 +7697,7 @@ def main() -> int:
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         PACKAGE_SUBMIT_RESPONSE_SERVICE,
+        HANDOFF_EXPORT_RESPONSE_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
@@ -7628,6 +7741,7 @@ def main() -> int:
         LAYER3_HANDOFF_CONTRACT_TEST,
         LAYER3_PACKAGE_REVIEW_CONTRACT_TEST,
         LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST,
+        LAYER3_HANDOFF_EXPORT_RESPONSE_TEST,
         WORKBENCH_PACKAGE_STATE_SERVICE,
         LAYER3_WORKBENCH_PACKAGE_STATE_TEST,
         PLAN_ERROR_SERVICE,
