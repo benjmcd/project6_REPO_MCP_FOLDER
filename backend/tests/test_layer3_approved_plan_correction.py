@@ -142,6 +142,31 @@ def _assert_no_downstream_artifacts(db: Session) -> None:
     assert db.query(ConnectorRun).count() == 0
 
 
+def _insert_orphan_downstream_package_state(db: Session, *, session_id: str, suffix: str) -> None:
+    reconciliation_record_id = f"reconciliation-{suffix}"
+    db.add_all(
+        [
+            L3ReconciliationRecord(
+                reconciliation_record_id=reconciliation_record_id,
+                session_id=session_id,
+                status="orphaned_downstream_state",
+                summary_json={"seeded_for": "approved_plan_cancel_fail_closed"},
+            ),
+            L3OutputPackage(
+                output_package_id=f"output-package-{suffix}",
+                session_id=session_id,
+                reconciliation_record_id=reconciliation_record_id,
+                package_kind="canonical_internal",
+                status="created",
+                payload_ref=f"memory://{suffix}/package",
+                payload_hash="0" * 64,
+                summary_json={"seeded_for": "approved_plan_cancel_fail_closed"},
+            ),
+        ]
+    )
+    db.commit()
+
+
 def test_cancel_approved_plan_without_replacement_updates_existing_plan_only_and_is_idempotent(db_session) -> None:
     session_id, analysis_plan_id, _ = _insert_approved_plan(db_session, suffix="success")
     payload = _payload(
@@ -268,6 +293,44 @@ def test_cancel_approved_plan_without_replacement_prechecks_fail_closed_before_m
     assert db_session.query(AnalysisArtifact).count() == 0
     assert db_session.query(L3OutputPackage).count() == 0
     assert db_session.query(L3ReconciliationRecord).count() == 0
+    assert db_session.query(ConnectorRun).count() == 0
+
+
+def test_cancel_approved_plan_without_replacement_rejects_orphan_downstream_package_state_before_mutation(
+    db_session,
+) -> None:
+    session_id, analysis_plan_id, _ = _insert_approved_plan(db_session, suffix="orphan-downstream")
+    _insert_orphan_downstream_package_state(
+        db_session,
+        session_id=session_id,
+        suffix="approved-plan-cancel-orphan",
+    )
+
+    with pytest.raises(Layer3WorkbenchError) as downstream_state:
+        cancel_approved_plan_without_replacement(
+            db_session,
+            _payload(
+                request_id="service-approved-plan-cancel-orphan-downstream",
+                session_id=session_id,
+                analysis_plan_id=analysis_plan_id,
+            ),
+        )
+
+    assert downstream_state.value.error_code == "downstream_state_already_exists"
+    assert downstream_state.value.blocked_fields == ["output_packages", "reconciliation_records"]
+    assert downstream_state.value.next_allowed_actions == ["inspect_existing_downstream_state"]
+    stored_session = db_session.get(L3Session, session_id)
+    stored_plan = db_session.get(L3AnalysisPlan, analysis_plan_id)
+    assert stored_session is not None
+    assert stored_plan is not None
+    assert APPROVED_PLAN_CANCEL_CONTEXT_KEY not in stored_session.summary_json
+    assert APPROVED_PLAN_CANCEL_CONTEXT_KEY not in stored_plan.plan_json
+    assert stored_plan.status == "approved"
+    assert db_session.query(L3PassRun).count() == 0
+    assert db_session.query(AnalysisRun).count() == 0
+    assert db_session.query(AnalysisArtifact).count() == 0
+    assert db_session.query(L3ReconciliationRecord).count() == 1
+    assert db_session.query(L3OutputPackage).count() == 1
     assert db_session.query(ConnectorRun).count() == 0
 
 
