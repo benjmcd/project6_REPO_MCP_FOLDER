@@ -6443,6 +6443,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID",
         "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID",
         "package_review_preview_summary(",
+        "package_review_preview_hash as _package_review_preview_hash",
         "package_review_candidate_projection(",
         "review_state_is_admitted_associated_cohort(",
         "packages_in_review_order as _packages_in_review_order",
@@ -6474,6 +6475,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (",
         "PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (",
         "def _package_review_preview_summary(",
+        "def _package_review_preview_hash(",
         "def _package_review_candidate_projection(",
         "def _review_state_is_admitted_associated_cohort(",
         "def _packages_in_review_order(",
@@ -6516,6 +6518,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID = \"layer3.package_review_preview_state.v1\"",
         "PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (",
         "def package_review_preview_summary(",
+        "def package_review_preview_hash(",
         "def package_review_candidate_projection(",
         "def review_state_is_admitted_associated_cohort(",
         "def packages_in_review_order(",
@@ -6557,6 +6560,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "test_package_reconciliation_state_readers_reject_wrong_schema",
         "test_package_source_shape_prefers_cohort_shape_then_dataset_version",
         "test_package_source_dataset_version_ids_prefers_list_then_dataset_version",
+        "test_package_review_preview_hash_uses_stable_identity_basis",
     ):
         if term not in package_state_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
@@ -6775,6 +6779,40 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_package_source_projection_extraction_summary "
                     f"missing package source projection extraction term: {term}"
                 )
+        if proof_scope.get("latest_package_review_preview_hash_extraction_branch") != (
+            "codex/l3-package-preview-hash"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_review_preview_hash_extraction_branch "
+                "must be 'codex/l3-package-preview-hash'"
+            )
+        preview_hash_pr = proof_scope.get("latest_package_review_preview_hash_extraction_pr")
+        if preview_hash_pr != "pending" and not (
+            isinstance(preview_hash_pr, str) and re.fullmatch(r"#\d+", preview_hash_pr)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_review_preview_hash_extraction_pr must be 'pending' or a PR number"
+            )
+        if proof_scope.get("latest_package_review_preview_hash_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_review_preview_hash_extraction_live_behavior_change must be False"
+            )
+        preview_hash_summary = proof_scope.get("latest_package_review_preview_hash_extraction_summary")
+        for term in (
+            "package-review preview hash extraction",
+            "package_review_preview_hash",
+            "stable identity basis",
+            "without activating package mutation/reconstruction",
+        ):
+            if not isinstance(preview_hash_summary, str) or term not in preview_hash_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_package_review_preview_hash_extraction_summary "
+                    f"missing package-review preview hash extraction term: {term}"
+                )
 
     required_doc_terms = {
         SYNTHESIS_BOUNDARY: (
@@ -6817,6 +6855,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "latest_package_review_package_set_helper_extraction_branch",
             "latest_package_reconciliation_state_extraction_branch",
             "latest_package_source_projection_extraction_branch",
+            "latest_package_review_preview_hash_extraction_branch",
             "PR #653/merge commit 39ed6564",
             "PR #655/merge commit 0c797452",
             "c1448bbd799c003b172514da1b04ac70495a4dca",
@@ -6826,6 +6865,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "package-set helper extraction",
             "reconciliation state extraction",
             "package source projection extraction",
+            "package-review preview hash extraction",
             "without activating package mutation",
         ),
         BOARD: (
@@ -6837,6 +6877,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "package-set helper extraction",
             "reconciliation state extraction",
             "package source projection extraction",
+            "package-review preview hash extraction",
             "merge commit `39ed6564`",
             "merge commit `0c797452`",
             "without activating package mutation/reconstruction",
