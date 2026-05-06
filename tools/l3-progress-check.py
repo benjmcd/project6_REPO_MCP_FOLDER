@@ -6450,6 +6450,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "canonical_payload_hashes as _canonical_payload_hashes",
         "canonical_payload_refs as _canonical_payload_refs",
         "package_review_submit_from_reconciliation as _package_review_submit_from_reconciliation",
+        "package_source_dataset_version_ids as _package_source_dataset_version_ids",
+        "package_source_shape as _package_source_shape",
         "handoff_export_prepare_from_reconciliation as _handoff_export_prepare_from_reconciliation",
         "aps_handoff_dispatch_from_reconciliation as _aps_handoff_dispatch_from_reconciliation",
         "external_export_download_prepare_from_reconciliation as _external_export_download_prepare_from_reconciliation",
@@ -6486,6 +6488,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def _handoff_export_prepare_from_reconciliation(",
         "def _aps_handoff_dispatch_from_reconciliation(",
         "def _external_export_download_prepare_from_reconciliation(",
+        "def _package_source_shape(",
+        "def _package_source_dataset_version_ids(",
     ):
         if stale_term in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns package review contract term: {stale_term}")
@@ -6527,6 +6531,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def handoff_export_prepare_from_reconciliation(",
         "def aps_handoff_dispatch_from_reconciliation(",
         "def external_export_download_prepare_from_reconciliation(",
+        "def package_source_shape(",
+        "def package_source_dataset_version_ids(",
     ):
         if term not in package_state_text:
             errors.append(f"{_rel(WORKBENCH_PACKAGE_STATE_SERVICE)} missing package-state helper term: {term}")
@@ -6549,6 +6555,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "test_reconciliation_state_requires_dict_and_matching_schema",
         "test_package_reconciliation_state_readers_preserve_matching_states",
         "test_package_reconciliation_state_readers_reject_wrong_schema",
+        "test_package_source_shape_prefers_cohort_shape_then_dataset_version",
+        "test_package_source_dataset_version_ids_prefers_list_then_dataset_version",
     ):
         if term not in package_state_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_PACKAGE_STATE_TEST)} missing package-state proof test term: {term}")
@@ -6715,6 +6723,40 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_package_reconciliation_state_extraction_summary "
                     f"missing reconciliation state extraction term: {term}"
                 )
+        if proof_scope.get("latest_package_source_projection_extraction_branch") != (
+            "codex/l3-package-source-projection"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_source_projection_extraction_branch "
+                "must be 'codex/l3-package-source-projection'"
+            )
+        source_projection_pr = proof_scope.get("latest_package_source_projection_extraction_pr")
+        if source_projection_pr != "pending" and not (
+            isinstance(source_projection_pr, str) and re.fullmatch(r"#\d+", source_projection_pr)
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_source_projection_extraction_pr must be 'pending' or a PR number"
+            )
+        if proof_scope.get("latest_package_source_projection_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_package_source_projection_extraction_live_behavior_change must be False"
+            )
+        source_projection_summary = proof_scope.get("latest_package_source_projection_extraction_summary")
+        for term in (
+            "package source projection extraction",
+            "package_source_shape",
+            "package_source_dataset_version_ids",
+            "without activating package mutation/reconstruction",
+        ):
+            if not isinstance(source_projection_summary, str) or term not in source_projection_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_package_source_projection_extraction_summary "
+                    f"missing package source projection extraction term: {term}"
+                )
 
     required_doc_terms = {
         SYNTHESIS_BOUNDARY: (
@@ -6756,6 +6798,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "latest_package_review_preview_state_extraction_branch",
             "latest_package_review_package_set_helper_extraction_branch",
             "latest_package_reconciliation_state_extraction_branch",
+            "latest_package_source_projection_extraction_branch",
             "PR #653/merge commit 39ed6564",
             "c1448bbd799c003b172514da1b04ac70495a4dca",
             "test_layer3_workbench_package_state.py",
@@ -6763,6 +6806,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "package-review preview state extraction",
             "package-set helper extraction",
             "reconciliation state extraction",
+            "package source projection extraction",
             "without activating package mutation",
         ),
         BOARD: (
@@ -6773,6 +6817,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "package-review preview state extraction",
             "package-set helper extraction",
             "reconciliation state extraction",
+            "package source projection extraction",
             "merge commit `39ed6564`",
             "without activating package mutation/reconstruction",
         ),
