@@ -375,7 +375,7 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
 def _check_latest_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "9bb11820bc5b12292cbc43d1a2c326e61df80d2e"
+    expected_commit = "ad51b1c6736cd51ec3dd30de914e59ddb4c66158"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -388,8 +388,8 @@ def _check_latest_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR602 current-main approved-plan "
-                f"cancel entry freeze base commit before cancel runtime {expected_commit}"
+                f"{name} must identify the post-PR609 current-main "
+                f"APS source-family extraction proof boundary {expected_commit}"
             )
 
     for name, source in (
@@ -403,16 +403,16 @@ def _check_latest_progress_sync(
         ),
     ):
         if not isinstance(source, str):
-            errors.append(f"{name} must be present after PR602 approved-plan cancel entry freeze")
+            errors.append(f"{name} must be present after PR609 APS source-family extraction")
             continue
         for term in (
             expected_commit,
-            "after PR #602",
-            "approved-plan cancel runtime",
-            "codex/l3-approved-plan-cancel-runtime",
+            "after PR #609",
+            "APS source-family extraction",
+            "codex/l3-synth-ref-sync",
         ):
             if term not in source:
-                errors.append(f"{name} missing approved-plan cancel runtime term: {term}")
+                errors.append(f"{name} missing PR609 progress-sync term: {term}")
 
     namespace_runtime = manifest.get("package_replacement_namespace_runtime")
     if not isinstance(namespace_runtime, dict):
@@ -889,11 +889,11 @@ def _check_plan_revision_recovery_entry_freeze(
         errors.append(f"{_rel(PROOF_MANIFEST)} scope missing for revision recovery runtime")
     else:
         expected_top_scope = {
-            "merged_pr": "#607",
-            "merge_commit": "f1cba09a84a47d0095a7fd682b835316ebde5496",
-            "source_branch": "codex/l3-pr607-package-state-sync",
-            "base_commit": "f1cba09a84a47d0095a7fd682b835316ebde5496",
-            "source_base_commit": "f1cba09a84a47d0095a7fd682b835316ebde5496",
+            "merged_pr": "#609",
+            "merge_commit": "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
+            "source_branch": "codex/l3-synth-ref-sync",
+            "base_commit": "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
+            "source_base_commit": "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
         }
         for key, value in expected_top_scope.items():
             if proof_scope.get(key) != value:
@@ -932,16 +932,16 @@ def _check_plan_revision_recovery_entry_freeze(
 
     seed_checkout_hint = _nested(manifest, "artifact_scope", "seed_checkout_hint")
     if not isinstance(seed_checkout_hint, str):
-        errors.append("artifact_scope.seed_checkout_hint must be present for PR #607 proof sync")
+        errors.append("artifact_scope.seed_checkout_hint must be present for PR #609 proof/progress sync")
     else:
         for term in (
-            "codex/l3-pr607-package-state-sync",
-            "f1cba09a84a47d0095a7fd682b835316ebde5496",
-            "PR #607 package-state helper proof merge",
-            "current-main proof/progress metadata sync only",
+            "codex/l3-synth-ref-sync",
+            "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
+            "PR #609 APS source-family extraction",
+            "external multi-audit synthesis/adjudication reference only",
         ):
             if term not in seed_checkout_hint:
-                errors.append(f"artifact_scope.seed_checkout_hint missing PR #607 sync term: {term}")
+                errors.append(f"artifact_scope.seed_checkout_hint missing PR #609 sync term: {term}")
 
     top_level = manifest.get("plan_revision_recovery_runtime")
     if not isinstance(top_level, dict):
@@ -4224,12 +4224,14 @@ def _check_session_status_migration_constraint(errors: list[str]) -> None:
 def _check_progress_text_surfaces(errors: list[str]) -> None:
     required_by_file = {
         BOARD: [
-            "As of `2026-05-05`",
-            "4d2bac8f68e52f7205210d19cce64576dc0384c4",
+            "As of `2026-05-06`",
+            "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
             "remaining authentication/security work is intentionally deferred",
             "PR `#531` now makes Gate B post-commit retry idempotency and material-preview hash hardening current-main bounded behavior",
             "PR `#533` now makes server-derived `state_action_contract` hardening current-main bounded behavior",
-            "prefer non-security proof/state/refactor work",
+            "PR `#609` now makes APS source-family extraction current-main no-behavior-change refactor/proof",
+            "C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md",
+            "API request-contract hardening for forbidden sentinel fields second",
         ],
         REFRESH_SPEC: [
             "Post-PR533 `2026-05-05` progress/proof sync",
@@ -5427,17 +5429,24 @@ def _check_aps_source_family_extraction(errors: list[str]) -> None:
             "layer3_aps_source_family.py",
             "test_layer3_aps_source_family.py",
             "APS source-family extraction",
+            "PR #609",
+            "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
             "no-behavior-change",
             "does not admit broad source/upload expansion",
         ),
         BOARD: (
             "APS source-family extraction",
+            "PR `#609`",
+            "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
             "layer3_aps_source_family.py",
             "test_layer3_aps_source_family.py",
             "without admitting broad source/upload expansion",
         ),
         PROOF_MANIFEST: (
             "latest_aps_source_family_extraction_branch",
+            "latest_aps_source_family_extraction_pr",
+            "#609",
+            "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
             "codex/l3-aps-source-family-extraction",
             "layer3_aps_source_family.py",
             "test_layer3_aps_source_family.py",
