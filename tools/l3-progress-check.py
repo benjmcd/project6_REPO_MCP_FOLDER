@@ -5478,6 +5478,7 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         "def plan_approval_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
         "def plan_revision_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
         "def execution_selection_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "def source_classes_from_plan_preview(plan_preview: Mapping[str, Any]) -> list[str]:",
         '"llm_plan"',
         '"create_pass_runs"',
         '"start_execution"',
@@ -5495,6 +5496,7 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         "forbidden = plan_approval_blocked_fields(payload)",
         "forbidden = plan_revision_blocked_fields(payload)",
         "forbidden = execution_selection_blocked_fields(payload)",
+        "source_classes_from_plan_preview as _source_classes_from_plan_preview",
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing plan-flow contract extraction term: {term}")
@@ -5502,6 +5504,7 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         "PLAN_APPROVAL_FORBIDDEN_FIELDS = frozenset(",
         "PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(",
         "EXECUTION_SELECTION_FORBIDDEN_FIELDS = frozenset(",
+        "def _source_classes_from_plan_preview(",
     ):
         if stale_term in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns plan-flow contract term: {stale_term}")
@@ -5514,6 +5517,8 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         "contract.plan_approval_blocked_fields(approval_payload)",
         "contract.plan_revision_blocked_fields(revision_payload)",
         "contract.execution_selection_blocked_fields(selection_payload)",
+        "test_source_classes_from_plan_preview_preserves_workbench_authority_ordering",
+        "test_workbench_delegates_plan_preview_source_classes_to_contract",
     ):
         if term not in test_text:
             errors.append(f"{_rel(LAYER3_PLAN_FLOW_CONTRACT_TEST)} missing plan-flow contract test term: {term}")
@@ -5551,6 +5556,9 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         MANIFEST: (
             "PR #584/commit 9cdd1e88 as no-behavior-change plan-flow request contract extraction proof",
             "merged_live_bounded_plan_flow_request_contract_extraction",
+            "merged_live_plan_preview_source_class_extraction",
+            "PR #635 as a no-behavior-change plan-preview source-class extraction",
+            "source_classes_from_plan_preview",
             "Post-PR584 sync: local git verified project6-origin/main at 9cdd1e88593d21e269d00dda50eae98ab852d219",
             "Post-PR584 current-main progress/proof sync",
             "does not admit broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior",
@@ -5558,6 +5566,8 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         BOARD: (
             "Plan-flow request contract extraction",
             "PR `#584`/commit `9cdd1e88`",
+            "PR `#635` extends the same no-behavior-change plan-flow contract extraction posture",
+            "_source_classes_from_plan_preview",
             "backend/app/services/layer3_plan_flow_contract.py",
             "merged live no-behavior-change refactor/proof",
             "full focused Layer 3 suite with `304 passed, 4 warnings`",
@@ -5565,6 +5575,9 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         PROOF_MANIFEST: (
             "no-behavior-change plan-flow request contract extraction proof from PR #584",
             "latest_plan_flow_request_contract_extraction_pr",
+            "latest_plan_preview_source_class_extraction_pr",
+            "PR #635 moves plan-preview source-class derivation",
+            "source_classes_from_plan_preview",
             "plan_flow_request_contract_extraction_current_boundary_proof",
             "9cdd1e88593d21e269d00dda50eae98ab852d219",
             "no-behavior-change plan-flow request contract extraction proof",

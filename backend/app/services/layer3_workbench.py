@@ -172,6 +172,7 @@ from app.services.layer3_plan_flow_contract import (
     execution_selection_blocked_fields,
     plan_approval_blocked_fields,
     plan_revision_blocked_fields,
+    source_classes_from_plan_preview as _source_classes_from_plan_preview,
 )
 from app.services.layer3_execution_request_contract import (
     ANALYSIS_EXECUTION_START_ALLOWED_FIELDS,
@@ -2358,16 +2359,6 @@ def _plan_revision_summary(db: Session, *, session_id: str) -> dict[str, Any]:
         "execution_started": False,
         "created_at": control.get("created_at"),
     }
-
-
-def _source_classes_from_plan_preview(plan_preview: dict[str, Any]) -> list[str]:
-    source_classes = set()
-    for collection_name in ("admitted_sets", "excluded_sets"):
-        for item in plan_preview.get(collection_name) or []:
-            source_summary = item.get("source_summary") if isinstance(item, dict) else {}
-            for source_class in (source_summary or {}).get("source_classes") or []:
-                source_classes.add(str(source_class))
-    return sorted(source_classes)
 
 
 def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:

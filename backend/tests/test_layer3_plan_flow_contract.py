@@ -89,3 +89,39 @@ def test_plan_flow_contract_blocks_same_fields_as_legacy_logic() -> None:
         selection_payload,
         contract.EXECUTION_SELECTION_FORBIDDEN_FIELDS,
     )
+
+
+def test_source_classes_from_plan_preview_preserves_workbench_authority_ordering() -> None:
+    plan_preview = {
+        "admitted_sets": [
+            {"source_summary": {"source_classes": ["aps", "dataset"]}},
+            {"source_summary": {"source_classes": ["aps", 42]}},
+            "ignored-non-dict-item",
+        ],
+        "excluded_sets": [
+            {"source_summary": {"source_classes": ["manual", "dataset"]}},
+            {"source_summary": {"source_classes": []}},
+        ],
+    }
+
+    assert contract.source_classes_from_plan_preview(plan_preview) == [
+        "42",
+        "aps",
+        "dataset",
+        "manual",
+    ]
+
+
+def test_workbench_delegates_plan_preview_source_classes_to_contract() -> None:
+    plan_preview = {
+        "admitted_sets": [
+            {"source_summary": {"source_classes": ["dataset", "aps"]}},
+        ],
+        "excluded_sets": [
+            {"source_summary": {"source_classes": ["unsupported"]}},
+        ],
+    }
+
+    assert layer3_workbench._source_classes_from_plan_preview(plan_preview) == (
+        contract.source_classes_from_plan_preview(plan_preview)
+    )
