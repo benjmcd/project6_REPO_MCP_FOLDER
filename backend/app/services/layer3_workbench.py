@@ -210,12 +210,13 @@ from app.services.layer3_workbench_package_state import (
     PACKAGE_REVIEW_PREVIEW_READY_STATE,
     PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
     active_downstream_unavailable as package_state_active_downstream_unavailable,
-    canonical_payload_values,
+    canonical_payload_hashes as _canonical_payload_hashes,
+    canonical_payload_refs as _canonical_payload_refs,
     dispatched_package_id,
     package_review_candidate_projection,
     package_review_preview_summary,
-    packages_in_kind_order,
-    packages_with_kinds,
+    packages_in_review_order as _packages_in_review_order,
+    review_source_packages as _review_source_packages,
     review_state_is_admitted_associated_cohort,
     unexpected_package_kinds as package_state_unexpected_package_kinds,
 )
@@ -3765,14 +3766,6 @@ def _handoff_export_prepare_from_reconciliation(reconciliation: L3Reconciliation
     return state
 
 
-def _packages_in_review_order(packages: list[L3OutputPackage]) -> list[L3OutputPackage]:
-    return packages_in_kind_order(packages, package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
-
-
-def _review_source_packages(packages: list[L3OutputPackage]) -> list[L3OutputPackage]:
-    return packages_with_kinds(packages, package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
-
-
 def _dispatched_aps_handoff_package_id(dispatch_state: dict[str, Any] | None) -> str | None:
     return dispatched_package_id(
         dispatch_state,
@@ -3792,32 +3785,6 @@ def _unexpected_package_kinds(
         aps_handoff_dispatch_state=aps_handoff_dispatch_state,
         aps_dispatched_state=APS_HANDOFF_DISPATCHED_STATE,
         aps_package_kind=PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
-    )
-
-
-def _canonical_payload_hashes(
-    *,
-    payload_hashes: Any,
-    packages: list[L3OutputPackage],
-) -> list[str] | None:
-    return canonical_payload_values(
-        values=payload_hashes,
-        packages=packages,
-        package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
-        package_attr="payload_hash",
-    )
-
-
-def _canonical_payload_refs(
-    *,
-    payload_refs: Any,
-    packages: list[L3OutputPackage],
-) -> list[str] | None:
-    return canonical_payload_values(
-        values=payload_refs,
-        packages=packages,
-        package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
-        package_attr="payload_ref",
     )
 
 
