@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Iterable
 
-from app.models.models import L3OutputPackage
+from app.models.models import L3OutputPackage, L3ReconciliationRecord
 from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_REVIEW_FACING,
@@ -38,6 +38,66 @@ PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
     PACKAGE_KIND_USER_FACING,
     PACKAGE_KIND_REVIEW_FACING,
 )
+PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID = "layer3.package_review_submit_state.v1"
+HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = "layer3.handoff_export_prepare_state.v1"
+APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_download_prepare_state.v1"
+
+
+def reconciliation_state(
+    reconciliation: L3ReconciliationRecord | None,
+    *,
+    state_key: str,
+    schema_id: str,
+) -> dict[str, Any] | None:
+    if reconciliation is None:
+        return None
+    state = (reconciliation.summary_json or {}).get(state_key)
+    if not isinstance(state, dict):
+        return None
+    if state.get("schema_id") != schema_id:
+        return None
+    return state
+
+
+def package_review_submit_from_reconciliation(
+    reconciliation: L3ReconciliationRecord | None,
+) -> dict[str, Any] | None:
+    return reconciliation_state(
+        reconciliation,
+        state_key="package_review_submit",
+        schema_id=PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+    )
+
+
+def handoff_export_prepare_from_reconciliation(
+    reconciliation: L3ReconciliationRecord | None,
+) -> dict[str, Any] | None:
+    return reconciliation_state(
+        reconciliation,
+        state_key="handoff_export_prepare",
+        schema_id=HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
+    )
+
+
+def aps_handoff_dispatch_from_reconciliation(
+    reconciliation: L3ReconciliationRecord | None,
+) -> dict[str, Any] | None:
+    return reconciliation_state(
+        reconciliation,
+        state_key="aps_handoff_dispatch",
+        schema_id=APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+    )
+
+
+def external_export_download_prepare_from_reconciliation(
+    reconciliation: L3ReconciliationRecord | None,
+) -> dict[str, Any] | None:
+    return reconciliation_state(
+        reconciliation,
+        state_key="external_export_download_prepare",
+        schema_id=EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+    )
 
 
 def review_state_is_admitted_associated_cohort(review_state: dict[str, Any] | None) -> bool:
