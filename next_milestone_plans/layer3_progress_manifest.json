@@ -5937,6 +5937,10 @@
       "no approved-plan cancellation semantic change",
       "no route, DTO, service, UI, source, package, handoff, export, connector, provider, qualitative, mockup, or auth/security activation"
     ],
+    "owner_service_constant_alignment": [
+      "backend/app/services/layer3_pass_entry.py aliases plan/pass status constants to model-owned constants",
+      "backend/app/services/layer3_approved_plan_correction.py aliases APPROVED_PLAN_CANCELLED_STATUS to L3_ANALYSIS_PLAN_STATUS_CANCELLED"
+    ],
     "required_tests": [
       "python -m py_compile .\\backend\\app\\models\\models.py .\\tools\\l3-progress-check.py",
       "python -m pytest .\\backend\\tests\\test_layer3_plan_pass_status_constraints.py -q",

@@ -4332,6 +4332,8 @@ def _check_session_status_migration_constraint(errors: list[str]) -> None:
 
 def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
     models_text = _read_required_text(MODELS, errors)
+    pass_entry_text = _read_required_text(ROOT / "backend" / "app" / "services" / "layer3_pass_entry.py", errors)
+    approved_plan_cancel_text = _read_required_text(APPROVED_PLAN_CORRECTION_SERVICE, errors)
     for term in (
         "L3_ANALYSIS_PLAN_STATUS_VALUES",
         "L3_PASS_RUN_STATUS_VALUES",
@@ -4340,6 +4342,22 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
     ):
         if term not in models_text:
             errors.append(f"{_rel(MODELS)} missing plan/pass status model term: {term}")
+    for term in (
+        "PLAN_STATUS_FORMED = L3_ANALYSIS_PLAN_STATUS_FORMED",
+        "PLAN_STATUS_APPROVED = L3_ANALYSIS_PLAN_STATUS_APPROVED",
+        "PASS_STATUS_PLANNED = L3_PASS_RUN_STATUS_PLANNED",
+        "PASS_STATUS_SELECTED_NOT_STARTED = L3_PASS_RUN_STATUS_SELECTED_NOT_STARTED",
+        "PASS_STATUS_RUNNING = L3_PASS_RUN_STATUS_RUNNING",
+        "PASS_STATUS_COMPLETED = L3_PASS_RUN_STATUS_COMPLETED",
+        "PASS_STATUS_COMPLETED_WITH_WARNINGS = L3_PASS_RUN_STATUS_COMPLETED_WITH_WARNINGS",
+        "PASS_STATUS_FAILED = L3_PASS_RUN_STATUS_FAILED",
+    ):
+        if term not in pass_entry_text:
+            errors.append(f"backend/app/services/layer3_pass_entry.py missing plan/pass status alias term: {term}")
+    if "APPROVED_PLAN_CANCELLED_STATUS = L3_ANALYSIS_PLAN_STATUS_CANCELLED" not in approved_plan_cancel_text:
+        errors.append(
+            "backend/app/services/layer3_approved_plan_correction.py missing cancelled-status model alias"
+        )
 
     migration_text = _read_required_text(PASS_ENTRY_MIGRATION, errors)
     for term in (

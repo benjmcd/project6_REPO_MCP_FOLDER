@@ -4,7 +4,14 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models.models import L3AnalysisPlan, L3OutputPackage, L3PassRun, L3ReconciliationRecord, L3Session
+from app.models.models import (
+    L3_ANALYSIS_PLAN_STATUS_CANCELLED,
+    L3AnalysisPlan,
+    L3OutputPackage,
+    L3PassRun,
+    L3ReconciliationRecord,
+    L3Session,
+)
 from app.services.layer3_authority_rail import authority_rail
 from app.services.layer3_plan_flow_contract import approved_plan_cancel_blocked_fields
 from app.services.layer3_response_contract import base_response
@@ -18,7 +25,7 @@ APPROVED_PLAN_CANCEL_STATE_SCHEMA_ID = "layer3.approved_plan_cancel_state.v1"
 APPROVED_PLAN_CANCEL_CONTEXT_KEY = "approved_plan_cancel"
 APPROVED_PLAN_CANCEL_DECISION = "cancel_approved_plan_without_replacement"
 APPROVED_PLAN_CANCEL_NEXT_STATE = "approved_plan_cancelled"
-APPROVED_PLAN_CANCELLED_STATUS = "cancelled"
+APPROVED_PLAN_CANCELLED_STATUS = L3_ANALYSIS_PLAN_STATUS_CANCELLED
 APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package", "handoff")
 GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
 
