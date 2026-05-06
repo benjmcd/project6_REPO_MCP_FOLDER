@@ -361,6 +361,17 @@ Post-merge full Layer 3 backend suite: 304 passed, 4 warnings.
 No broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.
 ```
 
+Gate C override unavailable DTO boundary proof:
+
+```text
+Files: backend/app/api/layer3.py; backend/tests/test_layer3_api.py.
+Focused override request-boundary suite: 3 passed, 135 deselected, 3 warnings.
+Full focused Layer 3 backend suite: 342 passed, 4 warnings.
+Progress proof: Layer 3 progress state check: PASS.
+The `/api/v1/layer3/gate-c/override` endpoint remains explicitly unavailable for known metadata fields and now rejects unknown capability-shaped fields before the unavailable-response service runs.
+No typing override persistence, execution, hidden LLM planning, provider/public URL support, connector/destination dispatch, package mutation/reconstruction, source widening, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.
+```
+
 Package replacement artifact manifest-only runtime proof:
 
 ```text
@@ -399,6 +410,7 @@ Merged as bounded current-main scope:
 - plan-preview DTO boundary hardening;
 - source-preview DTO boundary hardening;
 - material-preview DTO boundary hardening;
+- Gate C override unavailable DTO boundary hardening;
 - source-boundary extraction and verifier guard;
 - single APS-document qualitative execution;
 - qualitative/hybrid/RAG boundary proof;
