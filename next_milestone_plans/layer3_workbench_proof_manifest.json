@@ -527,7 +527,13 @@
     "latest_approved_plan_cancel_service_proof_branch": "codex/l3-approved-plan-cancel-service-proof",
     "latest_approved_plan_cancel_service_proof_base_commit": "c08c66c6d81ad26b0ff15387ab616161aa3b231f",
     "latest_approved_plan_cancel_service_proof_live_behavior_change": false,
-    "latest_approved_plan_cancel_service_proof_summary": "Direct owner-service proof covers `cancel_approved_plan_without_replacement`, `approved_plan_cancel_from_session`, duplicate idempotency, forbidden-field rejection before mutation, stale-preview/pass-run fail-closed behavior, and no downstream row/artifact creation through `backend/tests/test_layer3_approved_plan_correction.py`."
+    "latest_approved_plan_cancel_service_proof_summary": "Direct owner-service proof covers `cancel_approved_plan_without_replacement`, `approved_plan_cancel_from_session`, duplicate idempotency, forbidden-field rejection before mutation, stale-preview/pass-run fail-closed behavior, and no downstream row/artifact creation through `backend/tests/test_layer3_approved_plan_correction.py`.",
+    "latest_external_export_prepare_response_extraction_branch": "codex/l3-external-export-response",
+    "latest_external_export_prepare_response_extraction_pr": "#669",
+    "latest_external_export_prepare_response_extraction_head_commit": "b1270f4aed7b5d20aec7122705fe8774eabf69a3",
+    "latest_external_export_prepare_response_extraction_merge_commit": "f6e51567009a077ea226e1d3b4147ac29b05e3bb",
+    "latest_external_export_prepare_response_extraction_live_behavior_change": false,
+    "latest_external_export_prepare_response_extraction_summary": "external export/download prepare response extraction from PR #669, merge commit f6e51567009a077ea226e1d3b4147ac29b05e3bb external export/download prepare response extraction moves external_export_download_prepare_response plus associated-cohort delivery UI projection from layer3_workbench.py into layer3_external_export_response.py. It preserves the _external_export_download_prepare_response, _associated_cohort_delivery_ui_state, and _cohort_readiness_identity workbench aliases and is guarded by backend/tests/test_layer3_external_export_response.py and tools/l3-progress-check.py without activating provider/public URLs, connector/destination dispatch, package mutation/reconstruction, route, DTO, model, migration, UI, execution behavior, source/upload expansion, qualitative/hybrid/RAG activation, full mockup activation, auth/security behavior, frontend-only durable state, hidden LLM planning, or broad external export/download behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
