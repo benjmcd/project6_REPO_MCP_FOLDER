@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models.models import L3AnalysisPlan, L3PassRun, L3Session
+from app.models.models import L3AnalysisPlan, L3OutputPackage, L3PassRun, L3ReconciliationRecord, L3Session
 from app.services.layer3_authority_rail import authority_rail
 from app.services.layer3_plan_flow_contract import approved_plan_cancel_blocked_fields
 from app.services.layer3_response_contract import base_response
@@ -106,6 +106,37 @@ def _raise_duplicate_conflicts(existing: dict[str, Any], payload: dict[str, Any]
         )
 
 
+def _existing_downstream_state_counts(db: Session, *, session_id: str) -> dict[str, int]:
+    counts = {
+        "pass_runs": db.query(L3PassRun).filter(L3PassRun.session_id == session_id).count(),
+        "reconciliation_records": db.query(L3ReconciliationRecord)
+        .filter(L3ReconciliationRecord.session_id == session_id)
+        .count(),
+        "output_packages": db.query(L3OutputPackage).filter(L3OutputPackage.session_id == session_id).count(),
+    }
+    return {name: count for name, count in counts.items() if count > 0}
+
+
+def _raise_if_downstream_state_exists(db: Session, *, session_id: str) -> None:
+    counts = _existing_downstream_state_counts(db, session_id=session_id)
+    if counts.get("pass_runs", 0) > 0:
+        raise Layer3WorkbenchError(
+            "pass_runs_already_exist",
+            f"Layer 3 session '{session_id}' already has pass runs.",
+            status="conflict",
+            http_status=409,
+        )
+    if counts:
+        raise Layer3WorkbenchError(
+            "downstream_state_already_exists",
+            f"Layer 3 session '{session_id}' already has downstream package state.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(counts),
+            next_allowed_actions=["inspect_existing_downstream_state"],
+        )
+
+
 def cancel_approved_plan_without_replacement(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
@@ -164,6 +195,8 @@ def cancel_approved_plan_without_replacement(db: Session, payload: dict[str, Any
     if session is None:
         raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' was not found.", http_status=404)
 
+    _raise_if_downstream_state_exists(db, session_id=session_id)
+
     plan = (
         db.query(L3AnalysisPlan)
         .filter(L3AnalysisPlan.session_id == session_id, L3AnalysisPlan.analysis_plan_id == analysis_plan_id)
@@ -172,27 +205,12 @@ def cancel_approved_plan_without_replacement(db: Session, payload: dict[str, Any
     )
     existing_cancel = approved_plan_cancel_from_session(session)
     if existing_cancel is not None:
-        if db.query(L3PassRun).filter(L3PassRun.session_id == session_id).count() > 0:
-            raise Layer3WorkbenchError(
-                "pass_runs_already_exist",
-                f"Layer 3 session '{session_id}' already has pass runs.",
-                status="conflict",
-                http_status=409,
-            )
         if str(existing_cancel.get("client_request_id") or "") == request_id:
             _raise_duplicate_conflicts(existing_cancel, payload)
             return _cancel_response(request_id=request_id, session=session, plan=plan, cancellation=existing_cancel)
         raise Layer3WorkbenchError(
             "approved_plan_already_cancelled",
             f"Layer 3 session '{session_id}' already has a cancelled approved plan.",
-            status="conflict",
-            http_status=409,
-        )
-
-    if db.query(L3PassRun).filter(L3PassRun.session_id == session_id).count() > 0:
-        raise Layer3WorkbenchError(
-            "pass_runs_already_exist",
-            f"Layer 3 session '{session_id}' already has pass runs.",
             status="conflict",
             http_status=409,
         )
