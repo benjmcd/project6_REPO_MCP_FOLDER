@@ -18,6 +18,7 @@ GATE_B_IDEMPOTENCY_SCHEMA_ID = "layer3.gate_b_idempotency.v1"
 GATE_B_IDEMPOTENCY_CONTEXT_KEY = "layer3_gate_b_idempotency_v1"
 GATE_B_IDEMPOTENCY_STATUS_CLAIMED = L3_GATE_B_IDEMPOTENCY_STATUS_CLAIMED
 GATE_B_IDEMPOTENCY_STATUS_COMMITTED = L3_GATE_B_IDEMPOTENCY_STATUS_COMMITTED
+GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
 
 
 def gate_b_idempotency_record(
@@ -38,6 +39,19 @@ def gate_b_idempotency_record(
         "material_preview_hash": material_preview_hash,
         "gate_b_decision_manifest_id": gate_b_decision_manifest_id,
     }
+
+
+def gate_b_counts(decisions: list[dict[str, Any]]) -> dict[str, int]:
+    return {decision: sum(1 for item in decisions if item["decision"] == decision) for decision in GATE_B_DECISIONS}
+
+
+def gate_b_summary_from_session(session: L3Session) -> dict[str, int]:
+    summary = session.summary_json or {}
+    counts = summary.get("gate_b_summary_v1")
+    if isinstance(counts, dict):
+        return {decision: int(counts.get(decision, 0)) for decision in GATE_B_DECISIONS}
+    decisions = ((session.operator_context_json or {}).get("layer3_gate_b_decision_manifest_v1") or {}).get("items") or []
+    return gate_b_counts([item for item in decisions if isinstance(item, dict)])
 
 
 def gate_b_idempotency_request_hash(

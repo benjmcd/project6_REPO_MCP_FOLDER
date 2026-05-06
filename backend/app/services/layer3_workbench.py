@@ -66,15 +66,18 @@ from app.services.layer3_package_entry import (
     materialize_workbench_package_commit,
 )
 from app.services.layer3_gate_b_state import (
+    GATE_B_DECISIONS,
     GATE_B_IDEMPOTENCY_CONTEXT_KEY,
     GATE_B_IDEMPOTENCY_STATUS_COMMITTED,
     claim_gate_b_idempotency,
     complete_gate_b_idempotency_claim,
     find_gate_b_idempotency_claim,
     find_gate_b_idempotency_session,
+    gate_b_counts,
     gate_b_idempotency_claim_matches,
     gate_b_idempotency_from_session,
     gate_b_idempotency_record,
+    gate_b_summary_from_session,
 )
 from app.services.layer3_plan_revision_state import (
     PLAN_REVISION_CONTROL_CONTEXT_KEY,
@@ -225,7 +228,6 @@ GATE_LABELS = ("intent", "sources", "gate_b", "gate_c", "plan", "execution", "re
 ACTIVE_GATES = ("intent", "sources", "gate_b", "gate_c")
 DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
-GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
 SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID = "layer3.sublayer_visualization_state.v1"
@@ -1450,10 +1452,6 @@ def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict
     }
 
 
-def _gate_b_counts(decisions: list[dict[str, Any]]) -> dict[str, int]:
-    return {decision: sum(1 for item in decisions if item["decision"] == decision) for decision in GATE_B_DECISIONS}
-
-
 def _candidate_decision_manifest(decisions: list[dict[str, Any]]) -> dict[str, Any]:
     ordered = sorted(_json_clone(decisions), key=lambda item: str(item.get("candidate_id") or ""))
     return {"schema_id": "layer3.gate_b_decision_manifest.v1", "schema_version": SCHEMA_VERSION, "items": ordered}
@@ -1472,7 +1470,7 @@ def _gate_b_response_from_session(
     decision_manifest: dict[str, Any],
 ) -> dict[str, Any]:
     decisions = [item for item in decision_manifest.get("items") or [] if isinstance(item, dict)]
-    counts = _gate_b_counts(decisions)
+    counts = gate_b_counts(decisions)
     hints = manifest.source_plane_hints_json or {}
     material_preview_hash = _material_preview_hash(
         [
@@ -1741,7 +1739,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             next_allowed_actions=["retry_gate_b_decision"],
         )
 
-    counts = _gate_b_counts(decisions)
+    counts = gate_b_counts(decisions)
     manifest_items = []
     for item in approved:
         short_id = hashlib.sha256(item["candidate_id"].encode("utf-8")).hexdigest()[:12]
@@ -2099,7 +2097,7 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     if not session_id:
         raise Layer3WorkbenchError("session_not_found", "session_id is required for Gate C preview.", http_status=404)
     session = _load_session(db, session_id)
-    gate_b_counts = _gate_b_summary_from_session(session)
+    gate_b_counts = gate_b_summary_from_session(session)
     source_classes = _source_classes_from_latest_manifest(db, session_id)
     commit_typing = bool(payload.get("commit_typing"))
     try:
@@ -2207,15 +2205,6 @@ def gate_c_override_unavailable(payload: dict[str, Any]) -> dict[str, Any]:
         "recoverable": False,
         "next_allowed_actions": ["review_typing", "finish_first_slice"],
     }
-
-
-def _gate_b_summary_from_session(session: L3Session) -> dict[str, int]:
-    summary = session.summary_json or {}
-    counts = summary.get("gate_b_summary_v1")
-    if isinstance(counts, dict):
-        return {decision: int(counts.get(decision, 0)) for decision in GATE_B_DECISIONS}
-    decisions = ((session.operator_context_json or {}).get("layer3_gate_b_decision_manifest_v1") or {}).get("items") or []
-    return _gate_b_counts([item for item in decisions if isinstance(item, dict)])
 
 
 def _plan_preview_readiness(db: Session, *, session_id: str, include_owner_service: bool = False) -> dict[str, Any]:
@@ -2430,7 +2419,7 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     session = _load_session(db, session_id)
-    gate_b_counts = _gate_b_summary_from_session(session)
+    gate_b_counts = gate_b_summary_from_session(session)
     readiness = _plan_preview_readiness(db, session_id=session_id)
     if not readiness["available"]:
         raise Layer3WorkbenchError(
@@ -2601,7 +2590,7 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         raise plan_approval_workbench_error(exc) from exc
 
     session = _load_session(db, session_id)
-    gate_b_counts = _gate_b_summary_from_session(session)
+    gate_b_counts = gate_b_summary_from_session(session)
     approved_sets = [_approved_set_payload(item) for item in approved.approved_sets]
     planned_passes = [_approved_planned_pass_payload(item) for item in approved.planned_passes]
     approved_plan = {
@@ -2722,7 +2711,7 @@ def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     operator_note = str(payload.get("operator_note") or "").strip()
-    gate_b_counts = _gate_b_summary_from_session(session)
+    gate_b_counts = gate_b_summary_from_session(session)
     source_classes = _source_classes_from_plan_preview(expected_preview.get("plan_preview") or {})
     control = plan_revision_control_record(
         source_preview_id=preview_id,
@@ -10360,7 +10349,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     analysis_unit_count = db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count()
     analysis_group_count = db.query(L3AnalysisGroup).filter(L3AnalysisGroup.session_id == session_id).count()
     analysis_set_count = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).count()
-    gate_b_counts = _gate_b_summary_from_session(session)
+    gate_b_counts = gate_b_summary_from_session(session)
     typing_committed = typing_record_count > 0
     plan_preview_readiness = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
     plan_approval_readiness = _plan_approval_summary(db, session_id=session_id)

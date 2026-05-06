@@ -30,6 +30,7 @@ from app.models.models import (
 )
 from app.services import layer3_workbench
 from app.services.layer3_gate_b_state import (
+    GATE_B_DECISIONS,
     GATE_B_IDEMPOTENCY_CONTEXT_KEY,
     GATE_B_IDEMPOTENCY_SCHEMA_ID,
     GATE_B_IDEMPOTENCY_STATUS_CLAIMED,
@@ -38,10 +39,12 @@ from app.services.layer3_gate_b_state import (
     complete_gate_b_idempotency_claim,
     find_gate_b_idempotency_claim,
     find_gate_b_idempotency_session,
+    gate_b_counts,
     gate_b_idempotency_claim_matches,
     gate_b_idempotency_from_session,
     gate_b_idempotency_record,
     gate_b_idempotency_request_hash,
+    gate_b_summary_from_session,
 )
 from app.services.layer3_workbench import Layer3WorkbenchError
 
@@ -101,6 +104,70 @@ def test_gate_b_idempotency_from_session_rejects_missing_or_wrong_schema() -> No
 
     assert gate_b_idempotency_from_session(missing) is None
     assert gate_b_idempotency_from_session(wrong_schema) is None
+
+
+def test_gate_b_counts_preserve_workbench_decision_vocabulary() -> None:
+    decisions = [
+        {"decision": "approved"},
+        {"decision": "approved"},
+        {"decision": "denied"},
+        {"decision": "isolated"},
+        {"decision": "flagged"},
+    ]
+
+    assert GATE_B_DECISIONS == ("approved", "denied", "isolated", "flagged")
+    assert gate_b_counts(decisions) == {
+        "approved": 2,
+        "denied": 1,
+        "isolated": 1,
+        "flagged": 1,
+    }
+
+
+def test_gate_b_summary_from_session_prefers_summary_json_counts() -> None:
+    session = L3Session(
+        session_id="session-summary",
+        selection_manifest_id="manifest-summary",
+        summary_json={"gate_b_summary_v1": {"approved": "2", "denied": 1}},
+        operator_context_json={
+            "layer3_gate_b_decision_manifest_v1": {
+                "items": [
+                    {"decision": "approved"},
+                    {"decision": "flagged"},
+                ]
+            }
+        },
+    )
+
+    assert gate_b_summary_from_session(session) == {
+        "approved": 2,
+        "denied": 1,
+        "isolated": 0,
+        "flagged": 0,
+    }
+
+
+def test_gate_b_summary_from_session_falls_back_to_decision_manifest() -> None:
+    session = L3Session(
+        session_id="session-manifest",
+        selection_manifest_id="manifest-manifest",
+        operator_context_json={
+            "layer3_gate_b_decision_manifest_v1": {
+                "items": [
+                    {"decision": "approved"},
+                    {"decision": "denied"},
+                    {"decision": "flagged"},
+                ]
+            }
+        },
+    )
+
+    assert gate_b_summary_from_session(session) == {
+        "approved": 1,
+        "denied": 1,
+        "isolated": 0,
+        "flagged": 1,
+    }
 
 
 def test_find_gate_b_idempotency_session_returns_matching_record(db_session) -> None:
