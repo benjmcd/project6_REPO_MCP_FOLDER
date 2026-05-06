@@ -1,3 +1,5 @@
+import hashlib
+import json
 from types import SimpleNamespace
 
 from app.services.layer3_workbench_package_state import (
@@ -19,6 +21,7 @@ from app.services.layer3_workbench_package_state import (
     external_export_download_prepare_from_reconciliation,
     handoff_export_prepare_from_reconciliation,
     package_review_candidate_projection,
+    package_review_preview_hash,
     package_review_preview_summary,
     package_review_submit_from_reconciliation,
     package_source_dataset_version_ids,
@@ -308,6 +311,45 @@ def test_package_source_dataset_version_ids_prefers_list_then_dataset_version() 
         pass_summary={"dataset_version_id": "pass-dataset"},
     ) == ["pass-dataset"]
     assert package_source_dataset_version_ids(output_metadata_summary={}, pass_summary={}) == []
+
+
+def test_package_review_preview_hash_uses_stable_identity_basis() -> None:
+    output_metadata_summary = {
+        "output_payload_ref": "payload-ref",
+        "artifact_refs": ["artifact-b", "artifact-a"],
+        "artifact_types": ["csv", "json"],
+    }
+    expected_basis = {
+        "schema_id": "layer3.package_review_preview_hash.v1",
+        "session_id": "session-1",
+        "analysis_plan_id": "plan-1",
+        "pass_run_id": "pass-1",
+        "preview_id": "preview-1",
+        "preview_hash": "preview-hash",
+        "analysis_run_id": "analysis-1",
+        "result_review_record_ref": "review-ref",
+        "output_payload_ref": "payload-ref",
+        "artifact_refs": ["artifact-b", "artifact-a"],
+        "artifact_types": ["csv", "json"],
+        "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+    }
+    expected_digest = hashlib.sha256(
+        json.dumps(expected_basis, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ).hexdigest()[:16]
+
+    assert (
+        package_review_preview_hash(
+            session_id="session-1",
+            analysis_plan_id="plan-1",
+            pass_run_id="pass-1",
+            preview_id="preview-1",
+            preview_hash="preview-hash",
+            analysis_run_id="analysis-1",
+            result_review_record_ref="review-ref",
+            output_metadata_summary=output_metadata_summary,
+        )
+        == f"l3-package-preview-{expected_digest}"
+    )
 
 
 def test_packages_in_kind_order_returns_canonical_order() -> None:
