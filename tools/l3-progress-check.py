@@ -54,6 +54,9 @@ PLAN_REVISION_RECOVERY_CONTRACT = (
 PLAN_REVISION_RECOVERY_ENTRY_FREEZE = (
     PLANNING_DOCS / "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md"
 )
+PLAN_REVISION_RECOVERY_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_plan_revision_recovery.py"
+)
 APPROVED_PLAN_CORRECTION_FREEZE = (
     PLANNING_DOCS / "135_APPROVED_PLAN_CORRECTION_FREEZE.md"
 )
@@ -575,7 +578,11 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         errors.append("layer3_workbench_current_decision.next_required_decision must be a non-empty string")
     else:
         required_terms = [
-            "After direct approved_plan_cancel_without_replacement owner-service proof hardening",
+            (
+                "After direct owner-service proof hardening for "
+                "plan_revision_recovery_preview_refresh_entry and "
+                "approved_plan_cancel_without_replacement"
+            ),
             "keep remaining authentication/security",
             "approved-plan supersession runtime",
             "no-behavior-change service extraction",
@@ -601,7 +608,10 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         "progress/proof/state drift checker",
         "state/action contract drift checker",
         "preview hash/idempotency follow-up",
-        "approved-plan cancel owner-service proof maintenance only if fresh drift appears",
+        (
+            "plan revision recovery or approved-plan cancel owner-service "
+            "proof maintenance only if fresh drift appears"
+        ),
         "no-behavior-change service extraction",
         "future implementation-entry freeze",
     ]
@@ -966,6 +976,7 @@ def _check_plan_revision_recovery_entry_freeze(
                     "next_milestone_plans/Layer3_planning_docs/133_PLAN_REVISION_RECOVERY_CONTRACT.md",
                     "backend/app/services/layer3_plan_revision_recovery.py",
                     "backend/app/services/layer3_plan_revision_state.py",
+                    "backend/tests/test_layer3_plan_revision_recovery.py",
                     "backend/tests/test_layer3_plan_flow_contract.py",
                     "backend/tests/test_layer3_state_model_contract.py",
                     "backend/tests/test_layer3_readiness_contract.py",
@@ -1000,6 +1011,7 @@ def _check_plan_revision_recovery_entry_freeze(
         ROOT / "backend" / "app" / "services" / "layer3_plan_revision_recovery.py",
         errors,
     )
+    recovery_service_test_text = _read_required_text(PLAN_REVISION_RECOVERY_TEST, errors)
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     readiness_text = _read_required_text(
         ROOT / "backend" / "app" / "services" / "layer3_readiness_contract.py",
@@ -1043,6 +1055,27 @@ def _check_plan_revision_recovery_entry_freeze(
         errors.append("readiness contract must expose admitted revision-recovery runtime")
     if '"plan_revision_recovery": True' not in bootstrap_text:
         errors.append("bootstrap contract must expose plan_revision_recovery feature flag")
+
+    for term in (
+        "test_recover_plan_revision_for_preview_refresh_records_summary_state_only_and_is_idempotent",
+        "test_recover_plan_revision_for_preview_refresh_rejects_non_admitted_fields_before_mutation",
+        "test_recover_plan_revision_for_preview_refresh_prechecks_fail_closed_before_mutation",
+        "test_recover_plan_revision_for_preview_refresh_blocks_plan_and_pass_run_state_without_recovery_mutation",
+        "test_plan_revision_recovery_preview_marker_requires_recovery_state",
+        "recover_plan_revision_for_preview_refresh",
+        "plan_revision_recovery_preview_marker",
+        "plan_revision_recovery_from_session",
+        "_owner_authority_row_counts",
+        "db.query(L3AnalysisPlan).count() == 0",
+        "db.query(L3PassRun).count() == 0",
+        "db.query(AnalysisRun).count() == 0",
+        "db.query(AnalysisArtifact).count() == 0",
+        "db.query(L3OutputPackage).count() == 0",
+        "db.query(L3ReconciliationRecord).count() == 0",
+        "db.query(ConnectorRun).count() == 0",
+    ):
+        if term not in recovery_service_test_text:
+            errors.append(f"{_rel(PLAN_REVISION_RECOVERY_TEST)} missing recovery service proof term: {term}")
 
 
 def _check_approved_plan_correction_freeze(
@@ -5365,6 +5398,7 @@ def main() -> int:
         PLAN_REVISION_RECOVERY_FREEZE,
         PLAN_REVISION_RECOVERY_CONTRACT,
         PLAN_REVISION_RECOVERY_ENTRY_FREEZE,
+        PLAN_REVISION_RECOVERY_TEST,
         APPROVED_PLAN_CORRECTION_FREEZE,
         APPROVED_PLAN_CANCEL_ENTRY_FREEZE,
         APPROVED_PLAN_CORRECTION_SERVICE,
