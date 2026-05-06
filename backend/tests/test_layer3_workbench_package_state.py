@@ -6,16 +6,25 @@ from app.services.layer3_workbench_package_state import (
     PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
     PACKAGE_REVIEW_PREVIEW_READY_STATE,
     PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
+    APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+    EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+    HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
+    PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
     active_downstream_unavailable,
+    aps_handoff_dispatch_from_reconciliation,
     canonical_payload_hashes,
     canonical_payload_refs,
     canonical_payload_values,
     dispatched_package_id,
+    external_export_download_prepare_from_reconciliation,
+    handoff_export_prepare_from_reconciliation,
     package_review_candidate_projection,
     package_review_preview_summary,
+    package_review_submit_from_reconciliation,
     packages_in_review_order,
     packages_in_kind_order,
     packages_with_kinds,
+    reconciliation_state,
     review_source_packages,
     review_state_is_admitted_associated_cohort,
     state_downstream_unavailable,
@@ -54,6 +63,10 @@ def _approved_review_state() -> dict[str, object]:
     }
 
 
+def _reconciliation(summary_json: dict[str, object] | None):
+    return SimpleNamespace(summary_json=summary_json)
+
+
 def test_state_downstream_unavailable_prefers_explicit_non_empty_state() -> None:
     assert state_downstream_unavailable(
         {"downstream_unavailable": ["next", 7]},
@@ -87,6 +100,72 @@ def test_active_downstream_unavailable_falls_back_to_default_stage() -> None:
         default_state={},
         default_fallback=("default",),
     ) == ("default",)
+
+
+def test_reconciliation_state_requires_dict_and_matching_schema() -> None:
+    state = {"schema_id": "expected.schema", "value": "kept"}
+
+    assert reconciliation_state(
+        _reconciliation({"state_key": state}),
+        state_key="state_key",
+        schema_id="expected.schema",
+    ) == state
+    assert (
+        reconciliation_state(
+            _reconciliation({"state_key": {**state, "schema_id": "wrong.schema"}}),
+            state_key="state_key",
+            schema_id="expected.schema",
+        )
+        is None
+    )
+    assert (
+        reconciliation_state(
+            _reconciliation({"state_key": "not-a-dict"}),
+            state_key="state_key",
+            schema_id="expected.schema",
+        )
+        is None
+    )
+    assert reconciliation_state(None, state_key="state_key", schema_id="expected.schema") is None
+
+
+def test_package_reconciliation_state_readers_preserve_matching_states() -> None:
+    submit_state = {"schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID, "submit_record_ref": "submit-ref"}
+    prepare_state = {"schema_id": HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID, "prepare_record_ref": "prepare-ref"}
+    dispatch_state = {"schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID, "aps_bundle_ref": "aps-ref"}
+    readiness_state = {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+        "external_export_download_descriptor": {"ref": "download-ref"},
+    }
+    reconciliation = _reconciliation(
+        {
+            "package_review_submit": submit_state,
+            "handoff_export_prepare": prepare_state,
+            "aps_handoff_dispatch": dispatch_state,
+            "external_export_download_prepare": readiness_state,
+        }
+    )
+
+    assert package_review_submit_from_reconciliation(reconciliation) is submit_state
+    assert handoff_export_prepare_from_reconciliation(reconciliation) is prepare_state
+    assert aps_handoff_dispatch_from_reconciliation(reconciliation) is dispatch_state
+    assert external_export_download_prepare_from_reconciliation(reconciliation) is readiness_state
+
+
+def test_package_reconciliation_state_readers_reject_wrong_schema() -> None:
+    reconciliation = _reconciliation(
+        {
+            "package_review_submit": {"schema_id": HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID},
+            "handoff_export_prepare": {"schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID},
+            "aps_handoff_dispatch": {"schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID},
+            "external_export_download_prepare": {"schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID},
+        }
+    )
+
+    assert package_review_submit_from_reconciliation(reconciliation) is None
+    assert handoff_export_prepare_from_reconciliation(reconciliation) is None
+    assert aps_handoff_dispatch_from_reconciliation(reconciliation) is None
+    assert external_export_download_prepare_from_reconciliation(reconciliation) is None
 
 
 def test_package_review_candidate_projection_preserves_candidate_contract() -> None:
