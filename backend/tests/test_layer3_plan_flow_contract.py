@@ -12,6 +12,10 @@ def test_plan_flow_contract_is_shared() -> None:
     assert layer3_workbench.PLAN_APPROVAL_FORBIDDEN_FIELDS is contract.PLAN_APPROVAL_FORBIDDEN_FIELDS
     assert layer3_workbench.PLAN_REVISION_FORBIDDEN_FIELDS is contract.PLAN_REVISION_FORBIDDEN_FIELDS
     assert (
+        layer3_workbench.APPROVED_PLAN_CANCEL_FORBIDDEN_FIELDS
+        is contract.APPROVED_PLAN_CANCEL_FORBIDDEN_FIELDS
+    )
+    assert (
         layer3_workbench.EXECUTION_SELECTION_FORBIDDEN_FIELDS
         is contract.EXECUTION_SELECTION_FORBIDDEN_FIELDS
     )
@@ -55,6 +59,22 @@ def test_plan_flow_contract_blocks_same_fields_as_legacy_logic() -> None:
     assert contract.plan_revision_recovery_blocked_fields(recovery_payload) == _legacy_blocked(
         recovery_payload,
         contract.PLAN_REVISION_RECOVERY_FORBIDDEN_FIELDS,
+    )
+
+    cancel_payload = {
+        "client_request_id": "cancel-1",
+        "session_id": "session-1",
+        "analysis_plan_id": "plan-1",
+        "source_preview_id": "preview-1",
+        "source_preview_hash": "hash-1",
+        "operator_decision": "cancel_approved_plan_without_replacement",
+        "replacement_plan": {"mode": "not-admitted"},
+        "approved_plan_supersession": True,
+        "create_pass_runs": True,
+    }
+    assert contract.approved_plan_cancel_blocked_fields(cancel_payload) == _legacy_blocked(
+        cancel_payload,
+        contract.APPROVED_PLAN_CANCEL_FORBIDDEN_FIELDS,
     )
 
     selection_payload = {
