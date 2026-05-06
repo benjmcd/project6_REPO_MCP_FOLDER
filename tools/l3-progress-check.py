@@ -4355,9 +4355,17 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
     ):
         if term not in pass_entry_text:
             errors.append(f"backend/app/services/layer3_pass_entry.py missing plan/pass status alias term: {term}")
+    if "APPROVED_PLAN_APPROVED_STATUS = L3_ANALYSIS_PLAN_STATUS_APPROVED" not in approved_plan_cancel_text:
+        errors.append(
+            "backend/app/services/layer3_approved_plan_correction.py missing approved-status model alias"
+        )
     if "APPROVED_PLAN_CANCELLED_STATUS = L3_ANALYSIS_PLAN_STATUS_CANCELLED" not in approved_plan_cancel_text:
         errors.append(
             "backend/app/services/layer3_approved_plan_correction.py missing cancelled-status model alias"
+        )
+    if 'L3AnalysisPlan.status == "approved"' in approved_plan_cancel_text:
+        errors.append(
+            "backend/app/services/layer3_approved_plan_correction.py retains raw approved-plan status literal"
         )
     for term in (
         "PLAN_STATUS_APPROVED",
@@ -4370,6 +4378,7 @@ def _check_plan_pass_status_migration_constraints(errors: list[str]) -> None:
         'status == "approved"',
         'status == "cancelled"',
         'status="selected_not_started"',
+        'plan_status") == "approved"',
     ):
         if literal in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} retains raw plan/pass status literal: {literal}")
