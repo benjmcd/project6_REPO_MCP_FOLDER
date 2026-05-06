@@ -4952,6 +4952,21 @@ def _check_execution_error_extraction(errors: list[str]) -> None:
         if term not in test_text:
             errors.append(f"{_rel(LAYER3_EXECUTION_ERROR_TEST)} missing execution-error extraction proof term: {term}")
 
+    board_text = _read_required_text(BOARD, errors)
+    for term in (
+        "PR `#628`",
+        "ca8831df",
+        "layer3_execution_errors.py",
+        "test_layer3_execution_errors.py",
+        "| Analysis execution-start error mapping extraction | current-main no-behavior-change refactor/proof |",
+        "PR `#628`, commit `ca8831df`",
+        "without changing emitted error code, status, HTTP status, recoverability defaults, blocked fields, or next allowed actions",
+        "no-behavior-change analysis execution-start error-mapping extraction proof",
+        "does not admit new execution behavior, broad qualitative/RAG behavior, route, DTO, model, migration, UI, package, connector, provider, source, mockup, or auth/security behavior",
+    ):
+        if term not in board_text:
+            errors.append(f"{_rel(BOARD)} missing execution-error extraction board term: {term}")
+
 
 def _check_authority_rail_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(AUTHORITY_RAIL_SERVICE, errors)
