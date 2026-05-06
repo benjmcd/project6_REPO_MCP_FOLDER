@@ -235,6 +235,16 @@ class Layer3GateCPreviewRequest(BaseModel):
     actor: str | None = None
 
 
+class Layer3GateCOverrideUnavailableRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    session_id: str | None = None
+    actor: str | None = None
+
+
 class Layer3ExecutionSelectionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3729,10 +3739,10 @@ def post_gate_c_preview(
     status_code=409,
     response_model=Layer3TypingOverrideUnavailableResponse,
 )
-def post_gate_c_override(payload: dict[str, Any]) -> JSONResponse:
+def post_gate_c_override(payload: Layer3GateCOverrideUnavailableRequest) -> JSONResponse:
     return JSONResponse(
         status_code=409,
-        content=layer3_workbench.gate_c_override_unavailable(payload),
+        content=layer3_workbench.gate_c_override_unavailable(payload.model_dump(exclude_none=True)),
     )
 
 

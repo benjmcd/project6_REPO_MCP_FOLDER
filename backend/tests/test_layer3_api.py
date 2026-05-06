@@ -322,6 +322,13 @@ def _openapi_response_schema_for_status(spec: dict, path: str, method: str, stat
     return spec["components"]["schemas"][ref.rsplit("/", 1)[-1]]
 
 
+def _resolve_openapi_schema(spec: dict, schema: dict) -> dict:
+    ref = schema.get("$ref")
+    if ref:
+        return spec["components"]["schemas"][ref.rsplit("/", 1)[-1]]
+    return schema
+
+
 def _assert_workbench_error_responses(spec: dict, path: str, method: str, statuses: tuple[str, ...]) -> None:
     responses = spec["paths"][path][method]["responses"]
     for status in statuses:
@@ -2263,6 +2270,18 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
 
     override_responses = spec["paths"]["/api/v1/layer3/gate-c/override"]["post"]["responses"]
     assert "200" not in override_responses
+    override_request_schema = spec["paths"]["/api/v1/layer3/gate-c/override"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    override_request_schema = _resolve_openapi_schema(spec, override_request_schema)
+    assert override_request_schema["additionalProperties"] is False
+    assert {
+        "schema_id",
+        "schema_version",
+        "client_request_id",
+        "session_id",
+        "actor",
+    } == set(override_request_schema["properties"])
     override_schema = _openapi_response_schema_for_status(spec, "/api/v1/layer3/gate-c/override", "post", "409")
     assert override_schema["title"] == "Layer3TypingOverrideUnavailableResponse"
     assert {
@@ -13677,3 +13696,21 @@ def test_layer3_api_error_shape_and_override_unavailable(client: TestClient) -> 
     assert override.status_code == 409
     assert override.json()["schema_id"] == "layer3.typing_override_unavailable.v1"
     assert override.json()["error_code"] == "override_unavailable"
+
+
+def test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/api/v1/layer3/gate-c/override",
+        json={
+            "client_request_id": "api-override-extra",
+            "session_id": "missing",
+            "execute": True,
+            "hidden_llm_plan": {},
+            "provider_public_url": "https://example.invalid/export",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]

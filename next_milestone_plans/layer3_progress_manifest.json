@@ -5905,5 +5905,43 @@
     "implementation_pr": "#612",
     "merge_commit": "01023e82",
     "post_merge_authority": "project6-origin/main at 01023e82"
+  },
+  "gate_c_override_unavailable_request_contract": {
+    "mode": "gate_c_override_unavailable_request_boundary",
+    "hardening_scope": "strict request DTO for the explicitly unavailable Gate C override endpoint",
+    "implementation_branch": "codex/l3-gatec-dto",
+    "base_commit": "2a8d97618b4fd0bcf37e125234954c62fa703b65",
+    "live_behavior_change": true,
+    "route": "/api/v1/layer3/gate-c/override",
+    "request_dto": "Layer3GateCOverrideUnavailableRequest",
+    "response_dto": "Layer3TypingOverrideUnavailableResponse",
+    "proof_test": "backend/tests/test_layer3_api.py::test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response",
+    "preserved_behavior": [
+      "known metadata fields still return the explicit override_unavailable response",
+      "the route still has no 200 response contract",
+      "typing override remains unavailable in this first slice"
+    ],
+    "blocked_scope": [
+      "typing override persistence",
+      "L3PassRun creation",
+      "AnalysisRun creation",
+      "output/package/handoff/export artifact creation",
+      "connector/destination dispatch",
+      "source/schema/runtime widening",
+      "provider/public URL support",
+      "broad qualitative/hybrid/RAG execution",
+      "frontend-only durable state",
+      "hidden LLM planning",
+      "full mockup activation",
+      "authentication/security hardening",
+      "broad package mutation/reconstruction"
+    ],
+    "required_tests": [
+      "python -m py_compile .\\backend\\app\\api\\layer3.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"special_route_openapi_contracts or override_unavailable or gate_c_override\"",
+      "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest @tests -q",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ]
   }
 }

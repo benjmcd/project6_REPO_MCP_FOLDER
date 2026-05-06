@@ -4371,7 +4371,10 @@
     "latest_approved_plan_cancel_downstream_state_hardening_summary": "Approved-plan cancel now fails closed with downstream_state_already_exists when same-session L3ReconciliationRecord/L3OutputPackage state exists before cancellation mutation; the proof remains bounded to cancel_approved_plan_without_replacement and does not admit supersession, replacement, execution, package mutation, connector/destination dispatch, provider/public URL, source widening, qualitative/hybrid/RAG, full mockup, or auth/security behavior.",
     "latest_approved_plan_cancel_service_proof_summary": "Direct owner-service proof covers cancel_approved_plan_without_replacement, approved_plan_cancel_from_session, duplicate idempotency, forbidden-field rejection before mutation, stale-preview/pass-run fail-closed behavior, same-session orphan reconciliation/package state fail-closed behavior, and no downstream row/artifact creation through backend/tests/test_layer3_approved_plan_correction.py.",
     "latest_approved_plan_cancel_downstream_state_hardening_pr": "#612",
-    "latest_approved_plan_cancel_downstream_state_hardening_merge_commit": "01023e82"
+    "latest_approved_plan_cancel_downstream_state_hardening_merge_commit": "01023e82",
+    "latest_gate_c_override_unavailable_request_contract_branch": "codex/l3-gatec-dto",
+    "latest_gate_c_override_unavailable_request_contract_base_commit": "2a8d97618b4fd0bcf37e125234954c62fa703b65",
+    "latest_gate_c_override_unavailable_request_contract_summary": "Gate C override remains explicitly unavailable for known metadata fields and now rejects unknown capability-shaped request fields before the unavailable-response service runs; it does not admit typing override persistence, execution, hidden LLM planning, provider/public URLs, connector/destination dispatch, package mutation/reconstruction, source widening, broad qualitative/hybrid/RAG behavior, full mockup activation, or auth/security behavior."
   },
   "approved_plan_cancel_downstream_state_hardening_proof": {
     "scope": "Runtime hardening proof for approved_plan_cancel_without_replacement only; broader approved-plan correction modes remain blocked.",
@@ -4411,5 +4414,44 @@
     "implementation_pr": "#612",
     "merge_commit": "01023e82",
     "post_merge_authority": "project6-origin/main at 01023e82"
+  },
+  "gate_c_override_unavailable_request_contract_proof": {
+    "scope": "Request-boundary hardening proof for the explicitly unavailable Gate C override endpoint only.",
+    "implementation_branch": "codex/l3-gatec-dto",
+    "base_commit": "2a8d97618b4fd0bcf37e125234954c62fa703b65",
+    "live_behavior_change": true,
+    "route": "/api/v1/layer3/gate-c/override",
+    "request_dto": "Layer3GateCOverrideUnavailableRequest",
+    "response_dto": "Layer3TypingOverrideUnavailableResponse",
+    "proof_test": "backend/tests/test_layer3_api.py::test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response",
+    "authority_basis": [
+      "The synthesis/adjudication evidence ranked API request-contract hardening ahead of broad feature admission.",
+      "Repo-live API inspection showed the non-security route-level raw dict request boundary remaining on /gate-c/override.",
+      "Signed-reference raw dict routes are auth/security/delivery-adjacent and remain deferred by operator instruction.",
+      "The route still returns the explicit override_unavailable response for known metadata fields and has no 200 response contract.",
+      "The new API proof rejects unknown capability-shaped request fields with FastAPI request validation before the unavailable-response service runs."
+    ],
+    "non_goals": [
+      "typing override persistence",
+      "L3PassRun creation",
+      "AnalysisRun creation",
+      "output/package/handoff/export artifact creation",
+      "connector/destination dispatch",
+      "source/schema/runtime widening",
+      "provider/public URL support",
+      "broad qualitative/hybrid/RAG execution",
+      "frontend-only durable state",
+      "hidden LLM planning",
+      "full mockup activation",
+      "authentication/security hardening",
+      "broad package mutation/reconstruction"
+    ],
+    "required_tests": [
+      "python -m py_compile .\\backend\\app\\api\\layer3.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"special_route_openapi_contracts or override_unavailable or gate_c_override\"",
+      "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest @tests -q",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ]
   }
 }

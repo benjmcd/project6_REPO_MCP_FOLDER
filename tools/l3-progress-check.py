@@ -4212,6 +4212,64 @@ def _check_material_preview_request_guard(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing material-preview request guard term: {term}")
 
 
+def _check_gate_c_override_request_guard(errors: list[str]) -> None:
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "class Layer3GateCOverrideUnavailableRequest(BaseModel):",
+        "model_config = ConfigDict(extra=\"forbid\")",
+        "payload: Layer3GateCOverrideUnavailableRequest",
+        "layer3_workbench.gate_c_override_unavailable(payload.model_dump(exclude_none=True))",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing Gate C override request guard term: {term}")
+    if "def post_gate_c_override(payload: dict[str, Any])" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} regressed Gate C override to a raw dict request boundary")
+
+    test_text = _read_required_text(LAYER3_API_TEST, errors)
+    for term in (
+        "test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response",
+        "api-override-extra",
+        "hidden_llm_plan",
+        "provider_public_url",
+        "assert response.status_code == 422",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_API_TEST)} missing Gate C override request proof term: {term}")
+
+    proof_text = _read_required_text(PROOF_MANIFEST, errors)
+    for term in (
+        "gate_c_override_unavailable_request_contract_proof",
+        "Layer3GateCOverrideUnavailableRequest",
+        "test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response",
+        "Signed-reference raw dict routes are auth/security/delivery-adjacent and remain deferred",
+    ):
+        if term not in proof_text:
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing Gate C override request proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "Layer3GateCOverrideUnavailableRequest",
+            "test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response",
+            "Gate C override unavailable DTO boundary",
+        ],
+        GOAL_AUDIT: [
+            "Layer3GateCOverrideUnavailableRequest",
+            "test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_response",
+            "Gate C override unavailable DTO hardening",
+        ],
+        CLOSEOUT_DOC: [
+            "Gate C override unavailable DTO boundary proof",
+            "Focused override request-boundary suite: 3 passed",
+            "No typing override persistence",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing Gate C override request guard term: {term}")
+
+
 def _check_session_status_migration_constraint(errors: list[str]) -> None:
     migration_text = _read_required_text(SESSION_ENTRY_MIGRATION, errors)
     for term in (
@@ -5775,6 +5833,7 @@ def main() -> int:
     _check_plan_preview_request_guard(errors)
     _check_source_preview_request_guard(errors)
     _check_material_preview_request_guard(errors)
+    _check_gate_c_override_request_guard(errors)
     _check_session_status_migration_constraint(errors)
     _check_progress_text_surfaces(errors)
     _check_ci_layer3_backend_guardrail(errors)
