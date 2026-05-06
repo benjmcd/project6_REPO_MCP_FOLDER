@@ -54,6 +54,20 @@ from app.services.layer3_pass_entry import (
     execute_selected_pass_run,
     preview_pass_entry,
 )
+from app.services.layer3_execution_state import (
+    ANALYSIS_EXECUTION_START_STATE_SCHEMA_ID,
+    EXECUTION_PASS_COMPLETED_STATE,
+    EXECUTION_PASS_FAILED_STATE,
+    EXECUTION_PASS_RUNNING_STATE,
+    EXECUTION_SELECTION_STATE,
+    EXECUTION_SELECTION_STATE_SCHEMA_ID,
+    analysis_execution_start_from_pass_run as _analysis_execution_start_from_pass_run,
+    execution_selection_from_session as _execution_selection_from_session,
+    execution_selection_pass_runs as _execution_selection_pass_runs,
+    execution_state_for_pass_runs as _execution_state_for_pass_runs,
+    pass_run_analysis_run_id as _pass_run_analysis_run_id,
+    pass_run_execution_started as _pass_run_execution_started,
+)
 from app.services.layer3_execution_errors import analysis_execution_start_workbench_error
 from app.services.layer3_plan_errors import plan_approval_workbench_error, plan_preview_workbench_error
 from app.services.layer3_package_entry import (
@@ -259,10 +273,7 @@ PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
 EXECUTION_SELECTION_SCHEMA_ID = "layer3.execution_selection.v1"
-EXECUTION_SELECTION_STATE_SCHEMA_ID = "layer3.execution_selection_state.v1"
-EXECUTION_SELECTION_STATE = "execution_selected_not_started"
 ANALYSIS_EXECUTION_START_SCHEMA_ID = "layer3.analysis_execution_start.v1"
-ANALYSIS_EXECUTION_START_STATE_SCHEMA_ID = "layer3.analysis_execution_start_state.v1"
 EXECUTION_RESULT_STATUS_SCHEMA_ID = "layer3.execution_result_status.v1"
 EXECUTION_RESULT_REVIEW_SCHEMA_ID = "layer3.execution_result_review.v1"
 EXECUTION_RESULT_REVIEW_STATE_SCHEMA_ID = "layer3.execution_result_review_state.v1"
@@ -283,9 +294,6 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_downl
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID = "layer3.external_export_download_signed_reference.v1"
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_SCHEMA_ID = "layer3.external_export_download_signed_reference_use.v1"
-EXECUTION_PASS_RUNNING_STATE = "execution_pass_running"
-EXECUTION_PASS_COMPLETED_STATE = "execution_pass_completed"
-EXECUTION_PASS_FAILED_STATE = "execution_pass_failed"
 EXECUTION_RESULT_STATUS_AVAILABLE_STATE = "execution_result_status_available"
 EXECUTION_RESULT_STATUS_BLOCKED_STATE = "execution_result_status_blocked"
 EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE = "execution_result_status_missing_output"
@@ -2329,55 +2337,6 @@ def plan_revision_recovery(db: Session, payload: dict[str, Any]) -> dict[str, An
 
 def approved_plan_cancel(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     return _cancel_approved_plan_without_replacement(db, payload)
-
-
-def _execution_selection_from_session(session: L3Session | None) -> dict[str, Any] | None:
-    if session is None:
-        return None
-    selection = (session.summary_json or {}).get("execution_selection")
-    if not isinstance(selection, dict):
-        return None
-    if selection.get("schema_id") != EXECUTION_SELECTION_STATE_SCHEMA_ID:
-        return None
-    return selection
-
-
-def _execution_selection_pass_runs(db: Session, *, session_id: str) -> list[L3PassRun]:
-    return (
-        db.query(L3PassRun)
-        .filter(L3PassRun.session_id == session_id)
-        .order_by(L3PassRun.created_at.asc(), L3PassRun.pass_run_id.asc())
-        .all()
-    )
-
-
-def _pass_run_analysis_run_id(pass_run: L3PassRun) -> str | None:
-    value = (pass_run.summary_json or {}).get("analysis_run_id")
-    return str(value) if value else None
-
-
-def _pass_run_execution_started(pass_run: L3PassRun) -> bool:
-    return bool((pass_run.summary_json or {}).get("execution_started")) or pass_run.status != PASS_STATUS_SELECTED_NOT_STARTED
-
-
-def _execution_state_for_pass_runs(pass_runs: list[L3PassRun]) -> str:
-    statuses = {pass_run.status for pass_run in pass_runs}
-    if PASS_STATUS_RUNNING in statuses:
-        return EXECUTION_PASS_RUNNING_STATE
-    if PASS_STATUS_FAILED in statuses:
-        return EXECUTION_PASS_FAILED_STATE
-    if pass_runs and statuses <= {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS}:
-        return EXECUTION_PASS_COMPLETED_STATE
-    return EXECUTION_SELECTION_STATE
-
-
-def _analysis_execution_start_from_pass_run(pass_run: L3PassRun) -> dict[str, Any] | None:
-    state = (pass_run.summary_json or {}).get("analysis_execution_start")
-    if not isinstance(state, dict):
-        return None
-    if state.get("schema_id") != ANALYSIS_EXECUTION_START_STATE_SCHEMA_ID:
-        return None
-    return state
 
 
 def _analysis_execution_start_response(
