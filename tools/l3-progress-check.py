@@ -119,6 +119,9 @@ MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
 )
+APS_SOURCE_FAMILY_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_aps_source_family.py"
+)
 GATE_B_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_gate_b_state.py"
 )
@@ -167,6 +170,7 @@ REPLACEMENT_PACKAGE_NAMESPACE_SERVICE = (
 QUAL_APS_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_mockup_boundary.py"
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
+APS_SOURCE_FAMILY_TEST = ROOT / "backend" / "tests" / "test_layer3_aps_source_family.py"
 QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_mockup_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
@@ -5362,6 +5366,91 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing package review contract extraction doc term: {term}")
 
 
+def _check_aps_source_family_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(APS_SOURCE_FAMILY_SERVICE, errors)
+    for term in (
+        "APS_ADMITTED_TABLE_SOURCE_FAMILIES",
+        "APS_NOT_ADMITTED_SOURCE_FAMILIES",
+        "APS_ADMITTED_SOURCE_FAMILY_BY_PARSER",
+        "def source_family_for_parser(",
+        "def source_family_summary(",
+        "\"csv_table\"",
+        "\"xlsx_workbook\"",
+        "\"json_recordset\"",
+        "\"sec_edgar_filing\"",
+        "\"xml_html_inline_xbrl\"",
+        "\"broad_workbook_semantics\"",
+        "refused/deferred families are explanatory guardrails, not selectable source classes",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(APS_SOURCE_FAMILY_SERVICE)} missing APS source-family extraction term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_aps_source_family import",
+        "source_family_for_parser as _source_family_for_parser",
+        "source_family_summary as _source_family_summary",
+        "_source_family_for_parser(provenance.get(\"parser_family\"))",
+        "\"source_family_summary\": _source_family_summary(candidates)",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing APS source-family import/use term: {term}")
+    for stale_term in (
+        "APS_ADMITTED_TABLE_SOURCE_FAMILIES = (",
+        "APS_NOT_ADMITTED_SOURCE_FAMILIES = (",
+        "APS_ADMITTED_SOURCE_FAMILY_BY_PARSER = {",
+        "def _source_family_for_parser(",
+        "def _source_family_summary(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns APS source-family term: {stale_term}")
+
+    test_text = _read_required_text(APS_SOURCE_FAMILY_TEST, errors)
+    for term in (
+        "test_source_family_for_parser_maps_admitted_aps_table_families",
+        "test_source_family_for_parser_returns_unknown_metadata_copy",
+        "test_source_family_summary_counts_observed_parsers_and_returns_copies",
+        "APS_ADMITTED_TABLE_SOURCE_FAMILIES[0][\"source_family\"] == \"csv\"",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(APS_SOURCE_FAMILY_TEST)} missing APS source-family proof test term: {term}")
+
+    required_doc_terms = {
+        CLOSEOUT_DOC: (
+            "APS source-family extraction",
+            "backend/app/services/layer3_aps_source_family.py",
+            "backend/tests/test_layer3_aps_source_family.py",
+            "no-behavior-change",
+            "does not admit broad source/upload expansion",
+        ),
+        MANIFEST: (
+            "layer3_aps_source_family.py",
+            "test_layer3_aps_source_family.py",
+            "APS source-family extraction",
+            "no-behavior-change",
+            "does not admit broad source/upload expansion",
+        ),
+        BOARD: (
+            "APS source-family extraction",
+            "layer3_aps_source_family.py",
+            "test_layer3_aps_source_family.py",
+            "without admitting broad source/upload expansion",
+        ),
+        PROOF_MANIFEST: (
+            "latest_aps_source_family_extraction_branch",
+            "codex/l3-aps-source-family-extraction",
+            "layer3_aps_source_family.py",
+            "test_layer3_aps_source_family.py",
+            "no runtime behavior change",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing APS source-family extraction doc term: {term}")
+
+
 def _check_external_export_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(EXTERNAL_EXPORT_CONTRACT_SERVICE, errors)
     for term in (
@@ -5553,6 +5642,7 @@ def main() -> int:
         MODELS,
         GATE_B_STATE_SERVICE,
         SOURCE_BOUNDARY_SERVICE,
+        APS_SOURCE_FAMILY_SERVICE,
         QUAL_APS_SERVICE,
         MOCKUP_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
@@ -5573,6 +5663,7 @@ def main() -> int:
         REPLACEMENT_PACKAGE_NAMESPACE_SERVICE,
         LAYER3_JS,
         SOURCE_BOUNDARY_TEST,
+        APS_SOURCE_FAMILY_TEST,
         QUAL_APS_TEST,
         MOCKUP_BOUNDARY_TEST,
         SESSION_ENTRY_TEST,
@@ -5652,6 +5743,7 @@ def main() -> int:
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
+    _check_aps_source_family_extraction(errors)
     _check_external_export_contract_extraction(errors)
 
     if errors:
