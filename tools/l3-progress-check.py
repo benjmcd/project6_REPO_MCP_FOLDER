@@ -6903,30 +6903,28 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                 "must be 'codex/l3-package-submit-state'"
             )
         submit_state_pr = proof_scope.get("latest_package_submit_state_helper_extraction_pr")
-        if submit_state_pr != "pending" and not (
-            isinstance(submit_state_pr, str) and re.fullmatch(r"#\d+", submit_state_pr)
-        ):
+        if submit_state_pr != "#661":
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
-                "scope.latest_package_submit_state_helper_extraction_pr must be 'pending' or a PR number"
+                "scope.latest_package_submit_state_helper_extraction_pr must be '#661'"
             )
-        submit_state_head = proof_scope.get("latest_package_submit_state_helper_extraction_head_commit")
-        if submit_state_head != "pending" and not (
-            isinstance(submit_state_head, str) and re.fullmatch(r"[0-9a-f]{40}", submit_state_head)
+        if (
+            proof_scope.get("latest_package_submit_state_helper_extraction_head_commit")
+            != "ac5afc1492e79d5b78baa300f8bb96cc3692bab3"
         ):
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
                 "scope.latest_package_submit_state_helper_extraction_head_commit "
-                "must be 'pending' or a 40-character commit"
+                "must be 'ac5afc1492e79d5b78baa300f8bb96cc3692bab3'"
             )
-        submit_state_merge = proof_scope.get("latest_package_submit_state_helper_extraction_merge_commit")
-        if submit_state_merge != "pending" and not (
-            isinstance(submit_state_merge, str) and re.fullmatch(r"[0-9a-f]{40}", submit_state_merge)
+        if (
+            proof_scope.get("latest_package_submit_state_helper_extraction_merge_commit")
+            != "a1c8df7c2ca20e26ccbc3bf5e875b910abd69166"
         ):
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
                 "scope.latest_package_submit_state_helper_extraction_merge_commit "
-                "must be 'pending' or a 40-character commit"
+                "must be 'a1c8df7c2ca20e26ccbc3bf5e875b910abd69166'"
             )
         if proof_scope.get("latest_package_submit_state_helper_extraction_live_behavior_change") is not False:
             errors.append(
@@ -6935,6 +6933,8 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             )
         submit_state_summary = proof_scope.get("latest_package_submit_state_helper_extraction_summary")
         for term in (
+            "PR #661",
+            "merge commit a1c8df7c2ca20e26ccbc3bf5e875b910abd69166",
             "package submit state helper extraction",
             "legacy_package_review_submit_record_ref",
             "cohort_package_construction_source",
