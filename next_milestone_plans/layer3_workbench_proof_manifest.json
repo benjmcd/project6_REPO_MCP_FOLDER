@@ -1,9 +1,9 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Layer 3 proof readiness through package replacement artifact manifest-only runtime, package namespace planning/control and implementation-entry proof, bounded package replacement namespace runtime proof, and current-main plan revision recovery lifecycle planning/control proof from PR #595; retains no-behavior-change plan-flow request contract extraction proof from PR #584",
+  "status": "Layer 3 proof readiness through package replacement artifact manifest-only runtime, package namespace planning/control and implementation-entry proof, bounded package replacement namespace runtime proof, current-main plan revision recovery lifecycle planning/control proof from PR #595, and branch-local plan revision recovery preview-refresh implementation-entry freeze proof from doc 134; retains no-behavior-change plan-flow request contract extraction proof from PR #584",
   "scope": {
-    "source_branch": "codex/l3-package-namespace-runtime",
+    "source_branch": "codex/l3-revision-recovery-entry-freeze",
     "merged_pr": "",
     "merge_commit": "",
     "base_remote": "project6-origin/main",
@@ -312,7 +312,11 @@
     "latest_plan_revision_recovery_freeze_base_commit": "b8b1c000e85a0ae119139d5b7328e68437d143eb",
     "latest_plan_revision_recovery_freeze_merge_commit": "15c8ab17a42718da549974bea97073d5d4b940b4",
     "latest_plan_revision_recovery_freeze_live_behavior_change": false,
-    "latest_plan_revision_recovery_freeze_summary": "PR #595 merged docs 132/133 as planning/control authority for `plan_revision_recovery_lifecycle` only. It freezes the future server-authorized preview-refresh recovery question from terminal pre-approval revision-control states and admits no runtime recovery, approved-plan supersession, execution, package/handoff/export behavior, connector/destination dispatch, source widening, broad qualitative/hybrid/RAG behavior, full mockup activation, or auth/security behavior."
+    "latest_plan_revision_recovery_freeze_summary": "PR #595 merged docs 132/133 as planning/control authority for `plan_revision_recovery_lifecycle` only. It freezes the future server-authorized preview-refresh recovery question from terminal pre-approval revision-control states and admits no runtime recovery, approved-plan supersession, execution, package/handoff/export behavior, connector/destination dispatch, source widening, broad qualitative/hybrid/RAG behavior, full mockup activation, or auth/security behavior.",
+    "latest_plan_revision_recovery_entry_freeze_branch": "codex/l3-revision-recovery-entry-freeze",
+    "latest_plan_revision_recovery_entry_freeze_base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
+    "latest_plan_revision_recovery_entry_freeze_live_behavior_change": false,
+    "latest_plan_revision_recovery_entry_freeze_summary": "Doc 134 freezes `plan_revision_recovery_preview_refresh_entry` as implementation-entry only. It selects a later route/service/DTO/schema-id shape for server-authorized preview refresh while keeping runtime recovery, approved-plan supersession, execution, package/handoff/export, connector/destination, source widening, broad qualitative/hybrid/RAG, full mockup, auth/security behavior, and broad package mutation/reconstruction blocked."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -327,6 +331,7 @@
     "next_milestone_plans/Layer3_planning_docs/35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/132_PLAN_REVISION_RECOVERY_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/133_PLAN_REVISION_RECOVERY_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
     "next_milestone_plans/layer3_progress_manifest.json",
     "next_milestone_plans/layer3_progress_board.md",
     "next_milestone_plans/layer3-mockups/mockup-spec.txt",
@@ -3944,6 +3949,60 @@
       "L3PassRun creation",
       "AnalysisRun creation",
       "result/package/handoff/export behavior",
+      "connector/destination dispatch",
+      "source/schema/runtime widening",
+      "broad qualitative/hybrid/RAG execution",
+      "provider/public URL support",
+      "frontend-only durable state",
+      "hidden LLM planning",
+      "full mockup activation",
+      "authentication/security hardening",
+      "broad package mutation/reconstruction"
+    ],
+    "verification": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ]
+  },
+  "plan_revision_recovery_entry_freeze_proof": {
+    "scope": "Implementation-entry proof for `plan_revision_recovery_preview_refresh_entry` under doc 134; no runtime recovery is admitted.",
+    "planning_branch": "codex/l3-revision-recovery-entry-freeze",
+    "base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
+    "live_behavior_change": false,
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
+      "next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md",
+      "next_milestone_plans/Layer3_planning_docs/118_L3_GOAL_AUDIT.md",
+      "next_milestone_plans/Layer3_planning_docs/120_L3_CLOSEOUT.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "authority_basis": [
+      "Current branch starts at project6-origin/main 4809ac0aa61aac3a51a92f4070ff1d92d67591c5 after PR #596 revision recovery progress proof.",
+      "Docs 132/133 remain planning/control authority for `plan_revision_recovery_lifecycle` only.",
+      "`backend/app/services/layer3_state_model_contract.py` keeps `plan_rejected` and `plan_revision_requested` terminal with `allowed_next_actions: []`.",
+      "Readiness still treats `revision-recovery` as deferred until a later runtime PR admits recovery."
+    ],
+    "selected_entry": "plan_revision_recovery_preview_refresh_entry",
+    "future_route": "POST /api/v1/layer3/plan/revision/recover",
+    "future_owner_service": "backend/app/services/layer3_plan_revision_recovery.py",
+    "request_dto": "Layer3PlanRevisionRecoveryRequest",
+    "response_dto": "Layer3PlanRevisionRecoveryResponse",
+    "request_schema_id": "layer3.plan_revision_recovery_request.v1",
+    "response_schema_id": "layer3.plan_revision_recovery_result.v1",
+    "non_goals": [
+      "runtime recovery implementation",
+      "approved-plan reopening, cancellation, deletion, replacement, or supersession",
+      "L3AnalysisPlan creation, update, or deletion",
+      "L3PassRun creation",
+      "AnalysisRun creation",
+      "output/package/handoff/export artifact creation",
       "connector/destination dispatch",
       "source/schema/runtime widening",
       "broad qualitative/hybrid/RAG execution",

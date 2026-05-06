@@ -51,6 +51,9 @@ PLAN_REVISION_RECOVERY_FREEZE = (
 PLAN_REVISION_RECOVERY_CONTRACT = (
     PLANNING_DOCS / "133_PLAN_REVISION_RECOVERY_CONTRACT.md"
 )
+PLAN_REVISION_RECOVERY_ENTRY_FREEZE = (
+    PLANNING_DOCS / "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md"
+)
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -347,7 +350,7 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
 def _check_package_namespace_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "15c8ab17a42718da549974bea97073d5d4b940b4"
+    expected_commit = "4809ac0aa61aac3a51a92f4070ff1d92d67591c5"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -360,7 +363,7 @@ def _check_package_namespace_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR595 revision recovery progress "
+                f"{name} must identify the post-PR596 revision recovery entry "
                 f"base commit {expected_commit}"
             )
 
@@ -379,11 +382,11 @@ def _check_package_namespace_progress_sync(
             continue
         for term in (
             expected_commit,
-            "after PR #595 plan revision recovery freeze",
+            "after PR #596 revision recovery progress proof",
             "without runtime behavior changes",
         ):
             if term not in source:
-                errors.append(f"{name} missing post-PR595 revision recovery sync term: {term}")
+                errors.append(f"{name} missing post-PR596 revision recovery entry term: {term}")
 
     namespace_runtime = manifest.get("package_replacement_namespace_runtime")
     if not isinstance(namespace_runtime, dict):
@@ -468,8 +471,13 @@ def _check_package_namespace_progress_sync(
         ):
             if term not in summary:
                 errors.append(f"{name} missing package namespace runtime sync term: {term}")
-        if "implementation-entry freeze" in summary:
-            errors.append(f"{name} still describes namespace runtime as implementation-entry")
+        for stale in (
+            "namespace implementation-entry freeze",
+            "replacement_package_namespace_rows` as implementation-entry",
+            "doc `131` governs only implementation-entry",
+        ):
+            if stale in summary:
+                errors.append(f"{name} still describes namespace runtime as implementation-entry: {stale}")
 
 
 def _check_summary_counts(manifest: dict[str, Any], errors: list[str]) -> None:
@@ -564,7 +572,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         "progress/proof/state drift checker",
         "state/action contract drift checker",
         "preview hash/idempotency follow-up",
-        "revision recovery lifecycle freeze",
+        "plan_revision_recovery_preview_refresh_entry",
+        "approved-plan cancellation/supersession freeze",
         "no-behavior-change service extraction",
         "future implementation-entry freeze",
     ]
@@ -637,13 +646,13 @@ def _check_plan_revision_recovery_freeze(manifest: dict[str, Any], errors: list[
         GOAL_AUDIT: [
             "132_PLAN_REVISION_RECOVERY_FREEZE.md",
             "Plan revision recovery lifecycle",
-            "Planning/control only; not live",
+            "Planning/control plus implementation-entry freeze only; not live",
             "readiness keeps `revision-recovery` deferred",
         ],
         CLOSEOUT_DOC: [
             "planning/control plan revision recovery freeze",
             "plan_revision_recovery_lifecycle",
-            "Not runtime recovery",
+            "not runtime recovery",
             "not approved-plan supersession",
         ],
         BOARD: [
@@ -672,9 +681,9 @@ def _check_plan_revision_recovery_freeze(manifest: dict[str, Any], errors: list[
         errors.append("manifest next_required_decision missing for revision recovery freeze")
     else:
         for term in (
-            "After docs 132/133",
-            "plan_revision_recovery_lifecycle planning/control only",
-            "separate implementation-entry freeze",
+            "After docs 132/133 and doc 134",
+            "plan_revision_recovery_preview_refresh_entry implementation-entry only",
+            "separate bounded runtime PR",
             "terminal pre-approval revision-control state",
         ):
             if term not in next_required:
@@ -736,6 +745,154 @@ def _check_plan_revision_recovery_freeze(manifest: dict[str, Any], errors: list[
         window = state_model_text[location : location + 350]
         if '"allowed_next_actions": []' not in window:
             errors.append(f"state model must keep {state} terminal until recovery runtime is admitted")
+
+
+def _check_plan_revision_recovery_entry_freeze(
+    manifest: dict[str, Any], errors: list[str]
+) -> None:
+    entry_text = _read_required_text(PLAN_REVISION_RECOVERY_ENTRY_FREEZE, errors)
+    required_entry_terms = [
+        "Status: implementation-entry freeze only for `plan_revision_recovery_preview_refresh_entry`",
+        "POST /api/v1/layer3/plan/revision/recover",
+        "backend/app/services/layer3_plan_revision_recovery.py",
+        "Layer3PlanRevisionRecoveryRequest",
+        "Layer3PlanRevisionRecoveryResponse",
+        "layer3.plan_revision_recovery_request.v1",
+        "layer3.plan_revision_recovery_result.v1",
+        "No runtime behavior is admitted by this document.",
+        "plan_revision_recovery_not_available",
+        "pass_runs_already_exist",
+        "authentication/security hardening",
+    ]
+    for term in required_entry_terms:
+        if term not in entry_text:
+            errors.append(f"{_rel(PLAN_REVISION_RECOVERY_ENTRY_FREEZE)} missing entry-freeze term: {term}")
+
+    required_doc_terms = {
+        DEFERRED_GATES: [
+            "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
+            "implementation-entry only for `plan_revision_recovery_preview_refresh_entry`",
+            "does not implement runtime recovery",
+        ],
+        SYNTHESIS_BOUNDARY: [
+            "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
+            "plan_revision_recovery_preview_refresh_entry",
+            "does not make runtime recovery live",
+            "allowed_next_actions: []",
+        ],
+        GOAL_AUDIT: [
+            "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
+            "implementation-entry only for `plan_revision_recovery_preview_refresh_entry`",
+            "not runtime recovery",
+            "readiness keeps `revision-recovery` deferred",
+        ],
+        CLOSEOUT_DOC: [
+            "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
+            "plan_revision_recovery_preview_refresh_entry",
+            "still admits no runtime recovery",
+        ],
+        BOARD: [
+            "Branch-local plan revision recovery entry freeze",
+            "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
+            "POST /api/v1/layer3/plan/revision/recover",
+            "Plan revision recovery preview-refresh entry freeze",
+            "allowed_next_actions: []",
+        ],
+        PROOF_MANIFEST: [
+            "plan_revision_recovery_entry_freeze_proof",
+            "latest_plan_revision_recovery_entry_freeze_branch",
+            "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
+            "implementation-entry only",
+            "no runtime recovery",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing revision recovery entry term: {term}")
+
+    top_level = manifest.get("plan_revision_recovery_entry_freeze")
+    if not isinstance(top_level, dict):
+        errors.append("manifest missing plan_revision_recovery_entry_freeze object")
+    else:
+        expected = {
+            "mode": "plan_revision_recovery_preview_refresh_entry",
+            "source_gate": "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE",
+            "live_behavior_change": False,
+            "future_route": "/api/v1/layer3/plan/revision/recover",
+            "future_owner_service": "backend/app/services/layer3_plan_revision_recovery.py",
+            "request_dto": "Layer3PlanRevisionRecoveryRequest",
+            "response_dto": "Layer3PlanRevisionRecoveryResponse",
+        }
+        for key, value in expected.items():
+            if top_level.get(key) != value:
+                errors.append(f"plan_revision_recovery_entry_freeze.{key} must be {value!r}")
+
+    next_required = manifest.get("next_required_decision")
+    if not isinstance(next_required, str):
+        errors.append("manifest next_required_decision missing for revision recovery entry freeze")
+    else:
+        for term in (
+            "After docs 132/133 and doc 134",
+            "plan_revision_recovery_preview_refresh_entry implementation-entry only",
+            "separate bounded runtime PR",
+            "terminal pre-approval revision-control state",
+        ):
+            if term not in next_required:
+                errors.append(f"manifest next_required_decision missing revision entry term: {term}")
+
+    slices = manifest.get("layer3_workbench_slices")
+    if not isinstance(slices, list):
+        errors.append("layer3_workbench_slices missing for revision recovery entry freeze")
+    else:
+        matches = [
+            item
+            for item in slices
+            if isinstance(item, dict)
+            and item.get("slice_id") == "plan-revision-recovery-entry-freeze"
+        ]
+        if len(matches) != 1:
+            errors.append(
+                "layer3_workbench_slices must contain exactly one "
+                "plan-revision-recovery-entry-freeze record"
+            )
+        else:
+            item = matches[0]
+            if item.get("main_state") != "planning_only_plan_revision_recovery_preview_refresh_entry_freeze":
+                errors.append(
+                    "revision recovery entry slice must be "
+                    "planning_only_plan_revision_recovery_preview_refresh_entry_freeze"
+                )
+            docs = item.get("governing_docs")
+            if not isinstance(docs, list):
+                errors.append("revision recovery entry slice missing governing_docs")
+            else:
+                for doc in (
+                    "next_milestone_plans/Layer3_planning_docs/134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE.md",
+                    "next_milestone_plans/Layer3_planning_docs/132_PLAN_REVISION_RECOVERY_FREEZE.md",
+                    "next_milestone_plans/Layer3_planning_docs/133_PLAN_REVISION_RECOVERY_CONTRACT.md",
+                    "tools/l3-progress-check.py",
+                ):
+                    if doc not in docs:
+                        errors.append(f"revision recovery entry governing_docs missing {doc}")
+            explicit_non_goals = item.get("explicit_non_goals")
+            if not isinstance(explicit_non_goals, list):
+                errors.append("revision recovery entry slice missing explicit_non_goals")
+            else:
+                for blocked in (
+                    "runtime recovery implementation",
+                    "approved-plan reopening, cancellation, deletion, replacement, or supersession",
+                    "L3PassRun creation",
+                    "AnalysisRun creation",
+                    "output/package/handoff/export artifact creation",
+                    "connector/destination dispatch",
+                    "broad qualitative/hybrid/RAG execution",
+                    "authentication/security hardening",
+                    "broad package mutation/reconstruction",
+                ):
+                    if blocked not in explicit_non_goals:
+                        errors.append(f"revision recovery entry explicit_non_goals missing {blocked}")
 
 
 def _check_referenced_paths(manifest: dict[str, Any], errors: list[str]) -> None:
@@ -4545,6 +4702,9 @@ def main() -> int:
         PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE,
         PACKAGE_REPLACEMENT_NAMESPACE_FREEZE,
         PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE,
+        PLAN_REVISION_RECOVERY_FREEZE,
+        PLAN_REVISION_RECOVERY_CONTRACT,
+        PLAN_REVISION_RECOVERY_ENTRY_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         PACKAGE_ENTRY_MIGRATION,
@@ -4613,6 +4773,7 @@ def main() -> int:
         _check_summary_counts(manifest, errors)
         _check_current_decision(manifest, errors)
         _check_plan_revision_recovery_freeze(manifest, errors)
+        _check_plan_revision_recovery_entry_freeze(manifest, errors)
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
     _check_connector_dispatch_entry_freeze(errors)
