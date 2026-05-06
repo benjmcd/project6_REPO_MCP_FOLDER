@@ -4369,7 +4369,9 @@
     "latest_approved_plan_cancel_downstream_state_hardening_base_commit": "9585f49dc54a5dff3a4da8bfe83d2fd137dc08cc",
     "latest_approved_plan_cancel_downstream_state_hardening_live_behavior_change": true,
     "latest_approved_plan_cancel_downstream_state_hardening_summary": "Approved-plan cancel now fails closed with downstream_state_already_exists when same-session L3ReconciliationRecord/L3OutputPackage state exists before cancellation mutation; the proof remains bounded to cancel_approved_plan_without_replacement and does not admit supersession, replacement, execution, package mutation, connector/destination dispatch, provider/public URL, source widening, qualitative/hybrid/RAG, full mockup, or auth/security behavior.",
-    "latest_approved_plan_cancel_service_proof_summary": ""
+    "latest_approved_plan_cancel_service_proof_summary": "Direct owner-service proof covers cancel_approved_plan_without_replacement, approved_plan_cancel_from_session, duplicate idempotency, forbidden-field rejection before mutation, stale-preview/pass-run fail-closed behavior, same-session orphan reconciliation/package state fail-closed behavior, and no downstream row/artifact creation through backend/tests/test_layer3_approved_plan_correction.py.",
+    "latest_approved_plan_cancel_downstream_state_hardening_pr": "#612",
+    "latest_approved_plan_cancel_downstream_state_hardening_merge_commit": "01023e82"
   },
   "approved_plan_cancel_downstream_state_hardening_proof": {
     "scope": "Runtime hardening proof for approved_plan_cancel_without_replacement only; broader approved-plan correction modes remain blocked.",
@@ -4405,6 +4407,9 @@
       "python -m pytest .\\backend\\tests\\test_layer3_approved_plan_correction.py -q",
       "python .\\tools\\l3-progress-check.py",
       "git diff --check"
-    ]
+    ],
+    "implementation_pr": "#612",
+    "merge_commit": "01023e82",
+    "post_merge_authority": "project6-origin/main at 01023e82"
   }
 }

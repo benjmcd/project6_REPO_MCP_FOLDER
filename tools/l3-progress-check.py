@@ -1673,6 +1673,40 @@ def _check_approved_plan_cancel_runtime(
             if not isinstance(counting_rule, str) or "live bounded workbench slice" not in counting_rule:
                 errors.append("approved-plan cancel runtime slice counting_rule must classify the slice as live bounded")
 
+    hardening = manifest.get("approved_plan_cancel_downstream_state_hardening")
+    if not isinstance(hardening, dict):
+        errors.append("manifest missing approved_plan_cancel_downstream_state_hardening object")
+    else:
+        expected_hardening = {
+            "mode": "approved_plan_cancel_without_replacement",
+            "implementation_branch": "codex/l3-cancel-proof",
+            "implementation_pr": "#612",
+            "merge_commit": "01023e82",
+            "post_merge_authority": "project6-origin/main at 01023e82",
+            "error_code": "downstream_state_already_exists",
+            "owner_service": "backend/app/services/layer3_approved_plan_correction.py",
+        }
+        for key, value in expected_hardening.items():
+            if hardening.get(key) != value:
+                errors.append(f"approved_plan_cancel_downstream_state_hardening.{key} must be {value!r}")
+        blocked_state = hardening.get("blocked_state")
+        if not isinstance(blocked_state, list):
+            errors.append("approved_plan_cancel_downstream_state_hardening.blocked_state must be a list")
+        else:
+            for term in ("L3ReconciliationRecord", "L3OutputPackage"):
+                if term not in blocked_state:
+                    errors.append(f"approved_plan_cancel_downstream_state_hardening.blocked_state missing {term}")
+
+    proof_manifest_text = _read_required_text(PROOF_MANIFEST, errors)
+    for term in (
+        "approved_plan_cancel_downstream_state_hardening_proof",
+        '"implementation_pr": "#612"',
+        '"merge_commit": "01023e82"',
+        "same-session orphan reconciliation/package state fail-closed behavior",
+    ):
+        if term not in proof_manifest_text:
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing PR #612 approved-plan cancel hardening proof term: {term}")
+
 
 def _check_referenced_paths(manifest: dict[str, Any], errors: list[str]) -> None:
     refs = manifest.get("authoritative_file_refs")
