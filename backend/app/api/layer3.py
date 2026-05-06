@@ -262,6 +262,48 @@ class Layer3PlanRevisionRequest(BaseModel):
     vector_plan: Any | None = None
 
 
+class Layer3PlanRevisionRecoveryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    session_id: str
+    source_revision_state: str
+    source_preview_id: str
+    source_preview_hash: str
+    operator_decision: str
+    operator_note: str | None = None
+    approve_plan: Any | None = None
+    approved_plan_supersession: Any | None = None
+    delete_approved_plan: Any | None = None
+    execute: Any | None = None
+    execution: Any | None = None
+    run: Any | None = None
+    run_analysis: Any | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    plan_edits: Any | None = None
+    natural_language_plan: Any | None = None
+    llm_plan: Any | None = None
+    execution_started: Any | None = None
+    create_pass_runs: Any | None = None
+    pass_run_ids: Any | None = None
+    analysis_run_id: Any | None = None
+    artifact_manifest: Any | None = None
+    result_review: Any | None = None
+    package_mutation: Any | None = None
+    connector_dispatch: Any | None = None
+    provider_public_url: Any | None = None
+    source_expansion: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+    browser_persisted_state: Any | None = None
+
+
 class Layer3AnalysisExecutionStartRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -1183,6 +1225,23 @@ class Layer3PlanRevisionResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
     downstream_unavailable: list[str]
     plan_revision_control: dict[str, Any]
+
+
+class Layer3PlanRevisionRecoveryResponse(Layer3BaseResponse):
+    session_id: str
+    source_revision_state: str
+    next_state: str
+    preview_refresh_required: bool
+    approval_available: bool
+    execution_started: bool
+    recovery_lifecycle_only: bool
+    source_preview_id: str
+    source_preview_hash: str
+    operator_decision: str
+    operator_note_recorded: bool
+    authority_rail: dict[str, Any]
+    downstream_unavailable: list[str]
+    plan_revision_recovery: dict[str, Any]
 
 
 class Layer3ExecutionSelectionResponse(Layer3BaseResponse):
@@ -2148,6 +2207,60 @@ PLAN_REVISION_REQUEST_SCHEMA: dict[str, Any] = {
         "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
         "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
         "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+    },
+}
+
+
+PLAN_REVISION_RECOVERY_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": "Strict plan-revision recovery fields; only server-authorized preview refresh from recorded revision-control state is admitted.",
+    "required": [
+        "client_request_id",
+        "session_id",
+        "source_revision_state",
+        "source_preview_id",
+        "source_preview_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.plan_revision_recovery_request.v1"]},
+        "schema_version": {"type": "integer"},
+        "client_request_id": {"type": "string", "minLength": 1},
+        "session_id": {"type": "string"},
+        "source_revision_state": {"type": "string", "enum": ["plan_rejected", "plan_revision_requested"]},
+        "source_preview_id": {"type": "string"},
+        "source_preview_hash": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["recover_for_preview_refresh"]},
+        "operator_note": {"type": "string"},
+        "approve_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "approved_plan_supersession": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "delete_approved_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execute": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run_analysis": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_edits": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "natural_language_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "llm_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execution_started": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_pass_runs": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_run_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_mutation": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_dispatch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "provider_public_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "browser_persisted_state": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -3365,6 +3478,7 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     plan_preview: dict[str, Any]
     plan_approval: dict[str, Any]
     plan_revision: dict[str, Any]
+    plan_revision_recovery: dict[str, Any]
     execution_selection: dict[str, Any]
     analysis_execution_start: dict[str, Any]
     execution_result_review: dict[str, Any]
@@ -3557,6 +3671,19 @@ def post_plan_revise(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload.model_dump(exclude_unset=True)))
+
+
+@router.post(
+    "/plan/revision/recover",
+    response_model=Layer3PlanRevisionRecoveryResponse,
+    openapi_extra={"requestBody": _json_request_body(PLAN_REVISION_RECOVERY_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409, 500),
+)
+def post_plan_revision_recover(
+    payload: Layer3PlanRevisionRecoveryRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.plan_revision_recovery(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
