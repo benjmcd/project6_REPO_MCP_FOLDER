@@ -125,7 +125,9 @@ from app.services.layer3_external_export_response import (
     associated_cohort_delivery_ui_state as _associated_cohort_delivery_ui_state,
     associated_cohort_external_export_download as _is_associated_cohort_external_export_download,
     cohort_readiness_identity as _cohort_readiness_identity,
+    external_export_download_prepare_payload_for_delivery as _external_export_download_prepare_payload_for_delivery,
     external_export_download_prepare_response as _external_export_download_prepare_response,
+    safe_download_token as _safe_download_token,
 )
 from app.services.layer3_gate_b_state import (
     GATE_B_DECISIONS,
@@ -7486,29 +7488,6 @@ def external_export_download_prepare(
         packages=packages,
         readiness_state=readiness_state,
     )
-
-
-def _safe_download_token(value: str, *, fallback: str) -> str:
-    token = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "-" for ch in str(value or "").strip())
-    token = token.strip(".-")
-    return (token or fallback)[:96]
-
-
-def _external_export_download_prepare_payload_for_delivery(
-    payload: dict[str, Any],
-    *,
-    readiness_state: dict[str, Any],
-) -> dict[str, Any]:
-    prepare_payload = {
-        key: payload[key]
-        for key in EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS
-        if key in payload and key not in {"client_request_id", "operator_decision", "decision_notes"}
-    }
-    prepare_payload["client_request_id"] = str(readiness_state.get("client_request_id") or "").strip()
-    prepare_payload["operator_decision"] = EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION
-    if readiness_state.get("decision_notes") is not None:
-        prepare_payload["decision_notes"] = readiness_state.get("decision_notes")
-    return prepare_payload
 
 
 def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> ExternalExportDownloadDelivery:
