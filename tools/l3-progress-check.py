@@ -93,6 +93,9 @@ WORKBENCH_PACKAGE_STATE_SERVICE = (
 PLAN_ERROR_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_plan_errors.py"
 )
+EXECUTION_ERROR_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_execution_errors.py"
+)
 EXTERNAL_EXPORT_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_export_contract.py"
 )
@@ -226,6 +229,7 @@ LAYER3_WORKBENCH_PACKAGE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_workbench_package_state.py"
 )
 LAYER3_PLAN_ERROR_TEST = ROOT / "backend" / "tests" / "test_layer3_plan_errors.py"
+LAYER3_EXECUTION_ERROR_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_errors.py"
 LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_external_export_contract.py"
 )
@@ -4906,6 +4910,49 @@ def _check_plan_error_extraction(errors: list[str]) -> None:
             errors.append(f"{_rel(BOARD)} missing plan-error extraction board term: {term}")
 
 
+def _check_execution_error_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(EXECUTION_ERROR_SERVICE, errors)
+    for term in (
+        "def analysis_execution_start_workbench_error(",
+        "Layer3PassEntryError | Layer3QualApsExecutionError",
+        "Layer3WorkbenchError(",
+        '"analysis_execution_start_not_admitted"',
+        'status="conflict"',
+        "http_status=409",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(EXECUTION_ERROR_SERVICE)} missing execution-error extraction term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_execution_errors import analysis_execution_start_workbench_error",
+        "raise analysis_execution_start_workbench_error(exc) from exc",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing execution-error extraction delegation term: {term}")
+    stale_block = (
+        'Layer3WorkbenchError(\n'
+        '            "analysis_execution_start_not_admitted",\n'
+        "            str(exc),\n"
+        '            status="conflict",\n'
+        "            http_status=409,\n"
+        "        )"
+    )
+    if stale_block in workbench_text:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns analysis execution start error mapping")
+
+    test_text = _read_required_text(LAYER3_EXECUTION_ERROR_TEST, errors)
+    for term in (
+        "test_analysis_execution_start_maps_pass_entry_error_without_behavior_change",
+        "test_analysis_execution_start_maps_qual_aps_error_without_behavior_change",
+        "analysis_execution_start_not_admitted",
+        "pass entry blocked",
+        "qualitative pass blocked",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_EXECUTION_ERROR_TEST)} missing execution-error extraction proof term: {term}")
+
+
 def _check_authority_rail_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(AUTHORITY_RAIL_SERVICE, errors)
     for term in (
@@ -6033,6 +6080,8 @@ def main() -> int:
         LAYER3_WORKBENCH_PACKAGE_STATE_TEST,
         PLAN_ERROR_SERVICE,
         LAYER3_PLAN_ERROR_TEST,
+        EXECUTION_ERROR_SERVICE,
+        LAYER3_EXECUTION_ERROR_TEST,
         LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
@@ -6082,6 +6131,7 @@ def main() -> int:
     _check_response_contract_extraction(errors)
     _check_workbench_error_extraction(errors)
     _check_plan_error_extraction(errors)
+    _check_execution_error_extraction(errors)
     _check_authority_rail_extraction(errors)
     _check_preview_contract_extraction(errors)
     _check_readiness_contract_extraction(errors)

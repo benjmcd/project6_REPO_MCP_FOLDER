@@ -54,6 +54,7 @@ from app.services.layer3_pass_entry import (
     execute_selected_pass_run,
     preview_pass_entry,
 )
+from app.services.layer3_execution_errors import analysis_execution_start_workbench_error
 from app.services.layer3_plan_errors import plan_approval_workbench_error, plan_preview_workbench_error
 from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
@@ -3935,12 +3936,7 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
                 client_request_id=request_id,
             )
     except (Layer3PassEntryError, Layer3QualApsExecutionError) as exc:
-        raise Layer3WorkbenchError(
-            "analysis_execution_start_not_admitted",
-            str(exc),
-            status="conflict",
-            http_status=409,
-        ) from exc
+        raise analysis_execution_start_workbench_error(exc) from exc
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
