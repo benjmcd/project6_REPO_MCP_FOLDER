@@ -8,7 +8,11 @@ This artifact narrows docs `132`/`133` into one live server-authorized recovery 
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
 - baseline_ref: `project6-origin/main`
-- runtime_branch_base_commit: `47aef2ee13e173121c3738e63bafbe86e360c280`
+- runtime_base_commit: `47aef2ee13e173121c3738e63bafbe86e360c280`
+- implementation_pr: `#599`
+- implementation_head_commit: `51e5abcbcdd2070c47b3aeba73032db081be41f7`
+- implementation_merge_commit: `1e74a739a07623b7d91d405d946e6b1d221be6ff`
+- post_merge_sync_branch: `codex/l3-revision-recovery-runtime-progress-sync`
 - predecessor freeze: `132_PLAN_REVISION_RECOVERY_FREEZE.md`
 - predecessor contract: `133_PLAN_REVISION_RECOVERY_CONTRACT.md`
 - selected runtime entry: `plan_revision_recovery_preview_refresh_entry`
