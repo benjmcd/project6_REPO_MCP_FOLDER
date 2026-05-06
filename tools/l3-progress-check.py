@@ -78,6 +78,7 @@ STATE_MODEL_CONTRACT_SERVICE = (
 PLAN_FLOW_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_plan_flow_contract.py"
 )
+PLAN_FLOW_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_plan_flow_state.py"
 EXECUTION_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
 )
@@ -222,6 +223,7 @@ LAYER3_STATE_MODEL_CONTRACT_TEST = (
 LAYER3_PLAN_FLOW_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_plan_flow_contract.py"
 )
+LAYER3_PLAN_FLOW_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_plan_flow_state.py"
 LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
 )
@@ -5609,6 +5611,44 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing plan-flow contract extraction doc term: {term}")
 
 
+def _check_plan_flow_state_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(PLAN_FLOW_STATE_SERVICE, errors)
+    for term in (
+        "def latest_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan | None:",
+        "def plan_revision_control_for_session(db: Session, *, session_id: str) -> dict[str, Any] | None:",
+        "L3AnalysisPlan.created_at.desc(), L3AnalysisPlan.analysis_plan_id.asc()",
+        "plan_revision_control_from_session(session)",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PLAN_FLOW_STATE_SERVICE)} missing plan-flow state term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_plan_flow_state import (",
+        "latest_analysis_plan as _latest_analysis_plan",
+        "plan_revision_control_for_session as _plan_revision_control",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing plan-flow state delegation term: {term}")
+    for stale_term in (
+        "def _latest_analysis_plan(",
+        "def _plan_revision_control(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns plan-flow state term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_PLAN_FLOW_STATE_TEST, errors)
+    for term in (
+        "test_latest_analysis_plan_preserves_workbench_ordering",
+        "test_plan_revision_control_for_session_filters_recovery_state",
+        "layer3_workbench._latest_analysis_plan",
+        "layer3_workbench._plan_revision_control",
+        "PLAN_REVISION_RECOVERY_STATE",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_PLAN_FLOW_STATE_TEST)} missing plan-flow state proof term: {term}")
+
+
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
     for term in (
@@ -6225,6 +6265,7 @@ def main() -> int:
         READINESS_CONTRACT_SERVICE,
         BOOTSTRAP_CONTRACT_SERVICE,
         STATE_MODEL_CONTRACT_SERVICE,
+        PLAN_FLOW_STATE_SERVICE,
         EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
@@ -6256,6 +6297,7 @@ def main() -> int:
         LAYER3_READINESS_CONTRACT_TEST,
         LAYER3_BOOTSTRAP_CONTRACT_TEST,
         LAYER3_STATE_MODEL_CONTRACT_TEST,
+        LAYER3_PLAN_FLOW_STATE_TEST,
         LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
@@ -6322,6 +6364,7 @@ def main() -> int:
     _check_bootstrap_contract_extraction(errors)
     _check_state_model_contract_extraction(errors)
     _check_plan_flow_contract_extraction(errors)
+    _check_plan_flow_state_extraction(errors)
     _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
