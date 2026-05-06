@@ -6,7 +6,7 @@ from app.services.layer3_bootstrap_contract import (
 )
 
 
-def test_layer3_bootstrap_contract_is_shared_without_behavior_change() -> None:
+def test_layer3_bootstrap_contract_is_shared() -> None:
     workbench_body = layer3_workbench.bootstrap()
 
     direct_body = build_bootstrap_contract(
@@ -27,8 +27,10 @@ def test_layer3_bootstrap_contract_is_shared_without_behavior_change() -> None:
     assert direct_body["schema_id"] == BOOTSTRAP_SCHEMA_ID
     assert direct_body["features"] == dict(BOOTSTRAP_FEATURE_FLAGS)
     assert direct_body["features"]["single_aps_doc_qualitative_execution"] is True
+    assert direct_body["features"]["plan_revision_recovery"] is True
     assert direct_body["features"]["broad_qualitative_execution"] is False
     assert direct_body["features"]["rag_vector_retrieval"] is False
     assert direct_body["features"]["dispatch"] is False
     assert direct_body["execution_readiness"]["dispatch_admitted"] is False
+    assert direct_body["execution_readiness"]["plan_revision_recovery_admitted"] is True
     assert direct_body["execution_readiness"]["readiness_state"] == "execution_readiness_blocked"

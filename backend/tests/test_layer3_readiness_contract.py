@@ -10,7 +10,7 @@ from app.services.layer3_readiness_contract import (
 )
 
 
-def test_layer3_readiness_contract_is_shared_without_behavior_change() -> None:
+def test_layer3_readiness_contract_is_shared() -> None:
     state_model = layer3_workbench._workbench_state_model()
     state_action_contract = layer3_workbench._workbench_state_action_contract()
 
@@ -36,6 +36,9 @@ def test_layer3_readiness_contract_is_shared_without_behavior_change() -> None:
     assert direct["state_action_contract"] == state_action_contract
     assert direct["execution_enabled"] is False
     assert direct["dispatch_admitted"] is False
+    assert direct["plan_revision_recovery_admitted"] is True
+    assert direct["plan_revision_recovery_endpoint"] == "/api/v1/layer3/plan/revision/recover"
     assert direct["deferred_decisions"]["source_breadth"] == (
         "requires later freeze before RAG/vector/upload/local-directory expansion"
     )
+    assert direct["deferred_decisions"]["revision_recovery"].startswith("admitted only as preview-refresh recovery")

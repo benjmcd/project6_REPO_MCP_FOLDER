@@ -8,7 +8,7 @@ def _legacy_blocked(payload: dict[str, object], forbidden_fields: frozenset[str]
     return sorted(key for key in forbidden_fields if key in payload)
 
 
-def test_plan_flow_contract_is_shared_without_behavior_change() -> None:
+def test_plan_flow_contract_is_shared() -> None:
     assert layer3_workbench.PLAN_APPROVAL_FORBIDDEN_FIELDS is contract.PLAN_APPROVAL_FORBIDDEN_FIELDS
     assert layer3_workbench.PLAN_REVISION_FORBIDDEN_FIELDS is contract.PLAN_REVISION_FORBIDDEN_FIELDS
     assert (
@@ -39,6 +39,22 @@ def test_plan_flow_contract_blocks_same_fields_as_legacy_logic() -> None:
     assert contract.plan_revision_blocked_fields(revision_payload) == _legacy_blocked(
         revision_payload,
         contract.PLAN_REVISION_FORBIDDEN_FIELDS,
+    )
+
+    recovery_payload = {
+        "client_request_id": "recovery-1",
+        "session_id": "session-1",
+        "source_revision_state": "plan_rejected",
+        "source_preview_id": "preview-1",
+        "source_preview_hash": "hash-1",
+        "operator_decision": "recover_for_preview_refresh",
+        "approved_plan_supersession": True,
+        "provider_public_url": "https://example.invalid/object",
+        "browser_persisted_state": {"authoritative": True},
+    }
+    assert contract.plan_revision_recovery_blocked_fields(recovery_payload) == _legacy_blocked(
+        recovery_payload,
+        contract.PLAN_REVISION_RECOVERY_FORBIDDEN_FIELDS,
     )
 
     selection_payload = {

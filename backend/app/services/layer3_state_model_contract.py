@@ -465,13 +465,13 @@ def build_workbench_state_model(*, state_names: Mapping[str, str]) -> dict[str, 
             {
                 "state": "plan_rejected",
                 "authority_source": "l3_session_summary_plan_revision_control",
-                "allowed_next_actions": [],
+                "allowed_next_actions": ["plan_revision_recover"],
                 "forbidden_downstream_actions": ["approval", "execution", "results", "package"],
             },
             {
                 "state": "plan_revision_requested",
                 "authority_source": "l3_session_summary_plan_revision_control",
-                "allowed_next_actions": [],
+                "allowed_next_actions": ["plan_revision_recover"],
                 "forbidden_downstream_actions": ["approval", "execution", "results", "package"],
             },
             {

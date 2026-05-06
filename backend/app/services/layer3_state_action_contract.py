@@ -139,6 +139,27 @@ STATE_ACTION_ADMITTED_CAPABILITIES = (
             "full_mockup_activation",
         ],
     },
+    {
+        "capability": "plan_revision_recovery_preview_refresh_entry",
+        "admitted": True,
+        "source_gate": "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE",
+        "scope": "server-authorized preview refresh from terminal pre-approval revision-control state with no plan, pass-run, execution, package, handoff/export, connector, provider, source, or artifact writes",
+        "owner_service": "backend/app/services/layer3_plan_revision_recovery.py",
+        "blocked_downstream": [
+            "approved_plan_reopening_or_supersession",
+            "analysis_plan_creation",
+            "l3_pass_run_creation",
+            "analysis_run_creation",
+            "output_package_handoff_export_artifacts",
+            "provider_public_url",
+            "connector_destination_dispatch",
+            "local_upload_or_directory_source_expansion",
+            "broad_qualitative_execution",
+            "hybrid_execution",
+            "rag_vector_retrieval",
+            "full_mockup_activation",
+        ],
+    },
 )
 
 STATE_ACTION_DEFERRED_CAPABILITIES = (
@@ -220,6 +241,7 @@ def build_state_action_contract(
     plan_preview_unavailable_gate_labels: Iterable[str],
     gate_b_decisions: Iterable[str],
     plan_revision_decisions: Iterable[str],
+    plan_revision_recovery_decisions: Iterable[str],
     execution_result_review_decisions: Iterable[str],
     package_review_submit_decisions: Iterable[str],
     handoff_export_prepare_decisions: Iterable[str],
@@ -259,6 +281,7 @@ def build_state_action_contract(
         "decision_sets": {
             "gate_b": list(gate_b_decisions),
             "plan_revision": sorted(plan_revision_decisions),
+            "plan_revision_recovery": sorted(plan_revision_recovery_decisions),
             "execution_result_review": sorted(execution_result_review_decisions),
             "package_review_submit": sorted(package_review_submit_decisions),
             "handoff_export_prepare": sorted(handoff_export_prepare_decisions),
