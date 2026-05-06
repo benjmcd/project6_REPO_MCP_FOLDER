@@ -3,9 +3,14 @@ from __future__ import annotations
 from typing import Any
 
 from app.models.models import L3PassRun
+from app.services.layer3_preview_contract import preview_identity
+from app.services.layer3_response_contract import base_response
+from app.services.layer3_utils import json_clone
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
+EXECUTION_RESULT_REVIEW_SCHEMA_ID = "layer3.execution_result_review.v1"
 EXECUTION_RESULT_REVIEW_STATE_SCHEMA_ID = "layer3.execution_result_review_state.v1"
+EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE = ("package", "handoff", "package_review")
 EXECUTION_RESULT_REVIEW_ITEM_TYPES = frozenset(
     {
         "datum",
@@ -139,4 +144,45 @@ def result_review_trace_summary(
         "source_gate": output_metadata_summary.get("source_gate"),
         "reviewed_item_count": len(reviewed_items),
         "unresolved_trace_count": unresolved_trace_count,
+    }
+
+
+def execution_result_review_response(
+    *,
+    request_id: str,
+    status: str,
+    session_id: str,
+    analysis_plan_id: str,
+    preview_id: str,
+    preview_hash: str,
+    pass_run: L3PassRun,
+    analysis_run_id: str | None,
+    review_state: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        **base_response(EXECUTION_RESULT_REVIEW_SCHEMA_ID, request_id=request_id, status=status),
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "preview_identity": preview_identity(preview_id=preview_id, preview_hash=preview_hash),
+        "analysis_run_id": analysis_run_id,
+        "result_status_available": True,
+        "result_review_enabled": True,
+        "review_state": review_state["review_state"],
+        "operator_decision": review_state["operator_decision"],
+        "review_record_ref": review_state["review_record_ref"],
+        "trace_summary": json_clone(review_state["trace_summary"]),
+        "reviewed_output_items": json_clone(review_state.get("reviewed_output_items") or []),
+        "unresolved_trace_count": int(review_state.get("unresolved_trace_count") or 0),
+        "package_review_enabled": False,
+        "handoff_enabled": False,
+        "downstream_unavailable": list(EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE),
+        "review_notes_recorded": bool(str(review_state.get("review_notes") or "").strip()),
+        "engine_family": pass_run.engine_family,
+        "pass_type": review_state.get("pass_type"),
+        "pass_scope": review_state.get("pass_scope"),
+        "selected_method_name": review_state.get("selected_method_name"),
+        "source_gate": review_state.get("source_gate"),
+        "source_dataset_version_ids": json_clone(review_state.get("source_dataset_version_ids") or []),
+        "cohort_shape": review_state.get("cohort_shape"),
     }

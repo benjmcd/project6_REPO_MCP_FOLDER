@@ -6012,6 +6012,12 @@ def _check_execution_review_extraction(errors: list[str]) -> None:
         "reviewed_output_items_too_large",
         "def result_review_trace_summary(",
         "source_dataset_version_ids_json",
+        "EXECUTION_RESULT_REVIEW_SCHEMA_ID = \"layer3.execution_result_review.v1\"",
+        "EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE = (\"package\", \"handoff\", \"package_review\")",
+        "def execution_result_review_response(",
+        "base_response(EXECUTION_RESULT_REVIEW_SCHEMA_ID",
+        "preview_identity(preview_id=preview_id, preview_hash=preview_hash)",
+        "json_clone(review_state[\"trace_summary\"])",
     ):
         if term not in service_text:
             errors.append(f"{_rel(EXECUTION_REVIEW_SERVICE)} missing execution review extraction term: {term}")
@@ -6022,6 +6028,9 @@ def _check_execution_review_extraction(errors: list[str]) -> None:
         "execution_result_review_from_pass_run as _execution_result_review_from_pass_run",
         "normalize_result_review_items as _normalize_result_review_items",
         "result_review_trace_summary as _result_review_trace_summary",
+        "EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE",
+        "EXECUTION_RESULT_REVIEW_SCHEMA_ID",
+        "execution_result_review_response as _execution_result_review_response",
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing execution review delegation term: {term}")
@@ -6030,6 +6039,9 @@ def _check_execution_review_extraction(errors: list[str]) -> None:
         "def _execution_result_review_from_pass_run(",
         "def _normalize_result_review_items(",
         "def _result_review_trace_summary(",
+        "EXECUTION_RESULT_REVIEW_SCHEMA_ID = \"layer3.execution_result_review.v1\"",
+        "EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE = (\"package\", \"handoff\", \"package_review\")",
+        "def _execution_result_review_response(",
     ):
         if stale_term in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns execution review term: {stale_term}")
@@ -6040,8 +6052,11 @@ def _check_execution_review_extraction(errors: list[str]) -> None:
         "test_normalize_result_review_items_preserves_trace_semantics",
         "test_normalize_result_review_items_preserves_fail_closed_errors",
         "test_result_review_trace_summary_preserves_workbench_projection",
+        "test_execution_result_review_response_preserves_workbench_projection",
         "layer3_workbench._normalize_result_review_items",
+        "layer3_workbench._execution_result_review_response",
         "reviewed_output_items_too_large",
+        "EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE",
     ):
         if term not in test_text:
             errors.append(f"{_rel(LAYER3_EXECUTION_REVIEW_TEST)} missing execution review proof term: {term}")
@@ -6049,19 +6064,24 @@ def _check_execution_review_extraction(errors: list[str]) -> None:
     for path, terms in {
         BOARD: (
             "execution result-review extraction",
+            "execution result-review response extraction",
             "layer3_execution_review.py",
             "test_layer3_execution_review.py",
             "does not admit route, DTO, model, migration, UI, execution behavior",
         ),
         MANIFEST: (
             "execution_result_review_extraction_pr",
+            "execution_result_review_response_extraction_pr",
             "execution result-review extraction",
+            "execution result-review response extraction",
             "layer3_execution_review.py",
             "test_layer3_execution_review.py",
         ),
         PROOF_MANIFEST: (
             "latest_execution_result_review_extraction_branch",
+            "latest_execution_result_review_response_extraction_branch",
             "latest_execution_result_review_extraction_live_behavior_change",
+            "latest_execution_result_review_response_extraction_live_behavior_change",
             "backend/app/services/layer3_execution_review.py",
             "backend/tests/test_layer3_execution_review.py",
         ),
