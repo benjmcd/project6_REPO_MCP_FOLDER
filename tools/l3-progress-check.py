@@ -812,6 +812,27 @@ def _check_plan_revision_recovery_entry_freeze(
             if term not in text:
                 errors.append(f"{_rel(path)} missing revision recovery entry term: {term}")
 
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    proof_scope = proof_manifest.get("scope") if isinstance(proof_manifest, dict) else None
+    if not isinstance(proof_scope, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} scope missing for revision recovery entry freeze")
+    else:
+        expected_scope = {
+            "source_branch": "codex/l3-revision-recovery-entry-freeze",
+            "base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
+            "source_base_commit": "4809ac0aa61aac3a51a92f4070ff1d92d67591c5",
+            "live_behavior_change": False,
+        }
+        for key, value in expected_scope.items():
+            if proof_scope.get(key) != value:
+                errors.append(f"{_rel(PROOF_MANIFEST)} scope.{key} must be {value!r}")
+        purpose = proof_scope.get("purpose")
+        summary = proof_scope.get("live_behavior_change_summary")
+        if not isinstance(purpose, str) or "plan revision recovery preview-refresh" not in purpose:
+            errors.append(f"{_rel(PROOF_MANIFEST)} scope.purpose must describe revision recovery entry")
+        if not isinstance(summary, str) or "admits no runtime behavior" not in summary:
+            errors.append(f"{_rel(PROOF_MANIFEST)} scope.live_behavior_change_summary must deny runtime behavior")
+
     top_level = manifest.get("plan_revision_recovery_entry_freeze")
     if not isinstance(top_level, dict):
         errors.append("manifest missing plan_revision_recovery_entry_freeze object")
