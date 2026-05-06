@@ -5478,6 +5478,7 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         "def plan_approval_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
         "def plan_revision_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
         "def execution_selection_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "def source_classes_from_plan_preview(plan_preview: Mapping[str, Any]) -> list[str]:",
         '"llm_plan"',
         '"create_pass_runs"',
         '"start_execution"',
@@ -5495,6 +5496,7 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         "forbidden = plan_approval_blocked_fields(payload)",
         "forbidden = plan_revision_blocked_fields(payload)",
         "forbidden = execution_selection_blocked_fields(payload)",
+        "source_classes_from_plan_preview as _source_classes_from_plan_preview",
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing plan-flow contract extraction term: {term}")
@@ -5502,6 +5504,7 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         "PLAN_APPROVAL_FORBIDDEN_FIELDS = frozenset(",
         "PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(",
         "EXECUTION_SELECTION_FORBIDDEN_FIELDS = frozenset(",
+        "def _source_classes_from_plan_preview(",
     ):
         if stale_term in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns plan-flow contract term: {stale_term}")
@@ -5514,6 +5517,8 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
         "contract.plan_approval_blocked_fields(approval_payload)",
         "contract.plan_revision_blocked_fields(revision_payload)",
         "contract.execution_selection_blocked_fields(selection_payload)",
+        "test_source_classes_from_plan_preview_preserves_workbench_authority_ordering",
+        "test_workbench_delegates_plan_preview_source_classes_to_contract",
     ):
         if term not in test_text:
             errors.append(f"{_rel(LAYER3_PLAN_FLOW_CONTRACT_TEST)} missing plan-flow contract test term: {term}")

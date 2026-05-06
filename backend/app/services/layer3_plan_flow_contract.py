@@ -101,3 +101,13 @@ def approved_plan_cancel_blocked_fields(payload: Mapping[str, Any]) -> list[str]
 
 def execution_selection_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
     return sorted(key for key in EXECUTION_SELECTION_FORBIDDEN_FIELDS if key in payload)
+
+
+def source_classes_from_plan_preview(plan_preview: Mapping[str, Any]) -> list[str]:
+    source_classes = set()
+    for collection_name in ("admitted_sets", "excluded_sets"):
+        for item in plan_preview.get(collection_name) or []:
+            source_summary = item.get("source_summary") if isinstance(item, dict) else {}
+            for source_class in (source_summary or {}).get("source_classes") or []:
+                source_classes.add(str(source_class))
+    return sorted(source_classes)
