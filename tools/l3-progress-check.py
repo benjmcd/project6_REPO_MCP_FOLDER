@@ -70,6 +70,9 @@ QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT = (
 QUAL_APS_RENDERED_UI_FREEZE = PLANNING_DOCS / "151_QUAL_APS_RENDERED_UI_FREEZE.md"
 QUAL_APS_RENDERED_UI_CONTRACT = PLANNING_DOCS / "152_QUAL_APS_RENDERED_UI_CONTRACT.md"
 SOURCE_BREADTH_FREEZE = PLANNING_DOCS / "153_SOURCE_BREADTH_FREEZE.md"
+RAW_INGESTION_MATERIALIZATION_FREEZE = (
+    PLANNING_DOCS / "154_RAW_INGESTION_MATERIALIZATION_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -4891,7 +4894,7 @@ def _check_source_breadth_freeze(errors: list[str]) -> None:
         POST_709_ROADMAP_FREEZE: (
             "153_SOURCE_BREADTH_FREEZE.md",
             "current_admitted_classes_with_server_owned_raw_materialization_only",
-            "raw-ingestion implementation branch still needs exact runtime entry criteria and tests before edits",
+            "runtime implementation still requires a separate code branch and validation",
         ),
         PHASE1A_README: (
             "153_SOURCE_BREADTH_FREEZE.md",
@@ -4922,6 +4925,78 @@ def _check_source_breadth_freeze(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing source-breadth proof term: {term}")
+
+
+def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(RAW_INGESTION_MATERIALIZATION_FREEZE, errors)
+    for term in (
+        "Status: planning/control implementation-entry freeze",
+        "selected_raw_ingestion_mode: `raw_mixed_existing_source_materialization_entry`",
+        "owner service: `backend/app/services/layer3_raw_mixed_materialization.py`",
+        "route: `POST /api/v1/layer3/source/mixed-corpus/materialize`",
+        "request DTO: `Layer3RawMixedCorpusMaterializeRequest`",
+        "response DTO: `Layer3RawMixedCorpusMaterializeResponse`",
+        "layer3.raw_mixed_corpus_materialize_request.v1",
+        "layer3.raw_mixed_corpus_materialize_result.v1",
+        "layer3.raw_mixed_corpus_materialization_manifest.v1",
+        "The existing `POST /api/v1/layer3/source/mixed-corpus/seed` route remains seed-only and must continue to write no database rows or files.",
+        "The future implementation must write no files.",
+        "Partial materialization on failure is not admitted.",
+        "No Layer 3 flow state during materialization",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(RAW_INGESTION_MATERIALIZATION_FREEZE)} missing raw ingestion materialization term: {term}"
+            )
+
+    seed_doc_text = _read_required_text(RAW_MIXED_BRIDGE_FREEZE, errors)
+    for term in (
+        "writes no database rows",
+        "file write behavior: writes no files",
+        "successful seed action returns existing deterministic `DatasetVersion` and `ApsContentDocument` source authority only and writes no database rows or files",
+    ):
+        if term not in seed_doc_text:
+            errors.append(f"{_rel(RAW_MIXED_BRIDGE_FREEZE)} missing seed-only no-write distinction: {term}")
+
+    required_terms = {
+        SOURCE_BREADTH_FREEZE: (
+            "current_admitted_classes_with_server_owned_raw_materialization_only",
+            "`dataset_version`",
+            "`aps_content_document`",
+        ),
+        POST_709_ROADMAP_FREEZE: (
+            "154_RAW_INGESTION_MATERIALIZATION_FREEZE.md",
+            "raw_mixed_existing_source_materialization_entry",
+            "runtime implementation still requires a separate code branch and validation",
+        ),
+        PHASE1A_README: (
+            "154_RAW_INGESTION_MATERIALIZATION_FREEZE.md",
+            "raw_mixed_existing_source_materialization_entry",
+            "leaving the existing seed route no-write and seed-only",
+        ),
+        BOARD: (
+            "Raw ingestion materialization freeze",
+            "raw_mixed_existing_source_materialization_entry",
+            "existing seed route no-write and seed-only",
+        ),
+        MANIFEST: (
+            "latest_raw_ingestion_materialization_freeze_branch",
+            "raw_ingestion_materialization_freeze",
+            "raw_mixed_existing_source_materialization_entry",
+            "existing seed route remains no-write and seed-only",
+        ),
+        PROOF_MANIFEST: (
+            "raw_ingestion_materialization_freeze_proof",
+            "selected_raw_ingestion_mode",
+            "raw_mixed_existing_source_materialization_entry",
+            "POST /api/v1/layer3/source/mixed-corpus/materialize",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing raw ingestion materialization proof term: {term}")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -9485,6 +9560,7 @@ def main() -> int:
         QUAL_APS_RENDERED_UI_FREEZE,
         QUAL_APS_RENDERED_UI_CONTRACT,
         SOURCE_BREADTH_FREEZE,
+        RAW_INGESTION_MATERIALIZATION_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -9633,6 +9709,7 @@ def main() -> int:
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
     _check_source_breadth_freeze(errors)
+    _check_raw_ingestion_materialization_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
