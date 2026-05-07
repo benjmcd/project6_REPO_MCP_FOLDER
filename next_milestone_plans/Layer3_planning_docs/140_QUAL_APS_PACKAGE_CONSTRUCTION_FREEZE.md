@@ -22,7 +22,7 @@ This document governs the bounded runtime tranche after the live read-only `qual
 - selected future response schema: `layer3.qual_aps_package_construction_commit.v1`
 - package kinds: `canonical_internal`, `user_facing`, `review_facing`
 - live behavior: `backend/app/services/layer3_workbench.py` admits qualitative APS package construction through `layer3.qual_aps_package_construction_commit.v1`
-- submit blocker that must remain after construction: `qualitative_aps_package_review_submit_not_admitted`
+- submit successor: docs `143`/`144` and the live submit runtime now admit `qual_aps_package_review_submit_entry` after construction
 - companion contract: `141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
 - next roadmap reference: `142_POST_709_ROADMAP_FREEZE.md`
 
@@ -114,7 +114,7 @@ The implementation-entry boundary is acceptable only if it proves:
 - the package payloads are server-derived and deterministic;
 - duplicate `client_request_id` returns the existing constructed package set or fails closed without duplicate rows/files;
 - concurrent duplicate construction attempts cannot create duplicate reconciliation/package rows or divergent payload files;
-- package-review submit remains blocked with `qualitative_aps_package_review_submit_not_admitted`;
+- package-review submit is admitted only by the separate docs `143`/`144` boundary and must preserve this construction authority;
 - downstream handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URL, source expansion, RAG/vector, hidden LLM, mockup, UI, and auth/security behavior remains unavailable;
 - existing quantitative selected-pass and associated-cohort package construction behavior remains unchanged.
 

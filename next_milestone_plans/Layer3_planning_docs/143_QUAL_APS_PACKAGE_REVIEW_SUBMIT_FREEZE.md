@@ -1,25 +1,25 @@
 # Layer 3 Qualitative APS Package Review Submit Freeze
 
-Status: planning/control freeze for the next qualitative APS boundary after PR `#709`.
+Status: current-main runtime boundary for `qual_aps_package_review_submit_entry`.
 
-This document selects only a future `qual_aps_package_review_submit_entry` implementation-entry boundary. It does not implement package-review submit and does not admit handoff/export, APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, broad qualitative/hybrid/RAG behavior, package mutation/reconstruction, hidden LLM planning, full mockup activation, model/migration work, or authentication/security behavior.
+This document governs the live bounded `qual_aps_package_review_submit_entry` implementation. It admits exactly one qualitative APS package-review submit decision over an already constructed qualitative APS package set. It does not admit handoff/export, APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, broad qualitative/hybrid/RAG behavior, package mutation/reconstruction, hidden LLM planning, full mockup activation, model/migration work, or authentication/security behavior.
 
 ## Authority Snapshot
 
 - authoritative remote: `project6-origin/main`
-- current-main anchor: PR `#709`, merge commit `aaf524a646946190584cf69822cde58834846b75`
+- current-main anchor: PR `#709`, merge commit `aaf524a646946190584cf69822cde58834846b75`, plus the current qualitative APS package-review submit runtime branch
 - roadmap authority: `142_POST_709_ROADMAP_FREEZE.md`
 - predecessor runtime: `qual_aps_package_construction_commit_entry`
 - predecessor docs: `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md` and `141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
 - predecessor response schema: `layer3.qual_aps_package_construction_commit.v1`
 - existing submit route family: `POST /api/v1/layer3/package/review/submit`
-- selected future mode: `qual_aps_package_review_submit_entry`
-- selected future response schema: `layer3.qual_aps_package_review_submit.v1`
+- selected live mode: `qual_aps_package_review_submit_entry`
+- selected live response schema: `layer3.qual_aps_package_review_submit.v1`
 - package kinds: `canonical_internal`, `user_facing`, `review_facing`
-- blocker on current main: `qualitative_aps_package_review_submit_not_admitted`
+- former blocker removed by the live runtime: `qualitative_aps_package_review_submit_not_admitted`
 - companion contract: `144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md`
 
-Live source and tests outrank this planning document. This document is a freeze for the next possible runtime pass only.
+Live source and tests outrank this planning document. This document is the current runtime boundary record for qualitative APS package-review submit only.
 
 ## Decision
 
@@ -48,9 +48,9 @@ Only these operator decisions are in scope:
 
 The decision vocabulary is review disposition only. It is not a handoff command, export command, package rebuild command, source-expansion command, rerun command, result-review amendment, approved-plan correction, or mockup activation.
 
-## Future Runtime Shape
+## Runtime Shape
 
-A later implementation may include only:
+The live implementation may include only:
 
 - extending or reusing `POST /api/v1/layer3/package/review/submit` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`;
 - response schema `layer3.qual_aps_package_review_submit.v1`;
@@ -72,7 +72,7 @@ The implementation must not create new rows or files under this freeze.
 
 ## Forbidden Writes And Effects
 
-The future implementation must not:
+The implementation must not:
 
 - create `L3ReconciliationRecord`, `L3OutputPackage`, `L3AnalysisPlan`, `L3PassRun`, `AnalysisRun`, `AnalysisArtifact`, connector, destination, provider, source-ingestion, RAG/vector, runtime snapshot, auth, delivery, signed-reference, or handoff/export rows;
 - write, delete, rewrite, or replace package payload files;
@@ -82,7 +82,7 @@ The future implementation must not:
 
 ## Positive Invariants
 
-The implementation-entry boundary is acceptable only if it proves:
+The boundary is acceptable only if it proves:
 
 - admission is limited to `ENGINE_FAMILY_QUAL_APS_DOCUMENT` and `single_aps_doc_qualitative_pass`;
 - submit requires an existing PR `#709` qualitative package-construction commit;
@@ -98,7 +98,7 @@ The implementation-entry boundary is acceptable only if it proves:
 
 ## Required Tests For Runtime
 
-Minimum implementation proof for a later runtime pass:
+Minimum implementation proof for this runtime pass:
 
 - successful API submit for one constructed standalone APS qualitative package set;
 - bounded E2E extension from package construction through submit, stopping before handoff/export;

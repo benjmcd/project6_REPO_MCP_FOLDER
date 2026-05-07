@@ -238,6 +238,7 @@ from app.services.layer3_workbench_package_state import (
     PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
     PACKAGE_REVIEW_PREVIEW_READY_STATE,
     PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
+    QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
     PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
     active_downstream_unavailable as package_state_active_downstream_unavailable,
     aps_handoff_dispatch_from_reconciliation as _aps_handoff_dispatch_from_reconciliation,
@@ -257,6 +258,7 @@ from app.services.layer3_workbench_package_state import (
     package_source_dataset_version_ids as _package_source_dataset_version_ids,
     package_source_shape as _package_source_shape,
     packages_in_review_order as _packages_in_review_order,
+    qualitative_aps_package_construction_source as _is_qualitative_aps_package_construction_source,
     review_package_hash_map as _package_hash_map,
     review_package_ref_map as _package_ref_map,
     review_source_packages as _review_source_packages,
@@ -4326,16 +4328,22 @@ def _package_construction_summary(
         if not isinstance(commit_summary, dict):
             commit_summary = {}
         cohort_package_construction = _is_cohort_package_construction_source(reconciliation_summary.get("source_gate"))
+        qualitative_package_construction = _is_qualitative_aps_package_construction_source(
+            reconciliation_summary.get("source_gate")
+        )
         package_review_submit_enabled = bool(
             constructed
             and package_review_submit is None
             and (
                 commit_summary.get("package_review_submit_enabled", True) is True
                 or cohort_package_construction
+                or qualitative_package_construction
             )
         )
         if package_review_submit_enabled and cohort_package_construction:
             downstream_unavailable = list(COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
+        elif package_review_submit_enabled and qualitative_package_construction:
+            downstream_unavailable = list(QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
         else:
             downstream_unavailable = (
                 commit_summary.get("downstream_unavailable")
@@ -4347,6 +4355,8 @@ def _package_construction_summary(
                 list(
                     COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
                     if cohort_package_construction
+                    else QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+                    if qualitative_package_construction
                     else PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
                 )
                 if package_review_submit_enabled
@@ -4990,9 +5000,9 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             if associated_cohort_commit
             else SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE
         )
-    package_review_submit_enabled = not qualitative_aps_commit
+    package_review_submit_enabled = True
     downstream_unavailable = (
-        QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
+        QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
         if qualitative_aps_commit
         else
         COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
@@ -5169,11 +5179,13 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
     preview_hash = str(payload.get("preview_hash") or "").strip()
     supplied_review_ref = str(payload.get("result_review_record_ref") or "").strip()
     supplied_package_preview_hash = str(payload.get("package_review_preview_hash") or "").strip()
+    supplied_construction_basis_hash = str(payload.get("construction_basis_hash") or "").strip()
     reconciliation_record_id = str(payload.get("reconciliation_record_id") or "").strip()
     operator_decision = str(payload.get("operator_decision") or "").strip()
     decision_notes = str(payload.get("decision_notes") or "").strip()
     supplied_analysis_run_id = str(payload.get("analysis_run_id") or "").strip()
     raw_output_package_ids = payload.get("output_package_ids")
+    raw_payload_refs = payload.get("payload_refs")
     raw_payload_hashes = payload.get("payload_hashes")
 
     missing = [
@@ -5283,12 +5295,41 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             status="conflict",
             http_status=409,
         )
-    if status_body.get("engine_family") == ENGINE_FAMILY_QUAL_APS_DOCUMENT:
-        _raise_if_qualitative_aps_downstream_not_admitted(
+    qualitative_aps_submit = status_body.get("engine_family") == ENGINE_FAMILY_QUAL_APS_DOCUMENT
+    qualitative_basis: dict[str, Any] | None = None
+    if qualitative_aps_submit:
+        if supplied_analysis_run_id:
+            raise Layer3WorkbenchError(
+                "qualitative_aps_package_review_submit_analysis_run_not_admitted",
+                "Qualitative APS package-review submit must not supply analysis_run_id.",
+                status="invalid",
+                blocked_fields=["analysis_run_id"],
+            )
+        qualitative_basis = _require_qualitative_aps_package_review_authority(
+            db,
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
             status_body=status_body,
-            action_label="Package-review submit",
-            error_code="qualitative_aps_package_review_submit_not_admitted",
+            pass_run=pass_run,
+            output_metadata_summary=output_metadata_summary,
         )
+        qualitative_missing = []
+        if not supplied_construction_basis_hash:
+            qualitative_missing.append("construction_basis_hash")
+        if not raw_payload_refs:
+            qualitative_missing.append("payload_refs")
+        if qualitative_missing:
+            raise Layer3WorkbenchError(
+                "missing_qualitative_aps_package_review_submit_fields",
+                (
+                    "Qualitative APS package-review submit request is missing required fields: "
+                    f"{', '.join(qualitative_missing)}."
+                ),
+                status="invalid",
+                blocked_fields=qualitative_missing,
+                next_allowed_actions=["submit_complete_qualitative_aps_package_review_submit_request"],
+            )
     reconciliation = (
         db.query(L3ReconciliationRecord)
         .filter(
@@ -5382,16 +5423,28 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             blocked_fields=["result_review_record_ref"],
         )
 
-    expected_package_preview_hash = _package_review_preview_hash(
-        session_id=session_id,
-        analysis_plan_id=analysis_plan_id,
-        pass_run_id=pass_run_id,
-        preview_id=preview_id,
-        preview_hash=preview_hash,
-        analysis_run_id=str(status_body.get("analysis_run_id") or "") or None,
-        result_review_record_ref=supplied_review_ref,
-        output_metadata_summary=output_metadata_summary,
-    )
+    if qualitative_aps_submit:
+        expected_package_preview_hash = _qualitative_aps_package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            result_review_record_ref=supplied_review_ref,
+            output_payload_ref=output_metadata_summary.get("output_payload_ref"),
+            qualitative_basis=qualitative_basis or {},
+        )
+    else:
+        expected_package_preview_hash = _package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            analysis_run_id=str(status_body.get("analysis_run_id") or "") or None,
+            result_review_record_ref=supplied_review_ref,
+            output_metadata_summary=output_metadata_summary,
+        )
     if supplied_package_preview_hash != expected_package_preview_hash:
         raise Layer3WorkbenchError(
             "package_review_submit_preview_mismatch",
@@ -5490,6 +5543,14 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             next_allowed_actions=["inspect_existing_package_state"],
         )
     package_construction_source_gate = str(reconciliation_summary.get("source_gate") or "")
+    if qualitative_aps_submit and package_construction_source_gate != SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "qualitative_aps_package_review_submit_construction_source_gate_mismatch",
+            "Qualitative APS package-review submit requires qualitative APS package-construction authority from docs 140/141.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
     if associated_cohort_submit and package_construction_source_gate != SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE:
         raise Layer3WorkbenchError(
             "package_review_submit_construction_source_gate_mismatch",
@@ -5502,6 +5563,14 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         raise Layer3WorkbenchError(
             "package_review_submit_construction_source_gate_mismatch",
             "Single-item package-review submit cannot use associated-cohort package-construction authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+    if not qualitative_aps_submit and package_construction_source_gate == SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "package_review_submit_construction_source_gate_mismatch",
+            "Non-qualitative package-review submit cannot use qualitative APS package-construction authority.",
             status="conflict",
             http_status=409,
             blocked_fields=["reconciliation_record_id"],
@@ -5522,6 +5591,36 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             http_status=409,
             blocked_fields=commit_mismatches,
         )
+    expected_construction_basis_hash = str(
+        commit_summary.get("construction_basis_hash") or commit_summary.get("authority_basis_hash") or ""
+    )
+    if qualitative_aps_submit and supplied_construction_basis_hash != expected_construction_basis_hash:
+        raise Layer3WorkbenchError(
+            "qualitative_aps_package_review_submit_construction_basis_mismatch",
+            "Supplied construction_basis_hash does not match the persisted qualitative APS package construction.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["construction_basis_hash"],
+        )
+
+    canonical_payload_refs = None
+    if qualitative_aps_submit:
+        if not isinstance(raw_payload_refs, (list, dict)):
+            raise Layer3WorkbenchError(
+                "qualitative_aps_package_review_submit_payload_refs_invalid",
+                "payload_refs must be either a list of package refs or a mapping keyed by package kind or package id.",
+                status="invalid",
+                blocked_fields=["payload_refs"],
+            )
+        canonical_payload_refs = _canonical_payload_refs(payload_refs=raw_payload_refs, packages=packages)
+        if canonical_payload_refs is None:
+            raise Layer3WorkbenchError(
+                "qualitative_aps_package_review_submit_payload_refs_mismatch",
+                "Supplied payload_refs do not match the constructed package payload refs.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["payload_refs"],
+            )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
     submit_basis = {
@@ -5534,9 +5633,11 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "analysis_run_id": analysis_run_id,
         "result_review_record_ref": supplied_review_ref,
         "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_submit else None,
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": expected_package_ids,
         "package_kinds": [package.package_kind for package in ordered_packages],
+        "payload_refs": canonical_payload_refs if qualitative_aps_submit else None,
         "payload_hashes": canonical_payload_hashes,
         "operator_decision": operator_decision,
         "decision_notes": decision_notes or None,
@@ -5545,9 +5646,23 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "method": output_metadata_summary.get("selected_method_name"),
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
-        "source_shape": output_metadata_summary.get("cohort_shape"),
-        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT if qualitative_aps_submit else output_metadata_summary.get("cohort_shape"),
+        "source_dataset_version_ids": [] if qualitative_aps_submit else _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
     }
+    if qualitative_basis is not None:
+        submit_basis.update(
+            {
+                "content_id": qualitative_basis["content_id"],
+                "content_contract_id": qualitative_basis["content_contract_id"],
+                "chunking_contract_id": qualitative_basis["chunking_contract_id"],
+                "material_snapshot_id": qualitative_basis["material_snapshot_id"],
+                "analysis_unit_id": qualitative_basis["analysis_unit_id"],
+                "analysis_set_id": qualitative_basis["analysis_set_id"],
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": qualitative_basis["output_payload_hash"],
+                "chunk_count": qualitative_basis["chunk_count"],
+            }
+        )
     submit_record_ref = _stable_id("l3-package-review-submit", submit_basis)
     if existing_submit is not None:
         existing_submit_ref = str(existing_submit.get("submit_record_ref") or "")
@@ -5583,6 +5698,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
     downstream_unavailable = _package_review_submit_downstream_unavailable(
         package_review_state,
         associated_cohort_submit=associated_cohort_submit,
+        qualitative_aps_submit=qualitative_aps_submit,
     )
     submit_state = {
         "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
@@ -5599,17 +5715,19 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "analysis_run_id": analysis_run_id,
         "result_review_record_ref": supplied_review_ref,
         "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_submit else None,
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": expected_package_ids,
         "package_kinds": [package.package_kind for package in ordered_packages],
+        "payload_refs": canonical_payload_refs if qualitative_aps_submit else None,
         "payload_hashes": canonical_payload_hashes,
         "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_submit else pass_run.pass_type,
         "pass_scope": output_metadata_summary.get("pass_scope"),
         "method": output_metadata_summary.get("selected_method_name"),
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
-        "source_shape": output_metadata_summary.get("cohort_shape"),
-        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT if qualitative_aps_submit else output_metadata_summary.get("cohort_shape"),
+        "source_dataset_version_ids": [] if qualitative_aps_submit else _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
         "recorded_at": _utcnow_iso(),
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
@@ -5635,13 +5753,14 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             "reconciliation_record_id": reconciliation_record_id,
             "output_package_ids": expected_package_ids,
             "package_kinds": [package.package_kind for package in ordered_packages],
+            "payload_refs": canonical_payload_refs if qualitative_aps_submit else None,
             "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_submit else pass_run.pass_type,
             "pass_scope": output_metadata_summary.get("pass_scope"),
             "method": output_metadata_summary.get("selected_method_name"),
             "source_gate": output_metadata_summary.get("source_gate"),
             "package_construction_source_gate": package_construction_source_gate,
-            "source_shape": output_metadata_summary.get("cohort_shape"),
-            "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+            "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT if qualitative_aps_submit else output_metadata_summary.get("cohort_shape"),
+            "source_dataset_version_ids": [] if qualitative_aps_submit else _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
             "export_enabled": False,
@@ -8640,11 +8759,15 @@ def _package_review_submit_summary(
     if not isinstance(commit_summary, dict):
         commit_summary = {}
     cohort_package_construction = _is_cohort_package_construction_source(reconciliation_summary.get("source_gate"))
+    qualitative_package_construction = _is_qualitative_aps_package_construction_source(
+        reconciliation_summary.get("source_gate")
+    )
     recorded_submit = _package_review_submit_from_reconciliation(reconciliation)
     if (
         recorded_submit is None
         and commit_summary.get("package_review_submit_enabled", True) is not True
         and not cohort_package_construction
+        and not qualitative_package_construction
     ):
         downstream_unavailable = commit_summary.get("downstream_unavailable")
         if not isinstance(downstream_unavailable, list):
@@ -8668,9 +8791,14 @@ def _package_review_submit_summary(
             recorded_submit.get("package_construction_source_gate")
             or reconciliation_summary.get("source_gate")
         )
+        recorded_qualitative_submit = _is_qualitative_aps_package_construction_source(
+            recorded_submit.get("package_construction_source_gate")
+            or reconciliation_summary.get("source_gate")
+        )
         downstream_unavailable = _package_review_submit_downstream_unavailable(
             str(recorded_submit.get("package_review_state") or ""),
             associated_cohort_submit=recorded_cohort_submit,
+            qualitative_aps_submit=recorded_qualitative_submit,
         )
         return {
             "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
@@ -8705,6 +8833,8 @@ def _package_review_submit_summary(
     ready_downstream_unavailable = (
         COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
         if cohort_package_construction
+        else QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+        if qualitative_package_construction
         else PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
     )
     return {
