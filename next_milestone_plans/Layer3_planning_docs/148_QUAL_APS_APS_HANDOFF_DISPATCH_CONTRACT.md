@@ -1,8 +1,8 @@
 # Layer 3 Qualitative APS APS Handoff Dispatch Contract
 
-Status: planning/control API and state contract paired with `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`.
+Status: current-main API and state contract paired with `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`.
 
-This contract defines the future API/state/proof shape for `qual_aps_aps_handoff_dispatch_entry`. Current main does not admit qualitative APS APS handoff dispatch; session summary still returns `qualitative_aps_aps_handoff_dispatch_not_admitted` for the qualitative APS prepare authority chain.
+This contract defines the live API/state/proof shape for `qual_aps_aps_handoff_dispatch_entry`. Current main admits qualitative APS APS handoff dispatch for the exact qualitative APS prepare authority chain, then keeps qualitative APS external export/download blocked with `qualitative_aps_external_export_download_not_admitted`.
 
 ## Authority Order
 
@@ -161,7 +161,7 @@ Forbidden state effects:
 
 ## Response Contract
 
-Minimum future response fields:
+Minimum current response fields:
 
 - `schema_id`;
 - `status`;
@@ -235,7 +235,7 @@ The dispatch basis hash must include:
 
 ## Failure Contract
 
-The future runtime must fail closed when:
+The current runtime must fail closed when:
 
 - session, plan, preview hash, pass run, output metadata, result-review state, package-review preview state, construction state, package-review submit state, handoff/export prepare state, envelope state, reconciliation record, package rows, content document, chunks, material snapshot, analysis unit, or analysis set is missing;
 - pass run is not qualitative APS document execution;
@@ -250,7 +250,7 @@ The future runtime must fail closed when:
 
 ## Test Contract
 
-Minimum future implementation tests:
+Minimum current implementation tests:
 
 - one successful API dispatch after standalone APS qualitative handoff/export prepare;
 - bounded E2E reaches APS handoff dispatch and stops before external export/download;

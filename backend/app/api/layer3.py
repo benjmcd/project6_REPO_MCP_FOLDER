@@ -1826,6 +1826,15 @@ class Layer3ApsHandoffDispatchResponse(Layer3BaseResponse):
     source_shape: str | None = None
     source_dataset_version_ids: list[str] | None = None
     package_review_submit_schema_id: str | None = None
+    content_id: str | None = None
+    content_contract_id: str | None = None
+    chunking_contract_id: str | None = None
+    material_snapshot_id: str | None = None
+    analysis_unit_id: str | None = None
+    analysis_set_id: str | None = None
+    output_payload_ref: str | None = None
+    output_payload_hash: str | None = None
+    chunk_count: int | None = None
     package_review_submit_record_ref: str
     package_review_state: str
     prepare_record_ref: str
@@ -1849,7 +1858,9 @@ class Layer3ApsHandoffDispatchResponse(Layer3BaseResponse):
     external_export_enabled: bool
     download_enabled: bool
     connector_dispatch_enabled: bool
+    provider_public_url_enabled: bool | None = None
     downstream_unavailable: list[str]
+    next_allowed_actions: list[str] | None = None
     next_state: str
     authority_rail: dict[str, Any]
 
