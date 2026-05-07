@@ -34,6 +34,44 @@ async function seedRawMixedBridgeSetup(request) {
   return seed;
 }
 
+async function materializeRawMixedSetup(request) {
+  const setup = await expectJson(await request.post('/__test/layer3/materialize-raw-mixed'));
+  expect(setup.schema_id).toBe('project6.review_browser_raw_mixed_materialization_setup.v1');
+
+  const materialization = await expectJson(await request.post('/api/v1/layer3/source/mixed-corpus/materialize', {
+    data: setup.materialize_request,
+  }));
+  expect(materialization.schema_id).toBe('layer3.raw_mixed_corpus_materialize_result.v1');
+  expect(materialization.materialization_mode).toBe('raw_mixed_existing_source_materialization_entry');
+  expect(materialization.source_materialization_state).toBe('materialized');
+  expect(materialization.source_classes).toEqual(['dataset_version', 'aps_content_document']);
+  expect(materialization.layer3_flow_started).toBe(false);
+  expect(materialization.files_written).toEqual([]);
+  expect(materialization.next_allowed_actions).toEqual(['run_layer3_preflight_with_materialized_source_ids']);
+  expect(materialization.dataset_version_ids).toHaveLength(2);
+  expect(materialization.aps_content_document_ids).toHaveLength(1);
+  expect(materialization.database_rows_written).toEqual({
+    datasets: 2,
+    dataset_versions: 2,
+    variables: 4,
+    dataset_rows: 48,
+    variable_profiles: 2,
+    dataset_source_provenance: 2,
+    connector_runs: 1,
+    connector_run_targets: 1,
+    aps_content_documents: 1,
+    aps_content_chunks: 2,
+    aps_content_linkages: 1,
+  });
+  expect(materialization).not.toHaveProperty('local_upload');
+  expect(materialization).not.toHaveProperty('local_directory');
+  expect(materialization).not.toHaveProperty('rag_plan');
+  expect(materialization).not.toHaveProperty('provider_url');
+  expect(materialization).not.toHaveProperty('public_url');
+  expect(materialization).not.toHaveProperty('connector_dispatch');
+  return materialization;
+}
+
 async function expectNoDeferredRawMixedControls(page) {
   const sourceClassValues = await page.locator('input[name="source-class"]').evaluateAll((inputs) => (
     inputs.map((input) => input.value).sort()
@@ -159,6 +197,29 @@ async function openRawMixedSeededWorkbench(page, request) {
   return seed;
 }
 
+async function openRawMixedMaterializedWorkbench(page, request) {
+  const materialization = await materializeRawMixedSetup(request);
+  const datasetCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/dataset-version-candidates')
+  ));
+  const apsCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/aps-content-document-candidates')
+  ));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const datasetCandidates = await expectJson(await datasetCandidatesResponsePromise);
+  const apsCandidates = await expectJson(await apsCandidatesResponsePromise);
+
+  expect(datasetCandidates.dataset_version_candidates.map((candidate) => candidate.dataset_version_id)).toEqual(
+    expect.arrayContaining(materialization.dataset_version_ids),
+  );
+  expect(apsCandidates.aps_content_document_candidates.map((candidate) => candidate.content_id)).toEqual(
+    expect.arrayContaining(materialization.aps_content_document_ids),
+  );
+  await expectNoDeferredRawMixedControls(page);
+  await selectSeededSources(page, materialization);
+  return materialization;
+}
+
 async function runRawMixedRenderedMaterialPreview(page, seed) {
   const preflightResponsePromise = page.waitForResponse((response) => (
     response.url().includes('/api/v1/layer3/preflight')
@@ -169,7 +230,7 @@ async function runRawMixedRenderedMaterialPreview(page, seed) {
   const materialResponsePromise = page.waitForResponse((response) => (
     response.url().includes('/api/v1/layer3/material-preview')
   ));
-  await page.locator('#layer3-intent').fill('Drive raw mixed seed bridge IDs through rendered Gate C and plan approval.');
+  await page.locator('#layer3-intent').fill('Drive raw mixed source IDs through rendered Gate C and plan approval.');
   await page.locator('#run-preflight').click();
   const preflight = await expectJson(await preflightResponsePromise);
   const source = await expectJson(await sourceResponsePromise);
@@ -938,6 +999,18 @@ test('Layer 3 workbench uses raw mixed seed bridge setup through rendered Gate C
   await previewRenderedGateC(page, gateB.session_id);
   await commitRenderedGateC(page, gateB.session_id);
   const planPreview = await previewRenderedPlan(page, gateB.session_id, seed);
+  await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+});
+
+test('Layer 3 workbench uses raw mixed materialization setup through rendered Gate C and plan approval', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
   await approveRenderedPlan(page, gateB.session_id, planPreview);
   await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
 });
