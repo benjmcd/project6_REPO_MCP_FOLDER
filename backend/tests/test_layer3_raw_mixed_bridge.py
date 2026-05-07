@@ -227,6 +227,134 @@ def test_layer3_raw_mixed_seed_rejects_missing_client_request_id_before_service(
     assert _storage_files() == before_files
 
 
+def test_layer3_raw_mixed_seed_rejects_missing_manifest_ref_without_side_effects(
+    client: TestClient,
+    tmp_path: Path,
+) -> None:
+    seeded = _seed_raw_mixed_sources(client, tmp_path)
+
+    response, body = _post_seed_failure(
+        client,
+        _seed_payload(
+            seeded,
+            manifest_ref=f"raw-mixed/{seeded.corpus_batch_id}-missing.json",
+            manifest_hash="0" * 64,
+        ),
+    )
+
+    assert response.status_code == 404
+    assert body["error_code"] == "raw_mixed_manifest_ref_not_found"
+    assert body["blocked_fields"] == ["artifact_manifest_ref"]
+
+
+def test_layer3_raw_mixed_seed_rejects_manifest_ref_outside_storage_root_without_side_effects(
+    client: TestClient,
+    tmp_path: Path,
+) -> None:
+    seeded = _seed_raw_mixed_sources(client, tmp_path)
+
+    response, body = _post_seed_failure(
+        client,
+        _seed_payload(
+            seeded,
+            manifest_ref=str(tmp_path / "outside-storage-root.json"),
+            manifest_hash="0" * 64,
+        ),
+    )
+
+    assert response.status_code == 400
+    assert body["error_code"] == "raw_mixed_manifest_ref_not_server_owned"
+    assert body["blocked_fields"] == ["artifact_manifest_ref"]
+
+
+def test_layer3_raw_mixed_seed_rejects_missing_dataset_version_without_side_effects(
+    client: TestClient,
+    tmp_path: Path,
+) -> None:
+    seeded = _seed_raw_mixed_sources(client, tmp_path)
+    manifest_ref, manifest_hash = _write_seed_manifest(
+        seeded,
+        dataset_version_ids=("dv-raw-mixed-missing", seeded.dataset_version_ids[1]),
+    )
+
+    response, body = _post_seed_failure(
+        client,
+        _seed_payload(seeded, manifest_ref=manifest_ref, manifest_hash=manifest_hash),
+    )
+
+    assert response.status_code == 404
+    assert body["error_code"] == "raw_mixed_dataset_version_not_found"
+    assert body["blocked_fields"] == ["artifact_manifest.dataset_version_ids"]
+
+
+def test_layer3_raw_mixed_seed_rejects_missing_aps_content_document_without_side_effects(
+    client: TestClient,
+    tmp_path: Path,
+) -> None:
+    seeded = _seed_raw_mixed_sources(client, tmp_path)
+    manifest_ref, manifest_hash = _write_seed_manifest(
+        seeded,
+        aps_content_document_ids=("content-raw-mixed-missing",),
+    )
+
+    response, body = _post_seed_failure(
+        client,
+        _seed_payload(seeded, manifest_ref=manifest_ref, manifest_hash=manifest_hash),
+    )
+
+    assert response.status_code == 404
+    assert body["error_code"] == "raw_mixed_aps_content_document_not_found"
+    assert body["blocked_fields"] == ["artifact_manifest.aps_content_document_ids"]
+
+
+def test_layer3_raw_mixed_seed_rejects_unsupported_manifest_source_class_without_side_effects(
+    client: TestClient,
+    tmp_path: Path,
+) -> None:
+    seeded = _seed_raw_mixed_sources(client, tmp_path)
+    manifest_ref, manifest_hash = _write_seed_manifest(
+        seeded,
+        source_classes=("dataset_version", "web_connector"),
+    )
+
+    response, body = _post_seed_failure(
+        client,
+        _seed_payload(seeded, manifest_ref=manifest_ref, manifest_hash=manifest_hash),
+    )
+
+    assert response.status_code == 400
+    assert body["error_code"] == "raw_mixed_manifest_source_classes_mismatch"
+    assert body["blocked_fields"] == ["artifact_manifest_ref"]
+
+
+def test_layer3_raw_mixed_seed_rejects_deferred_source_expansion_fields_without_side_effects(
+    client: TestClient,
+    tmp_path: Path,
+) -> None:
+    seeded = _seed_raw_mixed_sources(client, tmp_path)
+    manifest_ref, manifest_hash = _write_seed_manifest(seeded)
+    deferred_fields = {
+        "source_upload": {"filename": "not-admitted.csv"},
+        "local_upload": {"path": str(tmp_path / "not-admitted.csv")},
+        "local_directory": str(tmp_path),
+        "file_glob": "*.csv",
+        "web_connector": {"url": "https://example.invalid/source"},
+        "rag_vector_index": "not-admitted-index",
+        "vector_plan": {"mode": "not-admitted"},
+        "unbounded_runtime_db": {"table": "not_admitted"},
+    }
+
+    for field, value in deferred_fields.items():
+        payload = _seed_payload(seeded, manifest_ref=manifest_ref, manifest_hash=manifest_hash)
+        payload[field] = value
+
+        response, body = _post_seed_failure(client, payload)
+
+        assert response.status_code == 400
+        assert body["error_code"] == "raw_mixed_seed_scope_not_admitted"
+        assert body["blocked_fields"] == [field]
+
+
 def _seed_raw_mixed_sources(client: TestClient, tmp_path: Path) -> RawMixedSeededSources:
     seeded = RawMixedSeededSources(
         corpus_batch_id="batch-raw-mixed-001",
@@ -288,8 +416,23 @@ def _write_seed_manifest(
     seeded: RawMixedSeededSources,
     *,
     target_ids: tuple[str, ...] | None = None,
+    source_classes: tuple[str, ...] | None = None,
+    dataset_version_ids: tuple[str, ...] | None = None,
+    aps_content_document_ids: tuple[str, ...] | None = None,
 ) -> tuple[str, str]:
-    manifest_ref = f"raw-mixed/{seeded.corpus_batch_id}.json"
+    manifest_variant = hashlib.sha256(
+        json.dumps(
+            {
+                "target_ids": list(target_ids or (seeded.aps_target_id,)),
+                "source_classes": list(source_classes or ("dataset_version", "aps_content_document")),
+                "dataset_version_ids": list(dataset_version_ids or seeded.dataset_version_ids),
+                "aps_content_document_ids": list(aps_content_document_ids or (seeded.aps_content_id,)),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()[:12]
+    manifest_ref = f"raw-mixed/{seeded.corpus_batch_id}-{manifest_variant}.json"
     manifest_path = Path(settings.storage_dir) / manifest_ref
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest = {
@@ -297,9 +440,9 @@ def _write_seed_manifest(
         "corpus_batch_id": seeded.corpus_batch_id,
         "aps_run_id": seeded.aps_run_id,
         "target_ids": list(target_ids or (seeded.aps_target_id,)),
-        "source_classes": ["dataset_version", "aps_content_document"],
-        "dataset_version_ids": list(seeded.dataset_version_ids),
-        "aps_content_document_ids": [seeded.aps_content_id],
+        "source_classes": list(source_classes or ("dataset_version", "aps_content_document")),
+        "dataset_version_ids": list(dataset_version_ids or seeded.dataset_version_ids),
+        "aps_content_document_ids": list(aps_content_document_ids or (seeded.aps_content_id,)),
     }
     manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")), encoding="utf-8")
     return manifest_ref, hashlib.sha256(manifest_path.read_bytes()).hexdigest()
@@ -404,6 +547,23 @@ def _counts(client: TestClient) -> dict[str, int]:
 def _storage_files() -> set[str]:
     storage_root = Path(settings.storage_dir)
     return {str(path.relative_to(storage_root)) for path in storage_root.rglob("*") if path.is_file()}
+
+
+def _post_seed_failure(
+    client: TestClient,
+    payload: dict[str, Any],
+) -> tuple[Any, dict[str, Any]]:
+    before_counts = _counts(client)
+    before_files = _storage_files()
+
+    response = client.post("/api/v1/layer3/source/mixed-corpus/seed", json=payload)
+
+    body = response.json()
+    assert "layer3_flow_started" not in body
+    assert "source_seed_id" not in body
+    assert _counts(client) == before_counts
+    assert _storage_files() == before_files
+    return response, body
 
 
 def _assert_forbidden_response_surface_absent(payload: Any) -> None:
