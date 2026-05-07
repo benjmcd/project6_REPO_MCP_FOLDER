@@ -37,7 +37,8 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
   await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
   await expect(page.locator('#external-export-download-delivery-submit')).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Start Execution' })).toHaveCount(0);
+  await expect(page.locator('#execution-select')).toBeDisabled();
+  await expect(page.locator('#execution-start')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Rerun' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(0);
