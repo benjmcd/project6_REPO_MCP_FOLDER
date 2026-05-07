@@ -5058,5 +5058,51 @@
       "git diff --check"
     ],
     "next_boundary": "A separate qualitative APS package-construction freeze is required before package payloads, review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URL, or rendered controls can become implementation work."
+  },
+  "qual_aps_package_construction_freeze_proof": {
+    "scope": "Planning/control metadata for docs 140 and 141, which freeze the future qualitative APS package-construction commit entry boundary only.",
+    "implementation_branch": "codex/l3-qual-aps-package-construction-freeze",
+    "implementation_pr": "#708",
+    "live_behavior_change": false,
+    "new_docs": [
+      "next_milestone_plans/Layer3_planning_docs/140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md"
+    ],
+    "authority_basis": [
+      "PR #702 proves the standalone aps_content_document qualitative API path reaches result review.",
+      "PR #706 makes read-only qualitative APS package-review preview live through layer3.qual_aps_package_review_preview.v1 with no DB row or file writes.",
+      "PR #707 closes the remaining Gate B material authority and qualitative APS package-review submit guard review debt.",
+      "backend/app/services/layer3_workbench.py still blocks qualitative APS package construction with qualitative_aps_package_construction_commit_not_admitted and package-review submit with qualitative_aps_package_review_submit_not_admitted.",
+      "Docs 140 and 141 select only the next implementation-entry boundary and do not make package rows or payload files live."
+    ],
+    "selected_future_mode": "qual_aps_package_construction_commit_entry",
+    "negative_invariants": [
+      "no runtime behavior change",
+      "no package construction runtime admission",
+      "no L3OutputPackage row creation",
+      "no L3ReconciliationRecord row creation",
+      "no package payload file write",
+      "no package-review submit",
+      "no handoff/export",
+      "no APS handoff dispatch",
+      "no external export/download",
+      "no connector or destination dispatch",
+      "no provider/public URL generation",
+      "no rendered controls or theme behavior change",
+      "no source expansion",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no route, DTO, model, migration, or production service change"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_boundary": "A later runtime pass may implement only qual_aps_package_construction_commit_entry and must stop before qualitative APS package-review submit or any downstream delivery behavior."
   }
 }
