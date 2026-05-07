@@ -81,6 +81,12 @@ POST_730_PRACTICAL_READINESS = PLANNING_DOCS / "158_POST_730_PRACTICAL_READINESS
 RAW_MIXED_RENDERED_DOWNSTREAM_BLOCKER = (
     PLANNING_DOCS / "159_RAW_MIXED_RENDERED_DOWNSTREAM_BLOCKER.md"
 )
+RENDERED_EXECUTION_SELECTION_START_FREEZE = (
+    PLANNING_DOCS / "160_RENDERED_EXECUTION_SELECTION_START_FREEZE.md"
+)
+RENDERED_EXECUTION_SELECTION_START_CONTRACT = (
+    PLANNING_DOCS / "161_RENDERED_EXECUTION_SELECTION_START_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -5397,6 +5403,125 @@ def _check_raw_mixed_rendered_downstream_blocker(errors: list[str]) -> None:
             errors.append(f"{_rel(MANIFEST)} current_status must mark raw mixed rendered downstream blocker as planning-only")
 
 
+def _check_rendered_execution_selection_start_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_EXECUTION_SELECTION_START_FREEZE: (
+            "Status: planning/control freeze only for `raw_mixed_rendered_execution_selection_start_controls`.",
+            "selected rendered execution mode: `raw_mixed_rendered_execution_selection_start_controls`",
+            "POST /api/v1/layer3/execution/select",
+            "POST /api/v1/layer3/execution/start",
+            "#execution-select",
+            "#execution-start",
+            "#execution-selection-start-panel",
+            "The future pass may add no backend route, DTO, service, model, or migration.",
+            "frontend-only durable authority",
+            "fixed `SERVER_PORT = 8031`, `fullyParallel: false`, and `workers: 1`",
+            "light` theme",
+            "dark` theme",
+            "workbench` theme",
+        ),
+        RENDERED_EXECUTION_SELECTION_START_CONTRACT: (
+            "Status: planning/control UI and API contract for `160_RENDERED_EXECUTION_SELECTION_START_FREEZE.md`.",
+            "Selected mode: `raw_mixed_rendered_execution_selection_start_controls`.",
+            "Layer3ExecutionSelectionRequest",
+            "Layer3ExecutionSelectionResponse",
+            "Layer3AnalysisExecutionStartRequest",
+            "Layer3AnalysisExecutionStartResponse",
+            "POST /api/v1/layer3/execution/select",
+            "POST /api/v1/layer3/execution/start",
+            "`synchronous_single_pass`",
+            "`light`",
+            "`dark`",
+            "`workbench`",
+            "no frontend-only durable authority",
+        ),
+        BOARD: (
+            "Rendered execution selection/start freeze",
+            "160_RENDERED_EXECUTION_SELECTION_START_FREEZE.md",
+            "161_RENDERED_EXECUTION_SELECTION_START_CONTRACT.md",
+            "raw_mixed_rendered_execution_selection_start_controls",
+            "POST /api/v1/layer3/execution/select",
+            "POST /api/v1/layer3/execution/start",
+            "headed and headless Chromium sequentially on fixed port `8031`",
+        ),
+        MANIFEST: (
+            "latest_rendered_execution_selection_start_freeze_branch",
+            "latest_rendered_execution_selection_start_freeze_live_behavior_change",
+            "rendered_execution_selection_start_freeze",
+            "raw_mixed_rendered_execution_selection_start_controls",
+            "fixed port 8031",
+            "light, dark, and workbench theme states",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_execution_selection_start_freeze_proof",
+            "160_RENDERED_EXECUTION_SELECTION_START_FREEZE.md",
+            "161_RENDERED_EXECUTION_SELECTION_START_CONTRACT.md",
+            "raw_mixed_rendered_execution_selection_start_controls",
+            "Layer3ExecutionSelectionRequest",
+            "Layer3AnalysisExecutionStartRequest",
+            "headless Chromium",
+            "headed Chromium",
+            "no runtime behavior change",
+        ),
+        LAYER3_API: (
+            "class Layer3ExecutionSelectionRequest(BaseModel):",
+            "class Layer3AnalysisExecutionStartRequest(BaseModel):",
+            "class Layer3ExecutionSelectionResponse(Layer3BaseResponse):",
+            "class Layer3AnalysisExecutionStartResponse(Layer3BaseResponse):",
+            '"/execution/select"',
+            '"/execution/start"',
+            '"synchronous_single_pass"',
+        ),
+        LAYER3_HTML: (
+            "result-status-inspect",
+            "package-review-preview-inspect",
+            "handoff-export-prepare-submit",
+            "external-export-download-prepare-submit",
+            "theme-selector",
+        ),
+        LAYER3_JS: (
+            "setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected))",
+            "postJson('/execution/result/status'",
+            "postJson('/package/review/preview'",
+            "THEME_STORAGE_KEY",
+            "LAYER3_THEME_STORAGE_KEY",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "assertRenderedPlanApprovalStopsBeforeExecution",
+            "'/execution/select'",
+            "'/execution/start'",
+            "Layer 3 workbench materializes raw mixed manifest through rendered controls",
+            "Layer 3 workbench exposes visible keyboard focus across themes",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered execution selection/start freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_execution_selection_start_freeze_branch") != "codex/l3-rendered-execution-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered execution selection/start freeze branch")
+        if current_status.get("latest_rendered_execution_selection_start_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered execution selection/start freeze as planning-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_execution_selection_start_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_execution_selection_start_freeze_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered execution selection/start freeze proof must be planning-only")
+    if proof.get("selected_rendered_execution_mode") != "raw_mixed_rendered_execution_selection_start_controls":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered execution selection/start freeze proof has stale selected mode")
+    for selector in ("#execution-select", "#execution-start", "#execution-selection-start-panel"):
+        if selector not in proof.get("future_selectors", []):
+            errors.append(f"{_rel(PROOF_MANIFEST)} future_selectors missing {selector}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -9964,6 +10089,8 @@ def main() -> int:
         POST_730_ROADMAP_SYNC,
         POST_730_PRACTICAL_READINESS,
         RAW_MIXED_RENDERED_DOWNSTREAM_BLOCKER,
+        RENDERED_EXECUTION_SELECTION_START_FREEZE,
+        RENDERED_EXECUTION_SELECTION_START_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -10122,6 +10249,7 @@ def main() -> int:
     _check_post_730_roadmap_sync(errors)
     _check_post_730_practical_readiness(errors)
     _check_raw_mixed_rendered_downstream_blocker(errors)
+    _check_rendered_execution_selection_start_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
