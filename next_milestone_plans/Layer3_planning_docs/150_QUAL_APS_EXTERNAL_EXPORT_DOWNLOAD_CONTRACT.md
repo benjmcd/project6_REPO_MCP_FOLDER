@@ -104,7 +104,7 @@ Forbidden prepare fields include provider/public URL fields, signed URL fields, 
 
 ## Delivery Request Contract
 
-Expected required fields include all prepare authority fields plus:
+Expected required fields include the prepare authority fields that identify session, plan, pass, package, handoff, APS dispatch, and readiness authority, excluding prepare-only intent fields (`operator_decision` and `decision_notes`) and adding:
 
 - `external_export_download_record_ref`;
 - `export_download_descriptor_ref`;
@@ -120,6 +120,8 @@ Required values:
 - `download_mode`: `reference_only_prepare`.
 
 Delivery must use the recorded readiness object as durable authority. Delivery must not accept raw artifact bytes, arbitrary paths, public URLs, signed URLs, provider URLs, connector ids, destination ids, credentials, package edits, source expansion instructions, prompt/model fields, UI/theme fields, or mockup fields.
+
+Delivery overrides prepare intent. It must use `operator_decision: deliver_external_export_download` and must not inherit `prepare_external_export_download` from the prepare request.
 
 ## Admission Contract
 
@@ -170,7 +172,9 @@ Allowed state effects for successful delivery:
 
 Forbidden state effects:
 
-- create or mutate reconciliation rows, output package rows, source authority rows, connector rows, destination rows, provider rows, delivery rows, signed-reference rows, auth rows, source-ingestion rows, RAG/vector rows, runtime snapshot rows, mockup rows, plan rows, pass rows, run rows, artifact rows, or migration/model state;
+- create reconciliation rows or mutate reconciliation rows except for the single admitted qualitative APS external export/download readiness object in existing `L3ReconciliationRecord.summary_json` during prepare;
+- mutate reconciliation rows during delivery;
+- create or mutate output package rows, source authority rows, connector rows, destination rows, provider rows, delivery rows, signed-reference rows, auth rows, source-ingestion rows, RAG/vector rows, runtime snapshot rows, mockup rows, plan rows, pass rows, run rows, artifact rows, or migration/model state;
 - mutate package payload files, APS bundle files, qualitative execution output, result-review state, package-review preview state, package construction state, package-review submit state, handoff/export prepare state, APS handoff dispatch state, package refs, package hashes, or source authority rows.
 
 ## Response Contract

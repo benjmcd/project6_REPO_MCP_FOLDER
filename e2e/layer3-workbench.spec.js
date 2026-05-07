@@ -369,6 +369,198 @@ async function assertRenderedPlanApprovalStopsBeforeExecution(page, sessionId, l
   ]);
 }
 
+function qualitativeApsPackageSubmitUiFixture() {
+  const sessionId = 'session-qual-aps-submit-ui';
+  const analysisPlanId = 'plan-qual-aps-submit-ui';
+  const passRunId = 'pass-qual-aps-submit-ui';
+  const previewId = 'preview-qual-aps-submit-ui';
+  const previewHash = 'preview-hash-qual-aps-submit-ui';
+  const resultReviewRef = 'result-review-qual-aps-submit-ui';
+  const packagePreviewHash = 'package-preview-qual-aps-submit-ui';
+  const reconciliationId = 'recon-qual-aps-submit-ui';
+  const constructionBasisHash = 'd'.repeat(64);
+  const outputPackages = [
+    {
+      output_package_id: 'pkg-qual-aps-canonical-ui',
+      package_kind: 'canonical_internal',
+      payload_ref: 'artifact://qual-aps-canonical-ui',
+      payload_hash: 'a'.repeat(64),
+    },
+    {
+      output_package_id: 'pkg-qual-aps-user-ui',
+      package_kind: 'user_facing',
+      payload_ref: 'artifact://qual-aps-user-ui',
+      payload_hash: 'b'.repeat(64),
+    },
+    {
+      output_package_id: 'pkg-qual-aps-review-ui',
+      package_kind: 'review_facing',
+      payload_ref: 'artifact://qual-aps-review-ui',
+      payload_hash: 'c'.repeat(64),
+    },
+  ];
+  const packageKinds = outputPackages.map((pkg) => pkg.package_kind);
+  const payloadRefs = outputPackages.map((pkg) => pkg.payload_ref);
+  const payloadHashes = outputPackages.map((pkg) => pkg.payload_hash);
+  return {
+    sessionId,
+    analysisPlanId,
+    passRunId,
+    previewId,
+    previewHash,
+    resultReviewRef,
+    packagePreviewHash,
+    reconciliationId,
+    constructionBasisHash,
+    packageKinds,
+    payloadRefs,
+    payloadHashes,
+    outputPackages,
+    packageSubmitResponse: {
+      schema_id: 'layer3.qual_aps_package_review_submit.v1',
+      status: 'submitted',
+      session_id: sessionId,
+      analysis_plan_id: analysisPlanId,
+      pass_run_id: passRunId,
+      preview_identity: { preview_id: previewId, preview_hash: previewHash },
+      analysis_run_id: null,
+      result_review_record_ref: resultReviewRef,
+      package_review_preview_hash: packagePreviewHash,
+      reconciliation_record_id: reconciliationId,
+      output_package_ids: outputPackages.map((pkg) => pkg.output_package_id),
+      package_kinds: packageKinds,
+      payload_refs: payloadRefs,
+      payload_hashes: payloadHashes,
+      construction_basis_hash: constructionBasisHash,
+      operator_decision: 'approved',
+      decision_notes: null,
+      package_review_state: 'package_review_approved',
+      submit_record_ref: 'submit-qual-aps-ui',
+      pass_type: 'qualitative_aps_document',
+      pass_scope: 'single_aps_doc_qualitative_pass',
+      method: 'qualitative_summary',
+      source_gate: '119_L3_QUAL_APS_EXEC_ENTRY_FREEZE',
+      source_shape: 'aps_content_document',
+      package_construction_source_gate: '140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE',
+      package_review_submit_enabled: false,
+      handoff_enabled: false,
+      export_enabled: false,
+      downstream_unavailable: ['handoff', 'export', 'aps_handoff', 'external_export_download', 'connector'],
+      next_state: 'package_review_approved',
+    },
+  };
+}
+
+async function seedQualitativeApsPackageSubmitUiState(page, fixture) {
+  await page.evaluate((state) => {
+    const outputPackageIds = state.outputPackages.map((pkg) => pkg.output_package_id);
+    const commonAuthority = {
+      session_id: state.sessionId,
+      analysis_plan_id: state.analysisPlanId,
+      pass_run_id: state.passRunId,
+      preview_identity: {
+        preview_id: state.previewId,
+        preview_hash: state.previewHash,
+      },
+      pass_scope: 'single_aps_doc_qualitative_pass',
+      selected_method_name: 'qualitative_summary',
+      source_gate: '119_L3_QUAL_APS_EXEC_ENTRY_FREEZE',
+      source_shape: 'aps_content_document',
+    };
+    State.sessionSummary = {
+      session_id: state.sessionId,
+      execution_selection: {
+        selected: true,
+        execution_started: true,
+        analysis_plan_id: state.analysisPlanId,
+        pass_run_ids: [state.passRunId],
+        analysis_run_ids: ['analysis-run-should-not-be-sent'],
+        source_preview_id: state.previewId,
+        source_preview_hash: state.previewHash,
+        pass_run_statuses: { [state.passRunId]: 'completed' },
+      },
+      analysis_execution_start: {
+        pass_run_id: state.passRunId,
+        analysis_plan_id: state.analysisPlanId,
+        source_preview_id: state.previewId,
+        source_preview_hash: state.previewHash,
+        pass_run_status: 'completed',
+        analysis_run_id: 'analysis-run-should-not-be-sent',
+      },
+      execution_result_review: {
+        ...commonAuthority,
+        review_state: 'execution_result_review_approved',
+        operator_decision: 'approved',
+        review_record_ref: state.resultReviewRef,
+      },
+      package_construction: {
+        schema_id: 'layer3.qual_aps_package_construction_commit.v1',
+        status: 'committed',
+        state: 'package_constructed',
+        session_id: state.sessionId,
+        analysis_plan_id: state.analysisPlanId,
+        pass_run_id: state.passRunId,
+        preview_identity: { preview_id: state.previewId, preview_hash: state.previewHash },
+        analysis_run_id: null,
+        result_review_record_ref: state.resultReviewRef,
+        package_review_preview_hash: state.packagePreviewHash,
+        reconciliation_record_id: state.reconciliationId,
+        construction_basis_hash: state.constructionBasisHash,
+        output_packages: state.outputPackages,
+        output_package_ids: outputPackageIds,
+        package_kinds: state.packageKinds,
+        payload_refs: state.payloadRefs,
+        payload_hashes: state.payloadHashes,
+        pass_type: 'qualitative_aps_document',
+        pass_scope: 'single_aps_doc_qualitative_pass',
+        method: 'qualitative_summary',
+        source_gate: '119_L3_QUAL_APS_EXEC_ENTRY_FREEZE',
+        source_shape: 'aps_content_document',
+        package_construction_source_gate: '140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE',
+        package_review_submit_enabled: true,
+        handoff_enabled: false,
+        downstream_unavailable: ['handoff', 'export', 'aps_handoff', 'external_export_download', 'connector'],
+      },
+    };
+    State.resultStatus = {
+      ...commonAuthority,
+      analysis_run_id: null,
+      result_status_available: true,
+      pass_run_status: 'completed',
+      output_metadata_summary: {
+        readable: true,
+        output_payload_ref: 'artifact://qual-aps-output-ui',
+        pass_scope: 'single_aps_doc_qualitative_pass',
+        source_shape: 'aps_content_document',
+      },
+    };
+    State.resultReview = State.sessionSummary.execution_result_review;
+    State.packageReviewPreview = {
+      schema_id: 'layer3.qual_aps_package_review_preview.v1',
+      status: 'ok',
+      session_id: state.sessionId,
+      analysis_plan_id: state.analysisPlanId,
+      pass_run_id: state.passRunId,
+      preview_identity: { preview_id: state.previewId, preview_hash: state.previewHash },
+      analysis_run_id: null,
+      result_review_state: 'execution_result_review_approved',
+      result_review_record_ref: state.resultReviewRef,
+      package_review_preview_hash: state.packagePreviewHash,
+      package_review_preview_enabled: true,
+      package_commit_enabled: true,
+      candidate_package_kinds: state.packageKinds.map((package_kind) => ({
+        package_kind,
+        preview_only: true,
+        package_commit_enabled: true,
+      })),
+    };
+    State.packageConstruction = State.sessionSummary.package_construction;
+    State.packageReviewSubmit = null;
+    State.packageReviewSubmitError = null;
+    renderAll();
+  }, fixture);
+}
+
 test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async ({ page }) => {
   await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => {
@@ -1224,6 +1416,111 @@ test('Layer 3 workbench requires explicit associated-cohort delivery UI server a
   ]) {
     expect(submittedPayload).not.toHaveProperty(forbiddenKey);
   }
+});
+
+test('Layer 3 workbench submits qualitative APS package review without analysis-run authority', async ({ page }) => {
+  const fixture = qualitativeApsPackageSubmitUiFixture();
+  let packageSubmitPayload = null;
+  await page.route('**/api/v1/layer3/package/review/submit', async (route) => {
+    packageSubmitPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(fixture.packageSubmitResponse),
+    });
+  });
+  await page.route(`**/api/v1/layer3/session/${fixture.sessionId}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        session_id: fixture.sessionId,
+        execution_selection: {
+          selected: true,
+          pass_run_ids: [fixture.passRunId],
+          pass_run_statuses: { [fixture.passRunId]: 'completed' },
+          source_preview_id: fixture.previewId,
+          source_preview_hash: fixture.previewHash,
+          analysis_plan_id: fixture.analysisPlanId,
+        },
+        package_review_submit: fixture.packageSubmitResponse,
+        handoff_export_prepare: {
+          schema_id: 'layer3.handoff_export_prepare_state.v1',
+          available: false,
+          state: 'handoff_export_unavailable',
+          blocked_reason: 'qualitative_aps_handoff_export_prepare_not_admitted_by_ui_fixture',
+        },
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await seedQualitativeApsPackageSubmitUiState(page, fixture);
+  await expectNoDeferredRawMixedControls(page);
+  await expect(page.locator('#package-review-submit')).toBeEnabled();
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_ready');
+
+  const responsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/review/submit')
+  ));
+  await page.locator('#package-review-submit').click();
+  const packageSubmit = await expectJson(await responsePromise);
+  expect(packageSubmit.schema_id).toBe('layer3.qual_aps_package_review_submit.v1');
+  expect(packageSubmitPayload).toBeTruthy();
+  expectOnlyPayloadKeys(packageSubmitPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'payload_refs',
+    'payload_hashes',
+    'construction_basis_hash',
+    'operator_decision',
+    'decision_notes',
+    'expected_package_kinds',
+  ]);
+  expect(packageSubmitPayload.session_id).toBe(fixture.sessionId);
+  expect(packageSubmitPayload.analysis_plan_id).toBe(fixture.analysisPlanId);
+  expect(packageSubmitPayload.pass_run_id).toBe(fixture.passRunId);
+  expect(packageSubmitPayload.preview_id).toBe(fixture.previewId);
+  expect(packageSubmitPayload.preview_hash).toBe(fixture.previewHash);
+  expect(packageSubmitPayload.result_review_record_ref).toBe(fixture.resultReviewRef);
+  expect(packageSubmitPayload.package_review_preview_hash).toBe(fixture.packagePreviewHash);
+  expect(packageSubmitPayload.reconciliation_record_id).toBe(fixture.reconciliationId);
+  expect(packageSubmitPayload.output_package_ids).toEqual(fixture.outputPackages.map((pkg) => pkg.output_package_id));
+  expect(packageSubmitPayload.payload_refs).toEqual(fixture.payloadRefs);
+  expect(packageSubmitPayload.payload_hashes).toEqual(fixture.payloadHashes);
+  expect(packageSubmitPayload.construction_basis_hash).toBe(fixture.constructionBasisHash);
+  expect(packageSubmitPayload.operator_decision).toBe('approved');
+  expect(packageSubmitPayload).not.toHaveProperty('analysis_run_id');
+  for (const forbiddenKey of [
+    'handoff',
+    'export',
+    'package_payload',
+    'provider_url',
+    'public_url',
+    'connector_run_id',
+    'connector_dispatch',
+    'destination',
+    'rag_plan',
+    'vector_query',
+    'local_upload',
+    'local_directory',
+    'web_connector',
+    'source_adapter_registry',
+    'llm_plan',
+    'mockup',
+    'auth_context',
+  ]) {
+    expect(packageSubmitPayload).not.toHaveProperty(forbiddenKey);
+  }
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
 });
 
 test('Layer 3 workbench applies mockup-informed Workbench visual boundaries without degrading shared themes', async ({ page }) => {

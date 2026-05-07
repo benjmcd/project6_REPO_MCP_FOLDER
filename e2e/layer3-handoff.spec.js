@@ -161,7 +161,9 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
     'package_review_preview_hash',
     'reconciliation_record_id',
     'output_package_ids',
+    'payload_refs',
     'payload_hashes',
+    'construction_basis_hash',
     'operator_decision',
     'decision_notes',
     'expected_package_kinds',
@@ -172,7 +174,9 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   expect(submitPayload.decision_notes).toBe('');
   expect(submitPayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
   expect([...submitPayload.output_package_ids].sort()).toEqual([...commit.output_packages.map((item) => item.output_package_id)].sort());
+  expect(submitPayload.payload_refs).toEqual(commit.payload_refs);
   expect(submitPayload.payload_hashes).toEqual(commit.payload_hashes);
+  expect(submitPayload.construction_basis_hash).toBe(commit.construction_basis_hash);
   expect(submitPayload.expected_package_kinds).toEqual(['canonical_internal', 'user_facing', 'review_facing']);
   expect(submitPayload).not.toHaveProperty('package');
   expect(submitPayload).not.toHaveProperty('handoff');

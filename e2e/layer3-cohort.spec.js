@@ -755,6 +755,7 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
     'package_review_preview_hash',
     'reconciliation_record_id',
     'output_package_ids',
+    'payload_refs',
     'payload_hashes',
     'operator_decision',
     'decision_notes',
@@ -763,6 +764,7 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
   expect(packageSubmitPayload.operator_decision).toBe('approved');
   expect(packageSubmitPayload.reconciliation_record_id).toBe(packageCommit.reconciliation_record_id);
   expect(packageSubmitPayload.output_package_ids.sort()).toEqual(packageCommit.output_packages.map((pkg) => pkg.output_package_id).sort());
+  expect(packageSubmitPayload.payload_refs).toEqual(packageCommit.payload_refs);
   expect(packageSubmitPayload.payload_hashes).toEqual(packageCommit.payload_hashes);
   expect(packageSubmitPayload).not.toHaveProperty('handoff');
   expect(packageSubmitPayload).not.toHaveProperty('export');
