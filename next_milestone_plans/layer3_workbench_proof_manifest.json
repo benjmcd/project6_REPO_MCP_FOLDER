@@ -579,10 +579,10 @@
     "latest_mixed_aps_provenance_bridge_input_main_commit": "de9abcd10603a9f0039c41bc7f07e05590854075",
     "latest_mixed_aps_provenance_bridge_live_behavior_change": true,
     "latest_mixed_aps_provenance_bridge_summary": "Branch codex/l3-mixed-aps-provenance-bridge carries approved API-created aps_content_document material selected with an admitted deterministic dataset_version associated cohort as aps_handoff_companion_provenance. It stamps APS material snapshot source identity with run_id/target_id, excludes that companion snapshot from single_aps_doc_qualitative_pass planned-pass admission, and extends the bounded API E2E through APS handoff dispatch, external export/download prepare, and same-origin external_export_download_delivered delivery. It admits no broad qualitative/RAG/vector execution, qualitative associated-cohort execution, provider/public URLs, real connector/destination dispatch, local upload or local-directory ingestion, broad package mutation/reconstruction, package payload rewrite outside admitted package commit behavior, UI/browser durable authority, full mockup activation, hidden LLM planning, auth/security behavior, or unsupported source expansion.",
-    "latest_raw_mixed_bridge_freeze_branch": "codex/l3-raw-mixed-bridge-freeze",
-    "latest_raw_mixed_bridge_freeze_input_main_commit": "70edbbf600c096ffcef8972d1839589488a02cec",
-    "latest_raw_mixed_bridge_freeze_live_behavior_change": false,
-    "latest_raw_mixed_bridge_freeze_summary": "Branch codex/l3-raw-mixed-bridge-freeze adds planning/control doc 137_RAW_MIXED_BRIDGE_FREEZE.md for the future raw_mixed_corpus_bridge_seed_only mode. The selected future mode can only seed existing admitted dataset_version and aps_content_document source authority from server-owned APS artifacts before a separate normal Layer 3 API flow. It admits no runtime behavior, route, DTO, model, migration, local upload, local-directory ingestion, broad file upload, web connector retrieval, RAG/vector retrieval, unbounded runtime DB source expansion, general source adapter registry behavior, flow execution inside seeding, package mutation/reconstruction, connector/destination dispatch, provider/public URLs, UI/browser durable authority, full mockup activation, hidden LLM planning, or auth/security behavior."
+    "latest_raw_mixed_bridge_seed_branch": "codex/l3-raw-mixed-bridge-seed",
+    "latest_raw_mixed_bridge_seed_input_main_commit": "b6446d53ce0e1f90837d5d491c898ad5fd29a51b",
+    "latest_raw_mixed_bridge_seed_live_behavior_change": true,
+    "latest_raw_mixed_bridge_seed_summary": "Branch codex/l3-raw-mixed-bridge-seed implements only raw_mixed_corpus_bridge_seed_only under doc 137 raw mixed bridge governance now admits only raw_mixed_corpus_bridge_seed_only. The route POST /api/v1/layer3/source/mixed-corpus/seed reads a hash-checked server-owned storage-root manifest and existing DatasetVersion, DatasetSourceProvenance, ApsContentDocument, ApsContentLinkage, ConnectorRun, and ConnectorRunTarget rows, then returns existing dataset_version and aps_content_document ids for a later separate normal Layer 3 API flow. It writes no DB rows or files and admits no local upload, local-directory ingestion, broad file upload, web connector retrieval, RAG/vector retrieval, unbounded runtime DB source expansion, general source adapter registry behavior, flow execution inside seeding, model/migration changes, package mutation/reconstruction, connector/destination dispatch, provider/public URLs, UI/browser durable authority, full mockup activation, hidden LLM planning, or auth/security behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -733,7 +733,7 @@
       "hybrid execution",
       "RAG/vector execution",
       "local upload or local-directory ingestion",
-      "raw mixed-corpus bridge runtime before a later implementation PR proves raw_mixed_corpus_bridge_seed_only",
+      "broad raw mixed-corpus ingestion beyond raw_mixed_corpus_bridge_seed_only",
       "hidden LLM planning",
       "full mockup activation",
       "multi-pass or batch analysis execution",
@@ -785,7 +785,7 @@
       "docs 100/101 current-main associated-cohort rendered delivery-control settlement over existing generic delivery UI code; no runtime/UI behavior change by docs alone",
       "docs 102/103 current-main signed delivery-reference planning/control governance from PR #497; no signed URL generation, token minting, URL serving, rendered signed URL controls, durable token/receipt/audit state, connector/destination dispatch, schema/runtime/source widening, or full mockup activation by docs alone",
       "docs 112/113 connector/destination dispatch governance; no connector-run creation, destination selection, generic downstream dispatch, provider/public URL behavior, rendered controls, package mutation, schema/runtime/source widening, qualitative execution, queue/retry/cancel behavior, or route behavior by docs alone",
-      "doc 137 raw mixed bridge governance is planning/control only for future raw_mixed_corpus_bridge_seed_only; no route, DTO, model, migration, source upload, local directory ingestion, web connector, RAG/vector, unbounded runtime DB, package, connector/destination, provider/public URL, mockup, hidden LLM, auth/security, or Layer 3 flow execution behavior is live by docs alone"
+      "doc 137 raw mixed bridge governance now admits only raw_mixed_corpus_bridge_seed_only; no broad ingestion, model, migration, source upload, local directory ingestion, web connector, RAG/vector, unbounded runtime DB, package, connector/destination, provider/public URL, mockup, hidden LLM, auth/security, or Layer 3 flow execution behavior is live by docs alone"
     ],
     "current_main_rendered_package_review_ui": [
       "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; PR #247 hardens stale session-summary fallback after package commit inside the same UI boundary. They do not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."

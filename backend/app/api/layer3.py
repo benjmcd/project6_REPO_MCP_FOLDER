@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, Request
@@ -14,6 +14,7 @@ from app.services import (
     layer3_connector_dispatch_entry,
     layer3_package_mutation_entry,
     layer3_package_supersession_commit,
+    layer3_raw_mixed_bridge,
     layer3_replacement_package_namespace,
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_set_authority,
@@ -199,6 +200,50 @@ class Layer3MaterialPreviewRequest(BaseModel):
     aps_content_document_ids: list[str] | None = None
     query_basis: dict[str, Any] | None = None
     actor: str | None = None
+
+
+class Layer3RawMixedCorpusSeedRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    seed_mode: Literal["raw_mixed_corpus_bridge_seed_only"]
+    corpus_batch_id: str = Field(min_length=1)
+    aps_run_id: str = Field(min_length=1)
+    target_ids: list[str] = Field(min_length=1)
+    artifact_manifest_ref: str = Field(min_length=1)
+    artifact_manifest_hash: str = Field(min_length=64, max_length=64)
+    requested_source_classes: list[str] = Field(min_length=2)
+    operator_confirmation: bool
+    source_upload: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    local_path: Any | None = None
+    directory_path: Any | None = None
+    broad_file_upload: Any | None = None
+    file_bytes: Any | None = None
+    file_glob: Any | None = None
+    web_connector: Any | None = None
+    connector_key: Any | None = None
+    connector_secret: Any | None = None
+    source_url: Any | None = None
+    provider_url: Any | None = None
+    public_url: Any | None = None
+    rag_vector_index: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+    embedding_model: Any | None = None
+    runtime_db_write: Any | None = None
+    unbounded_runtime_db: Any | None = None
+    package_payload: Any | None = None
+    rebuild_package: Any | None = None
+    rewrite_output: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    hidden_llm_planning: Any | None = None
+    mockup_activation: Any | None = None
+    auth_policy_override: Any | None = None
 
 
 class Layer3GateBDecisionItem(BaseModel):
@@ -1188,6 +1233,19 @@ class Layer3MaterialPreviewResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3RawMixedCorpusSeedResponse(Layer3BaseResponse):
+    source_seed_id: str
+    seed_mode: str
+    source_seed_state: str
+    dataset_version_ids: list[str]
+    aps_content_document_ids: list[str]
+    source_classes: list[str]
+    artifact_manifest_ref: str
+    artifact_manifest_hash: str
+    layer3_flow_started: bool
+    next_allowed_actions: list[str]
+
+
 class Layer3DatasetVersionCandidatesResponse(Layer3BaseResponse):
     dataset_version_candidates: list[dict[str, Any]]
     candidate_count: int
@@ -2153,6 +2211,49 @@ MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
             },
         },
         "actor": {"type": "string"},
+    },
+}
+
+
+RAW_MIXED_CORPUS_SEED_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Strict raw mixed corpus seed-only fields; source upload, local-directory, web, "
+        "RAG/vector, package, connector, provider/public URL, mockup, hidden-LLM, and "
+        "auth/security fields are rejected before service mutation."
+    ),
+    "required": [
+        "client_request_id",
+        "seed_mode",
+        "corpus_batch_id",
+        "aps_run_id",
+        "target_ids",
+        "artifact_manifest_ref",
+        "artifact_manifest_hash",
+        "requested_source_classes",
+        "operator_confirmation",
+    ],
+    "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.raw_mixed_corpus_seed_request.v1"]},
+        "schema_version": {"type": "integer", "enum": [1]},
+        "client_request_id": {"type": "string", "minLength": 1},
+        "seed_mode": {"type": "string", "enum": ["raw_mixed_corpus_bridge_seed_only"]},
+        "corpus_batch_id": {"type": "string", "minLength": 1},
+        "aps_run_id": {"type": "string", "minLength": 1},
+        "target_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "artifact_manifest_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Server-owned storage-root manifest reference; no local upload or directory traversal.",
+        },
+        "artifact_manifest_hash": {"type": "string", "minLength": 64, "maxLength": 64},
+        "requested_source_classes": {"type": "array", "items": SOURCE_CLASS_SCHEMA, "minItems": 2},
+        "operator_confirmation": {"type": "boolean"},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in sorted(layer3_raw_mixed_bridge.RAW_MIXED_CORPUS_FORBIDDEN_FIELDS)
+        },
     },
 }
 
@@ -3680,6 +3781,21 @@ def post_preflight(payload: Layer3PreflightRequest) -> dict[str, Any] | JSONResp
 )
 def post_source_preview(payload: Layer3SourcePreviewRequest) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.source_preview(payload.model_dump(exclude_none=True)))
+
+
+@router.post(
+    "/source/mixed-corpus/seed",
+    response_model=Layer3RawMixedCorpusSeedResponse,
+    openapi_extra={"requestBody": _json_request_body(RAW_MIXED_CORPUS_SEED_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_raw_mixed_corpus_seed(
+    payload: Layer3RawMixedCorpusSeedRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_raw_mixed_bridge.seed_raw_mixed_corpus(payload.model_dump(exclude_unset=True), db)
+    )
 
 
 @router.post(
