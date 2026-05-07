@@ -90,6 +90,12 @@ RENDERED_EXECUTION_SELECTION_START_CONTRACT = (
 RENDERED_EXECUTION_SELECTION_START_RUNTIME = (
     PLANNING_DOCS / "162_RENDERED_EXECUTION_SELECTION_START_RUNTIME.md"
 )
+RENDERED_RESULT_REVIEW_FREEZE = (
+    PLANNING_DOCS / "163_RENDERED_RESULT_REVIEW_FREEZE.md"
+)
+RENDERED_RESULT_REVIEW_CONTRACT = (
+    PLANNING_DOCS / "164_RENDERED_RESULT_REVIEW_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -360,6 +366,7 @@ LAYER3_HTML = LAYER3_STATIC / "layer3.html"
 LAYER3_CSS = LAYER3_STATIC / "layer3.css"
 LAYER3_JS = LAYER3_STATIC / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
+LAYER3_FLOW_E2E = ROOT / "e2e" / "layer3-flow.spec.js"
 LAYER3_HANDOFF_E2E = ROOT / "e2e" / "layer3-handoff.spec.js"
 LAYER3_HELPERS_E2E = ROOT / "e2e" / "layer3-helpers.js"
 REVIEW_BROWSER_SERVER = ROOT / "backend" / "tests" / "review_browser_server.py"
@@ -5622,6 +5629,129 @@ def _check_rendered_execution_selection_start_runtime(errors: list[str]) -> None
                 errors.append(f"{_rel(PROOF_MANIFEST)} live_selectors missing {selector}")
 
 
+def _check_rendered_result_review_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_RESULT_REVIEW_FREEZE: (
+            "Status: planning/control freeze only for `raw_mixed_rendered_result_review_submit`.",
+            "POST /api/v1/layer3/execution/result/review",
+            "Layer3ExecutionResultReviewRequest",
+            "Layer3ExecutionResultReviewResponse",
+            "#result-review-decision",
+            "#result-review-notes",
+            "#result-review-submit",
+            "#package-review-preview-inspect",
+            "cohort_result_review_ui_review_ready",
+            "light`, `dark`, and `workbench`",
+            "no frontend-only durable authority",
+        ),
+        RENDERED_RESULT_REVIEW_CONTRACT: (
+            "Selected mode: `raw_mixed_rendered_result_review_submit`.",
+            "POST /api/v1/layer3/execution/result/review",
+            "Layer3ExecutionResultReviewRequest",
+            "Layer3ExecutionResultReviewResponse",
+            "#result-review-decision",
+            "#result-review-notes",
+            "#result-review-submit",
+            "#result-review-panel",
+            "#package-review-preview-inspect",
+            "light`, `dark`, and `workbench`",
+            "frontend-only durable authority",
+        ),
+        BOARD: (
+            "Rendered result-review freeze",
+            "163_RENDERED_RESULT_REVIEW_FREEZE.md",
+            "164_RENDERED_RESULT_REVIEW_CONTRACT.md",
+            "raw_mixed_rendered_result_review_submit",
+            "POST /api/v1/layer3/execution/result/review",
+        ),
+        MANIFEST: (
+            "latest_rendered_result_review_freeze_branch",
+            "latest_rendered_result_review_freeze_live_behavior_change",
+            "rendered_result_review_freeze",
+            "raw_mixed_rendered_result_review_submit",
+            "/execution/result/review request allowlist",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_result_review_freeze_proof",
+            "163_RENDERED_RESULT_REVIEW_FREEZE.md",
+            "164_RENDERED_RESULT_REVIEW_CONTRACT.md",
+            "raw_mixed_rendered_result_review_submit",
+            "#result-review-submit",
+            "no frontend-only durable authority",
+        ),
+        LAYER3_API: (
+            "class Layer3ExecutionResultReviewRequest(BaseModel):",
+            "class Layer3ExecutionResultReviewResponse(Layer3BaseResponse):",
+            '"/execution/result/review"',
+            "package_variant: Any | None = None",
+            "rewrite_output: Any | None = None",
+        ),
+        LAYER3_HTML: (
+            "result-review-decision",
+            "result-review-notes",
+            "result-review-submit",
+            "package-review-preview-inspect",
+        ),
+        LAYER3_JS: (
+            "function canSubmitResultReview",
+            "function resultReviewPayload",
+            "postJson('/execution/result/review'",
+            "cohort_result_review_ui_review_ready",
+            "cohort_result_review_ui_recorded",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives raw mixed rendered execution selection and start",
+            "inspectRenderedResultStatus",
+            "cohort_result_review_ui_review_ready",
+            "/execution/result/review",
+            "/package/review/",
+            "/handoff/",
+        ),
+        LAYER3_FLOW_E2E: (
+            "Layer 3 workbench records selected-pass result review only after status authority",
+            "#result-review-decision",
+            "#result-review-notes",
+            "#result-review-submit",
+            "expectOnlyPayloadKeys(reviewPayload",
+            "changes_requested",
+            "package_review_enabled",
+            "handoff_enabled",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered result-review freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_result_review_freeze_branch") != "codex/l3-rendered-result-review-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered result-review freeze branch")
+        if current_status.get("latest_rendered_result_review_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered result-review freeze as planning-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_result_review_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_result_review_freeze_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered result-review freeze proof must be planning-only")
+    if proof.get("selected_rendered_result_review_mode") != "raw_mixed_rendered_result_review_submit":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered result-review freeze proof has stale selected mode")
+    for selector in (
+        "#result-review-decision",
+        "#result-review-notes",
+        "#result-review-submit",
+        "#result-review-panel",
+        "#package-review-preview-inspect",
+    ):
+        if selector not in proof.get("future_selectors", []):
+            errors.append(f"{_rel(PROOF_MANIFEST)} future_selectors missing {selector}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -10192,6 +10322,8 @@ def main() -> int:
         RENDERED_EXECUTION_SELECTION_START_FREEZE,
         RENDERED_EXECUTION_SELECTION_START_CONTRACT,
         RENDERED_EXECUTION_SELECTION_START_RUNTIME,
+        RENDERED_RESULT_REVIEW_FREEZE,
+        RENDERED_RESULT_REVIEW_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -10306,6 +10438,7 @@ def main() -> int:
         LAYER3_EXECUTION_ERROR_TEST,
         LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
+        LAYER3_FLOW_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
         REVIEW_BROWSER_SERVER,
@@ -10352,6 +10485,7 @@ def main() -> int:
     _check_raw_mixed_rendered_downstream_blocker(errors)
     _check_rendered_execution_selection_start_freeze(errors)
     _check_rendered_execution_selection_start_runtime(errors)
+    _check_rendered_result_review_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

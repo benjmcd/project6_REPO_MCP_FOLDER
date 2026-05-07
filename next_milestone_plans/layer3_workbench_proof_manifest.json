@@ -6066,5 +6066,55 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Freeze and implement only the next rendered downstream slice if result review, package, handoff/export, APS dispatch, or external export/download UI proof is needed."
+  },
+  "rendered_result_review_freeze_proof": {
+    "scope": "Planning/control freeze for future rendered raw mixed result-review submit after live rendered execution selection/start and result/status authority.",
+    "implementation_branch": "codex/l3-rendered-result-review-freeze",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/163_RENDERED_RESULT_REVIEW_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/164_RENDERED_RESULT_REVIEW_CONTRACT.md"
+    ],
+    "selected_rendered_result_review_mode": "raw_mixed_rendered_result_review_submit",
+    "routes_to_reuse": [
+      "POST /api/v1/layer3/execution/result/review"
+    ],
+    "future_selectors": [
+      "#result-review-decision",
+      "#result-review-notes",
+      "#result-review-submit",
+      "#result-review-panel",
+      "#package-review-preview-inspect"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/163_RENDERED_RESULT_REVIEW_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/164_RENDERED_RESULT_REVIEW_CONTRACT.md",
+      "backend/app/api/layer3.py",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "e2e/layer3-flow.spec.js",
+      "tools/l3-progress-check.py"
+    ],
+    "proof_summary": "The next pass may use only existing rendered result-review controls after raw mixed rendered execution result/status authority. It must submit only admitted Layer3ExecutionResultReviewRequest fields to /execution/result/review, prove recorded result-review state, preserve light/dark/workbench theme behavior, and stop before package, handoff, APS dispatch, and external export/download unless a separate freeze admits the next downstream slice.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no new rendered controls unless a blocker is reported first",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no package payload rewrite or package row creation from this pass",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Implement only a focused raw mixed rendered result-review submit proof if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
   }
 }
