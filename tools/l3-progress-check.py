@@ -330,6 +330,8 @@ LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST = (
 )
 LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
+LAYER3_HANDOFF_E2E = ROOT / "e2e" / "layer3-handoff.spec.js"
+LAYER3_HELPERS_E2E = ROOT / "e2e" / "layer3-helpers.js"
 MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
 MOCKUP_SPEC = ROOT / "next_milestone_plans" / "layer3-mockups" / "mockup-spec.txt"
 
@@ -4034,7 +4036,7 @@ def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> N
             "Qualitative APS attempts that lack the exact persisted package-preview",
         ),
         POST_709_ROADMAP_FREEZE: (
-            "Status: current-main planning/control reference after qualitative APS external export/download runtime and rendered UI freeze.",
+            "Status: current-main planning/control reference after qualitative APS external export/download runtime and rendered UI runtime.",
             "governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`",
             "qualitative APS handoff/export prepare over the approved package-review submit state",
             "governing APS handoff dispatch runtime docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`",
@@ -4397,45 +4399,52 @@ def _check_qualitative_aps_external_export_download_freeze(errors: list[str]) ->
 def _check_qualitative_aps_rendered_ui_freeze(errors: list[str]) -> None:
     required_doc_terms = {
         QUAL_APS_RENDERED_UI_FREEZE: (
-            "Status: planning-only implementation-entry freeze",
+            "Status: live bounded rendered `/review/layer3` qualitative APS package/downstream UI runtime",
             "qual_aps_rendered_downstream_existing_controls_only",
-            "Current main still does not admit rendered qualitative package/downstream controls",
+            "Current main now admits rendered qualitative package/downstream controls only through existing `/review/layer3` controls",
+            "Qualitative APS same-origin delivery remains disabled and gated when the server returns `delivery_ui: null` or omits `delivery_ui`.",
             "Required Theme Posture",
             "headless Chromium Playwright",
             "headed Chromium Playwright",
-            "must not introduce a raw mixed manifest picker",
+            "does not introduce a raw mixed manifest picker",
             "no frontend-only durable authority",
         ),
         QUAL_APS_RENDERED_UI_CONTRACT: (
-            "Status: planning-only UI/state contract paired with `151_QUAL_APS_RENDERED_UI_FREEZE.md`.",
+            "Status: live UI/state contract paired with `151_QUAL_APS_RENDERED_UI_FREEZE.md`.",
             "qual_aps_rendered_downstream_existing_controls_only",
             "Server state is the only durable authority",
             "Delivery UI Gate",
             "The UI must not enable delivery from `delivery_ui: null`.",
+            "Response-Derived Readiness Contract",
+            "external_export_download_delivery_ui_unavailable",
+            "external_export_download_signed_reference_ui_blocked",
             "headed and headless Chromium runs for the same qualitative APS rendered path",
         ),
         POST_709_ROADMAP_FREEZE: (
-            "governing rendered qualitative APS UI freeze docs: `151_QUAL_APS_RENDERED_UI_FREEZE.md`",
-            "rendered qualitative APS package/downstream UI runtime, including theme proof, governed by docs `151` and `152`",
+            "governing rendered qualitative APS UI runtime docs: `151_QUAL_APS_RENDERED_UI_FREEZE.md`",
+            "rendered `/review/layer3` qualitative APS downstream UI runtime, governed by docs `151` and `152`",
             "qual_aps_rendered_downstream_existing_controls_only",
+            "next work should move to source breadth",
         ),
         PHASE1A_README: (
             "151_QUAL_APS_RENDERED_UI_FREEZE.md",
             "152_QUAL_APS_RENDERED_UI_CONTRACT.md",
             "qual_aps_rendered_downstream_existing_controls_only",
             "headed/headless Chromium theme proof",
+            "qualitative delivery stays disabled from `delivery_ui: null`",
         ),
         DEFERRED_GATES: (
             "151_QUAL_APS_RENDERED_UI_FREEZE.md",
             "152_QUAL_APS_RENDERED_UI_CONTRACT.md",
             "qual_aps_rendered_downstream_existing_controls_only",
-            "do not make rendered controls live by themselves",
+            "rendered qualitative delivery without server `delivery_ui`",
         ),
         BOARD: (
-            "Qualitative APS rendered downstream UI freeze",
-            "planning/control docs",
+            "Qualitative APS rendered downstream UI runtime",
+            "current-main bounded rendered UI proof",
             "qual_aps_rendered_downstream_existing_controls_only",
-            "headed/headless Chromium theme proof",
+            "headless and headed Chromium",
+            "qualitative delivery disabled when `delivery_ui` is null or absent",
         ),
         MANIFEST: (
             "latest_qual_aps_rendered_ui_freeze_branch",
@@ -4451,6 +4460,21 @@ def _check_qualitative_aps_rendered_ui_freeze(errors: list[str]) -> None:
             "required_future_browser_proof",
         ),
     }
+    stale_doc_terms = {
+        QUAL_APS_RENDERED_UI_FREEZE: (
+            "Status: planning-only implementation-entry freeze",
+            "Current main still does not admit rendered qualitative package/downstream controls",
+            "Selected Future Boundary",
+        ),
+        QUAL_APS_RENDERED_UI_CONTRACT: (
+            "Status: planning-only UI/state contract",
+            "This contract specifies the future rendered `/review/layer3` behavior",
+            "The first future implementation should start",
+        ),
+        BOARD: (
+            "Qualitative APS rendered downstream UI freeze | planning/control docs",
+        ),
+    }
     for path, terms in required_doc_terms.items():
         text = _read_required_text(path, errors)
         for term in terms:
@@ -4458,6 +4482,69 @@ def _check_qualitative_aps_rendered_ui_freeze(errors: list[str]) -> None:
                 errors.append(
                     f"{_rel(path)} missing qualitative APS rendered UI freeze term: {term}"
                 )
+        for term in stale_doc_terms.get(path, ()):
+            if term in text:
+                errors.append(
+                    f"{_rel(path)} still contains stale qualitative APS rendered UI planning-only term: {term}"
+                )
+
+    required_source_terms = {
+        LAYER3_JS: (
+            "function packageReviewPreviewHash()",
+            "function packageConstructionBasisHash()",
+            "function apsHandoffDispatchState()",
+            "const qualitativeAps = handoff?.schema_id === 'layer3.qual_aps_handoff_export_prepare.v1'",
+            "state: 'aps_handoff_ready'",
+            "function isQualitativeApsExternalExportDownloadState",
+            "external_export_download_delivery_ui_unavailable",
+            "external_export_download_signed_reference_ui_blocked",
+            "deliveryUi.state === 'external_export_download_delivery_ui_ready'",
+            "if (!isAssociatedCohortExternalExportDownloadState(external))",
+            "payload.construction_basis_hash = constructionBasisHash",
+            "apsHandoffDispatchState()?.available === true",
+        ),
+        LAYER3_PAGE_TEST: (
+            "function packageReviewPreviewHash",
+            "function packageConstructionBasisHash",
+            "function isQualitativeApsExternalExportDownloadState",
+            "external_export_download_delivery_ui_unavailable",
+            "external_export_download_signed_reference_ui_blocked",
+            "source_artifact_size_bytes ?? summary.source_artifact_size_bytes",
+            "apsHandoffDispatchState()?.available === true",
+        ),
+        LAYER3_HELPERS_E2E: (
+            "prepareQualitativeApsResultReviewSession",
+            "approvedLayer3CandidateDecision",
+            "aps_content_document_ids: [seed.content_id]",
+            "attachSessionToWorkbench(page, sessionId, sourceClasses = ['dataset_version'])",
+        ),
+        LAYER3_HANDOFF_E2E: (
+            "Layer 3 workbench drives qualitative APS package handoff to external readiness with delivery UI gated",
+            "prepareQualitativeApsResultReviewSession",
+            "external_export_download_delivery_ui_unavailable",
+            "external_export_download_signed_reference_ui_blocked",
+            "expect(external.delivery_ui).toBeNull()",
+            "expectOnlyPayloadKeys",
+            "expect(submitPayload).not.toHaveProperty('analysis_run_id')",
+            "expect(externalPayload).not.toHaveProperty('public_url')",
+        ),
+    }
+    for path, terms in required_source_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing qualitative APS rendered UI runtime term: {term}"
+                )
+    js_text = _read_required_text(LAYER3_JS, errors)
+    for term in (
+        "source_artifact_size_bytes ?? summary.source_artifact_size_bytes",
+        "state: 'associated_cohort_external_export_download_delivery_ui_ready',",
+    ):
+        if term in js_text:
+            errors.append(
+                f"{_rel(LAYER3_JS)} still contains synthetic associated-cohort delivery UI term: {term}"
+            )
 
     manifest = _load_json(MANIFEST, errors)
     current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
@@ -4469,6 +4556,15 @@ def _check_qualitative_aps_rendered_ui_freeze(errors: list[str]) -> None:
         ):
             if key not in current_status:
                 errors.append(f"{_rel(MANIFEST)} current_status missing rendered UI key: {key}")
+        if current_status.get("latest_qual_aps_rendered_ui_freeze_branch") != "codex/l3-qual-aps-ui-runtime":
+            errors.append(
+                f"{_rel(MANIFEST)} current_status has stale rendered UI branch: "
+                "latest_qual_aps_rendered_ui_freeze_branch"
+            )
+        if current_status.get("latest_qual_aps_rendered_ui_freeze_live_behavior_change") is not True:
+            errors.append(
+                f"{_rel(MANIFEST)} current_status must mark rendered UI runtime as a live behavior change"
+            )
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:

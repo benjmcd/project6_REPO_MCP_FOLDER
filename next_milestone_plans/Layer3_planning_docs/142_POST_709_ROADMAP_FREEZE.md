@@ -1,13 +1,13 @@
 # Layer 3 Qualitative APS Post-Submit Roadmap Freeze
 
-Status: current-main planning/control reference after qualitative APS external export/download runtime and rendered UI freeze.
+Status: current-main planning/control reference after qualitative APS external export/download runtime and rendered UI runtime.
 
-This document is the referenceable roadmap for the remaining bounded Layer 3 work after qualitative APS package-review submit, qualitative APS handoff/export prepare, qualitative APS APS handoff dispatch, and qualitative APS external export/download became live. It now points to docs `151` and `152` as the planning-only rendered qualitative APS UI freeze before any rendered qualitative controls change. It does not implement or admit any new runtime behavior by itself.
+This document is the referenceable roadmap for the remaining bounded Layer 3 work after qualitative APS package-review submit, qualitative APS handoff/export prepare, qualitative APS APS handoff dispatch, qualitative APS external export/download, and the existing-control rendered qualitative APS downstream UI path became live. It points to docs `151` and `152` as the governing rendered qualitative APS UI runtime contract. It does not implement or admit any new runtime behavior by itself.
 
 ## Authority Snapshot
 
 - authoritative remote: `project6-origin/main`
-- current-main anchor: qualitative APS external export/download runtime branch
+- current-main anchor: qualitative APS rendered downstream UI runtime branch
 - latest live qualitative APS boundary: `qual_aps_external_export_download_prepare_deliver`
 - latest live qualitative APS response schema: `layer3.qual_aps_external_export_download_prepare.v1` and `layer3.qual_aps_external_export_download_delivery.v1`
 - governing construction docs: `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md` and `141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
@@ -15,7 +15,7 @@ This document is the referenceable roadmap for the remaining bounded Layer 3 wor
 - governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md` and `146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md`
 - governing APS handoff dispatch runtime docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md` and `148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md`
 - governing qualitative APS external export/download freeze docs: `149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md` and `150_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md`
-- governing rendered qualitative APS UI freeze docs: `151_QUAL_APS_RENDERED_UI_FREEZE.md` and `152_QUAL_APS_RENDERED_UI_CONTRACT.md`
+- governing rendered qualitative APS UI runtime docs: `151_QUAL_APS_RENDERED_UI_FREEZE.md` and `152_QUAL_APS_RENDERED_UI_CONTRACT.md`
 - broader deferred-gate control: `105_deferred-gates.md`
 - proof/progress surfaces: `layer3_progress_board.md`, `layer3_progress_manifest.json`, `layer3_workbench_proof_manifest.json`, and `tools/l3-progress-check.py`
 
@@ -34,37 +34,39 @@ Current main admits:
 - qualitative APS package-review submit over the constructed package set, recording the operator decision in existing summary state without creating rows or files;
 - qualitative APS handoff/export prepare over the approved package-review submit state, recording one prepare-only decision/envelope in existing summary state without creating rows or files;
 - qualitative APS APS handoff dispatch over the prepared qualitative envelope, creating exactly one APS evidence-bundle handoff package row, writing one server-owned APS bundle artifact, and recording dispatch state;
-- qualitative APS external export/download prepare/deliver runtime, governed by docs `149` and `150`; this is qualitative APS external export/download prepare/deliver over the dispatched APS bundle, recording one readiness object and streaming the existing server-owned APS bundle artifact.
+- qualitative APS external export/download prepare/deliver runtime, governed by docs `149` and `150`; this is qualitative APS external export/download prepare/deliver over the dispatched APS bundle, recording one readiness object and streaming the existing server-owned APS bundle artifact;
+- rendered `/review/layer3` qualitative APS downstream UI runtime, governed by docs `151` and `152`; this uses API/test setup to reach approved qualitative APS result review, then drives existing rendered controls through package preview, package construction commit, package review submit, handoff/export prepare, APS handoff dispatch, and external export/download prepare. Qualitative APS same-origin delivery remains gated/disabled when `delivery_ui` is null or absent.
 
-Current main still does not admit rendered qualitative package controls, provider/public URLs, real connector/destination dispatch, raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry expansion, broad qualitative/hybrid execution, hidden LLM planning, full mockup activation, auth/security behavior changes, or broad package mutation/reconstruction. The live qualitative APS external export/download path is limited to `qual_aps_external_export_download_prepare_deliver`.
+Current main still does not admit qualitative APS rendered delivery without explicit server `delivery_ui`, provider/public URLs, real connector/destination dispatch, raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry expansion, broad qualitative/hybrid execution, hidden LLM planning, full mockup activation, auth/security behavior changes, or broad package mutation/reconstruction. The live qualitative APS external export/download path is limited to `qual_aps_external_export_download_prepare_deliver`.
 
 ## Required Ordering
 
 Future work must proceed in this order unless a later live audit proves a different blocker:
 
-1. rendered qualitative APS package/downstream UI runtime, including theme proof, governed by docs `151` and `152`;
-2. source-breadth freeze before any ingestion/source-adapter expansion;
-3. raw ingestion implementation only after source-breadth freeze;
-4. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
-5. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
-6. connector/destination dispatch and provider/public URL freezes before any external delivery expansion;
-7. browser/full mockup activation freeze before any mockup-derived UI activation;
-8. auth/security hardening freeze before behavior changes in authorization, tenancy, credentials, or public access;
-9. CI/performance/observability hardening once the admitted runtime path is broad enough to stress runtime cost or audit trace completeness.
+1. source-breadth freeze before any ingestion/source-adapter expansion;
+2. raw ingestion implementation only after source-breadth freeze;
+3. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
+4. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
+5. connector/destination dispatch and provider/public URL freezes before any external delivery expansion;
+6. browser/full mockup activation freeze before any mockup-derived UI activation;
+7. auth/security hardening freeze before behavior changes in authorization, tenancy, credentials, or public access;
+8. CI/performance/observability hardening once the admitted runtime path is broad enough to stress runtime cost or audit trace completeness.
 
 ## Future Pass Specifications
 
 ### 1. Rendered Qualitative APS UI Runtime
 
-- goal: implement only the rendered controls needed for already-live qualitative APS backend/API steps under docs `151` and `152`.
-- current blocker: no rendered runtime implementation exists yet for `qual_aps_rendered_downstream_existing_controls_only`.
-- implementation-entry freeze required: yes, already provided by docs `151` and `152`.
-- likely files: `backend/app/review_ui/static/layer3.html`, `backend/app/review_ui/static/layer3.js`, `e2e/layer3-workbench.spec.js`, `e2e/layer3-handoff.spec.js`, `e2e/layer3-helpers.js`, UI runbook docs.
-- required tests: Playwright headed and headless Chrome for relevant existing themes; stable selectors; no frontend-only durable authority; API setup separated from rendered actions; theme persistence/isolation/responsive/focus behavior where visible controls are touched.
-- negative invariants: no new source/ingestion controls, no manifest picker, no upload/directory controls, no RAG/vector/provider/connector controls unless separately frozen, no browser state as authority.
-- priority: P3, after backend/API authority exists for the controls being rendered.
+Mode: `qual_aps_rendered_downstream_existing_controls_only`.
 
-### 3. Source Breadth And Raw Ingestion
+- goal: completed for existing-control activation through external export/download prepare; preserve the proof boundary for future maintenance.
+- current blocker: qualitative APS same-origin delivery remains disabled unless a future server-authoritative `delivery_ui` gate is admitted.
+- implementation-entry freeze required: already provided by docs `151` and `152`; any future delivery or new-control work needs a separate freeze if it widens this runtime.
+- likely files: `backend/app/review_ui/static/layer3.js`, `backend/tests/test_layer3_page.py`, `e2e/layer3-handoff.spec.js`, `e2e/layer3-helpers.js`, proof/progress manifests, and `tools/l3-progress-check.py`.
+- required tests: Playwright headed and headless Chrome for the qualitative APS rendered path; regression proof for associated-cohort delivery; stable selectors; no frontend-only durable authority; API setup separated from rendered actions.
+- negative invariants: no new source/ingestion controls, no manifest picker, no upload/directory controls, no RAG/vector/provider/connector controls unless separately frozen, no browser state as authority, no qualitative delivery from `delivery_ui: null`.
+- priority: completed bounded runtime; next work should move to source breadth unless delivery UI is selected by a separate freeze.
+
+### 2. Source Breadth And Raw Ingestion
 
 - goal: freeze then implement any source-class expansion beyond existing admitted authority rows.
 - current blocker: doc `123` keeps source expansion blocked and seed-only bridge writes no rows/files.
@@ -74,7 +76,7 @@ Future work must proceed in this order unless a later live audit proves a differ
 - negative invariants: no local-directory traversal, no arbitrary local paths, no web connector retrieval, no RAG/vector indexing, no connector dispatch, no provider URL, no hidden LLM.
 - priority: P4, after bounded downstream qualitative path is proven or if source breadth becomes the explicit product blocker.
 
-### 4. Broad Execution, RAG, Output Taxonomy, Package Lifecycle, External Delivery, Mockup, Security, And Observability
+### 3. Broad Execution, RAG, Output Taxonomy, Package Lifecycle, External Delivery, Mockup, Security, And Observability
 
 - goal: each broad category must get its own freeze before implementation.
 - current blocker: existing deferred docs keep these categories blocked.
