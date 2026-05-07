@@ -37,7 +37,12 @@ from app.models.models import (
     L3SignedReferenceToken,
     L3TypingRecord,
 )
-from test_layer3_api import client as client
+from app.services import dataframe_io
+from test_layer3_api import (
+    _aps_handoff_dispatch_payload,
+    _handoff_export_prepare_payload,
+    client as client,
+)
 from test_layer3_aps_handoff import _seed_aps_content_fixture
 from test_layer3_pass_entry import _seed_timeseries_dataset_version
 
@@ -57,6 +62,11 @@ class Layer3ApiDriver:
     def post_ok(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         response = self._client.post(path, json=payload)
         assert response.status_code == 200, response.text
+        return response.json()
+
+    def post_blocked(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        response = self._client.post(path, json=payload)
+        assert response.status_code == 409, response.text
         return response.json()
 
     def preflight(self) -> dict[str, Any]:
@@ -124,7 +134,7 @@ class Layer3ApiDriver:
                 "source_set_id": source_set_id,
                 "material_preview_id": material["material_preview_id"],
                 "material_preview_hash": material["material_preview_hash"],
-                "candidate_decisions": [_approved_decision(candidate) for candidate in material["material_candidates"]],
+                "candidate_decisions": [_gate_b_decision(candidate) for candidate in material["material_candidates"]],
             },
         )
 
@@ -136,6 +146,267 @@ class Layer3ApiDriver:
                 "session_id": session_id,
                 "commit_typing": True,
             },
+        )
+
+    def plan_preview(self, *, session_id: str) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/plan/preview",
+            {
+                "client_request_id": "bounded-e2e-plan-preview",
+                "session_id": session_id,
+                "include_exclusions": True,
+                "preview_scope": "owner_service_default",
+            },
+        )
+
+    def plan_approve(self, *, session_id: str, preview: dict[str, Any]) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/plan/approve",
+            {
+                "client_request_id": "bounded-e2e-plan-approve",
+                "session_id": session_id,
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+                "operator_confirmation": True,
+                "approval_scope": "owner_service_default",
+            },
+        )
+
+    def execution_select(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/execution/select",
+            {
+                "client_request_id": "bounded-e2e-execution-select",
+                "session_id": session_id,
+                "analysis_plan_id": approval["analysis_plan_id"],
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+            },
+        )
+
+    def execution_start(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/execution/start",
+            {
+                "client_request_id": "bounded-e2e-execution-start",
+                "session_id": session_id,
+                "analysis_plan_id": approval["analysis_plan_id"],
+                "pass_run_id": selection["pass_run_ids"][0],
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+            },
+        )
+
+    def execution_status(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/execution/result/status",
+            {
+                "client_request_id": "bounded-e2e-execution-status",
+                "session_id": session_id,
+                "analysis_plan_id": approval["analysis_plan_id"],
+                "pass_run_id": selection["pass_run_ids"][0],
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+                "analysis_run_id": start["analysis_run_id"],
+                "operator_view_mode": "status_only",
+            },
+        )
+
+    def execution_review(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        status: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/execution/result/review",
+            {
+                "client_request_id": "bounded-e2e-execution-review",
+                "session_id": session_id,
+                "analysis_plan_id": approval["analysis_plan_id"],
+                "pass_run_id": selection["pass_run_ids"][0],
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+                "analysis_run_id": start["analysis_run_id"],
+                "operator_decision": "approved",
+                "review_notes": "Bounded cohort output is traceable for package construction.",
+                "reviewed_output_items": [
+                    {
+                        "item_ref": "bounded-cohort-output",
+                        "item_type": "finding",
+                        "trace": {
+                            "session_id": session_id,
+                            "analysis_plan_id": approval["analysis_plan_id"],
+                            "pass_run_id": selection["pass_run_ids"][0],
+                            "analysis_run_id": start["analysis_run_id"],
+                            "output_payload_ref": status["output_payload_ref"],
+                        },
+                    }
+                ],
+            },
+        )
+
+    def package_preview(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/package/review/preview",
+            {
+                "client_request_id": "bounded-e2e-package-preview",
+                "session_id": session_id,
+                "analysis_plan_id": approval["analysis_plan_id"],
+                "pass_run_id": selection["pass_run_ids"][0],
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+                "analysis_run_id": start["analysis_run_id"],
+                "result_review_record_ref": review["review_record_ref"],
+            },
+        )
+
+    def package_commit(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+        package_preview: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/package/review/commit",
+            {
+                "client_request_id": "bounded-e2e-package-commit",
+                "session_id": session_id,
+                "analysis_plan_id": approval["analysis_plan_id"],
+                "pass_run_id": selection["pass_run_ids"][0],
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+                "analysis_run_id": start["analysis_run_id"],
+                "result_review_record_ref": review["review_record_ref"],
+                "package_review_preview_hash": package_preview["package_review_preview_hash"],
+                "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+            },
+        )
+
+    def package_submit(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+        commit: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/package/review/submit",
+            {
+                "client_request_id": "bounded-e2e-package-submit",
+                "session_id": session_id,
+                "analysis_plan_id": approval["analysis_plan_id"],
+                "pass_run_id": selection["pass_run_ids"][0],
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+                "analysis_run_id": start["analysis_run_id"],
+                "result_review_record_ref": review["review_record_ref"],
+                "package_review_preview_hash": commit["package_review_preview_hash"],
+                "reconciliation_record_id": commit["reconciliation_record_id"],
+                "output_package_ids": [package["output_package_id"] for package in commit["output_packages"]],
+                "payload_hashes": commit["payload_hashes"],
+                "operator_decision": "approved",
+                "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+            },
+        )
+
+    def handoff_prepare(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+        commit: dict[str, Any],
+        submit: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/handoff/export/prepare",
+            _handoff_export_prepare_payload(
+                request_id="bounded-e2e-handoff-prepare",
+                session_id=session_id,
+                preview_body=preview,
+                approval_body=approval,
+                selection_body=selection,
+                start_body=start,
+                review_body=review,
+                commit_body=commit,
+                submit_body=submit,
+            ),
+        )
+
+    def aps_dispatch_blocked(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+        commit: dict[str, Any],
+        submit: dict[str, Any],
+        prepare: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_blocked(
+            "/api/v1/layer3/handoff/aps/dispatch",
+            _aps_handoff_dispatch_payload(
+                request_id="bounded-e2e-aps-dispatch",
+                session_id=session_id,
+                preview_body=preview,
+                approval_body=approval,
+                selection_body=selection,
+                start_body=start,
+                review_body=review,
+                commit_body=commit,
+                submit_body=submit,
+                prepare_body=prepare,
+            ),
         )
 
 
@@ -189,8 +460,8 @@ class Layer3StateAssertions:
         with self._client.layer3_session_factory() as db:
             assert db.query(L3Session).filter(L3Session.session_id == session_id).count() == 1
             assert db.query(L3SelectionManifest).filter(L3SelectionManifest.session_id == session_id).count() == 1
-            assert db.query(L3Descriptor).filter(L3Descriptor.session_id == session_id).count() == 3
-            assert db.query(L3RetrievalEvent).filter(L3RetrievalEvent.session_id == session_id).count() == 3
+            assert db.query(L3Descriptor).filter(L3Descriptor.session_id == session_id).count() == 2
+            assert db.query(L3RetrievalEvent).filter(L3RetrievalEvent.session_id == session_id).count() == 2
             snapshots = (
                 db.query(L3MaterialSnapshot)
                 .filter(L3MaterialSnapshot.session_id == session_id)
@@ -198,18 +469,13 @@ class Layer3StateAssertions:
                 .all()
             )
             assert [snapshot.source_shape for snapshot in snapshots].count("dataset_version") == 2
-            assert [snapshot.source_shape for snapshot in snapshots].count("aps_content_document") == 1
+            assert [snapshot.source_shape for snapshot in snapshots].count("aps_content_document") == 0
             dataset_ids = [
                 snapshot.source_identity_json["dataset_version_id"]
                 for snapshot in snapshots
                 if snapshot.source_shape == "dataset_version"
             ]
             assert sorted(dataset_ids) == sorted(seeded.dataset_version_ids)
-            assert any(
-                snapshot.source_identity_json.get("content_id") == seeded.aps_content_id
-                for snapshot in snapshots
-                if snapshot.source_shape == "aps_content_document"
-            )
             dataset_group_ids = {
                 snapshot.co_retrieval_group_id
                 for snapshot in snapshots
@@ -228,12 +494,12 @@ class Layer3StateAssertions:
 
     def assert_gate_c_associated_cohort_boundary(self, *, session_id: str) -> None:
         with self._client.layer3_session_factory() as db:
-            assert db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count() == 3
-            assert db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count() == 3
-            assert db.query(L3AnalysisGroup).filter(L3AnalysisGroup.session_id == session_id).count() == 2
+            assert db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count() == 2
+            assert db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count() == 2
+            assert db.query(L3AnalysisGroup).filter(L3AnalysisGroup.session_id == session_id).count() == 1
             sets = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).all()
-            assert len(sets) == 2
-            assert {analysis_set.set_type for analysis_set in sets} == {"associated_cohort", "single_item"}
+            assert len(sets) == 1
+            assert {analysis_set.set_type for analysis_set in sets} == {"associated_cohort"}
             associated_set = (
                 db.query(L3AnalysisSet)
                 .filter(L3AnalysisSet.session_id == session_id, L3AnalysisSet.set_type == "associated_cohort")
@@ -242,9 +508,17 @@ class Layer3StateAssertions:
             assert len(associated_set.analysis_unit_ids_json) == 2
             assert associated_set.formation_basis_json["group_basis"] == "same_co_retrieval_group"
             assert associated_set.formation_basis_json["analysis_modality"] == "quantitative"
-            assert "requested_method_name" not in associated_set.formation_basis_json
-            for analysis_set in sets:
-                assert "requested_method_name" not in analysis_set.formation_basis_json
+            assert associated_set.formation_basis_json["requested_method_name"] == "descriptive_summary"
+
+    def assert_approved_plan_method_authority(self, *, session_id: str, seeded: SeededSources) -> None:
+        with self._client.layer3_session_factory() as db:
+            plan = db.query(L3AnalysisPlan).filter(L3AnalysisPlan.session_id == session_id).one()
+            planned_pass = plan.plan_json["planned_passes_json"][0]
+            assert planned_pass["selected_method_name"] == "descriptive_summary"
+            assert planned_pass["requested_method_name"] == "descriptive_summary"
+            assert planned_pass["requested_method_source"] == "analysis_set.formation_basis_json.requested_method_name"
+            assert planned_pass["source_gate"] == "78_COHORT_FREEZE"
+            assert sorted(planned_pass["source_dataset_version_ids_json"]) == sorted(seeded.dataset_version_ids)
 
     def assert_forbidden_side_effects_absent(self, *, seeded_counts: dict[str, int]) -> None:
         counts = self.counts()
@@ -264,10 +538,12 @@ class Layer3StateAssertions:
         assert counts["signed_reference_audit_events"] == 0
 
 
-def test_layer3_bounded_e2e_api_associated_cohort_forms_at_gate_c_boundary(
+def test_layer3_bounded_e2e_api_associated_cohort_reaches_handoff_prepare_boundary(
     client: TestClient,
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
+    _patch_cohort_dataframe_persistence(monkeypatch, tmp_path)
     seeded = _seed_sources(client, tmp_path)
     driver = Layer3ApiDriver(client)
     state = Layer3StateAssertions(client, tmp_path)
@@ -297,6 +573,8 @@ def test_layer3_bounded_e2e_api_associated_cohort_forms_at_gate_c_boundary(
         material=material,
     )
     assert gate_b["status"] == "ok"
+    assert len(gate_b["approved_candidate_ids"]) == 2
+    assert len(gate_b["flagged_candidate_ids"]) == 1
     session_id = gate_b["session_id"]
     state.assert_gate_b_state(session_id=session_id, seeded=seeded)
     state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
@@ -306,6 +584,133 @@ def test_layer3_bounded_e2e_api_associated_cohort_forms_at_gate_c_boundary(
     assert gate_c["authority_rail"]["typing_status"] == "committed"
     state.assert_gate_c_associated_cohort_boundary(session_id=session_id)
     state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
+
+    gate_c_counts = state.counts()
+    plan_preview = driver.plan_preview(session_id=session_id)
+    _assert_descriptive_cohort_plan_preview(plan_preview, seeded=seeded)
+    assert state.counts() == gate_c_counts
+
+    plan_approval = driver.plan_approve(session_id=session_id, preview=plan_preview)
+    assert plan_approval["next_state"] == "plan_approved"
+    approval_counts = state.counts()
+    assert approval_counts == {**gate_c_counts, "analysis_plans": gate_c_counts["analysis_plans"] + 1}
+    state.assert_approved_plan_method_authority(session_id=session_id, seeded=seeded)
+
+    selection = driver.execution_select(session_id=session_id, preview=plan_preview, approval=plan_approval)
+    assert selection["status"] == "selected_not_started"
+    selection_counts = state.counts()
+    assert selection_counts == {**approval_counts, "pass_runs": approval_counts["pass_runs"] + 1}
+
+    start = driver.execution_start(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+    )
+    assert start["status"] in {"completed", "completed_with_warnings"}
+    assert start["selected_method_name"] == "descriptive_summary"
+    _assert_response_refs_exist(start)
+    start_counts = state.counts()
+    assert start_counts["analysis_runs"] == selection_counts["analysis_runs"] + 1
+    assert start_counts["dataset_versions"] == selection_counts["dataset_versions"] + 1
+    assert start_counts["pass_runs"] == selection_counts["pass_runs"]
+    assert start_counts["output_packages"] == 0
+
+    status = driver.execution_status(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+    )
+    assert status["status"] == "available"
+    assert status["selected_method_name"] == "descriptive_summary"
+    _assert_response_refs_exist(status)
+    assert state.counts() == start_counts
+
+    review = driver.execution_review(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        status=status,
+    )
+    assert review["review_state"] == "execution_result_review_approved"
+    assert state.counts() == start_counts
+
+    package_preview = driver.package_preview(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+    )
+    assert package_preview["pass_type"] == "associated_cohort"
+    assert package_preview["selected_method_name"] == "descriptive_summary"
+    assert state.counts() == start_counts
+
+    package_commit = driver.package_commit(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        package_preview=package_preview,
+    )
+    assert package_commit["status"] == "committed"
+    _assert_response_refs_exist(package_commit)
+    commit_counts = state.counts()
+    assert commit_counts == {
+        **start_counts,
+        "output_packages": start_counts["output_packages"] + 3,
+        "reconciliations": start_counts["reconciliations"] + 1,
+    }
+
+    package_submit = driver.package_submit(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+    )
+    assert package_submit["package_review_state"] == "package_review_approved"
+    assert state.counts() == commit_counts
+
+    handoff_prepare = driver.handoff_prepare(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+    )
+    assert handoff_prepare["handoff_export_state"] == "handoff_export_prepared"
+    _assert_response_refs_exist(handoff_prepare)
+    assert state.counts() == commit_counts
+
+    aps_dispatch = driver.aps_dispatch_blocked(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+        prepare=handoff_prepare,
+    )
+    assert aps_dispatch["error_code"] == "aps_handoff_dispatch_blocked"
+    assert aps_dispatch["blocked_fields"] == ["aps_handoff_target"]
+    assert aps_dispatch["next_allowed_actions"] == ["inspect_aps_handoff_provenance"]
+    assert "aps_content_document provenance" in aps_dispatch["message"]
+    assert state.counts() == commit_counts
 
 
 def _seed_sources(client: TestClient, tmp_path: Path) -> SeededSources:
@@ -343,19 +748,46 @@ def _seed_sources(client: TestClient, tmp_path: Path) -> SeededSources:
     return seeded
 
 
+def _patch_cohort_dataframe_persistence(monkeypatch, tmp_path: Path) -> None:
+    def _persist_dataframe_as_csv(db, version, df, time_column) -> None:
+        storage_path = tmp_path / "cohort-derived" / f"{version.dataset_version_id}.csv"
+        storage_path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(storage_path, index=False)
+        version.storage_ref = str(storage_path)
+        version.row_count = int(len(df))
+        db.flush()
+
+    monkeypatch.setattr(dataframe_io, "persist_dataframe_as_version_rows", _persist_dataframe_as_csv)
+
+
+def _gate_b_decision(candidate: dict[str, Any]) -> dict[str, Any]:
+    if candidate["source_class"] == "dataset_version":
+        return _approved_decision(candidate)
+    return {
+        "candidate_id": candidate["candidate_id"],
+        "decision": "flagged",
+        "operator_reason": "APS qualitative companion remains deferred for the current quantitative cohort path.",
+        "decision_basis": _decision_basis(candidate),
+    }
+
+
 def _approved_decision(candidate: dict[str, Any]) -> dict[str, Any]:
     return {
         "candidate_id": candidate["candidate_id"],
         "decision": "approved",
-        "decision_basis": {
-            "source_ref": candidate["source_ref"],
-            "query_basis": candidate["query_basis"],
-            "provenance_ref": candidate["provenance_ref"],
-            "source_identity": candidate["source_identity"],
-            "source_provenance": candidate["source_provenance"],
-            "payload": candidate["payload"],
-            "load_summary": candidate["load_summary"],
-        },
+        "decision_basis": _decision_basis(candidate),
+    }
+
+
+def _decision_basis(candidate: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "source_ref": candidate["source_ref"],
+        "query_basis": candidate["query_basis"],
+        "provenance_ref": candidate["provenance_ref"],
+        "source_identity": candidate["source_identity"],
+        "source_provenance": candidate["source_provenance"],
+        "payload": candidate["payload"],
+        "load_summary": candidate["load_summary"],
     }
 
 
@@ -382,6 +814,19 @@ def _assert_material_preview(material: dict[str, Any], *, seeded: SeededSources)
         for candidate in candidates
         if candidate["source_class"] == "aps_content_document"
     )
+
+
+def _assert_descriptive_cohort_plan_preview(plan_preview: dict[str, Any], *, seeded: SeededSources) -> None:
+    payload = plan_preview["plan_preview"]
+    assert payload["approval_ready"] is True
+    assert len(payload["admitted_sets"]) == 1
+    assert payload["excluded_sets"] == []
+    assert len(payload["planned_passes"]) == 1
+    planned_pass = payload["planned_passes"][0]
+    assert planned_pass["pass_type"] == "associated_cohort"
+    assert planned_pass["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert planned_pass["selected_method_name"] == "descriptive_summary"
+    assert sorted(planned_pass["source_dataset_version_ids"]) == sorted(seeded.dataset_version_ids)
 
 
 def _assert_forbidden_response_surface_absent(payload: Any) -> None:
@@ -416,3 +861,14 @@ def _assert_file_sha256(path: str, expected_hash: str) -> None:
     artifact = Path(path)
     assert artifact.exists()
     assert hashlib.sha256(artifact.read_bytes()).hexdigest() == expected_hash
+
+
+def _assert_response_refs_exist(payload: dict[str, Any]) -> None:
+    for key in ("input_payload_ref", "output_payload_ref", "source_artifact_ref", "aps_bundle_ref"):
+        ref = payload.get(key)
+        if ref:
+            assert Path(ref).exists()
+    for ref in payload.get("payload_refs") or []:
+        assert Path(ref).exists()
+    for package in payload.get("output_packages") or []:
+        _assert_file_sha256(package["payload_ref"], package["payload_hash"])
