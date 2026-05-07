@@ -680,6 +680,21 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
         "flagged",
     ]
     assert "operator_reason" in gate_b_decision_item_schema["properties"]
+    decision_basis_schema = gate_b_decision_item_schema["properties"]["decision_basis"]
+    assert decision_basis_schema["additionalProperties"] is True
+    decision_basis_properties = decision_basis_schema["properties"]
+    assert {
+        "source_ref",
+        "query_basis",
+        "provenance_ref",
+        "source_identity",
+        "source_provenance",
+        "payload",
+        "load_summary",
+    } <= set(decision_basis_properties)
+    for basis_key in ("source_identity", "source_provenance", "payload", "load_summary"):
+        assert decision_basis_properties[basis_key]["type"] == "object"
+        assert decision_basis_properties[basis_key]["additionalProperties"] is True
 
     gate_b_schema = _openapi_response_schema(spec, "/api/v1/layer3/gate-b/decision", "post")
     assert gate_b_schema["title"] == "Layer3GateBDecisionResponse"

@@ -6,6 +6,9 @@ const LAYER3_GATE_B_DRAFT_STORAGE_KEY = 'layer3_workbench_gate_b_draft_v1';
 const LAYER3_SESSION_RECOVERY_SCHEMA_ID = 'layer3.browser_session_recovery.v1';
 const LAYER3_GATE_B_DRAFT_SCHEMA_ID = 'layer3.gate_b_draft_snapshot.v1';
 const GATE_B_DRAFT_TTL_MS = 12 * 60 * 60 * 1000;
+const QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE = '140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE';
+const QUAL_APS_PASS_SCOPE = 'single_aps_doc_qualitative_pass';
+const QUAL_APS_SOURCE_SHAPE = 'aps_content_document';
 
 const State = {
     bootstrap: null,
@@ -1173,6 +1176,15 @@ function packageReviewSubmitState() {
             package_kinds: construction.package_kinds,
             payload_refs: construction.payload_refs,
             payload_hashes: construction.payload_hashes,
+            construction_basis_hash: construction.construction_basis_hash,
+            package_review_preview_hash: construction.package_review_preview_hash,
+            result_review_record_ref: construction.result_review_record_ref,
+            package_construction_source_gate: construction.package_construction_source_gate,
+            pass_type: construction.pass_type,
+            pass_scope: construction.pass_scope,
+            method: construction.method,
+            source_gate: construction.source_gate,
+            source_shape: construction.source_shape,
             package_review_submit_enabled: true,
             handoff_enabled: false,
             export_enabled: false,
@@ -1183,6 +1195,20 @@ function packageReviewSubmitState() {
         return State.sessionSummary.package_review_submit;
     }
     return null;
+}
+
+function isQualitativeApsPackageSubmitState(
+    submit = packageReviewSubmitState() || {},
+    construction = packageConstructionState() || {},
+) {
+    return Boolean(
+        submit.package_construction_source_gate === QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE
+        || construction.package_construction_source_gate === QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE
+        || submit.pass_scope === QUAL_APS_PASS_SCOPE
+        || construction.pass_scope === QUAL_APS_PASS_SCOPE
+        || submit.source_shape === QUAL_APS_SOURCE_SHAPE
+        || construction.source_shape === QUAL_APS_SOURCE_SHAPE
+    );
 }
 
 function packageOutputPackageIds() {
@@ -1419,8 +1445,10 @@ function canSubmitPackageReview() {
     const review = recordedApprovedResultReview();
     const preview = State.packageReviewPreview || {};
     const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
     const cohort = associatedCohortProjection(authority);
     const notes = elements.packageReviewSubmitNotes.value.trim();
+    const qualitativeAps = isQualitativeApsPackageSubmitState(submit, construction);
     return Boolean(
         hasResultAuthorityIdentity(authority)
         && authority.selected
@@ -1431,7 +1459,9 @@ function canSubmitPackageReview() {
         && submit.package_review_submit_enabled === true
         && submit.reconciliation_record_id
         && packageOutputPackageIds().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadRefs().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
         && packagePayloadHashes().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && (!qualitativeAps || submit.construction_basis_hash || construction.construction_basis_hash)
         && !State.resultReviewPending
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
@@ -4265,6 +4295,9 @@ function packageReviewSubmitPayload(authority = selectedResultAuthority()) {
     const review = recordedApprovedResultReview();
     const preview = State.packageReviewPreview || {};
     const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    const qualitativeAps = isQualitativeApsPackageSubmitState(submit, construction);
+    const constructionBasisHash = submit.construction_basis_hash || construction.construction_basis_hash;
     const payload = {
         client_request_id: requestId(),
         session_id: authority.sessionId,
@@ -4276,12 +4309,16 @@ function packageReviewSubmitPayload(authority = selectedResultAuthority()) {
         package_review_preview_hash: preview.package_review_preview_hash,
         reconciliation_record_id: submit.reconciliation_record_id,
         output_package_ids: packageOutputPackageIds(),
+        payload_refs: packagePayloadRefs(),
         payload_hashes: packagePayloadHashes(),
         operator_decision: elements.packageReviewSubmitDecision.value,
         decision_notes: elements.packageReviewSubmitNotes.value.trim(),
         expected_package_kinds: PACKAGE_REVIEW_PACKAGE_KINDS,
     };
-    if (authority.analysisRunId) {
+    if (constructionBasisHash) {
+        payload.construction_basis_hash = constructionBasisHash;
+    }
+    if (authority.analysisRunId && !qualitativeAps) {
         payload.analysis_run_id = authority.analysisRunId;
     }
     return payload;

@@ -81,7 +81,7 @@ Conditionally allowed:
 
 `handoff_export_state` must equal:
 
-- `qual_aps_handoff_export_prepared` for qualitative APS. If the shared route internally maps through the generic state constant, it must still prove qualitative prepare authority from the persisted prepare object.
+- `handoff_export_prepared` for qualitative APS, with qualitative prepare authority proven from the persisted prepare object.
 
 `handoff_target` must equal:
 

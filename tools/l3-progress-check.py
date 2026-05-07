@@ -3986,6 +3986,27 @@ def _check_qualitative_aps_package_submit_freeze(errors: list[str]) -> None:
             if term not in text:
                 errors.append(f"{_rel(path)} missing qualitative APS package-submit freeze term: {term}")
 
+    layer3_js_text = _read_required_text(LAYER3_JS, errors)
+    for term in (
+        "QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE = '140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE'",
+        "function isQualitativeApsPackageSubmitState(",
+        "payload_refs: packagePayloadRefs()",
+        "payload.construction_basis_hash = constructionBasisHash",
+        "authority.analysisRunId && !qualitativeAps",
+    ):
+        if term not in layer3_js_text:
+            errors.append(f"{_rel(LAYER3_JS)} missing qualitative APS package-submit UI authority term: {term}")
+
+    workbench_e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
+    for term in (
+        "Layer 3 workbench submits qualitative APS package review without analysis-run authority",
+        "expect(packageSubmitPayload).not.toHaveProperty('analysis_run_id')",
+        "expect(packageSubmitPayload.payload_refs).toEqual(fixture.payloadRefs)",
+        "expect(packageSubmitPayload.construction_basis_hash).toBe(fixture.constructionBasisHash)",
+    ):
+        if term not in workbench_e2e_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing qualitative APS package-submit UI proof term: {term}")
+
 
 def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> None:
     required_doc_terms = {
@@ -4100,7 +4121,9 @@ def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> Non
             "current deferred next blocker in live session summary after dispatch: `qualitative_aps_external_export_download_not_admitted`",
             "exactly one APS evidence-bundle handoff package row",
             "one server-owned APS bundle artifact",
-            "Browser proof is not required for a backend/API-only APS handoff dispatch implementation.",
+            "`aps_handoff_dispatched`",
+            "`handoff_export_prepared`",
+            "Browser proof is required when backend readiness or session-summary changes make existing rendered `/review/layer3` controls newly available",
         ),
         QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT: (
             "Status: current-main API and state contract paired with `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`.",
@@ -4108,6 +4131,7 @@ def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> Non
             "`POST /api/v1/layer3/handoff/aps/dispatch`",
             "`layer3.qual_aps_aps_handoff_dispatch.v1`",
             "`dispatch_aps_handoff`",
+            "`handoff_export_prepared` for qualitative APS",
             "`qualitative_aps_external_export_download_not_admitted`",
             "Allowed state effects for successful dispatch:",
             "create exactly one APS evidence-bundle handoff package row",
@@ -4161,6 +4185,30 @@ def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> Non
                 errors.append(
                     f"{_rel(path)} missing qualitative APS APS handoff dispatch freeze term: {term}"
                 )
+
+    for path in (QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE, QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT):
+        text = _read_required_text(path, errors)
+        for stale_term in ("qual_aps_aps_handoff_dispatched", "qual_aps_handoff_export_prepared"):
+            if stale_term in text:
+                errors.append(f"{_rel(path)} contains stale qualitative APS dispatch state term: {stale_term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for qualitative APS dispatch metadata")
+    else:
+        for key in (
+            "latest_qual_aps_aps_handoff_dispatch_freeze_branch",
+            "latest_qual_aps_aps_handoff_dispatch_freeze_live_behavior_change",
+            "qual_aps_aps_handoff_dispatch_freeze",
+        ):
+            if key not in current_status:
+                errors.append(f"{_rel(MANIFEST)} current_status missing qualitative APS dispatch key: {key}")
+    top_level_scope = manifest.get("scope") if isinstance(manifest, dict) else None
+    if isinstance(top_level_scope, dict):
+        for key in top_level_scope:
+            if "qual_aps_aps_handoff_dispatch" in key or "qual_aps_external_export_download" in key:
+                errors.append(f"{_rel(MANIFEST)} has misplaced qualitative APS current-status key under top-level scope: {key}")
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
@@ -4221,7 +4269,8 @@ def _check_qualitative_aps_external_export_download_freeze(errors: list[str]) ->
             "selected future delivery schema/header: `layer3.qual_aps_external_export_download_delivery.v1`",
             "current live blocker: `qualitative_aps_external_export_download_not_admitted`",
             "same-origin artifact streaming",
-            "Browser proof is not required for a backend/API-only same-origin delivery implementation.",
+            "successful qualitative APS prepare after `aps_handoff_dispatched`",
+            "Browser proof is required when backend readiness, delivery, or session-summary changes make existing rendered `/review/layer3` controls newly available",
         ),
         QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT: (
             "Status: planning/control API and state contract paired with `149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`.",
@@ -4230,6 +4279,10 @@ def _check_qualitative_aps_external_export_download_freeze(errors: list[str]) ->
             "`POST /api/v1/layer3/handoff/export/download/deliver`",
             "`layer3.qual_aps_external_export_download_prepare.v1`",
             "`layer3.qual_aps_external_export_download_delivery.v1`",
+            "excluding prepare-only intent fields (`operator_decision` and `decision_notes`)",
+            "Delivery overrides prepare intent.",
+            "must not inherit `prepare_external_export_download`",
+            "except for the single admitted qualitative APS external export/download readiness object",
             "Allowed state effects for successful prepare:",
             "Allowed state effects for successful delivery:",
         ),
@@ -4282,6 +4335,24 @@ def _check_qualitative_aps_external_export_download_freeze(errors: list[str]) ->
                 errors.append(
                     f"{_rel(path)} missing qualitative APS external export/download freeze term: {term}"
                 )
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for qualitative APS external export/download metadata")
+    else:
+        for key in (
+            "latest_qual_aps_external_export_download_freeze_branch",
+            "latest_qual_aps_external_export_download_freeze_live_behavior_change",
+            "qual_aps_external_export_download_freeze",
+        ):
+            if key not in current_status:
+                errors.append(f"{_rel(MANIFEST)} current_status missing qualitative APS external export/download key: {key}")
+    top_level_scope = manifest.get("scope") if isinstance(manifest, dict) else None
+    if isinstance(top_level_scope, dict):
+        for key in top_level_scope:
+            if "qual_aps_aps_handoff_dispatch" in key or "qual_aps_external_export_download" in key:
+                errors.append(f"{_rel(MANIFEST)} has misplaced qualitative APS current-status key under top-level scope: {key}")
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
@@ -9014,6 +9085,31 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} still contains stale Gate B material basis branch-local term: {stale_term}")
 
 
+def _check_gate_b_decision_basis_openapi_guard(errors: list[str]) -> None:
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "GATE_B_DECISION_ITEM_SCHEMA",
+        '"source_identity": {"type": "object", "additionalProperties": True}',
+        '"source_provenance": {"type": "object", "additionalProperties": True}',
+        '"payload": {"type": "object", "additionalProperties": True}',
+        '"load_summary": {"type": "object", "additionalProperties": True}',
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing Gate B decision-basis OpenAPI guard term: {term}")
+
+    api_test_text = _read_required_text(LAYER3_API_TEST, errors)
+    for term in (
+        "decision_basis_properties = decision_basis_schema[\"properties\"]",
+        "\"source_identity\"",
+        "\"source_provenance\"",
+        "\"payload\"",
+        "\"load_summary\"",
+        "decision_basis_properties[basis_key][\"additionalProperties\"] is True",
+    ):
+        if term not in api_test_text:
+            errors.append(f"{_rel(LAYER3_API_TEST)} missing Gate B decision-basis OpenAPI test term: {term}")
+
+
 def _check_bounded_e2e_current_main_sync(errors: list[str]) -> None:
     for path, terms in {
         BOARD: (
@@ -9289,6 +9385,7 @@ def main() -> int:
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
+    _check_gate_b_decision_basis_openapi_guard(errors)
     _check_preflight_request_guard(errors)
     _check_plan_preview_request_guard(errors)
     _check_source_preview_request_guard(errors)
