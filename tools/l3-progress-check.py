@@ -15,6 +15,7 @@ REFRESH_SPEC = ROOT / "next_milestone_plans" / "layer3_progress_refresh_spec.md"
 PROGRESS_PROMPT = ROOT / "next_milestone_plans" / "progress-prompt.md"
 PROOF_MANIFEST = ROOT / "next_milestone_plans" / "layer3_workbench_proof_manifest.json"
 PLAYWRIGHT_WORKFLOW = ROOT / ".github" / "workflows" / "playwright.yml"
+PLAYWRIGHT_CONFIG = ROOT / "playwright.config.js"
 LAYER3_API_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-layer3-api.txt"
 BROWSER_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-browser.txt"
 PHASE1A_README = ROOT / "next_milestone_plans" / "README_LAYER3_PHASE1A_PACK.md"
@@ -76,6 +77,7 @@ RAW_INGESTION_MATERIALIZATION_FREEZE = (
 RAW_MIXED_RENDERED_UI_FREEZE = PLANNING_DOCS / "155_RAW_MIXED_RENDERED_UI_FREEZE.md"
 RAW_MIXED_RENDERED_UI_CONTRACT = PLANNING_DOCS / "156_RAW_MIXED_RENDERED_UI_CONTRACT.md"
 POST_730_ROADMAP_SYNC = PLANNING_DOCS / "157_POST_730_ROADMAP_SYNC.md"
+POST_730_PRACTICAL_READINESS = PLANNING_DOCS / "158_POST_730_PRACTICAL_READINESS.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -5270,6 +5272,61 @@ def _check_post_730_roadmap_sync(errors: list[str]) -> None:
             errors.append(f"{_rel(MANIFEST)} current_status must mark post-730 roadmap sync as planning-only")
 
 
+def _check_post_730_practical_readiness(errors: list[str]) -> None:
+    required_doc_terms = {
+        POST_730_PRACTICAL_READINESS: (
+            "Status: current-main practical readiness checkpoint after PR `#730` and roadmap sync PR `#731`.",
+            "df018510607bbcc9d07bcebdb7ec6b7701cf1c8d",
+            "ec160cb3e5b829bb314498131a149b206378c3f7",
+            "raw_mixed_server_owned_manifest_ref_ui_entry",
+            "fixed `SERVER_PORT = 8031`, `fullyParallel: false`, and `workers: 1`",
+            "run headed and headless browser validation sequentially",
+            "The next implementation-eligible pass is:",
+            "deeper rendered raw mixed downstream path",
+        ),
+        BOARD: (
+            "Post-PR730 practical readiness audit",
+            "158_POST_730_PRACTICAL_READINESS.md",
+            "fixed-port `8031` shared Playwright harness",
+            "sequential headless and headed raw mixed rendered smoke",
+            "deeper rendered raw mixed downstream path",
+        ),
+        MANIFEST: (
+            "latest_post_730_practical_readiness_branch",
+            "latest_post_730_practical_readiness_live_behavior_change",
+            "post_730_practical_readiness",
+            "fixed-port 8031 shared harness",
+            "test-only deeper rendered raw mixed downstream path",
+        ),
+        PROOF_MANIFEST: (
+            "post_730_practical_readiness_proof",
+            "158_POST_730_PRACTICAL_READINESS.md",
+            "fixed-port 8031 sequential-run caveat",
+            "no runtime behavior change",
+            "test-only deeper rendered raw mixed downstream path",
+        ),
+        PLAYWRIGHT_CONFIG: (
+            "const SERVER_PORT = 8031;",
+            "fullyParallel: false",
+            "workers: 1",
+            "reuseExistingServer: !process.env.CI",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing post-730 practical readiness term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_post_730_practical_readiness_branch") != "codex/l3-post730-readiness-audit":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale post-730 practical readiness branch")
+        if current_status.get("latest_post_730_practical_readiness_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark post-730 practical readiness as report-only")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -9835,6 +9892,7 @@ def main() -> int:
         RAW_MIXED_RENDERED_UI_FREEZE,
         RAW_MIXED_RENDERED_UI_CONTRACT,
         POST_730_ROADMAP_SYNC,
+        POST_730_PRACTICAL_READINESS,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -9991,6 +10049,7 @@ def main() -> int:
     _check_raw_ingestion_materialization_freeze(errors)
     _check_raw_mixed_rendered_ui_freeze(errors)
     _check_post_730_roadmap_sync(errors)
+    _check_post_730_practical_readiness(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
