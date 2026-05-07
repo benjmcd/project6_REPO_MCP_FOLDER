@@ -1885,6 +1885,55 @@ def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[s
     )
 
 
+def _stamp_api_dataset_cohort_method_authority(
+    db: Session,
+    *,
+    analysis_sets: list[L3AnalysisSet] | tuple[L3AnalysisSet, ...],
+) -> None:
+    for analysis_set in analysis_sets:
+        formation_basis = analysis_set.formation_basis_json or {}
+        if (
+            analysis_set.set_type != PASS_TYPE_ASSOCIATED_COHORT
+            or formation_basis.get("analysis_modality") != "quantitative"
+            or formation_basis.get("group_basis") != "same_co_retrieval_group"
+        ):
+            continue
+        group_ids = list(analysis_set.analysis_group_ids_json or [])
+        if len(group_ids) != 1:
+            continue
+        group = db.get(L3AnalysisGroup, group_ids[0])
+        group_basis = group.typing_basis_json if group is not None else {}
+        co_retrieval_group_id = str(group_basis.get("co_retrieval_group_id") or "")
+        if not co_retrieval_group_id.startswith("gate-b-dataset-version-cohort-"):
+            continue
+
+        units = [
+            db.get(L3AnalysisUnit, analysis_unit_id)
+            for analysis_unit_id in list(analysis_set.analysis_unit_ids_json or [])
+        ]
+        if len(units) < 2 or any(unit is None or unit.analysis_modality != "quantitative" for unit in units):
+            continue
+        snapshots = [
+            db.get(L3MaterialSnapshot, unit.member_snapshot_ids_json[0])
+            for unit in units
+            if unit is not None and len(unit.member_snapshot_ids_json or []) == 1
+        ]
+        if len(snapshots) != len(units):
+            continue
+        if any(
+            snapshot is None
+            or snapshot.source_shape != "dataset_version"
+            or not (snapshot.source_identity_json or {}).get("dataset_version_id")
+            for snapshot in snapshots
+        ):
+            continue
+
+        analysis_set.formation_basis_json = {
+            **formation_basis,
+            "requested_method_name": "descriptive_summary",
+        }
+
+
 def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     session_id = str(payload.get("session_id") or "").strip()
@@ -1897,6 +1946,7 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     try:
         if commit_typing:
             result = materialize_typing_entry(db, session_id=session_id)
+            _stamp_api_dataset_cohort_method_authority(db, analysis_sets=result.analysis_sets)
             db.commit()
             typing_records = [_serialize_typing_record(record) for record in result.typing_records]
             analysis_units = [_serialize_analysis_unit(unit) for unit in result.analysis_units]
