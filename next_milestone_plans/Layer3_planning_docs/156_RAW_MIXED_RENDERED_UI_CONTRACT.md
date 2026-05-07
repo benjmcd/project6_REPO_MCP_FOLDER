@@ -1,12 +1,12 @@
 # Raw Mixed Rendered Manifest UI Contract
 
-Status: planning/control UI contract paired with `155_RAW_MIXED_RENDERED_UI_FREEZE.md`.
+Status: live rendered UI contract paired with `155_RAW_MIXED_RENDERED_UI_FREEZE.md`.
 
-This contract specifies the future rendered `/review/layer3` behavior for `raw_mixed_server_owned_manifest_ref_ui_entry`. It admits no current runtime behavior and does not implement UI controls by itself.
+This contract specifies the live rendered `/review/layer3` behavior for `raw_mixed_server_owned_manifest_ref_ui_entry`. It admits only the bounded server-owned manifest-ref controls over the already-live materialization route.
 
 ## Route And State Authority
 
-The future rendered UI may call only the already-live materialization route for raw mixed source authority:
+The rendered UI may call only the already-live materialization route for raw mixed source authority:
 
 - `POST /api/v1/layer3/source/mixed-corpus/materialize`
 
@@ -14,9 +14,9 @@ After materialization, downstream rendered flow must use only the existing Layer
 
 The browser must not create source authority, repair failed materialization, fabricate missing IDs, mutate package payloads, or authorize downstream flow without server-returned source IDs and refreshed candidate state.
 
-## Future UI Entry Point
+## UI Entry Point
 
-The first future implementation should start at the smallest rendered workflow:
+The live implementation starts at the smallest rendered workflow:
 
 1. open `/review/layer3`;
 2. enter or select a server-owned manifest ref, manifest hash, corpus batch id, and admitted source classes;
@@ -61,7 +61,7 @@ Success state may enable downstream rendered source selection only after candida
 
 ## Theme And Accessibility Contract
 
-The future implementation must preserve current `/review/layer3` theme behavior:
+The implementation preserves current `/review/layer3` theme behavior:
 
 - every new control has stable selectors;
 - labels, help text, status badges, errors, disabled states, and loading states are visible in the current theme set;
@@ -72,7 +72,7 @@ The future implementation must preserve current `/review/layer3` theme behavior:
 
 ## Negative Invariants
 
-The future implementation must keep all of these absent:
+The implementation keeps all of these absent:
 
 - arbitrary local path input;
 - local upload, directory picker, broad file upload, or drag-and-drop ingestion;
@@ -89,7 +89,7 @@ The future implementation must keep all of these absent:
 
 ## Required Tests For Runtime
 
-The later runtime PR must include:
+The runtime PR must include:
 
 - page/static tests for request-field allowlist, disabled-state gating, and absent deferred controls;
 - Playwright headless proof for the raw mixed rendered manifest workflow;

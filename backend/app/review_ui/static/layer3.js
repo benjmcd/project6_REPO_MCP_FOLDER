@@ -10,6 +10,9 @@ const QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE = '140_QUAL_APS_PACKAGE_CONSTRUC
 const QUAL_APS_PASS_SCOPE = 'single_aps_doc_qualitative_pass';
 const QUAL_APS_SOURCE_GATE = '119_L3_QUAL_APS_EXEC_ENTRY_FREEZE';
 const QUAL_APS_SOURCE_SHAPE = 'aps_content_document';
+const RAW_MIXED_MATERIALIZE_REQUEST_SCHEMA_ID = 'layer3.raw_mixed_corpus_materialize_request.v1';
+const RAW_MIXED_MATERIALIZE_MODE = 'raw_mixed_existing_source_materialization_entry';
+const RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES = new Set(['dataset_version', 'aps_content_document']);
 
 const State = {
     bootstrap: null,
@@ -17,6 +20,9 @@ const State = {
     datasetVersionCandidateError: null,
     apsContentDocumentCandidates: null,
     apsContentDocumentCandidateError: null,
+    rawMixedMaterialization: null,
+    rawMixedMaterializationError: null,
+    rawMixedMaterializationPending: false,
     preflight: null,
     sourcePreview: null,
     materialPreview: null,
@@ -74,6 +80,13 @@ const elements = {
     intentForm: document.getElementById('intent-form'),
     intentInput: document.getElementById('layer3-intent'),
     sourceFieldset: document.getElementById('source-fieldset'),
+    rawMixedCorpusBatchId: document.getElementById('raw-mixed-corpus-batch-id'),
+    rawMixedManifestRef: document.getElementById('raw-mixed-manifest-ref'),
+    rawMixedManifestHash: document.getElementById('raw-mixed-manifest-hash'),
+    rawMixedOperatorConfirmation: document.getElementById('raw-mixed-operator-confirmation'),
+    rawMixedMaterialize: document.getElementById('raw-mixed-materialize'),
+    rawMixedMaterializationState: document.getElementById('raw-mixed-materialization-state'),
+    rawMixedMaterializationStatus: document.getElementById('raw-mixed-materialization-status'),
     datasetVersionCandidates: document.getElementById('dataset-version-candidates'),
     datasetVersionIds: document.getElementById('dataset-version-ids'),
     apsContentDocumentCandidates: document.getElementById('aps-content-document-candidates'),
@@ -530,6 +543,93 @@ function selectedApsContentDocumentIds() {
             if (!result.includes(item)) result.push(item);
         });
     return result;
+}
+
+function selectedRawMixedSourceClasses() {
+    return selectedSourceClasses()
+        .filter((sourceClass) => RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES.has(sourceClass));
+}
+
+function rawMixedMaterializationFormState() {
+    return {
+        corpusBatchId: elements.rawMixedCorpusBatchId?.value?.trim() || '',
+        manifestRef: elements.rawMixedManifestRef?.value?.trim() || '',
+        manifestHash: elements.rawMixedManifestHash?.value?.trim() || '',
+        operatorConfirmed: Boolean(elements.rawMixedOperatorConfirmation?.checked),
+        requestedSourceClasses: selectedRawMixedSourceClasses(),
+    };
+}
+
+function canMaterializeRawMixed() {
+    const form = rawMixedMaterializationFormState();
+    return Boolean(
+        form.corpusBatchId
+        && form.manifestRef
+        && form.manifestHash
+        && form.operatorConfirmed
+        && form.requestedSourceClasses.length
+        && !State.rawMixedMaterializationPending
+    );
+}
+
+function rawMixedMaterializationPayload() {
+    const form = rawMixedMaterializationFormState();
+    return {
+        schema_id: RAW_MIXED_MATERIALIZE_REQUEST_SCHEMA_ID,
+        schema_version: 1,
+        client_request_id: requestId(),
+        materialization_mode: RAW_MIXED_MATERIALIZE_MODE,
+        corpus_batch_id: form.corpusBatchId,
+        artifact_manifest_ref: form.manifestRef,
+        artifact_manifest_hash: form.manifestHash,
+        requested_source_classes: form.requestedSourceClasses,
+        operator_confirmation: true,
+    };
+}
+
+function candidateIdsForMaterialization(kind) {
+    if (kind === 'dataset_version') {
+        return new Set((State.datasetVersionCandidates?.dataset_version_candidates || [])
+            .map((candidate) => String(candidate.dataset_version_id || ''))
+            .filter(Boolean));
+    }
+    return new Set((State.apsContentDocumentCandidates?.aps_content_document_candidates || [])
+        .map((candidate) => String(candidate.content_id || ''))
+        .filter(Boolean));
+}
+
+function materializedSourceIdsVisible(materialization) {
+    const datasetIds = materialization?.dataset_version_ids || [];
+    const contentIds = materialization?.aps_content_document_ids || [];
+    const datasetCandidates = candidateIdsForMaterialization('dataset_version');
+    const contentCandidates = candidateIdsForMaterialization('aps_content_document');
+    return datasetIds.every((id) => datasetCandidates.has(String(id)))
+        && contentIds.every((id) => contentCandidates.has(String(id)));
+}
+
+function applyMaterializedSourceIds(materialization) {
+    const datasetIds = materialization?.dataset_version_ids || [];
+    const contentIds = materialization?.aps_content_document_ids || [];
+    if (elements.datasetVersionIds) {
+        elements.datasetVersionIds.value = datasetIds.join('\n');
+    }
+    if (elements.apsContentDocumentIds) {
+        elements.apsContentDocumentIds.value = contentIds.join('\n');
+    }
+}
+
+function clearLayer3FlowStateForSourceChange() {
+    State.preflight = null;
+    State.sourcePreview = null;
+    State.materialPreview = null;
+    State.gateB = null;
+    State.gateC = null;
+    State.planPreview = null;
+    State.planApproval = null;
+    State.planRevision = null;
+    clearGateBDraftSnapshot();
+    clearResultReviewState();
+    clearSessionRecoveryAnchor();
 }
 
 function selectedSourceClassLabels() {
@@ -2538,6 +2638,44 @@ function renderSourceFamilySummary(summary) {
     `;
 }
 
+function renderRawMixedMaterializationPanel() {
+    if (!elements.rawMixedMaterializationStatus || !elements.rawMixedMaterializationState) return;
+    const materialization = State.rawMixedMaterialization;
+    if (State.rawMixedMaterializationPending) {
+        elements.rawMixedMaterializationState.textContent = 'Materializing';
+        elements.rawMixedMaterializationState.className = 'status-pill preview';
+        elements.rawMixedMaterializationStatus.textContent = 'Materialization request is in flight.';
+        return;
+    }
+    if (State.rawMixedMaterializationError) {
+        elements.rawMixedMaterializationState.textContent = 'Blocked';
+        elements.rawMixedMaterializationState.className = 'status-pill blocked';
+        elements.rawMixedMaterializationStatus.textContent = State.rawMixedMaterializationError.message
+            || State.rawMixedMaterializationError.error_code
+            || 'Materialization failed closed.';
+        return;
+    }
+    if (materialization) {
+        const datasetCount = (materialization.dataset_version_ids || []).length;
+        const contentCount = (materialization.aps_content_document_ids || []).length;
+        elements.rawMixedMaterializationState.textContent = 'Materialized';
+        elements.rawMixedMaterializationState.className = 'status-pill ok';
+        elements.rawMixedMaterializationStatus.textContent = `${datasetCount} DatasetVersion ID${datasetCount === 1 ? '' : 's'} and ${contentCount} APS content document ID${contentCount === 1 ? '' : 's'} selected after candidate refresh.`;
+        return;
+    }
+    const form = rawMixedMaterializationFormState();
+    const ready = canMaterializeRawMixed();
+    elements.rawMixedMaterializationState.textContent = ready ? 'Ready' : 'Not materialized';
+    elements.rawMixedMaterializationState.className = ready ? 'status-pill ok' : 'status-pill preview';
+    if (!form.requestedSourceClasses.length) {
+        elements.rawMixedMaterializationStatus.textContent = 'Select at least one admitted source class.';
+    } else if (!form.corpusBatchId || !form.manifestRef || !form.manifestHash || !form.operatorConfirmed) {
+        elements.rawMixedMaterializationStatus.textContent = 'Awaiting server-owned manifest authority.';
+    } else {
+        elements.rawMixedMaterializationStatus.textContent = 'Ready to call the server-owned materialization route.';
+    }
+}
+
 function renderDatasetVersionCandidates() {
     if (!elements.datasetVersionCandidates) return;
     const summaryMarkup = renderSourceFamilySummary(State.datasetVersionCandidates?.source_family_summary);
@@ -4241,6 +4379,9 @@ function setGateControls() {
         && !State.externalExportDownloadSignedReferenceUsePending
     );
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
+    if (elements.rawMixedMaterialize) {
+        elements.rawMixedMaterialize.disabled = !canMaterializeRawMixed();
+    }
     elements.gateCPreview.disabled = !sessionId || gateCCommitted;
     elements.gateCCommit.disabled = !sessionId || gateCCommitted;
     elements.planPreview.disabled = !canPlanPreview() || Boolean(State.planApproval) || Boolean(State.planRevision) || State.planRevisionPending;
@@ -4274,6 +4415,7 @@ function setGateControls() {
 
 function renderAll() {
     renderAuthority();
+    renderRawMixedMaterializationPanel();
     renderDatasetVersionCandidates();
     renderApsContentDocumentCandidates();
     renderSublayerMap();
@@ -5045,6 +5187,44 @@ async function submitResultReview(event) {
     }
 }
 
+async function materializeRawMixedSources() {
+    if (!canMaterializeRawMixed()) return;
+    State.rawMixedMaterializationPending = true;
+    State.rawMixedMaterializationError = null;
+    State.rawMixedMaterialization = null;
+    renderAll();
+    setBusy(elements.rawMixedMaterialize, true, 'Materialize Source IDs');
+    try {
+        const materialization = await postJson('/source/mixed-corpus/materialize', rawMixedMaterializationPayload());
+        await loadDatasetVersionCandidates();
+        await loadApsContentDocumentCandidates();
+        if (!materializedSourceIdsVisible(materialization)) {
+            State.rawMixedMaterializationError = {
+                schema_id: 'layer3.workbench_error.v1',
+                error_code: 'raw_mixed_materialized_source_candidate_refresh_mismatch',
+                message: 'Materialized source IDs were not present after candidate refresh.',
+            };
+            addEvent('Raw mixed materialization blocked after candidate refresh mismatch.');
+            return;
+        }
+        clearLayer3FlowStateForSourceChange();
+        State.rawMixedMaterialization = materialization;
+        applyMaterializedSourceIds(materialization);
+        addEvent('Raw mixed materialized source IDs selected.');
+    } catch (error) {
+        State.rawMixedMaterializationError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'raw_mixed_materialization_request_failed',
+            message: error.message,
+        };
+        addEvent(`Raw mixed materialization blocked: ${error.message}`);
+    } finally {
+        State.rawMixedMaterializationPending = false;
+        setBusy(elements.rawMixedMaterialize, false, 'Materialize Source IDs');
+        renderAll();
+    }
+}
+
 async function runPreflightFlow(event) {
     event.preventDefault();
     const intent = elements.intentInput.value.trim();
@@ -5345,7 +5525,15 @@ elements.stepChips.forEach((chip) => {
 });
 elements.intentForm.addEventListener('submit', runPreflightFlow);
 elements.intentInput.addEventListener('input', renderSublayerMap);
-elements.sourceFieldset.addEventListener('change', renderSublayerMap);
+elements.sourceFieldset.addEventListener('change', () => {
+    renderSublayerMap();
+    renderAll();
+});
+elements.rawMixedCorpusBatchId.addEventListener('input', renderAll);
+elements.rawMixedManifestRef.addEventListener('input', renderAll);
+elements.rawMixedManifestHash.addEventListener('input', renderAll);
+elements.rawMixedOperatorConfirmation.addEventListener('change', renderAll);
+elements.rawMixedMaterialize.addEventListener('click', materializeRawMixedSources);
 elements.datasetVersionIds.addEventListener('input', renderAll);
 elements.datasetVersionCandidates.addEventListener('change', renderAll);
 elements.apsContentDocumentIds.addEventListener('input', renderAll);

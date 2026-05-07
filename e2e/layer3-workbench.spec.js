@@ -220,6 +220,89 @@ async function openRawMixedMaterializedWorkbench(page, request) {
   return materialization;
 }
 
+async function materializeRawMixedThroughRenderedControls(page, request) {
+  const setup = await expectJson(await request.post('/__test/layer3/materialize-raw-mixed'));
+  expect(setup.schema_id).toBe('project6.review_browser_raw_mixed_materialization_setup.v1');
+  const materializeRequest = setup.materialize_request;
+  const materializeRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/source/mixed-corpus/materialize')
+    && apiRequest.method() === 'POST'
+  ));
+  const materializeResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/source/mixed-corpus/materialize')
+    && response.request().method() === 'POST'
+  ));
+  const datasetCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/dataset-version-candidates')
+  ));
+  const apsCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/aps-content-document-candidates')
+  ));
+
+  await page.locator('#raw-mixed-corpus-batch-id').fill(materializeRequest.corpus_batch_id);
+  await page.locator('#raw-mixed-manifest-ref').fill(materializeRequest.artifact_manifest_ref);
+  await page.locator('#raw-mixed-manifest-hash').fill(materializeRequest.artifact_manifest_hash);
+  await page.locator('#raw-mixed-operator-confirmation').check();
+  await expect(page.locator('#raw-mixed-materialize')).toBeEnabled();
+  await page.locator('#raw-mixed-materialize').click();
+
+  const requestPayload = (await materializeRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(requestPayload, [
+    'artifact_manifest_hash',
+    'artifact_manifest_ref',
+    'client_request_id',
+    'corpus_batch_id',
+    'materialization_mode',
+    'operator_confirmation',
+    'requested_source_classes',
+    'schema_id',
+    'schema_version',
+  ]);
+  expect(requestPayload).toMatchObject({
+    artifact_manifest_hash: materializeRequest.artifact_manifest_hash,
+    artifact_manifest_ref: materializeRequest.artifact_manifest_ref,
+    corpus_batch_id: materializeRequest.corpus_batch_id,
+    materialization_mode: 'raw_mixed_existing_source_materialization_entry',
+    operator_confirmation: true,
+    requested_source_classes: ['dataset_version', 'aps_content_document'],
+    schema_id: 'layer3.raw_mixed_corpus_materialize_request.v1',
+    schema_version: 1,
+  });
+  for (const forbidden of [
+    'local_upload',
+    'local_directory',
+    'web_connector',
+    'rag_plan',
+    'provider_url',
+    'public_url',
+    'connector_dispatch',
+    'destination_id',
+    'package_mutation',
+    'auth_override',
+  ]) {
+    expect(requestPayload).not.toHaveProperty(forbidden);
+  }
+
+  const materialization = await expectJson(await materializeResponsePromise);
+  const datasetCandidates = await expectJson(await datasetCandidatesResponsePromise);
+  const apsCandidates = await expectJson(await apsCandidatesResponsePromise);
+  expect(materialization.schema_id).toBe('layer3.raw_mixed_corpus_materialize_result.v1');
+  expect(materialization.layer3_flow_started).toBe(false);
+  expect(materialization.files_written).toEqual([]);
+  expect(datasetCandidates.dataset_version_candidates.map((candidate) => candidate.dataset_version_id)).toEqual(
+    expect.arrayContaining(materialization.dataset_version_ids),
+  );
+  expect(apsCandidates.aps_content_document_candidates.map((candidate) => candidate.content_id)).toEqual(
+    expect.arrayContaining(materialization.aps_content_document_ids),
+  );
+  await expect(page.locator('#raw-mixed-materialization-state')).toHaveText('Materialized');
+  await expect(page.locator('#raw-mixed-materialization-status')).toContainText('selected after candidate refresh');
+  await expect(page.locator('#dataset-version-ids')).toHaveValue(materialization.dataset_version_ids.join('\n'));
+  await expect(page.locator('#aps-content-document-ids')).toHaveValue(materialization.aps_content_document_ids.join('\n'));
+  await expectNoDeferredRawMixedControls(page);
+  return materialization;
+}
+
 async function runRawMixedRenderedMaterialPreview(page, seed) {
   const preflightResponsePromise = page.waitForResponse((response) => (
     response.url().includes('/api/v1/layer3/preflight')
@@ -1006,6 +1089,35 @@ test('Layer 3 workbench uses raw mixed seed bridge setup through rendered Gate C
 test('Layer 3 workbench uses raw mixed materialization setup through rendered Gate C and plan approval', async ({ page, request }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+});
+
+test('Layer 3 workbench materializes raw mixed manifest through rendered controls', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const initialDatasetCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/dataset-version-candidates')
+  ));
+  const initialApsCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/aps-content-document-candidates')
+  ));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expectJson(await initialDatasetCandidatesResponsePromise);
+  await expectJson(await initialApsCandidatesResponsePromise);
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
+  await expect(page.locator('.raw-mixed-materialization')).toBeVisible();
+  await expect(page.locator('#raw-mixed-materialization-status')).toContainText('Awaiting server-owned manifest authority');
+  await page.locator('#theme-selector').selectOption('light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  await expect(page.locator('#raw-mixed-materialize')).toBeDisabled();
+
+  const materialization = await materializeRawMixedThroughRenderedControls(page, request);
   const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
   const gateB = await submitRenderedGateB(page, material);
   await previewRenderedGateC(page, gateB.session_id);
