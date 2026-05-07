@@ -5940,6 +5940,23 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    qualitative_aps_prepare = (
+        status_body.get("engine_family") == ENGINE_FAMILY_QUAL_APS_DOCUMENT
+        or status_body.get("pass_scope") == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+        or output_metadata_summary.get("source_gate") == QUAL_APS_SOURCE_GATE
+    )
+    if qualitative_aps_prepare:
+        raise Layer3WorkbenchError(
+            "qualitative_aps_handoff_export_prepare_not_admitted",
+            (
+                "Qualitative APS handoff/export preparation is intentionally blocked until "
+                "qual_aps_handoff_export_prepare_entry is implemented."
+            ),
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id", "package_review_preview_hash"],
+            next_allowed_actions=["inspect_qualitative_aps_package_review_submit_state"],
+        )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
