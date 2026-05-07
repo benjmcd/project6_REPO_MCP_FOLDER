@@ -269,7 +269,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "artifact_manifest" not in result_review_slice
     assert "handoff_target" not in package_submit_slice
     assert "export_mode" not in package_submit_slice
-    assert "payload_refs" not in package_submit_slice
+    assert "payload_refs: packagePayloadRefs()" in package_submit_slice
+    assert "payload.construction_basis_hash = constructionBasisHash" in package_submit_slice
+    assert "authority.analysisRunId && !qualitativeAps" in package_submit_slice
     assert "handoff_target: 'internal_export_envelope'" in handoff_prepare_slice
     assert "export_mode: 'prepare_only'" in handoff_prepare_slice
     assert "payload_refs: packagePayloadRefs()" in handoff_prepare_slice

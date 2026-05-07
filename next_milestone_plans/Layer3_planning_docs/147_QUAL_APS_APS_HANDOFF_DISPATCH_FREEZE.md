@@ -44,7 +44,7 @@ Only this operator decision is in scope for the current implementation:
 
 | Decision | Meaning | Allowed next state |
 | --- | --- | --- |
-| `dispatch_aps_handoff` | The prepared qualitative APS internal envelope may be materialized as an APS evidence-bundle handoff package through the server-side owner service. | `qual_aps_aps_handoff_dispatched` |
+| `dispatch_aps_handoff` | The prepared qualitative APS internal envelope may be materialized as an APS evidence-bundle handoff package through the server-side owner service. | `aps_handoff_dispatched` |
 
 The decision vocabulary is APS evidence-bundle handoff only. It is not an external export/download command, connector dispatch command, destination send command, provider/public URL request, package rebuild command, result-review amendment, package-review amendment, source-expansion command, or retry/recovery command.
 
@@ -89,7 +89,7 @@ The current boundary is acceptable only if it proves:
 
 - admission is limited to `ENGINE_FAMILY_QUAL_APS_DOCUMENT` and `single_aps_doc_qualitative_pass`;
 - dispatch requires live qualitative APS handoff/export prepare authority;
-- prepare state is `qual_aps_handoff_export_prepared` and has an internal envelope ref;
+- prepare state is `handoff_export_prepared` and has an internal envelope ref;
 - package-review submit schema is `layer3.qual_aps_package_review_submit.v1`;
 - package construction source gate is `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE`;
 - package kinds are exactly `canonical_internal`, `user_facing`, and `review_facing`;
@@ -128,7 +128,7 @@ Minimum implementation proof for the current runtime:
 - `python .\tools\l3-progress-check.py`;
 - `git diff --check`.
 
-Browser proof is not required for a backend/API-only APS handoff dispatch implementation. Headed and headless Chrome proof, including relevant theme checks, becomes required if rendered `/review/layer3` or theme-visible behavior changes.
+Browser proof is required when backend readiness or session-summary changes make existing rendered `/review/layer3` controls newly available, even if no UI files change. Headed and headless Chrome proof, including relevant theme checks, remains required for rendered-control, theme-visible, or browser-download behavior changes.
 
 ## Stop Conditions
 
