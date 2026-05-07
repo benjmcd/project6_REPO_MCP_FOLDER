@@ -322,6 +322,7 @@ from app.services.layer3_external_export_contract import (
     EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS,
     ExternalExportDownloadDelivery,
     external_export_download_delivery_blocked_fields,
+    external_export_download_delivery_request_fields,
     external_export_download_prepare_blocked_fields,
 )
 from app.services.layer3_response_contract import (
@@ -7318,7 +7319,8 @@ def external_export_download_prepare(
 
 
 def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> ExternalExportDownloadDelivery:
-    request_id = str(payload.get("client_request_id") or "").strip()
+    delivery_request = external_export_download_delivery_request_fields(payload)
+    request_id = delivery_request.request_id
     if not request_id:
         raise Layer3WorkbenchError(
             "client_request_id_required",
@@ -7328,68 +7330,19 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
             next_allowed_actions=["submit_idempotent_external_export_download_delivery_request"],
         )
 
-    session_id = str(payload.get("session_id") or "").strip()
-    reconciliation_record_id = str(payload.get("reconciliation_record_id") or "").strip()
-    supplied_readiness_ref = str(payload.get("external_export_download_record_ref") or "").strip()
-    supplied_descriptor_ref = str(payload.get("export_download_descriptor_ref") or "").strip()
-    supplied_readiness_state = str(payload.get("external_export_download_state") or "").strip()
-    delivery_mode = str(payload.get("delivery_mode") or "").strip()
-    operator_decision = str(payload.get("operator_decision") or "").strip()
-    export_download_target = str(payload.get("export_download_target") or "").strip()
-    download_mode = str(payload.get("download_mode") or "").strip()
-    supplied_aps_bundle_ref = str(payload.get("aps_bundle_ref") or "").strip()
-    supplied_aps_bundle_id = str(payload.get("aps_bundle_id") or "").strip()
-    supplied_aps_schema_id = str(payload.get("aps_schema_id") or "").strip()
-    raw_output_package_ids = payload.get("output_package_ids")
-    raw_package_kinds = payload.get("package_kinds")
-    raw_payload_refs = payload.get("payload_refs")
-    raw_payload_hashes = payload.get("payload_hashes")
-
-    missing = [
-        field
-        for field, value in (
-            ("session_id", session_id),
-            ("analysis_plan_id", str(payload.get("analysis_plan_id") or "").strip()),
-            ("pass_run_id", str(payload.get("pass_run_id") or "").strip()),
-            ("preview_id", str(payload.get("preview_id") or "").strip()),
-            ("preview_hash", str(payload.get("preview_hash") or "").strip()),
-            ("result_review_record_ref", str(payload.get("result_review_record_ref") or "").strip()),
-            ("package_review_preview_hash", str(payload.get("package_review_preview_hash") or "").strip()),
-            ("reconciliation_record_id", reconciliation_record_id),
-            ("package_review_submit_record_ref", str(payload.get("package_review_submit_record_ref") or "").strip()),
-            ("package_review_state", str(payload.get("package_review_state") or "").strip()),
-            ("prepare_record_ref", str(payload.get("prepare_record_ref") or "").strip()),
-            ("handoff_export_state", str(payload.get("handoff_export_state") or "").strip()),
-            ("handoff_export_envelope_ref", str(payload.get("handoff_export_envelope_ref") or "").strip()),
-            ("handoff_target", str(payload.get("handoff_target") or "").strip()),
-            ("export_mode", str(payload.get("export_mode") or "").strip()),
-            ("aps_handoff_record_ref", str(payload.get("aps_handoff_record_ref") or "").strip()),
-            ("aps_handoff_state", str(payload.get("aps_handoff_state") or "").strip()),
-            ("aps_handoff_target", str(payload.get("aps_handoff_target") or "").strip()),
-            ("dispatch_mode", str(payload.get("dispatch_mode") or "").strip()),
-            ("aps_output_package_id", str(payload.get("aps_output_package_id") or "").strip()),
-            ("aps_output_package_kind", str(payload.get("aps_output_package_kind") or "").strip()),
-            ("aps_bundle_ref", supplied_aps_bundle_ref),
-            ("aps_bundle_id", supplied_aps_bundle_id),
-            ("aps_schema_id", supplied_aps_schema_id),
-            ("external_export_download_record_ref", supplied_readiness_ref),
-            ("export_download_descriptor_ref", supplied_descriptor_ref),
-            ("external_export_download_state", supplied_readiness_state),
-            ("export_download_target", export_download_target),
-            ("download_mode", download_mode),
-            ("delivery_mode", delivery_mode),
-            ("operator_decision", operator_decision),
-        )
-        if not value
-    ]
-    if not raw_output_package_ids:
-        missing.append("output_package_ids")
-    if not raw_package_kinds:
-        missing.append("package_kinds")
-    if not raw_payload_refs:
-        missing.append("payload_refs")
-    if not raw_payload_hashes:
-        missing.append("payload_hashes")
+    session_id = delivery_request.session_id
+    reconciliation_record_id = delivery_request.reconciliation_record_id
+    supplied_readiness_ref = delivery_request.supplied_readiness_ref
+    supplied_descriptor_ref = delivery_request.supplied_descriptor_ref
+    supplied_readiness_state = delivery_request.supplied_readiness_state
+    delivery_mode = delivery_request.delivery_mode
+    operator_decision = delivery_request.operator_decision
+    export_download_target = delivery_request.export_download_target
+    download_mode = delivery_request.download_mode
+    supplied_aps_bundle_ref = delivery_request.supplied_aps_bundle_ref
+    supplied_aps_bundle_id = delivery_request.supplied_aps_bundle_id
+    supplied_aps_schema_id = delivery_request.supplied_aps_schema_id
+    missing = delivery_request.missing_fields
     if missing:
         raise Layer3WorkbenchError(
             "missing_external_export_download_delivery_fields",
