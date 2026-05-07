@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Current main now includes PR #609 no-behavior-change APS source-family extraction after PR #607 package-state helper proof hardening, PR #605 direct owner-service proof for the bounded plan_revision_recovery_preview_refresh_entry runtime, direct owner-service proof for approved_plan_cancel_without_replacement, PR #634 preflight manual_constraints request-boundary hardening for forbidden sentinel fields, PR #635 no-behavior-change plan-preview source-class extraction, PR #636 no-behavior-change approved-plan payload projection extraction, and PR #637 no-behavior-change plan-flow state lookup extraction. PR #638 extends the same no-behavior-change posture with plan-flow readiness summary extraction, PR #639 closes the residual exact deferred-sentinel preflight gap from PR #634 without admitting any deferred capability, and PR #640 adds no-behavior-change sublayer visualization state extraction. Broader approved-plan correction modes and all deferred broad capabilities remain blocked. This status retains the package artifact manifest runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, the package replacement artifact manifest-only runtime proof boundary, and the external post-PR609 synthesis/adjudication reference at C:\\Users\\benny\\Downloads\\audit\\AUDIT_SYNTHESIS_ADJUDICATION.md.",
+  "status": "Current main now includes the PR #689 mixed APS provenance bridge, PR #690/#691 raw mixed-corpus seed-only bridge freeze/runtime, and PR #692 through PR #700 failure-mode, API E2E, rendered UI, browser harness, and rendered Gate B-to-plan approval proof sequence. The latest rendered UI proof reaches existing Gate C, plan preview, and plan approval controls for the admitted dataset_version path after API seed setup, while preserving the APS companion as excluded from planned-pass admission. Raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked. This status retains the package replacement artifact manifest-only runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, and older proof records below for historical slice authority.",
   "scope": {
     "source_branch": "codex/l3-synth-ref-sync",
     "merged_pr": "#609",
@@ -576,13 +576,23 @@
     "latest_bounded_e2e_current_main_sync_live_behavior_change": false,
     "latest_bounded_e2e_current_main_sync_summary": "PR #688-era current-main proof/control sync after PR #682 through PR #687: PR #682/#683 settle the external_export_download_delivery_readiness_mismatches stale local helper guard, PR #684 corrects the PR #677 proof hash, PR #685 adds the first bounded API E2E boundary test, PR #686 enables API Gate C dataset-version cohort formation, and PR #687 extends that test with API-created dataset-version cohort method authority through plan, execution, package review/commit/submit, and handoff/export prepare. The supported E2E path intentionally stopped at aps_handoff_dispatch_blocked because APS content was flagged out of the quantitative cohort path and no admitted aps_content_document material-snapshot provenance existed for APS handoff. This proof sync admitted no runtime behavior, mixed-corpus provenance, APS dispatch on that path, external export/download prepare/deliver on that blocked E2E path, provider/public URLs, connector/destination dispatch, source/upload expansion, qualitative associated-cohort or broad qualitative/hybrid/RAG behavior beyond the separately admitted exact single_aps_doc_qualitative_pass, package mutation/reconstruction, UI/browser durable authority, full mockup activation, hidden LLM planning, or auth/security behavior.",
     "latest_mixed_aps_provenance_bridge_branch": "codex/l3-mixed-aps-provenance-bridge",
+    "latest_mixed_aps_provenance_bridge_pr": "#689",
     "latest_mixed_aps_provenance_bridge_input_main_commit": "de9abcd10603a9f0039c41bc7f07e05590854075",
+    "latest_mixed_aps_provenance_bridge_merge_commit": "70edbbf600c096ffcef8972d1839589488a02cec",
     "latest_mixed_aps_provenance_bridge_live_behavior_change": true,
-    "latest_mixed_aps_provenance_bridge_summary": "Branch codex/l3-mixed-aps-provenance-bridge carries approved API-created aps_content_document material selected with an admitted deterministic dataset_version associated cohort as aps_handoff_companion_provenance. It stamps APS material snapshot source identity with run_id/target_id, excludes that companion snapshot from single_aps_doc_qualitative_pass planned-pass admission, and extends the bounded API E2E through APS handoff dispatch, external export/download prepare, and same-origin external_export_download_delivered delivery. It admits no broad qualitative/RAG/vector execution, qualitative associated-cohort execution, provider/public URLs, real connector/destination dispatch, local upload or local-directory ingestion, broad package mutation/reconstruction, package payload rewrite outside admitted package commit behavior, UI/browser durable authority, full mockup activation, hidden LLM planning, auth/security behavior, or unsupported source expansion.",
+    "latest_mixed_aps_provenance_bridge_summary": "PR #689 carries approved API-created aps_content_document material selected with an admitted deterministic dataset_version associated cohort as aps_handoff_companion_provenance. It stamps APS material snapshot source identity with run_id/target_id, excludes that companion snapshot from single_aps_doc_qualitative_pass planned-pass admission, and extends the bounded API E2E through APS handoff dispatch, external export/download prepare, and same-origin external_export_download_delivered delivery. It admits no broad qualitative/RAG/vector execution, qualitative associated-cohort execution, provider/public URLs, real connector/destination dispatch, local upload or local-directory ingestion, broad package mutation/reconstruction, package payload rewrite outside admitted package commit behavior, UI/browser durable authority, full mockup activation, hidden LLM planning, auth/security behavior, or unsupported source expansion.",
+    "latest_raw_mixed_bridge_seed_freeze_pr": "#690",
     "latest_raw_mixed_bridge_seed_branch": "codex/l3-raw-mixed-bridge-seed",
+    "latest_raw_mixed_bridge_seed_pr": "#691",
     "latest_raw_mixed_bridge_seed_input_main_commit": "b6446d53ce0e1f90837d5d491c898ad5fd29a51b",
+    "latest_raw_mixed_bridge_seed_merge_commit": "91838fa01f4d7641ff307920e805b23b5b46923d",
     "latest_raw_mixed_bridge_seed_live_behavior_change": true,
-    "latest_raw_mixed_bridge_seed_summary": "Branch codex/l3-raw-mixed-bridge-seed implements only raw_mixed_corpus_bridge_seed_only under doc 137 raw mixed bridge governance now admits only raw_mixed_corpus_bridge_seed_only. The route POST /api/v1/layer3/source/mixed-corpus/seed reads a hash-checked server-owned storage-root manifest and existing DatasetVersion, DatasetSourceProvenance, ApsContentDocument, ApsContentLinkage, ConnectorRun, and ConnectorRunTarget rows, then returns existing dataset_version and aps_content_document ids for a later separate normal Layer 3 API flow. It writes no DB rows or files and admits no local upload, local-directory ingestion, broad file upload, web connector retrieval, RAG/vector retrieval, unbounded runtime DB source expansion, general source adapter registry behavior, flow execution inside seeding, model/migration changes, package mutation/reconstruction, connector/destination dispatch, provider/public URLs, UI/browser durable authority, full mockup activation, hidden LLM planning, or auth/security behavior."
+    "latest_raw_mixed_bridge_seed_summary": "PR #690 freezes the raw mixed seed-only bridge scope and PR #691 implements only raw_mixed_corpus_bridge_seed_only under doc 137 raw mixed bridge governance. The route POST /api/v1/layer3/source/mixed-corpus/seed reads a hash-checked server-owned storage-root manifest and existing DatasetVersion, DatasetSourceProvenance, ApsContentDocument, ApsContentLinkage, ConnectorRun, and ConnectorRunTarget rows, then returns existing dataset_version and aps_content_document ids for a later separate normal Layer 3 API flow. It writes no DB rows or files and admits no local upload, local-directory ingestion, broad file upload, web connector retrieval, RAG/vector retrieval, unbounded runtime DB source expansion, general source adapter registry behavior, flow execution inside seeding, model/migration changes, package mutation/reconstruction, connector/destination dispatch, provider/public URLs, UI/browser durable authority, full mockup activation, hidden LLM planning, or auth/security behavior.",
+    "latest_raw_mixed_bridge_ui_closeout_branch": "codex/l3-rendered-gateb-plan-boundary",
+    "latest_raw_mixed_bridge_ui_closeout_prs": "#692-#700",
+    "latest_raw_mixed_bridge_ui_closeout_merge_commit": "faabff6de9d2b487e54f665fc4cb685c63bff6e9",
+    "latest_raw_mixed_bridge_ui_closeout_live_behavior_change": true,
+    "latest_raw_mixed_bridge_ui_closeout_summary": "PR #692 through PR #700 close the seed-only bridge failure-mode, bridge-to-bounded API E2E, rendered UI smoke, manual/reference runbook, browser harness patch-state, and rendered Gate B-to-plan approval proof sequence. The latest rendered UI proof uses API setup only, then existing /review/layer3 controls to reach rendered Gate C, plan preview, and plan approval for the admitted dataset_version path after PR #700 preserves Gate B material authority fields in the UI payload. It adds no new rendered controls and admits no raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, or frontend-only durable authority. Theme posture remains explicit: existing workbench smoke covers theme persistence/isolation/focus/responsive behavior, and future rendered controls or style changes must include relevant theme checks in headed and headless Chrome."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -4804,6 +4814,98 @@
       "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
       "git diff --check"
+    ]
+  },
+  "raw_mixed_bridge_e2e_ui_closeout_proof": {
+    "scope": "Current-main proof metadata for PR #689 through PR #700 after the raw mixed seed-only bridge, bounded API E2E, rendered UI smoke, browser harness patch-state, and rendered Gate B-to-plan approval boundary sequence.",
+    "current_main_authority": "project6-origin/main at faabff6de9d2b487e54f665fc4cb685c63bff6e9 after PR #700",
+    "implementation_prs": [
+      "#689",
+      "#690",
+      "#691",
+      "#692",
+      "#693",
+      "#694",
+      "#695",
+      "#696",
+      "#697",
+      "#698",
+      "#699",
+      "#700"
+    ],
+    "merge_commits": {
+      "#689": "70edbbf600c096ffcef8972d1839589488a02cec",
+      "#690": "b6446d53ce0e1f90837d5d491c898ad5fd29a51b",
+      "#691": "91838fa01f4d7641ff307920e805b23b5b46923d",
+      "#692": "b98f8cbbc7d2011a781918e0490e63edc96db9e1",
+      "#693": "cc830febd620fec7d9be75dc03f2abaf5eab7be2",
+      "#694": "b2bc16a40108aa168c8e2cea782bcf1bf2b53fe6",
+      "#695": "abed335d78ad8d134f288ea55e91c8aaf9fc8675",
+      "#696": "ddf41deaed0b41d5be9018747e7db541d0d06a2a",
+      "#697": "a599962e6e18e231475dd38a5eae7c04de07a374",
+      "#698": "05dd442d67abb41f4197eb75a8f5f24761066fbf",
+      "#699": "09030b078695a87de3cc17fd5ec11c149de6a29b",
+      "#700": "faabff6de9d2b487e54f665fc4cb685c63bff6e9"
+    },
+    "authority_basis": [
+      "PR #689 extends the bounded API E2E through APS handoff dispatch, external export/download prepare, and same-origin delivery by carrying admitted APS companion provenance without admitting broad qualitative or RAG/vector execution.",
+      "PR #690 freezes the raw mixed bridge as seed-only planning scope, and PR #691 implements POST /api/v1/layer3/source/mixed-corpus/seed over a server-owned hash-checked manifest and existing admitted source authority rows.",
+      "PR #692 hardens missing/bad seed bridge failure modes and no-side-effect behavior.",
+      "PR #693 proves the seed response can be used as the setup boundary for the bounded API E2E path without hidden source IDs after seeding.",
+      "PR #694 proves the seed bridge can be used as API setup for rendered /review/layer3 without adding a human-facing raw mixed manifest workflow.",
+      "PR #695 through PR #698 document the practical UI runbook/reference plan and restore browser harness patch-state coverage.",
+      "PR #699 proves rendered Gate C and plan-preview boundary visibility, and PR #700 preserves material authority fields in rendered Gate B decisions so existing UI controls can reach plan preview and plan approval."
+    ],
+    "files_changed_across_sequence": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/services/layer3_qual_aps_execution.py",
+      "backend/app/services/layer3_raw_mixed_bridge.py",
+      "backend/app/api/layer3.py",
+      "backend/tests/test_layer3_bounded_e2e.py",
+      "backend/tests/test_layer3_raw_mixed_bridge.py",
+      "backend/tests/test_layer3_api.py",
+      "backend/tests/test_layer3_source_boundary.py",
+      "backend/tests/test_review_browser_server.py",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "e2e/layer3-helpers.js",
+      "next_milestone_plans/Layer3_planning_docs/137_RAW_MIXED_BRIDGE_FREEZE.md",
+      "next_milestone_plans/Layer3_execution_handoff/07_L3_UI_MANUAL_RUNBOOK.md",
+      "next_milestone_plans/Layer3_execution_handoff/08_L3_POST_695_REFERENCE_PLAN.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "theme_posture": [
+      "The PR #700 runtime change is payload-only in backend/app/review_ui/static/layer3.js; it adds no CSS, theme tokens, rendered controls, or visible styling.",
+      "Existing workbench Playwright coverage includes theme persistence, isolation, focus, responsive, and patch-state smoke around the rendered Layer 3 workbench.",
+      "Future rendered controls or style changes must include relevant theme checks and should compare headed and headless Chrome when browser behavior is part of the proof."
+    ],
+    "negative_invariants": [
+      "no raw ingestion",
+      "no local upload",
+      "no local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval",
+      "no source adapter registry behavior",
+      "no provider/public URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "post_700_validation": [
+      "python .\\tools\\l3-progress-check.py -> PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q -> 2 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_raw_mixed_bridge.py -q -> 12 passed",
+      "npx playwright test e2e/layer3-workbench.spec.js --grep \"raw mixed seed bridge setup through rendered Gate C and plan approval\" -> 1 passed",
+      "npx playwright test e2e/layer3-workbench.spec.js --grep \"raw mixed seed bridge setup through rendered Gate C and plan approval\" --headed -> 1 passed",
+      "npx playwright test e2e/layer3-workbench.spec.js -> 15 passed",
+      "python -m pytest .\\backend\\tests -k layer3 -q -> 441 passed, 358 deselected",
+      "git diff --check -> passed with expected LF-to-CRLF warnings on edited text files"
     ]
   }
 }
