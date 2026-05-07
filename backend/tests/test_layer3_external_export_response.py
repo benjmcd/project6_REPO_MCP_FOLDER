@@ -19,12 +19,14 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_USER_FACING,
     SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
 )
+from app.services.layer3_package_submit_response import COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
 from app.services.layer3_pass_entry import (
     COHORT_SHAPE_ALIGNED_WIDE_TABLE,
     PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
     PASS_TYPE_ASSOCIATED_COHORT,
     SOURCE_GATE_COHORT_DESC_FREEZE,
 )
+from app.services.layer3_workbench_package_state import APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID
 
 
 def _package(package_kind: str, output_package_id: str, *, payload_hash: str) -> L3OutputPackage:
@@ -222,10 +224,18 @@ class _PackageQuery:
 
 
 class _PackageDb:
-    def __init__(self, package: L3OutputPackage | None) -> None:
+    def __init__(
+        self,
+        package: L3OutputPackage | None = None,
+        *,
+        reconciliation: L3ReconciliationRecord | None = None,
+    ) -> None:
         self.package = package
+        self.reconciliation = reconciliation
 
     def query(self, model):
+        if model is L3ReconciliationRecord:
+            return _PackageQuery(self.reconciliation)
         assert model is L3OutputPackage
         return _PackageQuery(self.package)
 
@@ -281,3 +291,83 @@ def test_external_export_bundle_identity_helper_is_shared_with_workbench() -> No
         "source_artifact_hash": "source-artifact-hash",
         "source_artifact_size_bytes": 42,
     }
+
+
+def test_external_export_summary_helper_is_shared_with_workbench(monkeypatch) -> None:
+    assert (
+        layer3_workbench._external_export_download_prepare_summary
+        is export_response.external_export_download_prepare_summary
+    )
+
+    dispatch_state = {
+        "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+        "state": export_response.APS_HANDOFF_DISPATCHED_STATE,
+        "analysis_run_id": "analysis-run-export-response",
+        "result_review_record_ref": "layer3://result-review/record",
+        "package_review_preview_hash": "package-preview-hash-export",
+        "reconciliation_record_id": "reconciliation-export-response",
+        "output_package_ids": ["pkg-user", "pkg-internal", "pkg-review"],
+        "package_kinds": ["user_facing", "canonical_internal", "review_facing"],
+        "payload_refs": ["payload://user", "payload://internal", "payload://review"],
+        "payload_hashes": ["hash-user", "hash-internal", "hash-review"],
+        "package_review_submit_record_ref": "layer3://package-review-submit/record",
+        "package_review_state": "package_review_approved",
+        "prepare_record_ref": "layer3://handoff-export/prepare/record",
+        "handoff_export_state": "handoff_export_prepared",
+        "handoff_export_envelope_ref": "layer3://handoff-export/envelope",
+        "handoff_target": "aps_evidence_bundle_handoff",
+        "export_mode": "reference_envelope_prepare_only",
+        "aps_handoff_record_ref": "layer3://aps-handoff/record",
+        "aps_handoff_state": export_response.APS_HANDOFF_DISPATCHED_STATE,
+        "aps_handoff_target": "aps_evidence_bundle",
+        "dispatch_mode": "server_side_aps_handoff",
+        "pass_type": PASS_TYPE_ASSOCIATED_COHORT,
+        "pass_scope": PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+        "method": "descriptive_summary",
+        "source_gate": SOURCE_GATE_COHORT_DESC_FREEZE,
+        "package_construction_source_gate": SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+        "source_dataset_version_ids": ["dataset-version-1"],
+        "package_review_submit_schema_id": COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+    }
+    reconciliation = L3ReconciliationRecord(
+        session_id="session-export-response",
+        reconciliation_record_id="reconciliation-export-response",
+        summary_json={"aps_handoff_dispatch": dispatch_state},
+    )
+
+    def fake_bundle_identity(*args, **kwargs):
+        return {
+            "aps_output_package_id": "aps-output-package",
+            "aps_output_package_kind": PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+            "aps_bundle_ref": "layer3://aps-bundle/ref",
+            "aps_bundle_id": "aps-bundle-id",
+            "aps_schema_id": "layer3.aps_evidence_bundle.v1",
+            "source_artifact_ref": "layer3://aps-bundle/ref",
+            "source_artifact_schema_id": "layer3.aps_evidence_bundle.v1",
+            "source_artifact_hash": "source-artifact-hash",
+            "source_artifact_size_bytes": 42,
+        }
+
+    monkeypatch.setattr(export_response, "aps_bundle_identity_for_external_export_download", fake_bundle_identity)
+
+    summary = export_response.external_export_download_prepare_summary(
+        _PackageDb(reconciliation=reconciliation),
+        session_id="session-export-response",
+        aps_handoff_dispatch_state=dispatch_state,
+    )
+
+    assert summary["schema_id"] == export_response.EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID
+    assert summary["available"] is True
+    assert summary["state"] == "external_export_download_ready"
+    assert summary["operator_decision"] == "prepare_external_export_download"
+    assert summary["aps_output_package_id"] == "aps-output-package"
+    assert summary["source_artifact_hash"] == "source-artifact-hash"
+    assert summary["external_export_download_prepare_enabled"] is True
+    assert summary["browser_download_enabled"] is False
+    assert summary["download_url_enabled"] is False
+    assert summary["connector_dispatch_enabled"] is False
+    assert summary["destination_selection_enabled"] is False
+    assert summary["generic_downstream_dispatch_enabled"] is False
+    assert summary["pass_type"] == PASS_TYPE_ASSOCIATED_COHORT
+    assert summary["source_dataset_version_ids"] == ["dataset-version-1"]
