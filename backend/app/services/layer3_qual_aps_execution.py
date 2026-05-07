@@ -41,6 +41,7 @@ PASS_STATUS_SELECTED_NOT_STARTED = "selected_not_started"
 PASS_STATUS_COMPLETED = "completed"
 MODALITY_QUALITATIVE = "qualitative"
 SOURCE_SHAPE_APS_CONTENT_DOCUMENT = "aps_content_document"
+APS_HANDOFF_COMPANION_ANALYSIS_ROLE = "aps_handoff_companion_provenance"
 QUALITATIVE_BOUNDARY_DEFERRED_CAPABILITIES = (
     "broad_qualitative_execution",
     "qualitative_associated_cohort_execution",
@@ -138,6 +139,10 @@ def qualitative_aps_candidate_exclusion_reason(
     analysis_unit: L3AnalysisUnit,
     material_snapshot: L3MaterialSnapshot,
 ) -> str | None:
+    if (material_snapshot.source_provenance_json or {}).get("analysis_admission_role") == (
+        APS_HANDOFF_COMPANION_ANALYSIS_ROLE
+    ):
+        return "qualitative_aps_companion_provenance_not_pass_candidate"
     if analysis_set.set_type != PASS_TYPE_SINGLE_ITEM:
         return "qualitative_aps_set_type_not_single_item"
     if analysis_set.formation_basis_json.get("analysis_modality") != MODALITY_QUALITATIVE:

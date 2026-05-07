@@ -40,6 +40,8 @@ from app.models.models import (
 from app.services import dataframe_io
 from test_layer3_api import (
     _aps_handoff_dispatch_payload,
+    _external_export_download_deliver_payload,
+    _external_export_download_prepare_payload,
     _handoff_export_prepare_payload,
     client as client,
 )
@@ -380,7 +382,7 @@ class Layer3ApiDriver:
             ),
         )
 
-    def aps_dispatch_blocked(
+    def aps_dispatch(
         self,
         *,
         session_id: str,
@@ -393,7 +395,7 @@ class Layer3ApiDriver:
         submit: dict[str, Any],
         prepare: dict[str, Any],
     ) -> dict[str, Any]:
-        return self.post_blocked(
+        return self.post_ok(
             "/api/v1/layer3/handoff/aps/dispatch",
             _aps_handoff_dispatch_payload(
                 request_id="bounded-e2e-aps-dispatch",
@@ -408,6 +410,52 @@ class Layer3ApiDriver:
                 prepare_body=prepare,
             ),
         )
+
+    def external_export_download_prepare(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+        commit: dict[str, Any],
+        submit: dict[str, Any],
+        prepare: dict[str, Any],
+        dispatch: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        payload = _external_export_download_prepare_payload(
+            request_id="bounded-e2e-download-prepare",
+            session_id=session_id,
+            preview_body=preview,
+            approval_body=approval,
+            selection_body=selection,
+            start_body=start,
+            review_body=review,
+            commit_body=commit,
+            submit_body=submit,
+            prepare_body=prepare,
+            dispatch_body=dispatch,
+        )
+        return payload, self.post_ok("/api/v1/layer3/handoff/export/download/prepare", payload)
+
+    def external_export_download_deliver(
+        self,
+        *,
+        prepare_payload: dict[str, Any],
+        readiness: dict[str, Any],
+    ) -> Any:
+        response = self._client.post(
+            "/api/v1/layer3/handoff/export/download/deliver",
+            json=_external_export_download_deliver_payload(
+                request_id="bounded-e2e-download-deliver",
+                prepare_payload=prepare_payload,
+                readiness_body=readiness,
+            ),
+        )
+        assert response.status_code == 200, response.text
+        return response
 
 
 class Layer3StateAssertions:
@@ -460,8 +508,8 @@ class Layer3StateAssertions:
         with self._client.layer3_session_factory() as db:
             assert db.query(L3Session).filter(L3Session.session_id == session_id).count() == 1
             assert db.query(L3SelectionManifest).filter(L3SelectionManifest.session_id == session_id).count() == 1
-            assert db.query(L3Descriptor).filter(L3Descriptor.session_id == session_id).count() == 2
-            assert db.query(L3RetrievalEvent).filter(L3RetrievalEvent.session_id == session_id).count() == 2
+            assert db.query(L3Descriptor).filter(L3Descriptor.session_id == session_id).count() == 3
+            assert db.query(L3RetrievalEvent).filter(L3RetrievalEvent.session_id == session_id).count() == 3
             snapshots = (
                 db.query(L3MaterialSnapshot)
                 .filter(L3MaterialSnapshot.session_id == session_id)
@@ -469,13 +517,21 @@ class Layer3StateAssertions:
                 .all()
             )
             assert [snapshot.source_shape for snapshot in snapshots].count("dataset_version") == 2
-            assert [snapshot.source_shape for snapshot in snapshots].count("aps_content_document") == 0
+            assert [snapshot.source_shape for snapshot in snapshots].count("aps_content_document") == 1
             dataset_ids = [
                 snapshot.source_identity_json["dataset_version_id"]
                 for snapshot in snapshots
                 if snapshot.source_shape == "dataset_version"
             ]
             assert sorted(dataset_ids) == sorted(seeded.dataset_version_ids)
+            aps_snapshot = next(snapshot for snapshot in snapshots if snapshot.source_shape == "aps_content_document")
+            assert aps_snapshot.source_identity_json["content_id"] == seeded.aps_content_id
+            assert aps_snapshot.source_identity_json["run_id"] == seeded.aps_run_id
+            assert aps_snapshot.source_identity_json["target_id"] == seeded.aps_target_id
+            assert (
+                aps_snapshot.source_provenance_json["analysis_admission_role"]
+                == "aps_handoff_companion_provenance"
+            )
             dataset_group_ids = {
                 snapshot.co_retrieval_group_id
                 for snapshot in snapshots
@@ -494,12 +550,12 @@ class Layer3StateAssertions:
 
     def assert_gate_c_associated_cohort_boundary(self, *, session_id: str) -> None:
         with self._client.layer3_session_factory() as db:
-            assert db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count() == 2
-            assert db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count() == 2
-            assert db.query(L3AnalysisGroup).filter(L3AnalysisGroup.session_id == session_id).count() == 1
+            assert db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count() == 3
+            assert db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count() == 3
+            assert db.query(L3AnalysisGroup).filter(L3AnalysisGroup.session_id == session_id).count() == 2
             sets = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).all()
-            assert len(sets) == 1
-            assert {analysis_set.set_type for analysis_set in sets} == {"associated_cohort"}
+            assert len(sets) == 2
+            assert {analysis_set.set_type for analysis_set in sets} == {"associated_cohort", "single_item"}
             associated_set = (
                 db.query(L3AnalysisSet)
                 .filter(L3AnalysisSet.session_id == session_id, L3AnalysisSet.set_type == "associated_cohort")
@@ -509,6 +565,19 @@ class Layer3StateAssertions:
             assert associated_set.formation_basis_json["group_basis"] == "same_co_retrieval_group"
             assert associated_set.formation_basis_json["analysis_modality"] == "quantitative"
             assert associated_set.formation_basis_json["requested_method_name"] == "descriptive_summary"
+            companion_set = (
+                db.query(L3AnalysisSet)
+                .filter(L3AnalysisSet.session_id == session_id, L3AnalysisSet.set_type == "single_item")
+                .one()
+            )
+            companion_unit = db.get(L3AnalysisUnit, companion_set.analysis_unit_ids_json[0])
+            assert companion_unit.analysis_modality == "qualitative"
+            companion_snapshot = db.get(L3MaterialSnapshot, companion_unit.member_snapshot_ids_json[0])
+            assert companion_snapshot.source_shape == "aps_content_document"
+            assert (
+                companion_snapshot.source_provenance_json["analysis_admission_role"]
+                == "aps_handoff_companion_provenance"
+            )
 
     def assert_approved_plan_method_authority(self, *, session_id: str, seeded: SeededSources) -> None:
         with self._client.layer3_session_factory() as db:
@@ -538,7 +607,7 @@ class Layer3StateAssertions:
         assert counts["signed_reference_audit_events"] == 0
 
 
-def test_layer3_bounded_e2e_api_associated_cohort_reaches_handoff_prepare_boundary(
+def test_layer3_bounded_e2e_api_associated_cohort_reaches_download_delivery(
     client: TestClient,
     tmp_path: Path,
     monkeypatch,
@@ -573,8 +642,8 @@ def test_layer3_bounded_e2e_api_associated_cohort_reaches_handoff_prepare_bounda
         material=material,
     )
     assert gate_b["status"] == "ok"
-    assert len(gate_b["approved_candidate_ids"]) == 2
-    assert len(gate_b["flagged_candidate_ids"]) == 1
+    assert len(gate_b["approved_candidate_ids"]) == 3
+    assert gate_b["flagged_candidate_ids"] == []
     session_id = gate_b["session_id"]
     state.assert_gate_b_state(session_id=session_id, seeded=seeded)
     state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
@@ -695,7 +764,9 @@ def test_layer3_bounded_e2e_api_associated_cohort_reaches_handoff_prepare_bounda
     _assert_response_refs_exist(handoff_prepare)
     assert state.counts() == commit_counts
 
-    aps_dispatch = driver.aps_dispatch_blocked(
+    dispatch_counts_before = state.counts()
+    files_before_dispatch = state.files()
+    aps_dispatch = driver.aps_dispatch(
         session_id=session_id,
         preview=plan_preview,
         approval=plan_approval,
@@ -706,11 +777,46 @@ def test_layer3_bounded_e2e_api_associated_cohort_reaches_handoff_prepare_bounda
         submit=package_submit,
         prepare=handoff_prepare,
     )
-    assert aps_dispatch["error_code"] == "aps_handoff_dispatch_blocked"
-    assert aps_dispatch["blocked_fields"] == ["aps_handoff_target"]
-    assert aps_dispatch["next_allowed_actions"] == ["inspect_aps_handoff_provenance"]
-    assert "aps_content_document provenance" in aps_dispatch["message"]
-    assert state.counts() == commit_counts
+    assert aps_dispatch["status"] == "dispatched"
+    assert aps_dispatch["aps_handoff_state"] == "aps_handoff_dispatched"
+    assert aps_dispatch["pass_type"] == "associated_cohort"
+    assert sorted(aps_dispatch["source_dataset_version_ids"]) == sorted(seeded.dataset_version_ids)
+    _assert_response_refs_exist(aps_dispatch)
+    dispatch_counts = state.counts()
+    assert dispatch_counts == {
+        **dispatch_counts_before,
+        "output_packages": dispatch_counts_before["output_packages"] + 1,
+    }
+    added_dispatch_files = state.files() - files_before_dispatch
+    assert len(added_dispatch_files) == 1
+
+    download_prepare_payload, download_prepare = driver.external_export_download_prepare(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+        prepare=handoff_prepare,
+        dispatch=aps_dispatch,
+    )
+    assert download_prepare["status"] == "prepared"
+    assert download_prepare["external_export_download_state"] == "external_export_download_prepared"
+    assert download_prepare["source_artifact_ref"] == aps_dispatch["aps_bundle_ref"]
+    assert state.counts() == dispatch_counts
+    assert state.files() == files_before_dispatch | added_dispatch_files
+
+    delivery = driver.external_export_download_deliver(
+        prepare_payload=download_prepare_payload,
+        readiness=download_prepare,
+    )
+    assert delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    assert delivery.headers["x-layer3-schema-id"] == "layer3.external_export_download_delivery.v1"
+    assert delivery.content == Path(aps_dispatch["aps_bundle_ref"]).read_bytes()
+    assert state.counts() == dispatch_counts
+    assert state.files() == files_before_dispatch | added_dispatch_files
 
 
 def _seed_sources(client: TestClient, tmp_path: Path) -> SeededSources:
@@ -761,7 +867,7 @@ def _patch_cohort_dataframe_persistence(monkeypatch, tmp_path: Path) -> None:
 
 
 def _gate_b_decision(candidate: dict[str, Any]) -> dict[str, Any]:
-    if candidate["source_class"] == "dataset_version":
+    if candidate["source_class"] in {"dataset_version", "aps_content_document"}:
         return _approved_decision(candidate)
     return {
         "candidate_id": candidate["candidate_id"],
@@ -820,7 +926,9 @@ def _assert_descriptive_cohort_plan_preview(plan_preview: dict[str, Any], *, see
     payload = plan_preview["plan_preview"]
     assert payload["approval_ready"] is True
     assert len(payload["admitted_sets"]) == 1
-    assert payload["excluded_sets"] == []
+    assert len(payload["excluded_sets"]) == 1
+    assert payload["excluded_sets"][0]["reason_code"] == "qualitative_aps_companion_provenance_not_pass_candidate"
+    assert payload["excluded_sets"][0]["analysis_modality"] == "qualitative"
     assert len(payload["planned_passes"]) == 1
     planned_pass = payload["planned_passes"][0]
     assert planned_pass["pass_type"] == "associated_cohort"
