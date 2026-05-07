@@ -55,6 +55,12 @@ QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE = (
 QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT = (
     PLANNING_DOCS / "146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md"
 )
+QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE = (
+    PLANNING_DOCS / "147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md"
+)
+QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT = (
+    PLANNING_DOCS / "148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -121,6 +127,7 @@ EXECUTION_REQUEST_CONTRACT_SERVICE = (
 HANDOFF_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_handoff_contract.py"
 )
+APS_HANDOFF_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_aps_handoff.py"
 PACKAGE_REVIEW_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_package_review_contract.py"
 )
@@ -4075,6 +4082,110 @@ def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> N
     ):
         if term not in bounded_e2e_text:
             errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS handoff/export prepare runtime proof term: {term}")
+
+
+def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE: (
+            "Status: planning/control implementation-entry freeze for future `qual_aps_aps_handoff_dispatch_entry`.",
+            "selected future route: `POST /api/v1/layer3/handoff/aps/dispatch`",
+            "selected future response schema: `layer3.qual_aps_aps_handoff_dispatch.v1`",
+            "selected future mode: `qual_aps_aps_handoff_dispatch_entry`",
+            "current blocker in live session summary: `qualitative_aps_aps_handoff_dispatch_not_admitted`",
+            "exactly one APS evidence-bundle handoff package row",
+            "one server-owned APS bundle artifact",
+            "Browser proof is not required for a backend/API-only APS handoff dispatch implementation.",
+        ),
+        QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT: (
+            "Status: planning/control API and state contract paired with `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`.",
+            "Current main does not admit qualitative APS APS handoff dispatch",
+            "`POST /api/v1/layer3/handoff/aps/dispatch`",
+            "`layer3.qual_aps_aps_handoff_dispatch.v1`",
+            "`dispatch_aps_handoff`",
+            "Allowed state effects for successful dispatch:",
+            "create exactly one APS evidence-bundle handoff package row",
+            "owner-service APS handoff compatibility fails",
+        ),
+        POST_709_ROADMAP_FREEZE: (
+            "governing APS handoff dispatch freeze docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`",
+            "qualitative APS APS handoff dispatch runtime, governed by docs `147` and `148`",
+            "freeze/contract now exists in docs `147` and `148`",
+            "live runtime still has `qualitative_aps_aps_handoff_dispatch_not_admitted`",
+        ),
+        PHASE1A_README: (
+            "147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md",
+            "148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md",
+            "qual_aps_aps_handoff_dispatch_entry",
+            "keeps the live `qualitative_aps_aps_handoff_dispatch_not_admitted` blocker",
+        ),
+        DEFERRED_GATES: (
+            "147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md",
+            "148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md",
+            "future qualitative APS APS handoff dispatch boundary only",
+            "qualitative_aps_aps_handoff_dispatch_not_admitted",
+        ),
+        BOARD: (
+            "Qualitative APS APS handoff dispatch freeze",
+            "planning/control docs",
+            "qual_aps_aps_handoff_dispatch_entry",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            "admits no runtime behavior by itself",
+        ),
+        MANIFEST: (
+            "latest_qual_aps_aps_handoff_dispatch_freeze_branch",
+            "latest_qual_aps_aps_handoff_dispatch_freeze_live_behavior_change",
+            "qual_aps_aps_handoff_dispatch_freeze",
+            "qualitative_aps_aps_handoff_dispatch_not_admitted",
+            "admits no runtime behavior",
+        ),
+        PROOF_MANIFEST: (
+            "latest_qual_aps_aps_handoff_dispatch_freeze_branch",
+            "latest_qual_aps_aps_handoff_dispatch_freeze_live_behavior_change",
+            "latest_qual_aps_aps_handoff_dispatch_freeze_summary",
+            "qual_aps_aps_handoff_dispatch_freeze_proof",
+            "layer3.qual_aps_aps_handoff_dispatch.v1",
+            "qualitative_aps_aps_handoff_dispatch_not_admitted",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing qualitative APS APS handoff dispatch freeze term: {term}"
+                )
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "\"qualitative_aps_aps_handoff_dispatch_not_admitted\"",
+        "def _aps_handoff_dispatch_summary(",
+        "def aps_handoff_dispatch(",
+        "materialize_aps_handoff(db, session_id=session_id)",
+        "APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing APS handoff dispatch reference term: {term}")
+
+    handoff_contract_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
+    for term in (
+        "APS_HANDOFF_DISPATCH_ALLOWED_FIELDS",
+        "APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS",
+        "def aps_handoff_dispatch_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "\"connector_dispatch\"",
+        "\"download_url\"",
+    ):
+        if term not in handoff_contract_text:
+            errors.append(f"{_rel(HANDOFF_CONTRACT_SERVICE)} missing APS handoff dispatch contract term: {term}")
+
+    aps_handoff_text = _read_required_text(APS_HANDOFF_SERVICE, errors)
+    for term in (
+        "PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF = \"aps_evidence_bundle_handoff\"",
+        "APS_HANDOFF_SCHEMA_ID = \"layer3.aps_evidence_bundle_handoff.v1\"",
+        "def check_aps_handoff_compatibility(",
+        "def materialize_aps_handoff(",
+    ):
+        if term not in aps_handoff_text:
+            errors.append(f"{_rel(APS_HANDOFF_SERVICE)} missing APS handoff owner-service term: {term}")
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
@@ -8894,6 +9005,8 @@ def main() -> int:
         QUAL_APS_PACKAGE_SUBMIT_CONTRACT,
         QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE,
         QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT,
+        QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE,
+        QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -8990,6 +9103,7 @@ def main() -> int:
         LAYER3_EXECUTION_STATUS_TEST,
         LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
+        APS_HANDOFF_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
         LAYER3_PACKAGE_REVIEW_CONTRACT_TEST,
         LAYER3_PACKAGE_SUBMIT_RESPONSE_TEST,
@@ -9035,6 +9149,7 @@ def main() -> int:
     _check_qualitative_aps_package_construction_freeze(errors)
     _check_qualitative_aps_package_submit_freeze(errors)
     _check_qualitative_aps_handoff_export_prepare_freeze(errors)
+    _check_qualitative_aps_aps_handoff_dispatch_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
     _check_mockup_truth_state_boundary(errors)

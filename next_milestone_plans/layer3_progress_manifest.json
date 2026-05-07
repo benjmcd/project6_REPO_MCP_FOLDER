@@ -6131,5 +6131,10 @@
     "latest_qual_aps_handoff_export_prepare_freeze_branch": "codex/l3-qual-aps-handoff-prepare-runtime",
     "latest_qual_aps_handoff_export_prepare_freeze_live_behavior_change": true,
     "qual_aps_handoff_export_prepare_freeze": "Docs 145 and 146 now govern the live qual_aps_handoff_export_prepare_entry boundary after live qualitative APS package-review submit. Current main admits only POST /api/v1/layer3/handoff/export/prepare with response schema layer3.qual_aps_handoff_export_prepare.v1 for the exact qualitative APS authority chain, records exactly one prepare-only decision/envelope object in existing JSON-bearing state, creates no rows or files, preserves package refs/hashes/payload files, and keeps APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, package mutation/reconstruction, and package supersession blocked."
+  },
+  "scope": {
+    "latest_qual_aps_aps_handoff_dispatch_freeze_branch": "codex/l3-qual-aps-dispatch-freeze",
+    "latest_qual_aps_aps_handoff_dispatch_freeze_live_behavior_change": false,
+    "qual_aps_aps_handoff_dispatch_freeze": "Docs 147 and 148 freeze only the future qual_aps_aps_handoff_dispatch_entry boundary after live qualitative APS handoff/export prepare. The freeze selects POST /api/v1/layer3/handoff/aps/dispatch with future response schema layer3.qual_aps_aps_handoff_dispatch.v1, requires persisted qualitative prepare/envelope authority, and keeps the live qualitative_aps_aps_handoff_dispatch_not_admitted blocker until a separate runtime pass. It admits no runtime behavior and keeps external export/download, connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, package mutation/reconstruction, and package supersession blocked."
   }
 }
