@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Current main now includes the PR #689 mixed APS provenance bridge, PR #690/#691 raw mixed-corpus seed-only bridge freeze/runtime, PR #692 through PR #700 failure-mode, API E2E, rendered UI, browser harness, and rendered Gate B-to-plan approval proof sequence, PR #702 standalone APS content-document qualitative API E2E proof, PR #706 read-only qualitative APS package-review preview runtime proof, and PR #709 qualitative APS package-construction runtime proof. Docs 138 and 139 govern the live preview-only boundary, docs 140 and 141 govern the live construction boundary, doc 142 centralizes the planning/control roadmap after PR #709, and docs 143 and 144 freeze the future qualitative APS package-review submit boundary. The latest rendered UI proof reaches existing Gate C, plan preview, and plan approval controls for the admitted dataset_version path after API seed setup, while preserving the APS companion as excluded from planned-pass admission. The qualitative APS path now reaches package construction and still blocks package-review submit with qualitative_aps_package_review_submit_not_admitted. Raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked. This status retains the package replacement artifact manifest-only runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, and older proof records below for historical slice authority.",
+  "status": "Current main now includes the PR #689 mixed APS provenance bridge, PR #690/#691 raw mixed-corpus seed-only bridge freeze/runtime, PR #692 through PR #700 failure-mode, API E2E, rendered UI, browser harness, and rendered Gate B-to-plan approval proof sequence, PR #702 standalone APS content-document qualitative API E2E proof, PR #706 read-only qualitative APS package-review preview runtime proof, PR #709 qualitative APS package-construction runtime proof, and PR #712 qualitative APS package-review submit runtime proof. Docs 138 and 139 govern the live preview-only boundary, docs 140 and 141 govern the live construction boundary, docs 143 and 144 govern the live submit boundary, docs 145 and 146 freeze the future qualitative APS handoff/export prepare boundary, and doc 142 centralizes the planning/control roadmap. The latest rendered UI proof reaches existing Gate C, plan preview, and plan approval controls for the admitted dataset_version path after API seed setup, while preserving the APS companion as excluded from planned-pass admission. The qualitative APS path now reaches package-review submit and still blocks qualitative APS handoff/export runtime. Raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked. This status retains the package replacement artifact manifest-only runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, and older proof records below for historical slice authority.",
   "scope": {
     "source_branch": "codex/l3-synth-ref-sync",
     "merged_pr": "#609",
@@ -620,7 +620,10 @@
     "latest_qual_aps_package_review_submit_freeze_summary": "Docs 143 and 144 select only the future qual_aps_package_review_submit_entry boundary after PR #709 qualitative APS package construction. They prefer reuse of POST /api/v1/layer3/package/review/submit, require the persisted PR #709 construction basis, exactly one reconciliation row, exactly three package rows, matching package ids/kinds/payload refs/payload hashes, and record only one future operator decision object in existing JSON-bearing state. They admit no runtime behavior.",
     "latest_qual_aps_package_review_submit_runtime_branch": "codex/l3-qual-aps-package-submit",
     "latest_qual_aps_package_review_submit_runtime_live_behavior_change": true,
-    "latest_qual_aps_package_review_submit_runtime_summary": "Admits only qual_aps_package_review_submit_entry through POST /api/v1/layer3/package/review/submit and response schema layer3.qual_aps_package_review_submit.v1. The runtime records exactly one qualitative APS package-review decision object in existing JSON-bearing state, creates no rows or files, preserves package refs, hashes, and payload files, and keeps handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration expansion, broad qualitative/hybrid behavior, package mutation/reconstruction, and package supersession blocked."
+    "latest_qual_aps_package_review_submit_runtime_summary": "Admits only qual_aps_package_review_submit_entry through POST /api/v1/layer3/package/review/submit and response schema layer3.qual_aps_package_review_submit.v1. The runtime records exactly one qualitative APS package-review decision object in existing JSON-bearing state, creates no rows or files, preserves package refs, hashes, and payload files, and keeps handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration expansion, broad qualitative/hybrid behavior, package mutation/reconstruction, and package supersession blocked.",
+    "latest_qual_aps_handoff_export_prepare_freeze_branch": "codex/l3-qual-aps-handoff-prepare-freeze",
+    "latest_qual_aps_handoff_export_prepare_freeze_live_behavior_change": false,
+    "latest_qual_aps_handoff_export_prepare_freeze_summary": "Docs 145 and 146 select only the future qual_aps_handoff_export_prepare_entry boundary after live qualitative APS package-review submit. The freeze prefers reuse of POST /api/v1/layer3/handoff/export/prepare if implementation audit proves qualitative APS authority remains unambiguous, requires package-review submit schema layer3.qual_aps_package_review_submit.v1, persisted construction and submit authority, exactly three package rows, matching package ids/kinds/payload refs/payload hashes, and a prepare-only internal envelope decision. It admits no runtime behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -5225,5 +5228,44 @@
       "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q",
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"package_openapi_contracts or package_review_submit_prechecks_fail_closed\""
     ]
+  },
+  "qual_aps_handoff_export_prepare_freeze_proof": {
+    "scope": "Planning/control metadata for docs 145 and 146, which freeze the future qualitative APS handoff/export prepare boundary only.",
+    "implementation_branch": "codex/l3-qual-aps-handoff-prepare-freeze",
+    "live_behavior_change": false,
+    "new_docs": [
+      "next_milestone_plans/Layer3_planning_docs/145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md"
+    ],
+    "authority_basis": [
+      "The live qualitative APS package-review submit runtime records approved submit authority without creating rows or files.",
+      "Current main still lacks qualitative APS-specific handoff/export prepare authority.",
+      "The existing generic handoff/export prepare route is a route-family pattern only until qualitative APS preview, construction, and submit authority are explicitly validated.",
+      "Docs 145 and 146 select only the next implementation-entry boundary and do not make handoff/export prepare runtime live."
+    ],
+    "selected_future_mode": "qual_aps_handoff_export_prepare_entry",
+    "negative_invariants": [
+      "no runtime behavior change",
+      "no handoff/export prepare runtime admission",
+      "no APS dispatch",
+      "no external export/download",
+      "no connector or destination dispatch",
+      "no provider/public URL generation",
+      "no rendered controls or theme behavior change",
+      "no source expansion",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no route, DTO, model, migration, or production service change"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_boundary": "A later runtime pass may implement only qual_aps_handoff_export_prepare_entry and must stop before APS dispatch, external export/download, connector/destination dispatch, provider/public URL, rendered controls, source expansion, RAG/vector behavior, hidden LLM planning, full mockup activation, auth/security behavior, package mutation/reconstruction, or model/migration work."
   }
 }

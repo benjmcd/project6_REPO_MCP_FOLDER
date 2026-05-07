@@ -49,6 +49,12 @@ QUAL_APS_PACKAGE_SUBMIT_FREEZE = (
 QUAL_APS_PACKAGE_SUBMIT_CONTRACT = (
     PLANNING_DOCS / "144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md"
 )
+QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE = (
+    PLANNING_DOCS / "145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md"
+)
+QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT = (
+    PLANNING_DOCS / "146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -3902,7 +3908,7 @@ def _check_qualitative_aps_package_submit_freeze(errors: list[str]) -> None:
             "Layer 3 Qualitative APS Post-Submit Roadmap Freeze",
             "latest live qualitative APS boundary: `qual_aps_package_review_submit_entry`",
             "qualitative APS package-review submit over the constructed package set",
-            "qualitative APS handoff/export prepare freeze and contract",
+            "governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`",
         ),
         QUAL_APS_PACKAGE_SUBMIT_FREEZE: (
             "Status: current-main runtime boundary for `qual_aps_package_review_submit_entry`.",
@@ -3966,6 +3972,79 @@ def _check_qualitative_aps_package_submit_freeze(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing qualitative APS package-submit freeze term: {term}")
+
+
+def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE: (
+            "Status: planning/control freeze for future `qual_aps_handoff_export_prepare_entry`.",
+            "selected future mode: `qual_aps_handoff_export_prepare_entry`",
+            "selected future response schema: `layer3.qual_aps_handoff_export_prepare.v1`",
+            "`POST /api/v1/layer3/handoff/export/prepare`",
+            "Current main has generic and associated-cohort handoff/export prepare behavior",
+            "The future implementation must explicitly validate qualitative APS authority",
+            "The future implementation must not create new rows or files under this freeze.",
+            "Browser proof is not required for a backend/API-only handoff/export prepare implementation.",
+        ),
+        QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT: (
+            "Status: planning/control API and state contract paired with `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`.",
+            "Default future route:",
+            "`POST /api/v1/layer3/handoff/export/prepare`",
+            "Selected future response schema:",
+            "`layer3.qual_aps_handoff_export_prepare.v1`",
+            "`package_review_submit_schema_id`",
+            "`layer3.qual_aps_package_review_submit.v1`",
+            "Allowed state effects for a future successful prepare:",
+            "Current main still blocks qualitative APS handoff/export runtime",
+        ),
+        POST_709_ROADMAP_FREEZE: (
+            "Status: current-main planning/control reference after qualitative APS handoff/export prepare freeze.",
+            "governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`",
+            "qualitative APS handoff/export prepare runtime",
+            "docs `145`/`146` are frozen",
+        ),
+        PHASE1A_README: (
+            "145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+            "146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md",
+            "qual_aps_handoff_export_prepare_entry",
+            "They select reuse of the handoff/export prepare route family",
+        ),
+        DEFERRED_GATES: (
+            "145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+            "146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md",
+            "planning/control only for future `qual_aps_handoff_export_prepare_entry`",
+            "admit no runtime behavior",
+        ),
+        BOARD: (
+            "Qualitative APS handoff/export prepare freeze",
+            "planning/control docs",
+            "qual_aps_handoff_export_prepare_entry",
+            "POST /api/v1/layer3/handoff/export/prepare",
+            "admits no runtime behavior",
+        ),
+        MANIFEST: (
+            "latest_qual_aps_handoff_export_prepare_freeze_branch",
+            "latest_qual_aps_handoff_export_prepare_freeze_live_behavior_change",
+            "qual_aps_handoff_export_prepare_freeze",
+            "qual_aps_handoff_export_prepare_entry",
+            "admits no runtime behavior",
+        ),
+        PROOF_MANIFEST: (
+            "latest_qual_aps_handoff_export_prepare_freeze_branch",
+            "latest_qual_aps_handoff_export_prepare_freeze_live_behavior_change",
+            "latest_qual_aps_handoff_export_prepare_freeze_summary",
+            "qual_aps_handoff_export_prepare_freeze_proof",
+            "qual_aps_handoff_export_prepare_entry",
+            "no runtime behavior change",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing qualitative APS handoff/export prepare freeze term: {term}"
+                )
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
@@ -8783,6 +8862,8 @@ def main() -> int:
         POST_709_ROADMAP_FREEZE,
         QUAL_APS_PACKAGE_SUBMIT_FREEZE,
         QUAL_APS_PACKAGE_SUBMIT_CONTRACT,
+        QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE,
+        QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -8923,6 +9004,7 @@ def main() -> int:
     _check_qualitative_aps_package_review_freeze(errors)
     _check_qualitative_aps_package_construction_freeze(errors)
     _check_qualitative_aps_package_submit_freeze(errors)
+    _check_qualitative_aps_handoff_export_prepare_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
