@@ -5663,5 +5663,53 @@
       "git diff --check"
     ],
     "next_boundary": "Prove whether materialized source IDs should feed a deeper bounded E2E or rendered UI path; do not expand source classes, ingestion modes, UI controls, connectors, RAG/vector, provider URLs, auth/security, or package behavior without a separate freeze."
+  },
+  "raw_ingestion_materialization_bounded_e2e_proof": {
+    "scope": "Bounded integration proof that raw mixed-corpus materialization response IDs can feed the existing associated-cohort API E2E path through external export/download delivery.",
+    "implementation_branch": "codex/l3-materialization-followup",
+    "live_behavior_change": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/154_RAW_INGESTION_MATERIALIZATION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/153_SOURCE_BREADTH_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/137_RAW_MIXED_BRIDGE_FREEZE.md"
+    ],
+    "reference_files": [
+      "backend/app/services/layer3_raw_mixed_materialization.py",
+      "backend/tests/test_layer3_raw_mixed_materialization.py",
+      "backend/tests/test_layer3_bounded_e2e.py",
+      "tools/l3-progress-check.py"
+    ],
+    "selected_raw_ingestion_mode": "raw_mixed_existing_source_materialization_entry",
+    "runtime_route": "POST /api/v1/layer3/source/mixed-corpus/materialize",
+    "bounded_e2e_test": "test_layer3_raw_mixed_materialization_drives_bounded_e2e_path",
+    "runtime_hardening": "DatasetVersion.storage_ref now persists the resolved server-owned path after SHA-256 validation so the existing Layer 3 dataframe-loading path can consume materialized dataset_version authority.",
+    "proof_summary": "The test materializes two deterministic dataset_version rows plus one aps_content_document row, consumes only returned materialization IDs into the existing bounded associated-cohort API driver, verifies source-authority DB deltas and no file writes/no Layer 3 flow at materialization time, then drives the normal preflight, source preview, material preview, Gate B, Gate C, plan, execution, result review, package, handoff, APS dispatch, and external export/download delivery path.",
+    "required_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\backend\\app\\services\\layer3_raw_mixed_materialization.py .\\backend\\tests\\test_layer3_raw_mixed_materialization.py .\\backend\\tests\\test_layer3_bounded_e2e.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python -m pytest .\\backend\\tests\\test_layer3_raw_mixed_materialization.py -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q",
+      "python -m pytest .\\backend\\tests -k layer3 -q",
+      "git diff --check"
+    ],
+    "negative_invariants": [
+      "no source class expansion",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no model or migration change",
+      "no provider/public URL or signed URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no rendered UI control or theme behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "After this proof, the next admissible raw-ingestion step should be selected by a separate freeze; do not infer broad source adapters, local upload, local directory, provider URL, connector dispatch, RAG/vector, rendered UI, auth/security, or package mutation behavior from the bounded materialization E2E."
   }
 }

@@ -45,6 +45,7 @@ from app.models.models import (
     VariableDefinition,
     VariableProfile,
 )
+from app.services import nrc_aps_evidence_bundle_contract as aps_contract
 from app.services.layer3_raw_mixed_materialization import (
     RAW_MIXED_CORPUS_MATERIALIZE_MANIFEST_SCHEMA_ID,
     RAW_MIXED_CORPUS_MATERIALIZE_MODE,
@@ -63,6 +64,7 @@ class RawMixedMaterializationFixture:
     corpus_batch_id: str
     dataset_id: str
     dataset_version_id: str
+    dataset_version_ids: tuple[str, ...]
     aps_run_id: str
     aps_target_id: str
     aps_content_id: str
@@ -283,7 +285,9 @@ def test_layer3_raw_mixed_materialize_rolls_back_existing_authority_conflicts(
 def _write_materialization_manifest(
     *,
     dataset_version_id: str = "dv-raw-materialized-001",
+    additional_dataset_version_ids: tuple[str, ...] = (),
     value_variable_id: str = "var-raw-materialized-value",
+    row_count: int = 2,
     source_classes: tuple[str, ...] = ("dataset_version", "aps_content_document"),
     dataset_version_overrides: dict[str, Any] | None = None,
     manifest_overrides: dict[str, Any] | None = None,
@@ -293,15 +297,22 @@ def _write_materialization_manifest(
     aps_run_id = "run-raw-materialized-001"
     aps_target_id = "target-raw-materialized-001"
     aps_content_id = "content-raw-materialized-001"
-
-    dataset_ref, dataset_hash = _write_storage_ref(
-        f"raw-materialized/{corpus_batch_id}/dataset.csv",
-        "period,value\n2026-01,4.5\n2026-02,5.25\n",
-    )
+    dataset_version_ids = (dataset_version_id, *additional_dataset_version_ids)
     normalized_text = "Pump replacement notes show valve inspection and containment follow-up."
     normalized_ref, normalized_hash = _write_storage_ref(
         f"raw-materialized/{corpus_batch_id}/aps-normalized.txt",
         normalized_text,
+    )
+    content_units_ref, _content_units_hash = _write_storage_ref(
+        f"raw-materialized/{corpus_batch_id}/aps-content-units.json",
+        json.dumps(
+            [
+                {"unit_id": "unit-001", "text": "Pump replacement notes show valve inspection."},
+                {"unit_id": "unit-002", "text": "Containment follow-up is scheduled after inspection."},
+            ],
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
     )
     blob_ref, blob_hash = _write_storage_ref(
         f"raw-materialized/{corpus_batch_id}/aps-source.txt",
@@ -311,78 +322,27 @@ def _write_materialization_manifest(
         "Pump replacement notes show valve inspection.",
         "Containment follow-up is scheduled after inspection.",
     )
-    dataset_version = {
-        "dataset_id": dataset_id,
-        "dataset_version_id": dataset_version_id,
-        "name": "Raw Materialized Dataset",
-        "description": "Deterministic materialized dataset for Layer 3 tests.",
-        "domain_pack": "nrc_aps",
-        "frequency_hint": "monthly",
-        "time_column": "period",
-        "version_label": "v1",
-        "version_type": "raw_mixed_materialized",
-        "status": "ready",
-        "storage_ref": dataset_ref,
-        "storage_sha256": dataset_hash,
-        "row_count": 2,
-        "variables": [
-            {
-                "variable_id": "var-raw-materialized-period",
-                "variable_name": "period",
-                "dtype": "string",
-                "role": "time",
-                "is_numeric": False,
-                "is_time_index": True,
-                "ordinal_position": 0,
-            },
-            {
-                "variable_id": value_variable_id,
-                "variable_name": "value",
-                "dtype": "float",
-                "role": "measure",
-                "is_numeric": True,
-                "is_time_index": False,
-                "ordinal_position": 1,
-            },
-        ],
-        "rows": [
-            {
-                "dataset_row_id": "row-raw-materialized-001",
-                "row_number": 1,
-                "values_json": {"period": "2026-01", "value": 4.5},
-            },
-            {
-                "dataset_row_id": "row-raw-materialized-002",
-                "row_number": 2,
-                "values_json": {"period": "2026-02", "value": 5.25},
-            },
-        ],
-        "variable_profiles": [
-            {
-                "variable_profile_id": "profile-raw-materialized-value",
-                "variable_id": value_variable_id,
-                "seasonality_flag": False,
-                "stationarity_hint": "not_evaluated",
-                "summary_json": {"min": 4.5, "max": 5.25},
-            }
-        ],
-        "source_provenance": {
-            "dataset_source_provenance_id": "prov-raw-materialized-001",
-            "source_system": "nrc_adams_aps",
-            "source_mode": "raw_mixed_materialized",
-            "source_artifact_key": f"aps://{aps_run_id}/{aps_target_id}/{dataset_version_id}",
-            "source_reference_json": {
-                "content_id": aps_content_id,
-                "parser_family": "csv_table",
-            },
-        },
-    }
-    dataset_version.update(dataset_version_overrides or {})
+
+    dataset_versions = [
+        _dataset_version_manifest_entry(
+            corpus_batch_id=corpus_batch_id,
+            aps_run_id=aps_run_id,
+            aps_target_id=aps_target_id,
+            aps_content_id=aps_content_id,
+            dataset_id=dataset_id if index == 0 else f"ds-raw-materialized-{index + 1:03d}",
+            dataset_version_id=current_dataset_version_id,
+            value_variable_id=value_variable_id if index == 0 else f"var-raw-materialized-value-{index + 1:03d}",
+            index=index,
+            row_count=row_count,
+            overrides=dataset_version_overrides if index == 0 else None,
+        )
+        for index, current_dataset_version_id in enumerate(dataset_version_ids)
+    ]
     manifest = {
         "schema_id": RAW_MIXED_CORPUS_MATERIALIZE_MANIFEST_SCHEMA_ID,
         "corpus_batch_id": corpus_batch_id,
         "source_classes": list(source_classes),
-        "dataset_versions": [dataset_version],
+        "dataset_versions": dataset_versions,
         "aps_content_documents": [
             {
                 "connector_run": {
@@ -410,9 +370,9 @@ def _write_materialization_manifest(
                 "document": {
                     "aps_content_document_id": "aps-doc-raw-materialized-001",
                     "content_id": aps_content_id,
-                    "content_contract_id": "aps-content-contract-v1",
-                    "chunking_contract_id": "aps-chunking-contract-v1",
-                    "normalization_contract_id": "aps-normalization-contract-v1",
+                    "content_contract_id": aps_contract.APS_CONTENT_CONTRACT_ID,
+                    "chunking_contract_id": aps_contract.APS_CHUNKING_CONTRACT_ID,
+                    "normalization_contract_id": aps_contract.APS_NORMALIZATION_CONTRACT_ID,
                     "normalized_text_sha256": normalized_hash,
                     "normalized_char_count": len(normalized_text),
                     "chunk_count": 2,
@@ -453,6 +413,7 @@ def _write_materialization_manifest(
                 "linkage": {
                     "aps_content_linkage_id": "aps-linkage-raw-materialized-001",
                     "accession_number": "MLRAW000001",
+                    "content_units_ref": content_units_ref,
                     "normalized_text_ref": normalized_ref,
                     "normalized_text_sha256": normalized_hash,
                     "blob_ref": blob_ref,
@@ -473,12 +434,104 @@ def _write_materialization_manifest(
         corpus_batch_id=corpus_batch_id,
         dataset_id=dataset_id,
         dataset_version_id=dataset_version_id,
+        dataset_version_ids=dataset_version_ids,
         aps_run_id=aps_run_id,
         aps_target_id=aps_target_id,
         aps_content_id=aps_content_id,
         manifest_ref=manifest_ref,
         manifest_hash=hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
     )
+
+
+def _dataset_version_manifest_entry(
+    *,
+    corpus_batch_id: str,
+    aps_run_id: str,
+    aps_target_id: str,
+    aps_content_id: str,
+    dataset_id: str,
+    dataset_version_id: str,
+    value_variable_id: str,
+    index: int,
+    row_count: int,
+    overrides: dict[str, Any] | None,
+) -> dict[str, Any]:
+    suffix = "" if index == 0 else f"-{index + 1:03d}"
+    rows = [
+        {
+            "dataset_row_id": f"row-raw-materialized-{row_index + 1:03d}"
+            if index == 0
+            else f"row-raw-materialized-{index + 1:03d}-{row_index + 1:03d}",
+            "row_number": row_index + 1,
+            "values_json": {
+                "period": f"2026-{row_index + 1:02d}",
+                "value": 4.5 + index + (row_index * 0.25),
+            },
+        }
+        for row_index in range(row_count)
+    ]
+    csv_rows = "\n".join(f"{row['values_json']['period']},{row['values_json']['value']}" for row in rows)
+    dataset_ref, dataset_hash = _write_storage_ref(
+        f"raw-materialized/{corpus_batch_id}/dataset{suffix}.csv",
+        f"period,value\n{csv_rows}\n",
+    )
+    entry = {
+        "dataset_id": dataset_id,
+        "dataset_version_id": dataset_version_id,
+        "name": "Raw Materialized Dataset" if index == 0 else f"Raw Materialized Dataset {index + 1}",
+        "description": "Deterministic materialized dataset for Layer 3 tests.",
+        "domain_pack": "nrc_aps",
+        "frequency_hint": "monthly",
+        "time_column": "period",
+        "version_label": "v1",
+        "version_type": "raw_mixed_materialized",
+        "status": "ready",
+        "storage_ref": dataset_ref,
+        "storage_sha256": dataset_hash,
+        "row_count": row_count,
+        "variables": [
+            {
+                "variable_id": "var-raw-materialized-period" if index == 0 else f"var-raw-materialized-period-{index + 1:03d}",
+                "variable_name": "period",
+                "dtype": "string",
+                "role": "time",
+                "is_numeric": False,
+                "is_time_index": True,
+                "ordinal_position": 0,
+            },
+            {
+                "variable_id": value_variable_id,
+                "variable_name": "value",
+                "dtype": "float",
+                "role": "measure",
+                "is_numeric": True,
+                "is_time_index": False,
+                "ordinal_position": 1,
+            },
+        ],
+        "rows": rows,
+        "variable_profiles": [
+            {
+                "variable_profile_id": "profile-raw-materialized-value" if index == 0 else f"profile-raw-materialized-value-{index + 1:03d}",
+                "variable_id": value_variable_id,
+                "seasonality_flag": False,
+                "stationarity_hint": "not_evaluated",
+                "summary_json": {"min": 4.5 + index, "max": 5.25 + index},
+            }
+        ],
+        "source_provenance": {
+            "dataset_source_provenance_id": "prov-raw-materialized-001" if index == 0 else f"prov-raw-materialized-{index + 1:03d}",
+            "source_system": "nrc_adams_aps",
+            "source_mode": "raw_mixed_materialized",
+            "source_artifact_key": f"aps://{aps_run_id}/{aps_target_id}/{dataset_version_id}",
+            "source_reference_json": {
+                "content_id": aps_content_id,
+                "parser_family": "csv_table",
+            },
+        },
+    }
+    entry.update(overrides or {})
+    return entry
 
 
 def _write_storage_ref(ref: str, content: str) -> tuple[str, str]:
