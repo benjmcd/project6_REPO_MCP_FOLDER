@@ -208,3 +208,76 @@ def test_external_export_delivery_helpers_are_shared_with_workbench() -> None:
     assert prepare_payload["download_mode"] == "reference_only_prepare"
     assert "delivery_mode" not in prepare_payload
     assert "public_url" not in prepare_payload
+
+
+class _PackageQuery:
+    def __init__(self, package: L3OutputPackage | None) -> None:
+        self.package = package
+
+    def filter(self, *args, **kwargs):
+        return self
+
+    def one_or_none(self) -> L3OutputPackage | None:
+        return self.package
+
+
+class _PackageDb:
+    def __init__(self, package: L3OutputPackage | None) -> None:
+        self.package = package
+
+    def query(self, model):
+        assert model is L3OutputPackage
+        return _PackageQuery(self.package)
+
+
+def test_external_export_bundle_identity_helper_is_shared_with_workbench() -> None:
+    assert (
+        layer3_workbench._aps_bundle_identity_for_external_export_download
+        is export_response.aps_bundle_identity_for_external_export_download
+    )
+
+    package = L3OutputPackage(
+        session_id="session-export-response",
+        reconciliation_record_id="reconciliation-export-response",
+        output_package_id="aps-output-package",
+        package_kind=PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+        payload_ref="layer3://aps-bundle/ref",
+        payload_hash="source-artifact-hash",
+        summary_json={
+            "bundle_id": "aps-bundle-id",
+            "aps_schema_id": "layer3.aps_evidence_bundle.v1",
+        },
+    )
+    dispatch_state = {
+        "aps_handoff_state": export_response.APS_HANDOFF_DISPATCHED_STATE,
+        "aps_output_package_id": "aps-output-package",
+        "aps_output_package_kind": PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+        "aps_bundle_ref": "layer3://aps-bundle/ref",
+        "aps_bundle_id": "aps-bundle-id",
+        "aps_schema_id": "layer3.aps_evidence_bundle.v1",
+    }
+
+    identity = export_response.aps_bundle_identity_for_external_export_download(
+        _PackageDb(package),
+        session_id="session-export-response",
+        reconciliation_record_id="reconciliation-export-response",
+        dispatch_state=dispatch_state,
+        error_prefix="external_export_download_test",
+        existing_readiness={
+            "source_artifact_hash": "source-artifact-hash",
+            "source_artifact_size_bytes": 42,
+        },
+        validate_source_artifact=False,
+    )
+
+    assert identity == {
+        "aps_output_package_id": "aps-output-package",
+        "aps_output_package_kind": PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+        "aps_bundle_ref": "layer3://aps-bundle/ref",
+        "aps_bundle_id": "aps-bundle-id",
+        "aps_schema_id": "layer3.aps_evidence_bundle.v1",
+        "source_artifact_ref": "layer3://aps-bundle/ref",
+        "source_artifact_schema_id": "layer3.aps_evidence_bundle.v1",
+        "source_artifact_hash": "source-artifact-hash",
+        "source_artifact_size_bytes": 42,
+    }

@@ -124,6 +124,7 @@ from app.services.layer3_external_export_response import (
     EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
     associated_cohort_delivery_ui_state as _associated_cohort_delivery_ui_state,
     associated_cohort_external_export_download as _is_associated_cohort_external_export_download,
+    aps_bundle_identity_for_external_export_download as _aps_bundle_identity_for_external_export_download,
     cohort_readiness_identity as _cohort_readiness_identity,
     external_export_download_prepare_payload_for_delivery as _external_export_download_prepare_payload_for_delivery,
     external_export_download_prepare_response as _external_export_download_prepare_response,
@@ -3661,28 +3662,6 @@ def _aps_handoff_package_for_session(db: Session, *, session_id: str) -> L3Outpu
     )
 
 
-def _aps_handoff_package_for_dispatch(
-    db: Session,
-    *,
-    session_id: str,
-    reconciliation_record_id: str,
-    dispatch_state: dict[str, Any],
-) -> L3OutputPackage | None:
-    output_package_id = str(dispatch_state.get("aps_output_package_id") or "").strip()
-    if not output_package_id:
-        return None
-    return (
-        db.query(L3OutputPackage)
-        .filter(
-            L3OutputPackage.session_id == session_id,
-            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
-            L3OutputPackage.output_package_id == output_package_id,
-            L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
-        )
-        .one_or_none()
-    )
-
-
 def _aps_handoff_dispatch_response(
     *,
     request_id: str,
@@ -3754,160 +3733,6 @@ def _aps_handoff_dispatch_response(
             execution_enabled=False,
             package_review_enabled=False,
         ),
-    }
-
-
-def _aps_bundle_identity_for_external_export_download(
-    db: Session,
-    *,
-    session_id: str,
-    reconciliation_record_id: str,
-    dispatch_state: dict[str, Any],
-    error_prefix: str,
-    existing_readiness: dict[str, Any] | None = None,
-    validate_source_artifact: bool = True,
-) -> dict[str, Any]:
-    if dispatch_state.get("aps_handoff_state") != APS_HANDOFF_DISPATCHED_STATE:
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_requires_aps_handoff_dispatch",
-            "External export/download readiness requires recorded aps_handoff_dispatched state.",
-            status="blocked",
-            http_status=409,
-            blocked_fields=["aps_handoff_state"],
-            next_allowed_actions=["record_aps_handoff_dispatch"],
-        )
-    if dispatch_state.get("aps_output_package_kind") != PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF:
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_aps_package_kind_mismatch",
-            "Recorded APS handoff dispatch must reference an aps_evidence_bundle_handoff package.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_output_package_kind"],
-        )
-    package = _aps_handoff_package_for_dispatch(
-        db,
-        session_id=session_id,
-        reconciliation_record_id=reconciliation_record_id,
-        dispatch_state=dispatch_state,
-    )
-    if package is None:
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_aps_package_missing",
-            "Recorded APS handoff dispatch does not match an existing APS evidence-bundle handoff package.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_output_package_id"],
-        )
-    aps_bundle_ref = str(package.payload_ref or "").strip()
-    if not aps_bundle_ref or aps_bundle_ref != str(dispatch_state.get("aps_bundle_ref") or "").strip():
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_aps_bundle_ref_mismatch",
-            "Recorded APS bundle ref does not match the APS handoff package payload ref.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_bundle_ref"],
-        )
-    aps_summary = package.summary_json or {}
-    aps_bundle_id = str(aps_summary.get("bundle_id") or "").strip()
-    aps_schema_id = str(aps_summary.get("aps_schema_id") or APS_HANDOFF_SCHEMA_ID).strip()
-    if not aps_bundle_id or aps_bundle_id != str(dispatch_state.get("aps_bundle_id") or "").strip():
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_aps_bundle_id_mismatch",
-            "Recorded APS bundle id does not match the APS handoff package summary.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_bundle_id"],
-        )
-    if not aps_schema_id or aps_schema_id != str(dispatch_state.get("aps_schema_id") or "").strip():
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_aps_schema_mismatch",
-            "Recorded APS schema id does not match the APS handoff package summary.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_schema_id"],
-        )
-    if not validate_source_artifact:
-        source_artifact_hash = str((existing_readiness or {}).get("source_artifact_hash") or "").strip()
-        if not source_artifact_hash or str(package.payload_hash or "").strip() != source_artifact_hash:
-            raise Layer3WorkbenchError(
-                f"{error_prefix}_source_artifact_hash_mismatch",
-                "Recorded external export/download readiness hash does not match the APS handoff package payload hash.",
-                status="conflict",
-                http_status=409,
-                blocked_fields=["aps_bundle_hash"],
-            )
-        try:
-            source_artifact_size = int((existing_readiness or {}).get("source_artifact_size_bytes") or -1)
-        except (TypeError, ValueError):
-            source_artifact_size = -1
-        if source_artifact_size < 0:
-            raise Layer3WorkbenchError(
-                f"{error_prefix}_source_artifact_size_mismatch",
-                "Recorded external export/download readiness is missing the APS bundle artifact size.",
-                status="conflict",
-                http_status=409,
-                blocked_fields=["aps_bundle_size_bytes"],
-            )
-        return {
-            "aps_output_package_id": package.output_package_id,
-            "aps_output_package_kind": package.package_kind,
-            "aps_bundle_ref": aps_bundle_ref,
-            "aps_bundle_id": aps_bundle_id,
-            "aps_schema_id": aps_schema_id,
-            "source_artifact_ref": aps_bundle_ref,
-            "source_artifact_schema_id": aps_schema_id,
-            "source_artifact_hash": source_artifact_hash,
-            "source_artifact_size_bytes": source_artifact_size,
-        }
-    try:
-        from app.services.nrc_aps_evidence_bundle import EvidenceBundleError, load_persisted_bundle_artifact
-    except ModuleNotFoundError as exc:
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_source_artifact_validator_unavailable",
-            f"External export/download readiness could not load the APS bundle artifact validator: {exc}",
-            status="blocked",
-            http_status=409,
-            blocked_fields=["aps_bundle_ref"],
-            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
-        ) from exc
-    try:
-        bundle_payload, bundle_path = load_persisted_bundle_artifact(bundle_ref=aps_bundle_ref)
-    except EvidenceBundleError as exc:
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_source_artifact_unavailable",
-            f"External export/download readiness could not validate the existing APS bundle artifact: {exc.message}",
-            status="blocked",
-            http_status=409,
-            blocked_fields=["aps_bundle_ref"],
-            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
-        ) from exc
-    if str(bundle_payload.get("bundle_id") or "").strip() != aps_bundle_id:
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_source_artifact_mismatch",
-            "Validated APS bundle artifact does not match the recorded APS bundle id.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_bundle_id"],
-        )
-    source_artifact_hash = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
-    if str(package.payload_hash or "").strip() != source_artifact_hash:
-        raise Layer3WorkbenchError(
-            f"{error_prefix}_source_artifact_hash_mismatch",
-            "Validated APS bundle artifact hash does not match the APS handoff package payload hash.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_bundle_hash"],
-        )
-    return {
-        "aps_output_package_id": package.output_package_id,
-        "aps_output_package_kind": package.package_kind,
-        "aps_bundle_ref": aps_bundle_ref,
-        "aps_bundle_id": aps_bundle_id,
-        "aps_schema_id": aps_schema_id,
-        "source_artifact_ref": aps_bundle_ref,
-        "source_artifact_schema_id": aps_schema_id,
-        "source_artifact_hash": source_artifact_hash,
-        "source_artifact_size_bytes": int(bundle_path.stat().st_size),
     }
 
 
