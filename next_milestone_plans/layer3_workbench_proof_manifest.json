@@ -5591,5 +5591,77 @@
       "git diff --check"
     ],
     "next_boundary": "Implement the raw_mixed_existing_source_materialization_entry runtime only if the branch stays within doc 154: server-owned manifest, deterministic current-class source authority rows, no file writes, no Layer 3 flow start, and no source-family expansion."
+  },
+  "raw_ingestion_materialization_runtime_proof": {
+    "scope": "Bounded raw mixed-corpus source-authority materialization runtime for current admitted source classes only.",
+    "implementation_branch": "codex/l3-raw-materialization-runtime",
+    "live_behavior_change": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/154_RAW_INGESTION_MATERIALIZATION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/153_SOURCE_BREADTH_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/137_RAW_MIXED_BRIDGE_FREEZE.md"
+    ],
+    "reference_files": [
+      "backend/app/services/layer3_raw_mixed_materialization.py",
+      "backend/app/services/layer3_raw_mixed_bridge.py",
+      "backend/app/services/layer3_source_boundary.py",
+      "backend/app/api/layer3.py",
+      "backend/tests/test_layer3_raw_mixed_materialization.py",
+      "backend/tests/test_layer3_raw_mixed_bridge.py"
+    ],
+    "selected_raw_ingestion_mode": "raw_mixed_existing_source_materialization_entry",
+    "runtime_route": "POST /api/v1/layer3/source/mixed-corpus/materialize",
+    "owner_service": "backend/app/services/layer3_raw_mixed_materialization.py",
+    "request_dto": "Layer3RawMixedCorpusMaterializeRequest",
+    "response_dto": "Layer3RawMixedCorpusMaterializeResponse",
+    "request_schema_id": "layer3.raw_mixed_corpus_materialize_request.v1",
+    "response_schema_id": "layer3.raw_mixed_corpus_materialize_result.v1",
+    "manifest_schema_id": "layer3.raw_mixed_corpus_materialization_manifest.v1",
+    "admitted_source_classes": [
+      "dataset_version",
+      "aps_content_document"
+    ],
+    "database_rows_written": [
+      "Dataset",
+      "DatasetVersion",
+      "VariableDefinition",
+      "DatasetRow",
+      "VariableProfile",
+      "DatasetSourceProvenance",
+      "ConnectorRun",
+      "ConnectorRunTarget",
+      "ApsContentDocument",
+      "ApsContentChunk",
+      "ApsContentLinkage"
+    ],
+    "seed_route_distinction": "POST /api/v1/layer3/source/mixed-corpus/seed remains no-write and seed-only.",
+    "negative_invariants": [
+      "no file writes",
+      "no Layer 3 flow state during materialization",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no model or migration change",
+      "no provider/public URL or signed URL generation",
+      "no connector or destination dispatch",
+      "no package mutation or reconstruction",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no rendered UI control or theme behavior change",
+      "no frontend-only durable authority"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\backend\\app\\api\\layer3.py .\\backend\\app\\services\\layer3_raw_mixed_materialization.py .\\backend\\tests\\test_layer3_raw_mixed_materialization.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_raw_mixed_materialization.py -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_raw_mixed_bridge.py -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q",
+      "git diff --check"
+    ],
+    "next_boundary": "Prove whether materialized source IDs should feed a deeper bounded E2E or rendered UI path; do not expand source classes, ingestion modes, UI controls, connectors, RAG/vector, provider URLs, auth/security, or package behavior without a separate freeze."
   }
 }

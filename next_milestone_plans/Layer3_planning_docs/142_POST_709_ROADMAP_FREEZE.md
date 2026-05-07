@@ -69,8 +69,8 @@ Mode: `qual_aps_rendered_downstream_existing_controls_only`.
 ### 2. Source Breadth And Raw Ingestion
 
 - goal: freeze then implement only the first source-authority materialization pass that remains within existing admitted source families unless a later source-family freeze expands them.
-- current blocker: doc `123` keeps runtime source expansion blocked, doc `137` is seed-only over existing authority rows, doc `153` freezes source breadth as `current_admitted_classes_with_server_owned_raw_materialization_only`, and doc `154` freezes the first materialization entry as `raw_mixed_existing_source_materialization_entry`.
-- implementation-entry freeze required: satisfied for source breadth by doc `153` and for the first raw-ingestion materialization boundary by doc `154`; runtime implementation still requires a separate code branch and validation.
+- current blocker: doc `123` keeps broader runtime source expansion blocked, doc `137` is seed-only over existing authority rows, doc `153` freezes source breadth as `current_admitted_classes_with_server_owned_raw_materialization_only`, and doc `154` now governs the bounded `raw_mixed_existing_source_materialization_entry` runtime.
+- implementation-entry freeze required: satisfied for source breadth by doc `153` and for the first raw-ingestion materialization boundary by doc `154`; broader source-family expansion still requires a separate freeze and validation.
 - likely files: source services, API DTOs, migrations/models only if frozen, source-boundary tests, raw bridge tests, bounded E2E.
 - required tests: upload/path traversal/hash/storage-root/authority-row behavior; fail-closed unsupported source families; no Layer 3 flow started by ingestion alone.
 - negative invariants: no local-directory traversal, no arbitrary local paths, no web connector retrieval, no RAG/vector indexing, no connector dispatch, no provider URL, no hidden LLM.
