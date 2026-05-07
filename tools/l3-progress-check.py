@@ -149,6 +149,9 @@ MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
 )
+RAW_MIXED_BRIDGE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_raw_mixed_bridge.py"
+)
 PREFLIGHT_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_preflight_request_contract.py"
 )
@@ -207,6 +210,7 @@ PREFLIGHT_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_preflight_request_contract.py"
 )
 APS_SOURCE_FAMILY_TEST = ROOT / "backend" / "tests" / "test_layer3_aps_source_family.py"
+RAW_MIXED_BRIDGE_TEST = ROOT / "backend" / "tests" / "test_layer3_raw_mixed_bridge.py"
 QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_mockup_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
@@ -3805,16 +3809,18 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
 def _check_raw_mixed_bridge_freeze(errors: list[str]) -> None:
     doc_text = _read_required_text(RAW_MIXED_BRIDGE_FREEZE, errors)
     for term in (
-        "Status: planning/control implementation-entry freeze only for `raw_mixed_corpus_bridge_seed_only`",
-        "No runtime behavior is admitted by this document.",
+        "Status: implementation-entry freeze plus bounded runtime contract for `raw_mixed_corpus_bridge_seed_only`",
         "selected_raw_mixed_bridge_mode: `raw_mixed_corpus_bridge_seed_only`",
-        "future owner service: `backend/app/services/layer3_raw_mixed_bridge.py`",
-        "future route: `POST /api/v1/layer3/source/mixed-corpus/seed`",
-        "future request DTO: `Layer3RawMixedCorpusSeedRequest`",
-        "future response DTO: `Layer3RawMixedCorpusSeedResponse`",
+        "Runtime implementation scope is limited to `POST /api/v1/layer3/source/mixed-corpus/seed`",
+        "owner service: `backend/app/services/layer3_raw_mixed_bridge.py`",
+        "request DTO: `Layer3RawMixedCorpusSeedRequest`",
+        "response DTO: `Layer3RawMixedCorpusSeedResponse`",
         "layer3.raw_mixed_corpus_seed_request.v1",
         "layer3.raw_mixed_corpus_seed_result.v1",
+        "layer3.raw_mixed_corpus_seed_manifest.v1",
         "Source seeding remains separate from Layer 3 flow execution.",
+        "writes no database rows",
+        "server-owned storage-root manifest",
         "`dataset_version` and `aps_content_document`",
         "`local_upload`",
         "`local_directory`",
@@ -3826,6 +3832,63 @@ def _check_raw_mixed_bridge_freeze(errors: list[str]) -> None:
         if term not in doc_text:
             errors.append(f"{_rel(RAW_MIXED_BRIDGE_FREEZE)} missing raw mixed bridge freeze term: {term}")
 
+    service_text = _read_required_text(RAW_MIXED_BRIDGE_SERVICE, errors)
+    for term in (
+        "RAW_MIXED_CORPUS_SEED_REQUEST_SCHEMA_ID = \"layer3.raw_mixed_corpus_seed_request.v1\"",
+        "RAW_MIXED_CORPUS_SEED_RESPONSE_SCHEMA_ID = \"layer3.raw_mixed_corpus_seed_result.v1\"",
+        "RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID = \"layer3.raw_mixed_corpus_seed_manifest.v1\"",
+        "RAW_MIXED_CORPUS_SEED_MODE = \"raw_mixed_corpus_bridge_seed_only\"",
+        "RAW_MIXED_CORPUS_ALLOWED_FIELDS = frozenset(",
+        "RAW_MIXED_CORPUS_FORBIDDEN_FIELDS = frozenset(",
+        "def seed_raw_mixed_corpus(payload: Mapping[str, Any], db: Session) -> dict[str, Any]:",
+        "def _server_owned_manifest_path(artifact_manifest_ref: str) -> Path:",
+        "Path(settings.storage_dir)",
+        "db.get(DatasetVersion, dataset_version_id)",
+        "DatasetSourceProvenance.connector_run_id == aps_run_id",
+        "ApsContentLinkage.run_id == aps_run_id",
+        "\"layer3_flow_started\": False",
+        "RAW_MIXED_CORPUS_NEXT_ACTION",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(RAW_MIXED_BRIDGE_SERVICE)} missing raw mixed bridge runtime term: {term}")
+    for forbidden_service_term in ("db.add(", "db.commit(", "open(", "glob(", "rglob("):
+        if forbidden_service_term in service_text:
+            errors.append(
+                f"{_rel(RAW_MIXED_BRIDGE_SERVICE)} contains forbidden seed-only service term: {forbidden_service_term}"
+            )
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "layer3_raw_mixed_bridge",
+        "class Layer3RawMixedCorpusSeedRequest",
+        "class Layer3RawMixedCorpusSeedResponse",
+        "RAW_MIXED_CORPUS_SEED_REQUEST_SCHEMA",
+        "\"/source/mixed-corpus/seed\"",
+        "layer3_raw_mixed_bridge.seed_raw_mixed_corpus",
+        "payload.model_dump(exclude_unset=True)",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing raw mixed bridge API term: {term}")
+
+    test_text = _read_required_text(RAW_MIXED_BRIDGE_TEST, errors)
+    for term in (
+        "test_layer3_raw_mixed_seed_reuses_existing_sources_without_flow_side_effects",
+        "test_layer3_raw_mixed_seed_rejects_forbidden_fields_before_service_mutation",
+        "test_layer3_raw_mixed_seed_rejects_unsupported_source_class_without_side_effects",
+        "test_layer3_raw_mixed_seed_rejects_stale_manifest_hash_without_side_effects",
+        "test_layer3_raw_mixed_seed_rejects_unknown_aps_target_without_side_effects",
+        "test_layer3_raw_mixed_seed_rejects_missing_client_request_id_before_service",
+        "_drive_preview_only_flow",
+        "_counts(client)",
+        "_storage_files()",
+        "/api/v1/layer3/source/mixed-corpus/seed",
+        "DatasetSourceProvenance",
+        "raw_mixed_artifact_manifest_hash_mismatch",
+        "raw_mixed_aps_target_not_found",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(RAW_MIXED_BRIDGE_TEST)} missing raw mixed bridge proof term: {term}")
+
     service_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
     for term in (
         "SOURCE_BOUNDARY_MODE = \"supported_source_classes_only\"",
@@ -3836,27 +3899,30 @@ def _check_raw_mixed_bridge_freeze(errors: list[str]) -> None:
 
     for path, terms in {
         BOARD: (
-            "Raw mixed-corpus bridge entry freeze",
-            "planning/control only",
+            "Raw mixed-corpus seed-only bridge runtime",
+            "live bounded runtime",
             "raw_mixed_corpus_bridge_seed_only",
-            "No runtime behavior",
+            "POST /api/v1/layer3/source/mixed-corpus/seed",
+            "server-owned storage-root manifest",
             "local upload, local-directory ingestion",
             "flow execution inside seeding",
         ),
         MANIFEST: (
-            "latest_raw_mixed_bridge_freeze_branch",
-            "raw_mixed_bridge_freeze",
+            "latest_raw_mixed_bridge_seed_branch",
+            "raw_mixed_bridge_seed",
             "137_RAW_MIXED_BRIDGE_FREEZE.md",
+            "backend/app/services/layer3_raw_mixed_bridge.py",
+            "backend/tests/test_layer3_raw_mixed_bridge.py",
             "raw_mixed_corpus_bridge_seed_only",
-            "admits no runtime behavior",
+            "seed-only route",
         ),
         PROOF_MANIFEST: (
-            "latest_raw_mixed_bridge_freeze_branch",
-            "latest_raw_mixed_bridge_freeze_input_main_commit",
-            "latest_raw_mixed_bridge_freeze_live_behavior_change",
-            "latest_raw_mixed_bridge_freeze_summary",
-            "doc 137 raw mixed bridge governance is planning/control only",
-            "raw mixed-corpus bridge runtime before a later implementation PR proves raw_mixed_corpus_bridge_seed_only",
+            "latest_raw_mixed_bridge_seed_branch",
+            "latest_raw_mixed_bridge_seed_input_main_commit",
+            "latest_raw_mixed_bridge_seed_live_behavior_change",
+            "latest_raw_mixed_bridge_seed_summary",
+            "doc 137 raw mixed bridge governance now admits only raw_mixed_corpus_bridge_seed_only",
+            "broad raw mixed-corpus ingestion beyond raw_mixed_corpus_bridge_seed_only",
         ),
     }.items():
         text = _read_required_text(path, errors)
@@ -8408,6 +8474,7 @@ def main() -> int:
         MODELS,
         GATE_B_STATE_SERVICE,
         SOURCE_BOUNDARY_SERVICE,
+        RAW_MIXED_BRIDGE_SERVICE,
         PREFLIGHT_REQUEST_CONTRACT_SERVICE,
         APS_SOURCE_FAMILY_SERVICE,
         QUAL_APS_SERVICE,
@@ -8444,6 +8511,7 @@ def main() -> int:
         SOURCE_BOUNDARY_TEST,
         PREFLIGHT_REQUEST_CONTRACT_TEST,
         APS_SOURCE_FAMILY_TEST,
+        RAW_MIXED_BRIDGE_TEST,
         QUAL_APS_TEST,
         MOCKUP_BOUNDARY_TEST,
         SESSION_ENTRY_TEST,
