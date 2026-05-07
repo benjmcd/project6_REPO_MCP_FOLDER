@@ -739,6 +739,18 @@ test('Layer 3 workbench drives qualitative APS package handoff to external readi
   expect(commit.package_review_submit_enabled).toBe(true);
   await expectJson(await postCommitSummaryPromise);
 
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await attachSessionToWorkbench(page, sessionId, ['aps_content_document']);
+  const resumedSummaryResponsePromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${sessionId}`));
+  await page.locator('#result-review-refresh').click();
+  const resumedSummary = await expectJson(await resumedSummaryResponsePromise);
+  expect(resumedSummary.package_construction.state).toBe('package_constructed');
+  expect(resumedSummary.package_review_submit.state).toBe('package_review_submit_ready');
+  expect(resumedSummary.package_review_submit.package_review_preview_hash).toBe(commit.package_review_preview_hash);
+  expect(resumedSummary.package_review_submit.construction_basis_hash).toBe(commit.construction_basis_hash);
+  expect(resumedSummary.package_review_submit.payload_refs).toEqual(commit.payload_refs);
+  expect(resumedSummary.package_review_submit.payload_hashes).toEqual(commit.payload_hashes);
+
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_ready');
   await expect(page.locator('#package-review-submit')).toBeEnabled();
 
