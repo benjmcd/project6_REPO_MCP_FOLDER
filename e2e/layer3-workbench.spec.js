@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
   expectJson,
-  expectJsonStatus,
   requestId,
   expectOnlyPayloadKeys,
   formPostPayload,
@@ -198,6 +197,21 @@ async function submitRenderedGateB(page, material) {
   const gateBPayload = (await gateBRequestPromise).postDataJSON();
   expect(gateBPayload.material_preview_hash).toBe(material.material_preview_hash);
   expect(gateBPayload.candidate_decisions).toHaveLength(3);
+  const submittedDatasetVersionIds = gateBPayload.candidate_decisions
+    .filter((decision) => decision.decision_basis?.source_identity?.source_class === 'dataset_version')
+    .map((decision) => decision.decision_basis.source_identity.dataset_version_id)
+    .sort();
+  const materialDatasetVersionIds = material.material_candidates
+    .filter((candidate) => candidate.source_class === 'dataset_version')
+    .map((candidate) => candidate.source_identity.dataset_version_id)
+    .sort();
+  expect(submittedDatasetVersionIds).toEqual(materialDatasetVersionIds);
+  for (const decision of gateBPayload.candidate_decisions) {
+    expect(decision.decision_basis.source_identity).toBeTruthy();
+    expect(decision.decision_basis.source_provenance).toBeTruthy();
+    expect(decision.decision_basis.payload).toBeTruthy();
+    expect(decision.decision_basis.load_summary).toBeTruthy();
+  }
   expectNoDeferredRawMixedPayloadFields(gateBPayload);
   const gateB = await expectJson(await gateBResponsePromise);
   expect(gateB.status).toBe('ok');
@@ -255,7 +269,7 @@ async function commitRenderedGateC(page, sessionId) {
   return gateC;
 }
 
-async function previewRenderedPlanBlocked(page, sessionId) {
+async function previewRenderedPlan(page, sessionId, seed) {
   const planRequestPromise = page.waitForRequest((planRequest) => (
     planRequest.url().includes('/api/v1/layer3/plan/preview') && planRequest.method() === 'POST'
   ));
@@ -269,16 +283,62 @@ async function previewRenderedPlanBlocked(page, sessionId) {
   expect(payload.include_exclusions).toBe(true);
   expect(payload.preview_scope).toBe('owner_service_default');
   expectNoDeferredRawMixedPayloadFields(payload);
-  const planPreviewBlock = await expectJsonStatus(await planResponsePromise, 409);
-  expect(planPreviewBlock.schema_id).toBe('layer3.workbench_error.v1');
-  expect(planPreviewBlock.error_code).toBe('no_admissible_plan');
-  await expect(page.locator('#plan-panel')).toContainText('Plan Preview Blocked');
-  await expect(page.locator('#plan-panel')).toContainText('no admissible analysis sets');
-  await expect(page.locator('#plan-approve')).toBeDisabled();
-  return planPreviewBlock;
+  const planPreview = await expectJson(await planResponsePromise);
+  expect(planPreview.schema_id).toBe('layer3.plan_preview_result.v1');
+  expect(planPreview.preview_only).toBe(true);
+  expect(planPreview.plan_preview.approval_ready).toBe(true);
+  expect(planPreview.plan_preview.admitted_sets).toHaveLength(1);
+  expect(planPreview.plan_preview.excluded_sets).toHaveLength(1);
+  expect(planPreview.plan_preview.excluded_sets[0].reason_code).toBe(
+    'qualitative_aps_companion_provenance_not_pass_candidate',
+  );
+  expect(planPreview.plan_preview.planned_passes).toHaveLength(1);
+  const plannedPass = planPreview.plan_preview.planned_passes[0];
+  expect(plannedPass.pass_type).toBe('associated_cohort');
+  expect(plannedPass.pass_scope).toBe('quantitative_associated_cohort_dataset_version');
+  expect(plannedPass.selected_method_name).toBe('descriptive_summary');
+  expect([...plannedPass.source_dataset_version_ids].sort()).toEqual([...seed.dataset_version_ids].sort());
+  await expect(page.locator('#plan-panel')).toContainText('Planned Passes');
+  await expect(page.locator('#plan-panel')).toContainText('associated_cohort');
+  await expect(page.locator('#plan-approve')).toBeEnabled();
+  return planPreview;
 }
 
-async function assertRenderedPlanPreviewBlockStopsBeforeExecution(page, sessionId, layer3ApiRequests) {
+async function approveRenderedPlan(page, sessionId, planPreview) {
+  const approvalRequestPromise = page.waitForRequest((approvalRequest) => (
+    approvalRequest.url().includes('/api/v1/layer3/plan/approve') && approvalRequest.method() === 'POST'
+  ));
+  const approvalResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/plan/approve')
+  ));
+  await page.locator('#plan-approve').click();
+  const payload = (await approvalRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(payload, [
+    'approval_scope',
+    'client_request_id',
+    'operator_confirmation',
+    'preview_hash',
+    'preview_id',
+    'schema_id',
+    'session_id',
+  ]);
+  expect(payload.session_id).toBe(sessionId);
+  expect(payload.preview_id).toBe(planPreview.preview_id);
+  expect(payload.preview_hash).toBe(planPreview.preview_hash);
+  expect(payload.operator_confirmation).toBe(true);
+  expect(payload.approval_scope).toBe('owner_service_default');
+  expectNoDeferredRawMixedPayloadFields(payload);
+  const approval = await expectJson(await approvalResponsePromise);
+  expect(approval.schema_id).toBe('layer3.plan_approval_result.v1');
+  expect(approval.next_state).toBe('plan_approved');
+  expect(approval.execution_started).toBe(false);
+  expect(approval.approval_only).toBe(true);
+  expect(approval.analysis_plan_id).toBeTruthy();
+  await expect(page.locator('#plan-approve')).toBeDisabled();
+  return approval;
+}
+
+async function assertRenderedPlanApprovalStopsBeforeExecution(page, sessionId, layer3ApiRequests) {
   await expect(page.locator('#plan-approve')).toBeDisabled();
   await expect(page.locator('#result-status-inspect')).toBeDisabled();
   await expect(page.locator('#result-review-submit')).toBeDisabled();
@@ -292,7 +352,7 @@ async function assertRenderedPlanPreviewBlockStopsBeforeExecution(page, sessionI
   ));
   await page.locator('#result-review-refresh').click();
   const sessionSummary = await expectJson(await sessionSummaryResponsePromise);
-  expect(sessionSummary.plan_approval.approved).toBe(false);
+  expect(sessionSummary.plan_approval.approved).toBe(true);
   expect(sessionSummary.plan_approval.pass_run_count).toBe(0);
   expect(sessionSummary.execution_selection.selected).toBe(false);
   expect(sessionSummary.analysis_execution_start.available).toBe(false);
@@ -304,7 +364,6 @@ async function assertRenderedPlanPreviewBlockStopsBeforeExecution(page, sessionI
     '/execution/start',
     '/execution/result/status',
     '/execution/result/review',
-    '/plan/approve',
     '/package/review/',
     '/handoff/',
   ]);
@@ -679,15 +738,16 @@ test('Layer 3 workbench uses raw mixed seed bridge setup for rendered material r
   await expectNoDeferredRawMixedControls(page);
 });
 
-test('Layer 3 workbench uses raw mixed seed bridge setup through rendered Gate C and plan-preview boundary', async ({ page, request }) => {
+test('Layer 3 workbench uses raw mixed seed bridge setup through rendered Gate C and plan approval', async ({ page, request }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   const seed = await openRawMixedSeededWorkbench(page, request);
   const { material } = await runRawMixedRenderedMaterialPreview(page, seed);
   const gateB = await submitRenderedGateB(page, material);
   await previewRenderedGateC(page, gateB.session_id);
   await commitRenderedGateC(page, gateB.session_id);
-  await previewRenderedPlanBlocked(page, gateB.session_id);
-  await assertRenderedPlanPreviewBlockStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, seed);
+  await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
 });
 
 test('Layer 3 workbench renders selected APS DatasetVersion trace detail from material preview', async ({ page, request }) => {
