@@ -518,11 +518,31 @@ async function assertRenderedPlanApprovalStopsBeforeExecution(page, sessionId, l
   ]);
 }
 
+async function reloadRecoveredExecutionSession(page, sessionId) {
+  const sessionSummaryResponsePromise = page.waitForResponse((response) => (
+    response.url().includes(`/api/v1/layer3/session/${sessionId}`)
+  ));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const sessionSummary = await expectJson(await sessionSummaryResponsePromise);
+  expect(sessionSummary.session_id).toBe(sessionId);
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+  return sessionSummary;
+}
+
 async function selectAndStartRenderedExecution(page, sessionId, approval, planPreview) {
   await expect(page.locator('#execution-selection-start-panel')).toContainText('execution_selection_ready');
   await page.locator('#theme-selector').selectOption('dark');
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+  const recoveredBeforeSelection = await reloadRecoveredExecutionSession(page, sessionId);
+  expect(recoveredBeforeSelection.execution_selection.available).toBe(true);
+  expect(recoveredBeforeSelection.execution_selection.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(recoveredBeforeSelection.execution_selection.source_preview_id).toBe(planPreview.preview_id);
+  expect(recoveredBeforeSelection.execution_selection.source_preview_hash).toBe(planPreview.preview_hash);
+  await expect(page.locator('#execution-selection-start-panel')).toContainText('execution_selection_ready');
+  await expect(page.locator('#execution-select')).toBeEnabled();
+  await expect(page.locator('#execution-start')).toBeDisabled();
 
   const selectionRequestPromise = page.waitForRequest((selectionRequest) => (
     selectionRequest.url().includes('/api/v1/layer3/execution/select') && selectionRequest.method() === 'POST'
@@ -560,6 +580,14 @@ async function selectAndStartRenderedExecution(page, sessionId, approval, planPr
   await expect(page.locator('#execution-start')).toBeEnabled();
   await expectStepAvailable(page, 'execution');
   await expect(page.locator('#result-status-inspect')).toBeDisabled();
+
+  const recoveredAfterSelection = await reloadRecoveredExecutionSession(page, sessionId);
+  expect(recoveredAfterSelection.execution_selection.selected).toBe(true);
+  expect(recoveredAfterSelection.execution_selection.pass_run_ids).toEqual(selection.pass_run_ids);
+  expect(recoveredAfterSelection.execution_selection.source_preview_id).toBe(planPreview.preview_id);
+  await expect(page.locator('#execution-selection-start-panel')).toContainText('execution_selected');
+  await expect(page.locator('#execution-select')).toBeDisabled();
+  await expect(page.locator('#execution-start')).toBeEnabled();
 
   await page.locator('#theme-selector').selectOption('workbench');
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');

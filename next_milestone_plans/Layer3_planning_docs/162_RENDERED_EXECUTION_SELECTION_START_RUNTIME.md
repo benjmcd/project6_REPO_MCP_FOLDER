@@ -55,6 +55,7 @@ That proof verifies:
 - request payload allowlists for `/execution/select` and `/execution/start`;
 - only returned server IDs are used after materialization;
 - plan approval still stops before execution until the operator clicks the rendered selection/start controls;
+- reload/session recovery can derive execution selection/start authority from server session summary when local plan preview, plan approval, or execution selection memory is absent;
 - result status becomes available only after execution start;
 - result review, package, and handoff/export routes are not called;
 - light, dark, and workbench theme states keep the execution panel visible.
