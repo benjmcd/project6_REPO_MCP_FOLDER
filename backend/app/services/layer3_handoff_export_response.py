@@ -4,7 +4,10 @@ from typing import Any
 
 from app.models.models import L3OutputPackage, L3ReconciliationRecord
 from app.services.layer3_authority_rail import authority_rail
-from app.services.layer3_package_submit_response import COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+from app.services.layer3_package_submit_response import (
+    COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+    QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+)
 from app.services.layer3_preview_contract import preview_identity
 from app.services.layer3_response_contract import base_response
 from app.services.layer3_utils import json_clone
@@ -16,6 +19,7 @@ from app.services.layer3_workbench_package_state import (
 
 HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.handoff_export_prepare.v1"
 COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.cohort_handoff_export_prepare.v1"
+QUAL_APS_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.qual_aps_handoff_export_prepare.v1"
 
 
 def handoff_export_prepare_response(
@@ -44,6 +48,7 @@ def handoff_export_prepare_response(
         "analysis_run_id": analysis_run_id,
         "result_review_record_ref": result_review_record_ref,
         "package_review_preview_hash": package_review_preview_hash,
+        "construction_basis_hash": prepare_state.get("construction_basis_hash"),
         "reconciliation_record_id": reconciliation_record.reconciliation_record_id,
         "output_package_ids": [package.output_package_id for package in ordered_packages],
         "package_kinds": [package.package_kind for package in ordered_packages],
@@ -59,6 +64,10 @@ def handoff_export_prepare_response(
         "external_handoff_enabled": False,
         "external_export_enabled": False,
         "dispatch_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_url_enabled": False,
         "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         "next_state": prepare_state["handoff_export_state"],
         "prepare_record_ref": prepare_state["prepare_record_ref"],
@@ -77,6 +86,9 @@ def handoff_export_prepare_response(
     if cohort_package_construction_source(prepare_state.get("package_construction_source_gate")):
         body["schema_id"] = COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
         body["package_review_submit_schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    if prepare_state.get("package_construction_source_gate") == "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE":
+        body["schema_id"] = QUAL_APS_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
+        body["package_review_submit_schema_id"] = QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     for key in (
         "pass_type",
         "pass_scope",

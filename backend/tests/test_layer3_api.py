@@ -1301,6 +1301,7 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
         "payload_hashes",
         "package_review_submit_record_ref",
         "package_review_state",
+        "package_review_submit_schema_id",
         "handoff_target",
         "export_mode",
         "operator_decision",
@@ -3385,11 +3386,14 @@ def _handoff_export_prepare_payload(
         "payload_hashes": commit_body["payload_hashes"],
         "package_review_submit_record_ref": submit_body["submit_record_ref"],
         "package_review_state": submit_body["package_review_state"],
+        "package_review_submit_schema_id": submit_body.get("schema_id", "layer3.package_review_submit.v1"),
         "handoff_target": "internal_export_envelope",
         "export_mode": "prepare_only",
         "operator_decision": operator_decision,
         "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
     }
+    if commit_body.get("construction_basis_hash") is not None:
+        payload["construction_basis_hash"] = commit_body["construction_basis_hash"]
     if decision_notes is not None:
         payload["decision_notes"] = decision_notes
     return payload
@@ -8396,6 +8400,65 @@ def test_layer3_api_handoff_export_prepare_records_reference_envelope_without_si
     ]
 
 
+def test_layer3_api_handoff_export_prepare_accepts_legacy_submit_state_without_schema_id(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_payload,
+        submit_body,
+    ) = _submit_quant_package_review(client, tmp_path, request_id="api-handoff-prepare-legacy-submit")
+    payload = _handoff_export_prepare_payload(
+        request_id="api-handoff-prepare-legacy-submit-prepare",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        summary_json = json.loads(json.dumps(reconciliation.summary_json))
+        assert summary_json["package_review_submit"]["package_review_submit_schema_id"] == (
+            "layer3.package_review_submit.v1"
+        )
+        del summary_json["package_review_submit"]["package_review_submit_schema_id"]
+        reconciliation.summary_json = summary_json
+        db.commit()
+    finally:
+        db.close()
+
+    prepare = client.post("/api/v1/layer3/handoff/export/prepare", json=payload)
+    assert prepare.status_code == 200, prepare.json()
+    body = prepare.json()
+    assert body["schema_id"] == "layer3.handoff_export_prepare.v1"
+    assert body["handoff_export_state"] == "handoff_export_prepared"
+    assert body["package_review_submit_record_ref"] == submit_body["submit_record_ref"]
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        assert "package_review_submit_schema_id" not in reconciliation.summary_json["package_review_submit"]
+        assert reconciliation.summary_json["handoff_export_prepare"]["package_review_submit_schema_id"] == (
+            "layer3.package_review_submit.v1"
+        )
+    finally:
+        db.close()
+
+
 def test_layer3_api_handoff_export_prepare_requires_package_review_submit(
     client: TestClient,
     tmp_path,
@@ -8492,6 +8555,7 @@ def test_layer3_api_handoff_export_prepare_prechecks_fail_closed(
         "payload_hashes",
         "package_review_submit_record_ref",
         "package_review_state",
+        "package_review_submit_schema_id",
         "handoff_target",
         "export_mode",
         "operator_decision",
