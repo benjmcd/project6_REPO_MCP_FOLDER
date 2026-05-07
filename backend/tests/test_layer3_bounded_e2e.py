@@ -210,23 +210,39 @@ class Layer3StateAssertions:
                 for snapshot in snapshots
                 if snapshot.source_shape == "aps_content_document"
             )
+            dataset_group_ids = {
+                snapshot.co_retrieval_group_id
+                for snapshot in snapshots
+                if snapshot.source_shape == "dataset_version"
+            }
+            aps_group_ids = {
+                snapshot.co_retrieval_group_id
+                for snapshot in snapshots
+                if snapshot.source_shape == "aps_content_document"
+            }
+            assert len(dataset_group_ids) == 1
+            assert None not in dataset_group_ids
+            assert not dataset_group_ids.intersection(aps_group_ids)
             for snapshot in snapshots:
                 _assert_file_sha256(snapshot.payload_ref, snapshot.payload_hash)
 
-    def assert_gate_c_current_api_boundary(self, *, session_id: str) -> None:
+    def assert_gate_c_associated_cohort_boundary(self, *, session_id: str) -> None:
         with self._client.layer3_session_factory() as db:
             assert db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count() == 3
             assert db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count() == 3
-            assert db.query(L3AnalysisGroup).filter(L3AnalysisGroup.session_id == session_id).count() == 3
+            assert db.query(L3AnalysisGroup).filter(L3AnalysisGroup.session_id == session_id).count() == 2
             sets = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).all()
-            assert len(sets) == 3
-            assert {analysis_set.set_type for analysis_set in sets} == {"single_item"}
-            associated_sets = (
+            assert len(sets) == 2
+            assert {analysis_set.set_type for analysis_set in sets} == {"associated_cohort", "single_item"}
+            associated_set = (
                 db.query(L3AnalysisSet)
                 .filter(L3AnalysisSet.session_id == session_id, L3AnalysisSet.set_type == "associated_cohort")
-                .all()
+                .one()
             )
-            assert associated_sets == []
+            assert len(associated_set.analysis_unit_ids_json) == 2
+            assert associated_set.formation_basis_json["group_basis"] == "same_co_retrieval_group"
+            assert associated_set.formation_basis_json["analysis_modality"] == "quantitative"
+            assert "requested_method_name" not in associated_set.formation_basis_json
             for analysis_set in sets:
                 assert "requested_method_name" not in analysis_set.formation_basis_json
 
@@ -248,7 +264,7 @@ class Layer3StateAssertions:
         assert counts["signed_reference_audit_events"] == 0
 
 
-def test_layer3_bounded_e2e_api_associated_cohort_stops_at_current_typing_boundary(
+def test_layer3_bounded_e2e_api_associated_cohort_forms_at_gate_c_boundary(
     client: TestClient,
     tmp_path: Path,
 ) -> None:
@@ -288,9 +304,7 @@ def test_layer3_bounded_e2e_api_associated_cohort_stops_at_current_typing_bounda
     gate_c = driver.gate_c_commit(session_id=session_id)
     assert gate_c["next_state"] == "plan_preview_ready"
     assert gate_c["authority_rail"]["typing_status"] == "committed"
-    # Current API Gate B persists one descriptor per approved material candidate,
-    # so Gate C has no co-retrieval authority to form an associated cohort.
-    state.assert_gate_c_current_api_boundary(session_id=session_id)
+    state.assert_gate_c_associated_cohort_boundary(session_id=session_id)
     state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
 
 
