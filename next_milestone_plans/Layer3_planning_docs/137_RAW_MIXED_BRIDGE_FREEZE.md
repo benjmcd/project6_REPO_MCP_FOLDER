@@ -1,36 +1,39 @@
 # Layer 3 Raw Mixed Bridge Freeze
 
-Status: planning/control implementation-entry freeze only for `raw_mixed_corpus_bridge_seed_only` on branch `codex/l3-raw-mixed-bridge-freeze` from `project6-origin/main=70edbbf6`. No runtime behavior is admitted by this document.
+Status: implementation-entry freeze plus bounded runtime contract for `raw_mixed_corpus_bridge_seed_only` on branch `codex/l3-raw-mixed-bridge-seed` from `project6-origin/main=b6446d53`.
 
-This artifact selects the next source-side bridge decision after the bounded API-created mixed `dataset_version` plus APS companion path from PR #689. It does not implement ingestion, add a route, add models or migrations, change existing Layer 3 services, start a Layer 3 flow, accept local uploads, traverse local directories, fetch web connectors, read unbounded runtime DB sources, build RAG/vector indexes, mutate packages, dispatch connectors, generate provider/public URLs, activate mockups, or change auth/security behavior.
+This artifact now governs the bounded seed-only runtime after the bounded API-created mixed `dataset_version` plus APS companion path from PR #689 and the planning/control freeze from PR #690. Runtime implementation scope is limited to `POST /api/v1/layer3/source/mixed-corpus/seed`; it reuses already materialized admitted source authority from a hash-checked server-owned storage-root manifest. It does not implement broad ingestion, add models or migrations, change downstream Layer 3 flow services, start a Layer 3 flow, accept local uploads, traverse local directories, fetch web connectors, read unbounded runtime DB sources, build RAG/vector indexes, mutate packages, dispatch connectors, generate provider/public URLs, activate mockups, or change auth/security behavior.
 
 ## Authority Snapshot
 
 - authority_ref: `project6-origin/main`
-- authority_commit: `70edbbf600c096ffcef8972d1839589488a02cec`
-- planning_branch: `codex/l3-raw-mixed-bridge-freeze`
+- authority_commit: `b6446d53ce0e1f90837d5d491c898ad5fd29a51b`
+- implementation_branch: `codex/l3-raw-mixed-bridge-seed`
 - predecessor runtime proof: PR `#689` bounded API-created `dataset_version` associated-cohort plus APS companion delivery path
+- predecessor planning/control proof: PR `#690` raw mixed bridge freeze
 - current source boundary: `123_SOURCE_EXPANSION_FREEZE.md`
 - current source owner: `backend/app/services/layer3_source_boundary.py`
+- raw mixed bridge owner: `backend/app/services/layer3_raw_mixed_bridge.py`
 - current supported source classes: `dataset_version`, `aps_content_document`
 - current bounded E2E proof: `backend/tests/test_layer3_bounded_e2e.py`
+- current raw mixed seed proof: `backend/tests/test_layer3_raw_mixed_bridge.py`
 - existing APS artifact services inspected: `backend/app/services/nrc_aps_artifact_ingestion.py`, `backend/app/services/nrc_aps_artifact_ingestion_gate.py`
 - existing post-session APS multisource owner inspected: `backend/app/services/layer3_aps_multisource.py`
 - evidence boundary: live source/tests and `tools/l3-progress-check.py` outrank this document
 
 ## Decision
 
-The selected future raw mixed bridge mode is exactly:
+The selected raw mixed bridge mode is exactly:
 
 - selected_raw_mixed_bridge_mode: `raw_mixed_corpus_bridge_seed_only`
 
-The future implementation may only bridge server-owned, already materialized APS artifacts into the existing admitted Layer 3 source classes before a Layer 3 flow begins:
+The runtime may only bridge server-owned, already materialized APS artifacts into the existing admitted Layer 3 source classes before a Layer 3 flow begins:
 
 - existing `dataset_version` source rows
 - existing `aps_content_document` source rows
 - existing APS provenance/linkage rows needed to make those two source classes traceable
 
-The future implementation must keep source seeding separate from Layer 3 flow execution. It may return stable source ids for a later normal Layer 3 API flow, but it must not call preflight, source preview, material preview, Gate B, Gate C, planning, execution, package, handoff, APS dispatch, or export/download endpoints as part of the seed action.
+The implementation must keep source seeding separate from Layer 3 flow execution. It may return stable source ids for a later normal Layer 3 API flow, but it must not call preflight, source preview, material preview, Gate B, Gate C, planning, execution, package, handoff, APS dispatch, or export/download endpoints as part of the seed action.
 
 ## Why This Is The Next Safe Boundary
 
@@ -38,26 +41,31 @@ PR #689 proved that the current Layer 3 API path can carry an already selected A
 
 Current `123_SOURCE_EXPANSION_FREEZE.md` still selects `supported_source_classes_only`. Therefore a direct implementation of local upload, directory ingestion, web connector retrieval, RAG/vector retrieval, or broad source adapter expansion would overrun current authority. The next safe step is to freeze a seed-only bridge that targets the existing admitted source classes and makes every broader source family remain blocked until separately selected.
 
-## Future Runtime Scope
+## Runtime Scope
 
-A later implementation PR may add only:
+The bounded implementation may add only:
 
-- future owner service: `backend/app/services/layer3_raw_mixed_bridge.py`
-- future route: `POST /api/v1/layer3/source/mixed-corpus/seed`
-- future request DTO: `Layer3RawMixedCorpusSeedRequest`
-- future response DTO: `Layer3RawMixedCorpusSeedResponse`
-- future request schema id: `layer3.raw_mixed_corpus_seed_request.v1`
-- future response schema id: `layer3.raw_mixed_corpus_seed_result.v1`
-- future mode: `raw_mixed_corpus_bridge_seed_only`
-- future persistence target: existing source/provenance families needed to create or reuse `DatasetVersion` and `ApsContentDocument` authority
-- future artifact behavior: reference existing server-owned APS artifacts only, with hashes checked before use
-- future flow behavior: none
+- owner service: `backend/app/services/layer3_raw_mixed_bridge.py`
+- route: `POST /api/v1/layer3/source/mixed-corpus/seed`
+- request DTO: `Layer3RawMixedCorpusSeedRequest`
+- response DTO: `Layer3RawMixedCorpusSeedResponse`
+- request schema id: `layer3.raw_mixed_corpus_seed_request.v1`
+- response schema id: `layer3.raw_mixed_corpus_seed_result.v1`
+- manifest schema id: `layer3.raw_mixed_corpus_seed_manifest.v1`
+- mode: `raw_mixed_corpus_bridge_seed_only`
+- persistence target: existing source/provenance families needed to reuse `DatasetVersion` and `ApsContentDocument` authority
+- artifact behavior: reference an existing server-owned storage-root manifest only, with the manifest hash checked before use
+- DB read behavior: reads existing `DatasetVersion`, `DatasetSourceProvenance`, `ApsContentDocument`, `ApsContentLinkage`, `ConnectorRun`, and `ConnectorRunTarget` rows
+- DB write behavior: writes no database rows
+- file read behavior: reads only the named server-owned storage-root manifest file after requiring a SHA-256 hash
+- file write behavior: writes no files
+- flow behavior: none
 
-No future implementation under this freeze may add a broad adapter registry, plugin system, browser upload target, local directory crawler, web connector fetch, RAG/vector retrieval path, full corpus search, package mutation, provider URL, connector/destination dispatch, hidden LLM plan, or full mockup behavior.
+No implementation under this freeze may add a broad adapter registry, plugin system, browser upload target, local directory crawler, web connector fetch, RAG/vector retrieval path, full corpus search, package mutation, provider URL, connector/destination dispatch, hidden LLM plan, or full mockup behavior.
 
-## Future Request Contract
+## Request Contract
 
-The future request must be strict and response-safe:
+The request must be strict and response-safe:
 
 ```json
 {
@@ -78,7 +86,7 @@ The request must fail closed if `requested_source_classes` includes anything out
 
 ## Forbidden Request Fields
 
-The future route must reject these before service mutation:
+The route must reject these before service mutation:
 
 - `source_upload`
 - `local_upload`
@@ -109,7 +117,7 @@ The future route must reject these before service mutation:
 - `mockup_activation`
 - `auth_policy_override`
 
-## Future Response Contract
+## Response Contract
 
 Successful response shape:
 
@@ -156,9 +164,9 @@ This planning/control slice must not accidentally admit:
 - Layer 3 preflight, source preview, material preview, Gate B, Gate C, planning, execution, package, handoff, APS dispatch, or export/download as part of source seeding;
 - `L3Session`, `L3PassRun`, `AnalysisRun`, `L3OutputPackage`, `L3ReconciliationRecord`, connector, destination, provider/public URL, package mutation, qualitative/hybrid/RAG, hidden LLM, full mockup, or auth/security behavior.
 
-## Required Future Tests
+## Required Tests
 
-A later implementation PR must prove:
+The implementation must prove:
 
 - missing `client_request_id` fails closed;
 - unsupported requested source classes fail closed;
@@ -168,7 +176,7 @@ A later implementation PR must prove:
 - successful seed action creates or reuses deterministic `DatasetVersion` and `ApsContentDocument` source authority only;
 - duplicate `client_request_id` is deterministic;
 - no Layer 3 session, descriptor, material snapshot, typing, plan, pass, execution, result, package, handoff, APS dispatch, export/download, connector, provider URL, vector index, package mutation, mockup, or auth/security side effect occurs;
-- the existing bounded E2E can consume the returned ids through the normal separate API flow without special browser or planning-doc authority.
+- the returned ids can be consumed through the normal separate API preflight/source-preview/material-preview path without special browser or planning-doc authority.
 
 ## Stop Conditions
 
@@ -191,11 +199,15 @@ Stop before implementation if the intended change requires:
 
 ## Acceptance Criteria
 
-This planning/control slice is accepted only when:
+This bounded runtime slice is accepted only when:
 
 - this file exists and contains `selected_raw_mixed_bridge_mode: raw_mixed_corpus_bridge_seed_only`;
-- `layer3_progress_board.md`, `layer3_progress_manifest.json`, and `layer3_workbench_proof_manifest.json` record this slice as planning/control only;
-- `tools/l3-progress-check.py` requires this document and fails closed if the selected mode or no-runtime boundary drifts;
+- `layer3_progress_board.md`, `layer3_progress_manifest.json`, and `layer3_workbench_proof_manifest.json` record this slice as the bounded seed-only runtime;
+- `tools/l3-progress-check.py` requires this document, the owner service, the API route, and focused tests, and fails closed if the selected mode or seed-only boundary drifts;
+- `backend/app/services/layer3_raw_mixed_bridge.py` owns the seed-only runtime and writes no DB rows or files;
+- `backend/app/api/layer3.py` exposes only `POST /api/v1/layer3/source/mixed-corpus/seed` for this bridge;
+- `backend/tests/test_layer3_raw_mixed_bridge.py` proves success, idempotent reuse, forbidden fields, unsupported classes, stale manifest hash, unknown APS target, missing client request id, and no flow/package/export side effects;
 - `backend/app/services/layer3_source_boundary.py` still reports `SOURCE_BOUNDARY_MODE = "supported_source_classes_only"`;
 - `python .\tools\l3-progress-check.py` passes;
+- `python -m pytest .\backend\tests\test_layer3_raw_mixed_bridge.py -q` passes;
 - `git diff --check` reports no whitespace errors.

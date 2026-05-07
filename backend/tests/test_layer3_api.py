@@ -52,6 +52,7 @@ from app.services import (
     layer3_package_mutation_entry,
     layer3_package_supersession_commit,
     layer3_pass_entry as layer3_pass_entry_module,
+    layer3_raw_mixed_bridge,
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_namespace,
     layer3_replacement_package_set_authority,
@@ -382,6 +383,7 @@ def test_layer3_forbidden_sentinel_openapi_fields_are_impossible(client: TestCli
                 _assert_forbidden_request_field_schema(schema, field)
                 seen.add((path, field))
     assert {
+        ("/api/v1/layer3/source/mixed-corpus/seed", "local_directory"),
         ("/api/v1/layer3/plan/approved/cancel", "provider_public_url"),
         ("/api/v1/layer3/execution/select", "rag_plan"),
         ("/api/v1/layer3/package/review/commit", "package_payload"),
@@ -511,6 +513,51 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
         "partial_retrieval",
         "authority_rail",
     } <= set(material_schema["required"])
+
+    raw_mixed_request_schema = spec["paths"]["/api/v1/layer3/source/mixed-corpus/seed"]["post"]["requestBody"][
+        "content"
+    ]["application/json"]["schema"]
+    assert raw_mixed_request_schema["additionalProperties"] is False
+    assert set(raw_mixed_request_schema["required"]) == {
+        "client_request_id",
+        "seed_mode",
+        "corpus_batch_id",
+        "aps_run_id",
+        "target_ids",
+        "artifact_manifest_ref",
+        "artifact_manifest_hash",
+        "requested_source_classes",
+        "operator_confirmation",
+    }
+    assert raw_mixed_request_schema["properties"]["seed_mode"]["enum"] == ["raw_mixed_corpus_bridge_seed_only"]
+    assert raw_mixed_request_schema["properties"]["requested_source_classes"]["items"]["enum"] == [
+        "dataset_version",
+        "aps_content_document",
+    ]
+    for field in ("local_directory", "web_connector", "rag_vector_index", "package_payload", "provider_url"):
+        assert raw_mixed_request_schema["properties"][field]["description"].startswith("Known but non-admitted")
+        assert raw_mixed_request_schema["properties"][field]["not"] == {}
+
+    raw_mixed_schema = _openapi_response_schema(spec, "/api/v1/layer3/source/mixed-corpus/seed", "post")
+    assert raw_mixed_schema["title"] == "Layer3RawMixedCorpusSeedResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "source_seed_id",
+        "seed_mode",
+        "source_seed_state",
+        "dataset_version_ids",
+        "aps_content_document_ids",
+        "source_classes",
+        "artifact_manifest_ref",
+        "artifact_manifest_hash",
+        "layer3_flow_started",
+        "next_allowed_actions",
+    } <= set(raw_mixed_schema["required"])
+    _assert_workbench_error_responses(spec, "/api/v1/layer3/source/mixed-corpus/seed", "post", ("400", "404", "409"))
 
     dataset_candidate_schema = _openapi_response_schema(spec, "/api/v1/layer3/dataset-version-candidates", "get")
     assert dataset_candidate_schema["title"] == "Layer3DatasetVersionCandidatesResponse"
@@ -1984,6 +2031,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
     route_statuses = {
         ("/api/v1/layer3/preflight", "post"): ("400",),
         ("/api/v1/layer3/source-preview", "post"): ("400",),
+        ("/api/v1/layer3/source/mixed-corpus/seed", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/material-preview", "post"): ("400",),
         ("/api/v1/layer3/gate-b/decision", "post"): ("400", "409"),
         ("/api/v1/layer3/gate-c/preview", "post"): ("400", "404", "409"),
@@ -2131,6 +2179,49 @@ def test_layer3_api_json_or_error_call_sites_return_workbench_error_envelope(
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_api_boundary"]
+
+
+def test_layer3_raw_mixed_seed_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_raw_mixed_seed_boundary_error",
+            "Forced raw mixed seed boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_raw_mixed_seed_boundary"],
+        )
+
+    monkeypatch.setattr(layer3_raw_mixed_bridge, "seed_raw_mixed_corpus", _raise_forced_boundary_error)
+
+    response = client.post(
+        "/api/v1/layer3/source/mixed-corpus/seed",
+        json={
+            "client_request_id": "forced-raw-mixed-seed-boundary",
+            "seed_mode": "raw_mixed_corpus_bridge_seed_only",
+            "corpus_batch_id": "forced-batch",
+            "aps_run_id": "forced-run",
+            "target_ids": ["forced-target"],
+            "artifact_manifest_ref": "raw-mixed/forced.json",
+            "artifact_manifest_hash": "0" * 64,
+            "requested_source_classes": ["dataset_version", "aps_content_document"],
+            "operator_confirmation": True,
+        },
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_raw_mixed_seed_boundary_error",
+    )
+    assert body["message"] == "Forced raw mixed seed boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_raw_mixed_seed_boundary"]
 
 
 def test_layer3_connector_dispatch_record_api_boundary_returns_workbench_error_envelope(
