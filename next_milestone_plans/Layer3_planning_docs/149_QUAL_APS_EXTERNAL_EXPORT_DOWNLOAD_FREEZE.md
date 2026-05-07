@@ -79,7 +79,7 @@ The future implementation is acceptable only if it proves:
 
 Minimum implementation proof for the future runtime:
 
-- successful qualitative APS prepare after `qual_aps_aps_handoff_dispatched`;
+- successful qualitative APS prepare after `aps_handoff_dispatched`;
 - successful same-origin qualitative APS delivery from the prepared readiness object;
 - session summary changes from `qualitative_aps_external_export_download_not_admitted` to qualitative readiness only after prepare;
 - delivery revalidates current readiness before streaming;
@@ -98,7 +98,7 @@ Minimum implementation proof for the future runtime:
 - `python .\tools\l3-progress-check.py`;
 - `git diff --check`.
 
-Browser proof is not required for a backend/API-only same-origin delivery implementation. Headed and headless Chrome proof, including relevant theme checks, becomes required if rendered `/review/layer3` or theme-visible behavior changes.
+Browser proof is required when backend readiness, delivery, or session-summary changes make existing rendered `/review/layer3` controls newly available, even if no UI files change. Headed and headless Chrome proof, including relevant theme checks, remains required for rendered-control, theme-visible, browser-download, or same-origin delivery behavior changes.
 
 ## Stop Conditions
 
