@@ -14,6 +14,7 @@ This document is the referenceable roadmap for the remaining bounded Layer 3 wor
 - governing submit docs: `143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md` and `144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md`
 - governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md` and `146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md`
 - governing APS handoff dispatch runtime docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md` and `148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md`
+- governing qualitative APS external export/download freeze docs: `149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md` and `150_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md`
 - broader deferred-gate control: `105_deferred-gates.md`
 - proof/progress surfaces: `layer3_progress_board.md`, `layer3_progress_manifest.json`, `layer3_workbench_proof_manifest.json`, and `tools/l3-progress-check.py`
 
@@ -39,8 +40,7 @@ Current main still does not admit qualitative APS external export/download, rend
 
 Future work must proceed in this order unless a later live audit proves a different blocker:
 
-1. qualitative APS external export/download prepare/deliver freeze and contract;
-2. qualitative APS external export/download prepare/deliver runtime;
+1. qualitative APS external export/download prepare/deliver runtime, governed by docs `149` and `150`;
 3. rendered qualitative APS package/downstream UI freeze;
 4. rendered qualitative APS package/downstream UI runtime, including theme proof;
 5. source-breadth freeze before any ingestion/source-adapter expansion;
@@ -54,11 +54,11 @@ Future work must proceed in this order unless a later live audit proves a differ
 
 ## Future Pass Specifications
 
-### 1. Qualitative APS External Export/Download Freeze And Runtime
+### 1. Qualitative APS External Export/Download Runtime
 
-- goal: freeze and then implement same-origin prepare/deliver behavior for qualitative APS after exact APS dispatch authority.
-- current blocker: qualitative APS APS handoff dispatch is now live, but session summary and prepare readiness still fail closed with `qualitative_aps_external_export_download_not_admitted`.
-- implementation-entry freeze required: yes.
+- goal: implement same-origin prepare/deliver behavior for qualitative APS after exact APS dispatch authority.
+- current blocker: freeze/contract now exists in docs `149` and `150`; runtime still blocks the path with `qualitative_aps_external_export_download_not_admitted`.
+- implementation-entry freeze required: yes, already provided by docs `149` and `150`.
 - likely files: external export/download contract/response helpers, workbench/API DTOs, bounded E2E, qualitative APS tests, checker/proof metadata.
 - required tests: readiness, delivery, malformed token/payload fail-closed, same-origin artifact hash validation, no provider/public URL, no connector/destination dispatch.
 - negative invariants: no provider/public URLs, no external object-store ACL, no destination write, no package mutation, no UI/theme change unless separately frozen.
