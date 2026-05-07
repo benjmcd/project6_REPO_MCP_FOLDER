@@ -5908,7 +5908,7 @@
     "governing_doc": "next_milestone_plans/Layer3_planning_docs/159_RAW_MIXED_RENDERED_DOWNSTREAM_BLOCKER.md",
     "current_main_anchor": "PR #732 merge commit d6a70a86eac76c7931822a1cda66bdfaff99bb36",
     "selected_raw_mixed_rendered_ui_mode": "raw_mixed_server_owned_manifest_ref_ui_entry",
-    "blocker_summary": "Current main cannot honestly drive a deeper rendered raw mixed downstream path beyond plan approval because the UI has no rendered execution selection/start controls. Existing raw mixed rendered proof asserts execution, results, and package remain unavailable after plan approval and that no execution/package/handoff paths are called.",
+    "blocker_summary": "At the PR #732 current-main anchor, the repo could not honestly drive a deeper rendered raw mixed downstream path beyond plan approval because the UI had no rendered execution selection/start controls. Existing raw mixed rendered proof asserts execution, results, and package remain unavailable after plan approval and that no execution/package/handoff paths are called.",
     "reference_files": [
       "next_milestone_plans/Layer3_planning_docs/159_RAW_MIXED_RENDERED_DOWNSTREAM_BLOCKER.md",
       "backend/app/review_ui/static/layer3.html",
@@ -5944,7 +5944,7 @@
       "python .\\tools\\l3-progress-check.py",
       "git diff --check"
     ],
-    "next_boundary": "Freeze rendered execution selection/start controls before trying to extend the raw mixed rendered UI path beyond plan approval, or keep the raw mixed UI proof stopped at plan approval."
+    "next_boundary": "Historical blocker superseded for live guidance by docs 160/161 and the bounded rendered execution selection/start runtime in doc 162."
   },
   "rendered_execution_selection_start_freeze_proof": {
     "scope": "Planning/control freeze for future rendered execution selection/start controls after the raw mixed rendered downstream blocker.",
@@ -6019,5 +6019,51 @@
       "git diff --check"
     ],
     "next_boundary": "Implement only rendered execution selection/start controls if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
+  },
+  "rendered_execution_selection_start_runtime_proof": {
+    "scope": "Live bounded rendered /review/layer3 execution selection/start controls.",
+    "implementation_branch": "codex/l3-rendered-execution-controls",
+    "live_behavior_change": true,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/162_RENDERED_EXECUTION_SELECTION_START_RUNTIME.md",
+    "selected_rendered_execution_mode": "raw_mixed_rendered_execution_selection_start_controls",
+    "routes_reused": [
+      "POST /api/v1/layer3/execution/select",
+      "POST /api/v1/layer3/execution/start",
+      "POST /api/v1/layer3/execution/result/status"
+    ],
+    "live_selectors": [
+      "#execution-select",
+      "#execution-start",
+      "#execution-selection-start-panel"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/162_RENDERED_EXECUTION_SELECTION_START_RUNTIME.md",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
+      "tools/l3-progress-check.py"
+    ],
+    "proof_summary": "The rendered workbench enables execution selection only after approved-plan authority, enables execution start only after the server returns selected pass-run IDs, and enables result-status inspection only after execution start. The focused browser proof uses the raw mixed rendered materialization path, verifies exact execution selection/start request allowlists, checks light/dark/workbench theme visibility, and asserts result review, package, and handoff/export routes are not called.",
+    "browser_proof": [
+      "Layer 3 workbench drives raw mixed rendered execution selection and start"
+    ],
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Freeze and implement only the next rendered downstream slice if result review, package, handoff/export, APS dispatch, or external export/download UI proof is needed."
   }
 }

@@ -2,6 +2,8 @@
 
 Status: current-main planning/control blocker report for deeper rendered raw mixed downstream proof.
 
+Supersession note: this blocker remains historical evidence for the PR `#732` current-main anchor. `162_RENDERED_EXECUTION_SELECTION_START_RUNTIME.md` governs the later bounded runtime that adds rendered execution selection/start controls.
+
 This document records why the next test-only rendered downstream pass cannot honestly proceed beyond plan approval on current main without widening UI scope. It does not add or admit route, DTO, service, model, migration, UI control, source, ingestion, package, connector, provider, RAG/vector, mockup, hidden LLM, or auth/security behavior.
 
 ## Authority Snapshot

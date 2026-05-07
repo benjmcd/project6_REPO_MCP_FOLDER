@@ -484,6 +484,9 @@ async function approveRenderedPlan(page, sessionId, planPreview) {
 
 async function assertRenderedPlanApprovalStopsBeforeExecution(page, sessionId, layer3ApiRequests) {
   await expect(page.locator('#plan-approve')).toBeDisabled();
+  await expect(page.locator('#execution-selection-start-panel')).toContainText('execution_selection_ready');
+  await expect(page.locator('#execution-select')).toBeEnabled();
+  await expect(page.locator('#execution-start')).toBeDisabled();
   await expect(page.locator('#result-status-inspect')).toBeDisabled();
   await expect(page.locator('#result-review-submit')).toBeDisabled();
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
@@ -500,6 +503,8 @@ async function assertRenderedPlanApprovalStopsBeforeExecution(page, sessionId, l
   expect(sessionSummary.plan_approval.pass_run_count).toBe(0);
   expect(sessionSummary.execution_selection.selected).toBe(false);
   expect(sessionSummary.analysis_execution_start.available).toBe(false);
+  await expect(page.locator('#execution-select')).toBeEnabled();
+  await expect(page.locator('#execution-start')).toBeDisabled();
   await expect(page.locator('#result-status-inspect')).toBeDisabled();
   await expect(page.locator('#result-review-submit')).toBeDisabled();
   await expectNoDeferredRawMixedControls(page);
@@ -511,6 +516,145 @@ async function assertRenderedPlanApprovalStopsBeforeExecution(page, sessionId, l
     '/package/review/',
     '/handoff/',
   ]);
+}
+
+async function selectAndStartRenderedExecution(page, sessionId, approval, planPreview) {
+  await expect(page.locator('#execution-selection-start-panel')).toContainText('execution_selection_ready');
+  await page.locator('#theme-selector').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  const selectionRequestPromise = page.waitForRequest((selectionRequest) => (
+    selectionRequest.url().includes('/api/v1/layer3/execution/select') && selectionRequest.method() === 'POST'
+  ));
+  const selectionResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/execution/select')
+  ));
+  await page.locator('#execution-select').click();
+  const selectionPayload = (await selectionRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(selectionPayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'preview_hash',
+    'preview_id',
+    'session_id',
+  ]);
+  expect(selectionPayload.session_id).toBe(sessionId);
+  expect(selectionPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(selectionPayload.preview_id).toBe(planPreview.preview_id);
+  expect(selectionPayload.preview_hash).toBe(planPreview.preview_hash);
+  expectNoDeferredRawMixedPayloadFields(selectionPayload);
+
+  const selection = await expectJson(await selectionResponsePromise);
+  expect(selection.schema_id).toBe('layer3.execution_selection.v1');
+  expect(selection.session_id).toBe(sessionId);
+  expect(selection.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(selection.preview_identity.preview_id).toBe(planPreview.preview_id);
+  expect(selection.preview_identity.preview_hash).toBe(planPreview.preview_hash);
+  expect(selection.pass_run_ids).toHaveLength(1);
+  expect(selection.pass_run_count).toBe(1);
+  expect(selection.execution_started).toBe(false);
+  expect(selection.analysis_run_ids).toEqual([]);
+  await expect(page.locator('#execution-selection-start-panel')).toContainText('execution_selected');
+  await expect(page.locator('#execution-select')).toBeDisabled();
+  await expect(page.locator('#execution-start')).toBeEnabled();
+  await expectStepAvailable(page, 'execution');
+  await expect(page.locator('#result-status-inspect')).toBeDisabled();
+
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  const startRequestPromise = page.waitForRequest((startRequest) => (
+    startRequest.url().includes('/api/v1/layer3/execution/start') && startRequest.method() === 'POST'
+  ));
+  const startResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/execution/start')
+  ));
+  await page.locator('#execution-start').click();
+  const startPayload = (await startRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(startPayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'execution_mode',
+    'pass_run_id',
+    'preview_hash',
+    'preview_id',
+    'session_id',
+  ]);
+  expect(startPayload.session_id).toBe(sessionId);
+  expect(startPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(startPayload.pass_run_id).toBe(selection.pass_run_ids[0]);
+  expect(startPayload.preview_id).toBe(planPreview.preview_id);
+  expect(startPayload.preview_hash).toBe(planPreview.preview_hash);
+  expect(startPayload.execution_mode).toBe('synchronous_single_pass');
+  expectNoDeferredRawMixedPayloadFields(startPayload);
+
+  const start = await expectJson(await startResponsePromise);
+  expect(start.schema_id).toBe('layer3.analysis_execution_start.v1');
+  expect(start.session_id).toBe(sessionId);
+  expect(start.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(start.pass_run_id).toBe(selection.pass_run_ids[0]);
+  expect(start.preview_identity.preview_id).toBe(planPreview.preview_id);
+  expect(start.preview_identity.preview_hash).toBe(planPreview.preview_hash);
+  expect(start.execution_started).toBe(true);
+  await expect(page.locator('#execution-selection-start-panel')).toContainText('execution_started');
+  await expect(page.locator('#execution-start')).toBeDisabled();
+  await expect(page.locator('#result-status-inspect')).toBeEnabled();
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+
+  return { selection, start };
+}
+
+async function inspectRenderedResultStatus(page, sessionId, approval, planPreview, execution) {
+  await page.locator('#theme-selector').selectOption('light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  await page.locator('#execution-step-chip').click();
+  const statusRequestPromise = page.waitForRequest((statusRequest) => (
+    statusRequest.url().includes('/api/v1/layer3/execution/result/status') && statusRequest.method() === 'POST'
+  ));
+  const statusResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/execution/result/status')
+  ));
+  await page.locator('#result-status-inspect').click();
+  const statusPayload = (await statusRequestPromise).postDataJSON();
+  const expectedStatusKeys = [
+    'analysis_plan_id',
+    'client_request_id',
+    'operator_view_mode',
+    'pass_run_id',
+    'preview_hash',
+    'preview_id',
+    'session_id',
+  ];
+  if (statusPayload.analysis_run_id) {
+    expectedStatusKeys.push('analysis_run_id');
+    expect(statusPayload.analysis_run_id).toBe(execution.start.analysis_run_id);
+  }
+  expectOnlyPayloadKeys(statusPayload, expectedStatusKeys);
+  expect(statusPayload.session_id).toBe(sessionId);
+  expect(statusPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(statusPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(statusPayload.preview_id).toBe(planPreview.preview_id);
+  expect(statusPayload.preview_hash).toBe(planPreview.preview_hash);
+  expect(statusPayload.operator_view_mode).toBe('status_only');
+  expectNoDeferredRawMixedPayloadFields(statusPayload);
+
+  const status = await expectJson(await statusResponsePromise);
+  expect(status.schema_id).toBe('layer3.execution_result_status.v1');
+  expect(status.session_id).toBe(sessionId);
+  expect(status.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(status.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(status.preview_identity.preview_id).toBe(planPreview.preview_id);
+  expect(status.preview_identity.preview_hash).toBe(planPreview.preview_hash);
+  expect(status.execution_started).toBe(true);
+  expect(status.result_status_available).toBe(true);
+  await expect(page.locator('#result-review-panel')).toContainText('cohort_result_review_ui_review_ready');
+  await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+  await expectNoDeferredRawMixedControls(page);
+  return status;
 }
 
 function qualitativeApsPackageSubmitUiFixture() {
@@ -1125,6 +1269,25 @@ test('Layer 3 workbench materializes raw mixed manifest through rendered control
   const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
   await approveRenderedPlan(page, gateB.session_id, planPreview);
   await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+});
+
+test('Layer 3 workbench drives raw mixed rendered execution selection and start', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/execution/result/review',
+    '/package/review/',
+    '/handoff/',
+  ]);
 });
 
 test('Layer 3 workbench renders selected APS DatasetVersion trace detail from material preview', async ({ page, request }) => {
