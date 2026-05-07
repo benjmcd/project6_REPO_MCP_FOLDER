@@ -1509,8 +1509,10 @@ class Layer3PackageConstructionCommitResponse(Layer3BaseResponse):
     analysis_run_id: str | None
     result_review_record_ref: str
     package_review_preview_hash: str
+    construction_basis_hash: str | None = None
     reconciliation_record_id: str
     output_packages: list[dict[str, Any]]
+    output_package_ids: list[str] | None = None
     package_kinds: list[str]
     payload_refs: list[str]
     payload_hashes: list[str]
@@ -1520,10 +1522,24 @@ class Layer3PackageConstructionCommitResponse(Layer3BaseResponse):
     package_construction_source_gate: str | None = None
     source_shape: str | None = None
     source_dataset_version_ids: list[str] | None = None
+    content_id: str | None = None
+    content_contract_id: str | None = None
+    chunking_contract_id: str | None = None
+    material_snapshot_id: str | None = None
+    analysis_unit_id: str | None = None
+    analysis_set_id: str | None = None
+    output_payload_ref: str | None = None
+    output_payload_hash: str | None = None
     reviewed_output_item_summary: dict[str, Any] | None = None
+    package_commit_enabled: bool | None = None
     package_review_submit_enabled: bool
     handoff_enabled: bool
+    aps_handoff_enabled: bool | None = None
+    external_export_download_enabled: bool | None = None
+    connector_dispatch_enabled: bool | None = None
+    provider_public_url_enabled: bool | None = None
     downstream_unavailable: list[str]
+    next_allowed_actions: list[str] | None = None
     next_state: str
     authority_rail: dict[str, Any]
 

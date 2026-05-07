@@ -2,7 +2,7 @@
 
 Status: current-main runtime boundary for `qual_aps_package_review_preview_only`.
 
-This document governs the now-live read-only package-review preview boundary for one approved standalone APS content-document qualitative result through `POST /api/v1/layer3/package/review/preview`. It does not admit package construction, package-review submit, handoff/export, APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, model/migration changes, source widening, broad qualitative/hybrid/RAG behavior, hidden LLM planning, full mockup activation, or authentication/security behavior.
+This document governs the now-live read-only package-review preview boundary for one approved standalone APS content-document qualitative result through `POST /api/v1/layer3/package/review/preview`. A later bounded boundary, docs `140`/`141`, now admits qualitative APS package construction through `POST /api/v1/layer3/package/review/commit`. This preview document still does not admit package-review submit, handoff/export, APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, model/migration changes, source widening, broad qualitative/hybrid/RAG behavior, hidden LLM planning, full mockup activation, or authentication/security behavior.
 
 ## Authority Snapshot
 
@@ -14,7 +14,7 @@ This document governs the now-live read-only package-review preview boundary for
 - execution owner: `backend/app/services/layer3_qual_aps_execution.py`
 - package-preview route: `POST /api/v1/layer3/package/review/preview`
 - package-preview schema: `layer3.qual_aps_package_review_preview.v1`
-- package-construction blocker: `backend/app/services/layer3_workbench.py` still raises `qualitative_aps_package_construction_commit_not_admitted` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`
+- package-construction successor: docs `140`/`141` and the live commit runtime now admit `qual_aps_package_construction_commit_entry` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`
 - package-review-submit blocker: `backend/app/services/layer3_workbench.py` still raises `qualitative_aps_package_review_submit_not_admitted` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`, including restored or seeded reconciliation/package state
 - proof surface: `backend/tests/test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview`
 - companion contract: `139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
@@ -35,7 +35,7 @@ Current main admits exactly one qualitative APS execution mode:
 - API result/status and result-review visibility through the existing Layer 3 workbench API path
 - read-only package-review preview for the approved qualitative result through `layer3.qual_aps_package_review_preview.v1`
 
-PR `#702` proved that path could be driven through result review. The current runtime boundary advances only one step beyond that: package-review preview is inspectable/read-only, while package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, and provider/public URLs remain blocked. Package construction still fails closed with `qualitative_aps_package_construction_commit_not_admitted`, and package-review submit fails closed with `qualitative_aps_package_review_submit_not_admitted`.
+PR `#702` proved that path could be driven through result review. The preview runtime boundary advanced one step beyond that: package-review preview is inspectable/read-only. The later construction runtime now consumes that preview authority, while package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, and provider/public URLs remain blocked. Package-review submit fails closed with `qualitative_aps_package_review_submit_not_admitted`.
 
 ## Decision
 
@@ -43,9 +43,9 @@ The selected runtime boundary is:
 
 - selected mode: `qual_aps_package_review_preview_only`
 
-This mode adds only read-only package-review preview/readiness for one approved standalone APS content-document qualitative result. It must not construct packages or make downstream handoff/export behavior live.
+This mode adds only read-only package-review preview/readiness for one approved standalone APS content-document qualitative result. Package construction is admitted only by the separate docs `140`/`141` runtime boundary; this preview mode itself must not construct packages or make downstream handoff/export behavior live.
 
-The runtime stops at preview/readiness unless a later separate freeze admits package construction. This mirrors the earlier quantitative selected-pass progression: preview first, construction later, submit later, handoff/export later.
+The preview runtime stops at preview/readiness; the later separate construction boundary consumes the preview hash. This mirrors the earlier quantitative selected-pass progression: preview first, construction later, submit later, handoff/export later.
 
 ## Why This Comes Next
 
@@ -147,7 +147,7 @@ Minimum proof:
 - mismatched content id, material snapshot id, analysis unit id, analysis set id, or output payload hash fails closed;
 - forbidden package/handoff/export/source/provider/connector/RAG/model fields fail closed;
 - existing quantitative package preview tests still pass;
-- standalone APS qualitative E2E reaches read-only package preview and then stops at package construction with `qualitative_aps_package_construction_commit_not_admitted`;
+- standalone APS qualitative E2E reaches read-only package preview and then the separate construction commit boundary;
 - package-review submit is explicitly blocked with `qualitative_aps_package_review_submit_not_admitted` even if a request supplies restored or seeded reconciliation/package identifiers;
 - no DB row or file side effects beyond admitted read-only preview metadata, if any;
 - `python .\tools\l3-progress-check.py`;

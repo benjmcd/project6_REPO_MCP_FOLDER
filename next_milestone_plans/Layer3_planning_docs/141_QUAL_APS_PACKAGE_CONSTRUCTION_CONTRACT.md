@@ -1,8 +1,8 @@
 # Layer 3 Qualitative APS Package Construction Contract
 
-Status: implementation-entry contract paired with `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md`.
+Status: current runtime contract paired with `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md`.
 
-This contract defines the future API/state/proof shape for `qual_aps_package_construction_commit_entry`. It is not live runtime behavior. Current main still blocks qualitative APS package construction with `qualitative_aps_package_construction_commit_not_admitted` and package-review submit with `qualitative_aps_package_review_submit_not_admitted`.
+This contract defines the live API/state/proof shape for `qual_aps_package_construction_commit_entry`. Current main admits qualitative APS package construction through `layer3.qual_aps_package_construction_commit.v1` and still blocks package-review submit with `qualitative_aps_package_review_submit_not_admitted`.
 
 ## Authority Order
 
@@ -27,7 +27,7 @@ Selected route:
 
 - `POST /api/v1/layer3/package/review/commit`
 
-Selected future response schema:
+Selected response schema:
 
 - `layer3.qual_aps_package_construction_commit.v1`
 

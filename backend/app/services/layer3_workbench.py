@@ -105,6 +105,7 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_USER_FACING,
     SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
     SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+    SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
     Layer3PackageEntryError,
     materialize_workbench_package_commit,
 )
@@ -363,6 +364,7 @@ PLAN_APPROVAL_SCOPE = "owner_service_default"
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.package_review_preview.v1"
 QUAL_APS_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.qual_aps_package_review_preview.v1"
 PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.package_construction_commit.v1"
+QUAL_APS_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.qual_aps_package_construction_commit.v1"
 PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID = "layer3.package_construction_commit_state.v1"
 APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.aps_handoff_dispatch.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
@@ -450,6 +452,15 @@ PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
 COHORT_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
 QUAL_APS_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "package_construction",
+    "package_review_submit",
+    "handoff",
+    "export",
+    "aps_handoff",
+    "external_export_download",
+    "connector_dispatch",
+    "provider_public_url",
+)
+QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
     "handoff",
     "export",
@@ -2647,6 +2658,116 @@ def _qualitative_aps_output_hash(output_payload: dict[str, Any]) -> str | None:
     return output_hash if output_hash == _stable_hash(hash_basis) else None
 
 
+def _qualitative_aps_package_review_preview_hash(
+    *,
+    session_id: str,
+    analysis_plan_id: str,
+    pass_run_id: str,
+    preview_id: str,
+    preview_hash: str,
+    result_review_record_ref: str | None,
+    output_payload_ref: Any,
+    qualitative_basis: dict[str, Any],
+) -> str:
+    return _stable_id(
+        "l3-qual-aps-package-preview",
+        {
+            "schema_id": "layer3.qual_aps_package_review_preview_hash.v1",
+            "session_id": session_id,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_id,
+            "preview_hash": preview_hash,
+            "result_review_record_ref": result_review_record_ref,
+            "output_payload_ref": output_payload_ref,
+            "output_payload_hash": qualitative_basis["output_payload_hash"],
+            "content_id": qualitative_basis["content_id"],
+            "content_contract_id": qualitative_basis["content_contract_id"],
+            "chunking_contract_id": qualitative_basis["chunking_contract_id"],
+            "material_snapshot_id": qualitative_basis["material_snapshot_id"],
+            "analysis_unit_id": qualitative_basis["analysis_unit_id"],
+            "analysis_set_id": qualitative_basis["analysis_set_id"],
+            "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        },
+    )
+
+
+def _qualitative_aps_negative_capability_flags() -> dict[str, bool]:
+    return {
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_url_enabled": False,
+        "source_expansion_enabled": False,
+        "rag_vector_retrieval_enabled": False,
+        "hidden_llm_planning_enabled": False,
+        "full_mockup_enabled": False,
+        "rendered_ui_authority_enabled": False,
+        "auth_security_behavior_changed": False,
+    }
+
+
+def _qualitative_aps_package_payload_extras(
+    *,
+    qualitative_basis: dict[str, Any],
+    output_metadata_summary: dict[str, Any],
+    package_review_preview_hash: str,
+    result_review_state: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    output_payload = _json_clone(qualitative_basis["output_payload"])
+    chunk_summary = _json_clone(output_payload.get("chunk_summary") or {})
+    document_identity = _json_clone(output_payload.get("document_identity") or {})
+    source_authority = {
+        "schema_id": "layer3.qual_aps_package_source_authority.v1",
+        "engine_family": ENGINE_FAMILY_QUAL_APS_DOCUMENT,
+        "pass_scope": PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
+        "method": QUAL_APS_METHOD_NAME,
+        "source_gate": QUAL_APS_SOURCE_GATE,
+        "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT,
+        "content_id": qualitative_basis["content_id"],
+        "content_contract_id": qualitative_basis["content_contract_id"],
+        "chunking_contract_id": qualitative_basis["chunking_contract_id"],
+        "material_snapshot_id": qualitative_basis["material_snapshot_id"],
+        "analysis_unit_id": qualitative_basis["analysis_unit_id"],
+        "analysis_set_id": qualitative_basis["analysis_set_id"],
+        "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+        "output_payload_hash": qualitative_basis["output_payload_hash"],
+        "package_review_preview_hash": package_review_preview_hash,
+        "chunk_count": qualitative_basis["chunk_count"],
+        "chunk_ids": _json_clone(chunk_summary.get("chunk_ids") or []),
+        "chunk_hashes": _json_clone(chunk_summary.get("chunk_hashes") or []),
+    }
+    negative_capabilities = _qualitative_aps_negative_capability_flags()
+    reviewed_items = _json_clone(result_review_state.get("reviewed_output_items") or [])
+    return {
+        PACKAGE_KIND_CANONICAL_INTERNAL: {
+            "qualitative_output_payload": output_payload,
+            "qualitative_source_authority": _json_clone(source_authority),
+            "negative_capability_flags": _json_clone(negative_capabilities),
+        },
+        PACKAGE_KIND_USER_FACING: {
+            "qualitative_summary": {
+                "schema_id": "layer3.qual_aps_user_facing_package_summary.v1",
+                "content_id": qualitative_basis["content_id"],
+                "output_item_count": len(output_payload.get("output_items_json") or []),
+                "reviewed_output_item_count": len(reviewed_items),
+                "chunk_count": qualitative_basis["chunk_count"],
+                "method": QUAL_APS_METHOD_NAME,
+            },
+            "negative_capability_flags": _json_clone(negative_capabilities),
+        },
+        PACKAGE_KIND_REVIEW_FACING: {
+            "qualitative_source_authority": _json_clone(source_authority),
+            "document_identity": document_identity,
+            "chunk_trace": chunk_summary,
+            "reviewed_output_items": reviewed_items,
+            "negative_capability_flags": _json_clone(negative_capabilities),
+        },
+    }
+
+
 def _require_qualitative_aps_package_review_authority(
     db: Session,
     *,
@@ -4453,31 +4574,16 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             pass_run=pass_run,
             output_metadata_summary=output_metadata_summary,
         )
-        package_review_preview_hash = _stable_id(
-            "l3-qual-aps-package-preview",
-            {
-                "schema_id": "layer3.qual_aps_package_review_preview_hash.v1",
-                "session_id": session_id,
-                "analysis_plan_id": analysis_plan_id,
-                "pass_run_id": pass_run_id,
-                "preview_id": preview_id,
-                "preview_hash": preview_hash,
-                "result_review_record_ref": str(review_state.get("review_record_ref") or "") or None,
-                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
-                "output_payload_hash": qualitative_basis["output_payload_hash"],
-                "content_id": qualitative_basis["content_id"],
-                "content_contract_id": qualitative_basis["content_contract_id"],
-                "chunking_contract_id": qualitative_basis["chunking_contract_id"],
-                "material_snapshot_id": qualitative_basis["material_snapshot_id"],
-                "analysis_unit_id": qualitative_basis["analysis_unit_id"],
-                "analysis_set_id": qualitative_basis["analysis_set_id"],
-                "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
-            },
+        package_review_preview_hash = _qualitative_aps_package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            result_review_record_ref=str(review_state.get("review_record_ref") or "") or None,
+            output_payload_ref=output_metadata_summary.get("output_payload_ref"),
+            qualitative_basis=qualitative_basis,
         )
-        blocked_reasons = [
-            "qualitative_aps_package_construction_not_admitted",
-            "qualitative_aps_package_taxonomy_not_frozen",
-        ]
         return {
             **_base_response(
                 QUAL_APS_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID,
@@ -4494,7 +4600,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             "result_review_state": review_state.get("review_state"),
             "result_review_record_ref": review_state.get("review_record_ref"),
             "package_review_preview_enabled": True,
-            "package_commit_enabled": False,
+            "package_commit_enabled": True,
             "package_review_enabled": False,
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
@@ -4502,33 +4608,36 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             "external_export_download_enabled": False,
             "connector_dispatch_enabled": False,
             "provider_public_url_enabled": False,
-            "candidate_package_kinds": _qualitative_aps_package_review_candidate_projection(),
+            "candidate_package_kinds": package_review_candidate_projection(
+                package_commit_enabled=True,
+                readiness_reason="candidate family is eligible for bounded qualitative APS package construction commit",
+            ),
             "package_owner_compatibility": {
                 "schema_id": "layer3.qual_aps_package_owner_compatibility.v1",
-                "owner_service": "future_qualitative_aps_package_construction",
+                "owner_service": "layer3_package_entry.materialize_workbench_package_commit",
                 "assessment_basis": [
                     "approved_single_aps_doc_qualitative_result_review",
                     "read_only_qualitative_output_metadata",
                     "aps_document_chunk_authority",
                 ],
                 "materialize_package_entry_callable": False,
-                "workbench_package_commit_callable": False,
+                "workbench_package_commit_callable": True,
                 "preview_candidate_projection_compatible": True,
-                "construction_compatible_with_current_workbench_state": False,
-                "missing_owner_service_inputs": ["qualitative_package_taxonomy"],
+                "construction_compatible_with_current_workbench_state": True,
+                "missing_owner_service_inputs": [],
                 "selected_pass_status": pass_run.status,
                 "pass_type": pass_run.pass_type,
                 "pass_scope": PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
                 "source_gate": QUAL_APS_SOURCE_GATE,
                 "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT,
-                "status": "qualitative_aps_preview_only",
+                "status": "qualitative_aps_package_construction_preconditions_satisfied",
                 "reason": (
-                    "Standalone APS qualitative output is inspectable for package-review preview, "
-                    "but package construction remains deferred."
+                    "Standalone APS qualitative output is inspectable and eligible for the bounded "
+                    "package-construction commit boundary."
                 ),
             },
-            "blocked_reasons": blocked_reasons,
-            "downstream_unavailable": list(QUAL_APS_PREVIEW_DOWNSTREAM_UNAVAILABLE),
+            "blocked_reasons": [],
+            "downstream_unavailable": list(QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE),
             "next_state": PACKAGE_REVIEW_PREVIEW_READY_STATE,
             "output_metadata_summary": output_metadata_summary,
             "trace_summary": review_state.get("trace_summary"),
@@ -4559,7 +4668,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
                 session_id=session_id,
                 current_gate="package",
                 persistence_mode="read_only_qual_aps_package_review_preview",
-                downstream_unavailable=QUAL_APS_PREVIEW_DOWNSTREAM_UNAVAILABLE,
+                downstream_unavailable=QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE,
                 execution_enabled=False,
                 package_review_enabled=False,
             ),
@@ -4732,11 +4841,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
-    _raise_if_qualitative_aps_downstream_not_admitted(
-        status_body=status_body,
-        action_label="Package construction commit",
-        error_code="qualitative_aps_package_construction_commit_not_admitted",
-    )
+    qualitative_aps_commit = status_body.get("engine_family") == ENGINE_FAMILY_QUAL_APS_DOCUMENT
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     analysis_plan = (
@@ -4835,16 +4940,38 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             blocked_fields=["result_review_record_ref"],
         )
 
-    expected_package_preview_hash = _package_review_preview_hash(
-        session_id=session_id,
-        analysis_plan_id=analysis_plan_id,
-        pass_run_id=pass_run_id,
-        preview_id=preview_id,
-        preview_hash=preview_hash,
-        analysis_run_id=str(status_body.get("analysis_run_id") or "") or None,
-        result_review_record_ref=supplied_review_ref,
-        output_metadata_summary=output_metadata_summary,
-    )
+    qualitative_basis: dict[str, Any] | None = None
+    if qualitative_aps_commit:
+        qualitative_basis = _require_qualitative_aps_package_review_authority(
+            db,
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            status_body=status_body,
+            pass_run=pass_run,
+            output_metadata_summary=output_metadata_summary,
+        )
+        expected_package_preview_hash = _qualitative_aps_package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            result_review_record_ref=supplied_review_ref,
+            output_payload_ref=output_metadata_summary.get("output_payload_ref"),
+            qualitative_basis=qualitative_basis,
+        )
+    else:
+        expected_package_preview_hash = _package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            analysis_run_id=str(status_body.get("analysis_run_id") or "") or None,
+            result_review_record_ref=supplied_review_ref,
+            output_metadata_summary=output_metadata_summary,
+        )
     if supplied_package_preview_hash != expected_package_preview_hash:
         raise Layer3WorkbenchError(
             "package_review_preview_mismatch",
@@ -4855,17 +4982,53 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             next_allowed_actions=["refresh_package_review_preview"],
         )
 
-    source_gate = (
-        SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
-        if associated_cohort_commit
-        else SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE
-    )
-    package_review_submit_enabled = True
+    if qualitative_aps_commit:
+        source_gate = SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE
+    else:
+        source_gate = (
+            SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
+            if associated_cohort_commit
+            else SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE
+        )
+    package_review_submit_enabled = not qualitative_aps_commit
     downstream_unavailable = (
+        QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
+        if qualitative_aps_commit
+        else
         COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
         if associated_cohort_commit
         else PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
     )
+    authority_basis_extra: dict[str, Any] | None = None
+    package_payload_extras_by_kind: dict[str, dict[str, Any]] | None = None
+    authority_schema_id = "layer3.workbench_package_construction_authority.v1"
+    if qualitative_aps_commit:
+        assert qualitative_basis is not None
+        output_payload = qualitative_basis["output_payload"]
+        chunk_summary = output_payload.get("chunk_summary") if isinstance(output_payload, dict) else {}
+        authority_schema_id = "layer3.qual_aps_package_construction_authority.v1"
+        authority_basis_extra = {
+            "engine_family": ENGINE_FAMILY_QUAL_APS_DOCUMENT,
+            "pass_scope": PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
+            "method": QUAL_APS_METHOD_NAME,
+            "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT,
+            "content_id": qualitative_basis["content_id"],
+            "content_contract_id": qualitative_basis["content_contract_id"],
+            "chunking_contract_id": qualitative_basis["chunking_contract_id"],
+            "material_snapshot_id": qualitative_basis["material_snapshot_id"],
+            "analysis_unit_id": qualitative_basis["analysis_unit_id"],
+            "analysis_set_id": qualitative_basis["analysis_set_id"],
+            "output_payload_hash": qualitative_basis["output_payload_hash"],
+            "chunk_ids": _json_clone(chunk_summary.get("chunk_ids") if isinstance(chunk_summary, dict) else []),
+            "chunk_hashes": _json_clone(chunk_summary.get("chunk_hashes") if isinstance(chunk_summary, dict) else []),
+            "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        }
+        package_payload_extras_by_kind = _qualitative_aps_package_payload_extras(
+            qualitative_basis=qualitative_basis,
+            output_metadata_summary=output_metadata_summary,
+            package_review_preview_hash=supplied_package_preview_hash,
+            result_review_state=review_state,
+        )
     try:
         result = materialize_workbench_package_commit(
             db,
@@ -4881,6 +5044,9 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             source_gate=source_gate,
             package_review_submit_enabled=package_review_submit_enabled,
             downstream_unavailable=downstream_unavailable,
+            authority_schema_id=authority_schema_id,
+            authority_basis_extra=authority_basis_extra,
+            package_payload_extras_by_kind=package_payload_extras_by_kind,
         )
     except Layer3PackageEntryError as exc:
         raise Layer3WorkbenchError(
@@ -4894,9 +5060,27 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
 
     packages = list(result.output_packages)
     pass_summary = pass_run.summary_json or {}
+    reconciliation_summary = result.reconciliation_record.summary_json or {}
+    commit_summary = reconciliation_summary.get("workbench_package_commit")
+    if not isinstance(commit_summary, dict):
+        commit_summary = {}
+    package_source_shape = (
+        SOURCE_SHAPE_APS_CONTENT_DOCUMENT
+        if qualitative_aps_commit
+        else _package_source_shape(
+            output_metadata_summary=output_metadata_summary,
+            pass_summary=pass_summary,
+        )
+    )
+    source_dataset_version_ids = [] if qualitative_aps_commit else _package_source_dataset_version_ids(
+        output_metadata_summary=output_metadata_summary,
+        pass_summary=pass_summary,
+    )
     return {
         **_base_response(
-            PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID,
+            QUAL_APS_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID
+            if qualitative_aps_commit
+            else PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID,
             request_id=request_id,
             status="already_committed" if result.replayed else "committed",
         ),
@@ -4907,6 +5091,8 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
         "analysis_run_id": str(status_body.get("analysis_run_id") or "") or None,
         "result_review_record_ref": supplied_review_ref,
         "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": commit_summary.get("construction_basis_hash")
+        or commit_summary.get("authority_basis_hash"),
         "reconciliation_record_id": result.reconciliation_record.reconciliation_record_id,
         "output_packages": [
             {
@@ -4918,6 +5104,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             }
             for package in packages
         ],
+        "output_package_ids": [package.output_package_id for package in packages],
         "package_kinds": [package.package_kind for package in packages],
         "payload_refs": [package.payload_ref for package in packages],
         "payload_hashes": [package.payload_hash for package in packages],
@@ -4925,26 +5112,38 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
         "method": output_metadata_summary.get("selected_method_name"),
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": source_gate,
-        "source_shape": _package_source_shape(
-            output_metadata_summary=output_metadata_summary,
-            pass_summary=pass_summary,
-        ),
-        "source_dataset_version_ids": _package_source_dataset_version_ids(
-            output_metadata_summary=output_metadata_summary,
-            pass_summary=pass_summary,
-        ),
+        "source_shape": package_source_shape,
+        "source_dataset_version_ids": source_dataset_version_ids,
+        "content_id": qualitative_basis["content_id"] if qualitative_basis else None,
+        "content_contract_id": qualitative_basis["content_contract_id"] if qualitative_basis else None,
+        "chunking_contract_id": qualitative_basis["chunking_contract_id"] if qualitative_basis else None,
+        "material_snapshot_id": qualitative_basis["material_snapshot_id"] if qualitative_basis else None,
+        "analysis_unit_id": qualitative_basis["analysis_unit_id"] if qualitative_basis else None,
+        "analysis_set_id": qualitative_basis["analysis_set_id"] if qualitative_basis else None,
+        "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+        "output_payload_hash": qualitative_basis["output_payload_hash"] if qualitative_basis else None,
         "reviewed_output_item_summary": {
             "reviewed_item_count": len(review_state.get("reviewed_output_items") or []),
             "unresolved_trace_count": int(review_state.get("unresolved_trace_count") or 0),
         },
+        "package_commit_enabled": False,
         "package_review_submit_enabled": package_review_submit_enabled,
         "handoff_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_url_enabled": False,
         "downstream_unavailable": list(downstream_unavailable),
+        "next_allowed_actions": [] if qualitative_aps_commit else ["submit_package_review"],
         "next_state": PACKAGE_CONSTRUCTED_STATE,
         "authority_rail": _authority_rail(
             session_id=session_id,
             current_gate="package",
-            persistence_mode="durable_package_construction",
+            persistence_mode=(
+                "durable_qual_aps_package_construction"
+                if qualitative_aps_commit
+                else "durable_package_construction"
+            ),
             downstream_unavailable=downstream_unavailable,
             execution_enabled=False,
             package_review_enabled=False,

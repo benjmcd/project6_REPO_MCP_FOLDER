@@ -1,8 +1,8 @@
 # Layer 3 Qualitative APS Package Construction Freeze
 
-Status: implementation-entry freeze for `qual_aps_package_construction_commit_entry`.
+Status: current-main runtime boundary for `qual_aps_package_construction_commit_entry`.
 
-This document selects the next bounded runtime tranche after the live read-only `qual_aps_package_review_preview_only` boundary. It admits only a future package-construction commit for one approved standalone APS content-document qualitative result that already passed package-review preview. It does not admit package-review submit, handoff/export, APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, broad qualitative/hybrid/RAG behavior, hidden LLM planning, full mockup activation, model/migration work beyond existing package rows, or authentication/security behavior.
+This document governs the bounded runtime tranche after the live read-only `qual_aps_package_review_preview_only` boundary. It admits only package-construction commit for one approved standalone APS content-document qualitative result that already passed package-review preview. It does not admit package-review submit, handoff/export, APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, broad qualitative/hybrid/RAG behavior, hidden LLM planning, full mockup activation, model/migration work beyond existing package rows, or authentication/security behavior.
 
 ## Authority Snapshot
 
@@ -19,11 +19,11 @@ This document selects the next bounded runtime tranche after the live read-only 
 - selected future mode: `qual_aps_package_construction_commit_entry`
 - selected future response schema: `layer3.qual_aps_package_construction_commit.v1`
 - package kinds: `canonical_internal`, `user_facing`, `review_facing`
-- current blocker: `backend/app/services/layer3_workbench.py` raises `qualitative_aps_package_construction_commit_not_admitted`
+- live behavior: `backend/app/services/layer3_workbench.py` admits qualitative APS package construction through `layer3.qual_aps_package_construction_commit.v1`
 - submit blocker that must remain after construction: `qualitative_aps_package_review_submit_not_admitted`
 - companion contract: `141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
 
-Live source and tests outrank this planning document. This document is a freeze for the next implementation-entry boundary only.
+Live source and tests outrank this planning document. This document now tracks the bounded runtime boundary only.
 
 ## Decision
 
@@ -31,13 +31,13 @@ The selected next runtime mode is:
 
 - `qual_aps_package_construction_commit_entry`
 
-The selected mode may construct the first durable qualitative APS package set from an already approved standalone APS qualitative result and an already available qualitative package-review preview. It may create exactly one reconciliation authority record and exactly three package rows for the candidate package kinds. It may write exactly the package payload files needed for those rows. It must stop before package-review submit and all downstream delivery behavior.
+The selected mode constructs the first durable qualitative APS package set from an already approved standalone APS qualitative result and an already available qualitative package-review preview. It creates exactly one reconciliation authority record and exactly three package rows for the candidate package kinds. It writes exactly the package payload files needed for those rows. It must stop before package-review submit and all downstream delivery behavior.
 
 This is not package mutation, package supersession, connector dispatch, external export/download, provider URL generation, rendered UI work, source expansion, or broad qualitative execution.
 
 ## Why This Comes Next
 
-PR `#702` proved the standalone APS qualitative path through result review. PR `#706` made read-only package-review preview live. PR `#707` kept package construction and submit fail-closed where they are still not admitted. The next coherent milestone is therefore to define the first package-construction commit boundary before any runtime implementation touches package rows or files.
+PR `#702` proved the standalone APS qualitative path through result review. PR `#706` made read-only package-review preview live. PR `#707` kept package construction and submit fail-closed before this boundary. PR `#708` froze the construction entry. The current implementation now admits the first package-construction commit boundary and still stops before package-review submit.
 
 This pass must come before package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, and provider/public URL behavior because those depend on a durable package set that does not yet exist for qualitative APS output.
 
@@ -45,7 +45,7 @@ This pass must come after the preview boundary because package construction need
 
 ## Runtime Shape
 
-A later implementation may include only:
+The implementation includes only:
 
 - extending the existing `POST /api/v1/layer3/package/review/commit` route for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`;
 - a qualitative-specific response schema `layer3.qual_aps_package_construction_commit.v1`;
@@ -72,7 +72,7 @@ The implementation must derive every payload from existing persisted state and t
 
 ## Allowed Writes
 
-Only these writes may be admitted by a later implementation:
+Only these writes are admitted:
 
 - one `L3ReconciliationRecord` for the qualitative APS constructed package set;
 - three `L3OutputPackage` rows, one for each admitted package kind;
