@@ -112,6 +112,7 @@ from app.services.layer3_package_entry import (
 from app.services.layer3_package_submit_response import (
     COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+    QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     package_review_submit_response as _package_review_submit_response,
 )
 from app.services.layer3_handoff_export_response import (
@@ -5700,8 +5701,16 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         associated_cohort_submit=associated_cohort_submit,
         qualitative_aps_submit=qualitative_aps_submit,
     )
+    package_review_submit_schema_id = (
+        QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        if qualitative_aps_submit
+        else COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        if associated_cohort_submit
+        else PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    )
     submit_state = {
         "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+        "package_review_submit_schema_id": package_review_submit_schema_id,
         "client_request_id": request_id,
         "submit_record_ref": submit_record_ref,
         "authority_basis": submit_basis,
@@ -5744,6 +5753,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         **_json_clone(session.summary_json or {}),
         "package_review_submit": {
             "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+            "package_review_submit_schema_id": package_review_submit_schema_id,
             "submit_record_ref": submit_record_ref,
             "package_review_state": package_review_state,
             "operator_decision": operator_decision,
@@ -5804,9 +5814,11 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
     preview_hash = str(payload.get("preview_hash") or "").strip()
     supplied_review_ref = str(payload.get("result_review_record_ref") or "").strip()
     supplied_package_preview_hash = str(payload.get("package_review_preview_hash") or "").strip()
+    supplied_construction_basis_hash = str(payload.get("construction_basis_hash") or "").strip()
     reconciliation_record_id = str(payload.get("reconciliation_record_id") or "").strip()
     supplied_submit_ref = str(payload.get("package_review_submit_record_ref") or "").strip()
     supplied_package_review_state = str(payload.get("package_review_state") or "").strip()
+    supplied_package_review_submit_schema_id = str(payload.get("package_review_submit_schema_id") or "").strip()
     handoff_target = str(payload.get("handoff_target") or "").strip()
     export_mode = str(payload.get("export_mode") or "").strip()
     operator_decision = str(payload.get("operator_decision") or "").strip()
@@ -5829,6 +5841,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             ("reconciliation_record_id", reconciliation_record_id),
             ("package_review_submit_record_ref", supplied_submit_ref),
             ("package_review_state", supplied_package_review_state),
+            ("package_review_submit_schema_id", supplied_package_review_submit_schema_id),
             ("handoff_target", handoff_target),
             ("export_mode", export_mode),
             ("operator_decision", operator_decision),
@@ -5945,17 +5958,12 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         or status_body.get("pass_scope") == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
         or output_metadata_summary.get("source_gate") == QUAL_APS_SOURCE_GATE
     )
-    if qualitative_aps_prepare:
+    if qualitative_aps_prepare and supplied_analysis_run_id:
         raise Layer3WorkbenchError(
-            "qualitative_aps_handoff_export_prepare_not_admitted",
-            (
-                "Qualitative APS handoff/export preparation is intentionally blocked until "
-                "qual_aps_handoff_export_prepare_entry is implemented."
-            ),
-            status="blocked",
-            http_status=409,
-            blocked_fields=["pass_run_id", "package_review_preview_hash"],
-            next_allowed_actions=["inspect_qualitative_aps_package_review_submit_state"],
+            "qualitative_aps_handoff_export_prepare_analysis_run_not_admitted",
+            "Qualitative APS handoff/export preparation must not provide analysis_run_id.",
+            status="invalid",
+            blocked_fields=["analysis_run_id"],
         )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
@@ -5985,6 +5993,17 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             blocked_fields=["pass_run_id"],
         )
     associated_cohort_prepare = False
+    qualitative_basis = None
+    if qualitative_aps_prepare:
+        qualitative_basis = _require_qualitative_aps_package_review_authority(
+            db,
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            status_body=status_body,
+            pass_run=pass_run,
+            output_metadata_summary=output_metadata_summary,
+        )
     if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
         associated_cohort_prepare = _associated_cohort_result_source_admitted(
             status_body=status_body,
@@ -6061,16 +6080,28 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
-    expected_package_preview_hash = _package_review_preview_hash(
-        session_id=session_id,
-        analysis_plan_id=analysis_plan_id,
-        pass_run_id=pass_run_id,
-        preview_id=preview_id,
-        preview_hash=preview_hash,
-        analysis_run_id=analysis_run_id,
-        result_review_record_ref=supplied_review_ref,
-        output_metadata_summary=output_metadata_summary,
-    )
+    if qualitative_basis is not None:
+        expected_package_preview_hash = _qualitative_aps_package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            result_review_record_ref=supplied_review_ref,
+            output_payload_ref=output_metadata_summary.get("output_payload_ref"),
+            qualitative_basis=qualitative_basis,
+        )
+    else:
+        expected_package_preview_hash = _package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            analysis_run_id=analysis_run_id,
+            result_review_record_ref=supplied_review_ref,
+            output_metadata_summary=output_metadata_summary,
+        )
     if supplied_package_preview_hash != expected_package_preview_hash:
         raise Layer3WorkbenchError(
             "handoff_export_prepare_preview_mismatch",
@@ -6149,6 +6180,13 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["payload_refs", "payload_hashes"],
         )
+    if qualitative_aps_prepare and raw_payload_refs is None:
+        raise Layer3WorkbenchError(
+            "qualitative_aps_handoff_export_prepare_payload_refs_required",
+            "Qualitative APS handoff/export preparation requires explicit payload_refs authority.",
+            status="invalid",
+            blocked_fields=["payload_refs"],
+        )
     if raw_payload_refs is not None:
         canonical_payload_refs = _canonical_payload_refs(payload_refs=raw_payload_refs, packages=packages)
         if canonical_payload_refs is None:
@@ -6197,10 +6235,26 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["reconciliation_record_id"],
         )
+    if qualitative_aps_prepare and package_construction_source_gate != SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "qualitative_aps_handoff_export_prepare_construction_source_gate_mismatch",
+            "Qualitative APS handoff/export preparation requires qualitative APS package-construction authority from docs 140/141.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
     if not associated_cohort_prepare and package_construction_source_gate == SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE:
         raise Layer3WorkbenchError(
             "handoff_export_prepare_construction_source_gate_mismatch",
             "Single-item handoff/export preparation cannot use associated-cohort package-construction authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+    if not qualitative_aps_prepare and package_construction_source_gate == SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_construction_source_gate_mismatch",
+            "Non-qualitative handoff/export preparation cannot use qualitative APS package-construction authority.",
             status="conflict",
             http_status=409,
             blocked_fields=["reconciliation_record_id"],
@@ -6221,6 +6275,25 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=commit_mismatches,
         )
+    expected_construction_basis_hash = str(
+        commit_summary.get("construction_basis_hash") or commit_summary.get("authority_basis_hash") or ""
+    )
+    if qualitative_aps_prepare:
+        if not supplied_construction_basis_hash:
+            raise Layer3WorkbenchError(
+                "missing_qualitative_aps_handoff_export_prepare_fields",
+                "Qualitative APS handoff/export preparation requires construction_basis_hash.",
+                status="invalid",
+                blocked_fields=["construction_basis_hash"],
+            )
+        if supplied_construction_basis_hash != expected_construction_basis_hash:
+            raise Layer3WorkbenchError(
+                "qualitative_aps_handoff_export_prepare_construction_basis_mismatch",
+                "Supplied construction_basis_hash does not match the persisted qualitative APS package construction.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["construction_basis_hash"],
+            )
 
     package_review_submit = _package_review_submit_from_reconciliation(reconciliation)
     if package_review_submit is None:
@@ -6249,6 +6322,21 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["package_review_submit_record_ref"],
         )
+    expected_submit_schema_id = (
+        QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        if qualitative_aps_prepare
+        else COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        if associated_cohort_prepare
+        else PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    )
+    if supplied_package_review_submit_schema_id != expected_submit_schema_id:
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_submit_schema_mismatch",
+            "Supplied package_review_submit_schema_id does not match the admitted package-review submit authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_submit_schema_id"],
+        )
 
     submit_mismatches = [
         field
@@ -6260,8 +6348,10 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "analysis_run_id": analysis_run_id,
             "result_review_record_ref": supplied_review_ref,
             "package_review_preview_hash": supplied_package_preview_hash,
+            "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_prepare else None,
             "reconciliation_record_id": reconciliation_record_id,
             "package_construction_source_gate": package_construction_source_gate,
+            "package_review_submit_schema_id": expected_submit_schema_id,
         }.items()
         if str(package_review_submit.get(field) or "") != str(expected or "")
     ]
@@ -6288,6 +6378,38 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             output_metadata_summary.get("source_dataset_version_ids") or []
         ):
             submit_mismatches.append("source_dataset_version_ids")
+    if qualitative_aps_prepare:
+        qualitative_submit_expectations = {
+            "pass_type": PASS_TYPE_SINGLE_ITEM,
+            "pass_scope": PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
+            "method": QUAL_APS_METHOD_NAME,
+            "source_gate": QUAL_APS_SOURCE_GATE,
+            "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT,
+        }
+        submit_mismatches.extend(
+            field
+            for field, expected in qualitative_submit_expectations.items()
+            if str(package_review_submit.get(field) or "") != expected
+        )
+        if list(package_review_submit.get("source_dataset_version_ids") or []) != []:
+            submit_mismatches.append("source_dataset_version_ids")
+        if list(package_review_submit.get("payload_refs") or []) != canonical_payload_refs:
+            submit_mismatches.append("payload_refs")
+        authority_basis = package_review_submit.get("authority_basis")
+        if not isinstance(authority_basis, dict):
+            submit_mismatches.append("authority_basis")
+        else:
+            for field, expected in {
+                "content_id": qualitative_basis["content_id"] if qualitative_basis is not None else "",
+                "content_contract_id": qualitative_basis["content_contract_id"] if qualitative_basis is not None else "",
+                "chunking_contract_id": qualitative_basis["chunking_contract_id"] if qualitative_basis is not None else "",
+                "material_snapshot_id": qualitative_basis["material_snapshot_id"] if qualitative_basis is not None else "",
+                "analysis_unit_id": qualitative_basis["analysis_unit_id"] if qualitative_basis is not None else "",
+                "analysis_set_id": qualitative_basis["analysis_set_id"] if qualitative_basis is not None else "",
+                "output_payload_hash": qualitative_basis["output_payload_hash"] if qualitative_basis is not None else "",
+            }.items():
+                if str(authority_basis.get(field) or "") != expected:
+                    submit_mismatches.append(field)
     if submit_mismatches:
         raise Layer3WorkbenchError(
             "handoff_export_prepare_package_review_submit_mismatch",
@@ -6297,8 +6419,14 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             blocked_fields=sorted(set(submit_mismatches)),
         )
 
+    source_shape = SOURCE_SHAPE_APS_CONTENT_DOCUMENT if qualitative_aps_prepare else output_metadata_summary.get("cohort_shape")
+    source_dataset_version_ids = [] if qualitative_aps_prepare else _json_clone(
+        output_metadata_summary.get("source_dataset_version_ids") or []
+    )
+    prepare_pass_type = PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type
     preparation_basis = {
         "schema_id": "layer3.handoff_export_prepare_authority.v1",
+        "package_review_submit_schema_id": expected_submit_schema_id,
         "session_id": session_id,
         "analysis_plan_id": analysis_plan_id,
         "pass_run_id": pass_run_id,
@@ -6307,6 +6435,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "analysis_run_id": analysis_run_id,
         "result_review_record_ref": supplied_review_ref,
         "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_prepare else None,
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": expected_package_ids,
         "package_kinds": [package.package_kind for package in ordered_packages],
@@ -6318,16 +6447,28 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "export_mode": "prepare_only",
         "operator_decision": operator_decision,
         "decision_notes": decision_notes or None,
-        "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type,
+        "pass_type": prepare_pass_type,
         "pass_scope": output_metadata_summary.get("pass_scope"),
         "method": output_metadata_summary.get("selected_method_name"),
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
-        "source_shape": output_metadata_summary.get("cohort_shape"),
-        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "source_shape": source_shape,
+        "source_dataset_version_ids": source_dataset_version_ids,
     }
-    if associated_cohort_prepare:
-        preparation_basis["package_review_submit_schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    if qualitative_basis is not None:
+        preparation_basis.update(
+            {
+                "content_id": qualitative_basis["content_id"],
+                "content_contract_id": qualitative_basis["content_contract_id"],
+                "chunking_contract_id": qualitative_basis["chunking_contract_id"],
+                "material_snapshot_id": qualitative_basis["material_snapshot_id"],
+                "analysis_unit_id": qualitative_basis["analysis_unit_id"],
+                "analysis_set_id": qualitative_basis["analysis_set_id"],
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": qualitative_basis["output_payload_hash"],
+                "chunk_count": qualitative_basis["chunk_count"],
+            }
+        )
     prepare_record_ref = _stable_id("l3-handoff-export-prepare", preparation_basis)
     if existing_prepare is not None:
         if existing_prepare.get("prepare_record_ref") == prepare_record_ref:
@@ -6378,21 +6519,39 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "package_kinds": [package.package_kind for package in ordered_packages],
             "payload_refs": canonical_payload_refs,
             "payload_hashes": canonical_payload_hashes,
-            "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type,
+            "package_review_submit_schema_id": expected_submit_schema_id,
+            "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_prepare else None,
+            "pass_type": prepare_pass_type,
             "pass_scope": output_metadata_summary.get("pass_scope"),
             "method": output_metadata_summary.get("selected_method_name"),
             "source_gate": output_metadata_summary.get("source_gate"),
             "package_construction_source_gate": package_construction_source_gate,
-            "source_shape": output_metadata_summary.get("cohort_shape"),
-            "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+            "source_shape": source_shape,
+            "source_dataset_version_ids": _json_clone(source_dataset_version_ids),
             "prepared_at": recorded_at,
             "external_handoff_enabled": False,
             "external_export_enabled": False,
             "dispatch_enabled": False,
+            "aps_handoff_enabled": False,
+            "external_export_download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_url_enabled": False,
             "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         }
-        if associated_cohort_prepare:
-            envelope["package_review_submit_schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        if qualitative_basis is not None:
+            envelope.update(
+                {
+                    "content_id": qualitative_basis["content_id"],
+                    "content_contract_id": qualitative_basis["content_contract_id"],
+                    "chunking_contract_id": qualitative_basis["chunking_contract_id"],
+                    "material_snapshot_id": qualitative_basis["material_snapshot_id"],
+                    "analysis_unit_id": qualitative_basis["analysis_unit_id"],
+                    "analysis_set_id": qualitative_basis["analysis_set_id"],
+                    "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                    "output_payload_hash": qualitative_basis["output_payload_hash"],
+                    "chunk_count": qualitative_basis["chunk_count"],
+                }
+            )
     prepare_state = {
         "schema_id": HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
         "client_request_id": request_id,
@@ -6412,26 +6571,44 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "analysis_run_id": analysis_run_id,
         "result_review_record_ref": supplied_review_ref,
         "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_prepare else None,
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": expected_package_ids,
         "package_kinds": [package.package_kind for package in ordered_packages],
         "payload_refs": canonical_payload_refs,
         "payload_hashes": canonical_payload_hashes,
-        "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type,
+        "package_review_submit_schema_id": expected_submit_schema_id,
+        "pass_type": prepare_pass_type,
         "pass_scope": output_metadata_summary.get("pass_scope"),
         "method": output_metadata_summary.get("selected_method_name"),
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
-        "source_shape": output_metadata_summary.get("cohort_shape"),
-        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "source_shape": source_shape,
+        "source_dataset_version_ids": _json_clone(source_dataset_version_ids),
         "recorded_at": recorded_at,
         "external_handoff_enabled": False,
         "external_export_enabled": False,
         "dispatch_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_url_enabled": False,
         "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
     }
-    if associated_cohort_prepare:
-        prepare_state["package_review_submit_schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    if qualitative_basis is not None:
+        prepare_state.update(
+            {
+                "content_id": qualitative_basis["content_id"],
+                "content_contract_id": qualitative_basis["content_contract_id"],
+                "chunking_contract_id": qualitative_basis["chunking_contract_id"],
+                "material_snapshot_id": qualitative_basis["material_snapshot_id"],
+                "analysis_unit_id": qualitative_basis["analysis_unit_id"],
+                "analysis_set_id": qualitative_basis["analysis_set_id"],
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": qualitative_basis["output_payload_hash"],
+                "chunk_count": qualitative_basis["chunk_count"],
+            }
+        )
     if envelope is not None:
         prepare_state["handoff_export_envelope"] = envelope
 
@@ -6453,19 +6630,39 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "reconciliation_record_id": reconciliation_record_id,
             "output_package_ids": expected_package_ids,
             "package_kinds": [package.package_kind for package in ordered_packages],
-            "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type,
+            "package_review_submit_schema_id": expected_submit_schema_id,
+            "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_prepare else None,
+            "pass_type": prepare_pass_type,
             "pass_scope": output_metadata_summary.get("pass_scope"),
             "method": output_metadata_summary.get("selected_method_name"),
             "source_gate": output_metadata_summary.get("source_gate"),
             "package_construction_source_gate": package_construction_source_gate,
-            "source_shape": output_metadata_summary.get("cohort_shape"),
-            "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+            "source_shape": source_shape,
+            "source_dataset_version_ids": _json_clone(source_dataset_version_ids),
             "external_handoff_enabled": False,
             "external_export_enabled": False,
             "dispatch_enabled": False,
+            "aps_handoff_enabled": False,
+            "external_export_download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_url_enabled": False,
             "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         },
     }
+    if qualitative_basis is not None:
+        session.summary_json["handoff_export_prepare"].update(
+            {
+                "content_id": qualitative_basis["content_id"],
+                "content_contract_id": qualitative_basis["content_contract_id"],
+                "chunking_contract_id": qualitative_basis["chunking_contract_id"],
+                "material_snapshot_id": qualitative_basis["material_snapshot_id"],
+                "analysis_unit_id": qualitative_basis["analysis_unit_id"],
+                "analysis_set_id": qualitative_basis["analysis_set_id"],
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": qualitative_basis["output_payload_hash"],
+                "chunk_count": qualitative_basis["chunk_count"],
+            }
+        )
     db.commit()
 
     return _handoff_export_prepare_response(
@@ -8817,8 +9014,17 @@ def _package_review_submit_summary(
             associated_cohort_submit=recorded_cohort_submit,
             qualitative_aps_submit=recorded_qualitative_submit,
         )
+        recorded_submit_schema_id = (
+            QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            if recorded_qualitative_submit
+            else COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            if recorded_cohort_submit
+            else PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        )
         return {
             "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+            "package_review_submit_schema_id": recorded_submit.get("package_review_submit_schema_id")
+            or recorded_submit_schema_id,
             "available": False,
             "state": recorded_submit.get("package_review_state"),
             "blocked_reason": None,
@@ -8856,6 +9062,13 @@ def _package_review_submit_summary(
     )
     return {
         "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+        "package_review_submit_schema_id": (
+            QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            if qualitative_package_construction
+            else COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            if cohort_package_construction
+            else PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        ),
         "available": True,
         "state": PACKAGE_REVIEW_SUBMIT_READY_STATE,
         "blocked_reason": None,
@@ -8948,6 +9161,14 @@ def _handoff_export_prepare_summary(
         package_review_submit_state.get("package_construction_source_gate")
         or reconciliation_summary.get("source_gate")
     )
+    prepare_submit_schema_id = (
+        QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        if _is_qualitative_aps_package_construction_source(package_construction_source_gate)
+        else COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        if _is_cohort_package_construction_source(package_construction_source_gate)
+        else package_review_submit_state.get("package_review_submit_schema_id")
+        or PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    )
     recorded_prepare = _handoff_export_prepare_from_reconciliation(reconciliation)
     if recorded_prepare is not None:
         recorded_envelope = recorded_prepare.get("handoff_export_envelope")
@@ -8974,6 +9195,7 @@ def _handoff_export_prepare_summary(
                 recorded_prepare.get("package_review_preview_hash")
                 or package_review_submit_state.get("package_review_preview_hash")
             ),
+            "construction_basis_hash": recorded_prepare.get("construction_basis_hash"),
             "reconciliation_record_id": reconciliation_record_id,
             "output_package_ids": [package.output_package_id for package in ordered_packages],
             "package_kinds": [package.package_kind for package in ordered_packages],
@@ -8994,11 +9216,16 @@ def _handoff_export_prepare_summary(
                 or package_review_submit_state.get("source_dataset_version_ids")
                 or []
             ),
-            "package_review_submit_schema_id": recorded_prepare.get("package_review_submit_schema_id"),
+            "package_review_submit_schema_id": recorded_prepare.get("package_review_submit_schema_id")
+            or prepare_submit_schema_id,
             "handoff_export_prepare_enabled": False,
             "external_handoff_enabled": False,
             "external_export_enabled": False,
             "dispatch_enabled": False,
+            "aps_handoff_enabled": bool(recorded_prepare.get("aps_handoff_enabled")),
+            "external_export_download_enabled": bool(recorded_prepare.get("external_export_download_enabled")),
+            "connector_dispatch_enabled": bool(recorded_prepare.get("connector_dispatch_enabled")),
+            "provider_public_url_enabled": bool(recorded_prepare.get("provider_public_url_enabled")),
             "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         }
     return {
@@ -9009,6 +9236,7 @@ def _handoff_export_prepare_summary(
         "analysis_run_id": package_review_submit_state.get("analysis_run_id"),
         "result_review_record_ref": package_review_submit_state.get("result_review_record_ref"),
         "package_review_preview_hash": package_review_submit_state.get("package_review_preview_hash"),
+        "construction_basis_hash": package_review_submit_state.get("construction_basis_hash"),
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": [package.output_package_id for package in ordered_packages],
         "package_kinds": [package.package_kind for package in ordered_packages],
@@ -9023,15 +9251,15 @@ def _handoff_export_prepare_summary(
         "package_construction_source_gate": package_construction_source_gate,
         "source_shape": package_review_submit_state.get("source_shape"),
         "source_dataset_version_ids": _json_clone(package_review_submit_state.get("source_dataset_version_ids") or []),
-        "package_review_submit_schema_id": (
-            COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
-            if _is_cohort_package_construction_source(package_construction_source_gate)
-            else None
-        ),
+        "package_review_submit_schema_id": prepare_submit_schema_id,
         "handoff_export_prepare_enabled": True,
         "external_handoff_enabled": False,
         "external_export_enabled": False,
         "dispatch_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_url_enabled": False,
         "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
     }
 
@@ -9072,6 +9300,33 @@ def _aps_handoff_dispatch_summary(
             handoff_export_prepare_state.get("package_construction_source_gate")
         )
     )
+    qualitative_prepare_source = (
+        handoff_export_prepare_state.get("pass_scope") == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+        or _is_qualitative_aps_package_construction_source(
+            handoff_export_prepare_state.get("package_construction_source_gate")
+        )
+    )
+    if qualitative_prepare_source:
+        return {
+            "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+            "available": False,
+            "state": APS_HANDOFF_UNAVAILABLE_STATE,
+            "blocked_reason": "qualitative_aps_aps_handoff_dispatch_not_admitted",
+            "reconciliation_record_id": reconciliation_record_id,
+            "prepare_record_ref": prepare_record_ref,
+            "handoff_export_envelope_ref": envelope_ref,
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "aps_output_package_id": None,
+            "aps_output_package_kind": None,
+            "aps_bundle_ref": None,
+            "aps_bundle_id": None,
+            "aps_schema_id": None,
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
+        }
     if cohort_prepare_source and not _associated_cohort_aps_dispatch_prepare_state_admitted(
         handoff_export_prepare_state
     ):

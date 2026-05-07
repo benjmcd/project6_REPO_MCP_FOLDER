@@ -621,9 +621,9 @@
     "latest_qual_aps_package_review_submit_runtime_branch": "codex/l3-qual-aps-package-submit",
     "latest_qual_aps_package_review_submit_runtime_live_behavior_change": true,
     "latest_qual_aps_package_review_submit_runtime_summary": "Admits only qual_aps_package_review_submit_entry through POST /api/v1/layer3/package/review/submit and response schema layer3.qual_aps_package_review_submit.v1. The runtime records exactly one qualitative APS package-review decision object in existing JSON-bearing state, creates no rows or files, preserves package refs, hashes, and payload files, and keeps handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration expansion, broad qualitative/hybrid behavior, package mutation/reconstruction, and package supersession blocked.",
-    "latest_qual_aps_handoff_export_prepare_freeze_branch": "codex/l3-qual-aps-handoff-prepare-guard",
+    "latest_qual_aps_handoff_export_prepare_freeze_branch": "codex/l3-qual-aps-handoff-prepare-runtime",
     "latest_qual_aps_handoff_export_prepare_freeze_live_behavior_change": true,
-    "latest_qual_aps_handoff_export_prepare_freeze_summary": "Docs 145 and 146 select only the future qual_aps_handoff_export_prepare_entry boundary after live qualitative APS package-review submit. Current main explicitly fails closed with qualitative_aps_handoff_export_prepare_not_admitted until that future boundary is implemented. The freeze prefers reuse of POST /api/v1/layer3/handoff/export/prepare if implementation audit proves qualitative APS authority remains unambiguous, requires package-review submit schema layer3.qual_aps_package_review_submit.v1, persisted construction and submit authority, exactly three package rows, matching package ids/kinds/payload refs/payload hashes, and a prepare-only internal envelope decision. It admits no qualitative APS handoff/export prepare runtime."
+    "latest_qual_aps_handoff_export_prepare_freeze_summary": "Admits only qual_aps_handoff_export_prepare_entry through POST /api/v1/layer3/handoff/export/prepare and response schema layer3.qual_aps_handoff_export_prepare.v1. The runtime records exactly one qualitative APS prepare-only handoff/export decision/envelope object in existing JSON-bearing state, creates no rows or files, preserves package refs, hashes, and payload files, and keeps APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration expansion, broad qualitative/hybrid behavior, package mutation/reconstruction, and package supersession blocked."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -5230,27 +5230,37 @@
     ]
   },
   "qual_aps_handoff_export_prepare_freeze_proof": {
-    "scope": "Fail-closed guard plus planning/control metadata for docs 145 and 146, which freeze the future qualitative APS handoff/export prepare boundary only.",
-    "implementation_branch": "codex/l3-qual-aps-handoff-prepare-guard",
+    "scope": "Live bounded runtime and proof metadata for docs 145 and 146, which govern the qualitative APS handoff/export prepare boundary only.",
+    "implementation_branch": "codex/l3-qual-aps-handoff-prepare-runtime",
     "live_behavior_change": true,
-    "new_docs": [
+    "governing_docs": [
       "next_milestone_plans/Layer3_planning_docs/145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md"
     ],
-    "runtime_guard_files": [
+    "runtime_files": [
       "backend/app/services/layer3_workbench.py",
-      "backend/tests/test_layer3_bounded_e2e.py"
+      "backend/app/services/layer3_handoff_contract.py",
+      "backend/app/services/layer3_handoff_export_response.py",
+      "backend/app/api/layer3.py"
+    ],
+    "proof_files": [
+      "backend/tests/test_layer3_bounded_e2e.py",
+      "backend/tests/test_layer3_handoff_export_response.py",
+      "backend/tests/test_layer3_api.py",
+      "tools/l3-progress-check.py"
     ],
     "authority_basis": [
       "The live qualitative APS package-review submit runtime records approved submit authority without creating rows or files.",
-      "Current main still lacks qualitative APS-specific handoff/export prepare authority and explicitly fails closed with qualitative_aps_handoff_export_prepare_not_admitted.",
-      "The existing generic handoff/export prepare route is a route-family pattern only until qualitative APS preview, construction, and submit authority are explicitly validated.",
-      "Docs 145 and 146 select only the next implementation-entry boundary and do not make handoff/export prepare runtime live."
+      "The live qualitative APS package-construction runtime owns exactly three package rows and server-owned payload refs/hashes/files.",
+      "The handoff/export prepare runtime validates qualitative preview, construction, package-review submit, output payload, APS document/chunk, material, unit, set, package id, payload ref, and payload hash authority before recording prepare state.",
+      "The former qualitative_aps_handoff_export_prepare_not_admitted guard is removed only for the exact qual_aps_handoff_export_prepare_entry authority chain."
     ],
-    "selected_future_mode": "qual_aps_handoff_export_prepare_entry",
+    "selected_live_mode": "qual_aps_handoff_export_prepare_entry",
+    "selected_live_response_schema": "layer3.qual_aps_handoff_export_prepare.v1",
     "negative_invariants": [
-      "no qualitative APS handoff/export prepare runtime admission",
-      "no handoff/export prepare runtime admission",
+      "no new DB rows",
+      "no file writes",
+      "no package payload rewrite",
       "no APS dispatch",
       "no external export/download",
       "no connector or destination dispatch",
@@ -5261,16 +5271,18 @@
       "no hidden LLM planning",
       "no full mockup activation",
       "no auth/security behavior change",
-      "no route, DTO, model, migration, or successful handoff/export prepare behavior"
+      "no route/model/migration expansion"
     ],
     "required_validation": [
       "python -m py_compile .\\tools\\l3-progress-check.py",
       "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
       "python .\\tools\\l3-progress-check.py",
-      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q -k standalone_aps_content_document_qualitative",
+      "python -m pytest .\\backend\\tests\\test_layer3_handoff_export_response.py -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"handoff_export_prepare or package_review_submit\"",
       "git diff --check"
     ],
-    "next_boundary": "A later runtime pass may implement only qual_aps_handoff_export_prepare_entry and must stop before APS dispatch, external export/download, connector/destination dispatch, provider/public URL, rendered controls, source expansion, RAG/vector behavior, hidden LLM planning, full mockup activation, auth/security behavior, package mutation/reconstruction, or model/migration work."
+    "next_boundary": "The next pass should freeze qualitative APS APS handoff dispatch before any dispatch runtime, external export/download, connector/destination dispatch, provider/public URL, rendered control, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, package mutation/reconstruction, or model/migration work."
   }
 }

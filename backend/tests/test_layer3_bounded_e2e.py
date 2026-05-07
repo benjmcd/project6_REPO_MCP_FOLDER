@@ -449,7 +449,7 @@ class Layer3ApiDriver:
             },
         )
 
-    def qualitative_handoff_prepare_blocked(
+    def qualitative_handoff_prepare(
         self,
         *,
         session_id: str,
@@ -461,10 +461,10 @@ class Layer3ApiDriver:
         commit: dict[str, Any],
         submit: dict[str, Any],
     ) -> dict[str, Any]:
-        return self.post_blocked(
+        return self.post_ok(
             "/api/v1/layer3/handoff/export/prepare",
             _handoff_export_prepare_payload(
-                request_id="aps-qual-e2e-handoff-prepare-blocked",
+                request_id="aps-qual-e2e-handoff-prepare",
                 session_id=session_id,
                 preview_body=preview,
                 approval_body=approval,
@@ -1344,7 +1344,7 @@ def _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
         allowed_reconciliations=1,
     )
 
-    handoff_prepare = driver.qualitative_handoff_prepare_blocked(
+    handoff_prepare = driver.qualitative_handoff_prepare(
         session_id=session_id,
         preview=plan_preview,
         approval=plan_approval,
@@ -1354,10 +1354,33 @@ def _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
         commit=package_commit,
         submit=package_submit,
     )
-    assert handoff_prepare["error_code"] == "qualitative_aps_handoff_export_prepare_not_admitted"
-    assert handoff_prepare["status"] == "blocked"
-    assert set(handoff_prepare["blocked_fields"]) == {"pass_run_id", "package_review_preview_hash"}
-    assert handoff_prepare["next_allowed_actions"] == ["inspect_qualitative_aps_package_review_submit_state"]
+    assert handoff_prepare["schema_id"] == "layer3.qual_aps_handoff_export_prepare.v1"
+    assert handoff_prepare["status"] == "prepared"
+    assert handoff_prepare["handoff_export_state"] == "handoff_export_prepared"
+    assert handoff_prepare["analysis_run_id"] is None
+    assert handoff_prepare["construction_basis_hash"] == package_commit["construction_basis_hash"]
+    assert handoff_prepare["package_review_submit_schema_id"] == "layer3.qual_aps_package_review_submit.v1"
+    assert handoff_prepare["package_review_submit_record_ref"] == package_submit["submit_record_ref"]
+    assert handoff_prepare["payload_refs"] == package_commit["payload_refs"]
+    assert handoff_prepare["payload_hashes"] == package_commit["payload_hashes"]
+    assert handoff_prepare["pass_type"] == "single_item"
+    assert handoff_prepare["pass_scope"] == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+    assert handoff_prepare["method"] == QUAL_APS_METHOD_NAME
+    assert handoff_prepare["source_gate"] == QUAL_APS_SOURCE_GATE
+    assert handoff_prepare["package_construction_source_gate"] == "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE"
+    assert handoff_prepare["source_shape"] == "aps_content_document"
+    assert handoff_prepare["source_dataset_version_ids"] == []
+    assert handoff_prepare["external_handoff_enabled"] is False
+    assert handoff_prepare["external_export_enabled"] is False
+    assert handoff_prepare["dispatch_enabled"] is False
+    assert handoff_prepare["aps_handoff_enabled"] is False
+    assert handoff_prepare["external_export_download_enabled"] is False
+    assert handoff_prepare["connector_dispatch_enabled"] is False
+    assert handoff_prepare["provider_public_url_enabled"] is False
+    envelope = handoff_prepare["handoff_export_envelope"]
+    assert envelope["package_review_submit_schema_id"] == "layer3.qual_aps_package_review_submit.v1"
+    assert envelope["construction_basis_hash"] == package_commit["construction_basis_hash"]
+    assert envelope["source_shape"] == "aps_content_document"
     assert state.counts() == commit_counts
     assert state.files() == package_files
     state.assert_forbidden_side_effects_absent(
