@@ -167,3 +167,44 @@ def test_external_export_download_prepare_response_preserves_cohort_delivery_ui_
     assert response["delivery_ui"]["destination_selection_enabled"] is False
     assert response["delivery_ui"]["generic_downstream_dispatch_enabled"] is False
     assert response["delivery_ui"]["package_mutation_enabled"] is False
+
+
+def test_external_export_delivery_helpers_are_shared_with_workbench() -> None:
+    assert layer3_workbench._safe_download_token is export_response.safe_download_token
+    assert (
+        layer3_workbench._external_export_download_prepare_payload_for_delivery
+        is export_response.external_export_download_prepare_payload_for_delivery
+    )
+
+    assert export_response.safe_download_token(" session:bad/name.. ", fallback="fallback") == "session-bad-name"
+    assert export_response.safe_download_token("...", fallback="fallback") == "fallback"
+    assert len(export_response.safe_download_token("x" * 120, fallback="fallback")) == 96
+
+    payload = {
+        "client_request_id": "delivery-request",
+        "session_id": "session-export-response",
+        "operator_decision": "deliver_external_export_download",
+        "decision_notes": "operator delivery note must not override readiness",
+        "export_download_target": "aps_evidence_bundle_download_reference",
+        "download_mode": "reference_only_prepare",
+        "delivery_mode": "same_origin_artifact_stream",
+        "public_url": "not-admitted",
+    }
+    readiness_state = {
+        "client_request_id": "readiness-request",
+        "decision_notes": "readiness note",
+    }
+
+    prepare_payload = export_response.external_export_download_prepare_payload_for_delivery(
+        payload,
+        readiness_state=readiness_state,
+    )
+
+    assert prepare_payload["client_request_id"] == "readiness-request"
+    assert prepare_payload["operator_decision"] == "prepare_external_export_download"
+    assert prepare_payload["decision_notes"] == "readiness note"
+    assert prepare_payload["session_id"] == "session-export-response"
+    assert prepare_payload["export_download_target"] == "aps_evidence_bundle_download_reference"
+    assert prepare_payload["download_mode"] == "reference_only_prepare"
+    assert "delivery_mode" not in prepare_payload
+    assert "public_url" not in prepare_payload

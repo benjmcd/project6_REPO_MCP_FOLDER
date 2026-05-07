@@ -5,6 +5,7 @@ from typing import Any
 from app.models.models import L3OutputPackage, L3ReconciliationRecord
 from app.services.layer3_aps_handoff import PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
 from app.services.layer3_authority_rail import authority_rail
+from app.services.layer3_external_export_contract import EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS
 from app.services.layer3_package_entry import SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
 from app.services.layer3_pass_entry import (
     COHORT_SHAPE_ALIGNED_WIDE_TABLE,
@@ -23,6 +24,7 @@ from app.services.layer3_workbench_package_state import (
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.external_export_download_prepare.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = "layer3.external_export_download_delivery_ui.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_external_export_download"
+EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE = "external_export_download_prepared"
 HANDOFF_EXPORT_PREPARED_STATE = "handoff_export_prepared"
 APS_HANDOFF_DISPATCHED_STATE = "aps_handoff_dispatched"
@@ -221,3 +223,26 @@ def external_export_download_prepare_response(
     if isinstance(descriptor, dict):
         body["external_export_download_descriptor"] = descriptor
     return body
+
+
+def safe_download_token(value: str, *, fallback: str) -> str:
+    token = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "-" for ch in str(value or "").strip())
+    token = token.strip(".-")
+    return (token or fallback)[:96]
+
+
+def external_export_download_prepare_payload_for_delivery(
+    payload: dict[str, Any],
+    *,
+    readiness_state: dict[str, Any],
+) -> dict[str, Any]:
+    prepare_payload = {
+        key: payload[key]
+        for key in EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS
+        if key in payload and key not in {"client_request_id", "operator_decision", "decision_notes"}
+    }
+    prepare_payload["client_request_id"] = str(readiness_state.get("client_request_id") or "").strip()
+    prepare_payload["operator_decision"] = EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION
+    if readiness_state.get("decision_notes") is not None:
+        prepare_payload["decision_notes"] = readiness_state.get("decision_notes")
+    return prepare_payload
