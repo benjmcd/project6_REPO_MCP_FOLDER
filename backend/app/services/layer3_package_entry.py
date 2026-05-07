@@ -62,6 +62,7 @@ RECONCILIATION_STATUS_REVIEW_ONLY = "review_only"
 SOURCE_GATE_D_PACKAGE_FREEZE = "08_GATED_PACKAGE_FREEZE"
 SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE = "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE"
 SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE = "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
+SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE = "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE"
 PACKAGE_SCHEMA_VERSION = 1
 
 FINALIZED_PACKAGE_SESSION_STATUSES = frozenset(
@@ -1023,10 +1024,13 @@ def materialize_workbench_package_commit(
     source_gate: str = SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
     package_review_submit_enabled: bool = True,
     downstream_unavailable: list[str] | tuple[str, ...] | None = None,
+    authority_schema_id: str = "layer3.workbench_package_construction_authority.v1",
+    authority_basis_extra: dict[str, Any] | None = None,
+    package_payload_extras_by_kind: dict[str, dict[str, Any]] | None = None,
 ) -> Layer3PackageEntryResult:
     unavailable = list(downstream_unavailable or ["handoff", "export"])
     authority_basis = {
-        "schema_id": "layer3.workbench_package_construction_authority.v1",
+        "schema_id": authority_schema_id,
         "client_request_id": client_request_id,
         "session_id": session.session_id,
         "analysis_plan_id": analysis_plan.analysis_plan_id,
@@ -1040,6 +1044,8 @@ def materialize_workbench_package_commit(
         "unresolved_trace_count": int(result_review_state.get("unresolved_trace_count") or 0),
         "source_gate": source_gate,
     }
+    if authority_basis_extra:
+        authority_basis.update(_json_clone(authority_basis_extra))
     authority_basis_hash = _workbench_authority_basis_hash(authority_basis)
     existing = _existing_workbench_package_result(
         db,
@@ -1128,6 +1134,14 @@ def materialize_workbench_package_commit(
             "handoff remains deferred",
         ],
     }
+    package_payloads = {
+        PACKAGE_KIND_CANONICAL_INTERNAL: canonical_payload,
+        PACKAGE_KIND_USER_FACING: user_facing_payload,
+        PACKAGE_KIND_REVIEW_FACING: review_facing_payload,
+    }
+    for package_kind, extra in (package_payload_extras_by_kind or {}).items():
+        if package_kind in package_payloads and isinstance(extra, dict):
+            package_payloads[package_kind].update(_json_clone(extra))
     reconciliation_summary = {
         "analysis_plan_id": analysis_plan.analysis_plan_id,
         "pass_run_ids_json": [pass_run.pass_run_id],
@@ -1157,11 +1171,12 @@ def materialize_workbench_package_commit(
     db.flush()
 
     package_rows: list[L3OutputPackage] = []
-    for package_kind, payload in (
-        (PACKAGE_KIND_CANONICAL_INTERNAL, canonical_payload),
-        (PACKAGE_KIND_USER_FACING, user_facing_payload),
-        (PACKAGE_KIND_REVIEW_FACING, review_facing_payload),
+    for package_kind in (
+        PACKAGE_KIND_CANONICAL_INTERNAL,
+        PACKAGE_KIND_USER_FACING,
+        PACKAGE_KIND_REVIEW_FACING,
     ):
+        payload = package_payloads[package_kind]
         payload_ref, payload_hash = _persist_package_payload(
             session_id=session.session_id,
             package_kind=package_kind,
@@ -1188,6 +1203,22 @@ def materialize_workbench_package_commit(
             )
         )
     db.add_all(package_rows)
+    db.flush()
+    construction_basis_hash = _workbench_authority_basis_hash(
+        {
+            **authority_basis,
+            "package_kinds": [package.package_kind for package in package_rows],
+            "payload_refs": [package.payload_ref for package in package_rows],
+            "payload_hashes": [package.payload_hash for package in package_rows],
+        }
+    )
+    reconciliation_summary["workbench_package_commit"]["construction_basis_hash"] = construction_basis_hash
+    reconciliation_record.summary_json = reconciliation_summary
+    for package in package_rows:
+        package.summary_json = {
+            **_json_clone(package.summary_json or {}),
+            "construction_basis_hash": construction_basis_hash,
+        }
     db.flush()
 
     return Layer3PackageEntryResult(
