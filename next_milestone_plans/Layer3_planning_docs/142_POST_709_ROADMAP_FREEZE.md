@@ -13,6 +13,7 @@ This document is the referenceable roadmap for the remaining bounded Layer 3 wor
 - governing construction docs: `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md` and `141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
 - governing submit docs: `143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md` and `144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md`
 - governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md` and `146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md`
+- governing APS handoff dispatch freeze docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md` and `148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md`
 - broader deferred-gate control: `105_deferred-gates.md`
 - proof/progress surfaces: `layer3_progress_board.md`, `layer3_progress_manifest.json`, `layer3_workbench_proof_manifest.json`, and `tools/l3-progress-check.py`
 
@@ -37,29 +38,28 @@ Current main still does not admit qualitative APS APS dispatch, qualitative APS 
 
 Future work must proceed in this order unless a later live audit proves a different blocker:
 
-1. qualitative APS APS handoff dispatch freeze and contract;
-2. qualitative APS APS handoff dispatch runtime;
-3. qualitative APS external export/download prepare/deliver freeze and contract;
-4. qualitative APS external export/download prepare/deliver runtime;
-5. rendered qualitative APS package/downstream UI freeze;
-6. rendered qualitative APS package/downstream UI runtime, including theme proof;
-7. source-breadth freeze before any ingestion/source-adapter expansion;
-8. raw ingestion implementation only after source-breadth freeze;
-9. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
-10. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
-11. connector/destination dispatch and provider/public URL freezes before any external delivery expansion;
-12. browser/full mockup activation freeze before any mockup-derived UI activation;
-13. auth/security hardening freeze before behavior changes in authorization, tenancy, credentials, or public access;
-14. CI/performance/observability hardening once the admitted runtime path is broad enough to stress runtime cost or audit trace completeness.
+1. qualitative APS APS handoff dispatch runtime, governed by docs `147` and `148` after the qualitative APS APS handoff dispatch freeze and contract;
+2. qualitative APS external export/download prepare/deliver freeze and contract;
+3. qualitative APS external export/download prepare/deliver runtime;
+4. rendered qualitative APS package/downstream UI freeze;
+5. rendered qualitative APS package/downstream UI runtime, including theme proof;
+6. source-breadth freeze before any ingestion/source-adapter expansion;
+7. raw ingestion implementation only after source-breadth freeze;
+8. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
+9. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
+10. connector/destination dispatch and provider/public URL freezes before any external delivery expansion;
+11. browser/full mockup activation freeze before any mockup-derived UI activation;
+12. auth/security hardening freeze before behavior changes in authorization, tenancy, credentials, or public access;
+13. CI/performance/observability hardening once the admitted runtime path is broad enough to stress runtime cost or audit trace completeness.
 
 ## Future Pass Specifications
 
 ### 1. Qualitative APS APS Handoff Dispatch Freeze
 
 - goal: freeze exactly one APS dispatch mode from a prepared qualitative APS handoff/export envelope.
-- current blocker: no qualitative APS APS dispatch freeze/contract exists over the live prepare envelope.
+- current blocker: freeze/contract now exists in docs `147` and `148`; runtime still blocks the path with `qualitative_aps_aps_handoff_dispatch_not_admitted`.
 - implementation-entry freeze required: yes.
-- likely files: new planning docs and progress/proof metadata.
+- likely files: docs `147`/`148`, progress/proof metadata, and checker guard.
 - required tests: later runtime must prove dispatch authority, bundle identity, provenance, idempotency, fail-closed stale package/prepare state, and absence of real connector/destination behavior.
 - negative invariants: no generic connector dispatch, provider URL, external download delivery, package mutation, source/RAG expansion, UI unless separately frozen.
 - priority: P2.
@@ -67,7 +67,7 @@ Future work must proceed in this order unless a later live audit proves a differ
 ### 2. Qualitative APS APS Handoff Dispatch Runtime
 
 - goal: implement only the frozen APS handoff dispatch for qualitative APS packages.
-- current blocker: pass 1 freeze.
+- current blocker: live runtime still has `qualitative_aps_aps_handoff_dispatch_not_admitted` for qualitative APS prepare state.
 - implementation-entry freeze required: yes.
 - likely files: APS handoff owner service, workbench route logic, API DTOs, bounded E2E, qualitative APS tests, checker/proof metadata.
 - required tests: dispatch success; stale/malformed bundle authority fail closed; no connector/destination/provider behavior; no extra reconciliation/package rows outside admitted dispatch state.
