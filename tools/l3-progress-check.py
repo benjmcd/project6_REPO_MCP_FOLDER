@@ -73,6 +73,8 @@ SOURCE_BREADTH_FREEZE = PLANNING_DOCS / "153_SOURCE_BREADTH_FREEZE.md"
 RAW_INGESTION_MATERIALIZATION_FREEZE = (
     PLANNING_DOCS / "154_RAW_INGESTION_MATERIALIZATION_FREEZE.md"
 )
+RAW_MIXED_RENDERED_UI_FREEZE = PLANNING_DOCS / "155_RAW_MIXED_RENDERED_UI_FREEZE.md"
+RAW_MIXED_RENDERED_UI_CONTRACT = PLANNING_DOCS / "156_RAW_MIXED_RENDERED_UI_CONTRACT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -5112,6 +5114,73 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(REVIEW_BROWSER_SERVER)} missing materialization rendered UI setup term: {term}")
 
 
+def _check_raw_mixed_rendered_ui_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        RAW_MIXED_RENDERED_UI_FREEZE: (
+            "Status: planning/control implementation-entry freeze",
+            "selected_raw_mixed_rendered_ui_mode: `raw_mixed_server_owned_manifest_ref_ui_entry`",
+            "POST /api/v1/layer3/source/mixed-corpus/materialize",
+            "The operator input is a server-owned manifest reference and hash",
+            "Current main does not admit a human-facing raw mixed manifest picker",
+            "Backend service/API changes are not admitted by this freeze.",
+            "The rendered request may include only fields already admitted by `Layer3RawMixedCorpusMaterializeRequest`",
+            "server-owned storage-root ref, not as a local path",
+            "Theme Posture",
+            "headless Chromium for the raw mixed rendered manifest path",
+            "headed Chromium for the same path",
+            "no frontend-only durable authority",
+        ),
+        RAW_MIXED_RENDERED_UI_CONTRACT: (
+            "Status: planning/control UI contract paired with `155_RAW_MIXED_RENDERED_UI_FREEZE.md`.",
+            "raw_mixed_server_owned_manifest_ref_ui_entry",
+            "Server state is the only durable authority.",
+            "The future rendered UI may call only the already-live materialization route",
+            "refresh source candidate APIs and select only the returned IDs",
+            "The UI must reject or omit every field outside the live DTO.",
+            "Success state may enable downstream rendered source selection only after candidate refresh confirms the returned source IDs.",
+            "Theme And Accessibility Contract",
+            "headed and headless Chromium run the same raw mixed rendered manifest workflow",
+            "frontend-only durable authority",
+        ),
+        BOARD: (
+            "Raw mixed rendered manifest UI freeze",
+            "raw_mixed_server_owned_manifest_ref_ui_entry",
+            "planning/control only",
+            "no frontend-only durable authority",
+        ),
+        MANIFEST: (
+            "latest_raw_mixed_rendered_ui_freeze_branch",
+            "latest_raw_mixed_rendered_ui_freeze_live_behavior_change",
+            "raw_mixed_rendered_ui_freeze",
+            "raw_mixed_server_owned_manifest_ref_ui_entry",
+            "planning/control only",
+            "theme behavior",
+        ),
+        PROOF_MANIFEST: (
+            "raw_mixed_rendered_ui_freeze_proof",
+            "selected_raw_mixed_rendered_ui_mode",
+            "raw_mixed_server_owned_manifest_ref_ui_entry",
+            "required_future_browser_proof",
+            "headed Chromium",
+            "headless Chromium",
+            "no current rendered UI control",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing raw mixed rendered UI freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_raw_mixed_rendered_ui_freeze_branch") != "codex/l3-raw-mixed-rendered-ui-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale raw mixed rendered UI freeze branch")
+        if current_status.get("latest_raw_mixed_rendered_ui_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark raw mixed rendered UI freeze as planning-only")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -9674,6 +9743,8 @@ def main() -> int:
         QUAL_APS_RENDERED_UI_CONTRACT,
         SOURCE_BREADTH_FREEZE,
         RAW_INGESTION_MATERIALIZATION_FREEZE,
+        RAW_MIXED_RENDERED_UI_FREEZE,
+        RAW_MIXED_RENDERED_UI_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -9826,6 +9897,7 @@ def main() -> int:
     _check_raw_mixed_bridge_freeze(errors)
     _check_source_breadth_freeze(errors)
     _check_raw_ingestion_materialization_freeze(errors)
+    _check_raw_mixed_rendered_ui_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
