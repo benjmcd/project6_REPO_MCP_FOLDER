@@ -5077,6 +5077,19 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
+    if session is None or pass_run is None:
+        raise Layer3WorkbenchError(
+            "package_review_submit_inconsistent",
+            "Package-review submit could not reload the selected session or pass run.",
+            status="conflict",
+            http_status=409,
+        )
+    if status_body.get("engine_family") == ENGINE_FAMILY_QUAL_APS_DOCUMENT:
+        _raise_if_qualitative_aps_downstream_not_admitted(
+            status_body=status_body,
+            action_label="Package-review submit",
+            error_code="qualitative_aps_package_review_submit_not_admitted",
+        )
     reconciliation = (
         db.query(L3ReconciliationRecord)
         .filter(
@@ -5086,13 +5099,6 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         .with_for_update()
         .one_or_none()
     )
-    if session is None or pass_run is None:
-        raise Layer3WorkbenchError(
-            "package_review_submit_inconsistent",
-            "Package-review submit could not reload the selected session or pass run.",
-            status="conflict",
-            http_status=409,
-        )
     associated_cohort_submit = False
     if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
         associated_cohort_submit = _associated_cohort_result_source_admitted(

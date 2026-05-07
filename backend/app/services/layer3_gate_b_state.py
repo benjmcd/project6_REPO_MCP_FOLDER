@@ -57,7 +57,18 @@ def gate_b_summary_from_session(session: L3Session) -> dict[str, int]:
     return gate_b_counts([item for item in decisions if isinstance(item, dict)])
 
 
-def material_candidate_basis_from_preview(candidate: dict[str, Any]) -> dict[str, str]:
+def _material_candidate_authority_basis(candidate: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "source_identity": json_clone(candidate.get("source_identity") if isinstance(candidate.get("source_identity"), dict) else {}),
+        "source_provenance": json_clone(
+            candidate.get("source_provenance") if isinstance(candidate.get("source_provenance"), dict) else {}
+        ),
+        "payload": json_clone(candidate.get("payload") if isinstance(candidate.get("payload"), dict) else {}),
+        "load_summary": json_clone(candidate.get("load_summary") if isinstance(candidate.get("load_summary"), dict) else {}),
+    }
+
+
+def material_candidate_basis_from_preview(candidate: dict[str, Any]) -> dict[str, Any]:
     candidate_id = str(candidate.get("candidate_id") or "").strip()
     source_class = str(candidate.get("source_class") or "").strip()
     return {
@@ -66,22 +77,24 @@ def material_candidate_basis_from_preview(candidate: dict[str, Any]) -> dict[str
         "source_ref": str(candidate.get("source_ref") or "").strip(),
         "query_basis": str(candidate.get("query_basis") or "").strip(),
         "provenance_ref": str(candidate.get("provenance_ref") or "").strip(),
+        **_material_candidate_authority_basis(candidate),
     }
 
 
 def material_candidate_basis_from_decision(
     *, candidate_id: str, source_class: str, decision_basis: dict[str, Any]
-) -> dict[str, str]:
+) -> dict[str, Any]:
     return {
         "candidate_id": candidate_id,
         "source_class": source_class,
         "source_ref": str(decision_basis.get("source_ref") or "").strip(),
         "query_basis": str(decision_basis.get("query_basis") or "").strip(),
         "provenance_ref": str(decision_basis.get("provenance_ref") or "").strip(),
+        **_material_candidate_authority_basis(decision_basis),
     }
 
 
-def material_preview_basis(candidate_bases: list[dict[str, str]]) -> dict[str, Any]:
+def material_preview_basis(candidate_bases: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "schema_id": MATERIAL_PREVIEW_BASIS_SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -89,7 +102,7 @@ def material_preview_basis(candidate_bases: list[dict[str, str]]) -> dict[str, A
     }
 
 
-def material_preview_hash(candidate_bases: list[dict[str, str]]) -> str:
+def material_preview_hash(candidate_bases: list[dict[str, Any]]) -> str:
     return stable_hash(material_preview_basis(candidate_bases))
 
 

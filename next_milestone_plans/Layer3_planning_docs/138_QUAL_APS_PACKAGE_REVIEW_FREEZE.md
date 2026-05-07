@@ -15,6 +15,7 @@ This document governs the now-live read-only package-review preview boundary for
 - package-preview route: `POST /api/v1/layer3/package/review/preview`
 - package-preview schema: `layer3.qual_aps_package_review_preview.v1`
 - package-construction blocker: `backend/app/services/layer3_workbench.py` still raises `qualitative_aps_package_construction_commit_not_admitted` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`
+- package-review-submit blocker: `backend/app/services/layer3_workbench.py` still raises `qualitative_aps_package_review_submit_not_admitted` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`, including restored or seeded reconciliation/package state
 - proof surface: `backend/tests/test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview`
 - companion contract: `139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
 
@@ -34,7 +35,7 @@ Current main admits exactly one qualitative APS execution mode:
 - API result/status and result-review visibility through the existing Layer 3 workbench API path
 - read-only package-review preview for the approved qualitative result through `layer3.qual_aps_package_review_preview.v1`
 
-PR `#702` proved that path could be driven through result review. The current runtime boundary advances only one step beyond that: package-review preview is inspectable/read-only, while package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, and provider/public URLs remain blocked. Package construction still fails closed with `qualitative_aps_package_construction_commit_not_admitted`.
+PR `#702` proved that path could be driven through result review. The current runtime boundary advances only one step beyond that: package-review preview is inspectable/read-only, while package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, and provider/public URLs remain blocked. Package construction still fails closed with `qualitative_aps_package_construction_commit_not_admitted`, and package-review submit fails closed with `qualitative_aps_package_review_submit_not_admitted`.
 
 ## Decision
 
@@ -147,6 +148,7 @@ Minimum proof:
 - forbidden package/handoff/export/source/provider/connector/RAG/model fields fail closed;
 - existing quantitative package preview tests still pass;
 - standalone APS qualitative E2E reaches read-only package preview and then stops at package construction with `qualitative_aps_package_construction_commit_not_admitted`;
+- package-review submit is explicitly blocked with `qualitative_aps_package_review_submit_not_admitted` even if a request supplies restored or seeded reconciliation/package identifiers;
 - no DB row or file side effects beyond admitted read-only preview metadata, if any;
 - `python .\tools\l3-progress-check.py`;
 - `git diff --check`.

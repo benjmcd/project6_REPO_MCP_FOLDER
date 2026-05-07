@@ -3655,6 +3655,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "selected mode: `qual_aps_package_review_preview_only`",
             "layer3.qual_aps_package_review_preview.v1",
             "qualitative_aps_package_construction_commit_not_admitted",
+            "qualitative_aps_package_review_submit_not_admitted",
             "backend/tests/test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview",
             "This mode adds only read-only package-review preview/readiness",
             "The runtime may not write durable package or downstream state.",
@@ -3676,6 +3677,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "provider_public_url_enabled",
             "Forbidden state effects:",
             "create or mutate `L3OutputPackage`",
+            "qualitative_aps_package_review_submit_not_admitted",
             "Those names are descriptors until a later package-construction freeze defines qualitative APS package payloads.",
             "headed and headless Chrome proof if UI changes",
         ),
@@ -3684,12 +3686,14 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md",
             "live read-only `qual_aps_package_review_preview_only` boundary",
             "qualitative_aps_package_construction_commit_not_admitted",
+            "qualitative_aps_package_review_submit_not_admitted",
             "does not admit package-review submit",
         ),
         DEFERRED_GATES: (
             "Docs `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md` and `139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`",
             "live read-only `qual_aps_package_review_preview_only` runtime boundary",
             "current-main code still blocks qualitative APS package construction at `qualitative_aps_package_construction_commit_not_admitted`",
+            "qualitative_aps_package_review_submit_not_admitted",
         ),
         BOARD: (
             "Qualitative APS package-review preview runtime",
@@ -3697,6 +3701,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "qual_aps_package_review_preview_only",
             "layer3.qual_aps_package_review_preview.v1",
             "qualitative_aps_package_construction_commit_not_admitted",
+            "qualitative_aps_package_review_submit_not_admitted",
         ),
         MANIFEST: (
             "latest_qual_aps_package_review_preview_branch",
@@ -3705,6 +3710,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "qual_aps_package_review_preview_only",
             "layer3.qual_aps_package_review_preview.v1",
             "qualitative_aps_package_construction_commit_not_admitted",
+            "qualitative_aps_package_review_submit_not_admitted",
         ),
         PROOF_MANIFEST: (
             "latest_qual_aps_package_review_preview_branch",
@@ -3715,6 +3721,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "qual_aps_package_review_preview_only",
             "layer3.qual_aps_package_review_preview.v1",
             "qualitative_aps_package_construction_commit_not_admitted",
+            "qualitative_aps_package_review_submit_not_admitted",
             "no rendered controls or theme behavior change",
         ),
     }
@@ -3733,9 +3740,19 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
         "def _raise_if_qualitative_aps_downstream_not_admitted(",
         "status_body.get(\"engine_family\") != ENGINE_FAMILY_QUAL_APS_DOCUMENT",
         "error_code=\"qualitative_aps_package_construction_commit_not_admitted\"",
+        "error_code=\"qualitative_aps_package_review_submit_not_admitted\"",
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing qualitative APS package-review runtime term: {term}")
+
+    qual_test_text = _read_required_text(QUAL_APS_TEST, errors)
+    for term in (
+        "test_single_aps_doc_qualitative_package_preview_is_read_only_and_construction_blocked",
+        "qualitative_aps_package_review_submit_not_admitted",
+        "restored-qualitative-aps-reconciliation",
+    ):
+        if term not in qual_test_text:
+            errors.append(f"{_rel(QUAL_APS_TEST)} missing qualitative APS submit guard proof term: {term}")
 
     e2e_test_text = _read_required_text(LAYER3_BOUNDED_E2E_TEST, errors)
     for term in (
@@ -5407,6 +5424,10 @@ def _check_preview_contract_extraction(errors: list[str]) -> None:
         "def plan_preview_hash_contract(",
         '"owner_service_plan_version"',
         '"query_basis"',
+        '"source_identity"',
+        '"source_provenance"',
+        '"payload"',
+        '"load_summary"',
         '"supplied_hash_required_current_slice": False',
         "def preview_identity(",
         '"stale_preview_writes_blocked": True',
