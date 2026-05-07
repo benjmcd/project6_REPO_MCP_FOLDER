@@ -801,6 +801,8 @@ def test_aps_content_document_flows_from_material_preview_to_gate_b(db_session, 
     snapshot = db_session.query(L3MaterialSnapshot).one()
     assert snapshot.source_shape == "aps_content_document"
     assert snapshot.source_identity_json["content_id"] == content_id
+    assert snapshot.source_identity_json["run_id"] == "run-layer3-doc-001"
+    assert snapshot.source_identity_json["target_id"] == "target-layer3-doc-001"
     assert snapshot.source_provenance_json["source_trace"]["trace_readiness"] == "traceable_aps_content_document"
     assert snapshot.source_provenance_json["source_trace"]["aps_trace_refs"]["target_id"] == "target-layer3-doc-001"
 

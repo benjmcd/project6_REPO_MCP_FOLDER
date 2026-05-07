@@ -8207,10 +8207,14 @@ def _check_bounded_e2e_current_main_sync(errors: list[str]) -> None:
     for path, terms in {
         BOARD: (
             "Bounded Layer 3 API E2E current-main closeout",
+            "PR #688-era proof/control sync before mixed APS bridge",
             "PR `#682` through PR `#687`, current main `342c71e5`",
             "aps_handoff_dispatch_blocked",
             "no admitted `aps_content_document` material-snapshot provenance",
             "separately admitted exact `single_aps_doc_qualitative_pass`",
+            "Mixed APS provenance bridge bounded E2E extension",
+            "aps_handoff_companion_provenance",
+            "external_export_download_delivered",
         ),
         MANIFEST: (
             "latest_bounded_e2e_current_main_sync_branch",
@@ -8220,6 +8224,10 @@ def _check_bounded_e2e_current_main_sync(errors: list[str]) -> None:
             "aps_handoff_dispatch_blocked",
             "no admitted aps_content_document material-snapshot provenance",
             "exact single_aps_doc_qualitative_pass",
+            "latest_mixed_aps_provenance_bridge_branch",
+            "mixed_aps_provenance_bridge",
+            "aps_handoff_companion_provenance",
+            "external_export_download_delivered",
         ),
         PROOF_MANIFEST: (
             "latest_bounded_e2e_current_main_sync_branch",
@@ -8232,6 +8240,13 @@ def _check_bounded_e2e_current_main_sync(errors: list[str]) -> None:
             "aps_handoff_dispatch_blocked",
             "exact single APS-document qualitative execution through single_aps_doc_qualitative_pass only",
             "broad qualitative execution beyond the exact single_aps_doc_qualitative_pass boundary",
+            "latest_mixed_aps_provenance_bridge_branch",
+            "latest_mixed_aps_provenance_bridge_input_main_commit",
+            "latest_mixed_aps_provenance_bridge_live_behavior_change",
+            "latest_mixed_aps_provenance_bridge_summary",
+            "API-created mixed dataset-version associated-cohort plus APS content-document companion provenance",
+            "aps_handoff_companion_provenance",
+            "external_export_download_delivered",
         ),
     }.items():
         text = _read_required_text(path, errors)
@@ -8241,16 +8256,19 @@ def _check_bounded_e2e_current_main_sync(errors: list[str]) -> None:
 
     test_text = _read_required_text(LAYER3_BOUNDED_E2E_TEST, errors)
     for term in (
-        "test_layer3_bounded_e2e_api_associated_cohort_reaches_handoff_prepare_boundary",
+        "test_layer3_bounded_e2e_api_associated_cohort_reaches_download_delivery",
         "Layer3ApiDriver",
         "Layer3StateAssertions",
         "_seed_sources",
         "_patch_cohort_dataframe_persistence",
         "assert_forbidden_side_effects_absent",
-        "aps_dispatch_blocked",
-        "aps_handoff_dispatch_blocked",
+        "aps_dispatch",
+        "external_export_download_prepare",
+        "external_export_download_deliver",
+        "aps_handoff_companion_provenance",
+        "qualitative_aps_companion_provenance_not_pass_candidate",
+        "external_export_download_delivered",
         "requested_method_name\"] == \"descriptive_summary\"",
-        "APS qualitative companion remains deferred for the current quantitative cohort path.",
     ):
         if term not in test_text:
             errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing bounded E2E proof term: {term}")
@@ -8260,9 +8278,20 @@ def _check_bounded_e2e_current_main_sync(errors: list[str]) -> None:
         "_stamp_api_dataset_cohort_method_authority",
         "gate-b-dataset-version-cohort-",
         "\"requested_method_name\": \"descriptive_summary\"",
+        "_gate_b_snapshot_material_basis",
+        "APS_HANDOFF_COMPANION_ANALYSIS_ROLE",
+        "mixed_dataset_version_aps_handoff_provenance_bridge",
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing API cohort method-authority term: {term}")
+
+    qual_aps_text = _read_required_text(QUAL_APS_SERVICE, errors)
+    for term in (
+        "APS_HANDOFF_COMPANION_ANALYSIS_ROLE = \"aps_handoff_companion_provenance\"",
+        "qualitative_aps_companion_provenance_not_pass_candidate",
+    ):
+        if term not in qual_aps_text:
+            errors.append(f"{_rel(QUAL_APS_SERVICE)} missing mixed APS companion guard term: {term}")
 
 
 def main() -> int:

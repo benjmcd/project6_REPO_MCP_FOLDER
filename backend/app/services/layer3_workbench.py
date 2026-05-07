@@ -339,6 +339,7 @@ from app.services.layer3_preview_contract import (
 )
 from app.services.layer3_readiness_contract import build_readiness_contract
 from app.services.layer3_qual_aps_execution import (
+    APS_HANDOFF_COMPANION_ANALYSIS_ROLE,
     ENGINE_FAMILY_QUAL_APS_DOCUMENT,
     Layer3QualApsExecutionError,
     execute_single_aps_doc_qualitative_pass,
@@ -1795,6 +1796,10 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             and item["source_identity"].get("dataset_version_id") in approved_dataset_version_ids
         ):
             co_retrieval_group_id = dataset_version_co_retrieval_group_id
+        source_identity, source_provenance, load_summary = _gate_b_snapshot_material_basis(
+            item,
+            mark_aps_handoff_companion=dataset_version_co_retrieval_group_id is not None,
+        )
         record_retrieval_event(
             db,
             session=session,
@@ -1807,17 +1812,14 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     source_identity={
                         "candidate_id": item["candidate_id"],
                         "source_class": item["source_class"],
-                        **item["source_identity"],
+                        **source_identity,
                     },
-                    source_provenance=(item["source_provenance"] or item["decision_basis"]),
+                    source_provenance=source_provenance,
                     payload=(
                         item["payload"]
                         or {"candidate_id": item["candidate_id"], "source_class": item["source_class"], "decision": "approved"}
                     ),
-                    load_summary=(
-                        item["load_summary"]
-                        or {"loaded_records": 1, "failed_records": 0, "preview_material": True}
-                    ),
+                    load_summary=load_summary,
                     co_retrieval_group_id=co_retrieval_group_id,
                 )
             ],
@@ -1883,6 +1885,36 @@ def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[s
             if isinstance(item, dict) and str(item.get("descriptor_type") or "").strip()
         }
     )
+
+
+def _gate_b_snapshot_material_basis(
+    item: dict[str, Any],
+    *,
+    mark_aps_handoff_companion: bool,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    source_identity = _json_clone(item["source_identity"])
+    source_provenance = _json_clone(item["source_provenance"] or item["decision_basis"])
+    load_summary = _json_clone(
+        item["load_summary"] or {"loaded_records": 1, "failed_records": 0, "preview_material": True}
+    )
+    if item["source_class"] != "aps_content_document":
+        return source_identity, source_provenance, load_summary
+
+    source_trace = (
+        source_provenance.get("source_trace") if isinstance(source_provenance.get("source_trace"), dict) else {}
+    )
+    aps_trace_refs = (
+        source_trace.get("aps_trace_refs") if isinstance(source_trace.get("aps_trace_refs"), dict) else {}
+    )
+    for field in ("run_id", "target_id"):
+        if aps_trace_refs.get(field) and not source_identity.get(field):
+            source_identity[field] = aps_trace_refs[field]
+    if not mark_aps_handoff_companion:
+        return source_identity, source_provenance, load_summary
+    source_provenance["analysis_admission_role"] = APS_HANDOFF_COMPANION_ANALYSIS_ROLE
+    source_provenance["analysis_admission_reason"] = "mixed_dataset_version_aps_handoff_provenance_bridge"
+    load_summary["analysis_admission_role"] = APS_HANDOFF_COMPANION_ANALYSIS_ROLE
+    return source_identity, source_provenance, load_summary
 
 
 def _stamp_api_dataset_cohort_method_authority(
