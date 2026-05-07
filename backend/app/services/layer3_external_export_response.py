@@ -8,7 +8,10 @@ from sqlalchemy.orm import Session
 from app.models.models import L3OutputPackage, L3ReconciliationRecord
 from app.services.layer3_aps_handoff import APS_HANDOFF_SCHEMA_ID, PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
 from app.services.layer3_authority_rail import authority_rail
-from app.services.layer3_external_export_contract import EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS
+from app.services.layer3_external_export_contract import (
+    EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS,
+    ExternalExportDownloadDelivery,
+)
 from app.services.layer3_package_entry import SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
 from app.services.layer3_pass_entry import (
     COHORT_SHAPE_ALIGNED_WIDE_TABLE,
@@ -29,6 +32,7 @@ from app.services.layer3_workbench_package_state import (
 )
 
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.external_export_download_prepare.v1"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = "layer3.external_export_download_delivery_ui.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_external_export_download"
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
@@ -36,6 +40,7 @@ EXTERNAL_EXPORT_DOWNLOAD_UNAVAILABLE_STATE = "external_export_download_unavailab
 EXTERNAL_EXPORT_DOWNLOAD_READY_STATE = "external_export_download_ready"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE = "external_export_download_prepared"
 EXTERNAL_EXPORT_DOWNLOAD_BLOCKED_STATE = "external_export_download_blocked"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "external_export_download_delivered"
 HANDOFF_EXPORT_PREPARED_STATE = "handoff_export_prepared"
 APS_HANDOFF_DISPATCHED_STATE = "aps_handoff_dispatched"
 ASSOCIATED_COHORT_DELIVERY_UI_UNAVAILABLE_STATE = (
@@ -620,3 +625,82 @@ def external_export_download_prepare_payload_for_delivery(
     if readiness_state.get("decision_notes") is not None:
         prepare_payload["decision_notes"] = readiness_state.get("decision_notes")
     return prepare_payload
+
+
+def external_export_download_delivery_response(
+    *,
+    session_id: str,
+    supplied_aps_bundle_id: str,
+    supplied_readiness_ref: str,
+    source_artifact_ref: str,
+    expected_artifact_hash: str,
+    expected_artifact_size: int,
+    validation_body: dict[str, Any],
+) -> ExternalExportDownloadDelivery:
+    filename = (
+        f"layer3-{safe_download_token(session_id, fallback='session')}-"
+        f"{safe_download_token(supplied_aps_bundle_id, fallback='aps-bundle')}.json"
+    )
+
+    try:
+        from app.services.nrc_aps_evidence_bundle import EvidenceBundleError, load_persisted_bundle_artifact
+    except ModuleNotFoundError as exc:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_artifact_validator_unavailable",
+            f"External export/download delivery could not load the APS bundle artifact validator: {exc}",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
+            next_allowed_actions=["inspect_external_export_download_readiness"],
+        ) from exc
+    try:
+        bundle_payload, bundle_path = load_persisted_bundle_artifact(bundle_ref=source_artifact_ref)
+    except EvidenceBundleError as exc:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_source_artifact_unavailable",
+            f"External export/download delivery could not validate the existing APS bundle artifact: {exc.message}",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
+            next_allowed_actions=["inspect_external_export_download_readiness"],
+        ) from exc
+
+    artifact_hash = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+    artifact_size = int(bundle_path.stat().st_size)
+    if artifact_hash != expected_artifact_hash:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_source_artifact_hash_mismatch",
+            "Validated APS bundle artifact hash does not match recorded readiness.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_hash"],
+        )
+    if artifact_size != expected_artifact_size:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_source_artifact_size_mismatch",
+            "Validated APS bundle artifact size does not match recorded readiness.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_size_bytes"],
+        )
+    if str(bundle_payload.get("bundle_id") or "") != supplied_aps_bundle_id:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_aps_bundle_id_mismatch",
+            "Validated APS bundle payload does not match the supplied APS bundle id.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_id"],
+        )
+
+    return ExternalExportDownloadDelivery(
+        artifact_path=bundle_path,
+        media_type="application/json",
+        filename=filename,
+        headers={
+            "X-Layer3-Schema-Id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+            "X-Layer3-Delivery-State": EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
+            "X-Layer3-Source-Artifact-Hash": artifact_hash,
+            "X-Layer3-External-Export-Download-Record-Ref": supplied_readiness_ref,
+        },
+        authority=json_clone(validation_body),
+    )
