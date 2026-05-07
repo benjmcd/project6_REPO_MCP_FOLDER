@@ -605,7 +605,7 @@
     "latest_qual_aps_package_review_preview_branch": "codex/l3-qual-aps-package-preview",
     "latest_qual_aps_package_review_preview_pr": "#706",
     "latest_qual_aps_package_review_preview_live_behavior_change": true,
-    "latest_qual_aps_package_review_preview_summary": "Branch codex/l3-qual-aps-package-preview implements qual_aps_package_review_preview_only through existing POST /api/v1/layer3/package/review/preview. The runtime returns layer3.qual_aps_package_review_preview.v1 for one approved standalone aps_content_document qualitative result, validates persisted session/plan/pass/review/output/document/chunk/material/unit/set authority, writes no DB rows or files, and proves package construction remains blocked with qualitative_aps_package_construction_commit_not_admitted."
+    "latest_qual_aps_package_review_preview_summary": "Branch codex/l3-qual-aps-package-preview implements qual_aps_package_review_preview_only through existing POST /api/v1/layer3/package/review/preview. The runtime returns layer3.qual_aps_package_review_preview.v1 for one approved standalone aps_content_document qualitative result, validates persisted session/plan/pass/review/output/document/chunk/material/unit/set authority, writes no DB rows or files, proves package construction remains blocked with qualitative_aps_package_construction_commit_not_admitted, and keeps package-review submit blocked with qualitative_aps_package_review_submit_not_admitted."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -4878,6 +4878,9 @@
       "backend/tests/test_layer3_raw_mixed_bridge.py",
       "backend/tests/test_layer3_api.py",
       "backend/tests/test_layer3_source_boundary.py",
+      "backend/tests/test_layer3_workbench.py",
+      "backend/tests/review_browser_fixture.py",
+      "backend/tests/review_browser_server.py",
       "backend/tests/test_review_browser_server.py",
       "backend/app/review_ui/static/layer3.js",
       "e2e/layer3-workbench.spec.js",
@@ -4885,6 +4888,7 @@
       "next_milestone_plans/Layer3_planning_docs/137_RAW_MIXED_BRIDGE_FREEZE.md",
       "next_milestone_plans/Layer3_execution_handoff/07_L3_UI_MANUAL_RUNBOOK.md",
       "next_milestone_plans/Layer3_execution_handoff/08_L3_POST_695_REFERENCE_PLAN.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
       "next_milestone_plans/layer3_progress_board.md",
       "next_milestone_plans/layer3_progress_manifest.json",
       "next_milestone_plans/layer3_workbench_proof_manifest.json",
@@ -5025,7 +5029,8 @@
       "The existing package-review preview route is reused and returns layer3.qual_aps_package_review_preview.v1 for ENGINE_FAMILY_QUAL_APS_DOCUMENT only after approved result-review identity is validated.",
       "The runtime revalidates session, analysis plan, pass run, preview id/hash, approved result review, output payload hash, APS document identity, chunks, material snapshot, analysis unit, and analysis set from persisted authority.",
       "The runtime writes no package rows, reconciliation rows, source rows, files, connector rows, provider URLs, signed references, handoff/export state, or package payloads.",
-      "Package construction remains blocked for qualitative APS with qualitative_aps_package_construction_commit_not_admitted."
+      "Package construction remains blocked for qualitative APS with qualitative_aps_package_construction_commit_not_admitted.",
+      "Package-review submit remains blocked for qualitative APS with qualitative_aps_package_review_submit_not_admitted, including restored or seeded reconciliation/package identifiers."
     ],
     "selected_mode": "qual_aps_package_review_preview_only",
     "negative_invariants": [

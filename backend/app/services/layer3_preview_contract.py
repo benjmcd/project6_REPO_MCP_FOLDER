@@ -31,6 +31,10 @@ MATERIAL_PREVIEW_HASH_INCLUDED_INPUTS = (
     "source_ref",
     "query_basis",
     "provenance_ref",
+    "source_identity",
+    "source_provenance",
+    "payload",
+    "load_summary",
 )
 MATERIAL_PREVIEW_HASH_EXCLUDED_INPUTS = (
     "operator_decision",
