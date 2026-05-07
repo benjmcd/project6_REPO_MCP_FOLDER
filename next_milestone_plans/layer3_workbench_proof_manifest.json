@@ -6044,9 +6044,10 @@
       "e2e/layer3-workbench.spec.js",
       "tools/l3-progress-check.py"
     ],
-    "proof_summary": "The rendered workbench enables execution selection only after approved-plan authority, enables execution start only after the server returns selected pass-run IDs, and enables result-status inspection only after execution start. The focused browser proof uses the raw mixed rendered materialization path, verifies exact execution selection/start request allowlists, checks light/dark/workbench theme visibility, and asserts result review, package, and handoff/export routes are not called.",
+    "proof_summary": "The rendered workbench enables execution selection only after approved-plan authority, enables execution start only after the server returns selected pass-run IDs, and enables result-status inspection only after execution start. The focused browser proof uses the raw mixed rendered materialization path, verifies exact execution selection/start request allowlists, reloads through server session recovery before selection and before start, checks light/dark/workbench theme visibility, and asserts result review, package, and handoff/export routes are not called.",
     "browser_proof": [
-      "Layer 3 workbench drives raw mixed rendered execution selection and start"
+      "Layer 3 workbench drives raw mixed rendered execution selection and start",
+      "reloadRecoveredExecutionSession"
     ],
     "negative_invariants": [
       "no production backend route, DTO, service, model, or migration change",

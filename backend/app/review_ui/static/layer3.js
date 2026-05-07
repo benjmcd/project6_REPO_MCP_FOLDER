@@ -1054,6 +1054,33 @@ function selectedResultAuthority() {
     };
 }
 
+function executionSelectionState() {
+    return State.executionSelection || State.sessionSummary?.execution_selection || {};
+}
+
+function executionStartState() {
+    return State.executionStart || State.sessionSummary?.analysis_execution_start || {};
+}
+
+function executionPlanAuthority() {
+    const selection = executionSelectionState();
+    const previewIdentity = selection.preview_identity || State.executionStart?.preview_identity || {};
+    return {
+        analysisPlanId: State.planApproval?.analysis_plan_id
+            || selection.analysis_plan_id
+            || State.sessionSummary?.plan_approval?.analysis_plan_id
+            || null,
+        previewId: State.planPreview?.preview_id
+            || selection.source_preview_id
+            || previewIdentity.preview_id
+            || null,
+        previewHash: State.planPreview?.preview_hash
+            || selection.source_preview_hash
+            || previewIdentity.preview_hash
+            || null,
+    };
+}
+
 function hasResultAuthorityIdentity(authority = selectedResultAuthority()) {
     return Boolean(
         authority.sessionId
@@ -3105,31 +3132,40 @@ function canPlanRevise() {
 }
 
 function canSelectExecution() {
+    const authority = executionPlanAuthority();
+    const selection = executionSelectionState();
     return Boolean(
         currentSessionId()
-        && State.planPreview?.schema_id === 'layer3.plan_preview_result.v1'
-        && State.planPreview?.preview_id
-        && State.planPreview?.preview_hash
-        && State.planApproval?.analysis_plan_id
+        && authority.analysisPlanId
+        && authority.previewId
+        && authority.previewHash
+        && (
+            State.planApproval?.analysis_plan_id
+            || State.sessionSummary?.execution_selection?.available === true
+        )
         && !State.planRevision
         && !State.planRevisionPending
         && !State.executionSelection
+        && selection.selected !== true
         && !State.executionSelectionPending
         && !State.executionStartPending
     );
 }
 
 function canStartExecution() {
-    const passRunIds = Array.isArray(State.executionSelection?.pass_run_ids)
-        ? State.executionSelection.pass_run_ids
+    const selection = executionSelectionState();
+    const start = executionStartState();
+    const authority = executionPlanAuthority();
+    const passRunIds = Array.isArray(selection.pass_run_ids)
+        ? selection.pass_run_ids
         : [];
     return Boolean(
         currentSessionId()
-        && State.planPreview?.preview_id
-        && State.planPreview?.preview_hash
-        && State.planApproval?.analysis_plan_id
+        && authority.analysisPlanId
+        && authority.previewId
+        && authority.previewHash
         && passRunIds[0]
-        && !State.executionStart
+        && start.execution_started !== true
         && !State.executionSelectionPending
         && !State.executionStartPending
     );
@@ -3361,6 +3397,8 @@ function renderDownstreamLocks(labels) {
 }
 
 function executionSelectionPanelState() {
+    const authority = executionPlanAuthority();
+    const selection = executionSelectionState();
     if (State.executionStartPending) {
         return { label: 'execution_starting', pill: 'preview', message: 'Starting the selected pass through server authority.' };
     }
@@ -3373,10 +3411,10 @@ function executionSelectionPanelState() {
     if (State.executionStartError || State.executionSelectionError) {
         return { label: 'execution_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the latest execution action.' };
     }
-    if (State.executionSelection?.pass_run_count) {
+    if (selection.pass_run_count) {
         return { label: 'execution_selected', pill: 'ok', message: 'Server-selected pass run is ready to start.' };
     }
-    if (State.planApproval?.analysis_plan_id && State.planPreview?.preview_id && State.planPreview?.preview_hash) {
+    if (authority.analysisPlanId && authority.previewId && authority.previewHash) {
         return { label: 'execution_selection_ready', pill: 'preview', message: 'Approved plan is ready for execution selection.' };
     }
     return { label: 'execution_not_ready', pill: 'blocked', message: 'Approve a plan before execution selection.' };
@@ -3384,8 +3422,8 @@ function executionSelectionPanelState() {
 
 function renderExecutionSelectionStartPanel() {
     const panelState = executionSelectionPanelState();
-    const selection = State.executionSelection || {};
-    const start = State.executionStart || {};
+    const selection = executionSelectionState();
+    const start = executionStartState();
     const error = State.executionStartError || State.executionSelectionError;
     const passRunIds = Array.isArray(selection.pass_run_ids) ? selection.pass_run_ids : [];
     const analysisRunIds = Array.isArray(selection.analysis_run_ids) ? selection.analysis_run_ids : [];
@@ -3400,9 +3438,9 @@ function renderExecutionSelectionStartPanel() {
                 <strong>Execution Selection</strong>
                 <ul>
                     ${fieldItem('session', selection.session_id || currentSessionId(), { code: true })}
-                    ${fieldItem('analysis plan', selection.analysis_plan_id || State.planApproval?.analysis_plan_id, { code: true })}
-                    ${fieldItem('preview', previewIdentity.preview_id || State.planPreview?.preview_id, { code: true })}
-                    ${fieldItem('preview hash', previewIdentity.preview_hash || State.planPreview?.preview_hash, { code: true })}
+                    ${fieldItem('analysis plan', selection.analysis_plan_id || State.planApproval?.analysis_plan_id || State.sessionSummary?.plan_approval?.analysis_plan_id, { code: true })}
+                    ${fieldItem('preview', previewIdentity.preview_id || selection.source_preview_id || State.planPreview?.preview_id, { code: true })}
+                    ${fieldItem('preview hash', previewIdentity.preview_hash || selection.source_preview_hash || State.planPreview?.preview_hash, { code: true })}
                     ${fieldItem('pass run count', selection.pass_run_count)}
                     ${fieldItem('first pass run', passRunIds[0], { code: true })}
                 </ul>
@@ -4559,26 +4597,29 @@ function renderAll() {
 }
 
 function executionSelectionPayload() {
+    const authority = executionPlanAuthority();
     return {
         client_request_id: requestId(),
         session_id: currentSessionId(),
-        analysis_plan_id: State.planApproval.analysis_plan_id,
-        preview_id: State.planPreview.preview_id,
-        preview_hash: State.planPreview.preview_hash,
+        analysis_plan_id: authority.analysisPlanId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
     };
 }
 
 function executionStartPayload() {
-    const passRunIds = Array.isArray(State.executionSelection?.pass_run_ids)
-        ? State.executionSelection.pass_run_ids
+    const selection = executionSelectionState();
+    const authority = executionPlanAuthority();
+    const passRunIds = Array.isArray(selection.pass_run_ids)
+        ? selection.pass_run_ids
         : [];
     return {
         client_request_id: requestId(),
         session_id: currentSessionId(),
-        analysis_plan_id: State.planApproval.analysis_plan_id,
+        analysis_plan_id: authority.analysisPlanId,
         pass_run_id: passRunIds[0],
-        preview_id: State.planPreview.preview_id,
-        preview_hash: State.planPreview.preview_hash,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
         execution_mode: 'synchronous_single_pass',
     };
 }

@@ -5560,6 +5560,8 @@ def _check_rendered_execution_selection_start_runtime(errors: list[str]) -> None
         LAYER3_JS: (
             "State.executionSelection",
             "State.executionStart",
+            "executionSelectionState",
+            "executionPlanAuthority",
             "canSelectExecution",
             "canStartExecution",
             "renderExecutionSelectionStartPanel",
@@ -5579,6 +5581,7 @@ def _check_rendered_execution_selection_start_runtime(errors: list[str]) -> None
         ),
         LAYER3_WORKBENCH_E2E: (
             "Layer 3 workbench drives raw mixed rendered execution selection and start",
+            "reloadRecoveredExecutionSession",
             "selectAndStartRenderedExecution",
             "inspectRenderedResultStatus",
             "expectOnlyPayloadKeys(selectionPayload",
