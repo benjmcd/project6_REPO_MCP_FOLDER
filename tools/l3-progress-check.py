@@ -6686,8 +6686,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
     external_response_text = _read_required_text(EXTERNAL_EXPORT_RESPONSE_SERVICE, errors)
     for term in (
         "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = \"layer3.external_export_download_prepare.v1\"",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = \"layer3.external_export_download_delivery.v1\"",
         "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = \"layer3.external_export_download_delivery_ui.v1\"",
         "def external_export_download_prepare_response(",
+        "def external_export_download_delivery_response(",
         "def associated_cohort_delivery_ui_state(",
         "def safe_download_token(",
         "def external_export_download_prepare_payload_for_delivery(",
@@ -6700,6 +6702,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS",
         "EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = \"prepare_external_export_download\"",
         "EXTERNAL_EXPORT_DOWNLOAD_READY_STATE = \"external_export_download_ready\"",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = \"external_export_download_delivered\"",
         "APS_HANDOFF_SCHEMA_ID",
         "load_persisted_bundle_artifact",
         "Layer3WorkbenchError",
@@ -6722,6 +6725,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "safe_download_token as _safe_download_token",
         "aps_bundle_identity_for_external_export_download as _aps_bundle_identity_for_external_export_download",
         "external_export_download_prepare_summary as _external_export_download_prepare_summary",
+        "external_export_download_delivery_response as _external_export_download_delivery_response",
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing external export response delegation term: {term}")
@@ -6734,6 +6738,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def _aps_bundle_identity_for_external_export_download(",
         "def _aps_handoff_package_for_dispatch(",
         "def _external_export_download_prepare_summary(",
+        "def _external_export_download_delivery_response(",
+        "external_export_download_delivery_artifact_validator_unavailable",
+        "load_persisted_bundle_artifact(bundle_ref=source_artifact_ref)",
         "**_base_response(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID",
     ):
         if stale_term in workbench_text:
@@ -6756,6 +6763,11 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "layer3_workbench._external_export_download_prepare_summary",
         "export_response.external_export_download_prepare_summary",
         "external_export_download_ready",
+        "test_external_export_delivery_response_helper_is_shared_with_workbench",
+        "layer3_workbench._external_export_download_delivery_response",
+        "export_response.external_export_download_delivery_response",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE",
         "\"public_url\" not in prepare_payload",
         "EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE",
         "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID",
@@ -7519,6 +7531,62 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_external_export_summary_extraction_summary "
                     f"missing external export summary extraction term: {term}"
                 )
+        if proof_scope.get("latest_external_export_delivery_response_extraction_branch") != (
+            "codex/l3-external-export-delivery-response"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_response_extraction_branch "
+                "must be 'codex/l3-external-export-delivery-response'"
+            )
+        if proof_scope.get("latest_external_export_delivery_response_extraction_pr") != "#677":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_response_extraction_pr must be '#677'"
+            )
+        if proof_scope.get("latest_external_export_delivery_response_extraction_head_commit") != (
+            "1060f9e9754b7559e33df29d48aef597aa755458"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_response_extraction_head_commit "
+                "must match PR #677 head commit"
+            )
+        if proof_scope.get("latest_external_export_delivery_response_extraction_merge_commit") != (
+            "cc415cfe0e2f3757320f88a6cf6fb4b0109f9e2b"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_response_extraction_merge_commit "
+                "must match PR #677 merge commit"
+            )
+        if proof_scope.get("latest_external_export_delivery_response_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_response_extraction_live_behavior_change must be False"
+            )
+        delivery_response_summary = proof_scope.get(
+            "latest_external_export_delivery_response_extraction_summary"
+        )
+        for term in (
+            "external export/download delivery response extraction",
+            "PR #677",
+            "merge commit cc415cfe0e2f3757320f88a6cf6fb4b0109f9e2b",
+            "external_export_download_delivery_response",
+            "layer3_external_export_response.py",
+            "_external_export_download_delivery_response",
+            "route-level external_export_download_prepare",
+            "external_export_download_deliver proof",
+            "without activating provider/public URLs",
+            "connector/destination dispatch",
+            "package mutation/reconstruction",
+        ):
+            if not isinstance(delivery_response_summary, str) or term not in delivery_response_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_external_export_delivery_response_extraction_summary "
+                    f"missing external export delivery response extraction term: {term}"
+                )
 
     for path, terms in {
         MANIFEST: (
@@ -7556,6 +7624,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "external_export_summary_extraction",
             "PR #675/merge commit e54584d",
             "external_export_download_prepare_summary",
+            "external_export_delivery_response_extraction",
+            "PR #677/merge commit cc415cfe",
+            "external_export_download_delivery_response",
         ),
         BOARD: (
             "Package owner compatibility extraction",
@@ -7591,6 +7662,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "PR `#675`, merge commit `e54584d2`",
             "external_export_download_prepare_summary",
             "without changing external export/download session-summary behavior",
+            "External export/download delivery response extraction",
+            "PR `#677`, merge commit `cc415cfe`",
+            "external_export_download_delivery_response",
+            "without changing same-origin external export/download delivery behavior",
         ),
     }.items():
         text = _read_required_text(path, errors)
