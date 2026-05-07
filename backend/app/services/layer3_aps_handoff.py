@@ -21,6 +21,7 @@ from app.services.layer3_package_entry import (
     PACKAGE_STATUS_COMPLETE_WITH_WARNINGS,
     SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
     SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+    SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
 )
 from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED,
@@ -210,6 +211,7 @@ def _workbench_package_source_gate(canonical_payload: dict[str, Any]) -> bool:
         in {
             SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
             SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+            SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
         }
     )
 
