@@ -229,6 +229,7 @@ SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
 )
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
+LAYER3_BOUNDED_E2E_TEST = ROOT / "backend" / "tests" / "test_layer3_bounded_e2e.py"
 LAYER3_PAGE_TEST = ROOT / "backend" / "tests" / "test_layer3_page.py"
 LAYER3_RESPONSE_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_response_contract.py"
 LAYER3_WORKBENCH_ERROR_TEST = ROOT / "backend" / "tests" / "test_layer3_workbench_error.py"
@@ -8202,6 +8203,68 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} still contains stale Gate B material basis branch-local term: {stale_term}")
 
 
+def _check_bounded_e2e_current_main_sync(errors: list[str]) -> None:
+    for path, terms in {
+        BOARD: (
+            "Bounded Layer 3 API E2E current-main closeout",
+            "PR `#682` through PR `#687`, current main `342c71e5`",
+            "aps_handoff_dispatch_blocked",
+            "no admitted `aps_content_document` material-snapshot provenance",
+            "separately admitted exact `single_aps_doc_qualitative_pass`",
+        ),
+        MANIFEST: (
+            "latest_bounded_e2e_current_main_sync_branch",
+            "bounded_e2e_current_main_sync",
+            "PR #682 through PR #687",
+            "API-created dataset-version cohort method authority",
+            "aps_handoff_dispatch_blocked",
+            "no admitted aps_content_document material-snapshot provenance",
+            "exact single_aps_doc_qualitative_pass",
+        ),
+        PROOF_MANIFEST: (
+            "latest_bounded_e2e_current_main_sync_branch",
+            "latest_bounded_e2e_current_main_sync_prs",
+            "#682-#687",
+            "latest_bounded_e2e_current_main_sync_input_main_commit",
+            "342c71e5f8c7a88d5cadd274a525811399cfb151",
+            "latest_bounded_e2e_current_main_sync_live_behavior_change",
+            "latest_bounded_e2e_current_main_sync_summary",
+            "aps_handoff_dispatch_blocked",
+            "exact single APS-document qualitative execution through single_aps_doc_qualitative_pass only",
+            "broad qualitative execution beyond the exact single_aps_doc_qualitative_pass boundary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing bounded E2E current-main sync term: {term}")
+
+    test_text = _read_required_text(LAYER3_BOUNDED_E2E_TEST, errors)
+    for term in (
+        "test_layer3_bounded_e2e_api_associated_cohort_reaches_handoff_prepare_boundary",
+        "Layer3ApiDriver",
+        "Layer3StateAssertions",
+        "_seed_sources",
+        "_patch_cohort_dataframe_persistence",
+        "assert_forbidden_side_effects_absent",
+        "aps_dispatch_blocked",
+        "aps_handoff_dispatch_blocked",
+        "requested_method_name\"] == \"descriptive_summary\"",
+        "APS qualitative companion remains deferred for the current quantitative cohort path.",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing bounded E2E proof term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "_stamp_api_dataset_cohort_method_authority",
+        "gate-b-dataset-version-cohort-",
+        "\"requested_method_name\": \"descriptive_summary\"",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing API cohort method-authority term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -8398,6 +8461,7 @@ def main() -> int:
     _check_package_review_contract_extraction(errors)
     _check_aps_source_family_extraction(errors)
     _check_external_export_contract_extraction(errors)
+    _check_bounded_e2e_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
