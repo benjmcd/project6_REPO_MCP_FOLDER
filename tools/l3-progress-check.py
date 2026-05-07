@@ -4982,20 +4982,27 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         ),
         BOARD: (
             "Raw ingestion materialization runtime",
+            "Raw ingestion materialization bounded E2E",
             "raw_mixed_existing_source_materialization_entry",
             "leaves the seed route no-write and seed-only",
+            "DatasetVersion.storage_ref",
         ),
         MANIFEST: (
             "latest_raw_ingestion_materialization_runtime_branch",
+            "latest_raw_ingestion_materialization_bounded_e2e_branch",
             "raw_ingestion_materialization_runtime",
+            "raw_ingestion_materialization_bounded_e2e",
             "raw_mixed_existing_source_materialization_entry",
             "writes no files, starts no Layer 3 flow",
+            "DatasetVersion.storage_ref",
         ),
         PROOF_MANIFEST: (
             "raw_ingestion_materialization_runtime_proof",
+            "raw_ingestion_materialization_bounded_e2e_proof",
             "selected_raw_ingestion_mode",
             "raw_mixed_existing_source_materialization_entry",
             "POST /api/v1/layer3/source/mixed-corpus/materialize",
+            "test_layer3_raw_mixed_materialization_drives_bounded_e2e_path",
         ),
     }
     for path, terms in required_terms.items():
@@ -5019,6 +5026,8 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         "layer3_flow_started",
         "DatasetRow",
         "ApsContentLinkage",
+        "storage_path = _check_storage_ref",
+        '"storage_ref": str(storage_path)',
     ):
         if term not in service_text:
             errors.append(f"{_rel(RAW_MIXED_MATERIALIZATION_SERVICE)} missing materialization runtime term: {term}")
@@ -5056,6 +5065,19 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
     ):
         if term not in test_text:
             errors.append(f"{_rel(RAW_MIXED_MATERIALIZATION_TEST)} missing materialization proof term: {term}")
+
+    bounded_e2e_text = _read_required_text(LAYER3_BOUNDED_E2E_TEST, errors)
+    for term in (
+        "test_layer3_raw_mixed_materialization_drives_bounded_e2e_path",
+        "raw_mixed_materialize",
+        "_seeded_sources_from_raw_mixed_materialization_response",
+        "_source_authority_delta",
+        "_drive_bounded_e2e_api_associated_cohort_to_download_delivery",
+        "run_layer3_preflight_with_materialized_source_ids",
+        "RAW_MIXED_CORPUS_MATERIALIZE_RESPONSE_SCHEMA_ID",
+    ):
+        if term not in bounded_e2e_text:
+            errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing materialization bounded E2E proof term: {term}")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
