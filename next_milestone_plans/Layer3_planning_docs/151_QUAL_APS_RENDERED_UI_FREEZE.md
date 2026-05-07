@@ -1,12 +1,12 @@
 # Qualitative APS Rendered Downstream UI Freeze
 
-Status: planning-only implementation-entry freeze for a future bounded rendered `/review/layer3` qualitative APS package/downstream UI slice after PR `#720`.
+Status: live bounded rendered `/review/layer3` qualitative APS package/downstream UI runtime for `qual_aps_rendered_downstream_existing_controls_only`.
 
-This document does not implement UI behavior, backend behavior, routes, DTOs, models, migrations, source handling, package mutation, connector dispatch, provider/public URLs, RAG/vector retrieval, full mockup activation, hidden LLM planning, or auth/security behavior. It selects only the next rendered UI planning boundary over the already-live qualitative APS backend/API chain.
+This document now governs the implemented rendered UI runtime only. It does not admit backend behavior, routes, DTOs, models, migrations, source handling, package mutation, connector dispatch, provider/public URLs, RAG/vector retrieval, full mockup activation, hidden LLM planning, or auth/security behavior beyond the already-live qualitative APS backend/API chain.
 
 ## Current Live Boundary
 
-Current `project6-origin/main` after PR `#720` admits these backend/API qualitative APS steps for one standalone `aps_content_document` source:
+Current `project6-origin/main` admits these backend/API qualitative APS steps for one standalone `aps_content_document` source:
 
 - `single_aps_doc_qualitative_pass` through result review;
 - `qual_aps_package_review_preview_only`;
@@ -16,19 +16,19 @@ Current `project6-origin/main` after PR `#720` admits these backend/API qualitat
 - `qual_aps_aps_handoff_dispatch_entry`;
 - `qual_aps_external_export_download_prepare_deliver`.
 
-Current main still does not admit rendered qualitative package/downstream controls. Existing rendered `/review/layer3` controls are server-state driven and already include associated-cohort package, handoff, APS handoff, external readiness, delivery, and signed-reference surfaces, but qualitative APS downstream activation must not be inferred from those surfaces without an explicit rendered UI freeze and proof.
+Current main now admits rendered qualitative package/downstream controls only through existing `/review/layer3` controls and only after API/test setup has created a server-authoritative approved qualitative APS result-review state. The rendered path drives package preview, package construction commit, package review submit, handoff/export prepare, APS handoff dispatch, and external export/download prepare. Qualitative APS same-origin delivery remains disabled and gated when the server returns `delivery_ui: null` or omits `delivery_ui`.
 
-## Selected Future Boundary
+## Selected Live Boundary
 
-Selected future mode: `qual_aps_rendered_downstream_existing_controls_only`.
+Selected live mode: `qual_aps_rendered_downstream_existing_controls_only`.
 
-The future implementation may adapt the existing rendered `/review/layer3` workbench to present and drive only the already-live qualitative APS backend/API package/downstream steps listed above. It must use server-authoritative state and existing API endpoints; it must not introduce a raw mixed manifest picker, upload control, directory picker, source adapter registry, provider URL control, connector/destination selector, RAG/vector control, full mockup control, hidden LLM control, or auth/security behavior.
+The implementation adapts the existing rendered `/review/layer3` workbench to present and drive only the already-live qualitative APS backend/API package/downstream steps listed above. It uses server-authoritative state and existing API endpoints; it does not introduce a raw mixed manifest picker, upload control, directory picker, source adapter registry, provider URL control, connector/destination selector, RAG/vector control, full mockup control, hidden LLM control, or auth/security behavior.
 
-The implementation may use API/test-harness setup to create deterministic admitted APS source authority and reach the latest supported server state before opening `/review/layer3`. The rendered proof must not imply that a human-facing raw mixed corpus manifest workflow exists.
+The implementation uses API/test-harness setup to create deterministic admitted APS source authority and reach approved qualitative result review before opening `/review/layer3`. The rendered proof does not imply that a human-facing raw mixed corpus manifest workflow exists.
 
 ## Allowed UI Surfaces
 
-A future implementation governed by this freeze may touch only:
+The live implementation governed by this freeze may touch only:
 
 - `backend/app/review_ui/static/layer3.html`;
 - `backend/app/review_ui/static/layer3.css`;
@@ -41,9 +41,9 @@ A future implementation governed by this freeze may touch only:
 
 Backend service/API changes are not admitted by this freeze. If the rendered implementation proves a missing backend field, route, DTO, model, migration, or runtime behavior is required, stop and create a separate backend/API freeze.
 
-## Required UI Gating
+## Live UI Gating
 
-Rendered controls may become enabled only when server state proves the exact qualitative APS authority chain:
+Rendered controls become enabled only when server state proves the exact qualitative APS authority chain:
 
 1. selected source class is `aps_content_document`;
 2. selected pass is `single_aps_doc_qualitative_pass`;
@@ -61,7 +61,7 @@ The browser may generate a fresh `client_request_id` and maintain in-flight stat
 
 ## Required Theme Posture
 
-Any future rendered implementation must be proven under the relevant current `/review/layer3` themes. The minimum proof is:
+The rendered implementation is proven under the relevant current `/review/layer3` themes. The minimum proof is:
 
 - headless Chromium Playwright for the qualitative APS rendered path;
 - headed Chromium Playwright for the same path;
@@ -69,11 +69,11 @@ Any future rendered implementation must be proven under the relevant current `/r
 - no text overlap or unstable resizing in the touched panels at the existing tested desktop/mobile breakpoints;
 - no theme-specific controls or state authority that diverges from server state.
 
-If no rendered CSS/theme files change, the implementation still needs headed and headless proof that the newly activated qualitative controls render correctly inside existing themes.
+No rendered CSS/theme files change in this runtime; headed and headless proof covers the newly activated qualitative controls inside existing themes.
 
 ## Explicit Non-Goals
 
-This freeze does not admit:
+This runtime does not admit:
 
 - new backend endpoints, DTOs, models, migrations, or runtime services;
 - helper/service extraction;
@@ -85,9 +85,9 @@ This freeze does not admit:
 - hidden LLM planning or prompt/model controls;
 - auth/security behavior changes.
 
-## Required Proof For Future Implementation
+## Required Proof For Runtime
 
-A future implementation PR governed by this freeze must prove:
+The implementation PR governed by this freeze must prove:
 
 - no backend service/API behavior changes unless a separate freeze admits them;
 - API/test setup remains separated from rendered UI execution;
