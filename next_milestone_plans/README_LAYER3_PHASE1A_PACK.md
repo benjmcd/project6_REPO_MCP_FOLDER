@@ -16,8 +16,10 @@ Current post-PR #695 execution-handoff references:
 Current qualitative APS package-review runtime references:
 - `next_milestone_plans/Layer3_planning_docs/138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
+- `next_milestone_plans/Layer3_planning_docs/140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
 
-These docs freeze the live read-only `qual_aps_package_review_preview_only` boundary after PR `#702` proved the standalone APS content-document qualitative API path through result review. Current runtime admits only qualitative APS package-review preview through `POST /api/v1/layer3/package/review/preview`; it keeps package construction blocked with `qualitative_aps_package_construction_commit_not_admitted`, keeps package-review submit blocked with `qualitative_aps_package_review_submit_not_admitted`, and still does not admit handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls, source expansion, broad qualitative/hybrid/RAG, full mockup, or auth/security behavior.
+Docs `138`/`139` freeze the live read-only `qual_aps_package_review_preview_only` boundary after PR `#702` proved the standalone APS content-document qualitative API path through result review. Current runtime admits only qualitative APS package-review preview through `POST /api/v1/layer3/package/review/preview`; it keeps package construction blocked with `qualitative_aps_package_construction_commit_not_admitted`, keeps package-review submit blocked with `qualitative_aps_package_review_submit_not_admitted`, and still does not admit handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls, source expansion, broad qualitative/hybrid/RAG, full mockup, or auth/security behavior. Docs `140`/`141` are planning/control only and select the next implementation-entry boundary, `qual_aps_package_construction_commit_entry`, before any qualitative APS package rows or package payload files may be made live.
 
 Post-synthesis authority guardrail:
 - `next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`
@@ -1395,6 +1397,8 @@ Start with:
 - `Layer3_planning_docs/115_QUAL_APS_EXEC_CONTRACT.md`
 - `Layer3_planning_docs/138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md`
 - `Layer3_planning_docs/139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
+- `Layer3_planning_docs/140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md`
+- `Layer3_planning_docs/141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
 - `Layer3_planning_docs/105_deferred-gates.md`
 - `Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
 - `Layer3_planning_docs/27_L3_QUAL1_INPUTS.md`
@@ -1410,6 +1414,7 @@ Read docs `114`/`115` as historical planning/control only, then read docs `119` 
 - exact `single_aps_doc_qualitative_pass` is now the only admitted qualitative APS execution mode
 - current live APS document support includes selection, trace, material preview, Gate B snapshot, qualitative/document-chunk typing, and the bounded single-document qualitative pass
 - docs `138`/`139` govern the live read-only `qual_aps_package_review_preview_only` runtime boundary; current main admits qualitative package preview only and still blocks qualitative package construction at `qualitative_aps_package_construction_commit_not_admitted`
+- docs `140`/`141` define the next planning/control boundary, `qual_aps_package_construction_commit_entry`, which would admit only first construction of `canonical_internal`, `user_facing`, and `review_facing` qualitative APS packages after approved preview, while still blocking package-review submit and all downstream delivery behavior
 - the qualitative pass must not reuse `DatasetVersion` conversion or wrapped quantitative `run_analysis(...)`
 - APS document identity, chunk ordering/limits, citation/trace refs, execution owner, result/review vocabulary, idempotency, failure states, no-leakage behavior, and tests remain required for any future expansion beyond the exact admitted mode
 - associated-cohort qualitative execution, broad qualitative execution, hybrid/RAG/vector behavior, document trace changes, rendered controls, package/handoff/export, provider/public URLs, connector/destination dispatch, source ingestion, schema/runtime/source widening, and full mockup activation remain out unless separately frozen

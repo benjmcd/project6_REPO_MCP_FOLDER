@@ -36,6 +36,12 @@ QUAL_APS_PACKAGE_REVIEW_FREEZE = (
 QUAL_APS_PACKAGE_REVIEW_CONTRACT = (
     PLANNING_DOCS / "139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md"
 )
+QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE = (
+    PLANNING_DOCS / "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md"
+)
+QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT = (
+    PLANNING_DOCS / "141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -3766,6 +3772,78 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
     ):
         if term not in e2e_test_text:
             errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS package-review proof term: {term}")
+
+
+def _check_qualitative_aps_package_construction_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE: (
+            "Status: implementation-entry freeze for `qual_aps_package_construction_commit_entry`.",
+            "selected future route: `POST /api/v1/layer3/package/review/commit`",
+            "selected future response schema: `layer3.qual_aps_package_construction_commit.v1`",
+            "package kinds: `canonical_internal`, `user_facing`, `review_facing`",
+            "exactly one `L3ReconciliationRecord`",
+            "exactly three `L3OutputPackage` rows",
+            "package payload files under the existing server-owned artifact/storage root",
+            "package-review submit remains blocked with `qualitative_aps_package_review_submit_not_admitted`",
+            "Browser proof is not required for a backend/API-only package construction implementation.",
+        ),
+        QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT: (
+            "Status: implementation-entry contract paired with `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md`.",
+            "Current main still blocks qualitative APS package construction with `qualitative_aps_package_construction_commit_not_admitted`",
+            "`POST /api/v1/layer3/package/review/commit`",
+            "`layer3.qual_aps_package_construction_commit.v1`",
+            "`expected_package_kinds` must equal:",
+            "create exactly one `L3ReconciliationRecord`",
+            "create exactly three `L3OutputPackage` rows",
+            "duplicate `client_request_id` with the same construction basis",
+            "package-review submit remains blocked for qualitative APS with `qualitative_aps_package_review_submit_not_admitted`",
+            "headed and headless Chrome proof only if rendered UI changes",
+        ),
+        PHASE1A_README: (
+            "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md",
+            "141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md",
+            "qual_aps_package_construction_commit_entry",
+            "canonical_internal",
+            "user_facing",
+            "review_facing",
+        ),
+        DEFERRED_GATES: (
+            "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md",
+            "141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md",
+            "qual_aps_package_construction_commit_entry",
+            "they do not make qualitative APS package rows, package payload files, package-review submit, or downstream delivery live",
+        ),
+        BOARD: (
+            "Qualitative APS package-construction freeze",
+            "qual_aps_package_construction_commit_entry",
+            "exactly one reconciliation record",
+            "exactly three package rows",
+            "server-owned payload files",
+            "rendered controls/theme behavior",
+        ),
+        MANIFEST: (
+            "latest_qual_aps_package_construction_freeze_branch",
+            "latest_qual_aps_package_construction_freeze_pr",
+            "qual_aps_package_construction_freeze",
+            "qual_aps_package_construction_commit_entry",
+            "exactly one reconciliation record",
+            "exactly three L3OutputPackage rows",
+        ),
+        PROOF_MANIFEST: (
+            "qual_aps_package_construction_freeze_proof",
+            "selected_future_mode",
+            "qual_aps_package_construction_commit_entry",
+            "no L3OutputPackage row creation",
+            "no L3ReconciliationRecord row creation",
+            "no package payload file write",
+            "no rendered controls or theme behavior change",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing qualitative APS package-construction freeze term: {term}")
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
@@ -8578,6 +8656,8 @@ def main() -> int:
         RAW_MIXED_BRIDGE_FREEZE,
         QUAL_APS_PACKAGE_REVIEW_FREEZE,
         QUAL_APS_PACKAGE_REVIEW_CONTRACT,
+        QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
+        QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -8716,6 +8796,7 @@ def main() -> int:
     _check_package_replacement_namespace_entry_freeze(errors)
     _check_qualitative_capability_boundary(errors)
     _check_qualitative_aps_package_review_freeze(errors)
+    _check_qualitative_aps_package_construction_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
