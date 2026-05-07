@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import sys
 from pathlib import Path
@@ -210,6 +211,53 @@ def test_external_export_delivery_helpers_are_shared_with_workbench() -> None:
     assert prepare_payload["download_mode"] == "reference_only_prepare"
     assert "delivery_mode" not in prepare_payload
     assert "public_url" not in prepare_payload
+
+
+def test_external_export_delivery_response_helper_is_shared_with_workbench(monkeypatch, tmp_path) -> None:
+    assert (
+        layer3_workbench._external_export_download_delivery_response
+        is export_response.external_export_download_delivery_response
+    )
+
+    from app.services import nrc_aps_evidence_bundle
+
+    artifact_path = tmp_path / "bundle.json"
+    artifact_path.write_bytes(b'{"bundle_id":"aps-bundle-id"}')
+    artifact_hash = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+
+    def fake_load_persisted_bundle_artifact(*, bundle_ref: str):
+        assert bundle_ref == "layer3://aps-bundle/ref"
+        return {"bundle_id": "aps-bundle-id"}, artifact_path
+
+    monkeypatch.setattr(
+        nrc_aps_evidence_bundle,
+        "load_persisted_bundle_artifact",
+        fake_load_persisted_bundle_artifact,
+    )
+    validation_body = {"source_artifact_ref": "layer3://aps-bundle/ref", "nested": {"kept": True}}
+
+    delivery = export_response.external_export_download_delivery_response(
+        session_id="session:bad/name..",
+        supplied_aps_bundle_id="aps-bundle-id",
+        supplied_readiness_ref="layer3://external-export-download/record",
+        source_artifact_ref="layer3://aps-bundle/ref",
+        expected_artifact_hash=artifact_hash,
+        expected_artifact_size=artifact_path.stat().st_size,
+        validation_body=validation_body,
+    )
+
+    assert delivery.artifact_path == artifact_path
+    assert delivery.media_type == "application/json"
+    assert delivery.filename == "layer3-session-bad-name-aps-bundle-id.json"
+    assert delivery.headers == {
+        "X-Layer3-Schema-Id": export_response.EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+        "X-Layer3-Delivery-State": export_response.EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
+        "X-Layer3-Source-Artifact-Hash": artifact_hash,
+        "X-Layer3-External-Export-Download-Record-Ref": "layer3://external-export-download/record",
+    }
+    assert delivery.authority == validation_body
+    assert delivery.authority is not validation_body
+    assert delivery.authority["nested"] is not validation_body["nested"]
 
 
 class _PackageQuery:
