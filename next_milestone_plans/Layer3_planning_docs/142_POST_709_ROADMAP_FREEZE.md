@@ -58,8 +58,8 @@ Future work must proceed in this order unless a later live audit proves a differ
 
 - goal: freeze exactly one operator submit/approval decision over the already constructed qualitative APS package set.
 - current blocker: submit is intentionally blocked with `qualitative_aps_package_review_submit_not_admitted`.
-- implementation-entry freeze required: yes.
-- likely files: new docs `143`/`144`, `105_deferred-gates.md`, `README_LAYER3_PHASE1A_PACK.md`, progress/proof manifests.
+- implementation-entry freeze required: complete in docs `143`/`144`.
+- likely files: `143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md`, `144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md`, `105_deferred-gates.md`, `README_LAYER3_PHASE1A_PACK.md`, progress/proof manifests.
 - required tests: no runtime tests unless a later implementation pass starts; the freeze must specify request fields, response fields, stale authority, idempotency, concurrency, and negative invariants.
 - negative invariants: no handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URL, source expansion, RAG/vector, package mutation, UI, theme, auth/security, model/migration, or hidden LLM behavior.
 - priority: P0 because every qualitative APS downstream path requires an approved package-review decision.
@@ -67,8 +67,8 @@ Future work must proceed in this order unless a later live audit proves a differ
 ### 2. Qualitative APS Package-Review Submit Runtime
 
 - goal: implement only the frozen submit decision over the constructed qualitative APS package set.
-- current blocker: no dedicated submit freeze/contract exists yet.
-- implementation-entry freeze required: yes, from pass 1.
+- current blocker: runtime still blocks with `qualitative_aps_package_review_submit_not_admitted`; docs `143`/`144` now provide the implementation-entry freeze/contract.
+- implementation-entry freeze required: yes, from docs `143`/`144`.
 - likely files: `backend/app/services/layer3_workbench.py`, package state/submit helpers, `backend/app/api/layer3.py`, `backend/tests/test_layer3_bounded_e2e.py`, `backend/tests/test_layer3_qual_aps_execution.py`, progress checker, progress/proof manifests.
 - required tests: API success; stale package ids/hashes fail closed; duplicate client request behavior; no row/file mutation beyond submit state; bounded E2E reaches submit and stops.
 - negative invariants: no handoff/export state, APS dispatch, external export/download, connector/destination dispatch, provider/public URL, source/RAG expansion, package mutation/reconstruction, rendered UI, theme behavior, auth/security, or hidden LLM behavior.

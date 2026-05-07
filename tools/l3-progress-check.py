@@ -42,6 +42,13 @@ QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE = (
 QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT = (
     PLANNING_DOCS / "141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md"
 )
+POST_709_ROADMAP_FREEZE = PLANNING_DOCS / "142_POST_709_ROADMAP_FREEZE.md"
+QUAL_APS_PACKAGE_SUBMIT_FREEZE = (
+    PLANNING_DOCS / "143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md"
+)
+QUAL_APS_PACKAGE_SUBMIT_CONTRACT = (
+    PLANNING_DOCS / "144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -3888,6 +3895,77 @@ def _check_qualitative_aps_package_construction_freeze(errors: list[str]) -> Non
     ):
         if term not in e2e_test_text:
             errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS package-construction proof term: {term}")
+
+
+def _check_qualitative_aps_package_submit_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        POST_709_ROADMAP_FREEZE: (
+            "qualitative APS package-review submit freeze and contract",
+            "implementation-entry freeze required: complete in docs `143`/`144`",
+            "runtime still blocks with `qualitative_aps_package_review_submit_not_admitted`",
+            "docs `143`/`144` now provide the implementation-entry freeze/contract",
+        ),
+        QUAL_APS_PACKAGE_SUBMIT_FREEZE: (
+            "Status: planning/control freeze for the next qualitative APS boundary after PR `#709`.",
+            "selected future mode: `qual_aps_package_review_submit_entry`",
+            "selected future response schema: `layer3.qual_aps_package_review_submit.v1`",
+            "blocker on current main: `qualitative_aps_package_review_submit_not_admitted`",
+            "Allowed Writes",
+            "one qualitative APS package-review decision object in `L3ReconciliationRecord.summary_json`",
+            "The implementation must not create new rows or files under this freeze.",
+            "Browser proof is not required for a backend/API-only package-review submit implementation.",
+        ),
+        QUAL_APS_PACKAGE_SUBMIT_CONTRACT: (
+            "Status: planning/control API and state contract paired with `143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md`.",
+            "Selected route:",
+            "`POST /api/v1/layer3/package/review/submit`",
+            "Selected response schema:",
+            "`layer3.qual_aps_package_review_submit.v1`",
+            "`construction_basis_hash`",
+            "`operator_decision`",
+            "Allowed state effects on successful submit:",
+            "Current main still blocks qualitative APS package-review submit with `qualitative_aps_package_review_submit_not_admitted`.",
+        ),
+        PHASE1A_README: (
+            "143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md",
+            "144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md",
+            "qual_aps_package_review_submit_entry",
+            "They select reuse of the package-review submit route family as the preferred target",
+        ),
+        DEFERRED_GATES: (
+            "143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md",
+            "144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md",
+            "future `qual_aps_package_review_submit_entry` boundary",
+            "admit no runtime behavior by themselves",
+        ),
+        BOARD: (
+            "Qualitative APS package-review submit freeze",
+            "planning/control docs",
+            "qual_aps_package_review_submit_entry",
+            "POST /api/v1/layer3/package/review/submit",
+            "admits no runtime behavior by itself",
+        ),
+        MANIFEST: (
+            "latest_qual_aps_package_review_submit_freeze_branch",
+            "latest_qual_aps_package_review_submit_freeze_pr",
+            "qual_aps_package_review_submit_freeze",
+            "qual_aps_package_review_submit_entry",
+            "admits no runtime behavior",
+        ),
+        PROOF_MANIFEST: (
+            "latest_qual_aps_package_review_submit_freeze_branch",
+            "latest_qual_aps_package_review_submit_freeze_pr",
+            "latest_qual_aps_package_review_submit_freeze_live_behavior_change",
+            "latest_qual_aps_package_review_submit_freeze_summary",
+            "qual_aps_package_review_submit_entry",
+            "admit no runtime behavior",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing qualitative APS package-submit freeze term: {term}")
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
@@ -8702,6 +8780,9 @@ def main() -> int:
         QUAL_APS_PACKAGE_REVIEW_CONTRACT,
         QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
         QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT,
+        POST_709_ROADMAP_FREEZE,
+        QUAL_APS_PACKAGE_SUBMIT_FREEZE,
+        QUAL_APS_PACKAGE_SUBMIT_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -8841,6 +8922,7 @@ def main() -> int:
     _check_qualitative_capability_boundary(errors)
     _check_qualitative_aps_package_review_freeze(errors)
     _check_qualitative_aps_package_construction_freeze(errors)
+    _check_qualitative_aps_package_submit_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
