@@ -202,6 +202,7 @@ Minimum implementation tests:
 - existing quantitative single-item package preview remains unchanged;
 - existing associated-cohort package preview remains unchanged;
 - standalone APS qualitative E2E reaches read-only package preview and then stops at package construction with `qualitative_aps_package_construction_commit_not_admitted`;
+- package-review submit fails closed with `qualitative_aps_package_review_submit_not_admitted` before any restored or seeded reconciliation/package state can make qualitative APS submit appear live;
 - no package, reconciliation, handoff/export, APS dispatch, external export/download, connector, provider/public URL, source, RAG/vector, model/migration, or auth/security side effects;
 - progress checker guard if needed;
 - headed and headless Chrome proof if UI changes.

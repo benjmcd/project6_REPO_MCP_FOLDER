@@ -291,6 +291,18 @@ def _prepare_material(client: TestClient) -> tuple[dict, dict, dict]:
     return preflight, source, material
 
 
+def _gate_b_decision_basis(candidate: dict) -> dict:
+    return {
+        "source_ref": candidate["source_ref"],
+        "query_basis": candidate["query_basis"],
+        "provenance_ref": candidate["provenance_ref"],
+        "source_identity": candidate["source_identity"],
+        "source_provenance": candidate["source_provenance"],
+        "payload": candidate["payload"],
+        "load_summary": candidate["load_summary"],
+    }
+
+
 def _assert_common_response_envelope(body: dict) -> None:
     assert body["schema_id"].startswith("layer3.")
     assert body["schema_version"] == 1
@@ -4419,21 +4431,13 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
                     "candidate_id": first["candidate_id"],
                     "decision": "approved",
                     "operator_reason": "",
-                    "decision_basis": {
-                        "source_ref": first["source_ref"],
-                        "query_basis": first["query_basis"],
-                        "provenance_ref": first["provenance_ref"],
-                    },
+                    "decision_basis": _gate_b_decision_basis(first),
                 },
                 {
                     "candidate_id": second["candidate_id"],
                     "decision": "denied",
                     "operator_reason": "Not in first-slice scope.",
-                    "decision_basis": {
-                        "source_ref": second["source_ref"],
-                        "query_basis": second["query_basis"],
-                        "provenance_ref": second["provenance_ref"],
-                    },
+                    "decision_basis": _gate_b_decision_basis(second),
                 },
             ],
             "actor": "pytest",
@@ -4808,6 +4812,45 @@ def test_layer3_api_gate_b_material_preview_hash_mismatch_fails_closed(client: T
         assert db.query(L3OutputPackage).count() == 0
 
 
+def test_layer3_api_gate_b_material_preview_hash_binds_source_authority(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+    decision_basis = _gate_b_decision_basis(first)
+    decision_basis["source_identity"] = {**decision_basis["source_identity"], "dataset_version_id": "tampered-dv"}
+
+    mismatch = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-authority-tamper",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": first["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": decision_basis,
+                },
+            ],
+            "actor": "pytest",
+        },
+    )
+
+    assert mismatch.status_code == 409
+    body = mismatch.json()
+    _assert_common_response_envelope(body)
+    assert body["error_code"] == "material_preview_mismatch"
+    assert body["blocked_fields"] == ["material_preview_hash", "candidate_decisions"]
+    with client.layer3_session_factory() as db:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+
+
 def test_layer3_api_gate_b_duplicate_candidate_decisions_fail_closed(client: TestClient) -> None:
     preflight, source, material = _prepare_material(client)
     first = material["material_candidates"][0]
@@ -4815,11 +4858,7 @@ def test_layer3_api_gate_b_duplicate_candidate_decisions_fail_closed(client: Tes
         "candidate_id": first["candidate_id"],
         "decision": "approved",
         "operator_reason": "",
-        "decision_basis": {
-            "source_ref": first["source_ref"],
-            "query_basis": first["query_basis"],
-            "provenance_ref": first["provenance_ref"],
-        },
+        "decision_basis": _gate_b_decision_basis(first),
     }
 
     duplicate = client.post(
@@ -4864,11 +4903,7 @@ def test_layer3_api_gate_b_rejects_extra_fields_before_session_mutation(client: 
                     "candidate_id": first["candidate_id"],
                     "decision": "approved",
                     "operator_reason": "",
-                    "decision_basis": {
-                        "source_ref": first["source_ref"],
-                        "query_basis": first["query_basis"],
-                        "provenance_ref": first["provenance_ref"],
-                    },
+                    "decision_basis": _gate_b_decision_basis(first),
                     "analysis_run_id": "run-should-not-be-accepted",
                 }
             ],
@@ -4909,11 +4944,7 @@ def test_layer3_api_gate_b_requires_client_request_id_before_session_mutation(cl
                 "candidate_id": first["candidate_id"],
                 "decision": "approved",
                 "operator_reason": "",
-                "decision_basis": {
-                    "source_ref": first["source_ref"],
-                    "query_basis": first["query_basis"],
-                    "provenance_ref": first["provenance_ref"],
-                },
+                "decision_basis": _gate_b_decision_basis(first),
             }
         ],
         "actor": "pytest",
@@ -4951,21 +4982,13 @@ def test_layer3_api_gate_b_duplicate_client_request_id_is_idempotent(client: Tes
                 "candidate_id": first["candidate_id"],
                 "decision": "approved",
                 "operator_reason": "",
-                "decision_basis": {
-                    "source_ref": first["source_ref"],
-                    "query_basis": first["query_basis"],
-                    "provenance_ref": first["provenance_ref"],
-                },
+                "decision_basis": _gate_b_decision_basis(first),
             },
             {
                 "candidate_id": second["candidate_id"],
                 "decision": "denied",
                 "operator_reason": "Not in first-slice scope.",
-                "decision_basis": {
-                    "source_ref": second["source_ref"],
-                    "query_basis": second["query_basis"],
-                    "provenance_ref": second["provenance_ref"],
-                },
+                "decision_basis": _gate_b_decision_basis(second),
             },
         ],
         "actor": "pytest",
