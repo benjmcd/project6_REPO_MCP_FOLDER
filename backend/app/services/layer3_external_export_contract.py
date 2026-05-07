@@ -260,6 +260,32 @@ def external_export_download_delivery_request_fields(
     )
 
 
+def external_export_download_delivery_readiness_mismatches(
+    request_fields: ExternalExportDownloadDeliveryRequestFields,
+    readiness_state: Mapping[str, Any],
+) -> list[tuple[str, str, Any]]:
+    comparisons = (
+        (
+            "external_export_download_record_ref",
+            request_fields.supplied_readiness_ref,
+            readiness_state.get("external_export_download_record_ref"),
+        ),
+        (
+            "export_download_descriptor_ref",
+            request_fields.supplied_descriptor_ref,
+            readiness_state.get("export_download_descriptor_ref"),
+        ),
+        ("aps_bundle_ref", request_fields.supplied_aps_bundle_ref, readiness_state.get("aps_bundle_ref")),
+        ("aps_bundle_id", request_fields.supplied_aps_bundle_id, readiness_state.get("aps_bundle_id")),
+        ("aps_schema_id", request_fields.supplied_aps_schema_id, readiness_state.get("aps_schema_id")),
+    )
+    return [
+        (field, supplied, expected)
+        for field, supplied, expected in comparisons
+        if str(supplied or "") != str(expected or "")
+    ]
+
+
 def external_export_download_prepare_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
     unknown = sorted(
         key for key in payload if key not in EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS

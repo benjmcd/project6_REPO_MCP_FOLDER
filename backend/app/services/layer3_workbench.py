@@ -322,6 +322,7 @@ from app.services.layer3_external_export_contract import (
     EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS,
     ExternalExportDownloadDelivery,
     external_export_download_delivery_blocked_fields,
+    external_export_download_delivery_readiness_mismatches,
     external_export_download_delivery_request_fields,
     external_export_download_prepare_blocked_fields,
 )
@@ -7427,21 +7428,17 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
             http_status=409,
             blocked_fields=["external_export_download_record_ref"],
         )
-    for field, supplied, expected in (
-        ("external_export_download_record_ref", supplied_readiness_ref, readiness_state.get("external_export_download_record_ref")),
-        ("export_download_descriptor_ref", supplied_descriptor_ref, readiness_state.get("export_download_descriptor_ref")),
-        ("aps_bundle_ref", supplied_aps_bundle_ref, readiness_state.get("aps_bundle_ref")),
-        ("aps_bundle_id", supplied_aps_bundle_id, readiness_state.get("aps_bundle_id")),
-        ("aps_schema_id", supplied_aps_schema_id, readiness_state.get("aps_schema_id")),
+    for field, supplied, expected in external_export_download_delivery_readiness_mismatches(
+        delivery_request,
+        readiness_state,
     ):
-        if str(supplied or "") != str(expected or ""):
-            raise Layer3WorkbenchError(
-                f"external_export_download_delivery_{field}_mismatch",
-                f"Supplied {field} does not match recorded external export/download readiness.",
-                status="conflict",
-                http_status=409,
-                blocked_fields=[field],
-            )
+        raise Layer3WorkbenchError(
+            f"external_export_download_delivery_{field}_mismatch",
+            f"Supplied {field} does not match recorded external export/download readiness.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=[field],
+        )
 
     validation_body = external_export_download_prepare(
         db,
