@@ -48,6 +48,11 @@ from app.services.layer3_raw_mixed_bridge import (
     RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
     RAW_MIXED_CORPUS_SEED_MODE,
 )
+from app.services.layer3_raw_mixed_materialization import (
+    RAW_MIXED_CORPUS_MATERIALIZE_MANIFEST_SCHEMA_ID,
+    RAW_MIXED_CORPUS_MATERIALIZE_MODE,
+    RAW_MIXED_CORPUS_MATERIALIZE_REQUEST_SCHEMA_ID,
+)
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -400,6 +405,240 @@ def _seed_browser_raw_mixed_authority(db, temp_path: Path, *, seed_id: str) -> d
     }
 
 
+def _write_browser_storage_ref(ref: str, content: str) -> tuple[str, str]:
+    path = Path(settings.storage_dir) / ref
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    return ref, hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _browser_materialized_dataset_entry(
+    *,
+    seed_id: str,
+    corpus_batch_id: str,
+    run_id: str,
+    target_id: str,
+    content_id: str,
+    index: int,
+) -> dict[str, object]:
+    dataset_version_id = f"dv-materialized-{seed_id}-{index + 1}"
+    dataset_id = f"ds-materialized-{seed_id}-{index + 1}"
+    rows = [
+        {
+            "dataset_row_id": f"row-materialized-{seed_id}-{index + 1}-{row_index + 1}",
+            "row_number": row_index + 1,
+            "values_json": {
+                "period": f"2026-{row_index + 1:02d}",
+                "value": 10 + index + (row_index * 0.5),
+            },
+        }
+        for row_index in range(24)
+    ]
+    csv_rows = "\n".join(f"{row['values_json']['period']},{row['values_json']['value']}" for row in rows)
+    storage_ref, storage_hash = _write_browser_storage_ref(
+        f"raw-materialized/{corpus_batch_id}/dataset-{index + 1}.csv",
+        f"period,value\n{csv_rows}\n",
+    )
+    value_variable_id = f"var-materialized-value-{seed_id}-{index + 1}"
+    return {
+        "dataset_id": dataset_id,
+        "dataset_version_id": dataset_version_id,
+        "name": f"Browser Raw Materialized Dataset {index + 1}",
+        "description": "Deterministic browser harness materialized dataset.",
+        "domain_pack": "nrc_aps",
+        "frequency_hint": "monthly",
+        "time_column": "period",
+        "version_label": "v1",
+        "version_type": "raw_mixed_materialized",
+        "status": "ready",
+        "storage_ref": storage_ref,
+        "storage_sha256": storage_hash,
+        "row_count": 24,
+        "variables": [
+            {
+                "variable_id": f"var-materialized-period-{seed_id}-{index + 1}",
+                "variable_name": "period",
+                "dtype": "string",
+                "role": "time",
+                "is_numeric": False,
+                "is_time_index": True,
+                "ordinal_position": 0,
+            },
+            {
+                "variable_id": value_variable_id,
+                "variable_name": "value",
+                "dtype": "float",
+                "role": "measure",
+                "is_numeric": True,
+                "is_time_index": False,
+                "ordinal_position": 1,
+            },
+        ],
+        "rows": rows,
+        "variable_profiles": [
+            {
+                "variable_profile_id": f"profile-materialized-value-{seed_id}-{index + 1}",
+                "variable_id": value_variable_id,
+                "seasonality_flag": False,
+                "stationarity_hint": "not_evaluated",
+                "summary_json": {"min": 10 + index, "max": 21.5 + index},
+            }
+        ],
+        "source_provenance": {
+            "dataset_source_provenance_id": f"prov-materialized-{seed_id}-{index + 1}",
+            "source_system": "nrc_adams_aps",
+            "source_mode": "raw_mixed_materialized",
+            "source_artifact_key": f"aps://{run_id}/{target_id}/{dataset_version_id}",
+            "source_reference_json": {
+                "content_id": content_id,
+                "parser_family": "csv_table",
+                "parser_contract_id": "aps_csv_parser_v1",
+                "typed_content_contract_id": "aps_csv_table_units_v1",
+            },
+        },
+    }
+
+
+def _build_browser_raw_mixed_materialization_setup(*, seed_id: str) -> dict[str, object]:
+    corpus_batch_id = f"batch-materialized-{seed_id}"
+    run_id = f"run-materialized-{seed_id}"
+    target_id = f"target-materialized-{seed_id}"
+    content_id = f"content-materialized-{seed_id}"
+    normalized_text = "Browser materialized APS content confirms inspection follow-up."
+    normalized_ref, normalized_hash = _write_browser_storage_ref(
+        f"raw-materialized/{corpus_batch_id}/aps-normalized.txt",
+        normalized_text,
+    )
+    content_units_ref, _content_units_hash = _write_browser_storage_ref(
+        f"raw-materialized/{corpus_batch_id}/aps-content-units.json",
+        json.dumps(
+            [
+                {"unit_id": "unit-001", "text": "Browser materialized APS content confirms inspection."},
+                {"unit_id": "unit-002", "text": "Follow-up is recorded for rendered selection proof."},
+            ],
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+    )
+    blob_ref, blob_hash = _write_browser_storage_ref(
+        f"raw-materialized/{corpus_batch_id}/aps-source.txt",
+        "browser raw materialization source bytes",
+    )
+    chunk_texts = [
+        "Browser materialized APS content confirms inspection.",
+        "Follow-up is recorded for rendered selection proof.",
+    ]
+    manifest = {
+        "schema_id": RAW_MIXED_CORPUS_MATERIALIZE_MANIFEST_SCHEMA_ID,
+        "corpus_batch_id": corpus_batch_id,
+        "source_classes": ["dataset_version", "aps_content_document"],
+        "dataset_versions": [
+            _browser_materialized_dataset_entry(
+                seed_id=seed_id,
+                corpus_batch_id=corpus_batch_id,
+                run_id=run_id,
+                target_id=target_id,
+                content_id=content_id,
+                index=index,
+            )
+            for index in range(2)
+        ],
+        "aps_content_documents": [
+            {
+                "connector_run": {
+                    "connector_run_id": run_id,
+                    "source_system": "nrc_adams_aps",
+                    "source_mode": "server_owned_manifest",
+                    "status": "completed",
+                    "request_config_json": {"fixture": "browser_raw_mixed_materialization"},
+                    "query_plan_json": {"corpus_batch_id": corpus_batch_id},
+                },
+                "target": {
+                    "connector_run_target_id": target_id,
+                    "connector_run_id": run_id,
+                    "ordinal": 0,
+                    "artifact_surface": "files",
+                    "selection_source": "browser_materialization_manifest",
+                    "selection_scope": "single_aps_document",
+                    "artifact_locator_type": "server_owned_ref",
+                    "source_artifact_key": f"aps://{run_id}/{target_id}/{content_id}",
+                    "canonical_artifact_key": f"aps://{run_id}/{target_id}/canonical",
+                    "downloaded_sha256": blob_hash,
+                    "raw_storage_ref": blob_ref,
+                    "fetch_policy_mode": "server_owned_manifest",
+                    "status": "completed",
+                },
+                "document": {
+                    "aps_content_document_id": f"aps-doc-materialized-{seed_id}",
+                    "content_id": content_id,
+                    "content_contract_id": APS_CONTENT_CONTRACT_ID,
+                    "chunking_contract_id": APS_CHUNKING_CONTRACT_ID,
+                    "normalization_contract_id": APS_NORMALIZATION_CONTRACT_ID,
+                    "normalized_text_sha256": normalized_hash,
+                    "normalized_char_count": len(normalized_text),
+                    "chunk_count": len(chunk_texts),
+                    "content_status": "indexed",
+                    "media_type": "application/pdf",
+                    "document_class": "inspection_report",
+                    "quality_status": "strong",
+                    "page_count": 2,
+                    "diagnostics_ref": f"raw-materialized/{corpus_batch_id}/diagnostics.json",
+                    "visual_page_refs_json": [],
+                },
+                "chunks": [
+                    {
+                        "aps_content_chunk_id": f"aps-chunk-materialized-{seed_id}-{index + 1}",
+                        "chunk_id": f"{content_id}-chunk-{index + 1}",
+                        "chunk_ordinal": index,
+                        "chunk_text": chunk_text,
+                        "chunk_text_sha256": hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(),
+                        "start_char": index * 64,
+                        "end_char": (index * 64) + len(chunk_text),
+                        "page_start": index + 1,
+                        "page_end": index + 1,
+                        "unit_kind": "pdf_paragraph",
+                        "quality_status": "strong",
+                    }
+                    for index, chunk_text in enumerate(chunk_texts)
+                ],
+                "linkage": {
+                    "aps_content_linkage_id": f"aps-linkage-materialized-{seed_id}",
+                    "accession_number": "MLRAWBROWSER001",
+                    "content_units_ref": content_units_ref,
+                    "normalized_text_ref": normalized_ref,
+                    "normalized_text_sha256": normalized_hash,
+                    "blob_ref": blob_ref,
+                    "blob_sha256": blob_hash,
+                    "download_exchange_ref": f"raw-materialized/{corpus_batch_id}/download-exchange.json",
+                    "discovery_ref": f"raw-materialized/{corpus_batch_id}/discovery.json",
+                    "selection_ref": f"raw-materialized/{corpus_batch_id}/selection.json",
+                    "diagnostics_ref": f"raw-materialized/{corpus_batch_id}/diagnostics.json",
+                },
+            }
+        ],
+    }
+    manifest_ref = f"raw-materialized/{corpus_batch_id}/manifest.json"
+    manifest_path = Path(settings.storage_dir) / manifest_ref
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_bytes(_canonical_json_bytes(manifest))
+    manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    return {
+        "schema_id": "project6.review_browser_raw_mixed_materialization_setup.v1",
+        "schema_version": 1,
+        "materialize_request": {
+            "schema_id": RAW_MIXED_CORPUS_MATERIALIZE_REQUEST_SCHEMA_ID,
+            "schema_version": 1,
+            "client_request_id": f"browser-raw-mixed-materialize-{seed_id}",
+            "materialization_mode": RAW_MIXED_CORPUS_MATERIALIZE_MODE,
+            "corpus_batch_id": corpus_batch_id,
+            "artifact_manifest_ref": manifest_ref,
+            "artifact_manifest_hash": manifest_hash,
+            "requested_source_classes": ["dataset_version", "aps_content_document"],
+            "operator_confirmation": True,
+        },
+    }
+
+
 def _seed_browser_aps_content_fixture(
     db,
     temp_path: Path,
@@ -641,6 +880,7 @@ def create_app() -> FastAPI:
     temp_dir = TemporaryDirectory(prefix="review-browser-", ignore_cleanup_errors=True)
     temp_path = Path(temp_dir.name)
     raw_mixed_seed_counter = count(1)
+    raw_mixed_materialization_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
     install_review_browser_patches(fixture)
     _install_layer3_browser_patches(temp_path)
@@ -716,6 +956,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-aps-document",
                 "/__test/layer3/seed-aps-handoff",
                 "/__test/layer3/seed-raw-mixed",
+                "/__test/layer3/materialize-raw-mixed",
             ],
         }
 
@@ -773,5 +1014,10 @@ def create_app() -> FastAPI:
             return _seed_browser_raw_mixed_authority(db, temp_path, seed_id=seed_id)
         finally:
             db.close()
+
+    @app.post("/__test/layer3/materialize-raw-mixed")
+    def materialize_layer3_raw_mixed_setup() -> dict[str, object]:
+        seed_id = f"raw-mixed-materialize-browser-{next(raw_mixed_materialization_counter):03d}"
+        return _build_browser_raw_mixed_materialization_setup(seed_id=seed_id)
 
     return app

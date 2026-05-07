@@ -5711,5 +5711,47 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "After this proof, the next admissible raw-ingestion step should be selected by a separate freeze; do not infer broad source adapters, local upload, local directory, provider URL, connector dispatch, RAG/vector, rendered UI, auth/security, or package mutation behavior from the bounded materialization E2E."
+  },
+  "raw_ingestion_materialization_rendered_ui_smoke_proof": {
+    "scope": "Rendered /review/layer3 Playwright smoke using raw mixed-corpus materialization as API setup only.",
+    "implementation_branch": "codex/l3-materialization-ui-smoke",
+    "live_behavior_change": false,
+    "reference_files": [
+      "backend/tests/review_browser_server.py",
+      "e2e/layer3-workbench.spec.js",
+      "tools/l3-progress-check.py"
+    ],
+    "selected_raw_ingestion_mode": "raw_mixed_existing_source_materialization_entry",
+    "runtime_route": "POST /api/v1/layer3/source/mixed-corpus/materialize",
+    "rendered_ui_test": "Layer 3 workbench uses raw mixed materialization setup through rendered Gate C and plan approval",
+    "setup_boundary": "The test-only review browser server writes a server-owned storage-root materialization manifest, then the Playwright test calls the live materialization endpoint and uses only returned dataset_version and aps_content_document IDs in the rendered workbench.",
+    "proof_summary": "The smoke proves existing rendered source selection, material preview, Gate B, Gate C preview/commit, plan preview, and plan approval controls can consume materialized source authority without adding a manifest picker, upload control, directory picker, seed button, production route, production service, DTO/model/migration change, or rendered UI control.",
+    "required_validation": [
+      "python -m py_compile .\\backend\\tests\\review_browser_server.py .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_review_browser_server.py -q",
+      "npx playwright test e2e/layer3-workbench.spec.js --grep \"raw mixed materialization setup\"",
+      "git diff --check"
+    ],
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no new rendered UI control",
+      "no raw ingestion beyond server-owned materialization API setup",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no source adapter registry",
+      "no provider/public URL or signed URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no theme behavior change",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "A later rendered raw mixed manifest workflow still requires a separate UI freeze; this smoke must not be treated as human-facing raw ingestion, upload, directory, connector, RAG/vector, provider URL, or destination dispatch support."
   }
 }

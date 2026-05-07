@@ -342,6 +342,7 @@ LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 LAYER3_HANDOFF_E2E = ROOT / "e2e" / "layer3-handoff.spec.js"
 LAYER3_HELPERS_E2E = ROOT / "e2e" / "layer3-helpers.js"
+REVIEW_BROWSER_SERVER = ROOT / "backend" / "tests" / "review_browser_server.py"
 MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
 MOCKUP_SPEC = ROOT / "next_milestone_plans" / "layer3-mockups" / "mockup-spec.txt"
 
@@ -4983,6 +4984,7 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         BOARD: (
             "Raw ingestion materialization runtime",
             "Raw ingestion materialization bounded E2E",
+            "Raw ingestion materialization rendered UI smoke",
             "raw_mixed_existing_source_materialization_entry",
             "leaves the seed route no-write and seed-only",
             "DatasetVersion.storage_ref",
@@ -4990,8 +4992,10 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         MANIFEST: (
             "latest_raw_ingestion_materialization_runtime_branch",
             "latest_raw_ingestion_materialization_bounded_e2e_branch",
+            "latest_raw_ingestion_materialization_rendered_ui_smoke_branch",
             "raw_ingestion_materialization_runtime",
             "raw_ingestion_materialization_bounded_e2e",
+            "raw_ingestion_materialization_rendered_ui_smoke",
             "raw_mixed_existing_source_materialization_entry",
             "writes no files, starts no Layer 3 flow",
             "DatasetVersion.storage_ref",
@@ -4999,10 +5003,12 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         PROOF_MANIFEST: (
             "raw_ingestion_materialization_runtime_proof",
             "raw_ingestion_materialization_bounded_e2e_proof",
+            "raw_ingestion_materialization_rendered_ui_smoke_proof",
             "selected_raw_ingestion_mode",
             "raw_mixed_existing_source_materialization_entry",
             "POST /api/v1/layer3/source/mixed-corpus/materialize",
             "test_layer3_raw_mixed_materialization_drives_bounded_e2e_path",
+            "Layer 3 workbench uses raw mixed materialization setup through rendered Gate C and plan approval",
         ),
     }
     for path, terms in required_terms.items():
@@ -5078,6 +5084,32 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
     ):
         if term not in bounded_e2e_text:
             errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing materialization bounded E2E proof term: {term}")
+
+    workbench_e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
+    for term in (
+        "Layer 3 workbench uses raw mixed materialization setup through rendered Gate C and plan approval",
+        "materializeRawMixedSetup",
+        "openRawMixedMaterializedWorkbench",
+        "/api/v1/layer3/source/mixed-corpus/materialize",
+        "/__test/layer3/materialize-raw-mixed",
+        "raw_mixed_existing_source_materialization_entry",
+        "run_layer3_preflight_with_materialized_source_ids",
+        "expectNoDeferredRawMixedControls",
+    ):
+        if term not in workbench_e2e_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing materialization rendered UI smoke term: {term}")
+
+    review_browser_text = _read_required_text(REVIEW_BROWSER_SERVER, errors)
+    for term in (
+        "project6.review_browser_raw_mixed_materialization_setup.v1",
+        "/__test/layer3/materialize-raw-mixed",
+        "_build_browser_raw_mixed_materialization_setup",
+        "RAW_MIXED_CORPUS_MATERIALIZE_MANIFEST_SCHEMA_ID",
+        "RAW_MIXED_CORPUS_MATERIALIZE_REQUEST_SCHEMA_ID",
+        "RAW_MIXED_CORPUS_MATERIALIZE_MODE",
+    ):
+        if term not in review_browser_text:
+            errors.append(f"{_rel(REVIEW_BROWSER_SERVER)} missing materialization rendered UI setup term: {term}")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -9756,6 +9788,7 @@ def main() -> int:
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
+        REVIEW_BROWSER_SERVER,
     ):
         _require_file(path, errors)
 
