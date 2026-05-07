@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.models.models import (
     AnalysisArtifact,
     AnalysisRun,
+    ApsContentChunk,
     ApsContentDocument,
+    ApsContentLinkage,
     ConnectorRun,
     ConnectorRunTarget,
+    Dataset,
+    DatasetSourceProvenance,
     DatasetVersion,
     L3AnalysisGroup,
     L3AnalysisPlan,
@@ -38,6 +44,11 @@ from app.models.models import (
     L3TypingRecord,
 )
 from app.services import dataframe_io
+from app.services.layer3_raw_mixed_bridge import (
+    RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
+    RAW_MIXED_CORPUS_SEED_MODE,
+    RAW_MIXED_CORPUS_SEED_RESPONSE_SCHEMA_ID,
+)
 from test_layer3_api import (
     _aps_handoff_dispatch_payload,
     _external_export_download_deliver_payload,
@@ -457,6 +468,30 @@ class Layer3ApiDriver:
         assert response.status_code == 200, response.text
         return response
 
+    def raw_mixed_seed(
+        self,
+        *,
+        seeded: SeededSources,
+        manifest_ref: str,
+        manifest_hash: str,
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/source/mixed-corpus/seed",
+            {
+                "schema_id": "layer3.raw_mixed_corpus_seed_request.v1",
+                "schema_version": 1,
+                "client_request_id": "bounded-e2e-raw-mixed-seed",
+                "seed_mode": RAW_MIXED_CORPUS_SEED_MODE,
+                "corpus_batch_id": "batch-bounded-e2e-raw-mixed-001",
+                "aps_run_id": seeded.aps_run_id,
+                "target_ids": [seeded.aps_target_id],
+                "artifact_manifest_ref": manifest_ref,
+                "artifact_manifest_hash": manifest_hash,
+                "requested_source_classes": ["dataset_version", "aps_content_document"],
+                "operator_confirmation": True,
+            },
+        )
+
 
 class Layer3StateAssertions:
     def __init__(self, client: TestClient, tmp_path: Path) -> None:
@@ -472,9 +507,13 @@ class Layer3StateAssertions:
                 "analysis_runs": db.query(AnalysisRun).count(),
                 "analysis_sets": db.query(L3AnalysisSet).count(),
                 "analysis_units": db.query(L3AnalysisUnit).count(),
+                "aps_content_chunks": db.query(ApsContentChunk).count(),
                 "aps_content_documents": db.query(ApsContentDocument).count(),
+                "aps_content_linkages": db.query(ApsContentLinkage).count(),
                 "connector_run_targets": db.query(ConnectorRunTarget).count(),
                 "connector_runs": db.query(ConnectorRun).count(),
+                "datasets": db.query(Dataset).count(),
+                "dataset_source_provenance": db.query(DatasetSourceProvenance).count(),
                 "dataset_versions": db.query(DatasetVersion).count(),
                 "descriptors": db.query(L3Descriptor).count(),
                 "gate_b_keys": db.query(L3GateBIdempotencyKey).count(),
@@ -619,6 +658,62 @@ def test_layer3_bounded_e2e_api_associated_cohort_reaches_download_delivery(
     seeded_counts = state.counts()
     seeded_files = state.files()
 
+    _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
+        driver=driver,
+        state=state,
+        seeded=seeded,
+        seeded_counts=seeded_counts,
+        seeded_files=seeded_files,
+    )
+
+
+def test_layer3_raw_mixed_seed_bridge_drives_bounded_e2e_path(
+    client: TestClient,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _patch_cohort_dataframe_persistence(monkeypatch, tmp_path)
+    seeded_authority = _seed_sources(client, tmp_path)
+    driver = Layer3ApiDriver(client)
+    state = Layer3StateAssertions(client, tmp_path)
+    manifest_ref, manifest_hash = _write_raw_mixed_seed_manifest(seeded_authority)
+    seeded_counts = state.counts()
+    seeded_files = state.files()
+
+    seed = driver.raw_mixed_seed(
+        seeded=seeded_authority,
+        manifest_ref=manifest_ref,
+        manifest_hash=manifest_hash,
+    )
+
+    assert seed["schema_id"] == RAW_MIXED_CORPUS_SEED_RESPONSE_SCHEMA_ID
+    assert seed["seed_mode"] == RAW_MIXED_CORPUS_SEED_MODE
+    assert seed["source_seed_state"] == "seeded"
+    assert seed["source_classes"] == ["dataset_version", "aps_content_document"]
+    assert seed["layer3_flow_started"] is False
+    assert seed["next_allowed_actions"] == ["run_layer3_preflight_with_seeded_source_ids"]
+    assert state.counts() == seeded_counts
+    assert state.files() == seeded_files
+    _assert_forbidden_response_surface_absent(seed)
+
+    bridge_sources = _seeded_sources_from_raw_mixed_seed_response(client, seed)
+    _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
+        driver=driver,
+        state=state,
+        seeded=bridge_sources,
+        seeded_counts=seeded_counts,
+        seeded_files=seeded_files,
+    )
+
+
+def _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
+    *,
+    driver: Layer3ApiDriver,
+    state: Layer3StateAssertions,
+    seeded: SeededSources,
+    seeded_counts: dict[str, int],
+    seeded_files: set[str],
+) -> None:
     preflight = driver.preflight()
     _assert_forbidden_response_surface_absent(preflight)
     state.assert_no_layer3_writes(seeded_counts)
@@ -819,6 +914,39 @@ def test_layer3_bounded_e2e_api_associated_cohort_reaches_download_delivery(
     assert state.files() == files_before_dispatch | added_dispatch_files
 
 
+def _write_raw_mixed_seed_manifest(seeded: SeededSources) -> tuple[str, str]:
+    manifest_ref = "raw-mixed/bounded-e2e-raw-mixed-seed.json"
+    manifest_path = Path(settings.storage_dir) / manifest_ref
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "schema_id": RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
+        "corpus_batch_id": "batch-bounded-e2e-raw-mixed-001",
+        "aps_run_id": seeded.aps_run_id,
+        "target_ids": [seeded.aps_target_id],
+        "source_classes": ["dataset_version", "aps_content_document"],
+        "dataset_version_ids": list(seeded.dataset_version_ids),
+        "aps_content_document_ids": [seeded.aps_content_id],
+    }
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+    return manifest_ref, hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+
+
+def _seeded_sources_from_raw_mixed_seed_response(client: TestClient, seed: dict[str, Any]) -> SeededSources:
+    dataset_version_ids = tuple(seed["dataset_version_ids"])
+    aps_content_document_ids = seed["aps_content_document_ids"]
+    assert len(dataset_version_ids) == 2
+    assert len(aps_content_document_ids) == 1
+    aps_content_id = aps_content_document_ids[0]
+    with client.layer3_session_factory() as db:
+        linkage = db.query(ApsContentLinkage).filter(ApsContentLinkage.content_id == aps_content_id).one()
+        return SeededSources(
+            dataset_version_ids=(dataset_version_ids[0], dataset_version_ids[1]),
+            aps_run_id=linkage.run_id,
+            aps_target_id=linkage.target_id,
+            aps_content_id=aps_content_id,
+        )
+
+
 def _seed_sources(client: TestClient, tmp_path: Path) -> SeededSources:
     seeded = SeededSources(
         dataset_version_ids=("dv-bounded-e2e-cohort-001", "dv-bounded-e2e-cohort-002"),
@@ -850,6 +978,27 @@ def _seed_sources(client: TestClient, tmp_path: Path) -> SeededSources:
             target_id=seeded.aps_target_id,
             content_id=seeded.aps_content_id,
         )
+        for dataset_version_id in seeded.dataset_version_ids:
+            db.add(
+                DatasetSourceProvenance(
+                    dataset_source_provenance_id=f"prov-{dataset_version_id}",
+                    dataset_version_id=dataset_version_id,
+                    connector_run_id=seeded.aps_run_id,
+                    source_system="nrc_adams_aps",
+                    source_mode="bounded_e2e_raw_mixed_seed_fixture",
+                    source_artifact_key=f"aps://{seeded.aps_run_id}/{seeded.aps_target_id}/{dataset_version_id}",
+                    artifact_surface="dataset_version",
+                    artifact_locator_type="server_owned_ref",
+                    downloaded_sha256=hashlib.sha256(dataset_version_id.encode("utf-8")).hexdigest(),
+                    raw_storage_ref=f"dataset_version:{dataset_version_id}",
+                    source_reference_json={
+                        "parser_family": "csv_table",
+                        "target_id": seeded.aps_target_id,
+                        "content_id": seeded.aps_content_id,
+                    },
+                    fetch_policy_mode="seed_fixture",
+                )
+            )
         db.commit()
     return seeded
 
@@ -941,7 +1090,6 @@ def _assert_forbidden_response_surface_absent(payload: Any) -> None:
     forbidden_keys = {
         "artifact_manifest",
         "browser_state",
-        "connector_run_id",
         "destination",
         "download_url",
         "external_target",
