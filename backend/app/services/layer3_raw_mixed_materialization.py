@@ -184,7 +184,7 @@ def _materialize_dataset_version(db: Session, entry: Mapping[str, Any], written:
     )
     storage_ref = _entry_string(entry, "storage_ref", "artifact_manifest.dataset_versions[].storage_ref")
     storage_hash = _entry_sha256(entry, "storage_sha256", "artifact_manifest.dataset_versions[].storage_sha256")
-    _check_storage_ref(storage_ref, storage_hash, "artifact_manifest.dataset_versions[].storage_ref")
+    storage_path = _check_storage_ref(storage_ref, storage_hash, "artifact_manifest.dataset_versions[].storage_ref")
 
     dataset_values = {
         "name": str(entry.get("name") or f"Dataset {dataset_id}"),
@@ -202,7 +202,7 @@ def _materialize_dataset_version(db: Session, entry: Mapping[str, Any], written:
         "version_label": str(entry.get("version_label") or "v1"),
         "version_type": str(entry.get("version_type") or "raw_mixed_materialized"),
         "status": str(entry.get("status") or "ready"),
-        "storage_ref": storage_ref,
+        "storage_ref": str(storage_path),
         "row_count": int(entry.get("row_count") or 0),
         "notes": entry.get("notes"),
     }
@@ -572,7 +572,7 @@ def _same_value(actual: Any, expected: Any) -> bool:
     return actual == expected
 
 
-def _check_storage_ref(ref: str, expected_sha256: str, field: str) -> None:
+def _check_storage_ref(ref: str, expected_sha256: str, field: str) -> Path:
     path = _server_owned_path(ref, field)
     actual = hashlib.sha256(path.read_bytes()).hexdigest()
     if actual != expected_sha256:
@@ -584,6 +584,7 @@ def _check_storage_ref(ref: str, expected_sha256: str, field: str) -> None:
             blocked_fields=[field],
             next_allowed_actions=["refresh_raw_mixed_materialization_storage_hash"],
         )
+    return path
 
 
 def _server_owned_path(ref: str, field: str) -> Path:

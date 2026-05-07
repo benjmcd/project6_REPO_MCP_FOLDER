@@ -18,6 +18,7 @@ from app.models.models import (
     ConnectorRun,
     ConnectorRunTarget,
     Dataset,
+    DatasetRow,
     DatasetSourceProvenance,
     DatasetVersion,
     L3AnalysisGroup,
@@ -42,12 +43,18 @@ from app.models.models import (
     L3SignedReferenceRevocation,
     L3SignedReferenceToken,
     L3TypingRecord,
+    VariableDefinition,
+    VariableProfile,
 )
 from app.services import dataframe_io
 from app.services.layer3_raw_mixed_bridge import (
     RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
     RAW_MIXED_CORPUS_SEED_MODE,
     RAW_MIXED_CORPUS_SEED_RESPONSE_SCHEMA_ID,
+)
+from app.services.layer3_raw_mixed_materialization import (
+    RAW_MIXED_CORPUS_MATERIALIZE_MODE,
+    RAW_MIXED_CORPUS_MATERIALIZE_RESPONSE_SCHEMA_ID,
 )
 from app.services.layer3_qual_aps_execution import (
     ENGINE_FAMILY_QUAL_APS_DOCUMENT,
@@ -65,6 +72,7 @@ from test_layer3_api import (
 )
 from test_layer3_aps_handoff import _seed_aps_content_fixture
 from test_layer3_pass_entry import _seed_timeseries_dataset_version
+from test_layer3_raw_mixed_materialization import _materialize_payload, _write_materialization_manifest
 
 
 @dataclass(frozen=True)
@@ -694,6 +702,9 @@ class Layer3ApiDriver:
             },
         )
 
+    def raw_mixed_materialize(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self.post_ok("/api/v1/layer3/source/mixed-corpus/materialize", payload)
+
 
 class Layer3StateAssertions:
     def __init__(self, client: TestClient, tmp_path: Path) -> None:
@@ -715,6 +726,7 @@ class Layer3StateAssertions:
                 "connector_run_targets": db.query(ConnectorRunTarget).count(),
                 "connector_runs": db.query(ConnectorRun).count(),
                 "datasets": db.query(Dataset).count(),
+                "dataset_rows": db.query(DatasetRow).count(),
                 "dataset_source_provenance": db.query(DatasetSourceProvenance).count(),
                 "dataset_versions": db.query(DatasetVersion).count(),
                 "descriptors": db.query(L3Descriptor).count(),
@@ -735,6 +747,8 @@ class Layer3StateAssertions:
                 "signed_reference_revocations": db.query(L3SignedReferenceRevocation).count(),
                 "signed_reference_tokens": db.query(L3SignedReferenceToken).count(),
                 "typing_records": db.query(L3TypingRecord).count(),
+                "variable_profiles": db.query(VariableProfile).count(),
+                "variables": db.query(VariableDefinition).count(),
             }
 
     def files(self) -> set[str]:
@@ -956,6 +970,62 @@ def test_layer3_raw_mixed_seed_bridge_drives_bounded_e2e_path(
         seeded=bridge_sources,
         seeded_counts=seeded_counts,
         seeded_files=seeded_files,
+    )
+
+
+def test_layer3_raw_mixed_materialization_drives_bounded_e2e_path(
+    client: TestClient,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _patch_cohort_dataframe_persistence(monkeypatch, tmp_path)
+    fixture = _write_materialization_manifest(
+        dataset_version_id="dv-raw-materialized-bounded-001",
+        additional_dataset_version_ids=("dv-raw-materialized-bounded-002",),
+        row_count=24,
+    )
+    driver = Layer3ApiDriver(client)
+    state = Layer3StateAssertions(client, tmp_path)
+    before_counts = state.counts()
+    before_files = state.files()
+
+    materialization = driver.raw_mixed_materialize(_materialize_payload(fixture))
+
+    assert materialization["schema_id"] == RAW_MIXED_CORPUS_MATERIALIZE_RESPONSE_SCHEMA_ID
+    assert materialization["materialization_mode"] == RAW_MIXED_CORPUS_MATERIALIZE_MODE
+    assert materialization["source_materialization_state"] == "materialized"
+    assert tuple(materialization["dataset_version_ids"]) == fixture.dataset_version_ids
+    assert materialization["aps_content_document_ids"] == [fixture.aps_content_id]
+    assert materialization["source_classes"] == ["dataset_version", "aps_content_document"]
+    assert materialization["files_written"] == []
+    assert materialization["layer3_flow_started"] is False
+    assert materialization["next_allowed_actions"] == ["run_layer3_preflight_with_materialized_source_ids"]
+    assert materialization["database_rows_written"] == {
+        "datasets": 2,
+        "dataset_versions": 2,
+        "variables": 4,
+        "dataset_rows": 48,
+        "variable_profiles": 2,
+        "dataset_source_provenance": 2,
+        "connector_runs": 1,
+        "connector_run_targets": 1,
+        "aps_content_documents": 1,
+        "aps_content_chunks": 2,
+        "aps_content_linkages": 1,
+    }
+    _assert_forbidden_response_surface_absent(materialization)
+    materialized_counts = state.counts()
+    assert _source_authority_delta(before_counts, materialized_counts) == materialization["database_rows_written"]
+    assert state.files() == before_files
+    _assert_no_layer3_flow_delta(before_counts, materialized_counts)
+
+    materialized_sources = _seeded_sources_from_raw_mixed_materialization_response(client, materialization)
+    _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
+        driver=driver,
+        state=state,
+        seeded=materialized_sources,
+        seeded_counts=materialized_counts,
+        seeded_files=before_files,
     )
 
 
@@ -1587,6 +1657,74 @@ def _seeded_sources_from_raw_mixed_seed_response(client: TestClient, seed: dict[
             aps_target_id=linkage.target_id,
             aps_content_id=aps_content_id,
         )
+
+
+def _seeded_sources_from_raw_mixed_materialization_response(
+    client: TestClient,
+    materialization: dict[str, Any],
+) -> SeededSources:
+    dataset_version_ids = tuple(materialization["dataset_version_ids"])
+    aps_content_document_ids = materialization["aps_content_document_ids"]
+    assert len(dataset_version_ids) == 2
+    assert len(aps_content_document_ids) == 1
+    aps_content_id = aps_content_document_ids[0]
+    with client.layer3_session_factory() as db:
+        linkage = db.query(ApsContentLinkage).filter(ApsContentLinkage.content_id == aps_content_id).one()
+        return SeededSources(
+            dataset_version_ids=(dataset_version_ids[0], dataset_version_ids[1]),
+            aps_run_id=linkage.run_id,
+            aps_target_id=linkage.target_id,
+            aps_content_id=aps_content_id,
+        )
+
+
+def _source_authority_delta(before: dict[str, int], after: dict[str, int]) -> dict[str, int]:
+    return {
+        key: after[key] - before[key]
+        for key in [
+            "datasets",
+            "dataset_versions",
+            "variables",
+            "dataset_rows",
+            "variable_profiles",
+            "dataset_source_provenance",
+            "connector_runs",
+            "connector_run_targets",
+            "aps_content_documents",
+            "aps_content_chunks",
+            "aps_content_linkages",
+        ]
+    }
+
+
+def _assert_no_layer3_flow_delta(before: dict[str, int], after: dict[str, int]) -> None:
+    for key in [
+        "analysis_artifacts",
+        "analysis_groups",
+        "analysis_plans",
+        "analysis_runs",
+        "analysis_sets",
+        "analysis_units",
+        "descriptors",
+        "gate_b_keys",
+        "material_snapshots",
+        "output_packages",
+        "package_supersession_commits",
+        "pass_runs",
+        "reconciliations",
+        "replacement_artifact_manifests",
+        "replacement_authorities",
+        "replacement_packages",
+        "retrieval_events",
+        "selection_manifests",
+        "sessions",
+        "signed_reference_audit_events",
+        "signed_reference_receipts",
+        "signed_reference_revocations",
+        "signed_reference_tokens",
+        "typing_records",
+    ]:
+        assert after[key] == before[key]
 
 
 def _seed_sources(client: TestClient, tmp_path: Path) -> SeededSources:

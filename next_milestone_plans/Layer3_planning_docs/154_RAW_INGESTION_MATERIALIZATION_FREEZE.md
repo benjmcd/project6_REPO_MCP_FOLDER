@@ -69,6 +69,8 @@ The implementation may write only:
 
 The implementation must write no files. Source payload files must already exist under server-owned storage-root refs and must be hash checked before row materialization.
 
+For `DatasetVersion.storage_ref`, materialization must persist the resolved server-owned filesystem path after SHA-256 validation so the existing Layer 3 dataframe-loading path can consume the source authority row. Manifest-relative storage refs remain input-only manifest authority and must not become arbitrary local-path request input.
+
 The implementation must create no `L3Session`, `L3Descriptor`, `L3SelectionManifest`, `L3MaterialSnapshot`, `L3TypingRecord`, `L3AnalysisPlan`, `L3PassRun`, execution/result/package/handoff/export state, connector dispatch/destination write, provider/public URL, signed URL, vector index, mockup state, or auth/security state.
 
 No Layer 3 flow state during materialization is admitted.
