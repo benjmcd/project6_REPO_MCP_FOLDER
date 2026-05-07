@@ -44,7 +44,7 @@ Current main still does not admit qualitative APS rendered delivery without expl
 Future work must proceed in this order unless a later live audit proves a different blocker:
 
 1. source-breadth freeze before any ingestion/source-adapter expansion, now governed by `153_SOURCE_BREADTH_FREEZE.md`;
-2. raw ingestion implementation only after source-breadth freeze;
+2. raw ingestion implementation only after source-breadth freeze, now governed for the first materialization boundary by `154_RAW_INGESTION_MATERIALIZATION_FREEZE.md`;
 3. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
 4. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
 5. connector/destination dispatch and provider/public URL freezes before any external delivery expansion;
@@ -69,8 +69,8 @@ Mode: `qual_aps_rendered_downstream_existing_controls_only`.
 ### 2. Source Breadth And Raw Ingestion
 
 - goal: freeze then implement only the first source-authority materialization pass that remains within existing admitted source families unless a later source-family freeze expands them.
-- current blocker: doc `123` keeps runtime source expansion blocked, doc `137` is seed-only over existing authority rows, and doc `153` now freezes the next source-breadth posture as `current_admitted_classes_with_server_owned_raw_materialization_only`.
-- implementation-entry freeze required: satisfied for source breadth by doc `153`; a later raw-ingestion implementation branch still needs exact runtime entry criteria and tests before edits.
+- current blocker: doc `123` keeps runtime source expansion blocked, doc `137` is seed-only over existing authority rows, doc `153` freezes source breadth as `current_admitted_classes_with_server_owned_raw_materialization_only`, and doc `154` freezes the first materialization entry as `raw_mixed_existing_source_materialization_entry`.
+- implementation-entry freeze required: satisfied for source breadth by doc `153` and for the first raw-ingestion materialization boundary by doc `154`; runtime implementation still requires a separate code branch and validation.
 - likely files: source services, API DTOs, migrations/models only if frozen, source-boundary tests, raw bridge tests, bounded E2E.
 - required tests: upload/path traversal/hash/storage-root/authority-row behavior; fail-closed unsupported source families; no Layer 3 flow started by ingestion alone.
 - negative invariants: no local-directory traversal, no arbitrary local paths, no web connector retrieval, no RAG/vector indexing, no connector dispatch, no provider URL, no hidden LLM.
