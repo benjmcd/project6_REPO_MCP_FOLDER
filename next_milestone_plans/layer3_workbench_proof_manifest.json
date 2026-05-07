@@ -5471,5 +5471,65 @@
       "git diff --check"
     ],
     "next_boundary": "Source breadth freeze is the next ordered pass unless a separate freeze selects qualitative APS rendered delivery UI from explicit server delivery_ui authority. Backend/source/provider/connector/RAG/package-mutation/mockup/auth expansion remains blocked."
+  },
+  "source_breadth_freeze_proof": {
+    "scope": "Planning/control source-breadth implementation-entry freeze before any raw-ingestion/source-adapter expansion.",
+    "implementation_branch": "codex/l3-source-breadth-freeze",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/153_SOURCE_BREADTH_FREEZE.md"
+    ],
+    "reference_files": [
+      "backend/app/services/layer3_source_boundary.py",
+      "backend/app/services/layer3_raw_mixed_bridge.py",
+      "backend/tests/test_layer3_source_boundary.py",
+      "backend/tests/test_layer3_raw_mixed_bridge.py"
+    ],
+    "proof_files": [
+      "next_milestone_plans/Layer3_planning_docs/142_POST_709_ROADMAP_FREEZE.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "selected_source_breadth_mode": "current_admitted_classes_with_server_owned_raw_materialization_only",
+    "current_admitted_source_classes": [
+      "dataset_version",
+      "aps_content_document"
+    ],
+    "deferred_source_families": [
+      "rag_vector_index",
+      "arbitrary_local_directory",
+      "broad_file_upload",
+      "web_connector",
+      "unbounded_runtime_db",
+      "generic source adapter registry expansion",
+      "arbitrary operator-provided local file path input",
+      "browser/frontend-only source authority"
+    ],
+    "negative_invariants": [
+      "no raw ingestion runtime from this freeze",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no source adapter registry behavior",
+      "no provider/public URL or signed URL generation",
+      "no connector or destination dispatch",
+      "no package mutation or reconstruction",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority",
+      "no rendered UI control or theme behavior change"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_boundary": "A later raw-ingestion/source-authority implementation may target only server-owned, hash-checked materialization into the existing dataset_version and aps_content_document authority families unless a separate source-family freeze admits broader source classes."
   }
 }

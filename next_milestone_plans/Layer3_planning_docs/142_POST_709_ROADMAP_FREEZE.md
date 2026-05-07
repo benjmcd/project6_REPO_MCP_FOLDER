@@ -43,7 +43,7 @@ Current main still does not admit qualitative APS rendered delivery without expl
 
 Future work must proceed in this order unless a later live audit proves a different blocker:
 
-1. source-breadth freeze before any ingestion/source-adapter expansion;
+1. source-breadth freeze before any ingestion/source-adapter expansion, now governed by `153_SOURCE_BREADTH_FREEZE.md`;
 2. raw ingestion implementation only after source-breadth freeze;
 3. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
 4. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
@@ -68,9 +68,9 @@ Mode: `qual_aps_rendered_downstream_existing_controls_only`.
 
 ### 2. Source Breadth And Raw Ingestion
 
-- goal: freeze then implement any source-class expansion beyond existing admitted authority rows.
-- current blocker: doc `123` keeps source expansion blocked and seed-only bridge writes no rows/files.
-- implementation-entry freeze required: yes.
+- goal: freeze then implement only the first source-authority materialization pass that remains within existing admitted source families unless a later source-family freeze expands them.
+- current blocker: doc `123` keeps runtime source expansion blocked, doc `137` is seed-only over existing authority rows, and doc `153` now freezes the next source-breadth posture as `current_admitted_classes_with_server_owned_raw_materialization_only`.
+- implementation-entry freeze required: satisfied for source breadth by doc `153`; a later raw-ingestion implementation branch still needs exact runtime entry criteria and tests before edits.
 - likely files: source services, API DTOs, migrations/models only if frozen, source-boundary tests, raw bridge tests, bounded E2E.
 - required tests: upload/path traversal/hash/storage-root/authority-row behavior; fail-closed unsupported source families; no Layer 3 flow started by ingestion alone.
 - negative invariants: no local-directory traversal, no arbitrary local paths, no web connector retrieval, no RAG/vector indexing, no connector dispatch, no provider URL, no hidden LLM.

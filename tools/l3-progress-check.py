@@ -69,6 +69,7 @@ QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT = (
 )
 QUAL_APS_RENDERED_UI_FREEZE = PLANNING_DOCS / "151_QUAL_APS_RENDERED_UI_FREEZE.md"
 QUAL_APS_RENDERED_UI_CONTRACT = PLANNING_DOCS / "152_QUAL_APS_RENDERED_UI_CONTRACT.md"
+SOURCE_BREADTH_FREEZE = PLANNING_DOCS / "153_SOURCE_BREADTH_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -4856,6 +4857,73 @@ def _check_raw_mixed_bridge_freeze(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing raw mixed bridge proof term: {term}")
 
 
+def _check_source_breadth_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_BREADTH_FREEZE, errors)
+    for term in (
+        "Status: current-main source-breadth implementation-entry freeze",
+        "selected_source_breadth_mode: `current_admitted_classes_with_server_owned_raw_materialization_only`",
+        "`dataset_version`",
+        "`aps_content_document`",
+        "No new source class is admitted by this freeze.",
+        "`rag_vector_index`",
+        "`arbitrary_local_directory`",
+        "`broad_file_upload`",
+        "`web_connector`",
+        "`unbounded_runtime_db`",
+        "server-owned storage-root",
+        "SHA-256 checked",
+        "no Layer 3 flow state created by source materialization alone",
+        "no rendered UI control is added unless a separate UI/theme freeze admits it",
+        "This document freezes the next source-breadth posture without making raw ingestion live.",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_BREADTH_FREEZE)} missing source-breadth term: {term}")
+
+    service_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
+    for term in (
+        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_only\"",
+        "SUPPORTED_SOURCE_CLASSES = (\"dataset_version\", \"aps_content_document\")",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SOURCE_BOUNDARY_SERVICE)} drifted before source breadth freeze: {term}")
+
+    required_terms = {
+        POST_709_ROADMAP_FREEZE: (
+            "153_SOURCE_BREADTH_FREEZE.md",
+            "current_admitted_classes_with_server_owned_raw_materialization_only",
+            "raw-ingestion implementation branch still needs exact runtime entry criteria and tests before edits",
+        ),
+        PHASE1A_README: (
+            "153_SOURCE_BREADTH_FREEZE.md",
+            "current_admitted_classes_with_server_owned_raw_materialization_only",
+            "does not make raw ingestion live",
+        ),
+        BOARD: (
+            "Source breadth freeze",
+            "current_admitted_classes_with_server_owned_raw_materialization_only",
+            "does not make raw ingestion live",
+            "theme behavior change",
+        ),
+        MANIFEST: (
+            "latest_source_breadth_freeze_branch",
+            "source_breadth_freeze",
+            "current_admitted_classes_with_server_owned_raw_materialization_only",
+            "server-owned storage-root, hash-checked materialization",
+        ),
+        PROOF_MANIFEST: (
+            "source_breadth_freeze_proof",
+            "selected_source_breadth_mode",
+            "current_admitted_classes_with_server_owned_raw_materialization_only",
+            "no rendered UI control or theme behavior change",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-breadth proof term: {term}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -9416,6 +9484,7 @@ def main() -> int:
         QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT,
         QUAL_APS_RENDERED_UI_FREEZE,
         QUAL_APS_RENDERED_UI_CONTRACT,
+        SOURCE_BREADTH_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -9563,6 +9632,7 @@ def main() -> int:
     _check_qualitative_aps_rendered_ui_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
+    _check_source_breadth_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
