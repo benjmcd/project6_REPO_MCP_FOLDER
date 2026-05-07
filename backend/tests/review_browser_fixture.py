@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,8 @@ import app.api.review_nrc_aps as review_api
 from app.db.session import Base
 from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage, ConnectorRun, ConnectorRunTarget
 import app.services.review_nrc_aps_candidate_b_trace as trace_service
+import app.services.layer3_pass_entry as layer3_pass_entry_module
+import app.services.layer3_workbench as layer3_workbench_module
 import app.services.review_nrc_aps_runtime as runtime_service
 import app.services.review_nrc_aps_workbench_compare as compare_service
 from app.services.review_nrc_aps_catalog import build_runtime_binding_summary
@@ -32,6 +35,8 @@ APS_CONTENT_CONTRACT_ID = "aps_content_units_v2"
 APS_CHUNKING_CONTRACT_ID = "aps_chunking_v2"
 APS_NORMALIZATION_CONTRACT_ID = "aps_text_normalization_v2"
 APS_CONTENT_STATUS_INDEXED = "indexed"
+APS_EVIDENCE_BUNDLE_MODULE = "app.services.nrc_aps_evidence_bundle"
+_MISSING_MODULE = object()
 
 
 @dataclass(frozen=True)
@@ -524,6 +529,11 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
 
 def capture_review_browser_patch_state() -> dict[str, object]:
     return {
+        "aps_evidence_bundle_module": sys.modules.get(APS_EVIDENCE_BUNDLE_MODULE, _MISSING_MODULE),
+        "layer3_check_aps_handoff_compatibility": layer3_workbench_module.check_aps_handoff_compatibility,
+        "layer3_materialize_aps_handoff": layer3_workbench_module.materialize_aps_handoff,
+        "layer3_recommend_analysis": layer3_pass_entry_module.recommend_analysis,
+        "layer3_run_analysis": layer3_pass_entry_module.run_analysis,
         "runtime_discover_runtime_bindings": runtime_service.discover_runtime_bindings,
         "compare_discover_runtime_bindings": compare_service.discover_runtime_bindings,
         "compare_discover_candidate_runs": compare_service.discover_candidate_runs,
@@ -540,6 +550,15 @@ def capture_review_browser_patch_state() -> dict[str, object]:
 
 
 def restore_review_browser_patches(patch_state: dict[str, object]) -> None:
+    saved_aps_bundle_module = patch_state["aps_evidence_bundle_module"]
+    if saved_aps_bundle_module is _MISSING_MODULE:
+        sys.modules.pop(APS_EVIDENCE_BUNDLE_MODULE, None)
+    else:
+        sys.modules[APS_EVIDENCE_BUNDLE_MODULE] = saved_aps_bundle_module
+    layer3_workbench_module.check_aps_handoff_compatibility = patch_state["layer3_check_aps_handoff_compatibility"]
+    layer3_workbench_module.materialize_aps_handoff = patch_state["layer3_materialize_aps_handoff"]
+    layer3_pass_entry_module.recommend_analysis = patch_state["layer3_recommend_analysis"]
+    layer3_pass_entry_module.run_analysis = patch_state["layer3_run_analysis"]
     runtime_service.discover_runtime_bindings = patch_state["runtime_discover_runtime_bindings"]
     compare_service.discover_runtime_bindings = patch_state["compare_discover_runtime_bindings"]
     compare_service.discover_candidate_runs = patch_state["compare_discover_candidate_runs"]
