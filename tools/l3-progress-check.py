@@ -61,6 +61,12 @@ QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE = (
 QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT = (
     PLANNING_DOCS / "148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md"
 )
+QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE = (
+    PLANNING_DOCS / "149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md"
+)
+QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT = (
+    PLANNING_DOCS / "150_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -4020,7 +4026,7 @@ def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> N
             "145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md",
             "146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md",
             "live bounded `qual_aps_handoff_export_prepare_entry` runtime boundary",
-            "Qualitative APS external export/download remains blocked",
+            "current-main runtime still blocks that path",
         ),
         BOARD: (
             "Qualitative APS handoff/export prepare runtime",
@@ -4109,8 +4115,8 @@ def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> Non
         ),
         POST_709_ROADMAP_FREEZE: (
             "governing APS handoff dispatch runtime docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`",
-            "qualitative APS APS handoff dispatch is now live",
-            "qualitative APS external export/download prepare/deliver freeze and contract",
+            "qualitative APS APS handoff dispatch over the prepared qualitative envelope",
+            "governing qualitative APS external export/download freeze docs: `149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`",
             "qualitative_aps_external_export_download_not_admitted",
         ),
         PHASE1A_README: (
@@ -4203,6 +4209,114 @@ def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> Non
     ):
         if term not in bounded_e2e_text:
             errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS APS handoff dispatch proof term: {term}")
+
+
+def _check_qualitative_aps_external_export_download_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE: (
+            "Status: planning/control implementation-entry freeze for future `qual_aps_external_export_download_prepare_deliver`.",
+            "selected future prepare route: `POST /api/v1/layer3/handoff/export/download/prepare`",
+            "selected future prepare response schema: `layer3.qual_aps_external_export_download_prepare.v1`",
+            "selected future deliver route: `POST /api/v1/layer3/handoff/export/download/deliver`",
+            "selected future delivery schema/header: `layer3.qual_aps_external_export_download_delivery.v1`",
+            "current live blocker: `qualitative_aps_external_export_download_not_admitted`",
+            "same-origin artifact streaming",
+            "Browser proof is not required for a backend/API-only same-origin delivery implementation.",
+        ),
+        QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT: (
+            "Status: planning/control API and state contract paired with `149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`.",
+            "Current main still rejects the qualitative APS path with `qualitative_aps_external_export_download_not_admitted`",
+            "`POST /api/v1/layer3/handoff/export/download/prepare`",
+            "`POST /api/v1/layer3/handoff/export/download/deliver`",
+            "`layer3.qual_aps_external_export_download_prepare.v1`",
+            "`layer3.qual_aps_external_export_download_delivery.v1`",
+            "Allowed state effects for successful prepare:",
+            "Allowed state effects for successful delivery:",
+        ),
+        POST_709_ROADMAP_FREEZE: (
+            "governing qualitative APS external export/download freeze docs: `149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`",
+            "qualitative APS external export/download prepare/deliver runtime, governed by docs `149` and `150`",
+            "freeze/contract now exists in docs `149` and `150`",
+            "runtime still blocks the path with `qualitative_aps_external_export_download_not_admitted`",
+        ),
+        PHASE1A_README: (
+            "149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md",
+            "150_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md",
+            "qual_aps_external_export_download_prepare_deliver",
+            "same-origin artifact streaming",
+        ),
+        DEFERRED_GATES: (
+            "149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md",
+            "150_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md",
+            "future qualitative APS external export/download prepare/deliver boundary only",
+            "qualitative_aps_external_export_download_not_admitted",
+        ),
+        BOARD: (
+            "Qualitative APS external export/download freeze",
+            "planning/control docs",
+            "qual_aps_external_export_download_prepare_deliver",
+            "POST /api/v1/layer3/handoff/export/download/prepare",
+            "admits no runtime behavior by itself",
+        ),
+        MANIFEST: (
+            "latest_qual_aps_external_export_download_freeze_branch",
+            "latest_qual_aps_external_export_download_freeze_live_behavior_change",
+            "qual_aps_external_export_download_freeze",
+            "qualitative_aps_external_export_download_not_admitted",
+            "admits no runtime behavior",
+        ),
+        PROOF_MANIFEST: (
+            "latest_qual_aps_external_export_download_freeze_branch",
+            "latest_qual_aps_external_export_download_freeze_live_behavior_change",
+            "latest_qual_aps_external_export_download_freeze_summary",
+            "qual_aps_external_export_download_freeze_proof",
+            "layer3.qual_aps_external_export_download_prepare.v1",
+            "layer3.qual_aps_external_export_download_delivery.v1",
+            "qualitative_aps_external_export_download_not_admitted",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing qualitative APS external export/download freeze term: {term}"
+                )
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "def external_export_download_prepare(",
+        "def external_export_download_deliver(",
+        "\"qualitative_aps_external_export_download_not_admitted\"",
+        "await_qualitative_aps_external_export_download_freeze",
+        "EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing external export/download reference term: {term}")
+
+    response_text = _read_required_text(EXTERNAL_EXPORT_RESPONSE_SERVICE, errors)
+    for term in (
+        "def qualitative_aps_external_export_download_deferred(",
+        "def aps_bundle_identity_for_external_export_download(",
+        "def external_export_download_prepare_summary(",
+        "\"qualitative_aps_external_export_download_not_admitted\"",
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = \"layer3.external_export_download_prepare.v1\"",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = \"layer3.external_export_download_delivery.v1\"",
+    ):
+        if term not in response_text:
+            errors.append(f"{_rel(EXTERNAL_EXPORT_RESPONSE_SERVICE)} missing external export/download response term: {term}")
+
+    contract_text = _read_required_text(EXTERNAL_EXPORT_CONTRACT_SERVICE, errors)
+    for term in (
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS",
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS",
+        "def external_export_download_delivery_readiness_mismatches(",
+    ):
+        if term not in contract_text:
+            errors.append(f"{_rel(EXTERNAL_EXPORT_CONTRACT_SERVICE)} missing external export/download contract term: {term}")
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
@@ -9024,6 +9138,8 @@ def main() -> int:
         QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT,
         QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE,
         QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT,
+        QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE,
+        QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -9167,6 +9283,7 @@ def main() -> int:
     _check_qualitative_aps_package_submit_freeze(errors)
     _check_qualitative_aps_handoff_export_prepare_freeze(errors)
     _check_qualitative_aps_aps_handoff_dispatch_freeze(errors)
+    _check_qualitative_aps_external_export_download_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
