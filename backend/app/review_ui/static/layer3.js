@@ -4306,6 +4306,7 @@ function handoffExportPreparePayload(authority = selectedResultAuthority()) {
         payload_hashes: packagePayloadHashes(),
         package_review_submit_record_ref: handoff.package_review_submit_record_ref || submit.submit_record_ref,
         package_review_state: submit.package_review_state || submit.state || handoff.package_review_state,
+        package_review_submit_schema_id: handoff.package_review_submit_schema_id || submit.package_review_submit_schema_id || submit.schema_id,
         handoff_target: 'internal_export_envelope',
         export_mode: 'prepare_only',
         operator_decision: elements.handoffExportPrepareDecision.value,
