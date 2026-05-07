@@ -126,6 +126,7 @@ from app.services.layer3_external_export_response import (
     associated_cohort_external_export_download as _is_associated_cohort_external_export_download,
     aps_bundle_identity_for_external_export_download as _aps_bundle_identity_for_external_export_download,
     cohort_readiness_identity as _cohort_readiness_identity,
+    external_export_download_delivery_response as _external_export_download_delivery_response,
     external_export_download_prepare_payload_for_delivery as _external_export_download_prepare_payload_for_delivery,
     external_export_download_prepare_response as _external_export_download_prepare_response,
     external_export_download_prepare_summary as _external_export_download_prepare_summary,
@@ -7526,74 +7527,17 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
         expected_artifact_size = int(readiness_state.get("source_artifact_size_bytes") or -1)
     except (TypeError, ValueError):
         expected_artifact_size = -1
-    filename = (
-        f"layer3-{_safe_download_token(session_id, fallback='session')}-"
-        f"{_safe_download_token(supplied_aps_bundle_id, fallback='aps-bundle')}.json"
-    )
 
     db.rollback()
 
-    try:
-        from app.services.nrc_aps_evidence_bundle import EvidenceBundleError, load_persisted_bundle_artifact
-    except ModuleNotFoundError as exc:
-        raise Layer3WorkbenchError(
-            "external_export_download_delivery_artifact_validator_unavailable",
-            f"External export/download delivery could not load the APS bundle artifact validator: {exc}",
-            status="blocked",
-            http_status=409,
-            blocked_fields=["aps_bundle_ref"],
-            next_allowed_actions=["inspect_external_export_download_readiness"],
-        ) from exc
-    try:
-        bundle_payload, bundle_path = load_persisted_bundle_artifact(bundle_ref=source_artifact_ref)
-    except EvidenceBundleError as exc:
-        raise Layer3WorkbenchError(
-            "external_export_download_delivery_source_artifact_unavailable",
-            f"External export/download delivery could not validate the existing APS bundle artifact: {exc.message}",
-            status="blocked",
-            http_status=409,
-            blocked_fields=["aps_bundle_ref"],
-            next_allowed_actions=["inspect_external_export_download_readiness"],
-        ) from exc
-
-    artifact_hash = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
-    artifact_size = int(bundle_path.stat().st_size)
-    if artifact_hash != expected_artifact_hash:
-        raise Layer3WorkbenchError(
-            "external_export_download_delivery_source_artifact_hash_mismatch",
-            "Validated APS bundle artifact hash does not match recorded readiness.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_bundle_hash"],
-        )
-    if artifact_size != expected_artifact_size:
-        raise Layer3WorkbenchError(
-            "external_export_download_delivery_source_artifact_size_mismatch",
-            "Validated APS bundle artifact size does not match recorded readiness.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_bundle_size_bytes"],
-        )
-    if str(bundle_payload.get("bundle_id") or "") != supplied_aps_bundle_id:
-        raise Layer3WorkbenchError(
-            "external_export_download_delivery_aps_bundle_id_mismatch",
-            "Validated APS bundle payload does not match the supplied APS bundle id.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["aps_bundle_id"],
-        )
-
-    return ExternalExportDownloadDelivery(
-        artifact_path=bundle_path,
-        media_type="application/json",
-        filename=filename,
-        headers={
-            "X-Layer3-Schema-Id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
-            "X-Layer3-Delivery-State": EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
-            "X-Layer3-Source-Artifact-Hash": artifact_hash,
-            "X-Layer3-External-Export-Download-Record-Ref": supplied_readiness_ref,
-        },
-        authority=_json_clone(validation_body),
+    return _external_export_download_delivery_response(
+        session_id=session_id,
+        supplied_aps_bundle_id=supplied_aps_bundle_id,
+        supplied_readiness_ref=supplied_readiness_ref,
+        source_artifact_ref=source_artifact_ref,
+        expected_artifact_hash=expected_artifact_hash,
+        expected_artifact_size=expected_artifact_size,
+        validation_body=validation_body,
     )
 
 
