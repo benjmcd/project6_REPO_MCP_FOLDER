@@ -1,12 +1,12 @@
 # Layer 3 Qualitative APS Handoff Export Prepare Contract
 
-Status: planning/control API and state contract paired with `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`.
+Status: current-main API and state contract paired with `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`.
 
-This contract defines the future API/state/proof shape for `qual_aps_handoff_export_prepare_entry`. It does not make qualitative APS handoff/export prepare live. Current main still blocks qualitative APS handoff/export runtime while admitting qualitative APS package-review submit through `POST /api/v1/layer3/package/review/submit`, and it now does so with the explicit fail-closed error `qualitative_aps_handoff_export_prepare_not_admitted` instead of relying on generic preview-hash mismatch.
+This contract defines the live API/state/proof shape for `qual_aps_handoff_export_prepare_entry`. Current main admits qualitative APS handoff/export prepare only through `POST /api/v1/layer3/handoff/export/prepare` after the approved qualitative APS package-review submit state, and the former blocker `qualitative_aps_handoff_export_prepare_not_admitted` has been removed for that exact authority chain.
 
 ## Authority Order
 
-Future qualitative APS handoff/export prepare must resolve authority in this order:
+Qualitative APS handoff/export prepare must resolve authority in this order:
 
 1. live source and tests on `project6-origin/main`;
 2. `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`;
@@ -26,11 +26,11 @@ Planning prose, browser state, raw document text, mockup state, PR titles, branc
 
 ## Route Contract
 
-Default future route:
+Default route:
 
 - `POST /api/v1/layer3/handoff/export/prepare`
 
-Selected future response schema:
+Selected response schema:
 
 - `layer3.qual_aps_handoff_export_prepare.v1`
 
@@ -38,7 +38,7 @@ Route reuse is preferred because the existing handoff/export route family alread
 
 ## Request Contract
 
-Expected required fields for a future implementation:
+Expected required fields:
 
 - `client_request_id`;
 - `session_id`;
@@ -129,11 +129,11 @@ An available qualitative APS handoff/export prepare requires:
 
 Any missing, stale, malformed, mismatched, non-approved, duplicate-conflicting, or cross-session authority must fail closed before mutation.
 
-Until this future boundary is implemented, qualitative APS attempts against `POST /api/v1/layer3/handoff/export/prepare` must fail closed with `qualitative_aps_handoff_export_prepare_not_admitted` and must not write handoff/export prepare state.
+Qualitative APS attempts that lack the exact persisted package-preview, construction, package-review submit, payload, and source authority must fail closed before writing handoff/export prepare state.
 
 ## State Contract
 
-Allowed state effects for a future successful prepare:
+Allowed state effects for a successful prepare:
 
 - record exactly one qualitative APS handoff/export prepare object in `L3ReconciliationRecord.summary_json`;
 - optionally record session/operator summary pointer fields in `L3Session.summary_json`;

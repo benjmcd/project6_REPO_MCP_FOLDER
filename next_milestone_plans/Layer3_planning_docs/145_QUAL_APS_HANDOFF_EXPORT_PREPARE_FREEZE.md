@@ -1,8 +1,8 @@
 # Layer 3 Qualitative APS Handoff Export Prepare Freeze
 
-Status: planning/control freeze for future `qual_aps_handoff_export_prepare_entry`, with current-main fail-closed guard.
+Status: current-main runtime boundary for `qual_aps_handoff_export_prepare_entry`.
 
-This document selects the next eligible qualitative APS downstream boundary after the live `qual_aps_package_review_submit_entry` runtime. It admits no runtime behavior by itself. It freezes only a future internal handoff/export prepare decision over an already approved standalone APS qualitative package-review submit state.
+This document governs the live qualitative APS downstream boundary after the live `qual_aps_package_review_submit_entry` runtime. It admits only an internal handoff/export prepare decision over an already approved standalone APS qualitative package-review submit state.
 
 ## Authority Snapshot
 
@@ -14,11 +14,11 @@ This document selects the next eligible qualitative APS downstream boundary afte
 - package preview docs: `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md` and `139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
 - qualitative execution docs: `114_QUAL_APS_EXEC_FREEZE.md`, `115_QUAL_APS_EXEC_CONTRACT.md`, and `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md`
 - current route family to audit first: `POST /api/v1/layer3/handoff/export/prepare`
-- selected future mode: `qual_aps_handoff_export_prepare_entry`
-- selected future response schema: `layer3.qual_aps_handoff_export_prepare.v1`
+- selected live mode: `qual_aps_handoff_export_prepare_entry`
+- selected live response schema: `layer3.qual_aps_handoff_export_prepare.v1`
 - companion contract: `146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md`
 
-Live source and tests outrank this planning document. This document is not proof that qualitative APS handoff/export prepare is live. Current main explicitly rejects qualitative APS handoff/export prepare with `qualitative_aps_handoff_export_prepare_not_admitted` until a later runtime pass implements this boundary.
+Live source and tests outrank this planning document. The former blocker `qualitative_aps_handoff_export_prepare_not_admitted` has been removed by the live runtime for the exact admitted qualitative APS authority chain.
 
 ## Decision
 
@@ -26,9 +26,9 @@ The next implementation-entry candidate is:
 
 - `qual_aps_handoff_export_prepare_entry`
 
-The future runtime may record exactly one internal prepare-only handoff/export decision over the already submitted qualitative APS package set. It must reuse the existing handoff/export route family unless implementation audit proves that route reuse would make qualitative APS, quantitative single-item, or associated-cohort authority ambiguous.
+The runtime may record exactly one internal prepare-only handoff/export decision over the already submitted qualitative APS package set. It reuses the existing handoff/export route family because the implementation audit proved qualitative APS, quantitative single-item, and associated-cohort authority remain distinguishable.
 
-The future runtime must stop before APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, RAG/vector retrieval, package mutation/reconstruction, hidden LLM planning, full mockup activation, model/migration work, and authentication/security behavior.
+The runtime must stop before APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, RAG/vector retrieval, package mutation/reconstruction, hidden LLM planning, full mockup activation, model/migration work, and authentication/security behavior.
 
 ## Why This Comes Next
 
@@ -36,11 +36,11 @@ Current main now has a durable qualitative APS package set and a package-review 
 
 This pass must precede qualitative APS APS dispatch and external export/download. It must follow package-review submit because prepare authority must prove that the package set is both constructed and approved for downstream consideration.
 
-## Current Blocker
+## Former Blocker
 
-Current main has generic and associated-cohort handoff/export prepare behavior, but no qualitative APS-specific prepare runtime authority. Current main explicitly guards the qualitative APS path with `qualitative_aps_handoff_export_prepare_not_admitted` rather than relying on generic preview-hash mismatch. Direct reuse of the generic route is not sufficient by itself because qualitative APS package preview, construction, and submit use distinct qualitative authority hashes, source-shape fields, and no `AnalysisRun`.
+Before this runtime pass, current main had generic and associated-cohort handoff/export prepare behavior, but no qualitative APS-specific prepare runtime authority. The implementation now admits only the qualitative APS branch that validates distinct qualitative preview, construction, and submit authority hashes, source-shape fields, and absent `AnalysisRun`.
 
-The future implementation must explicitly validate qualitative APS authority rather than relying on the generic single-item path.
+The implementation explicitly validates qualitative APS authority rather than relying on the generic single-item path.
 
 ## Decision Vocabulary
 
@@ -55,9 +55,9 @@ Only these operator decisions are in scope for a future implementation:
 
 The decision vocabulary is internal preparation only. It is not an APS dispatch command, external export/download command, connector dispatch command, package rebuild command, result-review amendment, package-review amendment, package mutation, rerun, recovery, source-expansion command, or provider URL request.
 
-## Future Runtime Shape
+## Runtime Shape
 
-The future implementation may include only:
+The implementation includes only:
 
 - extending or reusing `POST /api/v1/layer3/handoff/export/prepare` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`;
 - response schema `layer3.qual_aps_handoff_export_prepare.v1`;
@@ -71,12 +71,12 @@ The future implementation may include only:
 
 ## Allowed Writes
 
-Only these writes are admitted for a future runtime:
+Only these writes are admitted for the runtime:
 
 - one qualitative APS handoff/export prepare decision object in `L3ReconciliationRecord.summary_json`;
 - optional `L3Session.summary_json` pointer/index fields needed for existing readiness projections.
 
-The future implementation must not create new rows or files under this freeze.
+The implementation must not create new rows or files under this freeze.
 
 ## Forbidden Writes And Effects
 
@@ -106,9 +106,9 @@ The future boundary is acceptable only if it proves:
 - existing quantitative single-item, associated-cohort, package construction, package submit, handoff/export, APS dispatch, and external export/download behavior remains unchanged;
 - rendered UI and theme behavior remain unchanged unless a separate UI freeze admits them.
 
-## Required Tests For Future Runtime
+## Required Tests
 
-Minimum implementation proof for a later runtime pass:
+Minimum implementation proof for the runtime:
 
 - successful API prepare for one approved standalone APS qualitative package-review submit state;
 - bounded E2E extension from qualitative APS submit through handoff/export prepare, stopping before APS dispatch;

@@ -3906,7 +3906,7 @@ def _check_qualitative_aps_package_submit_freeze(errors: list[str]) -> None:
     required_doc_terms = {
         POST_709_ROADMAP_FREEZE: (
             "Layer 3 Qualitative APS Post-Submit Roadmap Freeze",
-            "latest live qualitative APS boundary: `qual_aps_package_review_submit_entry`",
+            "latest live qualitative APS boundary: `qual_aps_handoff_export_prepare_entry`",
             "qualitative APS package-review submit over the constructed package set",
             "governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`",
         ),
@@ -3977,59 +3977,57 @@ def _check_qualitative_aps_package_submit_freeze(errors: list[str]) -> None:
 def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> None:
     required_doc_terms = {
         QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE: (
-            "Status: planning/control freeze for future `qual_aps_handoff_export_prepare_entry`, with current-main fail-closed guard.",
-            "selected future mode: `qual_aps_handoff_export_prepare_entry`",
-            "selected future response schema: `layer3.qual_aps_handoff_export_prepare.v1`",
+            "Status: current-main runtime boundary for `qual_aps_handoff_export_prepare_entry`.",
+            "selected live mode: `qual_aps_handoff_export_prepare_entry`",
+            "selected live response schema: `layer3.qual_aps_handoff_export_prepare.v1`",
             "`POST /api/v1/layer3/handoff/export/prepare`",
-            "Current main has generic and associated-cohort handoff/export prepare behavior",
-            "`qualitative_aps_handoff_export_prepare_not_admitted`",
-            "The future implementation must explicitly validate qualitative APS authority",
-            "The future implementation must not create new rows or files under this freeze.",
+            "former blocker `qualitative_aps_handoff_export_prepare_not_admitted` has been removed",
+            "The implementation explicitly validates qualitative APS authority",
+            "The implementation must not create new rows or files under this freeze.",
             "Browser proof is not required for a backend/API-only handoff/export prepare implementation.",
         ),
         QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT: (
-            "Status: planning/control API and state contract paired with `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`.",
-            "Default future route:",
+            "Status: current-main API and state contract paired with `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`.",
+            "Default route:",
             "`POST /api/v1/layer3/handoff/export/prepare`",
-            "Selected future response schema:",
+            "Selected response schema:",
             "`layer3.qual_aps_handoff_export_prepare.v1`",
             "`package_review_submit_schema_id`",
             "`layer3.qual_aps_package_review_submit.v1`",
-            "Allowed state effects for a future successful prepare:",
-            "Current main still blocks qualitative APS handoff/export runtime",
-            "`qualitative_aps_handoff_export_prepare_not_admitted`",
+            "Allowed state effects for a successful prepare:",
+            "Qualitative APS attempts that lack the exact persisted package-preview",
         ),
         POST_709_ROADMAP_FREEZE: (
-            "Status: current-main planning/control reference after qualitative APS handoff/export prepare freeze.",
+            "Status: current-main planning/control reference after qualitative APS handoff/export prepare runtime.",
             "governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`",
-            "qualitative APS handoff/export prepare runtime",
-            "docs `145`/`146` are frozen",
+            "latest live qualitative APS boundary: `qual_aps_handoff_export_prepare_entry`",
+            "qualitative APS APS handoff dispatch freeze and contract",
         ),
         PHASE1A_README: (
             "145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md",
             "146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md",
             "qual_aps_handoff_export_prepare_entry",
-            "They select reuse of the handoff/export prepare route family",
+            "They reuse the handoff/export prepare route family",
         ),
         DEFERRED_GATES: (
             "145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md",
             "146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md",
-            "planning/control only for future `qual_aps_handoff_export_prepare_entry`",
-            "qualitative_aps_handoff_export_prepare_not_admitted",
+            "live bounded `qual_aps_handoff_export_prepare_entry` runtime boundary",
+            "APS dispatch, external export/download, connector/destination dispatch",
         ),
         BOARD: (
-            "Qualitative APS handoff/export prepare freeze and guard",
-            "current-main fail-closed guard plus planning/control docs",
+            "Qualitative APS handoff/export prepare runtime",
+            "current-main bounded backend/API runtime",
             "qual_aps_handoff_export_prepare_entry",
             "POST /api/v1/layer3/handoff/export/prepare",
-            "admits no qualitative APS handoff/export prepare runtime",
+            "creates no rows or files",
         ),
         MANIFEST: (
             "latest_qual_aps_handoff_export_prepare_freeze_branch",
             "latest_qual_aps_handoff_export_prepare_freeze_live_behavior_change",
             "qual_aps_handoff_export_prepare_freeze",
             "qual_aps_handoff_export_prepare_entry",
-            "admits no qualitative APS handoff/export prepare runtime",
+            "creates no rows or files",
         ),
         PROOF_MANIFEST: (
             "latest_qual_aps_handoff_export_prepare_freeze_branch",
@@ -4037,7 +4035,7 @@ def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> N
             "latest_qual_aps_handoff_export_prepare_freeze_summary",
             "qual_aps_handoff_export_prepare_freeze_proof",
             "qual_aps_handoff_export_prepare_entry",
-            "qualitative_aps_handoff_export_prepare_not_admitted",
+            "layer3.qual_aps_handoff_export_prepare.v1",
         ),
     }
     for path, terms in required_doc_terms.items():
@@ -4053,20 +4051,30 @@ def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> N
         "status_body.get(\"engine_family\") == ENGINE_FAMILY_QUAL_APS_DOCUMENT",
         "status_body.get(\"pass_scope\") == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE",
         "output_metadata_summary.get(\"source_gate\") == QUAL_APS_SOURCE_GATE",
-        "\"qualitative_aps_handoff_export_prepare_not_admitted\"",
-        "\"inspect_qualitative_aps_package_review_submit_state\"",
+        "QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID",
+        "SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE",
+        "\"qualitative_aps_handoff_export_prepare_construction_basis_mismatch\"",
+        "\"qualitative_aps_aps_handoff_dispatch_not_admitted\"",
     ):
         if term not in workbench_text:
-            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing qualitative APS handoff/export prepare guard term: {term}")
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing qualitative APS handoff/export prepare runtime term: {term}")
+    response_text = _read_required_text(HANDOFF_EXPORT_RESPONSE_SERVICE, errors)
+    for term in (
+        "QUAL_APS_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = \"layer3.qual_aps_handoff_export_prepare.v1\"",
+        "QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID",
+        "\"provider_public_url_enabled\": False",
+    ):
+        if term not in response_text:
+            errors.append(f"{_rel(HANDOFF_EXPORT_RESPONSE_SERVICE)} missing qualitative APS handoff/export prepare response term: {term}")
     bounded_e2e_text = _read_required_text(LAYER3_BOUNDED_E2E_TEST, errors)
     for term in (
-        "def qualitative_handoff_prepare_blocked(",
-        "aps-qual-e2e-handoff-prepare-blocked",
-        "\"qualitative_aps_handoff_export_prepare_not_admitted\"",
-        "\"inspect_qualitative_aps_package_review_submit_state\"",
+        "def qualitative_handoff_prepare(",
+        "aps-qual-e2e-handoff-prepare",
+        "\"layer3.qual_aps_handoff_export_prepare.v1\"",
+        "\"provider_public_url_enabled\"",
     ):
         if term not in bounded_e2e_text:
-            errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS handoff/export prepare guard proof term: {term}")
+            errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS handoff/export prepare runtime proof term: {term}")
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
