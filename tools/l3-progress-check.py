@@ -7553,7 +7553,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                 "must match PR #677 head commit"
             )
         if proof_scope.get("latest_external_export_delivery_response_extraction_merge_commit") != (
-            "cc415cfe0e2f3757320f88a6cf6fb4b0109f9e2b"
+            "cc415cfe502322f47cbb2c708827c454e981d70a"
         ):
             errors.append(
                 f"{_rel(PROOF_MANIFEST)} "
@@ -7571,7 +7571,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         for term in (
             "external export/download delivery response extraction",
             "PR #677",
-            "merge commit cc415cfe0e2f3757320f88a6cf6fb4b0109f9e2b",
+            "merge commit cc415cfe502322f47cbb2c708827c454e981d70a",
             "external_export_download_delivery_response",
             "layer3_external_export_response.py",
             "_external_export_download_delivery_response",
