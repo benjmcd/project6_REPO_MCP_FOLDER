@@ -49,6 +49,13 @@ from app.services.layer3_raw_mixed_bridge import (
     RAW_MIXED_CORPUS_SEED_MODE,
     RAW_MIXED_CORPUS_SEED_RESPONSE_SCHEMA_ID,
 )
+from app.services.layer3_qual_aps_execution import (
+    ENGINE_FAMILY_QUAL_APS_DOCUMENT,
+    PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
+    QUAL_APS_METHOD_NAME,
+    QUAL_APS_OUTPUT_SCHEMA_ID,
+    QUAL_APS_SOURCE_GATE,
+)
 from test_layer3_api import (
     _aps_handoff_dispatch_payload,
     _external_export_download_deliver_payload,
@@ -63,6 +70,13 @@ from test_layer3_pass_entry import _seed_timeseries_dataset_version
 @dataclass(frozen=True)
 class SeededSources:
     dataset_version_ids: tuple[str, str]
+    aps_run_id: str
+    aps_target_id: str
+    aps_content_id: str
+
+
+@dataclass(frozen=True)
+class SeededApsDocument:
     aps_run_id: str
     aps_target_id: str
     aps_content_id: str
@@ -101,6 +115,50 @@ class Layer3ApiDriver:
                 "client_request_id": "bounded-e2e-source-preview",
                 "preflight_id": preflight_id,
                 "selected_source_classes": ["dataset_version", "aps_content_document"],
+            },
+        )
+
+    def aps_doc_preflight(self) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/preflight",
+            {
+                "client_request_id": "aps-qual-e2e-preflight",
+                "natural_language_intent": "Review one indexed APS content document as qualitative source material.",
+                "manual_constraints": {"source_classes": ["aps_content_document"]},
+            },
+        )
+
+    def aps_doc_source_preview(self, *, preflight_id: str) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/source-preview",
+            {
+                "client_request_id": "aps-qual-e2e-source-preview",
+                "preflight_id": preflight_id,
+                "selected_source_classes": ["aps_content_document"],
+            },
+        )
+
+    def aps_doc_material_preview(
+        self,
+        *,
+        preflight_id: str,
+        source: dict[str, Any],
+        seeded: SeededApsDocument,
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/material-preview",
+            {
+                "client_request_id": "aps-qual-e2e-material-preview",
+                "preflight_id": preflight_id,
+                "source_set_id": source["source_set_id"],
+                "source_candidate_ids": [
+                    candidate["source_candidate_id"] for candidate in source["source_candidates"]
+                ],
+                "aps_content_document_ids": [seeded.aps_content_id],
+                "query_basis": {
+                    "terms": ["aps", "qualitative", "single-document"],
+                    "filters": {"aps_content_document_ids": [seeded.aps_content_id]},
+                },
             },
         )
 
@@ -298,6 +356,30 @@ class Layer3ApiDriver:
             "/api/v1/layer3/package/review/preview",
             {
                 "client_request_id": "bounded-e2e-package-preview",
+                "session_id": session_id,
+                "analysis_plan_id": approval["analysis_plan_id"],
+                "pass_run_id": selection["pass_run_ids"][0],
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+                "analysis_run_id": start["analysis_run_id"],
+                "result_review_record_ref": review["review_record_ref"],
+            },
+        )
+
+    def qualitative_package_preview_blocked(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_blocked(
+            "/api/v1/layer3/package/review/preview",
+            {
+                "client_request_id": "aps-qual-e2e-package-preview-blocked",
                 "session_id": session_id,
                 "analysis_plan_id": approval["analysis_plan_id"],
                 "pass_run_id": selection["pass_run_ids"][0],
@@ -538,6 +620,9 @@ class Layer3StateAssertions:
     def files(self) -> set[str]:
         return {str(path.relative_to(self._tmp_path)) for path in self._tmp_path.rglob("*") if path.is_file()}
 
+    def relative_file(self, path: str) -> str:
+        return str(Path(path).relative_to(self._tmp_path))
+
     def assert_no_layer3_writes(self, before: dict[str, int]) -> None:
         after = self.counts()
         layer3_keys = [key for key in before if key not in {"dataset_versions", "aps_content_documents"}]
@@ -618,6 +703,37 @@ class Layer3StateAssertions:
                 == "aps_handoff_companion_provenance"
             )
 
+    def assert_gate_b_aps_document_state(self, *, session_id: str, seeded: SeededApsDocument) -> None:
+        with self._client.layer3_session_factory() as db:
+            assert db.query(L3Session).filter(L3Session.session_id == session_id).count() == 1
+            assert db.query(L3SelectionManifest).filter(L3SelectionManifest.session_id == session_id).count() == 1
+            assert db.query(L3Descriptor).filter(L3Descriptor.session_id == session_id).count() == 1
+            assert db.query(L3RetrievalEvent).filter(L3RetrievalEvent.session_id == session_id).count() == 1
+            snapshot = db.query(L3MaterialSnapshot).filter(L3MaterialSnapshot.session_id == session_id).one()
+            assert snapshot.source_shape == "aps_content_document"
+            assert snapshot.source_identity_json["content_id"] == seeded.aps_content_id
+            assert snapshot.source_identity_json["run_id"] == seeded.aps_run_id
+            assert snapshot.source_identity_json["target_id"] == seeded.aps_target_id
+            assert "dataset_version_id" not in snapshot.source_identity_json
+            assert snapshot.source_provenance_json["source_family"] == "aps_content_document"
+            assert snapshot.source_provenance_json["source_admission_state"] == "admitted_content_document"
+            assert "analysis_admission_role" not in snapshot.source_provenance_json
+            _assert_file_sha256(snapshot.payload_ref, snapshot.payload_hash)
+
+    def assert_gate_c_single_aps_document_boundary(self, *, session_id: str, seeded: SeededApsDocument) -> None:
+        with self._client.layer3_session_factory() as db:
+            assert db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count() == 1
+            assert db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count() == 1
+            assert db.query(L3AnalysisGroup).filter(L3AnalysisGroup.session_id == session_id).count() == 1
+            analysis_set = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).one()
+            assert analysis_set.set_type == "single_item"
+            assert analysis_set.formation_basis_json["analysis_modality"] == "qualitative"
+            analysis_unit = db.get(L3AnalysisUnit, analysis_set.analysis_unit_ids_json[0])
+            assert analysis_unit.analysis_modality == "qualitative"
+            snapshot = db.get(L3MaterialSnapshot, analysis_unit.member_snapshot_ids_json[0])
+            assert snapshot.source_shape == "aps_content_document"
+            assert snapshot.source_identity_json["content_id"] == seeded.aps_content_id
+
     def assert_approved_plan_method_authority(self, *, session_id: str, seeded: SeededSources) -> None:
         with self._client.layer3_session_factory() as db:
             plan = db.query(L3AnalysisPlan).filter(L3AnalysisPlan.session_id == session_id).one()
@@ -627,6 +743,17 @@ class Layer3StateAssertions:
             assert planned_pass["requested_method_source"] == "analysis_set.formation_basis_json.requested_method_name"
             assert planned_pass["source_gate"] == "78_COHORT_FREEZE"
             assert sorted(planned_pass["source_dataset_version_ids_json"]) == sorted(seeded.dataset_version_ids)
+
+    def assert_approved_aps_document_plan_authority(self, *, session_id: str) -> None:
+        with self._client.layer3_session_factory() as db:
+            plan = db.query(L3AnalysisPlan).filter(L3AnalysisPlan.session_id == session_id).one()
+            planned_pass = plan.plan_json["planned_passes_json"][0]
+            assert planned_pass["pass_type"] == "single_item"
+            assert planned_pass["pass_scope"] == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+            assert planned_pass["engine_family"] == ENGINE_FAMILY_QUAL_APS_DOCUMENT
+            assert planned_pass["selected_method_name"] == QUAL_APS_METHOD_NAME
+            assert planned_pass["source_gate"] == QUAL_APS_SOURCE_GATE
+            assert "source_dataset_version_ids_json" not in planned_pass
 
     def assert_forbidden_side_effects_absent(self, *, seeded_counts: dict[str, int]) -> None:
         counts = self.counts()
@@ -701,6 +828,25 @@ def test_layer3_raw_mixed_seed_bridge_drives_bounded_e2e_path(
         driver=driver,
         state=state,
         seeded=bridge_sources,
+        seeded_counts=seeded_counts,
+        seeded_files=seeded_files,
+    )
+
+
+def test_layer3_standalone_aps_content_document_qualitative_e2e_stops_before_package(
+    client: TestClient,
+    tmp_path: Path,
+) -> None:
+    seeded = _seed_aps_document_source(client, tmp_path)
+    driver = Layer3ApiDriver(client)
+    state = Layer3StateAssertions(client, tmp_path)
+    seeded_counts = state.counts()
+    seeded_files = state.files()
+
+    _drive_standalone_aps_document_qualitative_e2e_to_package_boundary(
+        driver=driver,
+        state=state,
+        seeded=seeded,
         seeded_counts=seeded_counts,
         seeded_files=seeded_files,
     )
@@ -914,6 +1060,133 @@ def _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
     assert state.files() == files_before_dispatch | added_dispatch_files
 
 
+def _drive_standalone_aps_document_qualitative_e2e_to_package_boundary(
+    *,
+    driver: Layer3ApiDriver,
+    state: Layer3StateAssertions,
+    seeded: SeededApsDocument,
+    seeded_counts: dict[str, int],
+    seeded_files: set[str],
+) -> None:
+    preflight = driver.aps_doc_preflight()
+    _assert_forbidden_response_surface_absent(preflight)
+    state.assert_no_layer3_writes(seeded_counts)
+    assert state.files() == seeded_files
+
+    source = driver.aps_doc_source_preview(preflight_id=preflight["preflight_id"])
+    _assert_aps_doc_source_preview(source)
+    _assert_forbidden_response_surface_absent(source)
+    state.assert_no_layer3_writes(seeded_counts)
+    assert state.files() == seeded_files
+
+    material = driver.aps_doc_material_preview(
+        preflight_id=preflight["preflight_id"],
+        source=source,
+        seeded=seeded,
+    )
+    _assert_aps_doc_material_preview(material, seeded=seeded)
+    _assert_forbidden_response_surface_absent(material)
+    state.assert_no_layer3_writes(seeded_counts)
+    assert state.files() == seeded_files
+
+    gate_b = driver.gate_b_decision(
+        preflight_id=preflight["preflight_id"],
+        source_set_id=source["source_set_id"],
+        material=material,
+    )
+    assert gate_b["status"] == "ok"
+    assert len(gate_b["approved_candidate_ids"]) == 1
+    assert gate_b["flagged_candidate_ids"] == []
+    session_id = gate_b["session_id"]
+    state.assert_gate_b_aps_document_state(session_id=session_id, seeded=seeded)
+    state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
+    gate_b_files = state.files()
+    assert len(gate_b_files - seeded_files) == 1
+
+    gate_c = driver.gate_c_commit(session_id=session_id)
+    assert gate_c["next_state"] == "plan_preview_ready"
+    assert gate_c["authority_rail"]["typing_status"] == "committed"
+    state.assert_gate_c_single_aps_document_boundary(session_id=session_id, seeded=seeded)
+    state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
+    assert state.files() == gate_b_files
+
+    gate_c_counts = state.counts()
+    plan_preview = driver.plan_preview(session_id=session_id)
+    _assert_single_aps_doc_qualitative_plan_preview(plan_preview)
+    assert state.counts() == gate_c_counts
+    assert state.files() == gate_b_files
+
+    plan_approval = driver.plan_approve(session_id=session_id, preview=plan_preview)
+    assert plan_approval["next_state"] == "plan_approved"
+    approval_counts = state.counts()
+    assert approval_counts == {**gate_c_counts, "analysis_plans": gate_c_counts["analysis_plans"] + 1}
+    state.assert_approved_aps_document_plan_authority(session_id=session_id)
+
+    selection = driver.execution_select(session_id=session_id, preview=plan_preview, approval=plan_approval)
+    assert selection["status"] == "selected_not_started"
+    selection_counts = state.counts()
+    assert selection_counts == {**approval_counts, "pass_runs": approval_counts["pass_runs"] + 1}
+    assert state.files() == gate_b_files
+
+    start = driver.execution_start(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+    )
+    assert start["status"] == "completed"
+    assert start["analysis_run_id"] is None
+    assert start["engine_family"] == ENGINE_FAMILY_QUAL_APS_DOCUMENT
+    assert start["selected_method_name"] == QUAL_APS_METHOD_NAME
+    assert start["dataset_version_id"] is None
+    _assert_response_refs_exist(start)
+    output = _assert_single_aps_doc_qualitative_output(start, seeded=seeded)
+    start_counts = state.counts()
+    assert start_counts == selection_counts
+    execution_files = state.files()
+    assert execution_files == gate_b_files | {state.relative_file(start["output_payload_ref"])}
+
+    status = driver.execution_status(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+    )
+    assert status["status"] == "available"
+    assert status["analysis_run_id"] is None
+    assert status["output_metadata_summary"]["content_id"] == seeded.aps_content_id
+    assert status["output_metadata_summary"]["chunk_ids"] == output["chunk_summary"]["chunk_ids"]
+    _assert_response_refs_exist(status)
+    assert state.counts() == start_counts
+    assert state.files() == execution_files
+
+    review = driver.execution_review(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        status=status,
+    )
+    assert review["review_state"] == "execution_result_review_approved"
+    assert state.counts() == start_counts
+    assert state.files() == execution_files
+
+    package_block = driver.qualitative_package_preview_blocked(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+    )
+    assert package_block["error_code"] == "qualitative_aps_package_review_preview_not_admitted"
+    assert state.counts() == start_counts
+    assert state.files() == execution_files
+    state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
+
+
 def _write_raw_mixed_seed_manifest(seeded: SeededSources) -> tuple[str, str]:
     manifest_ref = "raw-mixed/bounded-e2e-raw-mixed-seed.json"
     manifest_path = Path(settings.storage_dir) / manifest_ref
@@ -1003,6 +1276,24 @@ def _seed_sources(client: TestClient, tmp_path: Path) -> SeededSources:
     return seeded
 
 
+def _seed_aps_document_source(client: TestClient, tmp_path: Path) -> SeededApsDocument:
+    seeded = SeededApsDocument(
+        aps_run_id="run-standalone-aps-qual-e2e-001",
+        aps_target_id="target-standalone-aps-qual-e2e-001",
+        aps_content_id="content-standalone-aps-qual-e2e-001",
+    )
+    with client.layer3_session_factory() as db:
+        _seed_aps_content_fixture(
+            db,
+            tmp_path,
+            run_id=seeded.aps_run_id,
+            target_id=seeded.aps_target_id,
+            content_id=seeded.aps_content_id,
+        )
+        db.commit()
+    return seeded
+
+
 def _patch_cohort_dataframe_persistence(monkeypatch, tmp_path: Path) -> None:
     def _persist_dataframe_as_csv(db, version, df, time_column) -> None:
         storage_path = tmp_path / "cohort-derived" / f"{version.dataset_version_id}.csv"
@@ -1071,6 +1362,28 @@ def _assert_material_preview(material: dict[str, Any], *, seeded: SeededSources)
     )
 
 
+def _assert_aps_doc_source_preview(source: dict[str, Any]) -> None:
+    assert source["unsupported_sources"] == []
+    assert [candidate["source_class"] for candidate in source["source_candidates"]] == ["aps_content_document"]
+    candidate = source["source_candidates"][0]
+    assert candidate["source_candidate_id"]
+    assert candidate["source_class"] == "aps_content_document"
+
+
+def _assert_aps_doc_material_preview(material: dict[str, Any], *, seeded: SeededApsDocument) -> None:
+    candidates = material["material_candidates"]
+    assert len(candidates) == 1
+    candidate = candidates[0]
+    assert candidate["source_class"] == "aps_content_document"
+    assert candidate["source_identity"]["content_id"] == seeded.aps_content_id
+    assert candidate["source_provenance"]["aps_derived"] is True
+    assert candidate["source_trace"]["trace_readiness"] == "traceable_aps_content_document"
+    assert candidate["source_trace"]["aps_trace_refs"]["run_id"] == seeded.aps_run_id
+    assert candidate["source_trace"]["aps_trace_refs"]["target_id"] == seeded.aps_target_id
+    assert candidate["load_summary"]["loaded_records"] == 2
+    assert candidate["load_summary"]["failed_records"] == 0
+
+
 def _assert_descriptive_cohort_plan_preview(plan_preview: dict[str, Any], *, seeded: SeededSources) -> None:
     payload = plan_preview["plan_preview"]
     assert payload["approval_ready"] is True
@@ -1084,6 +1397,40 @@ def _assert_descriptive_cohort_plan_preview(plan_preview: dict[str, Any], *, see
     assert planned_pass["pass_scope"] == "quantitative_associated_cohort_dataset_version"
     assert planned_pass["selected_method_name"] == "descriptive_summary"
     assert sorted(planned_pass["source_dataset_version_ids"]) == sorted(seeded.dataset_version_ids)
+
+
+def _assert_single_aps_doc_qualitative_plan_preview(
+    plan_preview: dict[str, Any],
+) -> None:
+    payload = plan_preview["plan_preview"]
+    assert payload["approval_ready"] is True
+    assert len(payload["admitted_sets"]) == 1
+    assert payload["excluded_sets"] == []
+    assert len(payload["planned_passes"]) == 1
+    planned_pass = payload["planned_passes"][0]
+    assert planned_pass["pass_type"] == "single_item"
+    assert planned_pass["pass_scope"] == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+    assert planned_pass["engine_family"] == ENGINE_FAMILY_QUAL_APS_DOCUMENT
+    assert planned_pass["selected_method_name"] == QUAL_APS_METHOD_NAME
+
+
+def _assert_single_aps_doc_qualitative_output(
+    start: dict[str, Any],
+    *,
+    seeded: SeededApsDocument,
+) -> dict[str, Any]:
+    output = json.loads(Path(start["output_payload_ref"]).read_text(encoding="utf-8"))
+    assert output["schema_id"] == QUAL_APS_OUTPUT_SCHEMA_ID
+    assert output["analysis_run_id"] is None
+    assert output["document_identity"]["content_id"] == seeded.aps_content_id
+    assert output["chunk_summary"]["ordering"] == "chunk_ordinal_then_chunk_id"
+    assert output["chunk_summary"]["chunk_ids"] == [
+        f"{seeded.aps_content_id}-chunk-1",
+        f"{seeded.aps_content_id}-chunk-2",
+    ]
+    assert len(output["output_items_json"]) == 2
+    assert output["output_items_json"][0]["trace"]["chunk_id"] == f"{seeded.aps_content_id}-chunk-1"
+    return output
 
 
 def _assert_forbidden_response_surface_absent(payload: Any) -> None:
