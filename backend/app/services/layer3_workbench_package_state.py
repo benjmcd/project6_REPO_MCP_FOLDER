@@ -86,6 +86,14 @@ COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = (
     "external_export_download",
     "connector",
 )
+QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = (
+    "handoff",
+    "export",
+    "aps_handoff",
+    "external_export_download",
+    "connector_dispatch",
+    "provider_public_url",
+)
 HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = ("aps_handoff", "external_export", "downstream_dispatch")
 HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = "layer3.handoff_export_prepare_state.v1"
 APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
@@ -312,9 +320,12 @@ def package_review_submit_downstream_unavailable(
     package_review_state: str | None,
     *,
     associated_cohort_submit: bool = False,
+    qualitative_aps_submit: bool = False,
 ) -> tuple[str, ...]:
     if associated_cohort_submit:
         return COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+    if qualitative_aps_submit:
+        return QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
     if package_review_state == PACKAGE_REVIEW_APPROVED_STATE:
         return HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
     return PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE

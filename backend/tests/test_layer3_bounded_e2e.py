@@ -417,7 +417,7 @@ class Layer3ApiDriver:
             },
         )
 
-    def qualitative_package_submit_blocked(
+    def qualitative_package_submit(
         self,
         *,
         session_id: str,
@@ -428,20 +428,21 @@ class Layer3ApiDriver:
         review: dict[str, Any],
         commit: dict[str, Any],
     ) -> dict[str, Any]:
-        return self.post_blocked(
+        return self.post_ok(
             "/api/v1/layer3/package/review/submit",
             {
-                "client_request_id": "aps-qual-e2e-package-submit-blocked",
+                "client_request_id": "aps-qual-e2e-package-submit",
                 "session_id": session_id,
                 "analysis_plan_id": approval["analysis_plan_id"],
                 "pass_run_id": selection["pass_run_ids"][0],
                 "preview_id": preview["preview_id"],
                 "preview_hash": preview["preview_hash"],
-                "analysis_run_id": start["analysis_run_id"],
                 "result_review_record_ref": review["review_record_ref"],
                 "package_review_preview_hash": commit["package_review_preview_hash"],
+                "construction_basis_hash": commit["construction_basis_hash"],
                 "reconciliation_record_id": commit["reconciliation_record_id"],
                 "output_package_ids": commit["output_package_ids"],
+                "payload_refs": commit["payload_refs"],
                 "payload_hashes": commit["payload_hashes"],
                 "operator_decision": "approved",
                 "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
@@ -1283,7 +1284,7 @@ def _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
         allowed_reconciliations=1,
     )
 
-    package_submit_block = driver.qualitative_package_submit_blocked(
+    package_submit = driver.qualitative_package_submit(
         session_id=session_id,
         preview=plan_preview,
         approval=plan_approval,
@@ -1292,7 +1293,22 @@ def _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
         review=review,
         commit=package_commit,
     )
-    assert package_submit_block["error_code"] == "qualitative_aps_package_review_submit_not_admitted"
+    assert package_submit["schema_id"] == "layer3.qual_aps_package_review_submit.v1"
+    assert package_submit["status"] == "submitted"
+    assert package_submit["analysis_run_id"] is None
+    assert package_submit["construction_basis_hash"] == package_commit["construction_basis_hash"]
+    assert package_submit["payload_refs"] == package_commit["payload_refs"]
+    assert package_submit["payload_hashes"] == package_commit["payload_hashes"]
+    assert package_submit["package_review_state"] == "package_review_approved"
+    assert package_submit["package_review_submit_enabled"] is False
+    assert package_submit["handoff_enabled"] is False
+    assert package_submit["aps_handoff_enabled"] is False
+    assert package_submit["external_export_download_enabled"] is False
+    assert package_submit["connector_dispatch_enabled"] is False
+    assert package_submit["provider_public_url_enabled"] is False
+    assert "package_review_submit" not in package_submit["downstream_unavailable"]
+    assert "handoff" in package_submit["downstream_unavailable"]
+    assert "external_export_download" in package_submit["downstream_unavailable"]
     assert state.counts() == commit_counts
     assert state.files() == package_files
     state.assert_forbidden_side_effects_absent(
@@ -1616,13 +1632,14 @@ def _assert_single_aps_doc_qualitative_package_commit(
     assert package_commit["package_review_preview_hash"] == package_preview["package_review_preview_hash"]
     assert package_commit["construction_basis_hash"]
     assert package_commit["package_construction_source_gate"] == "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE"
-    assert package_commit["package_review_submit_enabled"] is False
+    assert package_commit["package_review_submit_enabled"] is True
     assert package_commit["handoff_enabled"] is False
     assert package_commit["aps_handoff_enabled"] is False
     assert package_commit["external_export_download_enabled"] is False
     assert package_commit["connector_dispatch_enabled"] is False
     assert package_commit["provider_public_url_enabled"] is False
-    assert "package_review_submit" in package_commit["downstream_unavailable"]
+    assert "package_review_submit" not in package_commit["downstream_unavailable"]
+    assert "handoff" in package_commit["downstream_unavailable"]
     assert "external_export_download" in package_commit["downstream_unavailable"]
     assert package_commit["content_id"] == seeded.aps_content_id
     assert package_commit["content_contract_id"] == output["document_identity"]["content_contract_id"]

@@ -17,10 +17,12 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_REVIEW_FACING,
     PACKAGE_KIND_USER_FACING,
     SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+    SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
 )
 from app.services.layer3_workbench_package_state import (
     COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
     HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE,
+    QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
 )
 
 
@@ -97,6 +99,7 @@ def test_package_review_submit_response_preserves_workbench_projection() -> None
         PACKAGE_KIND_USER_FACING,
         PACKAGE_KIND_REVIEW_FACING,
     ]
+    assert response["payload_refs"] == ["payload://pkg-internal", "payload://pkg-user", "payload://pkg-review"]
     assert response["payload_hashes"] == ["hash-internal", "hash-user", "hash-review"]
     assert response["package_review_submit_enabled"] is False
     assert response["handoff_enabled"] is False
@@ -141,3 +144,41 @@ def test_package_review_submit_response_preserves_cohort_schema_and_blocks_expor
     )
     assert response["source_dataset_version_ids"] == ["dataset-cohort-a", "dataset-cohort-b"]
     assert response["analysis_run_id"] is None
+
+
+def test_package_review_submit_response_preserves_qualitative_aps_schema_and_blocks_downstream() -> None:
+    response = submit_response.package_review_submit_response(
+        request_id="request-submit-qual-aps",
+        status="recorded",
+        session_id="session-submit-response",
+        analysis_plan_id="plan-submit-response",
+        pass_run_id="pass-run-submit-response",
+        preview_id="preview-submit-response",
+        preview_hash="hash-submit-response",
+        analysis_run_id=None,
+        result_review_record_ref="layer3://result-review/record",
+        package_review_preview_hash="package-preview-hash-submit",
+        reconciliation_record=_reconciliation(),
+        packages=[
+            _package(PACKAGE_KIND_CANONICAL_INTERNAL, "pkg-internal", payload_hash="hash-internal"),
+            _package(PACKAGE_KIND_USER_FACING, "pkg-user", payload_hash="hash-user"),
+            _package(PACKAGE_KIND_REVIEW_FACING, "pkg-review", payload_hash="hash-review"),
+        ],
+        review_state=_review_state(
+            package_construction_source_gate=SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
+            pass_scope="single_aps_doc_qualitative_pass",
+            source_shape="aps_content_document",
+            source_dataset_version_ids=[],
+            construction_basis_hash="construction-hash-qual-aps",
+        ),
+    )
+
+    assert response["schema_id"] == submit_response.QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    assert response["construction_basis_hash"] == "construction-hash-qual-aps"
+    assert response["payload_refs"] == ["payload://pkg-internal", "payload://pkg-user", "payload://pkg-review"]
+    assert response["downstream_unavailable"] == list(QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
+    assert response["handoff_enabled"] is False
+    assert response["aps_handoff_enabled"] is False
+    assert response["external_export_download_enabled"] is False
+    assert response["connector_dispatch_enabled"] is False
+    assert response["provider_public_url_enabled"] is False

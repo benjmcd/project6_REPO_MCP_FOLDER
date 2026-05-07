@@ -571,7 +571,7 @@ def test_single_aps_doc_qualitative_package_preview_construction_and_submit_guar
 
     assert commit["schema_id"] == "layer3.qual_aps_package_construction_commit.v1"
     assert commit["status"] == "committed"
-    assert commit["package_review_submit_enabled"] is False
+    assert commit["package_review_submit_enabled"] is True
     assert commit["package_construction_source_gate"] == "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE"
     assert commit["content_id"] == "content-qual-aps-package"
     assert commit["output_payload_hash"] == preview["output_payload_hash"]
@@ -586,30 +586,58 @@ def test_single_aps_doc_qualitative_package_preview_construction_and_submit_guar
         assert payload_path.exists()
         assert hashlib.sha256(payload_path.read_bytes()).hexdigest() == package["payload_hash"]
 
-    with pytest.raises(Layer3WorkbenchError) as submit_exc:
+    submit_payload = {
+        "client_request_id": "req-qual-package-submit",
+        "session_id": flow["session_id"],
+        "analysis_plan_id": flow["analysis_plan_id"],
+        "pass_run_id": flow["pass_run_id"],
+        "preview_id": flow["preview_id"],
+        "preview_hash": flow["preview_hash"],
+        "result_review_record_ref": review["review_record_ref"],
+        "package_review_preview_hash": preview["package_review_preview_hash"],
+        "construction_basis_hash": commit["construction_basis_hash"],
+        "reconciliation_record_id": commit["reconciliation_record_id"],
+        "operator_decision": "approved",
+        "output_package_ids": commit["output_package_ids"],
+        "payload_refs": commit["payload_refs"],
+        "payload_hashes": commit["payload_hashes"],
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+    with pytest.raises(Layer3WorkbenchError) as stale_construction_exc:
         layer3_workbench.package_review_submit(
             db_session,
-            {
-                "client_request_id": "req-qual-package-submit-blocked",
-                "session_id": flow["session_id"],
-                "analysis_plan_id": flow["analysis_plan_id"],
-                "pass_run_id": flow["pass_run_id"],
-                "preview_id": flow["preview_id"],
-                "preview_hash": flow["preview_hash"],
-                "analysis_run_id": start["analysis_run_id"],
-                "result_review_record_ref": review["review_record_ref"],
-                "package_review_preview_hash": preview["package_review_preview_hash"],
-                "reconciliation_record_id": commit["reconciliation_record_id"],
-                "operator_decision": "approved",
-                "output_package_ids": commit["output_package_ids"],
-                "payload_hashes": commit["payload_hashes"],
-            },
+            {**submit_payload, "construction_basis_hash": "stale-construction-basis"},
         )
-
-    assert submit_exc.value.error_code == "qualitative_aps_package_review_submit_not_admitted"
-    assert submit_exc.value.status == "blocked"
+    assert stale_construction_exc.value.error_code == (
+        "qualitative_aps_package_review_submit_construction_basis_mismatch"
+    )
     assert db_session.query(L3OutputPackage).count() == 3
     assert db_session.query(L3ReconciliationRecord).count() == 1
+
+    submit = layer3_workbench.package_review_submit(db_session, submit_payload)
+
+    assert submit["schema_id"] == "layer3.qual_aps_package_review_submit.v1"
+    assert submit["status"] == "submitted"
+    assert submit["analysis_run_id"] is None
+    assert submit["construction_basis_hash"] == commit["construction_basis_hash"]
+    assert submit["payload_refs"] == commit["payload_refs"]
+    assert submit["payload_hashes"] == commit["payload_hashes"]
+    assert submit["package_review_state"] == "package_review_approved"
+    assert submit["package_review_submit_enabled"] is False
+    assert submit["handoff_enabled"] is False
+    assert submit["aps_handoff_enabled"] is False
+    assert submit["external_export_download_enabled"] is False
+    assert submit["connector_dispatch_enabled"] is False
+    assert submit["provider_public_url_enabled"] is False
+    assert "package_review_submit" not in submit["downstream_unavailable"]
+    assert "handoff" in submit["downstream_unavailable"]
+    assert "external_export_download" in submit["downstream_unavailable"]
+    assert db_session.query(L3OutputPackage).count() == 3
+    assert db_session.query(L3ReconciliationRecord).count() == 1
+
+    replay = layer3_workbench.package_review_submit(db_session, submit_payload)
+    assert replay["status"] == "already_submitted"
+    assert replay["submit_record_ref"] == submit["submit_record_ref"]
 
 
 def test_single_aps_doc_qualitative_plan_requires_chunks(db_session, tmp_path) -> None:
