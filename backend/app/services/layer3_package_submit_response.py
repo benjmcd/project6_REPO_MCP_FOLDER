@@ -15,6 +15,7 @@ from app.services.layer3_workbench_package_state import (
 
 PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.package_review_submit.v1"
 COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.cohort_package_review_submit.v1"
+QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.qual_aps_package_review_submit.v1"
 
 
 def package_review_submit_response(
@@ -37,9 +38,14 @@ def package_review_submit_response(
     associated_cohort_submit = cohort_package_construction_source(
         review_state.get("package_construction_source_gate")
     )
+    qualitative_aps_submit = (
+        str(review_state.get("package_construction_source_gate") or "")
+        == "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE"
+    )
     downstream_unavailable = package_review_submit_downstream_unavailable(
         str(review_state.get("package_review_state") or ""),
         associated_cohort_submit=associated_cohort_submit,
+        qualitative_aps_submit=qualitative_aps_submit,
     )
     body = {
         **base_response(PACKAGE_REVIEW_SUBMIT_SCHEMA_ID, request_id=request_id, status=status),
@@ -50,9 +56,11 @@ def package_review_submit_response(
         "analysis_run_id": analysis_run_id,
         "result_review_record_ref": result_review_record_ref,
         "package_review_preview_hash": package_review_preview_hash,
+        "construction_basis_hash": review_state.get("construction_basis_hash"),
         "reconciliation_record_id": reconciliation_record.reconciliation_record_id,
         "output_package_ids": [package.output_package_id for package in ordered_packages],
         "package_kinds": [package.package_kind for package in ordered_packages],
+        "payload_refs": [package.payload_ref for package in ordered_packages],
         "payload_hashes": [package.payload_hash for package in ordered_packages],
         "operator_decision": review_state["operator_decision"],
         "decision_notes": review_state.get("decision_notes"),
@@ -68,6 +76,10 @@ def package_review_submit_response(
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
         "export_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_url_enabled": False,
         "downstream_unavailable": list(downstream_unavailable),
         "next_state": review_state["package_review_state"],
         "authority_rail": authority_rail(
@@ -81,4 +93,6 @@ def package_review_submit_response(
     }
     if associated_cohort_submit:
         body["schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    if qualitative_aps_submit:
+        body["schema_id"] = QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     return body

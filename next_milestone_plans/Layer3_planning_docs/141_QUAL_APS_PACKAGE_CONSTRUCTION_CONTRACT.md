@@ -2,7 +2,7 @@
 
 Status: current runtime contract paired with `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md`.
 
-This contract defines the live API/state/proof shape for `qual_aps_package_construction_commit_entry`. Current main admits qualitative APS package construction through `layer3.qual_aps_package_construction_commit.v1`; the implementation authority is PR `#709`, merge commit `aaf524a646946190584cf69822cde58834846b75`, and package-review submit still blocks with `qualitative_aps_package_review_submit_not_admitted`. The post-PR `#709` future-pass ordering is centralized in `142_POST_709_ROADMAP_FREEZE.md`.
+This contract defines the live API/state/proof shape for `qual_aps_package_construction_commit_entry`. Current main admits qualitative APS package construction through `layer3.qual_aps_package_construction_commit.v1`; the implementation authority is PR `#709`, merge commit `aaf524a646946190584cf69822cde58834846b75`. Package-review submit is now admitted only by the separate docs `143`/`144` boundary and must preserve this construction authority. The post-PR `#709` future-pass ordering is centralized in `142_POST_709_ROADMAP_FREEZE.md`.
 
 ## Authority Order
 
@@ -228,7 +228,7 @@ Minimum implementation tests:
 - exactly one reconciliation row and three package rows are created on success;
 - payload refs exist and hashes match row metadata;
 - existing quantitative single-item and associated-cohort package construction remains unchanged;
-- package-review submit remains blocked for qualitative APS with `qualitative_aps_package_review_submit_not_admitted`;
+- package-review submit is admitted only by the separate docs `143`/`144` boundary and must preserve package ids, payload refs, payload hashes, and construction basis hash;
 - no handoff/export, APS dispatch, external export/download, connector, provider/public URL, source, RAG/vector, model/migration, hidden LLM, full mockup, rendered UI, theme, or auth/security side effects;
 - progress checker guard if needed;
 - headed and headless Chrome proof only if rendered UI changes.

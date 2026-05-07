@@ -1,8 +1,8 @@
 # Layer 3 Qualitative APS Package Review Submit Contract
 
-Status: planning/control API and state contract paired with `143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md`.
+Status: current runtime API and state contract paired with `143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md`.
 
-This contract defines the future API/state/proof shape for `qual_aps_package_review_submit_entry`. It does not make package-review submit live. Current main still blocks qualitative APS package-review submit with `qualitative_aps_package_review_submit_not_admitted`.
+This contract defines the live API/state/proof shape for `qual_aps_package_review_submit_entry`. Current main admits qualitative APS package-review submit through `POST /api/v1/layer3/package/review/submit` and response schema `layer3.qual_aps_package_review_submit.v1`, while downstream handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URL, rendered UI/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, model/migration, and auth/security behavior remain blocked.
 
 ## Authority Order
 

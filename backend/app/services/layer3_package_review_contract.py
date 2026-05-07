@@ -128,6 +128,8 @@ PACKAGE_REVIEW_SUBMIT_ALLOWED_FIELDS = frozenset(
         "package_review_preview_hash",
         "reconciliation_record_id",
         "output_package_ids",
+        "construction_basis_hash",
+        "payload_refs",
         "payload_hashes",
         "operator_decision",
         "client_request_id",

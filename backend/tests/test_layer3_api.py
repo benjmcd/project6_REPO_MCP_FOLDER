@@ -1240,6 +1240,8 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "blocked",
     ]
     assert submit_request_schema["properties"]["output_package_ids"]["type"] == "array"
+    assert submit_request_schema["properties"]["construction_basis_hash"]["type"] == "string"
+    _assert_string_array_or_string_map_schema(submit_request_schema["properties"]["payload_refs"])
     _assert_string_array_or_string_map_schema(submit_request_schema["properties"]["payload_hashes"])
     assert submit_request_schema["properties"]["handoff"]["description"].startswith("Known but non-admitted")
     assert submit_request_schema["properties"]["package_payload"]["description"].startswith("Known but non-admitted")
@@ -1259,9 +1261,11 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "analysis_run_id",
         "result_review_record_ref",
         "package_review_preview_hash",
+        "construction_basis_hash",
         "reconciliation_record_id",
         "output_package_ids",
         "package_kinds",
+        "payload_refs",
         "payload_hashes",
         "operator_decision",
         "decision_notes",
