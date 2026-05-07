@@ -182,3 +182,5 @@ For non-harness manual testing, use isolated database and storage state. Do not 
 ## Current next proof gap
 
 The next automation gap after this runbook is a deeper Playwright bridge-to-rendered-UI path that uses the raw mixed bridge as API setup and then drives the existing rendered controls beyond Gate B only where server-authoritative state and existing controls already support the flow. That future pass should remain test-only unless it exposes a concrete production blocker.
+
+Post-PR #695 planning note: `08_L3_POST_695_REFERENCE_PLAN.md` supersedes this paragraph for execution order. The deeper Playwright bridge-to-rendered-UI path remains the next UI proof gap, but the immediate prerequisite is a test-only browser-harness Layer 3 patch-restoration pass because same-process pytest ordering can leak Layer 3 browser harness patches into bounded E2E tests.
