@@ -5807,5 +5807,46 @@
       "git diff --check"
     ],
     "next_boundary": "Raw mixed rendered manifest controls are live only for server-owned manifest refs over existing materialization. Backend/source/provider/connector/RAG/package-mutation/mockup/auth expansion remains blocked unless separately frozen."
+  },
+  "post_730_roadmap_sync_proof": {
+    "scope": "Planning/control roadmap sync after PR #730 made raw mixed rendered server-owned manifest materialization controls live.",
+    "implementation_branch": "codex/l3-post730-roadmap-sync",
+    "live_behavior_change": false,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/157_POST_730_ROADMAP_SYNC.md",
+    "current_main_anchor": "PR #730 merge commit ec160cb3e5b829bb314498131a149b206378c3f7",
+    "selected_raw_mixed_rendered_ui_mode": "raw_mixed_server_owned_manifest_ref_ui_entry",
+    "proof_summary": "Doc 157 separates current live bounded source/materialization/UI truth from future roadmap decisions. It records the completed source-breadth, materialization runtime, materialization E2E, API-setup UI smoke, and rendered server-owned manifest-ref control sequence, then ranks the next pass as a post-PR730 practical readiness audit before any deeper rendered raw mixed downstream path.",
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/157_POST_730_ROADMAP_SYNC.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "negative_invariants": [
+      "no runtime behavior change",
+      "no production backend route, DTO, service, model, or migration change",
+      "no new rendered UI control",
+      "no source family expansion",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_boundary": "Run a post-PR730 practical readiness audit before attempting deeper rendered raw mixed downstream UI proof. Any new source family, backend behavior, provider/connector/RAG/package-mutation/mockup/auth change still requires a separate freeze."
   }
 }
