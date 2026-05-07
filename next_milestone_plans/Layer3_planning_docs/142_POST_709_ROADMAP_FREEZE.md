@@ -57,7 +57,7 @@ Future work must proceed in this order unless a later live audit proves a differ
 ### 1. Qualitative APS Handoff/Export Prepare Runtime
 
 - goal: implement only the prepared internal envelope for qualitative APS package-review-approved packages.
-- current blocker: docs `145`/`146` are frozen, but runtime has not yet implemented the qualitative APS authority branch.
+- current blocker: docs `145`/`146` are frozen and current main explicitly fails closed with `qualitative_aps_handoff_export_prepare_not_admitted`, but runtime has not yet implemented the qualitative APS authority branch.
 - implementation-entry freeze required: yes.
 - likely files: `backend/app/services/layer3_workbench.py`, handoff/export response helpers, API DTOs, bounded E2E, qualitative APS tests, checker/proof metadata.
 - required tests: prepare success; stale submit/package authority fail closed; no APS dispatch/external export; no package payload rewrite.
