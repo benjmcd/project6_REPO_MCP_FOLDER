@@ -29,6 +29,7 @@ CLOSEOUT_DOC = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
 CONNECTOR_ENTRY_FREEZE = PLANNING_DOCS / "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md"
 PACKAGE_MUTATION_FREEZE = PLANNING_DOCS / "122_PACKAGE_MUTATION_FREEZE.md"
 SOURCE_EXPANSION_FREEZE = PLANNING_DOCS / "123_SOURCE_EXPANSION_FREEZE.md"
+RAW_MIXED_BRIDGE_FREEZE = PLANNING_DOCS / "137_RAW_MIXED_BRIDGE_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -3799,6 +3800,69 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing source-boundary term: {term}")
+
+
+def _check_raw_mixed_bridge_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(RAW_MIXED_BRIDGE_FREEZE, errors)
+    for term in (
+        "Status: planning/control implementation-entry freeze only for `raw_mixed_corpus_bridge_seed_only`",
+        "No runtime behavior is admitted by this document.",
+        "selected_raw_mixed_bridge_mode: `raw_mixed_corpus_bridge_seed_only`",
+        "future owner service: `backend/app/services/layer3_raw_mixed_bridge.py`",
+        "future route: `POST /api/v1/layer3/source/mixed-corpus/seed`",
+        "future request DTO: `Layer3RawMixedCorpusSeedRequest`",
+        "future response DTO: `Layer3RawMixedCorpusSeedResponse`",
+        "layer3.raw_mixed_corpus_seed_request.v1",
+        "layer3.raw_mixed_corpus_seed_result.v1",
+        "Source seeding remains separate from Layer 3 flow execution.",
+        "`dataset_version` and `aps_content_document`",
+        "`local_upload`",
+        "`local_directory`",
+        "`web_connector`",
+        "`rag_vector_index`",
+        "`unbounded_runtime_db`",
+        "no Layer 3 session, descriptor, material snapshot, typing, plan, pass, execution, result, package, handoff, APS dispatch, export/download, connector, provider URL, vector index, package mutation, mockup, or auth/security side effect occurs",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(RAW_MIXED_BRIDGE_FREEZE)} missing raw mixed bridge freeze term: {term}")
+
+    service_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
+    for term in (
+        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_only\"",
+        "SUPPORTED_SOURCE_CLASSES = (\"dataset_version\", \"aps_content_document\")",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SOURCE_BOUNDARY_SERVICE)} drifted before raw mixed bridge implementation: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "Raw mixed-corpus bridge entry freeze",
+            "planning/control only",
+            "raw_mixed_corpus_bridge_seed_only",
+            "No runtime behavior",
+            "local upload, local-directory ingestion",
+            "flow execution inside seeding",
+        ),
+        MANIFEST: (
+            "latest_raw_mixed_bridge_freeze_branch",
+            "raw_mixed_bridge_freeze",
+            "137_RAW_MIXED_BRIDGE_FREEZE.md",
+            "raw_mixed_corpus_bridge_seed_only",
+            "admits no runtime behavior",
+        ),
+        PROOF_MANIFEST: (
+            "latest_raw_mixed_bridge_freeze_branch",
+            "latest_raw_mixed_bridge_freeze_input_main_commit",
+            "latest_raw_mixed_bridge_freeze_live_behavior_change",
+            "latest_raw_mixed_bridge_freeze_summary",
+            "doc 137 raw mixed bridge governance is planning/control only",
+            "raw mixed-corpus bridge runtime before a later implementation PR proves raw_mixed_corpus_bridge_seed_only",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing raw mixed bridge proof term: {term}")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -8315,6 +8379,7 @@ def main() -> int:
         CONNECTOR_ENTRY_FREEZE,
         PACKAGE_MUTATION_FREEZE,
         SOURCE_EXPANSION_FREEZE,
+        RAW_MIXED_BRIDGE_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -8451,6 +8516,7 @@ def main() -> int:
     _check_package_replacement_namespace_entry_freeze(errors)
     _check_qualitative_capability_boundary(errors)
     _check_source_boundary_contract(errors)
+    _check_raw_mixed_bridge_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
