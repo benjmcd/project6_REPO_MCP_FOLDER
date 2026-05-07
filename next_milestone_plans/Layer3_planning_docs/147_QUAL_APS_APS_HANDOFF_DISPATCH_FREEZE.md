@@ -1,46 +1,46 @@
 # Layer 3 Qualitative APS APS Handoff Dispatch Freeze
 
-Status: planning/control implementation-entry freeze for future `qual_aps_aps_handoff_dispatch_entry`.
+Status: current-main runtime boundary for `qual_aps_aps_handoff_dispatch_entry`.
 
-This document freezes the next bounded qualitative APS downstream pass after the live `qual_aps_handoff_export_prepare_entry` runtime. It does not admit runtime behavior. It selects only a future server-side APS evidence-bundle handoff dispatch over an already prepared qualitative APS handoff/export envelope.
+This document now records the bounded qualitative APS downstream runtime after the live `qual_aps_handoff_export_prepare_entry` runtime. Current main admits only server-side APS evidence-bundle handoff dispatch over an already prepared qualitative APS handoff/export envelope.
 
 ## Authority Snapshot
 
 - authoritative remote: `project6-origin/main`
-- latest live qualitative APS boundary: `qual_aps_handoff_export_prepare_entry`
-- latest live qualitative APS response schema: `layer3.qual_aps_handoff_export_prepare.v1`
+- latest live qualitative APS boundary: `qual_aps_aps_handoff_dispatch_entry`
+- latest live qualitative APS response schema: `layer3.qual_aps_aps_handoff_dispatch.v1`
 - predecessor docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md` and `146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md`
 - package-review submit docs: `143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md` and `144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md`
 - package construction docs: `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md` and `141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
 - package preview docs: `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md` and `139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
 - qualitative execution docs: `114_QUAL_APS_EXEC_FREEZE.md`, `115_QUAL_APS_EXEC_CONTRACT.md`, and `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md`
-- selected future route: `POST /api/v1/layer3/handoff/aps/dispatch`
-- selected future response schema: `layer3.qual_aps_aps_handoff_dispatch.v1`
-- selected future mode: `qual_aps_aps_handoff_dispatch_entry`
-- current blocker in live session summary: `qualitative_aps_aps_handoff_dispatch_not_admitted`
+- selected live route: `POST /api/v1/layer3/handoff/aps/dispatch`
+- selected live response schema: `layer3.qual_aps_aps_handoff_dispatch.v1`
+- selected live mode: `qual_aps_aps_handoff_dispatch_entry`
+- current deferred next blocker in live session summary after dispatch: `qualitative_aps_external_export_download_not_admitted`
 - companion contract: `148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md`
 
-Live source, tests, models, migrations, routes, and proof-checker behavior outrank this planning document. Current main still blocks qualitative APS APS handoff dispatch until a separate runtime pass removes only the exact `qualitative_aps_aps_handoff_dispatch_not_admitted` blocker for this authority chain.
+Live source, tests, models, migrations, routes, and proof-checker behavior outrank this planning document. Current main removes only the exact `qualitative_aps_aps_handoff_dispatch_not_admitted` blocker for this authority chain and still blocks qualitative APS external export/download with `qualitative_aps_external_export_download_not_admitted`.
 
 ## Decision
 
-The next implementation-entry candidate is:
+The implemented boundary is:
 
 - `qual_aps_aps_handoff_dispatch_entry`
 
-The future runtime may reuse the existing `POST /api/v1/layer3/handoff/aps/dispatch` route family only for an already prepared standalone APS qualitative package set. It must materialize exactly one APS evidence-bundle handoff package through the existing APS handoff owner-service contract, then record exactly one qualitative APS APS handoff dispatch object in existing JSON-bearing state.
+The runtime reuses the existing `POST /api/v1/layer3/handoff/aps/dispatch` route family only for an already prepared standalone APS qualitative package set. It materializes exactly one APS evidence-bundle handoff package through the existing APS handoff owner-service contract, then records exactly one qualitative APS APS handoff dispatch object in existing JSON-bearing state.
 
-The future runtime must stop before external export/download prepare or deliver, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, RAG/vector retrieval, package mutation/reconstruction, hidden LLM planning, full mockup activation, model/migration work, and authentication/security behavior.
+The runtime stops before external export/download prepare or deliver, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, RAG/vector retrieval, package mutation/reconstruction, hidden LLM planning, full mockup activation, model/migration work, and authentication/security behavior.
 
 ## Why This Comes Next
 
-Current main can produce a qualitative APS internal handoff/export envelope, but it still cannot hand that envelope to the APS evidence-bundle handoff owner service for the qualitative APS path. External export/download depends on a dispatched APS bundle identity, so dispatch must be frozen and implemented before any qualitative APS external export/download pass.
+Current main can produce a qualitative APS internal handoff/export envelope and can now hand that envelope to the APS evidence-bundle handoff owner service for the qualitative APS path. Qualitative APS external export/download remains deferred until a separate freeze admits readiness and delivery over the dispatched APS bundle identity.
 
 The pass must remain narrower than generic connector dispatch. It is not a destination send, public URL generation, provider upload, broad package mutation, or external delivery pass.
 
 ## Decision Vocabulary
 
-Only this operator decision is in scope for a future implementation:
+Only this operator decision is in scope for the current implementation:
 
 | Decision | Meaning | Allowed next state |
 | --- | --- | --- |
@@ -50,7 +50,7 @@ The decision vocabulary is APS evidence-bundle handoff only. It is not an extern
 
 ## Runtime Shape
 
-The future implementation may include only:
+The implementation includes only:
 
 - reusing or narrowly extending `POST /api/v1/layer3/handoff/aps/dispatch` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`;
 - response schema `layer3.qual_aps_aps_handoff_dispatch.v1`;
@@ -65,7 +65,7 @@ The future implementation may include only:
 
 ## Allowed Writes
 
-Only these writes are admitted for the future runtime:
+Only these writes are admitted for the current runtime:
 
 - one APS evidence-bundle handoff package row created by the existing APS handoff owner service;
 - one qualitative APS APS handoff dispatch object in `L3ReconciliationRecord.summary_json`;
@@ -76,7 +76,7 @@ The implementation must not create new reconciliation rows, source rows, analysi
 
 ## Forbidden Writes And Effects
 
-The future implementation must not:
+The current implementation must not:
 
 - create `L3ReconciliationRecord`, `L3AnalysisPlan`, `L3PassRun`, `AnalysisRun`, `AnalysisArtifact`, connector, destination, provider, source-ingestion, RAG/vector, runtime snapshot, auth, external export/download, signed-reference, or delivery rows;
 - write, delete, rewrite, copy, or replace the existing qualitative APS package payload files;
@@ -85,7 +85,7 @@ The future implementation must not:
 
 ## Positive Invariants
 
-The future boundary is acceptable only if it proves:
+The current boundary is acceptable only if it proves:
 
 - admission is limited to `ENGINE_FAMILY_QUAL_APS_DOCUMENT` and `single_aps_doc_qualitative_pass`;
 - dispatch requires live qualitative APS handoff/export prepare authority;
@@ -104,7 +104,7 @@ The future boundary is acceptable only if it proves:
 
 ## Required Tests
 
-Minimum implementation proof for the future runtime:
+Minimum implementation proof for the current runtime:
 
 - successful API dispatch after one prepared standalone APS qualitative handoff/export envelope;
 - bounded E2E extension from qualitative APS handoff/export prepare through APS handoff dispatch, stopping before external export/download;

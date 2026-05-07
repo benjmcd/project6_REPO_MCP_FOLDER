@@ -96,6 +96,11 @@ class Layer3ApiDriver:
         assert response.status_code == 409, response.text
         return response.json()
 
+    def get(self, path: str) -> dict[str, Any]:
+        response = self._client.get(path)
+        assert response.status_code == 200, response.text
+        return response.json()
+
     def preflight(self) -> dict[str, Any]:
         return self.post_ok(
             "/api/v1/layer3/preflight",
@@ -473,6 +478,35 @@ class Layer3ApiDriver:
                 review_body=review,
                 commit_body=commit,
                 submit_body=submit,
+            ),
+        )
+
+    def qualitative_aps_dispatch(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+        commit: dict[str, Any],
+        submit: dict[str, Any],
+        prepare: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_ok(
+            "/api/v1/layer3/handoff/aps/dispatch",
+            _aps_handoff_dispatch_payload(
+                request_id="aps-qual-e2e-aps-dispatch",
+                session_id=session_id,
+                preview_body=preview,
+                approval_body=approval,
+                selection_body=selection,
+                start_body=start,
+                review_body=review,
+                commit_body=commit,
+                submit_body=submit,
+                prepare_body=prepare,
             ),
         )
 
@@ -1387,6 +1421,72 @@ def _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
         seeded_counts=seeded_counts,
         allowed_output_packages=3,
         allowed_reconciliations=1,
+    )
+
+    dispatch_files_before = state.files()
+    aps_dispatch = driver.qualitative_aps_dispatch(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+        prepare=handoff_prepare,
+    )
+    assert aps_dispatch["schema_id"] == "layer3.qual_aps_aps_handoff_dispatch.v1"
+    assert aps_dispatch["status"] == "dispatched"
+    assert aps_dispatch["analysis_run_id"] is None
+    assert aps_dispatch["aps_handoff_state"] == "aps_handoff_dispatched"
+    assert aps_dispatch["pass_type"] == "single_item"
+    assert aps_dispatch["pass_scope"] == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+    assert aps_dispatch["method"] == QUAL_APS_METHOD_NAME
+    assert aps_dispatch["source_gate"] == QUAL_APS_SOURCE_GATE
+    assert aps_dispatch["package_construction_source_gate"] == "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE"
+    assert aps_dispatch["source_shape"] == "aps_content_document"
+    assert aps_dispatch["source_dataset_version_ids"] == []
+    assert aps_dispatch["package_review_submit_schema_id"] == "layer3.qual_aps_package_review_submit.v1"
+    assert aps_dispatch["package_review_submit_record_ref"] == package_submit["submit_record_ref"]
+    assert aps_dispatch["prepare_record_ref"] == handoff_prepare["prepare_record_ref"]
+    assert aps_dispatch["handoff_export_envelope_ref"] == envelope["envelope_ref"]
+    assert aps_dispatch["content_id"] == seeded.aps_content_id
+    assert aps_dispatch["content_contract_id"] == output["document_identity"]["content_contract_id"]
+    assert aps_dispatch["chunking_contract_id"] == output["document_identity"]["chunking_contract_id"]
+    assert aps_dispatch["material_snapshot_id"] == output["material_snapshot_id"]
+    assert aps_dispatch["analysis_unit_id"] == output["analysis_unit_id"]
+    assert aps_dispatch["analysis_set_id"] == output["analysis_set_id"]
+    assert aps_dispatch["output_payload_ref"] == start["output_payload_ref"]
+    assert aps_dispatch["output_payload_hash"] == output["output_hash"]
+    assert aps_dispatch["chunk_count"] == len(output["chunk_summary"]["chunk_ids"])
+    assert aps_dispatch["external_export_enabled"] is False
+    assert aps_dispatch["download_enabled"] is False
+    assert aps_dispatch["connector_dispatch_enabled"] is False
+    assert aps_dispatch["provider_public_url_enabled"] is False
+    assert aps_dispatch["next_allowed_actions"] == []
+    assert "external_export" in aps_dispatch["downstream_unavailable"]
+    assert "download" in aps_dispatch["downstream_unavailable"]
+    assert "connector_dispatch" in aps_dispatch["downstream_unavailable"]
+    _assert_response_refs_exist(aps_dispatch)
+    dispatch_counts = state.counts()
+    assert dispatch_counts == {
+        **commit_counts,
+        "output_packages": commit_counts["output_packages"] + 1,
+    }
+    dispatch_files = state.files()
+    assert len(dispatch_files - dispatch_files_before) == 1
+    state.assert_forbidden_side_effects_absent(
+        seeded_counts=seeded_counts,
+        allowed_output_packages=4,
+        allowed_reconciliations=1,
+    )
+
+    summary_after_dispatch = driver.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary_after_dispatch["aps_handoff_dispatch"]["state"] == "aps_handoff_dispatched"
+    assert summary_after_dispatch["external_export_download"]["available"] is False
+    assert (
+        summary_after_dispatch["external_export_download"]["blocked_reason"]
+        == "qualitative_aps_external_export_download_not_admitted"
     )
 
 

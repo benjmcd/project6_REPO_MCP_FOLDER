@@ -3913,7 +3913,7 @@ def _check_qualitative_aps_package_submit_freeze(errors: list[str]) -> None:
     required_doc_terms = {
         POST_709_ROADMAP_FREEZE: (
             "Layer 3 Qualitative APS Post-Submit Roadmap Freeze",
-            "latest live qualitative APS boundary: `qual_aps_handoff_export_prepare_entry`",
+            "qualitative APS handoff/export prepare over the approved package-review submit state",
             "qualitative APS package-review submit over the constructed package set",
             "governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`",
         ),
@@ -4005,10 +4005,10 @@ def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> N
             "Qualitative APS attempts that lack the exact persisted package-preview",
         ),
         POST_709_ROADMAP_FREEZE: (
-            "Status: current-main planning/control reference after qualitative APS handoff/export prepare runtime.",
+            "Status: current-main planning/control reference after qualitative APS APS handoff dispatch runtime.",
             "governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`",
-            "latest live qualitative APS boundary: `qual_aps_handoff_export_prepare_entry`",
-            "qualitative APS APS handoff dispatch freeze and contract",
+            "qualitative APS handoff/export prepare over the approved package-review submit state",
+            "governing APS handoff dispatch runtime docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`",
         ),
         PHASE1A_README: (
             "145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md",
@@ -4020,7 +4020,7 @@ def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> N
             "145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md",
             "146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md",
             "live bounded `qual_aps_handoff_export_prepare_entry` runtime boundary",
-            "APS dispatch, external export/download, connector/destination dispatch",
+            "Qualitative APS external export/download remains blocked",
         ),
         BOARD: (
             "Qualitative APS handoff/export prepare runtime",
@@ -4087,56 +4087,57 @@ def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> N
 def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> None:
     required_doc_terms = {
         QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE: (
-            "Status: planning/control implementation-entry freeze for future `qual_aps_aps_handoff_dispatch_entry`.",
-            "selected future route: `POST /api/v1/layer3/handoff/aps/dispatch`",
-            "selected future response schema: `layer3.qual_aps_aps_handoff_dispatch.v1`",
-            "selected future mode: `qual_aps_aps_handoff_dispatch_entry`",
-            "current blocker in live session summary: `qualitative_aps_aps_handoff_dispatch_not_admitted`",
+            "Status: current-main runtime boundary for `qual_aps_aps_handoff_dispatch_entry`.",
+            "selected live route: `POST /api/v1/layer3/handoff/aps/dispatch`",
+            "selected live response schema: `layer3.qual_aps_aps_handoff_dispatch.v1`",
+            "selected live mode: `qual_aps_aps_handoff_dispatch_entry`",
+            "current deferred next blocker in live session summary after dispatch: `qualitative_aps_external_export_download_not_admitted`",
             "exactly one APS evidence-bundle handoff package row",
             "one server-owned APS bundle artifact",
             "Browser proof is not required for a backend/API-only APS handoff dispatch implementation.",
         ),
         QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT: (
-            "Status: planning/control API and state contract paired with `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`.",
-            "Current main does not admit qualitative APS APS handoff dispatch",
+            "Status: current-main API and state contract paired with `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`.",
+            "Current main admits qualitative APS APS handoff dispatch",
             "`POST /api/v1/layer3/handoff/aps/dispatch`",
             "`layer3.qual_aps_aps_handoff_dispatch.v1`",
             "`dispatch_aps_handoff`",
+            "`qualitative_aps_external_export_download_not_admitted`",
             "Allowed state effects for successful dispatch:",
             "create exactly one APS evidence-bundle handoff package row",
             "owner-service APS handoff compatibility fails",
         ),
         POST_709_ROADMAP_FREEZE: (
-            "governing APS handoff dispatch freeze docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`",
-            "qualitative APS APS handoff dispatch runtime, governed by docs `147` and `148`",
-            "freeze/contract now exists in docs `147` and `148`",
-            "live runtime still has `qualitative_aps_aps_handoff_dispatch_not_admitted`",
+            "governing APS handoff dispatch runtime docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`",
+            "qualitative APS APS handoff dispatch is now live",
+            "qualitative APS external export/download prepare/deliver freeze and contract",
+            "qualitative_aps_external_export_download_not_admitted",
         ),
         PHASE1A_README: (
             "147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md",
             "148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md",
             "qual_aps_aps_handoff_dispatch_entry",
-            "keeps the live `qualitative_aps_aps_handoff_dispatch_not_admitted` blocker",
+            "qualitative_aps_external_export_download_not_admitted",
         ),
         DEFERRED_GATES: (
             "147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md",
             "148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md",
-            "future qualitative APS APS handoff dispatch boundary only",
-            "qualitative_aps_aps_handoff_dispatch_not_admitted",
+            "live qualitative APS APS handoff dispatch boundary",
+            "qualitative_aps_external_export_download_not_admitted",
         ),
         BOARD: (
-            "Qualitative APS APS handoff dispatch freeze",
-            "planning/control docs",
+            "Qualitative APS APS handoff dispatch runtime",
+            "current-main bounded backend/API runtime",
             "qual_aps_aps_handoff_dispatch_entry",
             "POST /api/v1/layer3/handoff/aps/dispatch",
-            "admits no runtime behavior by itself",
+            "qualitative_aps_external_export_download_not_admitted",
         ),
         MANIFEST: (
             "latest_qual_aps_aps_handoff_dispatch_freeze_branch",
             "latest_qual_aps_aps_handoff_dispatch_freeze_live_behavior_change",
             "qual_aps_aps_handoff_dispatch_freeze",
-            "qualitative_aps_aps_handoff_dispatch_not_admitted",
-            "admits no runtime behavior",
+            "qualitative_aps_external_export_download_not_admitted",
+            "exactly one APS evidence-bundle handoff package row",
         ),
         PROOF_MANIFEST: (
             "latest_qual_aps_aps_handoff_dispatch_freeze_branch",
@@ -4144,7 +4145,7 @@ def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> Non
             "latest_qual_aps_aps_handoff_dispatch_freeze_summary",
             "qual_aps_aps_handoff_dispatch_freeze_proof",
             "layer3.qual_aps_aps_handoff_dispatch.v1",
-            "qualitative_aps_aps_handoff_dispatch_not_admitted",
+            "qualitative_aps_external_export_download_not_admitted",
         ),
     }
     for path, terms in required_doc_terms.items():
@@ -4157,7 +4158,11 @@ def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> Non
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
+        "QUAL_APS_APS_HANDOFF_DISPATCH_SCHEMA_ID = \"layer3.qual_aps_aps_handoff_dispatch.v1\"",
+        "def _qualitative_aps_aps_dispatch_source_admitted(",
+        "def _qualitative_aps_aps_dispatch_prepare_state_admitted(",
         "\"qualitative_aps_aps_handoff_dispatch_not_admitted\"",
+        "\"qualitative_aps_external_export_download_not_admitted\"",
         "def _aps_handoff_dispatch_summary(",
         "def aps_handoff_dispatch(",
         "materialize_aps_handoff(db, session_id=session_id)",
@@ -4183,9 +4188,21 @@ def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> Non
         "APS_HANDOFF_SCHEMA_ID = \"layer3.aps_evidence_bundle_handoff.v1\"",
         "def check_aps_handoff_compatibility(",
         "def materialize_aps_handoff(",
+        "SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE",
     ):
         if term not in aps_handoff_text:
             errors.append(f"{_rel(APS_HANDOFF_SERVICE)} missing APS handoff owner-service term: {term}")
+
+    bounded_e2e_text = _read_required_text(LAYER3_BOUNDED_E2E_TEST, errors)
+    for term in (
+        "def qualitative_aps_dispatch(",
+        "aps-qual-e2e-aps-dispatch",
+        "\"layer3.qual_aps_aps_handoff_dispatch.v1\"",
+        "\"qualitative_aps_external_export_download_not_admitted\"",
+        "allowed_output_packages=4",
+    ):
+        if term not in bounded_e2e_text:
+            errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS APS handoff dispatch proof term: {term}")
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
