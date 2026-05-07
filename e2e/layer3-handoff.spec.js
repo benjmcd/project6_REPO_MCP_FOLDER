@@ -8,6 +8,7 @@ import {
   expectStepAvailable,
   expectStepUnavailable,
   prepareExecutedLayer3Session,
+  prepareQualitativeApsResultReviewSession,
   attachSessionToWorkbench,
 } from './layer3-helpers.js';
 
@@ -675,6 +676,276 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   await expect(page.getByRole('button', { name: 'Create Package' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(0);
+});
+
+test('Layer 3 workbench drives qualitative APS package handoff to external readiness with delivery UI gated', async ({ page, request }) => {
+  const setup = await prepareQualitativeApsResultReviewSession(request);
+  const sessionId = setup.gateB.session_id;
+
+  const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expectJson(await bootstrapResponsePromise);
+  await attachSessionToWorkbench(page, sessionId, ['aps_content_document']);
+
+  const summaryResponsePromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${sessionId}`));
+  await page.locator('#result-review-refresh').click();
+  const initialSummary = await expectJson(await summaryResponsePromise);
+  expect(initialSummary.execution_result_review.review_state).toBe('execution_result_review_approved');
+
+  await expect(page.locator('#package-review-preview-inspect')).toBeEnabled();
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+
+  const packagePreviewRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/package/review/preview'));
+  const packagePreviewResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/preview'));
+  await page.locator('#package-review-preview-inspect').click();
+  const packagePreviewPayload = (await packagePreviewRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(packagePreviewPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+  ]);
+  expect(packagePreviewPayload.result_review_record_ref).toBe(setup.review.review_record_ref);
+  expect(packagePreviewPayload).not.toHaveProperty('analysis_run_id');
+  const packagePreview = await expectJson(await packagePreviewResponsePromise);
+  expect(packagePreview.schema_id).toBe('layer3.qual_aps_package_review_preview.v1');
+  expect(packagePreview.package_commit_enabled).toBe(true);
+
+  await expect(page.locator('#package-construction-commit')).toBeEnabled();
+  const commitRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/package/review/commit'));
+  const commitResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/commit'));
+  const postCommitSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${sessionId}`));
+  await page.locator('#package-construction-commit').click();
+  const commitPayload = (await commitRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(commitPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'expected_package_kinds',
+  ]);
+  expect(commitPayload.package_review_preview_hash).toBe(packagePreview.package_review_preview_hash);
+  expect(commitPayload).not.toHaveProperty('analysis_run_id');
+  const commit = await expectJson(await commitResponsePromise);
+  expect(commit.schema_id).toBe('layer3.qual_aps_package_construction_commit.v1');
+  expect(commit.package_construction_source_gate).toBe('140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE');
+  expect(commit.package_review_submit_enabled).toBe(true);
+  await expectJson(await postCommitSummaryPromise);
+
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_ready');
+  await expect(page.locator('#package-review-submit')).toBeEnabled();
+
+  const submitRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/package/review/submit'));
+  const submitResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/submit'));
+  const postSubmitSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${sessionId}`));
+  await page.locator('#package-review-submit').click();
+  const submitPayload = (await submitRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(submitPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'construction_basis_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'payload_refs',
+    'payload_hashes',
+    'operator_decision',
+    'decision_notes',
+    'expected_package_kinds',
+  ]);
+  expect(submitPayload.session_id).toBe(sessionId);
+  expect(submitPayload.analysis_plan_id).toBe(setup.approval.analysis_plan_id);
+  expect(submitPayload.pass_run_id).toBe(setup.passRunId);
+  expect(submitPayload.preview_id).toBe(setup.planPreview.preview_id);
+  expect(submitPayload.preview_hash).toBe(setup.planPreview.preview_hash);
+  expect(submitPayload.result_review_record_ref).toBe(setup.review.review_record_ref);
+  expect(submitPayload.package_review_preview_hash).toBe(commit.package_review_preview_hash);
+  expect(submitPayload.construction_basis_hash).toBe(commit.construction_basis_hash);
+  expect(submitPayload.operator_decision).toBe('approved');
+  expect(submitPayload).not.toHaveProperty('analysis_run_id');
+  expect(submitPayload).not.toHaveProperty('provider_url');
+  expect(submitPayload).not.toHaveProperty('connector_dispatch');
+  expect(submitPayload).not.toHaveProperty('package_payload');
+
+  const submit = await expectJson(await submitResponsePromise);
+  expect(submit.schema_id).toBe('layer3.qual_aps_package_review_submit.v1');
+  expect(submit.package_review_state).toBe('package_review_approved');
+  await expectJson(await postSubmitSummaryPromise);
+
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('handoff_export_ready');
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeEnabled();
+
+  const prepareRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/handoff/export/prepare'));
+  const prepareResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/handoff/export/prepare'));
+  const postPrepareSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${sessionId}`));
+  await page.locator('#handoff-export-prepare-submit').click();
+  const preparePayload = (await prepareRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(preparePayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'construction_basis_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'payload_refs',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'package_review_submit_schema_id',
+    'handoff_target',
+    'export_mode',
+    'operator_decision',
+    'expected_package_kinds',
+  ]);
+  expect(preparePayload.package_review_submit_schema_id).toBe('layer3.qual_aps_package_review_submit.v1');
+  expect(preparePayload.construction_basis_hash).toBe(commit.construction_basis_hash);
+  expect(preparePayload.handoff_target).toBe('internal_export_envelope');
+  expect(preparePayload.export_mode).toBe('prepare_only');
+  expect(preparePayload.operator_decision).toBe('authorize_prepare');
+  expect(preparePayload).not.toHaveProperty('analysis_run_id');
+  expect(preparePayload).not.toHaveProperty('external_export');
+  expect(preparePayload).not.toHaveProperty('connector_run_id');
+
+  const prepare = await expectJson(await prepareResponsePromise);
+  expect(prepare.schema_id).toBe('layer3.qual_aps_handoff_export_prepare.v1');
+  expect(prepare.handoff_export_state).toBe('handoff_export_prepared');
+  expect(prepare.analysis_run_id).toBeNull();
+  await expectJson(await postPrepareSummaryPromise);
+
+  await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('aps_handoff_ready');
+  await expect(page.locator('#aps-handoff-dispatch-submit')).toBeEnabled();
+
+  const dispatchRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/handoff/aps/dispatch'));
+  const dispatchResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/handoff/aps/dispatch'));
+  const postDispatchSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${sessionId}`));
+  await page.locator('#aps-handoff-dispatch-submit').click();
+  const dispatchPayload = (await dispatchRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(dispatchPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'package_kinds',
+    'payload_refs',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'prepare_record_ref',
+    'handoff_export_state',
+    'handoff_export_envelope_ref',
+    'handoff_target',
+    'export_mode',
+    'aps_handoff_target',
+    'dispatch_mode',
+    'operator_decision',
+  ]);
+  expect(dispatchPayload.aps_handoff_target).toBe('aps_evidence_bundle');
+  expect(dispatchPayload.dispatch_mode).toBe('server_side_aps_handoff');
+  expect(dispatchPayload.operator_decision).toBe('dispatch_aps_handoff');
+  expect(dispatchPayload).not.toHaveProperty('analysis_run_id');
+  expect(dispatchPayload).not.toHaveProperty('download_url');
+  expect(dispatchPayload).not.toHaveProperty('destination');
+
+  const dispatch = await expectJson(await dispatchResponsePromise);
+  expect(dispatch.schema_id).toBe('layer3.qual_aps_aps_handoff_dispatch.v1');
+  expect(dispatch.aps_handoff_state).toBe('aps_handoff_dispatched');
+  expect(dispatch.analysis_run_id).toBeNull();
+  const postDispatchSummary = await expectJson(await postDispatchSummaryPromise);
+  expect(postDispatchSummary.external_export_download.available).toBe(true);
+  expect(postDispatchSummary.external_export_download.state).toBe('external_export_download_ready');
+
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('external_export_download_ready');
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeEnabled();
+
+  const externalRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/handoff/export/download/prepare'));
+  const externalResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/handoff/export/download/prepare'));
+  const postExternalSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${sessionId}`));
+  await page.locator('#external-export-download-prepare-submit').click();
+  const externalPayload = (await externalRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(externalPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'package_kinds',
+    'payload_refs',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'prepare_record_ref',
+    'handoff_export_state',
+    'handoff_export_envelope_ref',
+    'handoff_target',
+    'export_mode',
+    'aps_handoff_record_ref',
+    'aps_handoff_state',
+    'aps_handoff_target',
+    'dispatch_mode',
+    'aps_output_package_id',
+    'aps_output_package_kind',
+    'aps_bundle_ref',
+    'aps_bundle_id',
+    'aps_schema_id',
+    'export_download_target',
+    'download_mode',
+    'operator_decision',
+    'aps_bundle_hash',
+    'aps_bundle_size_bytes',
+  ]);
+  expect(externalPayload.export_download_target).toBe('aps_evidence_bundle_download_reference');
+  expect(externalPayload.download_mode).toBe('reference_only_prepare');
+  expect(externalPayload.operator_decision).toBe('prepare_external_export_download');
+  expect(externalPayload.aps_bundle_hash).toBe(postDispatchSummary.external_export_download.source_artifact_hash);
+  expect(externalPayload.aps_bundle_size_bytes).toBe(postDispatchSummary.external_export_download.source_artifact_size_bytes);
+  expect(externalPayload).not.toHaveProperty('analysis_run_id');
+  expect(externalPayload).not.toHaveProperty('public_url');
+  expect(externalPayload).not.toHaveProperty('signed_url');
+  expect(externalPayload).not.toHaveProperty('connector_dispatch');
+
+  const external = await expectJson(await externalResponsePromise);
+  expect(external.schema_id).toBe('layer3.qual_aps_external_export_download_prepare.v1');
+  expect(external.external_export_download_state).toBe('external_export_download_prepared');
+  expect(external.delivery_ui).toBeNull();
+  const postExternalSummary = await expectJson(await postExternalSummaryPromise);
+  expect(postExternalSummary.external_export_download.state).toBe('external_export_download_prepared');
+  expect(postExternalSummary.external_export_download.delivery_ui ?? null).toBeNull();
+
+  await expect(page.locator('#external-export-download-delivery-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('external_export_download_delivery_ui_unavailable');
+  await expect(page.locator('#external-export-download-signed-reference-generate')).toBeDisabled();
+  await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText('external_export_download_signed_reference_ui_blocked');
+  await expect(page.getByRole('button', {
+    name: /upload|ingest|local directory|web connector|rag|vector|provider url|public url|connector dispatch|destination|mockup|auth/i,
+  })).toHaveCount(0);
 });
 
 test('Layer 3 workbench can request plan revision without starting execution', async ({ page, request }) => {

@@ -227,13 +227,28 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "provider_signed_url" in js.text
     assert "durable_token_state" in js.text
     assert "function externalExportDownloadDeliveryUiAdmitted" in js.text
+    assert "function isQualitativeApsExternalExportDownloadState" in js.text
+    assert "if (isQualitativeApsExternalExportDownloadState(external))" in js.text
+    assert "deliveryUi.state === 'external_export_download_delivery_ui_ready'" in js.text
     assert "deliveryUi.state === 'associated_cohort_external_export_download_delivery_ui_ready'" in js.text
+    assert "external_export_download_delivery_ui_unavailable" in js.text
+    assert "external_export_download_signed_reference_ui_blocked" in js.text
+    assert "if (!isAssociatedCohortExternalExportDownloadState(external))" in js.text
+    assert "source_artifact_size_bytes ?? summary.source_artifact_size_bytes" not in js.text
     assert "deliveryUi.browser_managed_same_origin_attachment_enabled === true" in js.text
     assert "deliveryUi.public_url_enabled === false" in js.text
     assert ".blob()" not in js.text
     assert "operator_view_mode: 'status_only'" in js.text
     assert "operator_decision: elements.resultReviewDecision.value" in js.text
     assert "operator_decision: elements.packageReviewSubmitDecision.value" in js.text
+    assert "function packageReviewPreviewHash" in js.text
+    assert "function packageConstructionBasisHash" in js.text
+    assert "package_review_preview_hash: previewHash" in js.text
+    assert "payload.construction_basis_hash = constructionBasisHash" in js.text
+    assert "submit.result_review_record_ref || construction.result_review_record_ref" in js.text
+    assert "handoffState === 'handoff_export_prepared'" in js.text
+    assert "state: 'aps_handoff_ready'" in js.text
+    assert "apsHandoffDispatchState()?.available === true" in js.text
     assert "operator_decision: elements.handoffExportPrepareDecision.value" in js.text
     assert "operator_decision: 'dispatch_aps_handoff'" in js.text
     assert "operator_decision: 'prepare_external_export_download'" in js.text

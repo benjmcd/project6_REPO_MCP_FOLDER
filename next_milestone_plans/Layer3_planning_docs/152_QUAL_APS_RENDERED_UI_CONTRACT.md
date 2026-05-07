@@ -1,12 +1,12 @@
 # Qualitative APS Rendered Downstream UI Contract
 
-Status: planning-only UI/state contract paired with `151_QUAL_APS_RENDERED_UI_FREEZE.md`.
+Status: live UI/state contract paired with `151_QUAL_APS_RENDERED_UI_FREEZE.md`.
 
-This contract specifies the future rendered `/review/layer3` behavior for `qual_aps_rendered_downstream_existing_controls_only`. It does not make UI behavior live by itself and does not admit backend, source, package mutation, connector, provider, RAG/vector, mockup, model/migration, or auth/security expansion.
+This contract specifies the live rendered `/review/layer3` behavior for `qual_aps_rendered_downstream_existing_controls_only`. It admits only existing-control UI activation over already-live qualitative APS backend/API steps and does not admit backend, source, package mutation, connector, provider, RAG/vector, mockup, model/migration, or auth/security expansion.
 
 ## Route And State Authority
 
-The future UI implementation may use only existing Layer 3 API routes that are already live for the qualitative APS backend/API chain:
+The UI implementation may use only existing Layer 3 API routes that are already live for the qualitative APS backend/API chain:
 
 - `GET /api/v1/layer3/session/{session_id}`;
 - `POST /api/v1/layer3/package/review/preview`;
@@ -17,22 +17,23 @@ The future UI implementation may use only existing Layer 3 API routes that are a
 - `POST /api/v1/layer3/handoff/export/download/prepare`;
 - `POST /api/v1/layer3/handoff/export/download/deliver`.
 
-API/test setup may use existing admitted setup endpoints or test-only helpers to seed deterministic source authority and reach the rendered entry point. Setup must remain separate from rendered UI execution.
+API/test setup may use existing admitted setup endpoints or test-only helpers to seed deterministic source authority and reach the rendered entry point. Setup remains separate from rendered UI execution.
 
 Server state is the only durable authority. Browser state may cache display data, generate a `client_request_id`, hold in-flight state, and preserve a recovery anchor. Browser state must not create or repair authority.
 
-## Selected UI Entry Point
+## Live UI Entry Point
 
-The first future implementation should start at the smallest rendered point that proves value without broadening scope:
+The live implementation starts at the smallest rendered point that proves value without broadening scope:
 
 1. seed or create deterministic admitted `aps_content_document` source authority through existing test/API setup;
-2. drive the backend/API qualitative APS path to approved result review or the earliest state the implementation explicitly selects;
+2. drive the backend/API qualitative APS path to approved result review;
 3. open `/review/layer3`;
 4. use only server-returned qualitative APS IDs/state after setup;
-5. drive rendered package/downstream controls as far as existing backend/API support allows;
-6. stop before any missing backend/UI control would require new source, provider, connector, package mutation, mockup, auth, model, migration, or broad execution behavior.
+5. drive rendered package/downstream controls through package preview, package construction commit, package review submit, handoff/export prepare, APS handoff dispatch, and external export/download prepare;
+6. keep qualitative APS same-origin delivery disabled when the server returns `delivery_ui: null` or omits `delivery_ui`;
+7. stop before any missing backend/UI control would require new source, provider, connector, package mutation, mockup, auth, model, migration, or broad execution behavior.
 
-The future implementation must not imply a human-facing raw mixed manifest UI exists.
+The implementation does not imply a human-facing raw mixed manifest UI exists.
 
 ## Request Contracts
 
@@ -50,11 +51,11 @@ Handoff/export prepare requests may include only the qualitative package submit 
 
 APS dispatch requests may include only the qualitative handoff/export prepare and APS dispatch authority admitted by the backend.
 
-External export/download prepare and deliver requests may include only the qualitative APS dispatch, APS bundle, and same-origin artifact delivery authority admitted by the backend. Delivery must not request provider/public URL, signed URL, connector dispatch, destination write, or package rewrite behavior.
+External export/download prepare requests may include only the qualitative APS dispatch, APS bundle, and reference-only prepare authority admitted by the backend. Qualitative APS delivery requests stay disabled unless a server-authoritative `delivery_ui` object explicitly proves same-origin delivery eligibility; delivery must not request provider/public URL, signed URL, connector dispatch, destination write, or package rewrite behavior.
 
 ## Rendered States
 
-The future UI must distinguish these states for every activated qualitative APS downstream panel:
+The UI distinguishes these states for every activated qualitative APS downstream panel:
 
 - unavailable because required upstream server state is absent;
 - ready because server state marks the next qualitative APS step available;
@@ -70,11 +71,24 @@ The UI must not treat browser-local state as equivalent to recorded server state
 
 Qualitative APS same-origin delivery may be rendered only for the already-live `qual_aps_external_export_download_prepare_deliver` backend/API path and only when server state proves qualitative APS readiness and explicit delivery eligibility for the same-origin APS bundle artifact.
 
-If the existing associated-cohort `delivery_ui` gate remains specific to associated-cohort delivery, qualitative APS delivery controls must stay disabled until a future implementation adds an explicitly qualitative server-authoritative rendered delivery gate or proves the existing gate is safely generic. The UI must not enable delivery from `delivery_ui: null`.
+Current qualitative APS external export/download prepare returns or summarizes `delivery_ui: null`; the rendered UI therefore shows `external_export_download_delivery_ui_unavailable`, disables delivery, blocks signed-reference generation with `external_export_download_signed_reference_ui_blocked`, and does not synthesize qualitative delivery readiness. The UI must not enable delivery from `delivery_ui: null`.
+
+## Response-Derived Readiness Contract
+
+The rendered UI may use the successful in-memory response from the immediately preceding server action as the current readiness source for the next rendered control, while the browser refreshes session summary state. This is allowed only when the response contains the server-authored identifiers and hashes needed by the next route.
+
+For this runtime:
+
+- package review submit readiness may use the qualitative package construction commit response to carry `package_review_preview_hash`, `construction_basis_hash`, package ids, refs, and hashes;
+- handoff/export prepare readiness may use the package review submit response;
+- APS handoff dispatch readiness may use the handoff/export prepare response and may derive `aps_handoff_ready` only from `handoff_export_prepared`, `prepare_record_ref`, `handoff_export_envelope_ref`, and `package_review_submit_record_ref`;
+- external export/download prepare readiness may use the APS handoff dispatch response and server summary readiness.
+
+This response-derived readiness is not frontend-only durable authority. It cannot fabricate missing hashes, missing refs, missing package identity, provider fields, connector fields, destination fields, source-expansion fields, package mutation fields, or delivery UI eligibility.
 
 ## Theme And Accessibility Contract
 
-The implementation must preserve existing theme behavior and prove the touched controls under the current theme set. Required checks:
+The implementation preserves existing theme behavior and proves the touched controls under the current theme set. Required checks:
 
 - stable selectors for every newly activated control and panel;
 - disabled, focus, hover, loading, success, blocked, and error states visible in both default and persisted theme contexts when those contexts are currently supported;
@@ -93,9 +107,9 @@ The future UI implementation must keep all of these absent:
 - browser-local durable authority, full mockup activation, auth/security behavior changes;
 - backend service/API changes unless separately frozen.
 
-## Required Tests For Future Runtime
+## Required Tests For Runtime
 
-The future runtime PR must include:
+The runtime PR must include:
 
 - focused page/static tests for gating and request payload construction;
 - Playwright headless proof for the qualitative APS rendered path;
