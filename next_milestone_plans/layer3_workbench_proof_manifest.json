@@ -5753,5 +5753,53 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "A later rendered raw mixed manifest workflow still requires a separate UI freeze; this smoke must not be treated as human-facing raw ingestion, upload, directory, connector, RAG/vector, provider URL, or destination dispatch support."
+  },
+  "raw_mixed_rendered_ui_freeze_proof": {
+    "scope": "Planning/control freeze and contract for a future rendered /review/layer3 raw mixed server-owned manifest materialization entry point.",
+    "implementation_branch": "codex/l3-raw-mixed-rendered-ui-freeze",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/155_RAW_MIXED_RENDERED_UI_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/156_RAW_MIXED_RENDERED_UI_CONTRACT.md"
+    ],
+    "reference_files": [
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "selected_raw_mixed_rendered_ui_mode": "raw_mixed_server_owned_manifest_ref_ui_entry",
+    "runtime_route_to_reuse": "POST /api/v1/layer3/source/mixed-corpus/materialize",
+    "proof_summary": "The freeze specifies that a later rendered control may only collect or select a server-owned manifest ref/hash for the already-live materialization route, consume only returned dataset_version and aps_content_document IDs after candidate refresh, and continue through existing rendered source/material/Gate B/Gate C/plan controls. It does not implement UI controls or runtime behavior.",
+    "required_future_browser_proof": [
+      "headless Chromium for the raw mixed rendered manifest workflow",
+      "headed Chromium for the same raw mixed rendered manifest workflow",
+      "theme persistence, focus, disabled, loading, success, blocked, error, responsive, and no-overlap proof for touched controls"
+    ],
+    "negative_invariants": [
+      "no current rendered UI control",
+      "no production backend route, DTO, service, model, or migration change",
+      "no arbitrary local path input",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no source adapter registry or source-class expansion",
+      "no provider/public URL or signed URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no theme behavior change in this planning pass",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_boundary": "A later implementation may add rendered raw mixed materialization controls only if it stays within docs 155 and 156; backend/source/provider/connector/RAG/package-mutation/mockup/auth expansion remains blocked unless separately frozen."
   }
 }
