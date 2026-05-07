@@ -188,6 +188,10 @@ def test_material_candidate_basis_helpers_preserve_workbench_projection_and_defa
         "source_ref": " source:1 ",
         "query_basis": " revenue ",
         "provenance_ref": " prov:1 ",
+        "source_identity": {"dataset_version_id": "dv-1"},
+        "source_provenance": {"authority": "preview"},
+        "payload": {"row_count": 3},
+        "load_summary": {"loaded_records": 1},
         "ignored": "not part of the hash basis",
     }
 
@@ -197,17 +201,25 @@ def test_material_candidate_basis_helpers_preserve_workbench_projection_and_defa
         "source_ref": "source:1",
         "query_basis": "revenue",
         "provenance_ref": "prov:1",
+        "source_identity": {"dataset_version_id": "dv-1"},
+        "source_provenance": {"authority": "preview"},
+        "payload": {"row_count": 3},
+        "load_summary": {"loaded_records": 1},
     }
     assert material_candidate_basis_from_decision(
         candidate_id="mat-2",
         source_class="aps_content_document",
-        decision_basis={"source_ref": " doc:2 "},
+        decision_basis={"source_ref": " doc:2 ", "source_identity": {"content_id": "doc-2"}},
     ) == {
         "candidate_id": "mat-2",
         "source_class": "aps_content_document",
         "source_ref": "doc:2",
         "query_basis": "",
         "provenance_ref": "",
+        "source_identity": {"content_id": "doc-2"},
+        "source_provenance": {},
+        "payload": {},
+        "load_summary": {},
     }
 
 
@@ -219,6 +231,10 @@ def test_material_preview_basis_sorts_clones_and_hashes_canonically() -> None:
             "source_ref": "doc:b",
             "query_basis": "revenue",
             "provenance_ref": "prov:b",
+            "source_identity": {"content_id": "doc-b"},
+            "source_provenance": {"provenance_ref": "prov:b"},
+            "payload": {"chunk_count": 2},
+            "load_summary": {"loaded_records": 1},
         },
         {
             "candidate_id": "mat-a",
@@ -226,6 +242,10 @@ def test_material_preview_basis_sorts_clones_and_hashes_canonically() -> None:
             "source_ref": "dataset:a",
             "query_basis": "revenue",
             "provenance_ref": "prov:a",
+            "source_identity": {"dataset_version_id": "dv-a"},
+            "source_provenance": {"provenance_ref": "prov:a"},
+            "payload": {"row_count": 2},
+            "load_summary": {"loaded_records": 1},
         },
     ]
 
@@ -237,6 +257,8 @@ def test_material_preview_basis_sorts_clones_and_hashes_canonically() -> None:
     assert [item["candidate_id"] for item in basis["items"]] == ["mat-a", "mat-b"]
     candidate_bases[0]["source_ref"] = "mutated-after-basis"
     assert basis["items"][1]["source_ref"] == "doc:b"
+    candidate_bases[0]["source_identity"]["content_id"] = "mutated-doc"
+    assert basis["items"][1]["source_identity"]["content_id"] == "doc-b"
     assert material_preview_hash(list(reversed(candidate_bases))) == material_preview_hash(candidate_bases)
     assert material_preview_hash(candidate_bases) != original_hash
     expected_hash = hashlib.sha256(stable_json_bytes(material_preview_basis(candidate_bases))).hexdigest()
@@ -435,6 +457,10 @@ def _prepare_gate_b_payload(db_session, *, request_id: str) -> dict:
                     "source_ref": first["source_ref"],
                     "query_basis": first["query_basis"],
                     "provenance_ref": first["provenance_ref"],
+                    "source_identity": first["source_identity"],
+                    "source_provenance": first["source_provenance"],
+                    "payload": first["payload"],
+                    "load_summary": first["load_summary"],
                 },
             },
             {
@@ -445,6 +471,10 @@ def _prepare_gate_b_payload(db_session, *, request_id: str) -> dict:
                     "source_ref": second["source_ref"],
                     "query_basis": second["query_basis"],
                     "provenance_ref": second["provenance_ref"],
+                    "source_identity": second["source_identity"],
+                    "source_provenance": second["source_provenance"],
+                    "payload": second["payload"],
+                    "load_summary": second["load_summary"],
                 },
             },
         ],

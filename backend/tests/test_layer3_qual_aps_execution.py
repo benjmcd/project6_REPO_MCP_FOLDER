@@ -574,6 +574,31 @@ def test_single_aps_doc_qualitative_package_preview_is_read_only_and_constructio
     assert db_session.query(L3OutputPackage).count() == 0
     assert db_session.query(L3ReconciliationRecord).count() == 0
 
+    with pytest.raises(Layer3WorkbenchError) as submit_exc:
+        layer3_workbench.package_review_submit(
+            db_session,
+            {
+                "client_request_id": "req-qual-package-submit-blocked",
+                "session_id": flow["session_id"],
+                "analysis_plan_id": flow["analysis_plan_id"],
+                "pass_run_id": flow["pass_run_id"],
+                "preview_id": flow["preview_id"],
+                "preview_hash": flow["preview_hash"],
+                "analysis_run_id": start["analysis_run_id"],
+                "result_review_record_ref": review["review_record_ref"],
+                "package_review_preview_hash": preview["package_review_preview_hash"],
+                "reconciliation_record_id": "restored-qualitative-aps-reconciliation",
+                "operator_decision": "approved",
+                "output_package_ids": ["restored-canonical", "restored-user", "restored-review"],
+                "payload_hashes": ["1" * 64, "2" * 64, "3" * 64],
+            },
+        )
+
+    assert submit_exc.value.error_code == "qualitative_aps_package_review_submit_not_admitted"
+    assert submit_exc.value.status == "blocked"
+    assert db_session.query(L3OutputPackage).count() == 0
+    assert db_session.query(L3ReconciliationRecord).count() == 0
+
 
 def test_single_aps_doc_qualitative_plan_requires_chunks(db_session, tmp_path) -> None:
     content_id = _seed_aps_content_document(
