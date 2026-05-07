@@ -589,8 +589,10 @@ class Layer3PackageReviewSubmitRequest(BaseModel):
     preview_hash: str | None = None
     result_review_record_ref: str | None = None
     package_review_preview_hash: str | None = None
+    construction_basis_hash: str | None = None
     reconciliation_record_id: str | None = None
     output_package_ids: Any | None = None
+    payload_refs: Any | None = None
     payload_hashes: Any | None = None
     operator_decision: str | None = None
     decision_notes: str | None = None
@@ -1552,9 +1554,11 @@ class Layer3PackageReviewSubmitResponse(Layer3BaseResponse):
     analysis_run_id: str | None
     result_review_record_ref: str
     package_review_preview_hash: str
+    construction_basis_hash: str | None
     reconciliation_record_id: str
     output_package_ids: list[str]
     package_kinds: list[str]
+    payload_refs: list[str]
     payload_hashes: list[str]
     operator_decision: str
     decision_notes: str | None
@@ -1563,6 +1567,10 @@ class Layer3PackageReviewSubmitResponse(Layer3BaseResponse):
     package_review_submit_enabled: bool
     handoff_enabled: bool
     export_enabled: bool
+    aps_handoff_enabled: bool | None = None
+    external_export_download_enabled: bool | None = None
+    connector_dispatch_enabled: bool | None = None
+    provider_public_url_enabled: bool | None = None
     downstream_unavailable: list[str]
     next_state: str
     authority_rail: dict[str, Any]
@@ -2811,8 +2819,12 @@ PACKAGE_REVIEW_SUBMIT_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "result_review_record_ref": {"type": "string"},
         "package_review_preview_hash": {"type": "string"},
+        "construction_basis_hash": {"type": "string"},
         "reconciliation_record_id": {"type": "string"},
         "output_package_ids": {"type": "array", "items": {"type": "string"}},
+        "payload_refs": _string_array_or_string_map_schema(
+            "List of package payload refs or a mapping keyed by package kind or package id."
+        ),
         "payload_hashes": _string_array_or_string_map_schema(
             "List of package payload hashes or a mapping keyed by package kind or package id."
         ),
