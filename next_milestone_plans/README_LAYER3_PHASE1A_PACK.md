@@ -18,8 +18,11 @@ Current qualitative APS package-review runtime references:
 - `next_milestone_plans/Layer3_planning_docs/139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
 - `next_milestone_plans/Layer3_planning_docs/140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
+- `next_milestone_plans/Layer3_planning_docs/142_POST_709_ROADMAP_FREEZE.md`
 
 Docs `138`/`139` govern the live read-only `qual_aps_package_review_preview_only` boundary after PR `#702` proved the standalone APS content-document qualitative API path through result review. Docs `140`/`141` now govern the bounded live `qual_aps_package_construction_commit_entry` boundary through `POST /api/v1/layer3/package/review/commit`: it creates exactly one qualitative APS reconciliation record, exactly three package rows, and server-owned package payload files for `canonical_internal`, `user_facing`, and `review_facing`. Package-review submit remains blocked with `qualitative_aps_package_review_submit_not_admitted`, and the runtime still does not admit handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls, source expansion, broad qualitative/hybrid/RAG, full mockup, or auth/security behavior.
+
+Doc `142` is the current post-PR `#709` roadmap/reference freeze. It centralizes the intended ordering from qualitative APS package-review submit freeze through downstream qualitative APS delivery, rendered UI/theme proof, source breadth, raw ingestion, broad execution/RAG, package lifecycle, connector/provider expansion, mockup activation, auth/security, and observability hardening. It is planning/control only and does not make any future pass live.
 
 Post-synthesis authority guardrail:
 - `next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`

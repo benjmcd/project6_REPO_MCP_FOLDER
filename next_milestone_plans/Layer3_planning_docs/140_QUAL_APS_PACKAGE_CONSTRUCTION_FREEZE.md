@@ -10,6 +10,8 @@ This document governs the bounded runtime tranche after the live read-only `qual
 - current-main baseline for this freeze: PR `#707` merge commit `74624df4cbd1a000c1d47fea95a83aed0aa23949`
 - implementation-entry branch: `codex/l3-qual-aps-package-construction-freeze`
 - planning PR: `#708`
+- implementation PR: `#709`
+- implementation merge commit: `aaf524a646946190584cf69822cde58834846b75`
 - predecessor runtime: `qual_aps_package_review_preview_only`
 - predecessor docs: `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md` and `139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
 - predecessor runtime PR: `#706`
@@ -22,6 +24,7 @@ This document governs the bounded runtime tranche after the live read-only `qual
 - live behavior: `backend/app/services/layer3_workbench.py` admits qualitative APS package construction through `layer3.qual_aps_package_construction_commit.v1`
 - submit blocker that must remain after construction: `qualitative_aps_package_review_submit_not_admitted`
 - companion contract: `141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
+- next roadmap reference: `142_POST_709_ROADMAP_FREEZE.md`
 
 Live source and tests outrank this planning document. This document now tracks the bounded runtime boundary only.
 
