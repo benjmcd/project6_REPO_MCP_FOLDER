@@ -569,7 +569,12 @@
     "latest_external_export_delivery_match_extraction_head_commit": "6c4288c44d71881fac969e889b970ae87e5c806c",
     "latest_external_export_delivery_match_extraction_merge_commit": "c13e96214f58b475e2027f066294701ad99df0de",
     "latest_external_export_delivery_match_extraction_live_behavior_change": false,
-    "latest_external_export_delivery_match_extraction_summary": "external export/download delivery readiness matching extraction from PR #681, merge commit c13e96214f58b475e2027f066294701ad99df0de moves external_export_download_delivery_readiness_mismatches from the delivery validation block of layer3_workbench.py into layer3_external_export_contract.py. It preserves workbench-owned error construction and is guarded by backend/tests/test_layer3_external_export_contract.py plus route-level external_export_download_prepare and external_export_download_deliver proof without activating provider/public URLs, connector/destination dispatch, package mutation/reconstruction, route, DTO, model, migration, UI, execution behavior, source/upload expansion, qualitative/hybrid/RAG activation, full mockup activation, auth/security behavior, frontend-only durable state, hidden LLM planning, signed-reference behavior, or broad external export/download behavior."
+    "latest_external_export_delivery_match_extraction_summary": "external export/download delivery readiness matching extraction from PR #681, merge commit c13e96214f58b475e2027f066294701ad99df0de moves external_export_download_delivery_readiness_mismatches from the delivery validation block of layer3_workbench.py into layer3_external_export_contract.py. It preserves workbench-owned error construction and is guarded by backend/tests/test_layer3_external_export_contract.py plus route-level external_export_download_prepare and external_export_download_deliver proof without activating provider/public URLs, connector/destination dispatch, package mutation/reconstruction, route, DTO, model, migration, UI, execution behavior, source/upload expansion, qualitative/hybrid/RAG activation, full mockup activation, auth/security behavior, frontend-only durable state, hidden LLM planning, signed-reference behavior, or broad external export/download behavior.",
+    "latest_bounded_e2e_current_main_sync_branch": "codex/l3-bounded-e2e-proof-sync",
+    "latest_bounded_e2e_current_main_sync_prs": "#682-#687",
+    "latest_bounded_e2e_current_main_sync_input_main_commit": "342c71e5f8c7a88d5cadd274a525811399cfb151",
+    "latest_bounded_e2e_current_main_sync_live_behavior_change": false,
+    "latest_bounded_e2e_current_main_sync_summary": "Current-main proof/control sync after PR #682 through PR #687: PR #682/#683 settle the external_export_download_delivery_readiness_mismatches stale local helper guard, PR #684 corrects the PR #677 proof hash, PR #685 adds the first bounded API E2E boundary test, PR #686 enables API Gate C dataset-version cohort formation, and PR #687 extends that test with API-created dataset-version cohort method authority through plan, execution, package review/commit/submit, and handoff/export prepare. The supported E2E path intentionally stops at aps_handoff_dispatch_blocked because APS content is flagged out of the quantitative cohort path and no admitted aps_content_document material-snapshot provenance exists for APS handoff. This proof sync admits no runtime behavior, mixed-corpus provenance, APS dispatch on that path, external export/download prepare/deliver on that blocked E2E path, provider/public URLs, connector/destination dispatch, source/upload expansion, qualitative associated-cohort or broad qualitative/hybrid/RAG behavior beyond the separately admitted exact single_aps_doc_qualitative_pass, package mutation/reconstruction, UI/browser durable authority, full mockup activation, hidden LLM planning, or auth/security behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -706,6 +711,7 @@
       "bounded rendered /review/layer3 external export/download readiness UI controls over POST /api/v1/layer3/handoff/export/download/prepare after server-authoritative external_export_download.available readiness, limited to one prepare_external_export_download action and read-only recorded descriptor rendering",
       "bounded backend/API same-origin external export/download delivery endpoint through POST /api/v1/layer3/handoff/export/download/deliver, limited to streaming the existing validated APS evidence-bundle artifact after server-side authority proof over package-review, handoff/export prepare, APS dispatch, readiness descriptor, package refs/hashes, and APS bundle authority",
       "current-methods AnalysisMethod registry implementation in backend/app/services/analysis.py for cross_correlation, decomposition, and structural_break, with existing recommendation/execution behavior preserved",
+      "exact single APS-document qualitative execution through single_aps_doc_qualitative_pass only, with broad qualitative/hybrid/RAG and qualitative associated-cohort behavior still blocked",
       "bounded backend/API same-origin signed delivery-reference generation/use through POST /api/v1/layer3/handoff/export/download/signed-reference/generate and POST /api/v1/layer3/handoff/export/download/signed-reference/use after exact associated-cohort delivery authority"
     ],
     "not_live": [
@@ -714,7 +720,7 @@
       "handoff outside the PR #251/#256 prepare-only internal envelope boundary and the PR #260 APS evidence-bundle owner-service dispatch boundary",
       "runtime snapshot DB writes",
       "schema widening",
-      "qualitative execution",
+      "broad qualitative execution beyond the exact single_aps_doc_qualitative_pass boundary",
       "hybrid execution",
       "RAG/vector execution",
       "local upload or local-directory ingestion",
