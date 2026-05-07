@@ -75,6 +75,7 @@ RAW_INGESTION_MATERIALIZATION_FREEZE = (
 )
 RAW_MIXED_RENDERED_UI_FREEZE = PLANNING_DOCS / "155_RAW_MIXED_RENDERED_UI_FREEZE.md"
 RAW_MIXED_RENDERED_UI_CONTRACT = PLANNING_DOCS / "156_RAW_MIXED_RENDERED_UI_CONTRACT.md"
+POST_730_ROADMAP_SYNC = PLANNING_DOCS / "157_POST_730_ROADMAP_SYNC.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -5220,6 +5221,55 @@ def _check_raw_mixed_rendered_ui_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(MANIFEST)} current_status must mark raw mixed rendered UI freeze as live")
 
 
+def _check_post_730_roadmap_sync(errors: list[str]) -> None:
+    required_doc_terms = {
+        POST_730_ROADMAP_SYNC: (
+            "Status: current-main planning/control reference after raw mixed rendered materialization controls became live.",
+            "PR `#730`, merge commit `ec160cb3e5b829bb314498131a149b206378c3f7`",
+            "raw_mixed_server_owned_manifest_ref_ui_entry",
+            "Current main admits these bounded Layer 3 paths:",
+            "post-PR730 practical readiness audit",
+            "deeper rendered raw mixed UI path using the live controls",
+            "source-family expansion beyond `dataset_version` and `aps_content_document`",
+            "This roadmap sync is accepted only when:",
+        ),
+        BOARD: (
+            "Post-PR730 roadmap sync",
+            "157_POST_730_ROADMAP_SYNC.md",
+            "ec160cb3e5b829bb314498131a149b206378c3f7",
+            "planning/control only",
+            "post-PR730 practical readiness audit",
+        ),
+        MANIFEST: (
+            "latest_post_730_roadmap_sync_branch",
+            "latest_post_730_roadmap_sync_live_behavior_change",
+            "post_730_roadmap_sync",
+            "Doc 157 records the post-PR730 current-main roadmap posture",
+            "post-PR730 practical readiness audit",
+        ),
+        PROOF_MANIFEST: (
+            "post_730_roadmap_sync_proof",
+            "157_POST_730_ROADMAP_SYNC.md",
+            "PR #730 merge commit ec160cb3e5b829bb314498131a149b206378c3f7",
+            "raw_mixed_server_owned_manifest_ref_ui_entry",
+            "no runtime behavior change",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing post-730 roadmap sync term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_post_730_roadmap_sync_branch") != "codex/l3-post730-roadmap-sync":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale post-730 roadmap sync branch")
+        if current_status.get("latest_post_730_roadmap_sync_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark post-730 roadmap sync as planning-only")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -9784,6 +9834,7 @@ def main() -> int:
         RAW_INGESTION_MATERIALIZATION_FREEZE,
         RAW_MIXED_RENDERED_UI_FREEZE,
         RAW_MIXED_RENDERED_UI_CONTRACT,
+        POST_730_ROADMAP_SYNC,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -9939,6 +9990,7 @@ def main() -> int:
     _check_source_breadth_freeze(errors)
     _check_raw_ingestion_materialization_freeze(errors)
     _check_raw_mixed_rendered_ui_freeze(errors)
+    _check_post_730_roadmap_sync(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
