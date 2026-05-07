@@ -6692,15 +6692,19 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def safe_download_token(",
         "def external_export_download_prepare_payload_for_delivery(",
         "def aps_bundle_identity_for_external_export_download(",
+        "def external_export_download_prepare_summary(",
         "def _aps_handoff_package_for_dispatch(",
         "base_response(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID",
         "preview_identity(preview_id=preview_id, preview_hash=preview_hash)",
         "packages_in_review_order(packages)",
         "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS",
         "EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = \"prepare_external_export_download\"",
+        "EXTERNAL_EXPORT_DOWNLOAD_READY_STATE = \"external_export_download_ready\"",
         "APS_HANDOFF_SCHEMA_ID",
         "load_persisted_bundle_artifact",
         "Layer3WorkbenchError",
+        "aps_handoff_dispatch_from_reconciliation",
+        "external_export_download_prepare_from_reconciliation",
         "authority_rail(",
         "public_url_enabled",
         "connector_dispatch_enabled",
@@ -6717,6 +6721,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "cohort_readiness_identity as _cohort_readiness_identity",
         "safe_download_token as _safe_download_token",
         "aps_bundle_identity_for_external_export_download as _aps_bundle_identity_for_external_export_download",
+        "external_export_download_prepare_summary as _external_export_download_prepare_summary",
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing external export response delegation term: {term}")
@@ -6728,6 +6733,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "def _external_export_download_prepare_payload_for_delivery(",
         "def _aps_bundle_identity_for_external_export_download(",
         "def _aps_handoff_package_for_dispatch(",
+        "def _external_export_download_prepare_summary(",
         "**_base_response(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID",
     ):
         if stale_term in workbench_text:
@@ -6746,6 +6752,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "layer3_workbench._aps_bundle_identity_for_external_export_download",
         "export_response.aps_bundle_identity_for_external_export_download",
         "validate_source_artifact=False",
+        "test_external_export_summary_helper_is_shared_with_workbench",
+        "layer3_workbench._external_export_download_prepare_summary",
+        "export_response.external_export_download_prepare_summary",
+        "external_export_download_ready",
         "\"public_url\" not in prepare_payload",
         "EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE",
         "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID",
@@ -6770,6 +6780,7 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
         "external_export_download_delivery_source_artifact_unavailable",
         "test_layer3_api_external_export_download_prepare_records_reference_only_descriptor",
         "test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_companion_provenance",
+        "test_layer3_api_session_summary_fails_closed_on_manifest_mismatch",
     ):
         if term not in layer3_api_test_text:
             errors.append(f"{_rel(LAYER3_API_TEST)} missing external export delivery API proof term: {term}")
@@ -7451,6 +7462,63 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_external_export_bundle_identity_extraction_summary "
                     f"missing external export bundle identity extraction term: {term}"
                 )
+        if proof_scope.get("latest_external_export_summary_extraction_branch") != (
+            "codex/l3-external-export-summary"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_summary_extraction_branch "
+                "must be 'codex/l3-external-export-summary'"
+            )
+        if proof_scope.get("latest_external_export_summary_extraction_pr") != "#675":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_summary_extraction_pr must be '#675'"
+            )
+        if proof_scope.get("latest_external_export_summary_extraction_head_commit") != (
+            "d3741bd5ac0d640cb4194a343a45b86b1704f72b"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_summary_extraction_head_commit "
+                "must match PR #675 head commit"
+            )
+        if proof_scope.get("latest_external_export_summary_extraction_merge_commit") != (
+            "e54584d263faa3b539c294a413211286bfb9caa1"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_summary_extraction_merge_commit "
+                "must match PR #675 merge commit"
+            )
+        if proof_scope.get("latest_external_export_summary_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_summary_extraction_live_behavior_change must be False"
+            )
+        external_summary = proof_scope.get(
+            "latest_external_export_summary_extraction_summary"
+        )
+        for term in (
+            "external export/download prepare summary extraction",
+            "PR #675",
+            "merge commit e54584d263faa3b539c294a413211286bfb9caa1",
+            "external_export_download_prepare_summary",
+            "layer3_external_export_response.py",
+            "_external_export_download_prepare_summary",
+            "route-level external_export_download_prepare",
+            "external_export_download_deliver",
+            "session_summary proof",
+            "without activating provider/public URLs",
+            "connector/destination dispatch",
+            "package mutation/reconstruction",
+        ):
+            if not isinstance(external_summary, str) or term not in external_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_external_export_summary_extraction_summary "
+                    f"missing external export summary extraction term: {term}"
+                )
 
     for path, terms in {
         MANIFEST: (
@@ -7485,6 +7553,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "external_export_bundle_identity_extraction",
             "PR #673/merge commit 563b3461",
             "aps_bundle_identity_for_external_export_download",
+            "external_export_summary_extraction",
+            "PR #675/merge commit e54584d",
+            "external_export_download_prepare_summary",
         ),
         BOARD: (
             "Package owner compatibility extraction",
@@ -7516,6 +7587,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "PR `#673`, merge commit `563b3461`",
             "aps_bundle_identity_for_external_export_download",
             "without changing external export/download prepare, delivery, or source-artifact validation behavior",
+            "External export/download prepare summary extraction",
+            "PR `#675`, merge commit `e54584d2`",
+            "external_export_download_prepare_summary",
+            "without changing external export/download session-summary behavior",
         ),
     }.items():
         text = _read_required_text(path, errors)
