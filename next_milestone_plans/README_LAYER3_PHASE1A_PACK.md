@@ -9,6 +9,10 @@ Use it to orient quickly across the three active pack directories:
 - `next_milestone_plans/Layer3_execution_handoff`
 - `next_milestone_plans/Layer3_execution_freeze`
 
+Current post-PR #695 execution-handoff references:
+- `next_milestone_plans/Layer3_execution_handoff/07_L3_UI_MANUAL_RUNBOOK.md`
+- `next_milestone_plans/Layer3_execution_handoff/08_L3_POST_695_REFERENCE_PLAN.md`
+
 Post-synthesis authority guardrail:
 - `next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`
 
