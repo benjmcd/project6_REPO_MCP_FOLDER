@@ -472,7 +472,7 @@ def test_single_aps_doc_qualitative_execution_rejects_forbidden_request_fields(d
     assert pass_run.output_payload_ref is None
 
 
-def test_single_aps_doc_qualitative_package_preview_remains_blocked(db_session, tmp_path) -> None:
+def test_single_aps_doc_qualitative_package_preview_is_read_only_and_construction_blocked(db_session, tmp_path) -> None:
     flow = _commit_single_doc_plan(db_session, tmp_path, content_id="content-qual-aps-package")
     start = layer3_workbench.analysis_execution_start(
         db_session,
@@ -498,12 +498,66 @@ def test_single_aps_doc_qualitative_package_preview_remains_blocked(db_session, 
             "reviewed_output_items": [],
         },
     )
+    alternate_chunk_text = "Reprocessed chunk from a later APS contract version."
+    db_session.add(
+        ApsContentChunk(
+            content_id=flow["content_id"],
+            chunk_id=f"{flow['content_id']}-chunk-alt-1",
+            content_contract_id="aps_pdf_content_units_v2",
+            chunking_contract_id="aps_pdf_chunking_v2",
+            chunk_ordinal=0,
+            start_char=0,
+            end_char=len(alternate_chunk_text),
+            chunk_text=alternate_chunk_text,
+            chunk_text_sha256=hashlib.sha256(alternate_chunk_text.encode("utf-8")).hexdigest(),
+            page_start=1,
+            page_end=1,
+            unit_kind="pdf_paragraph",
+            quality_status="strong",
+        )
+    )
+    db_session.flush()
+
+    preview = layer3_workbench.package_review_preview(
+        db_session,
+        {
+            "client_request_id": "req-qual-package-preview",
+            "session_id": flow["session_id"],
+            "analysis_plan_id": flow["analysis_plan_id"],
+            "pass_run_id": flow["pass_run_id"],
+            "preview_id": flow["preview_id"],
+            "preview_hash": flow["preview_hash"],
+            "analysis_run_id": start["analysis_run_id"],
+            "result_review_record_ref": review["review_record_ref"],
+        },
+    )
+
+    assert preview["schema_id"] == "layer3.qual_aps_package_review_preview.v1"
+    assert preview["status"] == "available"
+    assert preview["engine_family"] == ENGINE_FAMILY_QUAL_APS_DOCUMENT
+    assert preview["pass_scope"] == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+    assert preview["method"] == QUAL_APS_METHOD_NAME
+    assert preview["source_gate"] == QUAL_APS_SOURCE_GATE
+    assert preview["analysis_run_id"] is None
+    assert preview["package_review_preview_enabled"] is True
+    assert preview["package_commit_enabled"] is False
+    assert preview["package_review_submit_enabled"] is False
+    assert preview["handoff_enabled"] is False
+    assert preview["aps_handoff_enabled"] is False
+    assert preview["external_export_download_enabled"] is False
+    assert preview["connector_dispatch_enabled"] is False
+    assert preview["provider_public_url_enabled"] is False
+    assert preview["content_id"] == "content-qual-aps-package"
+    assert preview["chunk_count"] == 2
+    assert preview["output_payload_hash"]
+    assert db_session.query(L3OutputPackage).count() == 0
+    assert db_session.query(L3ReconciliationRecord).count() == 0
 
     with pytest.raises(Layer3WorkbenchError) as exc:
-        layer3_workbench.package_review_preview(
+        layer3_workbench.package_construction_commit(
             db_session,
             {
-                "client_request_id": "req-qual-package-preview",
+                "client_request_id": "req-qual-package-commit-blocked",
                 "session_id": flow["session_id"],
                 "analysis_plan_id": flow["analysis_plan_id"],
                 "pass_run_id": flow["pass_run_id"],
@@ -511,10 +565,12 @@ def test_single_aps_doc_qualitative_package_preview_remains_blocked(db_session, 
                 "preview_hash": flow["preview_hash"],
                 "analysis_run_id": start["analysis_run_id"],
                 "result_review_record_ref": review["review_record_ref"],
+                "package_review_preview_hash": preview["package_review_preview_hash"],
+                "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
             },
         )
 
-    assert exc.value.error_code == "qualitative_aps_package_review_preview_not_admitted"
+    assert exc.value.error_code == "qualitative_aps_package_construction_commit_not_admitted"
     assert db_session.query(L3OutputPackage).count() == 0
     assert db_session.query(L3ReconciliationRecord).count() == 0
 

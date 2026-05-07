@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Current main now includes the PR #689 mixed APS provenance bridge, PR #690/#691 raw mixed-corpus seed-only bridge freeze/runtime, PR #692 through PR #700 failure-mode, API E2E, rendered UI, browser harness, and rendered Gate B-to-plan approval proof sequence, and PR #702 standalone APS content-document qualitative API E2E proof. Docs 138 and 139 are planning/control for the future qualitative APS package-review preview boundary only. The latest rendered UI proof reaches existing Gate C, plan preview, and plan approval controls for the admitted dataset_version path after API seed setup, while preserving the APS companion as excluded from planned-pass admission. The PR #702 standalone APS proof reaches result review for the admitted single aps_content_document qualitative path and proves package preview remains blocked. Raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked. This status retains the package replacement artifact manifest-only runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, and older proof records below for historical slice authority.",
+  "status": "Current main now includes the PR #689 mixed APS provenance bridge, PR #690/#691 raw mixed-corpus seed-only bridge freeze/runtime, PR #692 through PR #700 failure-mode, API E2E, rendered UI, browser harness, and rendered Gate B-to-plan approval proof sequence, PR #702 standalone APS content-document qualitative API E2E proof, and PR #706 read-only qualitative APS package-review preview runtime proof. Docs 138 and 139 now govern that live preview-only boundary. The latest rendered UI proof reaches existing Gate C, plan preview, and plan approval controls for the admitted dataset_version path after API seed setup, while preserving the APS companion as excluded from planned-pass admission. The PR #706 standalone APS proof reaches read-only package-review preview for the admitted single aps_content_document qualitative path and proves package construction remains blocked. Raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked. This status retains the package replacement artifact manifest-only runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, and older proof records below for historical slice authority.",
   "scope": {
     "source_branch": "codex/l3-synth-ref-sync",
     "merged_pr": "#609",
@@ -601,7 +601,11 @@
     "latest_qual_aps_package_review_freeze_branch": "codex/l3-qual-aps-package-freeze",
     "latest_qual_aps_package_review_freeze_pr": "#704",
     "latest_qual_aps_package_review_freeze_live_behavior_change": false,
-    "latest_qual_aps_package_review_freeze_summary": "Docs 138 and 139 freeze only future qual_aps_package_review_preview_only planning/control after PR #702 proved package preview remains blocked for standalone APS qualitative output. They do not admit package preview runtime, package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, route, DTO, model, migration, or runtime changes."
+    "latest_qual_aps_package_review_freeze_summary": "Docs 138 and 139 originally froze future qual_aps_package_review_preview_only planning/control after PR #702 proved the standalone APS qualitative path through result review. They now govern the live read-only qualitative package-review preview runtime and still block package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, and broad qualitative/hybrid behavior.",
+    "latest_qual_aps_package_review_preview_branch": "codex/l3-qual-aps-package-preview",
+    "latest_qual_aps_package_review_preview_pr": "#706",
+    "latest_qual_aps_package_review_preview_live_behavior_change": true,
+    "latest_qual_aps_package_review_preview_summary": "Branch codex/l3-qual-aps-package-preview implements qual_aps_package_review_preview_only through existing POST /api/v1/layer3/package/review/preview. The runtime returns layer3.qual_aps_package_review_preview.v1 for one approved standalone aps_content_document qualitative result, validates persisted session/plan/pass/review/output/document/chunk/material/unit/set authority, writes no DB rows or files, and proves package construction remains blocked with qualitative_aps_package_construction_commit_not_admitted."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -5000,5 +5004,54 @@
       "git diff --check"
     ],
     "next_boundary": "The next runtime pass, if selected later, should implement only read-only qualitative APS package-review preview over approved standalone APS qualitative result-review state and must stop before construction/submit/handoff/export."
+  },
+  "qual_aps_package_review_preview_proof": {
+    "scope": "Live read-only qualitative APS package-review preview for one approved standalone APS content-document qualitative result.",
+    "implementation_branch": "codex/l3-qual-aps-package-preview",
+    "implementation_pr": "#706",
+    "live_behavior_change": true,
+    "runtime_surfaces": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/services/layer3_workbench_package_state.py",
+      "backend/app/api/layer3.py"
+    ],
+    "proof_surfaces": [
+      "backend/tests/test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview",
+      "tools/l3-progress-check.py",
+      "next_milestone_plans/Layer3_planning_docs/138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md"
+    ],
+    "authority_basis": [
+      "The existing package-review preview route is reused and returns layer3.qual_aps_package_review_preview.v1 for ENGINE_FAMILY_QUAL_APS_DOCUMENT only after approved result-review identity is validated.",
+      "The runtime revalidates session, analysis plan, pass run, preview id/hash, approved result review, output payload hash, APS document identity, chunks, material snapshot, analysis unit, and analysis set from persisted authority.",
+      "The runtime writes no package rows, reconciliation rows, source rows, files, connector rows, provider URLs, signed references, handoff/export state, or package payloads.",
+      "Package construction remains blocked for qualitative APS with qualitative_aps_package_construction_commit_not_admitted."
+    ],
+    "selected_mode": "qual_aps_package_review_preview_only",
+    "negative_invariants": [
+      "no package construction",
+      "no package-review submit",
+      "no handoff/export",
+      "no APS handoff dispatch",
+      "no external export/download",
+      "no connector or destination dispatch",
+      "no provider/public URL generation",
+      "no rendered controls or theme behavior change",
+      "no source expansion",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no model or migration change",
+      "existing quantitative single-item and associated-cohort package preview behavior remains unchanged"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\services\\layer3_workbench_package_state.py .\\backend\\app\\api\\layer3.py .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q -k standalone_aps_content_document_qualitative",
+      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q",
+      "git diff --check"
+    ],
+    "next_boundary": "A separate qualitative APS package-construction freeze is required before package payloads, review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URL, or rendered controls can become implementation work."
   }
 }
