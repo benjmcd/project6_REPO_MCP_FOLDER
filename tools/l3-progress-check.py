@@ -179,6 +179,9 @@ SIGNED_REFERENCE_STATE_SERVICE = (
 WORKBENCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
 )
+PACKAGE_ENTRY_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_package_entry.py"
+)
 RESPONSE_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_response_contract.py"
 )
@@ -3660,7 +3663,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "Status: current-main runtime boundary for `qual_aps_package_review_preview_only`",
             "selected mode: `qual_aps_package_review_preview_only`",
             "layer3.qual_aps_package_review_preview.v1",
-            "qualitative_aps_package_construction_commit_not_admitted",
+            "qual_aps_package_construction_commit_entry",
             "qualitative_aps_package_review_submit_not_admitted",
             "backend/tests/test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview",
             "This mode adds only read-only package-review preview/readiness",
@@ -3684,21 +3687,21 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "Forbidden state effects:",
             "create or mutate `L3OutputPackage`",
             "qualitative_aps_package_review_submit_not_admitted",
-            "Those names are descriptors until a later package-construction freeze defines qualitative APS package payloads.",
+            "Those names are preview descriptors until the separate package-construction boundary creates qualitative APS package rows and payloads.",
             "headed and headless Chrome proof if UI changes",
         ),
         PHASE1A_README: (
             "138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md",
             "139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md",
             "live read-only `qual_aps_package_review_preview_only` boundary",
-            "qualitative_aps_package_construction_commit_not_admitted",
+            "live `qual_aps_package_construction_commit_entry` boundary",
             "qualitative_aps_package_review_submit_not_admitted",
-            "does not admit package-review submit",
+            "Package-review submit remains blocked",
         ),
         DEFERRED_GATES: (
             "Docs `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md` and `139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`",
             "live read-only `qual_aps_package_review_preview_only` runtime boundary",
-            "current-main code still blocks qualitative APS package construction at `qualitative_aps_package_construction_commit_not_admitted`",
+            "live bounded `qual_aps_package_construction_commit_entry` runtime boundary",
             "qualitative_aps_package_review_submit_not_admitted",
         ),
         BOARD: (
@@ -3706,7 +3709,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "current-main bounded runtime/API proof",
             "qual_aps_package_review_preview_only",
             "layer3.qual_aps_package_review_preview.v1",
-            "qualitative_aps_package_construction_commit_not_admitted",
+            "qual_aps_package_construction_commit_entry",
             "qualitative_aps_package_review_submit_not_admitted",
         ),
         MANIFEST: (
@@ -3715,7 +3718,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "qual_aps_package_review_preview",
             "qual_aps_package_review_preview_only",
             "layer3.qual_aps_package_review_preview.v1",
-            "qualitative_aps_package_construction_commit_not_admitted",
+            "qual_aps_package_construction_commit_entry",
             "qualitative_aps_package_review_submit_not_admitted",
         ),
         PROOF_MANIFEST: (
@@ -3726,7 +3729,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
             "qual_aps_package_review_preview_proof",
             "qual_aps_package_review_preview_only",
             "layer3.qual_aps_package_review_preview.v1",
-            "qualitative_aps_package_construction_commit_not_admitted",
+            "qual_aps_package_construction_commit_entry",
             "qualitative_aps_package_review_submit_not_admitted",
             "no rendered controls or theme behavior change",
         ),
@@ -3745,7 +3748,7 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
         "def _qualitative_aps_package_review_candidate_projection(",
         "def _raise_if_qualitative_aps_downstream_not_admitted(",
         "status_body.get(\"engine_family\") != ENGINE_FAMILY_QUAL_APS_DOCUMENT",
-        "error_code=\"qualitative_aps_package_construction_commit_not_admitted\"",
+        "QUAL_APS_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = \"layer3.qual_aps_package_construction_commit.v1\"",
         "error_code=\"qualitative_aps_package_review_submit_not_admitted\"",
     ):
         if term not in workbench_text:
@@ -3753,9 +3756,10 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
 
     qual_test_text = _read_required_text(QUAL_APS_TEST, errors)
     for term in (
-        "test_single_aps_doc_qualitative_package_preview_is_read_only_and_construction_blocked",
+        "test_single_aps_doc_qualitative_package_preview_construction_and_submit_guard",
+        "layer3.qual_aps_package_construction_commit.v1",
         "qualitative_aps_package_review_submit_not_admitted",
-        "restored-qualitative-aps-reconciliation",
+        "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE",
     ):
         if term not in qual_test_text:
             errors.append(f"{_rel(QUAL_APS_TEST)} missing qualitative APS submit guard proof term: {term}")
@@ -3765,10 +3769,10 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
         "test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview",
         "ENGINE_FAMILY_QUAL_APS_DOCUMENT",
         "layer3.qual_aps_package_review_preview.v1",
-        "qualitative_aps_package_construction_commit_not_admitted",
-        "package_preview[\"package_commit_enabled\"] is False",
-        "assert state.counts() == start_counts",
-        "assert state.files() == execution_files",
+        "layer3.qual_aps_package_construction_commit.v1",
+        "qualitative_aps_package_review_submit_not_admitted",
+        "allowed_output_packages=3",
+        "allowed_reconciliations=1",
     ):
         if term not in e2e_test_text:
             errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS package-review proof term: {term}")
@@ -3777,10 +3781,11 @@ def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
 def _check_qualitative_aps_package_construction_freeze(errors: list[str]) -> None:
     required_doc_terms = {
         QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE: (
-            "Status: implementation-entry freeze for `qual_aps_package_construction_commit_entry`.",
+            "Status: current-main runtime boundary for `qual_aps_package_construction_commit_entry`.",
             "selected future route: `POST /api/v1/layer3/package/review/commit`",
             "selected future response schema: `layer3.qual_aps_package_construction_commit.v1`",
             "package kinds: `canonical_internal`, `user_facing`, `review_facing`",
+            "live behavior: `backend/app/services/layer3_workbench.py` admits qualitative APS package construction",
             "exactly one `L3ReconciliationRecord`",
             "exactly three `L3OutputPackage` rows",
             "package payload files under the existing server-owned artifact/storage root",
@@ -3788,8 +3793,8 @@ def _check_qualitative_aps_package_construction_freeze(errors: list[str]) -> Non
             "Browser proof is not required for a backend/API-only package construction implementation.",
         ),
         QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT: (
-            "Status: implementation-entry contract paired with `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md`.",
-            "Current main still blocks qualitative APS package construction with `qualitative_aps_package_construction_commit_not_admitted`",
+            "Status: current runtime contract paired with `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md`.",
+            "Current main admits qualitative APS package construction through `layer3.qual_aps_package_construction_commit.v1`",
             "`POST /api/v1/layer3/package/review/commit`",
             "`layer3.qual_aps_package_construction_commit.v1`",
             "`expected_package_kinds` must equal:",
@@ -3811,31 +3816,32 @@ def _check_qualitative_aps_package_construction_freeze(errors: list[str]) -> Non
             "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md",
             "141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md",
             "qual_aps_package_construction_commit_entry",
-            "they do not make qualitative APS package rows, package payload files, package-review submit, or downstream delivery live",
+            "package-review submit plus all downstream behavior deferred",
         ),
         BOARD: (
-            "Qualitative APS package-construction freeze",
+            "Qualitative APS package-construction runtime",
+            "current-main bounded runtime/API proof",
             "qual_aps_package_construction_commit_entry",
-            "exactly one reconciliation record",
-            "exactly three package rows",
-            "server-owned payload files",
+            "exactly one `L3ReconciliationRecord`",
+            "exactly three `L3OutputPackage` rows",
+            "exactly three server-owned payload files",
             "rendered controls/theme behavior",
         ),
         MANIFEST: (
-            "latest_qual_aps_package_construction_freeze_branch",
-            "latest_qual_aps_package_construction_freeze_pr",
-            "qual_aps_package_construction_freeze",
+            "latest_qual_aps_package_construction_runtime_branch",
+            "latest_qual_aps_package_construction_runtime_pr",
+            "qual_aps_package_construction_runtime",
             "qual_aps_package_construction_commit_entry",
-            "exactly one reconciliation record",
+            "exactly one L3ReconciliationRecord",
             "exactly three L3OutputPackage rows",
         ),
         PROOF_MANIFEST: (
-            "qual_aps_package_construction_freeze_proof",
-            "selected_future_mode",
+            "qual_aps_package_construction_commit_proof",
+            "selected_mode",
             "qual_aps_package_construction_commit_entry",
-            "no L3OutputPackage row creation",
-            "no L3ReconciliationRecord row creation",
-            "no package payload file write",
+            "exactly one L3ReconciliationRecord",
+            "exactly three L3OutputPackage rows",
+            "exactly three server-owned package payload files",
             "no rendered controls or theme behavior change",
         ),
     }
@@ -3844,6 +3850,44 @@ def _check_qualitative_aps_package_construction_freeze(errors: list[str]) -> Non
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing qualitative APS package-construction freeze term: {term}")
+
+    package_entry_text = _read_required_text(PACKAGE_ENTRY_SERVICE, errors)
+    for term in (
+        "SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE = \"140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE\"",
+        "authority_schema_id: str = \"layer3.workbench_package_construction_authority.v1\"",
+        "authority_basis_extra: dict[str, Any] | None = None",
+        "package_payload_extras_by_kind: dict[str, dict[str, Any]] | None = None",
+        "\"construction_basis_hash\"",
+    ):
+        if term not in package_entry_text:
+            errors.append(f"{_rel(PACKAGE_ENTRY_SERVICE)} missing qualitative APS package-construction helper term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "QUAL_APS_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = \"layer3.qual_aps_package_construction_commit.v1\"",
+        "QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (",
+        "def _qualitative_aps_package_review_preview_hash(",
+        "def _qualitative_aps_package_payload_extras(",
+        "SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE",
+        "authority_schema_id = \"layer3.qual_aps_package_construction_authority.v1\"",
+        "package_payload_extras_by_kind = _qualitative_aps_package_payload_extras(",
+        "error_code=\"qualitative_aps_package_review_submit_not_admitted\"",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing qualitative APS package-construction runtime term: {term}")
+
+    e2e_test_text = _read_required_text(LAYER3_BOUNDED_E2E_TEST, errors)
+    for term in (
+        "def qualitative_package_commit(",
+        "def qualitative_package_submit_blocked(",
+        "layer3.qual_aps_package_construction_commit.v1",
+        "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE",
+        "allowed_output_packages=3",
+        "allowed_reconciliations=1",
+        "qualitative_aps_package_review_submit_not_admitted",
+    ):
+        if term not in e2e_test_text:
+            errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS package-construction proof term: {term}")
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
