@@ -5945,5 +5945,79 @@
       "git diff --check"
     ],
     "next_boundary": "Freeze rendered execution selection/start controls before trying to extend the raw mixed rendered UI path beyond plan approval, or keep the raw mixed UI proof stopped at plan approval."
+  },
+  "rendered_execution_selection_start_freeze_proof": {
+    "scope": "Planning/control freeze for future rendered execution selection/start controls after the raw mixed rendered downstream blocker.",
+    "implementation_branch": "codex/l3-rendered-execution-freeze",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/160_RENDERED_EXECUTION_SELECTION_START_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/161_RENDERED_EXECUTION_SELECTION_START_CONTRACT.md"
+    ],
+    "selected_rendered_execution_mode": "raw_mixed_rendered_execution_selection_start_controls",
+    "routes_to_reuse": [
+      "POST /api/v1/layer3/execution/select",
+      "POST /api/v1/layer3/execution/start"
+    ],
+    "request_dtos_to_reuse": [
+      "Layer3ExecutionSelectionRequest",
+      "Layer3AnalysisExecutionStartRequest"
+    ],
+    "response_schemas_to_reuse": [
+      "Layer3ExecutionSelectionResponse",
+      "Layer3AnalysisExecutionStartResponse"
+    ],
+    "future_selectors": [
+      "#execution-select",
+      "#execution-start",
+      "#execution-selection-start-panel"
+    ],
+    "proof_summary": "The freeze selects a future UI-only implementation boundary for adding rendered controls that call existing execution selection/start routes after rendered plan approval, using only server-authoritative session, plan, preview, and selected pass-run state. It does not make those controls live.",
+    "theme_and_browser_requirements": [
+      "light theme",
+      "dark theme",
+      "workbench theme",
+      "headless Chromium",
+      "headed Chromium",
+      "sequential fixed-port 8031 harness runs unless a later freeze changes the harness"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/160_RENDERED_EXECUTION_SELECTION_START_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/161_RENDERED_EXECUTION_SELECTION_START_CONTRACT.md",
+      "backend/app/api/layer3.py",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "negative_invariants": [
+      "no runtime behavior change",
+      "no production backend route, DTO, service, model, or migration change",
+      "no current rendered UI control change",
+      "no source family expansion",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no package payload rewrite outside admitted package commit behavior",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_boundary": "Implement only rendered execution selection/start controls if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
   }
 }
