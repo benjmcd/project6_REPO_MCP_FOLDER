@@ -1713,6 +1713,26 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     counts = gate_b_counts(decisions)
+    approved_dataset_version_items = [
+        item
+        for item in approved
+        if item["source_class"] == "dataset_version" and item["source_identity"].get("dataset_version_id")
+    ]
+    approved_dataset_version_ids = sorted(
+        str(item["source_identity"]["dataset_version_id"]) for item in approved_dataset_version_items
+    )
+    dataset_version_co_retrieval_group_id = (
+        _stable_id(
+            "gate-b-dataset-version-cohort",
+            {
+                "approved_candidate_ids": sorted(item["candidate_id"] for item in approved_dataset_version_items),
+                "dataset_version_ids": approved_dataset_version_ids,
+                "material_preview_hash": material_preview_hash,
+            },
+        )
+        if len(approved_dataset_version_ids) > 1
+        else None
+    )
     manifest_items = []
     for item in approved:
         short_id = hashlib.sha256(item["candidate_id"].encode("utf-8")).hexdigest()[:12]
@@ -1768,6 +1788,13 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     complete_gate_b_idempotency_claim(gate_b_claim, session=session, manifest=manifest)
     descriptors = expand_descriptors(db, session=session, manifest=manifest)
     for descriptor, item in zip(descriptors, approved, strict=True):
+        co_retrieval_group_id = None
+        if (
+            dataset_version_co_retrieval_group_id is not None
+            and item["source_class"] == "dataset_version"
+            and item["source_identity"].get("dataset_version_id") in approved_dataset_version_ids
+        ):
+            co_retrieval_group_id = dataset_version_co_retrieval_group_id
         record_retrieval_event(
             db,
             session=session,
@@ -1791,6 +1818,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                         item["load_summary"]
                         or {"loaded_records": 1, "failed_records": 0, "preview_material": True}
                     ),
+                    co_retrieval_group_id=co_retrieval_group_id,
                 )
             ],
         )
