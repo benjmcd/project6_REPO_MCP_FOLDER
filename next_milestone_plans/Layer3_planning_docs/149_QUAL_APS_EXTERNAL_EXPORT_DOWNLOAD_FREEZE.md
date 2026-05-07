@@ -1,8 +1,8 @@
 # Layer 3 Qualitative APS External Export/Download Freeze
 
-Status: planning/control implementation-entry freeze for future `qual_aps_external_export_download_prepare_deliver`.
+Status: current-main runtime boundary for `qual_aps_external_export_download_prepare_deliver`.
 
-This document freezes the next bounded qualitative APS downstream pass after the live `qual_aps_aps_handoff_dispatch_entry` runtime. Current main still blocks qualitative APS external export/download with `qualitative_aps_external_export_download_not_admitted`; this freeze does not remove that blocker by itself.
+This document governs the bounded qualitative APS downstream pass after the live `qual_aps_aps_handoff_dispatch_entry` runtime. Current main now admits qualitative APS external export/download only for the exact dispatched APS evidence-bundle authority chain and keeps broader export, connector, provider, source, RAG/vector, UI, theme, auth, model, and migration behavior deferred.
 
 ## Authority Snapshot
 
@@ -10,29 +10,29 @@ This document freezes the next bounded qualitative APS downstream pass after the
 - latest live qualitative APS boundary: `qual_aps_aps_handoff_dispatch_entry`
 - latest live qualitative APS response schema: `layer3.qual_aps_aps_handoff_dispatch.v1`
 - predecessor docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md` and `148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md`
-- selected future prepare route: `POST /api/v1/layer3/handoff/export/download/prepare`
-- selected future prepare response schema: `layer3.qual_aps_external_export_download_prepare.v1`
-- selected future deliver route: `POST /api/v1/layer3/handoff/export/download/deliver`
-- selected future delivery schema/header: `layer3.qual_aps_external_export_download_delivery.v1`
-- selected future mode: `qual_aps_external_export_download_prepare_deliver`
-- current live blocker: `qualitative_aps_external_export_download_not_admitted`
+- selected live prepare route: `POST /api/v1/layer3/handoff/export/download/prepare`
+- selected live prepare response schema: `layer3.qual_aps_external_export_download_prepare.v1`
+- selected live deliver route: `POST /api/v1/layer3/handoff/export/download/deliver`
+- selected live delivery schema/header: `layer3.qual_aps_external_export_download_delivery.v1`
+- selected live mode: `qual_aps_external_export_download_prepare_deliver`
+- current live readiness state: `external_export_download_ready`
 - companion contract: `150_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md`
 
-Live source, tests, models, migrations, routes, and proof-checker behavior outrank this planning document. The existing associated-cohort external export/download path is pattern evidence only; it does not prove qualitative APS delivery is live.
+Live source, tests, models, migrations, routes, and proof-checker behavior outrank this planning document. The existing associated-cohort external export/download path is pattern evidence only; qualitative APS delivery is live only where current-main code and tests prove the exact APS bundle path.
 
 ## Decision
 
-The next eligible implementation boundary is:
+The admitted current-main implementation boundary is:
 
 - `qual_aps_external_export_download_prepare_deliver`
 
-The implementation may remove only the exact qualitative APS external export/download blocker after a recorded qualitative APS APS handoff dispatch. It must reuse the existing external export/download prepare and deliver route family unless source inspection proves reuse would make associated-cohort and qualitative APS authority ambiguous.
+The implementation removes only the exact qualitative APS external export/download blocker after a recorded qualitative APS APS handoff dispatch. It reuses the existing external export/download prepare and deliver route family and keeps associated-cohort and qualitative APS authority separated by persisted state checks and schema ids.
 
 The admitted target is same-origin delivery of the server-owned APS evidence-bundle artifact that was already materialized by the APS handoff owner service. It is not a provider upload, public URL generation, signed URL generation, connector run, destination write, package rebuild, package mutation, raw ingestion, RAG/vector operation, rendered UI pass, hidden LLM pass, model/migration pass, or auth/security pass.
 
 ## Runtime Shape
 
-The future implementation may include only:
+The current-main implementation includes only:
 
 - qualitative APS readiness admission in `external_export_download_prepare`;
 - qualitative APS delivery admission in `external_export_download_deliver`;
@@ -45,7 +45,7 @@ The future implementation may include only:
 
 ## Allowed Writes
 
-Only these writes are eligible for the future implementation:
+Only these writes are admitted:
 
 - one qualitative APS external export/download readiness object in existing `L3ReconciliationRecord.summary_json`;
 - optional `L3Session.summary_json` pointer/index fields needed for current session-summary projections.
@@ -54,7 +54,7 @@ Delivery must stream the existing server-owned APS bundle artifact and must not 
 
 ## Forbidden Writes And Effects
 
-The future implementation must not:
+The implementation must not:
 
 - create new `L3ReconciliationRecord`, `L3OutputPackage`, `L3AnalysisPlan`, `L3PassRun`, `AnalysisRun`, `AnalysisArtifact`, connector, destination, provider, delivery, signed-reference, auth, source-ingestion, RAG/vector, runtime snapshot, or mockup rows;
 - mutate existing qualitative package rows, APS handoff package rows, payload refs, payload hashes, package payload bodies, APS bundle artifacts, result-review state, package-review preview state, package construction state, package-review submit state, handoff/export prepare state, APS handoff dispatch state, source authority rows, or qualitative execution output;
@@ -62,7 +62,7 @@ The future implementation must not:
 
 ## Positive Invariants
 
-The future implementation is acceptable only if it proves:
+The implementation is acceptable only if it proves:
 
 - admission is limited to `ENGINE_FAMILY_QUAL_APS_DOCUMENT` and `single_aps_doc_qualitative_pass`;
 - readiness requires recorded qualitative APS APS handoff dispatch state;
@@ -77,11 +77,11 @@ The future implementation is acceptable only if it proves:
 
 ## Required Tests
 
-Minimum implementation proof for the future runtime:
+Minimum implementation proof for the runtime:
 
 - successful qualitative APS prepare after `aps_handoff_dispatched`;
 - successful same-origin qualitative APS delivery from the prepared readiness object;
-- session summary changes from `qualitative_aps_external_export_download_not_admitted` to qualitative readiness only after prepare;
+- session summary changes to qualitative readiness only after `aps_handoff_dispatched` and prepare persists `external_export_download_prepared`;
 - delivery revalidates current readiness before streaming;
 - stale or missing external export/download record ref fails closed;
 - stale or missing export download descriptor ref fails closed;

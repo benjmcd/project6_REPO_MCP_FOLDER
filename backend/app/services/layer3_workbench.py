@@ -132,6 +132,7 @@ from app.services.layer3_external_export_response import (
     external_export_download_prepare_payload_for_delivery as _external_export_download_prepare_payload_for_delivery,
     external_export_download_prepare_response as _external_export_download_prepare_response,
     external_export_download_prepare_summary as _external_export_download_prepare_summary,
+    qualitative_aps_external_export_download_admitted as _qualitative_aps_external_export_download_admitted,
     qualitative_aps_external_export_download_deferred as _qualitative_aps_external_export_download_deferred,
     safe_download_token as _safe_download_token,
 )
@@ -3052,6 +3053,46 @@ def _qualitative_aps_aps_dispatch_prepare_state_admitted(
         and bool(str(prepare_state.get("analysis_set_id") or "").strip())
         and bool(str(prepare_state.get("output_payload_ref") or "").strip())
         and bool(str(prepare_state.get("output_payload_hash") or "").strip())
+    )
+
+
+def _qualitative_aps_external_export_submit_state_admitted(
+    submit_state: dict[str, Any],
+    *,
+    qualitative_basis: dict[str, Any] | None,
+    payload_refs: list[str],
+) -> bool:
+    if qualitative_basis is None:
+        return False
+    authority_basis = submit_state.get("authority_basis")
+    if not isinstance(authority_basis, dict):
+        return False
+    identity_matches = all(
+        str(authority_basis.get(field) or "") == str(qualitative_basis.get(field) or "")
+        for field in (
+            "content_id",
+            "content_contract_id",
+            "chunking_contract_id",
+            "material_snapshot_id",
+            "analysis_unit_id",
+            "analysis_set_id",
+            "output_payload_hash",
+        )
+    )
+    return bool(
+        submit_state.get("pass_type") == PASS_TYPE_SINGLE_ITEM
+        and submit_state.get("pass_scope") == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+        and submit_state.get("method") == QUAL_APS_METHOD_NAME
+        and submit_state.get("source_gate") == QUAL_APS_SOURCE_GATE
+        and submit_state.get("package_construction_source_gate")
+        == SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE
+        and submit_state.get("source_shape") == SOURCE_SHAPE_APS_CONTENT_DOCUMENT
+        and list(submit_state.get("source_dataset_version_ids") or []) == []
+        and submit_state.get("package_review_submit_schema_id")
+        == QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        and list(submit_state.get("payload_refs") or []) == payload_refs
+        and bool(str(authority_basis.get("output_payload_ref") or "").strip())
+        and identity_matches
     )
 
 
@@ -7956,21 +7997,33 @@ def external_export_download_prepare(
             blocked_fields=["pass_run_id"],
         )
     associated_cohort_readiness = status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
-    qualitative_aps_readiness_deferred = _qualitative_aps_external_export_download_deferred(
+    qualitative_aps_readiness_candidate = _qualitative_aps_external_export_download_deferred(
         {
             "pass_scope": status_body.get("pass_scope"),
             "source_gate": output_metadata_summary.get("source_gate"),
             "source_shape": output_metadata_summary.get("source_shape"),
         }
     )
-    if qualitative_aps_readiness_deferred:
+    qualitative_aps_readiness = _qualitative_aps_aps_dispatch_source_admitted(
+        status_body=status_body,
+        pass_run=pass_run,
+        output_metadata_summary=output_metadata_summary,
+    )
+    if qualitative_aps_readiness_candidate and supplied_analysis_run_id:
+        raise Layer3WorkbenchError(
+            "qualitative_aps_external_export_download_analysis_run_not_admitted",
+            "Qualitative APS external export/download readiness must not provide analysis_run_id.",
+            status="invalid",
+            blocked_fields=["analysis_run_id"],
+        )
+    if qualitative_aps_readiness_candidate and not qualitative_aps_readiness:
         raise Layer3WorkbenchError(
             "qualitative_aps_external_export_download_not_admitted",
-            "Qualitative APS external export/download readiness remains deferred after APS handoff dispatch.",
+            "Qualitative APS external export/download readiness requires exact standalone APS document execution authority.",
             status="blocked",
             http_status=409,
             blocked_fields=["pass_run_id"],
-            next_allowed_actions=["await_qualitative_aps_external_export_download_freeze"],
+            next_allowed_actions=["inspect_qualitative_aps_execution_authority"],
         )
     if associated_cohort_readiness and not _associated_cohort_result_source_admitted(
         status_body=status_body,
@@ -8045,16 +8098,38 @@ def external_export_download_prepare(
         )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
-    expected_package_preview_hash = _package_review_preview_hash(
-        session_id=session_id,
-        analysis_plan_id=analysis_plan_id,
-        pass_run_id=pass_run_id,
-        preview_id=preview_id,
-        preview_hash=preview_hash,
-        analysis_run_id=analysis_run_id,
-        result_review_record_ref=supplied_review_ref,
-        output_metadata_summary=output_metadata_summary,
-    )
+    qualitative_basis = None
+    if qualitative_aps_readiness:
+        qualitative_basis = _require_qualitative_aps_package_review_authority(
+            db,
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            status_body=status_body,
+            pass_run=pass_run,
+            output_metadata_summary=output_metadata_summary,
+        )
+        expected_package_preview_hash = _qualitative_aps_package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            result_review_record_ref=supplied_review_ref,
+            output_payload_ref=output_metadata_summary.get("output_payload_ref"),
+            qualitative_basis=qualitative_basis,
+        )
+    else:
+        expected_package_preview_hash = _package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            analysis_run_id=analysis_run_id,
+            result_review_record_ref=supplied_review_ref,
+            output_metadata_summary=output_metadata_summary,
+        )
     if supplied_package_preview_hash != expected_package_preview_hash:
         raise Layer3WorkbenchError(
             "external_export_download_prepare_preview_mismatch",
@@ -8205,6 +8280,19 @@ def external_export_download_prepare(
             blocked_fields=["package_review_submit_record_ref"],
             next_allowed_actions=["inspect_package_review_submit_state"],
         )
+    if qualitative_aps_readiness and not _qualitative_aps_external_export_submit_state_admitted(
+        package_review_submit,
+        qualitative_basis=qualitative_basis,
+        payload_refs=canonical_payload_refs,
+    ):
+        raise Layer3WorkbenchError(
+            "qualitative_aps_external_export_download_prepare_not_admitted",
+            "Qualitative APS external export/download readiness requires exact approved qualitative package-review submit authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_review_submit_record_ref"],
+            next_allowed_actions=["inspect_package_review_submit_state"],
+        )
 
     prepare_state = _handoff_export_prepare_from_reconciliation(reconciliation)
     if prepare_state is None or prepare_state.get("handoff_export_state") != HANDOFF_EXPORT_PREPARED_STATE:
@@ -8285,6 +8373,15 @@ def external_export_download_prepare(
             blocked_fields=sorted(set(cohort_prepare_mismatches)),
             next_allowed_actions=["inspect_handoff_export_prepare_state"],
         )
+    if qualitative_aps_readiness and not _qualitative_aps_aps_dispatch_prepare_state_admitted(prepare_state):
+        raise Layer3WorkbenchError(
+            "qualitative_aps_external_export_download_prepare_not_admitted",
+            "Qualitative APS external export/download readiness requires exact prepared qualitative handoff/export authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["prepare_record_ref"],
+            next_allowed_actions=["inspect_handoff_export_prepare_state"],
+        )
     recorded_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
     if recorded_dispatch is None or recorded_dispatch.get("aps_handoff_state") != APS_HANDOFF_DISPATCHED_STATE:
         raise Layer3WorkbenchError(
@@ -8359,6 +8456,15 @@ def external_export_download_prepare(
             status="blocked",
             http_status=409,
             blocked_fields=sorted(set(cohort_dispatch_mismatches)),
+            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+        )
+    if qualitative_aps_readiness and not _qualitative_aps_external_export_download_admitted(recorded_dispatch):
+        raise Layer3WorkbenchError(
+            "qualitative_aps_external_export_download_prepare_not_admitted",
+            "Qualitative APS external export/download readiness requires exact qualitative APS handoff dispatch authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_handoff_record_ref"],
             next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
         )
     for field, supplied, expected in (
@@ -8460,6 +8566,8 @@ def external_export_download_prepare(
                 "package_review_submit_schema_id": COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
             }
         )
+    elif qualitative_aps_readiness:
+        readiness_basis.update(_cohort_readiness_identity(recorded_dispatch))
     external_export_download_record_ref = _stable_id("l3-external-export-download-prepare", readiness_basis)
     if existing_readiness is not None:
         if (
@@ -8591,6 +8699,8 @@ def external_export_download_prepare(
             }
         )
         readiness_state["delivery_ui"] = _associated_cohort_delivery_ui_state(readiness_state)
+    elif qualitative_aps_readiness:
+        readiness_state.update(_cohort_readiness_identity(recorded_dispatch))
     reconciliation.summary_json = {
         **reconciliation_summary,
         "external_export_download_prepare": readiness_state,

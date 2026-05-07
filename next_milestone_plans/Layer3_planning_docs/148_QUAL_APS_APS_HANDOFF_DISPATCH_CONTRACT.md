@@ -2,7 +2,7 @@
 
 Status: current-main API and state contract paired with `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`.
 
-This contract defines the live API/state/proof shape for `qual_aps_aps_handoff_dispatch_entry`. Current main admits qualitative APS APS handoff dispatch for the exact qualitative APS prepare authority chain, then keeps qualitative APS external export/download blocked with `qualitative_aps_external_export_download_not_admitted`.
+This contract defines the live API/state/proof shape for `qual_aps_aps_handoff_dispatch_entry`. Current main admits qualitative APS APS handoff dispatch for the exact qualitative APS prepare authority chain; the later qualitative APS external export/download boundary is governed separately by docs `149` and `150`.
 
 ## Authority Order
 
@@ -253,7 +253,7 @@ The current runtime must fail closed when:
 Minimum current implementation tests:
 
 - one successful API dispatch after standalone APS qualitative handoff/export prepare;
-- bounded E2E reaches APS handoff dispatch and stops before external export/download;
+- bounded E2E reaches APS handoff dispatch; docs `149` and `150` separately govern external export/download over that dispatched APS bundle;
 - missing or non-prepared handoff/export prepare state fails closed;
 - stale prepare record ref and stale envelope ref fail closed;
 - missing submit state fails closed;

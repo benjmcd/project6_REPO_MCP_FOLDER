@@ -1483,10 +1483,76 @@ def _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
 
     summary_after_dispatch = driver.get(f"/api/v1/layer3/session/{session_id}")
     assert summary_after_dispatch["aps_handoff_dispatch"]["state"] == "aps_handoff_dispatched"
-    assert summary_after_dispatch["external_export_download"]["available"] is False
+    assert summary_after_dispatch["external_export_download"]["available"] is True
+    assert summary_after_dispatch["external_export_download"]["state"] == "external_export_download_ready"
+    assert summary_after_dispatch["external_export_download"]["blocked_reason"] is None
+    assert summary_after_dispatch["external_export_download"]["pass_type"] == "single_item"
     assert (
-        summary_after_dispatch["external_export_download"]["blocked_reason"]
-        == "qualitative_aps_external_export_download_not_admitted"
+        summary_after_dispatch["external_export_download"]["pass_scope"]
+        == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+    )
+    assert summary_after_dispatch["external_export_download"]["method"] == QUAL_APS_METHOD_NAME
+    assert summary_after_dispatch["external_export_download"]["source_shape"] == "aps_content_document"
+    assert summary_after_dispatch["external_export_download"]["source_dataset_version_ids"] == []
+    assert summary_after_dispatch["external_export_download"]["content_id"] == seeded.aps_content_id
+    assert summary_after_dispatch["external_export_download"]["browser_download_enabled"] is False
+    assert summary_after_dispatch["external_export_download"]["download_url_enabled"] is False
+    assert summary_after_dispatch["external_export_download"]["connector_dispatch_enabled"] is False
+    assert summary_after_dispatch["external_export_download"]["destination_selection_enabled"] is False
+
+    download_prepare_payload, download_prepare = driver.external_export_download_prepare(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+        prepare=handoff_prepare,
+        dispatch=aps_dispatch,
+    )
+    assert download_prepare["schema_id"] == "layer3.qual_aps_external_export_download_prepare.v1"
+    assert download_prepare["status"] == "prepared"
+    assert download_prepare["analysis_run_id"] is None
+    assert download_prepare["external_export_download_state"] == "external_export_download_prepared"
+    assert download_prepare["source_artifact_ref"] == aps_dispatch["aps_bundle_ref"]
+    assert download_prepare["source_artifact_hash"] == hashlib.sha256(
+        Path(aps_dispatch["aps_bundle_ref"]).read_bytes()
+    ).hexdigest()
+    assert download_prepare["source_artifact_size_bytes"] == Path(aps_dispatch["aps_bundle_ref"]).stat().st_size
+    assert download_prepare["pass_type"] == "single_item"
+    assert download_prepare["pass_scope"] == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+    assert download_prepare["method"] == QUAL_APS_METHOD_NAME
+    assert download_prepare["source_gate"] == QUAL_APS_SOURCE_GATE
+    assert download_prepare["source_shape"] == "aps_content_document"
+    assert download_prepare["source_dataset_version_ids"] == []
+    assert download_prepare["content_id"] == seeded.aps_content_id
+    assert download_prepare["browser_download_enabled"] is False
+    assert download_prepare["download_url_enabled"] is False
+    assert download_prepare["connector_dispatch_enabled"] is False
+    assert download_prepare["destination_selection_enabled"] is False
+    assert download_prepare["delivery_ui"] is None
+    assert state.counts() == dispatch_counts
+    assert state.files() == dispatch_files
+
+    delivery = driver.external_export_download_deliver(
+        prepare_payload=download_prepare_payload,
+        readiness=download_prepare,
+    )
+    assert delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    assert delivery.headers["x-layer3-schema-id"] == "layer3.qual_aps_external_export_download_delivery.v1"
+    assert delivery.content == Path(aps_dispatch["aps_bundle_ref"]).read_bytes()
+    assert "download_url" not in delivery.headers
+    assert "public_url" not in delivery.headers
+    assert "signed_url" not in delivery.headers
+    assert "connector_run_id" not in delivery.headers
+    assert state.counts() == dispatch_counts
+    assert state.files() == dispatch_files
+    state.assert_forbidden_side_effects_absent(
+        seeded_counts=seeded_counts,
+        allowed_output_packages=4,
+        allowed_reconciliations=1,
     )
 
 
