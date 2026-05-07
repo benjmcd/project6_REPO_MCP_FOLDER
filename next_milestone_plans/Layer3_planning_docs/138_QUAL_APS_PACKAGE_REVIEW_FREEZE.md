@@ -8,6 +8,7 @@ This document does not implement package-review preview, package construction, p
 
 - authoritative remote: `project6-origin/main`
 - current-main baseline for this freeze: PR `#703` merge commit `a813ac265fd8c737dc55cccf572eef79213b86a1`
+- planning PR: `#704`
 - latest upstream proof: PR `#702` standalone APS content-document qualitative API E2E proof
 - execution owner: `backend/app/services/layer3_qual_aps_execution.py`
 - package-preview blocker: `backend/app/services/layer3_workbench.py` raises `qualitative_aps_package_review_preview_not_admitted` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`
