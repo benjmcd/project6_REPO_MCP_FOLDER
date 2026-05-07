@@ -1,21 +1,24 @@
 # Layer 3 Qualitative APS Package-Review Freeze
 
-Status: planning/control freeze only for the next boundary after the current-main standalone APS content-document qualitative API E2E proof.
+Status: current-main runtime boundary for `qual_aps_package_review_preview_only`.
 
-This document does not implement package-review preview, package construction, package-review submit, handoff/export, APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, model/migration changes, source widening, broad qualitative/hybrid/RAG behavior, hidden LLM planning, full mockup activation, or authentication/security behavior.
+This document governs the now-live read-only package-review preview boundary for one approved standalone APS content-document qualitative result through `POST /api/v1/layer3/package/review/preview`. It does not admit package construction, package-review submit, handoff/export, APS handoff dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered UI controls, model/migration changes, source widening, broad qualitative/hybrid/RAG behavior, hidden LLM planning, full mockup activation, or authentication/security behavior.
 
 ## Authority Snapshot
 
 - authoritative remote: `project6-origin/main`
 - current-main baseline for this freeze: PR `#703` merge commit `a813ac265fd8c737dc55cccf572eef79213b86a1`
 - planning PR: `#704`
+- implementation branch: `codex/l3-qual-aps-package-preview`
 - latest upstream proof: PR `#702` standalone APS content-document qualitative API E2E proof
 - execution owner: `backend/app/services/layer3_qual_aps_execution.py`
-- package-preview blocker: `backend/app/services/layer3_workbench.py` raises `qualitative_aps_package_review_preview_not_admitted` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`
-- proof surface: `backend/tests/test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_stops_before_package`
+- package-preview route: `POST /api/v1/layer3/package/review/preview`
+- package-preview schema: `layer3.qual_aps_package_review_preview.v1`
+- package-construction blocker: `backend/app/services/layer3_workbench.py` still raises `qualitative_aps_package_construction_commit_not_admitted` for `ENGINE_FAMILY_QUAL_APS_DOCUMENT`
+- proof surface: `backend/tests/test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview`
 - companion contract: `139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
 
-Live source and tests outrank this planning document. This document is a decision boundary for a later implementation prompt, not proof that runtime behavior exists.
+Live source and tests outrank this planning document. This document freezes the narrow runtime boundary and the negative invariants around it.
 
 ## Current Live Boundary
 
@@ -29,22 +32,19 @@ Current main admits exactly one qualitative APS execution mode:
 - execution through `backend/app/services/layer3_qual_aps_execution.py`
 - output payload metadata on the pass run, without `AnalysisRun`
 - API result/status and result-review visibility through the existing Layer 3 workbench API path
+- read-only package-review preview for the approved qualitative result through `layer3.qual_aps_package_review_preview.v1`
 
-PR `#702` proves that path can be driven through result review and then stops at package preview with:
-
-- `qualitative_aps_package_review_preview_not_admitted`
-
-That stop is intentional current-main behavior. The qualitative APS execution result is not packageable, handoff-ready, dispatchable, downloadable, or externally deliverable on current main.
+PR `#702` proved that path could be driven through result review. The current runtime boundary advances only one step beyond that: package-review preview is inspectable/read-only, while package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, and provider/public URLs remain blocked. Package construction still fails closed with `qualitative_aps_package_construction_commit_not_admitted`.
 
 ## Decision
 
-The next eligible planning boundary is:
+The selected runtime boundary is:
 
-- selected future mode: `qual_aps_package_review_preview_only`
+- selected mode: `qual_aps_package_review_preview_only`
 
-This mode, if later implemented, may add only read-only package-review preview/readiness for one approved standalone APS content-document qualitative result. It must not construct packages or make downstream handoff/export behavior live.
+This mode adds only read-only package-review preview/readiness for one approved standalone APS content-document qualitative result. It must not construct packages or make downstream handoff/export behavior live.
 
-The first future implementation must stop at preview/readiness unless a later separate freeze admits package construction. This mirrors the earlier quantitative selected-pass progression: preview first, construction later, submit later, handoff/export later.
+The runtime stops at preview/readiness unless a later separate freeze admits package construction. This mirrors the earlier quantitative selected-pass progression: preview first, construction later, submit later, handoff/export later.
 
 ## Why This Comes Next
 
@@ -56,20 +56,20 @@ This lane comes before broader qualitative/hybrid/RAG work because broad qualita
 
 This lane does not supersede source-breadth or raw-ingestion planning. Source expansion remains blocked; this package-review preview boundary uses only existing admitted `aps_content_document` authority.
 
-## In-Scope Future Implementation
+## In-Scope Runtime
 
-A later implementation may include only:
+The runtime may include only:
 
-- extending the existing `POST /api/v1/layer3/package/review/preview` path or adding one separately justified qualitative preview route;
+- extending the existing `POST /api/v1/layer3/package/review/preview` path for qualitative APS preview;
 - strict request DTO and forbidden-field guard if route-level request shape changes;
 - server revalidation of session, plan, preview id/hash, pass run, qualitative execution output metadata, and approved result-review state;
 - a read-only package compatibility projection for qualitative APS output;
 - response-safe candidate package descriptors, not durable packages;
 - deterministic preview hash or compatibility hash if useful for idempotent preview;
 - focused API/service tests;
-- progress-check/proof guard if the checker needs to preserve this boundary.
+- progress-check/proof guard to preserve this boundary.
 
-The future implementation may read existing rows and artifacts:
+The runtime may read existing rows and artifacts:
 
 - `L3Session`
 - `L3AnalysisPlan`
@@ -83,7 +83,7 @@ The future implementation may read existing rows and artifacts:
 - `ApsContentLinkage`
 - qualitative APS output metadata/payload refs already produced by execution
 
-The future implementation may not write durable package or downstream state.
+The runtime may not write durable package or downstream state.
 
 ## Explicit Non-Goals
 
@@ -112,7 +112,7 @@ This freeze does not admit:
 
 ## Positive Invariants
 
-A future implementation is acceptable only if it proves:
+The runtime boundary is acceptable only if it proves:
 
 - package preview admission is limited to `ENGINE_FAMILY_QUAL_APS_DOCUMENT` plus `single_aps_doc_qualitative_pass`;
 - the result-review state is approved and belongs to the same session, plan, preview id/hash, pass run, source document, analysis unit, and analysis set;
@@ -124,7 +124,7 @@ A future implementation is acceptable only if it proves:
 
 ## Negative Invariants
 
-The future implementation must prove absence of:
+The runtime boundary must prove absence of:
 
 - broad qualitative, hybrid, RAG, vector, comparative, cross-document, or qualitative cohort execution;
 - conversion of APS content into `DatasetVersion`;
@@ -135,9 +135,9 @@ The future implementation must prove absence of:
 - browser-supplied raw document text, local paths, provider paths, package bytes, connector ids, destination ids, prompt flags, or model flags;
 - auth/security behavior changes.
 
-## Required Proof Before Runtime Admission
+## Runtime Proof Required
 
-Minimum future proof:
+Minimum proof:
 
 - service/API success for one approved standalone APS qualitative result-review preview;
 - missing approved result review fails closed;
@@ -146,7 +146,7 @@ Minimum future proof:
 - mismatched content id, material snapshot id, analysis unit id, analysis set id, or output payload hash fails closed;
 - forbidden package/handoff/export/source/provider/connector/RAG/model fields fail closed;
 - existing quantitative package preview tests still pass;
-- existing PR `#702` standalone APS qualitative E2E still passes;
+- standalone APS qualitative E2E reaches read-only package preview and then stops at package construction with `qualitative_aps_package_construction_commit_not_admitted`;
 - no DB row or file side effects beyond admitted read-only preview metadata, if any;
 - `python .\tools\l3-progress-check.py`;
 - `git diff --check`.

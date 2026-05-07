@@ -366,7 +366,7 @@ class Layer3ApiDriver:
             },
         )
 
-    def qualitative_package_preview_blocked(
+    def qualitative_package_preview(
         self,
         *,
         session_id: str,
@@ -376,10 +376,10 @@ class Layer3ApiDriver:
         start: dict[str, Any],
         review: dict[str, Any],
     ) -> dict[str, Any]:
-        return self.post_blocked(
+        return self.post_ok(
             "/api/v1/layer3/package/review/preview",
             {
-                "client_request_id": "aps-qual-e2e-package-preview-blocked",
+                "client_request_id": "aps-qual-e2e-package-preview",
                 "session_id": session_id,
                 "analysis_plan_id": approval["analysis_plan_id"],
                 "pass_run_id": selection["pass_run_ids"][0],
@@ -387,6 +387,33 @@ class Layer3ApiDriver:
                 "preview_hash": preview["preview_hash"],
                 "analysis_run_id": start["analysis_run_id"],
                 "result_review_record_ref": review["review_record_ref"],
+            },
+        )
+
+    def qualitative_package_commit_blocked(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+        package_preview: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_blocked(
+            "/api/v1/layer3/package/review/commit",
+            {
+                "client_request_id": "aps-qual-e2e-package-commit-blocked",
+                "session_id": session_id,
+                "analysis_plan_id": approval["analysis_plan_id"],
+                "pass_run_id": selection["pass_run_ids"][0],
+                "preview_id": preview["preview_id"],
+                "preview_hash": preview["preview_hash"],
+                "analysis_run_id": start["analysis_run_id"],
+                "result_review_record_ref": review["review_record_ref"],
+                "package_review_preview_hash": package_preview["package_review_preview_hash"],
+                "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
             },
         )
 
@@ -833,7 +860,7 @@ def test_layer3_raw_mixed_seed_bridge_drives_bounded_e2e_path(
     )
 
 
-def test_layer3_standalone_aps_content_document_qualitative_e2e_stops_before_package(
+def test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview(
     client: TestClient,
     tmp_path: Path,
 ) -> None:
@@ -843,7 +870,7 @@ def test_layer3_standalone_aps_content_document_qualitative_e2e_stops_before_pac
     seeded_counts = state.counts()
     seeded_files = state.files()
 
-    _drive_standalone_aps_document_qualitative_e2e_to_package_boundary(
+    _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
         driver=driver,
         state=state,
         seeded=seeded,
@@ -1060,7 +1087,7 @@ def _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
     assert state.files() == files_before_dispatch | added_dispatch_files
 
 
-def _drive_standalone_aps_document_qualitative_e2e_to_package_boundary(
+def _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
     *,
     driver: Layer3ApiDriver,
     state: Layer3StateAssertions,
@@ -1173,7 +1200,7 @@ def _drive_standalone_aps_document_qualitative_e2e_to_package_boundary(
     assert state.counts() == start_counts
     assert state.files() == execution_files
 
-    package_block = driver.qualitative_package_preview_blocked(
+    package_preview = driver.qualitative_package_preview(
         session_id=session_id,
         preview=plan_preview,
         approval=plan_approval,
@@ -1181,7 +1208,25 @@ def _drive_standalone_aps_document_qualitative_e2e_to_package_boundary(
         start=start,
         review=review,
     )
-    assert package_block["error_code"] == "qualitative_aps_package_review_preview_not_admitted"
+    _assert_single_aps_doc_qualitative_package_preview(
+        package_preview,
+        output=output,
+        seeded=seeded,
+        start=start,
+    )
+    assert state.counts() == start_counts
+    assert state.files() == execution_files
+
+    package_block = driver.qualitative_package_commit_blocked(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        package_preview=package_preview,
+    )
+    assert package_block["error_code"] == "qualitative_aps_package_construction_commit_not_admitted"
     assert state.counts() == start_counts
     assert state.files() == execution_files
     state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
@@ -1431,6 +1476,65 @@ def _assert_single_aps_doc_qualitative_output(
     assert len(output["output_items_json"]) == 2
     assert output["output_items_json"][0]["trace"]["chunk_id"] == f"{seeded.aps_content_id}-chunk-1"
     return output
+
+
+def _assert_single_aps_doc_qualitative_package_preview(
+    package_preview: dict[str, Any],
+    *,
+    output: dict[str, Any],
+    seeded: SeededApsDocument,
+    start: dict[str, Any],
+) -> None:
+    assert package_preview["schema_id"] == "layer3.qual_aps_package_review_preview.v1"
+    assert package_preview["status"] == "available"
+    assert package_preview["analysis_run_id"] is None
+    assert package_preview["engine_family"] == ENGINE_FAMILY_QUAL_APS_DOCUMENT
+    assert package_preview["pass_type"] == "single_item"
+    assert package_preview["pass_scope"] == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+    assert package_preview["method"] == QUAL_APS_METHOD_NAME
+    assert package_preview["selected_method_name"] == QUAL_APS_METHOD_NAME
+    assert package_preview["source_gate"] == QUAL_APS_SOURCE_GATE
+    assert package_preview["source_shape"] == "aps_content_document"
+    assert package_preview["source_dataset_version_ids"] == []
+    assert package_preview["content_id"] == seeded.aps_content_id
+    assert package_preview["content_contract_id"] == output["document_identity"]["content_contract_id"]
+    assert package_preview["chunking_contract_id"] == output["document_identity"]["chunking_contract_id"]
+    assert package_preview["material_snapshot_id"] == output["material_snapshot_id"]
+    assert package_preview["analysis_unit_id"] == output["analysis_unit_id"]
+    assert package_preview["analysis_set_id"] == output["analysis_set_id"]
+    assert package_preview["output_payload_ref"] == start["output_payload_ref"]
+    assert package_preview["output_payload_hash"] == output["output_hash"]
+    assert package_preview["chunk_count"] == output["chunk_summary"]["chunk_count"]
+    assert package_preview["package_review_preview_enabled"] is True
+    assert package_preview["package_commit_enabled"] is False
+    assert package_preview["package_review_enabled"] is False
+    assert package_preview["package_review_submit_enabled"] is False
+    assert package_preview["handoff_enabled"] is False
+    assert package_preview["aps_handoff_enabled"] is False
+    assert package_preview["external_export_download_enabled"] is False
+    assert package_preview["connector_dispatch_enabled"] is False
+    assert package_preview["provider_public_url_enabled"] is False
+    assert package_preview["blocked_reasons"] == [
+        "qualitative_aps_package_construction_not_admitted",
+        "qualitative_aps_package_taxonomy_not_frozen",
+    ]
+    assert "package_construction" in package_preview["downstream_unavailable"]
+    assert "external_export_download" in package_preview["downstream_unavailable"]
+    assert package_preview["package_owner_compatibility"]["workbench_package_commit_callable"] is False
+    assert package_preview["package_owner_compatibility"]["missing_owner_service_inputs"] == [
+        "qualitative_package_taxonomy"
+    ]
+    assert [candidate["package_kind"] for candidate in package_preview["candidate_package_kinds"]] == [
+        "canonical_internal",
+        "user_facing",
+        "review_facing",
+    ]
+    assert all(candidate["preview_only"] is True for candidate in package_preview["candidate_package_kinds"])
+    assert all(candidate["package_commit_enabled"] is False for candidate in package_preview["candidate_package_kinds"])
+    assert package_preview["output_metadata_summary"]["content_id"] == seeded.aps_content_id
+    assert package_preview["output_metadata_summary"]["chunk_ids"] == output["chunk_summary"]["chunk_ids"]
+    _assert_response_refs_exist(package_preview)
+    _assert_forbidden_response_surface_absent(package_preview)
 
 
 def _assert_forbidden_response_surface_absent(payload: Any) -> None:
