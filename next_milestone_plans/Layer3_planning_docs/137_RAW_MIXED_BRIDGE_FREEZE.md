@@ -173,7 +173,7 @@ The implementation must prove:
 - forbidden source/upload/local-directory/web/RAG/vector/package/connector/provider/mockup/auth fields fail validation before service mutation;
 - stale artifact manifest hash fails closed;
 - unknown APS run or target ids fail closed;
-- successful seed action creates or reuses deterministic `DatasetVersion` and `ApsContentDocument` source authority only;
+- successful seed action returns existing deterministic `DatasetVersion` and `ApsContentDocument` source authority only and writes no database rows or files;
 - duplicate `client_request_id` is deterministic;
 - no Layer 3 session, descriptor, material snapshot, typing, plan, pass, execution, result, package, handoff, APS dispatch, export/download, connector, provider URL, vector index, package mutation, mockup, or auth/security side effect occurs;
 - the returned ids can be consumed through the normal separate API preflight/source-preview/material-preview path without special browser or planning-doc authority.
