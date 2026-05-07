@@ -1,8 +1,8 @@
 # Layer 3 Qualitative APS External Export/Download Contract
 
-Status: planning/control API and state contract paired with `149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`.
+Status: current-main API and state contract paired with `149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`.
 
-This contract defines the future API/state/proof shape for `qual_aps_external_export_download_prepare_deliver`. Current main still rejects the qualitative APS path with `qualitative_aps_external_export_download_not_admitted`; this document does not admit runtime behavior by itself.
+This contract defines the live API/state/proof shape for `qual_aps_external_export_download_prepare_deliver`. Current main admits the qualitative APS path only after exact qualitative APS APS handoff dispatch authority and still rejects broader source, connector, provider, package-mutation, RAG/vector, UI, theme, auth, model, and migration behavior.
 
 ## Authority Order
 
@@ -25,19 +25,19 @@ Planning prose, browser state, raw document text, mockup state, PR titles, branc
 
 ## Route Contract
 
-Selected future prepare route:
+Selected live prepare route:
 
 - `POST /api/v1/layer3/handoff/export/download/prepare`
 
-Selected future prepare response schema:
+Selected live prepare response schema:
 
 - `layer3.qual_aps_external_export_download_prepare.v1`
 
-Selected future deliver route:
+Selected live deliver route:
 
 - `POST /api/v1/layer3/handoff/export/download/deliver`
 
-Selected future delivery schema/header:
+Selected live delivery schema/header:
 
 - `layer3.qual_aps_external_export_download_delivery.v1`
 
@@ -179,7 +179,7 @@ Forbidden state effects:
 
 ## Response Contract
 
-Minimum future prepare response fields:
+Minimum live prepare response fields:
 
 - `schema_id`;
 - `status`;
@@ -230,7 +230,7 @@ Minimum future prepare response fields:
 - `next_state`;
 - `authority_rail`.
 
-Minimum future delivery response/header contract:
+Minimum live delivery response/header contract:
 
 - schema id/header `layer3.qual_aps_external_export_download_delivery.v1`;
 - source artifact ref/hash/size headers or authority payload;
@@ -254,10 +254,10 @@ The readiness basis hash must include request identity fields, result-review rec
 
 ## Failure Contract
 
-The future runtime must fail closed when:
+The runtime must fail closed when:
 
 - the qualitative APS pass is not the exact standalone APS content-document qualitative pass;
-- `qualitative_aps_external_export_download_not_admitted` would otherwise be bypassed without a recorded APS handoff dispatch;
+- qualitative APS external export/download would otherwise be bypassed without a recorded APS handoff dispatch;
 - session, plan, preview hash, pass run, output metadata, result-review state, package-review preview state, construction state, package-review submit state, handoff/export prepare state, APS handoff dispatch state, reconciliation record, package rows, APS handoff package row, APS bundle artifact, content document, chunks, material snapshot, analysis unit, or analysis set is missing;
 - any supplied ref, hash, id, schema id, state, package list, package kind list, payload ref list, or payload hash list differs from persisted authority;
 - bundle file hash or size differs from package/readiness authority;
@@ -271,5 +271,5 @@ Before runtime implementation can be considered complete:
 - focused API tests must prove prepare success, delivery success, and all required fail-closed cases;
 - the bounded qualitative APS E2E must extend from APS handoff dispatch through prepare and deliver;
 - associated-cohort external export/download prepare, deliver, delivery UI, and signed-reference tests must remain green;
-- `tools/l3-progress-check.py` must guard the qualitative APS freeze/contract docs, the current blocker, and the eventual runtime proof terms;
+- `tools/l3-progress-check.py` must guard the qualitative APS freeze/contract docs and current runtime proof terms;
 - `git diff --check` must pass apart from known line-ending warnings if present.
