@@ -37,6 +37,11 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'data-available="false"' in response.text
     assert 'id="intent-band"' in response.text
     assert 'id="source-fieldset"' in response.text
+    assert 'id="raw-mixed-corpus-batch-id"' in response.text
+    assert 'id="raw-mixed-manifest-ref"' in response.text
+    assert 'id="raw-mixed-manifest-hash"' in response.text
+    assert 'id="raw-mixed-operator-confirmation"' in response.text
+    assert 'id="raw-mixed-materialize"' in response.text
     assert 'id="dataset-version-candidates"' in response.text
     assert 'id="dataset-version-ids"' in response.text
     assert "APS-derived DatasetVersion selection" in response.text
@@ -131,6 +136,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".sublayer-region" in css.text
     assert ".canvas-intake-spec" in css.text
     assert ".source-spec-chip-grid" in css.text
+    assert ".raw-mixed-materialization" in css.text
+    assert ".raw-mixed-materialization-grid" in css.text
     assert ".dataset-version-selector" in css.text
     assert ".dataset-version-candidate" in css.text
     assert ".aps-content-document-selector" in css.text
@@ -172,6 +179,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "scrollIntoView" in js.text
     assert "renderSublayerMap" in js.text
     assert "selectedSourceClassLabels" in js.text
+    assert "RAW_MIXED_MATERIALIZE_REQUEST_SCHEMA_ID = 'layer3.raw_mixed_corpus_materialize_request.v1'" in js.text
+    assert "RAW_MIXED_MATERIALIZE_MODE = 'raw_mixed_existing_source_materialization_entry'" in js.text
+    assert "rawMixedMaterializationPayload" in js.text
+    assert "postJson('/source/mixed-corpus/materialize'" in js.text
+    assert "materializedSourceIdsVisible" in js.text
     assert "selectedDatasetVersionIds" in js.text
     assert "selectedApsContentDocumentIds" in js.text
     assert "postJson('/material-preview'" in js.text

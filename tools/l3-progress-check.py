@@ -340,7 +340,10 @@ LAYER3_EXECUTION_ERROR_TEST = ROOT / "backend" / "tests" / "test_layer3_executio
 LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_external_export_contract.py"
 )
-LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
+LAYER3_STATIC = ROOT / "backend" / "app" / "review_ui" / "static"
+LAYER3_HTML = LAYER3_STATIC / "layer3.html"
+LAYER3_CSS = LAYER3_STATIC / "layer3.css"
+LAYER3_JS = LAYER3_STATIC / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 LAYER3_HANDOFF_E2E = ROOT / "e2e" / "layer3-handoff.spec.js"
 LAYER3_HELPERS_E2E = ROOT / "e2e" / "layer3-helpers.js"
@@ -5117,11 +5120,11 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
 def _check_raw_mixed_rendered_ui_freeze(errors: list[str]) -> None:
     required_doc_terms = {
         RAW_MIXED_RENDERED_UI_FREEZE: (
-            "Status: planning/control implementation-entry freeze",
+            "Status: live bounded rendered `/review/layer3` raw mixed materialization workflow",
             "selected_raw_mixed_rendered_ui_mode: `raw_mixed_server_owned_manifest_ref_ui_entry`",
             "POST /api/v1/layer3/source/mixed-corpus/materialize",
-            "The operator input is a server-owned manifest reference and hash",
-            "Current main does not admit a human-facing raw mixed manifest picker",
+            "The UI collects a server-owned materialization manifest reference and hash",
+            "Current main now admits the bounded server-owned manifest-ref controls described here.",
             "Backend service/API changes are not admitted by this freeze.",
             "The rendered request may include only fields already admitted by `Layer3RawMixedCorpusMaterializeRequest`",
             "server-owned storage-root ref, not as a local path",
@@ -5131,10 +5134,10 @@ def _check_raw_mixed_rendered_ui_freeze(errors: list[str]) -> None:
             "no frontend-only durable authority",
         ),
         RAW_MIXED_RENDERED_UI_CONTRACT: (
-            "Status: planning/control UI contract paired with `155_RAW_MIXED_RENDERED_UI_FREEZE.md`.",
+            "Status: live rendered UI contract paired with `155_RAW_MIXED_RENDERED_UI_FREEZE.md`.",
             "raw_mixed_server_owned_manifest_ref_ui_entry",
             "Server state is the only durable authority.",
-            "The future rendered UI may call only the already-live materialization route",
+            "The rendered UI may call only the already-live materialization route",
             "refresh source candidate APIs and select only the returned IDs",
             "The UI must reject or omit every field outside the live DTO.",
             "Success state may enable downstream rendered source selection only after candidate refresh confirms the returned source IDs.",
@@ -5143,27 +5146,63 @@ def _check_raw_mixed_rendered_ui_freeze(errors: list[str]) -> None:
             "frontend-only durable authority",
         ),
         BOARD: (
-            "Raw mixed rendered manifest UI freeze",
+            "Raw mixed rendered manifest UI runtime",
             "raw_mixed_server_owned_manifest_ref_ui_entry",
-            "planning/control only",
-            "no frontend-only durable authority",
+            "bounded rendered materialization controls",
+            "frontend-only durable authority",
         ),
         MANIFEST: (
             "latest_raw_mixed_rendered_ui_freeze_branch",
             "latest_raw_mixed_rendered_ui_freeze_live_behavior_change",
             "raw_mixed_rendered_ui_freeze",
             "raw_mixed_server_owned_manifest_ref_ui_entry",
-            "planning/control only",
+            "live raw_mixed_server_owned_manifest_ref_ui_entry",
             "theme behavior",
         ),
         PROOF_MANIFEST: (
             "raw_mixed_rendered_ui_freeze_proof",
             "selected_raw_mixed_rendered_ui_mode",
             "raw_mixed_server_owned_manifest_ref_ui_entry",
-            "required_future_browser_proof",
+            "browser_proof",
             "headed Chromium",
             "headless Chromium",
-            "no current rendered UI control",
+            "no production backend route, DTO, service, model, or migration change",
+        ),
+        LAYER3_HTML: (
+            "raw-mixed-corpus-batch-id",
+            "raw-mixed-manifest-ref",
+            "raw-mixed-manifest-hash",
+            "raw-mixed-operator-confirmation",
+            "raw-mixed-materialize",
+            "Materialize Source IDs",
+        ),
+        LAYER3_CSS: (
+            ".raw-mixed-materialization",
+            ".raw-mixed-materialization-grid",
+            ".raw-mixed-materialization-status",
+            "html[data-theme=\"workbench\"] body.layer3-page .raw-mixed-materialization",
+        ),
+        LAYER3_JS: (
+            "RAW_MIXED_MATERIALIZE_REQUEST_SCHEMA_ID",
+            "RAW_MIXED_MATERIALIZE_MODE",
+            "rawMixedMaterializationPayload",
+            "postJson('/source/mixed-corpus/materialize'",
+            "materializedSourceIdsVisible",
+            "applyMaterializedSourceIds",
+            "clearLayer3FlowStateForSourceChange",
+        ),
+        LAYER3_PAGE_TEST: (
+            "raw-mixed-corpus-batch-id",
+            "raw-mixed-materialization",
+            "rawMixedMaterializationPayload",
+            "postJson('/source/mixed-corpus/materialize'",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench materializes raw mixed manifest through rendered controls",
+            "materializeRawMixedThroughRenderedControls",
+            "expectOnlyPayloadKeys(requestPayload",
+            "raw_mixed_existing_source_materialization_entry",
+            "selected after candidate refresh",
         ),
     }
     for path, terms in required_doc_terms.items():
@@ -5175,10 +5214,10 @@ def _check_raw_mixed_rendered_ui_freeze(errors: list[str]) -> None:
     manifest_data = _load_json(MANIFEST, errors)
     current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
     if isinstance(current_status, dict):
-        if current_status.get("latest_raw_mixed_rendered_ui_freeze_branch") != "codex/l3-raw-mixed-rendered-ui-freeze":
+        if current_status.get("latest_raw_mixed_rendered_ui_freeze_branch") != "codex/l3-raw-mixed-rendered-ui":
             errors.append(f"{_rel(MANIFEST)} current_status has stale raw mixed rendered UI freeze branch")
-        if current_status.get("latest_raw_mixed_rendered_ui_freeze_live_behavior_change") is not False:
-            errors.append(f"{_rel(MANIFEST)} current_status must mark raw mixed rendered UI freeze as planning-only")
+        if current_status.get("latest_raw_mixed_rendered_ui_freeze_live_behavior_change") is not True:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark raw mixed rendered UI freeze as live")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -9807,6 +9846,8 @@ def main() -> int:
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
         PACKAGE_SUPERSESSION_COMMIT_SERVICE,
         REPLACEMENT_PACKAGE_NAMESPACE_SERVICE,
+        LAYER3_HTML,
+        LAYER3_CSS,
         LAYER3_JS,
         SOURCE_BOUNDARY_TEST,
         PREFLIGHT_REQUEST_CONTRACT_TEST,
