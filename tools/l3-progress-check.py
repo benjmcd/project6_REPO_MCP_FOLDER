@@ -196,6 +196,9 @@ SOURCE_BOUNDARY_SERVICE = (
 RAW_MIXED_BRIDGE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_raw_mixed_bridge.py"
 )
+RAW_MIXED_MATERIALIZATION_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_raw_mixed_materialization.py"
+)
 PREFLIGHT_REQUEST_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_preflight_request_contract.py"
 )
@@ -258,6 +261,9 @@ PREFLIGHT_REQUEST_CONTRACT_TEST = (
 )
 APS_SOURCE_FAMILY_TEST = ROOT / "backend" / "tests" / "test_layer3_aps_source_family.py"
 RAW_MIXED_BRIDGE_TEST = ROOT / "backend" / "tests" / "test_layer3_raw_mixed_bridge.py"
+RAW_MIXED_MATERIALIZATION_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_raw_mixed_materialization.py"
+)
 QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_mockup_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
@@ -4894,7 +4900,7 @@ def _check_source_breadth_freeze(errors: list[str]) -> None:
         POST_709_ROADMAP_FREEZE: (
             "153_SOURCE_BREADTH_FREEZE.md",
             "current_admitted_classes_with_server_owned_raw_materialization_only",
-            "runtime implementation still requires a separate code branch and validation",
+            "broader source-family expansion still requires a separate freeze and validation",
         ),
         PHASE1A_README: (
             "153_SOURCE_BREADTH_FREEZE.md",
@@ -4930,7 +4936,7 @@ def _check_source_breadth_freeze(errors: list[str]) -> None:
 def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
     doc_text = _read_required_text(RAW_INGESTION_MATERIALIZATION_FREEZE, errors)
     for term in (
-        "Status: planning/control implementation-entry freeze",
+        "Status: bounded runtime contract",
         "selected_raw_ingestion_mode: `raw_mixed_existing_source_materialization_entry`",
         "owner service: `backend/app/services/layer3_raw_mixed_materialization.py`",
         "route: `POST /api/v1/layer3/source/mixed-corpus/materialize`",
@@ -4940,7 +4946,7 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         "layer3.raw_mixed_corpus_materialize_result.v1",
         "layer3.raw_mixed_corpus_materialization_manifest.v1",
         "The existing `POST /api/v1/layer3/source/mixed-corpus/seed` route remains seed-only and must continue to write no database rows or files.",
-        "The future implementation must write no files.",
+        "The implementation must write no files.",
         "Partial materialization on failure is not admitted.",
         "No Layer 3 flow state during materialization",
     ):
@@ -4967,26 +4973,26 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         POST_709_ROADMAP_FREEZE: (
             "154_RAW_INGESTION_MATERIALIZATION_FREEZE.md",
             "raw_mixed_existing_source_materialization_entry",
-            "runtime implementation still requires a separate code branch and validation",
+            "broader source-family expansion still requires a separate freeze and validation",
         ),
         PHASE1A_README: (
             "154_RAW_INGESTION_MATERIALIZATION_FREEZE.md",
             "raw_mixed_existing_source_materialization_entry",
-            "leaving the existing seed route no-write and seed-only",
+            "the existing seed route remains no-write and seed-only",
         ),
         BOARD: (
-            "Raw ingestion materialization freeze",
+            "Raw ingestion materialization runtime",
             "raw_mixed_existing_source_materialization_entry",
-            "existing seed route no-write and seed-only",
+            "leaves the seed route no-write and seed-only",
         ),
         MANIFEST: (
-            "latest_raw_ingestion_materialization_freeze_branch",
-            "raw_ingestion_materialization_freeze",
+            "latest_raw_ingestion_materialization_runtime_branch",
+            "raw_ingestion_materialization_runtime",
             "raw_mixed_existing_source_materialization_entry",
-            "existing seed route remains no-write and seed-only",
+            "writes no files, starts no Layer 3 flow",
         ),
         PROOF_MANIFEST: (
-            "raw_ingestion_materialization_freeze_proof",
+            "raw_ingestion_materialization_runtime_proof",
             "selected_raw_ingestion_mode",
             "raw_mixed_existing_source_materialization_entry",
             "POST /api/v1/layer3/source/mixed-corpus/materialize",
@@ -4997,6 +5003,59 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing raw ingestion materialization proof term: {term}")
+
+    service_text = _read_required_text(RAW_MIXED_MATERIALIZATION_SERVICE, errors)
+    for term in (
+        'RAW_MIXED_CORPUS_MATERIALIZE_REQUEST_SCHEMA_ID = "layer3.raw_mixed_corpus_materialize_request.v1"',
+        'RAW_MIXED_CORPUS_MATERIALIZE_RESPONSE_SCHEMA_ID = "layer3.raw_mixed_corpus_materialize_result.v1"',
+        'RAW_MIXED_CORPUS_MATERIALIZE_MANIFEST_SCHEMA_ID = "layer3.raw_mixed_corpus_materialization_manifest.v1"',
+        'RAW_MIXED_CORPUS_MATERIALIZE_MODE = "raw_mixed_existing_source_materialization_entry"',
+        "materialize_raw_mixed_corpus",
+        "RAW_MIXED_CORPUS_FORBIDDEN_FIELDS",
+        "unsupported_requested",
+        "db.begin_nested()",
+        "db.commit()",
+        "files_written",
+        "layer3_flow_started",
+        "DatasetRow",
+        "ApsContentLinkage",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(RAW_MIXED_MATERIALIZATION_SERVICE)} missing materialization runtime term: {term}")
+    for forbidden_service_term in ("open(", "glob(", "rglob("):
+        if forbidden_service_term in service_text:
+            errors.append(
+                f"{_rel(RAW_MIXED_MATERIALIZATION_SERVICE)} contains forbidden materialization service term: {forbidden_service_term}"
+            )
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "layer3_raw_mixed_materialization",
+        "class Layer3RawMixedCorpusMaterializeRequest",
+        "class Layer3RawMixedCorpusMaterializeResponse",
+        "RAW_MIXED_CORPUS_MATERIALIZE_REQUEST_SCHEMA",
+        '"/source/mixed-corpus/materialize"',
+        "layer3_raw_mixed_materialization.materialize_raw_mixed_corpus",
+        "payload.model_dump(exclude_unset=True)",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing materialization API term: {term}")
+
+    test_text = _read_required_text(RAW_MIXED_MATERIALIZATION_TEST, errors)
+    for term in (
+        "test_layer3_raw_mixed_materialize_creates_admitted_sources_for_bounded_preview",
+        "test_layer3_raw_mixed_materialize_rejects_bad_manifest_hash_without_side_effects",
+        "test_layer3_raw_mixed_materialize_rejects_manifest_outside_storage_root_without_side_effects",
+        "test_layer3_raw_mixed_materialize_rejects_forbidden_request_and_manifest_fields",
+        "test_layer3_raw_mixed_materialize_rejects_unsupported_source_classes_without_side_effects",
+        "test_layer3_raw_mixed_materialize_rolls_back_existing_authority_conflicts",
+        "_drive_preview_only_flow",
+        "_assert_no_layer3_flow_delta",
+        "database_rows_written",
+        "files_written",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(RAW_MIXED_MATERIALIZATION_TEST)} missing materialization proof term: {term}")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -9590,6 +9649,7 @@ def main() -> int:
         GATE_B_STATE_SERVICE,
         SOURCE_BOUNDARY_SERVICE,
         RAW_MIXED_BRIDGE_SERVICE,
+        RAW_MIXED_MATERIALIZATION_SERVICE,
         PREFLIGHT_REQUEST_CONTRACT_SERVICE,
         APS_SOURCE_FAMILY_SERVICE,
         QUAL_APS_SERVICE,
@@ -9627,6 +9687,7 @@ def main() -> int:
         PREFLIGHT_REQUEST_CONTRACT_TEST,
         APS_SOURCE_FAMILY_TEST,
         RAW_MIXED_BRIDGE_TEST,
+        RAW_MIXED_MATERIALIZATION_TEST,
         QUAL_APS_TEST,
         MOCKUP_BOUNDARY_TEST,
         SESSION_ENTRY_TEST,
