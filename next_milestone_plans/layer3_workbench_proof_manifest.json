@@ -5900,5 +5900,50 @@
       "git diff --check"
     ],
     "next_boundary": "The next implementation-eligible pass is a test-only deeper rendered raw mixed downstream path using live raw mixed controls and existing downstream controls only, stopping before any unsupported UI or backend behavior."
+  },
+  "raw_mixed_rendered_downstream_blocker_proof": {
+    "scope": "Planning/control blocker report for deeper rendered raw mixed downstream proof after PR #732 readiness audit.",
+    "implementation_branch": "codex/l3-raw-mixed-rendered-downstream",
+    "live_behavior_change": false,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/159_RAW_MIXED_RENDERED_DOWNSTREAM_BLOCKER.md",
+    "current_main_anchor": "PR #732 merge commit d6a70a86eac76c7931822a1cda66bdfaff99bb36",
+    "selected_raw_mixed_rendered_ui_mode": "raw_mixed_server_owned_manifest_ref_ui_entry",
+    "blocker_summary": "Current main cannot honestly drive a deeper rendered raw mixed downstream path beyond plan approval because the UI has no rendered execution selection/start controls. Existing raw mixed rendered proof asserts execution, results, and package remain unavailable after plan approval and that no execution/package/handoff paths are called.",
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/159_RAW_MIXED_RENDERED_DOWNSTREAM_BLOCKER.md",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "negative_invariants": [
+      "no runtime behavior change",
+      "no production backend route, DTO, service, model, or migration change",
+      "no new rendered UI control",
+      "no hidden API substitute for missing rendered execution controls",
+      "no source family expansion",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_boundary": "Freeze rendered execution selection/start controls before trying to extend the raw mixed rendered UI path beyond plan approval, or keep the raw mixed UI proof stopped at plan approval."
   }
 }
