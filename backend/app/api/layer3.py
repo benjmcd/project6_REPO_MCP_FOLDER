@@ -1465,6 +1465,12 @@ class Layer3PackageReviewPreviewResponse(Layer3BaseResponse):
     package_review_preview_enabled: bool
     package_commit_enabled: bool
     package_review_enabled: bool
+    package_review_submit_enabled: bool | None = None
+    handoff_enabled: bool | None = None
+    aps_handoff_enabled: bool | None = None
+    external_export_download_enabled: bool | None = None
+    connector_dispatch_enabled: bool | None = None
+    provider_public_url_enabled: bool | None = None
     candidate_package_kinds: list[dict[str, Any]]
     package_owner_compatibility: dict[str, Any]
     blocked_reasons: list[str]
@@ -1475,11 +1481,23 @@ class Layer3PackageReviewPreviewResponse(Layer3BaseResponse):
     reviewed_output_item_summary: dict[str, Any] | None = None
     unresolved_trace_count: int
     pass_type: str | None = None
+    engine_family: str | None = None
     pass_scope: str | None = None
+    method: str | None = None
     selected_method_name: str | None = None
     source_gate: str | None = None
     source_dataset_version_ids: list[str] | None = None
     cohort_shape: str | None = None
+    source_shape: str | None = None
+    content_id: str | None = None
+    content_contract_id: str | None = None
+    chunking_contract_id: str | None = None
+    material_snapshot_id: str | None = None
+    analysis_unit_id: str | None = None
+    analysis_set_id: str | None = None
+    output_payload_ref: str | None = None
+    output_payload_hash: str | None = None
+    chunk_count: int | None = None
     authority_rail: dict[str, Any]
 
 

@@ -1,18 +1,18 @@
 # Layer 3 Qualitative APS Package-Review Contract
 
-Status: planning/control contract paired with `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md`.
+Status: current runtime contract paired with `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md`.
 
-This contract defines the minimum API/state/proof shape for a future `qual_aps_package_review_preview_only` implementation. It does not make qualitative package preview live and does not admit package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, source expansion, broad qualitative/hybrid/RAG behavior, rendered controls, model/migration changes, hidden LLM planning, full mockup activation, or authentication/security behavior.
+This contract defines the API/state/proof shape for the live `qual_aps_package_review_preview_only` implementation. It admits only read-only package-review preview for one approved standalone APS content-document qualitative result and does not admit package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, source expansion, broad qualitative/hybrid/RAG behavior, rendered controls, model/migration changes, hidden LLM planning, full mockup activation, or authentication/security behavior.
 
 ## Authority Order
 
-Future qualitative APS package-review preview must resolve authority in this order:
+Qualitative APS package-review preview must resolve authority in this order:
 
 1. live source and tests on `project6-origin/main`;
 2. `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md`;
 3. existing qualitative execution governance in `114_QUAL_APS_EXEC_FREEZE.md`, `115_QUAL_APS_EXEC_CONTRACT.md`, `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md`, and `124_QUAL_HYBRID_RAG_FREEZE.md`;
 4. `backend/app/services/layer3_qual_aps_execution.py` for qualitative execution output authority;
-5. `backend/app/services/layer3_workbench.py` for API flow state, result/status, result-review, and current package-preview fail-closed behavior;
+5. `backend/app/services/layer3_workbench.py` for API flow state, result/status, result-review, read-only qualitative package-preview authority, and downstream fail-closed behavior;
 6. `backend/app/services/layer3_workbench_package_state.py` for existing package-preview candidate vocabulary and downstream-unavailable patterns;
 7. `backend/tests/test_layer3_bounded_e2e.py` and `backend/tests/test_layer3_qual_aps_execution.py`;
 8. request payload as operator intent only;
@@ -22,17 +22,17 @@ Mockups, browser-visible state, planning prose, PR titles, branch names, or copi
 
 ## Route Decision
 
-Default future route target:
+Live route target:
 
 - `POST /api/v1/layer3/package/review/preview`
 
-Route reuse is preferred only if the future audit proves the existing request/response envelope can distinguish:
+Route reuse is admitted because the existing request/response envelope now distinguishes:
 
 - wrapped quantitative single-item preview;
 - associated-cohort descriptive-summary preview;
 - standalone APS content-document qualitative preview.
 
-A separate route is allowed only if route reuse would make those authority families ambiguous. If a separate route is selected, it must be named in the implementation prompt before code begins and must still be preview-only.
+No separate qualitative preview route is admitted in this boundary.
 
 ## Request Contract
 
@@ -177,7 +177,7 @@ If a later implementation changes `/review/layer3`, it must:
 
 ## Failure Contract
 
-The future implementation must fail closed when:
+The runtime must fail closed when:
 
 - session, plan, preview hash, pass run, output metadata, result-review state, content document, chunks, material snapshot, analysis unit, or analysis set is missing;
 - pass run is not qualitative APS document execution;
@@ -190,7 +190,7 @@ The future implementation must fail closed when:
 
 ## Test Contract
 
-Minimum future implementation tests:
+Minimum implementation tests:
 
 - one success path for approved standalone APS qualitative result-review preview;
 - missing approved result review fails closed;
@@ -201,7 +201,7 @@ Minimum future implementation tests:
 - forbidden request fields fail closed before mutation;
 - existing quantitative single-item package preview remains unchanged;
 - existing associated-cohort package preview remains unchanged;
-- PR `#702` standalone APS qualitative E2E still passes through the package blocker or is updated only when this runtime genuinely admits preview;
+- standalone APS qualitative E2E reaches read-only package preview and then stops at package construction with `qualitative_aps_package_construction_commit_not_admitted`;
 - no package, reconciliation, handoff/export, APS dispatch, external export/download, connector, provider/public URL, source, RAG/vector, model/migration, or auth/security side effects;
 - progress checker guard if needed;
 - headed and headless Chrome proof if UI changes.
