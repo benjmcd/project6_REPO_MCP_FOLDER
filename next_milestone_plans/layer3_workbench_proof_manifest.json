@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Current main now includes the PR #689 mixed APS provenance bridge, PR #690/#691 raw mixed-corpus seed-only bridge freeze/runtime, and PR #692 through PR #700 failure-mode, API E2E, rendered UI, browser harness, and rendered Gate B-to-plan approval proof sequence. The latest rendered UI proof reaches existing Gate C, plan preview, and plan approval controls for the admitted dataset_version path after API seed setup, while preserving the APS companion as excluded from planned-pass admission. Raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked. This status retains the package replacement artifact manifest-only runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, and older proof records below for historical slice authority.",
+  "status": "Current main now includes the PR #689 mixed APS provenance bridge, PR #690/#691 raw mixed-corpus seed-only bridge freeze/runtime, PR #692 through PR #700 failure-mode, API E2E, rendered UI, browser harness, and rendered Gate B-to-plan approval proof sequence, and PR #702 standalone APS content-document qualitative API E2E proof. The latest rendered UI proof reaches existing Gate C, plan preview, and plan approval controls for the admitted dataset_version path after API seed setup, while preserving the APS companion as excluded from planned-pass admission. The PR #702 standalone APS proof reaches result review for the admitted single aps_content_document qualitative path and proves package preview remains blocked. Raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked. This status retains the package replacement artifact manifest-only runtime proof boundary, the no-behavior-change plan-flow request contract extraction proof from PR #584, and older proof records below for historical slice authority.",
   "scope": {
     "source_branch": "codex/l3-synth-ref-sync",
     "merged_pr": "#609",
@@ -592,7 +592,12 @@
     "latest_raw_mixed_bridge_ui_closeout_prs": "#692-#700",
     "latest_raw_mixed_bridge_ui_closeout_merge_commit": "faabff6de9d2b487e54f665fc4cb685c63bff6e9",
     "latest_raw_mixed_bridge_ui_closeout_live_behavior_change": true,
-    "latest_raw_mixed_bridge_ui_closeout_summary": "PR #692 through PR #700 close the seed-only bridge failure-mode, bridge-to-bounded API E2E, rendered UI smoke, manual/reference runbook, browser harness patch-state, and rendered Gate B-to-plan approval proof sequence. The latest rendered UI proof uses API setup only, then existing /review/layer3 controls to reach rendered Gate C, plan preview, and plan approval for the admitted dataset_version path after PR #700 preserves Gate B material authority fields in the UI payload. It adds no new rendered controls and admits no raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, or frontend-only durable authority. Theme posture remains explicit: existing workbench smoke covers theme persistence/isolation/focus/responsive behavior, and future rendered controls or style changes must include relevant theme checks in headed and headless Chrome."
+    "latest_raw_mixed_bridge_ui_closeout_summary": "PR #692 through PR #700 close the seed-only bridge failure-mode, bridge-to-bounded API E2E, rendered UI smoke, manual/reference runbook, browser harness patch-state, and rendered Gate B-to-plan approval proof sequence. The latest rendered UI proof uses API setup only, then existing /review/layer3 controls to reach rendered Gate C, plan preview, and plan approval for the admitted dataset_version path after PR #700 preserves Gate B material authority fields in the UI payload. It adds no new rendered controls and admits no raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry behavior, provider/public URLs, real connector/destination dispatch, broad package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security behavior, or frontend-only durable authority. Theme posture remains explicit: existing workbench smoke covers theme persistence/isolation/focus/responsive behavior, and future rendered controls or style changes must include relevant theme checks in headed and headless Chrome.",
+    "latest_standalone_aps_qualitative_e2e_branch": "codex/l3-standalone-aps-qual-e2e",
+    "latest_standalone_aps_qualitative_e2e_pr": "#702",
+    "latest_standalone_aps_qualitative_e2e_merge_commit": "4a5c06903933054e67f4b366f9cd7849186d0bed",
+    "latest_standalone_aps_qualitative_e2e_live_behavior_change": false,
+    "latest_standalone_aps_qualitative_e2e_summary": "PR #702 adds one test-only API-level bounded E2E proof for the admitted standalone aps_content_document qualitative path. The proof seeds deterministic APS content separately from the Layer 3 flow, drives preflight through result review, asserts APS-only DB/file and output payload artifact state, and proves package preview remains fail-closed with qualitative_aps_package_review_preview_not_admitted. It admits no runtime behavior, rendered UI control, route, DTO, model, migration, source expansion, package/handoff/export behavior, connector/destination dispatch, provider/public URL, RAG/vector, hidden LLM, full mockup, auth/security, or theme behavior change."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -4907,5 +4912,47 @@
       "python -m pytest .\\backend\\tests -k layer3 -q -> 441 passed, 358 deselected",
       "git diff --check -> passed with expected LF-to-CRLF warnings on edited text files"
     ]
+  },
+  "standalone_aps_qualitative_e2e_proof": {
+    "scope": "Current-main test-only proof metadata for PR #702 standalone aps_content_document qualitative API E2E.",
+    "current_main_authority": "project6-origin/main at 4a5c06903933054e67f4b366f9cd7849186d0bed after PR #702",
+    "implementation_branch": "codex/l3-standalone-aps-qual-e2e",
+    "implementation_pr": "#702",
+    "merge_commit": "4a5c06903933054e67f4b366f9cd7849186d0bed",
+    "live_behavior_change": false,
+    "files_changed": [
+      "backend/tests/test_layer3_bounded_e2e.py"
+    ],
+    "authority_basis": [
+      "PR #702 adds one API-level bounded E2E test for the existing admitted single aps_content_document qualitative path.",
+      "The test seeds deterministic APS content authority separately from Layer 3 flow execution.",
+      "The test drives preflight, source preview, material preview, Gate B, Gate C, plan preview, plan approval, execution selection, execution start, result status, and result review through API calls.",
+      "The test asserts APS-only DB/file state, output payload artifact creation, no DatasetVersion or AnalysisRun creation in qualitative execution, and no package/handoff/export state creation.",
+      "The test proves package preview remains fail-closed with qualitative_aps_package_review_preview_not_admitted rather than inventing package support for qualitative APS output."
+    ],
+    "negative_invariants": [
+      "no production runtime behavior change",
+      "no rendered UI controls or theme behavior change",
+      "no route, DTO, model, or migration change",
+      "no source expansion",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval",
+      "no package/handoff/export admission for qualitative APS output",
+      "no connector or destination dispatch",
+      "no provider/public URL generation",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change"
+    ],
+    "post_702_validation": [
+      "python .\\tools\\l3-progress-check.py -> PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q -k standalone_aps_content_document_qualitative -> 1 passed, 2 deselected",
+      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q -> 3 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_qual_aps_execution.py -q -> 7 passed",
+      "python -m pytest .\\backend\\tests -k layer3 -q -> 442 passed, 358 deselected, 4 warnings",
+      "git diff --check -> PASS"
+    ],
+    "next_boundary": "Use this proof as the current APS qualitative API baseline before any later package/handoff/export admission, rendered UI expansion, source breadth expansion, or broader qualitative/hybrid/RAG behavior."
   }
 }
