@@ -613,7 +613,7 @@
     "latest_post_709_roadmap_freeze_branch": "codex/l3-post-709-roadmap-freeze",
     "latest_post_709_roadmap_freeze_pr": "#710",
     "latest_post_709_roadmap_freeze_live_behavior_change": false,
-    "latest_post_709_roadmap_freeze_summary": "Doc 142 centralizes the current-main future-pass order after qualitative APS APS handoff dispatch is now live: qualitative APS external export/download freeze/runtime, rendered UI/theme proof, source breadth, raw ingestion, broad qualitative/hybrid/RAG, package lifecycle, connector/provider expansion, mockup activation, auth/security, and CI/performance/observability hardening. It is planning/control only and admits no runtime behavior by itself.",
+    "latest_post_709_roadmap_freeze_summary": "Doc 142 centralizes the current-main future-pass order after qualitative APS APS handoff dispatch and qualitative APS external export/download are now live, and after docs 151/152 freeze future rendered qualitative APS UI activation. It now points to rendered UI/theme runtime, source breadth, raw ingestion, broad qualitative/hybrid/RAG, package lifecycle, connector/provider expansion, mockup activation, auth/security, and CI/performance/observability hardening. It is planning/control only and admits no runtime behavior by itself.",
     "latest_qual_aps_package_review_submit_freeze_branch": "codex/l3-qual-aps-package-submit-freeze",
     "latest_qual_aps_package_review_submit_freeze_pr": "#711",
     "latest_qual_aps_package_review_submit_freeze_live_behavior_change": false,
@@ -629,7 +629,10 @@
     "latest_qual_aps_aps_handoff_dispatch_freeze_summary": "Docs 147 and 148 now govern live qual_aps_aps_handoff_dispatch_entry through POST /api/v1/layer3/handoff/aps/dispatch and response schema layer3.qual_aps_aps_handoff_dispatch.v1. The runtime requires live qualitative APS handoff/export prepare authority, creates exactly one APS evidence-bundle handoff package row, writes one server-owned APS bundle artifact, records dispatch state in existing JSON-bearing state, preserves qualitative package refs/hashes/output payload identity, and leaves qualitative APS external export/download to docs 149 and 150. It admits no connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, broad qualitative/hybrid behavior, package mutation/reconstruction, or package supersession.",
     "latest_qual_aps_external_export_download_freeze_branch": "codex/l3-qual-aps-export-runtime",
     "latest_qual_aps_external_export_download_freeze_live_behavior_change": true,
-    "latest_qual_aps_external_export_download_freeze_summary": "Docs 149 and 150 now govern live qual_aps_external_export_download_prepare_deliver through POST /api/v1/layer3/handoff/export/download/prepare and POST /api/v1/layer3/handoff/export/download/deliver. The runtime requires live qualitative APS dispatch authority, APS handoff package authority, and server-owned APS bundle artifact hash/size authority, selects schemas layer3.qual_aps_external_export_download_prepare.v1 and layer3.qual_aps_external_export_download_delivery.v1, reports external_export_download_ready after dispatch, records one readiness JSON object, streams the existing APS bundle with zero DB/file writes on delivery, and admits no connector/destination dispatch, provider/public URLs, signed URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, broad qualitative/hybrid behavior, package mutation/reconstruction, or package supersession."
+    "latest_qual_aps_external_export_download_freeze_summary": "Docs 149 and 150 now govern live qual_aps_external_export_download_prepare_deliver through POST /api/v1/layer3/handoff/export/download/prepare and POST /api/v1/layer3/handoff/export/download/deliver. The runtime requires live qualitative APS dispatch authority, APS handoff package authority, and server-owned APS bundle artifact hash/size authority, selects schemas layer3.qual_aps_external_export_download_prepare.v1 and layer3.qual_aps_external_export_download_delivery.v1, reports external_export_download_ready after dispatch, records one readiness JSON object, streams the existing APS bundle with zero DB/file writes on delivery, and admits no connector/destination dispatch, provider/public URLs, signed URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, broad qualitative/hybrid behavior, package mutation/reconstruction, or package supersession.",
+    "latest_qual_aps_rendered_ui_freeze_branch": "codex/l3-qual-aps-ui-freeze",
+    "latest_qual_aps_rendered_ui_freeze_live_behavior_change": false,
+    "latest_qual_aps_rendered_ui_freeze_summary": "Docs 151 and 152 freeze only future qual_aps_rendered_downstream_existing_controls_only rendered /review/layer3 activation over already-live qualitative APS backend/API package/downstream steps. They require server-authoritative state, setup separated from rendered UI execution, stable selectors, headed and headless Chromium theme proof, and no frontend-only durable authority. They admit no UI runtime by themselves and keep backend changes, source expansion, RAG/vector, provider/public URLs, signed URLs, connector/destination dispatch, package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security, model/migration, and broad qualitative/hybrid behavior blocked."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -5402,6 +5405,65 @@
       "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview -q",
       "git diff --check"
     ],
-    "next_boundary": "The next pass should freeze rendered qualitative APS package/downstream UI before any rendered controls; connector/destination dispatch, provider/public URL, signed URL, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, package mutation/reconstruction, and model/migration work remain blocked."
+    "next_boundary": "Docs 151 and 152 now freeze rendered qualitative APS package/downstream UI before any rendered controls; connector/destination dispatch, provider/public URL, signed URL, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, package mutation/reconstruction, and model/migration work remain blocked."
+  },
+  "qual_aps_rendered_ui_freeze_proof": {
+    "scope": "Planning-only implementation-entry freeze for future rendered qualitative APS package/downstream UI activation.",
+    "implementation_branch": "codex/l3-qual-aps-ui-freeze",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/151_QUAL_APS_RENDERED_UI_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/152_QUAL_APS_RENDERED_UI_CONTRACT.md"
+    ],
+    "reference_files": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "e2e/layer3-handoff.spec.js",
+      "e2e/layer3-helpers.js"
+    ],
+    "proof_files": [
+      "next_milestone_plans/Layer3_planning_docs/142_POST_709_ROADMAP_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "selected_future_mode": "qual_aps_rendered_downstream_existing_controls_only",
+    "selected_future_surface": "/review/layer3",
+    "authority_basis": [
+      "PR #720 made the qualitative APS backend/API package/downstream chain live through same-origin external export/download delivery.",
+      "Current rendered qualitative package/downstream controls are not live until a separate runtime PR implements and browser-proves them.",
+      "Future rendered controls must use server-authoritative state and cannot treat browser state as durable authority."
+    ],
+    "required_future_browser_proof": [
+      "headed Chromium for the qualitative APS rendered path",
+      "headless Chromium for the same qualitative APS rendered path",
+      "theme persistence, focus, disabled, responsive, and status-state proof for touched controls"
+    ],
+    "negative_invariants": [
+      "no backend route, DTO, service, model, or migration change from this freeze",
+      "no source expansion",
+      "no local upload or local-directory ingestion",
+      "no web connector retrieval",
+      "no RAG/vector retrieval",
+      "no provider/public URL or signed URL generation",
+      "no connector or destination dispatch",
+      "no package mutation or reconstruction",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "required_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_boundary": "A separate runtime PR may implement only qual_aps_rendered_downstream_existing_controls_only under docs 151 and 152, with headed/headless Chromium theme proof and no backend/source/provider/connector/RAG/package-mutation/mockup/auth expansion."
   }
 }
