@@ -7644,6 +7644,63 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
                     "scope.latest_external_export_delivery_input_extraction_summary "
                     f"missing external export delivery input extraction term: {term}"
                 )
+        if proof_scope.get("latest_external_export_delivery_match_extraction_branch") != (
+            "codex/l3-external-export-delivery-match"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_match_extraction_branch "
+                "must be 'codex/l3-external-export-delivery-match'"
+            )
+        if proof_scope.get("latest_external_export_delivery_match_extraction_pr") != "#681":
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_match_extraction_pr must be '#681'"
+            )
+        if proof_scope.get("latest_external_export_delivery_match_extraction_head_commit") != (
+            "6c4288c44d71881fac969e889b970ae87e5c806c"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_match_extraction_head_commit "
+                "must match PR #681 head commit"
+            )
+        if proof_scope.get("latest_external_export_delivery_match_extraction_merge_commit") != (
+            "c13e96214f58b475e2027f066294701ad99df0de"
+        ):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_match_extraction_merge_commit "
+                "must match PR #681 merge commit"
+            )
+        if proof_scope.get("latest_external_export_delivery_match_extraction_live_behavior_change") is not False:
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} "
+                "scope.latest_external_export_delivery_match_extraction_live_behavior_change must be False"
+            )
+        delivery_match_summary = proof_scope.get(
+            "latest_external_export_delivery_match_extraction_summary"
+        )
+        for term in (
+            "external export/download delivery readiness matching extraction",
+            "PR #681",
+            "merge commit c13e96214f58b475e2027f066294701ad99df0de",
+            "external_export_download_delivery_readiness_mismatches",
+            "layer3_external_export_contract.py",
+            "workbench-owned error construction",
+            "route-level external_export_download_prepare",
+            "external_export_download_deliver proof",
+            "without activating provider/public URLs",
+            "connector/destination dispatch",
+            "package mutation/reconstruction",
+            "signed-reference behavior",
+        ):
+            if not isinstance(delivery_match_summary, str) or term not in delivery_match_summary:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} "
+                    "scope.latest_external_export_delivery_match_extraction_summary "
+                    f"missing external export delivery match extraction term: {term}"
+                )
 
     for path, terms in {
         MANIFEST: (
@@ -7687,6 +7744,9 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "external_export_delivery_input_extraction",
             "PR #679/merge commit a9d21dad",
             "external_export_download_delivery_request_fields",
+            "external_export_delivery_match_extraction",
+            "PR #681/merge commit c13e9621",
+            "external_export_download_delivery_readiness_mismatches",
         ),
         BOARD: (
             "Package owner compatibility extraction",
@@ -7730,6 +7790,10 @@ def _check_package_review_contract_extraction(errors: list[str]) -> None:
             "PR `#679`, merge commit `a9d21dad`",
             "external_export_download_delivery_request_fields",
             "without changing same-origin external export/download delivery precheck behavior",
+            "External export/download delivery readiness matching extraction",
+            "PR `#681`, merge commit `c13e9621`",
+            "external_export_download_delivery_readiness_mismatches",
+            "without changing same-origin external export/download delivery readiness-mismatch behavior",
         ),
     }.items():
         text = _read_required_text(path, errors)
@@ -7917,6 +7981,7 @@ def _check_external_export_contract_extraction(errors: list[str]) -> None:
         "class ExternalExportDownloadDelivery",
         "class ExternalExportDownloadDeliveryRequestFields",
         "def external_export_download_delivery_request_fields(",
+        "def external_export_download_delivery_readiness_mismatches(",
         "def external_export_download_prepare_blocked_fields(",
         "def external_export_download_delivery_blocked_fields(",
         '"public_url"',
@@ -7931,7 +7996,9 @@ def _check_external_export_contract_extraction(errors: list[str]) -> None:
         "from app.services.layer3_external_export_contract import",
         "ExternalExportDownloadDelivery",
         "external_export_download_delivery_request_fields",
+        "external_export_download_delivery_readiness_mismatches",
         "delivery_request = external_export_download_delivery_request_fields(payload)",
+        "external_export_download_delivery_readiness_mismatches(",
         "missing = delivery_request.missing_fields",
         "external_export_download_prepare_blocked_fields(payload)",
         "external_export_download_delivery_blocked_fields(payload)",
@@ -7950,9 +8017,11 @@ def _check_external_export_contract_extraction(errors: list[str]) -> None:
         "test_external_export_download_contract_is_shared_without_behavior_change",
         "test_external_export_download_contract_blocks_same_fields_as_legacy_logic",
         "test_external_export_download_delivery_request_fields_match_legacy_missing_order",
+        "test_external_export_download_delivery_readiness_mismatches_match_legacy_comparison",
         "ExternalExportDownloadDelivery",
         "ExternalExportDownloadDeliveryRequestFields",
         "external_export_download_delivery_request_fields",
+        "external_export_download_delivery_readiness_mismatches",
         "missing_fields",
         "external_export_download_prepare_blocked_fields",
         "external_export_download_delivery_blocked_fields",
