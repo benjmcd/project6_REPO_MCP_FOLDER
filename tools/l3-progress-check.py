@@ -8008,6 +8008,7 @@ def _check_external_export_contract_extraction(errors: list[str]) -> None:
     for stale_term in (
         "from dataclasses import dataclass, field",
         "@dataclass(frozen=True)\nclass ExternalExportDownloadDelivery:",
+        "def external_export_download_delivery_readiness_mismatches(",
     ):
         if stale_term in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns external export contract term: {stale_term!r}")
