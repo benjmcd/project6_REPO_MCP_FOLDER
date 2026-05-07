@@ -800,6 +800,7 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
     'payload_hashes',
     'package_review_submit_record_ref',
     'package_review_state',
+    'package_review_submit_schema_id',
     'handoff_target',
     'export_mode',
     'operator_decision',
@@ -807,6 +808,7 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
     'analysis_run_id',
   ]);
   expect(handoffPreparePayload.package_review_state).toBe('package_review_approved');
+  expect(handoffPreparePayload.package_review_submit_schema_id).toBe(packageSubmit.schema_id);
   expect(handoffPreparePayload.handoff_target).toBe('internal_export_envelope');
   expect(handoffPreparePayload.export_mode).toBe('prepare_only');
   expect(handoffPreparePayload.operator_decision).toBe('authorize_prepare');
