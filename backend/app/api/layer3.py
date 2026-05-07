@@ -961,12 +961,14 @@ class Layer3HandoffExportPrepareRequest(BaseModel):
     preview_hash: str | None = None
     result_review_record_ref: str | None = None
     package_review_preview_hash: str | None = None
+    construction_basis_hash: str | None = None
     reconciliation_record_id: str | None = None
     output_package_ids: Any | None = None
     payload_refs: Any | None = None
     payload_hashes: Any | None = None
     package_review_submit_record_ref: str | None = None
     package_review_state: str | None = None
+    package_review_submit_schema_id: str | None = None
     handoff_target: str | None = None
     export_mode: str | None = None
     operator_decision: str | None = None
@@ -1768,6 +1770,7 @@ class Layer3HandoffExportPrepareResponse(Layer3BaseResponse):
     analysis_run_id: str | None
     result_review_record_ref: str
     package_review_preview_hash: str
+    construction_basis_hash: str | None = None
     reconciliation_record_id: str
     output_package_ids: list[str]
     package_kinds: list[str]
@@ -1791,6 +1794,10 @@ class Layer3HandoffExportPrepareResponse(Layer3BaseResponse):
     external_handoff_enabled: bool
     external_export_enabled: bool
     dispatch_enabled: bool
+    aps_handoff_enabled: bool | None = None
+    external_export_download_enabled: bool | None = None
+    connector_dispatch_enabled: bool | None = None
+    provider_public_url_enabled: bool | None = None
     downstream_unavailable: list[str]
     next_state: str
     prepare_record_ref: str
@@ -3361,6 +3368,7 @@ HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "payload_hashes",
         "package_review_submit_record_ref",
         "package_review_state",
+        "package_review_submit_schema_id",
         "handoff_target",
         "export_mode",
         "operator_decision",
@@ -3374,6 +3382,7 @@ HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "result_review_record_ref": {"type": "string"},
         "package_review_preview_hash": {"type": "string"},
+        "construction_basis_hash": {"type": "string"},
         "reconciliation_record_id": {"type": "string"},
         "output_package_ids": {"type": "array", "items": {"type": "string"}},
         "payload_refs": _string_array_or_string_map_schema(
@@ -3384,6 +3393,7 @@ HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         ),
         "package_review_submit_record_ref": {"type": "string"},
         "package_review_state": {"type": "string", "enum": ["package_review_approved"]},
+        "package_review_submit_schema_id": {"type": "string"},
         "handoff_target": {"type": "string", "enum": ["internal_export_envelope"]},
         "export_mode": {"type": "string", "enum": ["prepare_only"]},
         "operator_decision": {"type": "string", "enum": ["authorize_prepare", "hold", "decline", "blocked"]},

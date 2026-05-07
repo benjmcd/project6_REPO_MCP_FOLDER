@@ -1301,6 +1301,7 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
         "payload_hashes",
         "package_review_submit_record_ref",
         "package_review_state",
+        "package_review_submit_schema_id",
         "handoff_target",
         "export_mode",
         "operator_decision",
@@ -3385,11 +3386,14 @@ def _handoff_export_prepare_payload(
         "payload_hashes": commit_body["payload_hashes"],
         "package_review_submit_record_ref": submit_body["submit_record_ref"],
         "package_review_state": submit_body["package_review_state"],
+        "package_review_submit_schema_id": submit_body.get("schema_id", "layer3.package_review_submit.v1"),
         "handoff_target": "internal_export_envelope",
         "export_mode": "prepare_only",
         "operator_decision": operator_decision,
         "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
     }
+    if commit_body.get("construction_basis_hash") is not None:
+        payload["construction_basis_hash"] = commit_body["construction_basis_hash"]
     if decision_notes is not None:
         payload["decision_notes"] = decision_notes
     return payload
@@ -8492,6 +8496,7 @@ def test_layer3_api_handoff_export_prepare_prechecks_fail_closed(
         "payload_hashes",
         "package_review_submit_record_ref",
         "package_review_state",
+        "package_review_submit_schema_id",
         "handoff_target",
         "export_mode",
         "operator_decision",

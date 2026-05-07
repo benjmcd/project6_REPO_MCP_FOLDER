@@ -18,8 +18,12 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_USER_FACING,
     SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
     SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+    SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
 )
-from app.services.layer3_package_submit_response import COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+from app.services.layer3_package_submit_response import (
+    COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+    QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+)
 from app.services.layer3_workbench_package_state import HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
 
 
@@ -146,3 +150,30 @@ def test_handoff_export_prepare_response_preserves_cohort_schema_and_provenance(
     assert response["external_handoff_enabled"] is False
     assert response["external_export_enabled"] is False
     assert response["dispatch_enabled"] is False
+
+
+def test_handoff_export_prepare_response_preserves_qualitative_aps_schema_and_disabled_downstream() -> None:
+    response = handoff_response.handoff_export_prepare_response(
+        **_kwargs(
+            package_construction_source_gate=SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
+            construction_basis_hash="construction-basis-qual-aps",
+            pass_type="single_item",
+            pass_scope="single_aps_doc_qualitative_pass",
+            method="single_aps_doc_qualitative_pass",
+            source_gate="qual_aps_doc_output_freeze",
+            source_shape="aps_content_document",
+            source_dataset_version_ids=[],
+            package_review_submit_schema_id=QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+        )
+    )
+
+    assert response["schema_id"] == handoff_response.QUAL_APS_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
+    assert response["package_review_submit_schema_id"] == QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    assert response["construction_basis_hash"] == "construction-basis-qual-aps"
+    assert response["pass_type"] == "single_item"
+    assert response["source_shape"] == "aps_content_document"
+    assert response["source_dataset_version_ids"] == []
+    assert response["aps_handoff_enabled"] is False
+    assert response["external_export_download_enabled"] is False
+    assert response["connector_dispatch_enabled"] is False
+    assert response["provider_public_url_enabled"] is False
