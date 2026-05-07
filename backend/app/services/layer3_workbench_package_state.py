@@ -8,6 +8,7 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_REVIEW_FACING,
     PACKAGE_KIND_USER_FACING,
     SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+    SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
 )
 from app.services.layer3_pass_entry import (
     COHORT_REQUESTED_METHOD_SOURCE,
@@ -35,7 +36,6 @@ COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "connector",
 )
 QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
-    "package_construction",
     "package_review_submit",
     "handoff",
     "export",
@@ -44,6 +44,7 @@ QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "connector_dispatch",
     "provider_public_url",
 )
+QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
 PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_USER_FACING,
@@ -303,6 +304,10 @@ def cohort_package_construction_source(source_gate: Any) -> bool:
     return str(source_gate or "") == SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
 
 
+def qualitative_aps_package_construction_source(source_gate: Any) -> bool:
+    return str(source_gate or "") == SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE
+
+
 def package_review_submit_downstream_unavailable(
     package_review_state: str | None,
     *,
@@ -362,9 +367,9 @@ def package_review_preview_summary(
         if qualitative_aps
         else PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
     )
-    package_commit_enabled = bool(approved and not qualitative_aps)
+    package_commit_enabled = bool(approved)
     readiness_reason = (
-        "candidate descriptor is preview-only until qualitative APS package construction is separately frozen"
+        "candidate family is eligible for bounded qualitative APS package construction commit"
         if qualitative_aps
         else None
     )

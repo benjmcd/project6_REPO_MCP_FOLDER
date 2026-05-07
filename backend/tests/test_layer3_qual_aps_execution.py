@@ -472,7 +472,7 @@ def test_single_aps_doc_qualitative_execution_rejects_forbidden_request_fields(d
     assert pass_run.output_payload_ref is None
 
 
-def test_single_aps_doc_qualitative_package_preview_is_read_only_and_construction_blocked(db_session, tmp_path) -> None:
+def test_single_aps_doc_qualitative_package_preview_construction_and_submit_guard(db_session, tmp_path) -> None:
     flow = _commit_single_doc_plan(db_session, tmp_path, content_id="content-qual-aps-package")
     start = layer3_workbench.analysis_execution_start(
         db_session,
@@ -540,7 +540,7 @@ def test_single_aps_doc_qualitative_package_preview_is_read_only_and_constructio
     assert preview["source_gate"] == QUAL_APS_SOURCE_GATE
     assert preview["analysis_run_id"] is None
     assert preview["package_review_preview_enabled"] is True
-    assert preview["package_commit_enabled"] is False
+    assert preview["package_commit_enabled"] is True
     assert preview["package_review_submit_enabled"] is False
     assert preview["handoff_enabled"] is False
     assert preview["aps_handoff_enabled"] is False
@@ -553,26 +553,38 @@ def test_single_aps_doc_qualitative_package_preview_is_read_only_and_constructio
     assert db_session.query(L3OutputPackage).count() == 0
     assert db_session.query(L3ReconciliationRecord).count() == 0
 
-    with pytest.raises(Layer3WorkbenchError) as exc:
-        layer3_workbench.package_construction_commit(
-            db_session,
-            {
-                "client_request_id": "req-qual-package-commit-blocked",
-                "session_id": flow["session_id"],
-                "analysis_plan_id": flow["analysis_plan_id"],
-                "pass_run_id": flow["pass_run_id"],
-                "preview_id": flow["preview_id"],
-                "preview_hash": flow["preview_hash"],
-                "analysis_run_id": start["analysis_run_id"],
-                "result_review_record_ref": review["review_record_ref"],
-                "package_review_preview_hash": preview["package_review_preview_hash"],
-                "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
-            },
-        )
+    commit = layer3_workbench.package_construction_commit(
+        db_session,
+        {
+            "client_request_id": "req-qual-package-commit",
+            "session_id": flow["session_id"],
+            "analysis_plan_id": flow["analysis_plan_id"],
+            "pass_run_id": flow["pass_run_id"],
+            "preview_id": flow["preview_id"],
+            "preview_hash": flow["preview_hash"],
+            "analysis_run_id": start["analysis_run_id"],
+            "result_review_record_ref": review["review_record_ref"],
+            "package_review_preview_hash": preview["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
 
-    assert exc.value.error_code == "qualitative_aps_package_construction_commit_not_admitted"
-    assert db_session.query(L3OutputPackage).count() == 0
-    assert db_session.query(L3ReconciliationRecord).count() == 0
+    assert commit["schema_id"] == "layer3.qual_aps_package_construction_commit.v1"
+    assert commit["status"] == "committed"
+    assert commit["package_review_submit_enabled"] is False
+    assert commit["package_construction_source_gate"] == "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE"
+    assert commit["content_id"] == "content-qual-aps-package"
+    assert commit["output_payload_hash"] == preview["output_payload_hash"]
+    assert commit["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert len(commit["output_package_ids"]) == 3
+    assert len(commit["payload_refs"]) == 3
+    assert len(commit["payload_hashes"]) == 3
+    assert db_session.query(L3OutputPackage).count() == 3
+    assert db_session.query(L3ReconciliationRecord).count() == 1
+    for package in commit["output_packages"]:
+        payload_path = Path(package["payload_ref"])
+        assert payload_path.exists()
+        assert hashlib.sha256(payload_path.read_bytes()).hexdigest() == package["payload_hash"]
 
     with pytest.raises(Layer3WorkbenchError) as submit_exc:
         layer3_workbench.package_review_submit(
@@ -587,17 +599,17 @@ def test_single_aps_doc_qualitative_package_preview_is_read_only_and_constructio
                 "analysis_run_id": start["analysis_run_id"],
                 "result_review_record_ref": review["review_record_ref"],
                 "package_review_preview_hash": preview["package_review_preview_hash"],
-                "reconciliation_record_id": "restored-qualitative-aps-reconciliation",
+                "reconciliation_record_id": commit["reconciliation_record_id"],
                 "operator_decision": "approved",
-                "output_package_ids": ["restored-canonical", "restored-user", "restored-review"],
-                "payload_hashes": ["1" * 64, "2" * 64, "3" * 64],
+                "output_package_ids": commit["output_package_ids"],
+                "payload_hashes": commit["payload_hashes"],
             },
         )
 
     assert submit_exc.value.error_code == "qualitative_aps_package_review_submit_not_admitted"
     assert submit_exc.value.status == "blocked"
-    assert db_session.query(L3OutputPackage).count() == 0
-    assert db_session.query(L3ReconciliationRecord).count() == 0
+    assert db_session.query(L3OutputPackage).count() == 3
+    assert db_session.query(L3ReconciliationRecord).count() == 1
 
 
 def test_single_aps_doc_qualitative_plan_requires_chunks(db_session, tmp_path) -> None:

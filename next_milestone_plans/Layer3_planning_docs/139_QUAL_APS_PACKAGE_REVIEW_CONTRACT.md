@@ -2,7 +2,7 @@
 
 Status: current runtime contract paired with `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md`.
 
-This contract defines the API/state/proof shape for the live `qual_aps_package_review_preview_only` implementation. It admits only read-only package-review preview for one approved standalone APS content-document qualitative result and does not admit package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, source expansion, broad qualitative/hybrid/RAG behavior, rendered controls, model/migration changes, hidden LLM planning, full mockup activation, or authentication/security behavior.
+This contract defines the API/state/proof shape for the live `qual_aps_package_review_preview_only` implementation. It admits only read-only package-review preview for one approved standalone APS content-document qualitative result. Package construction is admitted only by the separate docs `140`/`141` runtime boundary. This contract does not admit package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, source expansion, broad qualitative/hybrid/RAG behavior, rendered controls, model/migration changes, hidden LLM planning, full mockup activation, or authentication/security behavior.
 
 ## Authority Order
 
@@ -154,7 +154,7 @@ The preview may use candidate package descriptors only. The first candidate voca
 - `user_facing`
 - `review_facing`
 
-Those names are descriptors until a later package-construction freeze defines qualitative APS package payloads. The preview must not imply those packages exist.
+Those names are preview descriptors until the separate package-construction boundary creates qualitative APS package rows and payloads. The preview itself must not imply those packages already exist.
 
 The compatibility projection must decide, at minimum:
 
@@ -201,7 +201,7 @@ Minimum implementation tests:
 - forbidden request fields fail closed before mutation;
 - existing quantitative single-item package preview remains unchanged;
 - existing associated-cohort package preview remains unchanged;
-- standalone APS qualitative E2E reaches read-only package preview and then stops at package construction with `qualitative_aps_package_construction_commit_not_admitted`;
+- standalone APS qualitative E2E reaches read-only package preview and then the separate package-construction commit boundary;
 - package-review submit fails closed with `qualitative_aps_package_review_submit_not_admitted` before any restored or seeded reconciliation/package state can make qualitative APS submit appear live;
 - no package, reconciliation, handoff/export, APS dispatch, external export/download, connector, provider/public URL, source, RAG/vector, model/migration, or auth/security side effects;
 - progress checker guard if needed;
