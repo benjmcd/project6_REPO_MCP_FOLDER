@@ -112,6 +112,28 @@
                         <label><input type="checkbox" name="source-class" value="dataset_version" checked> Dataset version</label>
                         <label><input type="checkbox" name="source-class" value="aps_content_document" checked> APS content document</label>
                     </fieldset>
+                    <section class="raw-mixed-materialization" aria-labelledby="raw-mixed-materialization-heading">
+                        <div class="raw-mixed-materialization-header">
+                            <h3 id="raw-mixed-materialization-heading">Raw mixed server-owned manifest</h3>
+                            <span id="raw-mixed-materialization-state" class="status-pill preview">Not materialized</span>
+                        </div>
+                        <div class="raw-mixed-materialization-grid">
+                            <label for="raw-mixed-corpus-batch-id">Corpus batch ID</label>
+                            <input id="raw-mixed-corpus-batch-id" name="raw-mixed-corpus-batch-id" autocomplete="off">
+                            <label for="raw-mixed-manifest-ref">Manifest ref</label>
+                            <input id="raw-mixed-manifest-ref" name="raw-mixed-manifest-ref" autocomplete="off">
+                            <label for="raw-mixed-manifest-hash">Manifest SHA-256</label>
+                            <input id="raw-mixed-manifest-hash" name="raw-mixed-manifest-hash" autocomplete="off" spellcheck="false">
+                        </div>
+                        <label class="raw-mixed-confirmation">
+                            <input id="raw-mixed-operator-confirmation" name="raw-mixed-operator-confirmation" type="checkbox">
+                            Server-owned manifest authority confirmed
+                        </label>
+                        <div class="raw-mixed-materialization-actions">
+                            <button id="raw-mixed-materialize" class="secondary-btn" type="button" disabled>Materialize Source IDs</button>
+                            <div id="raw-mixed-materialization-status" class="raw-mixed-materialization-status" aria-live="polite">Awaiting server-owned manifest authority.</div>
+                        </div>
+                    </section>
                     <section class="dataset-version-selector" aria-labelledby="dataset-version-selector-heading">
                         <div>
                             <h3 id="dataset-version-selector-heading">APS-derived DatasetVersion selection</h3>

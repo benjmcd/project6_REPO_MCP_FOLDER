@@ -302,6 +302,7 @@ html[data-theme="workbench"] body.layer3-page .step-chip.current {
 }
 
 html[data-theme="workbench"] body.layer3-page .source-fieldset,
+html[data-theme="workbench"] body.layer3-page .raw-mixed-materialization,
 html[data-theme="workbench"] body.layer3-page .dataset-version-selector,
 html[data-theme="workbench"] body.layer3-page .aps-content-document-selector,
 html[data-theme="workbench"] body.layer3-page .plan-summary-card,
@@ -3118,6 +3119,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
 .intent-form label,
 .source-fieldset legend,
+.raw-mixed-materialization label,
 .dataset-version-selector label,
 .aps-content-document-selector label,
 .filter-row label {
@@ -3127,6 +3129,8 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 }
 
 .intent-form textarea,
+.raw-mixed-materialization input[type="text"],
+.raw-mixed-materialization input:not([type]),
 .dataset-version-selector textarea,
 .aps-content-document-selector textarea,
 .filter-row input,
@@ -3161,6 +3165,61 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     align-items: center;
     gap: 8px;
     color: var(--text-color);
+}
+
+.raw-mixed-materialization {
+    display: grid;
+    gap: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--panel-bg);
+}
+
+.raw-mixed-materialization-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+
+.raw-mixed-materialization h3 {
+    margin: 0;
+    font-size: 0.94rem;
+}
+
+.raw-mixed-materialization-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, 0.32fr) minmax(0, 1fr);
+    gap: 10px 12px;
+    align-items: center;
+}
+
+.raw-mixed-materialization-grid input {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.raw-mixed-confirmation {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.raw-mixed-materialization-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.raw-mixed-materialization-status {
+    color: var(--muted-text);
+    font-size: 0.82rem;
+    line-height: 1.38;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .dataset-version-selector,
@@ -3783,6 +3842,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
     .result-review-controls button {
         grid-column: 1;
+    }
+
+    .raw-mixed-materialization-grid {
+        grid-template-columns: 1fr;
     }
 
     .sublayer-map-panel,

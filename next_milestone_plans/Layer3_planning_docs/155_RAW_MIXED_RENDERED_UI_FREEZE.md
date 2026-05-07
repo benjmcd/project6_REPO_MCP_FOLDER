@@ -1,16 +1,16 @@
 # Raw Mixed Rendered Manifest UI Freeze
 
-Status: planning/control implementation-entry freeze for a later rendered `/review/layer3` raw mixed materialization workflow.
+Status: live bounded rendered `/review/layer3` raw mixed materialization workflow for `raw_mixed_server_owned_manifest_ref_ui_entry`.
 
-This document admits no runtime behavior by itself. It does not add rendered controls, backend routes, DTOs, services, models, migrations, source adapters, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, provider/public URLs, connector/destination dispatch, package mutation, full mockup activation, hidden LLM planning, auth/security behavior, or theme behavior.
+This document now governs the implemented rendered UI runtime only. It does not add backend routes, DTOs, services, models, migrations, source adapters, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, provider/public URLs, connector/destination dispatch, package mutation, full mockup activation, hidden LLM planning, auth/security behavior, or theme-specific authority.
 
 ## Decision
 
-The selected future rendered UI mode is exactly:
+The selected live rendered UI mode is exactly:
 
 - selected_raw_mixed_rendered_ui_mode: `raw_mixed_server_owned_manifest_ref_ui_entry`
 
-A later UI implementation may expose only a human-facing `/review/layer3` entry point for the already-live `POST /api/v1/layer3/source/mixed-corpus/materialize` route. The UI may collect or select a server-owned materialization manifest reference and hash, call the existing materialization endpoint, and then feed only the returned `dataset_version` and `aps_content_document` IDs into the existing source selection, preflight, source preview, material preview, Gate B, Gate C, plan preview, and plan approval controls.
+The live UI exposes only a human-facing `/review/layer3` entry point for the already-live `POST /api/v1/layer3/source/mixed-corpus/materialize` route. The UI collects a server-owned materialization manifest reference and hash, calls the existing materialization endpoint, refreshes source candidates, and then feeds only the returned `dataset_version` and `aps_content_document` IDs into the existing source selection, preflight, source preview, material preview, Gate B, Gate C, plan preview, and plan approval controls.
 
 The UI must not imply that arbitrary raw ingestion is live. The operator input is a server-owned manifest reference and hash, not file bytes, a local path, a directory, a URL to fetch, a connector request, an upload, or a source adapter registry instruction.
 
@@ -24,11 +24,11 @@ Current main already admits:
 - a bounded API E2E proof that materialized source IDs can drive the associated-cohort path through external export/download delivery;
 - a rendered Playwright smoke proving API/test setup can materialize source authority and drive existing `/review/layer3` controls through Gate C and plan approval without adding UI controls.
 
-Current main does not admit a human-facing raw mixed manifest picker, upload control, directory picker, web connector control, RAG/vector control, provider/public URL control, connector/destination control, or source adapter registry.
+Current main now admits the bounded server-owned manifest-ref controls described here. It still does not admit a file picker, upload control, directory picker, web connector control, RAG/vector control, provider/public URL control, connector/destination control, or source adapter registry.
 
-## Allowed Future UI Surface
+## Allowed UI Surface
 
-A later implementation governed by this freeze may touch only:
+The implementation governed by this freeze may touch only:
 
 - `backend/app/review_ui/static/layer3.html`;
 - `backend/app/review_ui/static/layer3.css`;
@@ -38,7 +38,7 @@ A later implementation governed by this freeze may touch only:
 - `e2e/layer3-helpers.js`;
 - this freeze/contract pack, progress/proof manifests, and `tools/l3-progress-check.py`.
 
-Backend service/API changes are not admitted by this freeze. If the rendered implementation needs a manifest catalog route, upload endpoint, source adapter registry, model, migration, or new backend field, stop and create a separate backend/API freeze.
+Backend service/API changes are not admitted by this freeze. If a later change needs a manifest catalog route, upload endpoint, source adapter registry, model, migration, or new backend field, stop and create a separate backend/API freeze.
 
 ## Input Boundary
 
@@ -58,7 +58,7 @@ The UI must not send deferred fields for local upload, local-directory ingestion
 
 ## Required UI Gating
 
-Rendered materialization controls may become enabled only when:
+Rendered materialization controls become enabled only when:
 
 1. selected source classes are a non-empty subset of `dataset_version` and `aps_content_document`;
 2. the materialization mode is exactly `raw_mixed_existing_source_materialization_entry`;
@@ -73,7 +73,7 @@ The browser may keep in-flight request state and display response summaries. It 
 
 ## Theme Posture
 
-Any later rendered control implementation must preserve the current `/review/layer3` theme system. Required proof includes:
+The rendered control implementation preserves the current `/review/layer3` theme system. Required proof includes:
 
 - headless Chromium for the raw mixed rendered manifest path;
 - headed Chromium for the same path;
@@ -82,11 +82,11 @@ Any later rendered control implementation must preserve the current `/review/lay
 - no text overlap, clipping, unstable resizing, or theme-specific state divergence in touched panels at the existing desktop and mobile breakpoints;
 - no theme-specific request payload differences or theme-specific authority.
 
-If no CSS/theme file changes are needed, the proof still must cover the new controls inside existing themes.
+The implementation adds only control-scoped CSS and proves the new controls inside existing themes.
 
-## Required Proof For Runtime
+## Required Proof
 
-The later UI implementation PR must prove:
+The implementation PR must prove:
 
 - API/test setup remains separate from rendered UI execution except for the human-facing manifest controls being implemented;
 - rendered controls call only `POST /api/v1/layer3/source/mixed-corpus/materialize` for materialization;
@@ -95,12 +95,12 @@ The later UI implementation PR must prove:
 - normal rendered preflight/source/material/Gate B/Gate C/plan flow remains unchanged after source selection;
 - failure cases render fail-closed status without creating Layer 3 flow state;
 - no new backend route, DTO, model, migration, service behavior, or rendered source-class expansion is introduced;
-- existing seed-only bridge UI smoke and materialization UI smoke continue to pass;
+- existing seed-only bridge UI smoke and materialization API-setup smoke continue to pass;
 - headed and headless Chromium proof covers the raw mixed rendered manifest workflow and touched theme states.
 
 ## Explicit Non-Goals
 
-This freeze does not admit:
+This runtime does not admit:
 
 - local upload, local-directory ingestion, broad file upload, or arbitrary local path input;
 - web connector retrieval, connector credentials, real connector invocation, destination selection, or destination writes;
@@ -115,7 +115,7 @@ This freeze does not admit:
 
 ## Stop Conditions
 
-Stop before implementation if the intended change requires:
+Stop before any further implementation if the intended change requires:
 
 - accepting local paths, file bytes, directories, uploads, or URLs to fetch;
 - adding a manifest catalog route or storage browser route;
@@ -128,11 +128,11 @@ Stop before implementation if the intended change requires:
 
 ## Acceptance Criteria
 
-This freeze is accepted only when:
+This runtime is accepted only when:
 
 - this file exists and names `selected_raw_mixed_rendered_ui_mode: raw_mixed_server_owned_manifest_ref_ui_entry`;
 - the paired contract document exists;
-- progress/proof references identify this as planning/control only;
+- progress/proof references identify this as a bounded rendered UI runtime;
 - `tools/l3-progress-check.py` requires the freeze/contract, progress/proof references, and negative UI/source/theme terms;
 - `python .\tools\l3-progress-check.py` passes;
 - `git diff --check` passes.
