@@ -228,6 +228,7 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
     'payload_hashes',
     'package_review_submit_record_ref',
     'package_review_state',
+    'package_review_submit_schema_id',
     'handoff_target',
     'export_mode',
     'operator_decision',
@@ -245,6 +246,7 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   expect(preparePayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
   expect(preparePayload.package_review_submit_record_ref).toBe(submit.submit_record_ref);
   expect(preparePayload.package_review_state).toBe('package_review_approved');
+  expect(preparePayload.package_review_submit_schema_id).toBe(submit.schema_id);
   expect(preparePayload.handoff_target).toBe('internal_export_envelope');
   expect(preparePayload.export_mode).toBe('prepare_only');
   expect(preparePayload.operator_decision).toBe('authorize_prepare');
