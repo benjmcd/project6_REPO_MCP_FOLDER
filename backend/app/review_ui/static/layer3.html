@@ -227,9 +227,14 @@
                         <span class="status-pill preview">Selected pass only</span>
                     </div>
                     <div class="action-row">
+                        <button id="execution-select" class="secondary-btn" type="button" disabled>Select Execution</button>
+                        <button id="execution-start" class="secondary-btn" type="button" disabled>Start Execution</button>
                         <button id="result-review-refresh" class="secondary-btn" type="button" disabled>Refresh Session State</button>
                         <button id="result-status-inspect" class="secondary-btn" type="button" disabled>Inspect Result Status</button>
                     </div>
+                </div>
+                <div id="execution-selection-start-panel" class="result-review-panel" aria-live="polite">
+                    <div class="empty-panel">Approve a plan before execution selection.</div>
                 </div>
                 <form id="result-review-form" class="result-review-form">
                     <div id="result-review-panel" class="result-review-panel">

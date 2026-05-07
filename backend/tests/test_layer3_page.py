@@ -52,6 +52,9 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert "ApsContentDocument" in response.text
     assert 'id="gate-b-band"' in response.text
     assert 'id="result-review-band"' in response.text
+    assert 'id="execution-select"' in response.text
+    assert 'id="execution-start"' in response.text
+    assert 'id="execution-selection-start-panel"' in response.text
     assert 'id="intent-form"' in response.text
     assert 'id="material-ledger-body"' in response.text
     assert 'id="gate-c-panel"' in response.text
@@ -215,6 +218,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/plan/preview'" in js.text
     assert "postJson('/plan/revise'" in js.text
     assert "postJson('/plan/approve'" in js.text
+    assert "postJson('/execution/select'" in js.text
+    assert "postJson('/execution/start'" in js.text
     assert "postJson('/package/review/preview'" in js.text
     assert "getJson(`/session/${encodeURIComponent(sessionId)}`)" in js.text
     assert "postJson('/execution/result/status'" in js.text

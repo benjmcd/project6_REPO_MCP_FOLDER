@@ -87,6 +87,9 @@ RENDERED_EXECUTION_SELECTION_START_FREEZE = (
 RENDERED_EXECUTION_SELECTION_START_CONTRACT = (
     PLANNING_DOCS / "161_RENDERED_EXECUTION_SELECTION_START_CONTRACT.md"
 )
+RENDERED_EXECUTION_SELECTION_START_RUNTIME = (
+    PLANNING_DOCS / "162_RENDERED_EXECUTION_SELECTION_START_RUNTIME.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -5372,7 +5375,6 @@ def _check_raw_mixed_rendered_downstream_blocker(errors: list[str]) -> None:
             "external-export-download-prepare-submit",
         ),
         LAYER3_JS: (
-            "setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected))",
             "postJson('/execution/result/status'",
             "postJson('/package/review/preview'",
         ),
@@ -5388,11 +5390,6 @@ def _check_raw_mixed_rendered_downstream_blocker(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing raw mixed rendered downstream blocker term: {term}")
-
-    html_text = _read_required_text(LAYER3_HTML, errors)
-    for forbidden_control in ("execution-select", "execution-start"):
-        if forbidden_control in html_text:
-            errors.append(f"{_rel(LAYER3_HTML)} unexpectedly contains {forbidden_control} control; update blocker doc")
 
     manifest_data = _load_json(MANIFEST, errors)
     current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
@@ -5480,7 +5477,7 @@ def _check_rendered_execution_selection_start_freeze(errors: list[str]) -> None:
             "theme-selector",
         ),
         LAYER3_JS: (
-            "setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected))",
+            "setStepChip(elements.executionStep, Boolean(State.executionSelection || State.sessionSummary?.execution_selection?.selected))",
             "postJson('/execution/result/status'",
             "postJson('/package/review/preview'",
             "THEME_STORAGE_KEY",
@@ -5520,6 +5517,106 @@ def _check_rendered_execution_selection_start_freeze(errors: list[str]) -> None:
     for selector in ("#execution-select", "#execution-start", "#execution-selection-start-panel"):
         if selector not in proof.get("future_selectors", []):
             errors.append(f"{_rel(PROOF_MANIFEST)} future_selectors missing {selector}")
+
+
+def _check_rendered_execution_selection_start_runtime(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_EXECUTION_SELECTION_START_RUNTIME: (
+            "Status: live bounded runtime for `raw_mixed_rendered_execution_selection_start_controls`.",
+            "POST /api/v1/layer3/execution/select",
+            "POST /api/v1/layer3/execution/start",
+            "#execution-select",
+            "#execution-start",
+            "#execution-selection-start-panel",
+            "Layer 3 workbench drives raw mixed rendered execution selection and start",
+            "no frontend-only durable authority",
+            "light, dark, and workbench theme states",
+        ),
+        BOARD: (
+            "Rendered execution selection/start runtime",
+            "162_RENDERED_EXECUTION_SELECTION_START_RUNTIME.md",
+            "raw_mixed_rendered_execution_selection_start_controls",
+            "Layer 3 workbench drives raw mixed rendered execution selection and start",
+        ),
+        MANIFEST: (
+            "latest_rendered_execution_selection_start_runtime_branch",
+            "latest_rendered_execution_selection_start_runtime_live_behavior_change",
+            "rendered_execution_selection_start_runtime",
+            "raw_mixed_rendered_execution_selection_start_controls",
+            "Layer 3 workbench drives raw mixed rendered execution selection and start",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_execution_selection_start_runtime_proof",
+            "162_RENDERED_EXECUTION_SELECTION_START_RUNTIME.md",
+            "raw_mixed_rendered_execution_selection_start_controls",
+            "Layer 3 workbench drives raw mixed rendered execution selection and start",
+            "no frontend-only durable authority",
+        ),
+        LAYER3_HTML: (
+            "execution-select",
+            "execution-start",
+            "execution-selection-start-panel",
+        ),
+        LAYER3_JS: (
+            "State.executionSelection",
+            "State.executionStart",
+            "canSelectExecution",
+            "canStartExecution",
+            "renderExecutionSelectionStartPanel",
+            "executionSelectionPayload",
+            "executionStartPayload",
+            "postJson('/execution/select'",
+            "postJson('/execution/start'",
+            "execution_mode: 'synchronous_single_pass'",
+            "setStepChip(elements.executionStep, Boolean(State.executionSelection || State.sessionSummary?.execution_selection?.selected))",
+        ),
+        LAYER3_PAGE_TEST: (
+            "execution-select",
+            "execution-start",
+            "execution-selection-start-panel",
+            "postJson('/execution/select'",
+            "postJson('/execution/start'",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives raw mixed rendered execution selection and start",
+            "selectAndStartRenderedExecution",
+            "inspectRenderedResultStatus",
+            "expectOnlyPayloadKeys(selectionPayload",
+            "expectOnlyPayloadKeys(startPayload",
+            "expectNoRequestsToLayer3Paths(layer3ApiRequests",
+            "cohort_result_review_ui_review_ready",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered execution selection/start runtime term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_execution_selection_start_runtime_branch") != "codex/l3-rendered-execution-controls":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered execution selection/start runtime branch")
+        if current_status.get("latest_rendered_execution_selection_start_runtime_live_behavior_change") is not True:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered execution selection/start runtime as live")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_execution_selection_start_runtime_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_execution_selection_start_runtime_proof object")
+        return
+    if proof.get("live_behavior_change") is not True:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered execution selection/start runtime proof must be live")
+    if proof.get("selected_rendered_execution_mode") != "raw_mixed_rendered_execution_selection_start_controls":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered execution selection/start runtime proof has stale selected mode")
+    selectors = proof.get("live_selectors")
+    if not isinstance(selectors, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered execution selection/start runtime proof missing live_selectors")
+    else:
+        for selector in ("#execution-select", "#execution-start", "#execution-selection-start-panel"):
+            if selector not in selectors:
+                errors.append(f"{_rel(PROOF_MANIFEST)} live_selectors missing {selector}")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -10091,6 +10188,7 @@ def main() -> int:
         RAW_MIXED_RENDERED_DOWNSTREAM_BLOCKER,
         RENDERED_EXECUTION_SELECTION_START_FREEZE,
         RENDERED_EXECUTION_SELECTION_START_CONTRACT,
+        RENDERED_EXECUTION_SELECTION_START_RUNTIME,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -10250,6 +10348,7 @@ def main() -> int:
     _check_post_730_practical_readiness(errors)
     _check_raw_mixed_rendered_downstream_blocker(errors)
     _check_rendered_execution_selection_start_freeze(errors)
+    _check_rendered_execution_selection_start_runtime(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
