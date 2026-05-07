@@ -14,6 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from review_browser_fixture import capture_review_browser_patch_state, restore_review_browser_patches
 from review_browser_server import create_app
+from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services import layer3_workbench as layer3_workbench_module
 
 
 @pytest.fixture()
@@ -25,6 +27,41 @@ def client() -> Iterator[TestClient]:
             yield test_client
     finally:
         restore_review_browser_patches(patch_state)
+
+
+def test_review_browser_server_restores_layer3_patch_state_after_app_creation() -> None:
+    module_key = "app.services.nrc_aps_evidence_bundle"
+    module_was_present = module_key in sys.modules
+    original_aps_bundle_module = sys.modules.get(module_key)
+    original_recommend_analysis = layer3_pass_entry_module.recommend_analysis
+    original_run_analysis = layer3_pass_entry_module.run_analysis
+    original_check_aps_handoff_compatibility = layer3_workbench_module.check_aps_handoff_compatibility
+    original_materialize_aps_handoff = layer3_workbench_module.materialize_aps_handoff
+    patch_state = capture_review_browser_patch_state()
+    app = None
+
+    try:
+        app = create_app()
+
+        assert layer3_pass_entry_module.recommend_analysis is not original_recommend_analysis
+        assert layer3_pass_entry_module.run_analysis is not original_run_analysis
+        assert layer3_workbench_module.check_aps_handoff_compatibility is not original_check_aps_handoff_compatibility
+        assert layer3_workbench_module.materialize_aps_handoff is not original_materialize_aps_handoff
+
+        restore_review_browser_patches(patch_state)
+
+        assert layer3_pass_entry_module.recommend_analysis is original_recommend_analysis
+        assert layer3_pass_entry_module.run_analysis is original_run_analysis
+        assert layer3_workbench_module.check_aps_handoff_compatibility is original_check_aps_handoff_compatibility
+        assert layer3_workbench_module.materialize_aps_handoff is original_materialize_aps_handoff
+        if module_was_present:
+            assert sys.modules[module_key] is original_aps_bundle_module
+        else:
+            assert module_key not in sys.modules
+    finally:
+        restore_review_browser_patches(patch_state)
+        if app is not None:
+            app.state.review_browser_temp_dir.cleanup()
 
 
 def test_review_browser_server_health_and_compare_sources(client: TestClient) -> None:
