@@ -67,6 +67,8 @@ QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE = (
 QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT = (
     PLANNING_DOCS / "150_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md"
 )
+QUAL_APS_RENDERED_UI_FREEZE = PLANNING_DOCS / "151_QUAL_APS_RENDERED_UI_FREEZE.md"
+QUAL_APS_RENDERED_UI_CONTRACT = PLANNING_DOCS / "152_QUAL_APS_RENDERED_UI_CONTRACT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -4032,7 +4034,7 @@ def _check_qualitative_aps_handoff_export_prepare_freeze(errors: list[str]) -> N
             "Qualitative APS attempts that lack the exact persisted package-preview",
         ),
         POST_709_ROADMAP_FREEZE: (
-            "Status: current-main planning/control reference after qualitative APS APS handoff dispatch runtime.",
+            "Status: current-main planning/control reference after qualitative APS external export/download runtime and rendered UI freeze.",
             "governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`",
             "qualitative APS handoff/export prepare over the approved package-review submit state",
             "governing APS handoff dispatch runtime docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md`",
@@ -4390,6 +4392,83 @@ def _check_qualitative_aps_external_export_download_freeze(errors: list[str]) ->
     ):
         if term not in contract_text:
             errors.append(f"{_rel(EXTERNAL_EXPORT_CONTRACT_SERVICE)} missing external export/download contract term: {term}")
+
+
+def _check_qualitative_aps_rendered_ui_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        QUAL_APS_RENDERED_UI_FREEZE: (
+            "Status: planning-only implementation-entry freeze",
+            "qual_aps_rendered_downstream_existing_controls_only",
+            "Current main still does not admit rendered qualitative package/downstream controls",
+            "Required Theme Posture",
+            "headless Chromium Playwright",
+            "headed Chromium Playwright",
+            "must not introduce a raw mixed manifest picker",
+            "no frontend-only durable authority",
+        ),
+        QUAL_APS_RENDERED_UI_CONTRACT: (
+            "Status: planning-only UI/state contract paired with `151_QUAL_APS_RENDERED_UI_FREEZE.md`.",
+            "qual_aps_rendered_downstream_existing_controls_only",
+            "Server state is the only durable authority",
+            "Delivery UI Gate",
+            "The UI must not enable delivery from `delivery_ui: null`.",
+            "headed and headless Chromium runs for the same qualitative APS rendered path",
+        ),
+        POST_709_ROADMAP_FREEZE: (
+            "governing rendered qualitative APS UI freeze docs: `151_QUAL_APS_RENDERED_UI_FREEZE.md`",
+            "rendered qualitative APS package/downstream UI runtime, including theme proof, governed by docs `151` and `152`",
+            "qual_aps_rendered_downstream_existing_controls_only",
+        ),
+        PHASE1A_README: (
+            "151_QUAL_APS_RENDERED_UI_FREEZE.md",
+            "152_QUAL_APS_RENDERED_UI_CONTRACT.md",
+            "qual_aps_rendered_downstream_existing_controls_only",
+            "headed/headless Chromium theme proof",
+        ),
+        DEFERRED_GATES: (
+            "151_QUAL_APS_RENDERED_UI_FREEZE.md",
+            "152_QUAL_APS_RENDERED_UI_CONTRACT.md",
+            "qual_aps_rendered_downstream_existing_controls_only",
+            "do not make rendered controls live by themselves",
+        ),
+        BOARD: (
+            "Qualitative APS rendered downstream UI freeze",
+            "planning/control docs",
+            "qual_aps_rendered_downstream_existing_controls_only",
+            "headed/headless Chromium theme proof",
+        ),
+        MANIFEST: (
+            "latest_qual_aps_rendered_ui_freeze_branch",
+            "latest_qual_aps_rendered_ui_freeze_live_behavior_change",
+            "qual_aps_rendered_ui_freeze",
+            "no frontend-only durable authority",
+        ),
+        PROOF_MANIFEST: (
+            "latest_qual_aps_rendered_ui_freeze_branch",
+            "latest_qual_aps_rendered_ui_freeze_live_behavior_change",
+            "latest_qual_aps_rendered_ui_freeze_summary",
+            "qual_aps_rendered_ui_freeze_proof",
+            "required_future_browser_proof",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing qualitative APS rendered UI freeze term: {term}"
+                )
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if isinstance(current_status, dict):
+        for key in (
+            "latest_qual_aps_rendered_ui_freeze_branch",
+            "latest_qual_aps_rendered_ui_freeze_live_behavior_change",
+            "qual_aps_rendered_ui_freeze",
+        ):
+            if key not in current_status:
+                errors.append(f"{_rel(MANIFEST)} current_status missing rendered UI key: {key}")
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
@@ -9239,6 +9318,8 @@ def main() -> int:
         QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT,
         QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE,
         QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT,
+        QUAL_APS_RENDERED_UI_FREEZE,
+        QUAL_APS_RENDERED_UI_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -9383,6 +9464,7 @@ def main() -> int:
     _check_qualitative_aps_handoff_export_prepare_freeze(errors)
     _check_qualitative_aps_aps_handoff_dispatch_freeze(errors)
     _check_qualitative_aps_external_export_download_freeze(errors)
+    _check_qualitative_aps_rendered_ui_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
