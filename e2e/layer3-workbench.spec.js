@@ -11,6 +11,85 @@ import {
   attachSessionToWorkbench,
 } from './layer3-helpers.js';
 
+async function seedRawMixedBridgeSetup(request) {
+  const setup = await expectJson(await request.post('/__test/layer3/seed-raw-mixed'));
+  expect(setup.schema_id).toBe('project6.review_browser_raw_mixed_seed_setup.v1');
+
+  const seed = await expectJson(await request.post('/api/v1/layer3/source/mixed-corpus/seed', {
+    data: setup.seed_request,
+  }));
+  expect(seed.schema_id).toBe('layer3.raw_mixed_corpus_seed_result.v1');
+  expect(seed.seed_mode).toBe('raw_mixed_corpus_bridge_seed_only');
+  expect(seed.source_seed_state).toBe('seeded');
+  expect(seed.source_classes).toEqual(['dataset_version', 'aps_content_document']);
+  expect(seed.layer3_flow_started).toBe(false);
+  expect(seed.next_allowed_actions).toEqual(['run_layer3_preflight_with_seeded_source_ids']);
+  expect(seed.dataset_version_ids).toHaveLength(2);
+  expect(seed.aps_content_document_ids).toHaveLength(1);
+  expect(seed).not.toHaveProperty('local_upload');
+  expect(seed).not.toHaveProperty('local_directory');
+  expect(seed).not.toHaveProperty('rag_plan');
+  expect(seed).not.toHaveProperty('provider_url');
+  expect(seed).not.toHaveProperty('public_url');
+  expect(seed).not.toHaveProperty('connector_run_id');
+  return seed;
+}
+
+async function expectNoDeferredRawMixedControls(page) {
+  const sourceClassValues = await page.locator('input[name="source-class"]').evaluateAll((inputs) => (
+    inputs.map((input) => input.value).sort()
+  ));
+  expect(sourceClassValues).toEqual(['aps_content_document', 'dataset_version']);
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expect(page.locator([
+    'input[name*="upload"]',
+    'input[name*="directory"]',
+    'input[name*="provider"]',
+    'input[name*="public"]',
+    'input[name*="rag"]',
+    'input[name*="vector"]',
+    'textarea[name*="upload"]',
+    'textarea[name*="directory"]',
+    'textarea[name*="provider"]',
+    'textarea[name*="public"]',
+    'textarea[name*="rag"]',
+    'textarea[name*="vector"]',
+  ].join(','))).toHaveCount(0);
+  await expect(page.getByRole('button', {
+    name: /upload|ingest|local directory|web connector|rag|vector|provider url|public url|connector dispatch|destination|mockup|auth/i,
+  })).toHaveCount(0);
+}
+
+async function selectSeededSources(page, seed) {
+  for (const datasetVersionId of seed.dataset_version_ids) {
+    const input = page.locator(`input[name="dataset-version-candidate"][value="${datasetVersionId}"]`);
+    await expect(input).toBeVisible();
+    await input.check();
+    await expect(input).toBeChecked();
+  }
+  for (const contentId of seed.aps_content_document_ids) {
+    const input = page.locator(`input[name="aps-content-document-candidate"][value="${contentId}"]`);
+    await expect(input).toBeVisible();
+    await input.check();
+    await expect(input).toBeChecked();
+  }
+}
+
+function expectMaterialPreviewContainsSeededSources(material, seed) {
+  const candidates = material.material_candidates || [];
+  expect(candidates).toHaveLength(3);
+  const datasetVersionIds = candidates
+    .filter((candidate) => candidate.source_class === 'dataset_version')
+    .map((candidate) => candidate.source_identity?.dataset_version_id)
+    .sort();
+  const apsContentIds = candidates
+    .filter((candidate) => candidate.source_class === 'aps_content_document')
+    .map((candidate) => candidate.source_identity?.content_id)
+    .sort();
+  expect(datasetVersionIds).toEqual([...seed.dataset_version_ids].sort());
+  expect(apsContentIds).toEqual([...seed.aps_content_document_ids].sort());
+}
+
 test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async ({ page }) => {
   await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => {
@@ -305,6 +384,79 @@ test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails
   await expect(summary).toContainText(
     'This endpoint surfaces server-backed APS-derived DatasetVersion choices only; refused/deferred families are explanatory guardrails, not selectable source classes.',
   );
+});
+
+test('Layer 3 workbench uses raw mixed seed bridge setup for rendered material review', async ({ page, request }) => {
+  const seed = await seedRawMixedBridgeSetup(request);
+
+  const datasetCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/dataset-version-candidates')
+  ));
+  const apsCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/aps-content-document-candidates')
+  ));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const datasetCandidates = await expectJson(await datasetCandidatesResponsePromise);
+  const apsCandidates = await expectJson(await apsCandidatesResponsePromise);
+
+  expect(datasetCandidates.dataset_version_candidates.map((candidate) => candidate.dataset_version_id)).toEqual(
+    expect.arrayContaining(seed.dataset_version_ids),
+  );
+  expect(apsCandidates.aps_content_document_candidates.map((candidate) => candidate.content_id)).toEqual(
+    expect.arrayContaining(seed.aps_content_document_ids),
+  );
+  await expectNoDeferredRawMixedControls(page);
+  await selectSeededSources(page, seed);
+
+  const preflightResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/preflight')
+  ));
+  const sourceResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/source-preview')
+  ));
+  const materialResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/material-preview')
+  ));
+  await page.locator('#layer3-intent').fill('Review raw mixed seed bridge setup through rendered Layer 3 material preview.');
+  await page.locator('#run-preflight').click();
+  const preflight = await expectJson(await preflightResponsePromise);
+  const source = await expectJson(await sourceResponsePromise);
+  const material = await expectJson(await materialResponsePromise);
+
+  expect(preflight.preflight_id).toBeTruthy();
+  expect(source.source_candidates.map((candidate) => candidate.source_class).sort()).toEqual([
+    'aps_content_document',
+    'dataset_version',
+  ]);
+  expectMaterialPreviewContainsSeededSources(material, seed);
+  await expect(page.locator('#material-ledger-body tr[data-candidate-id]')).toHaveCount(3);
+  for (const contentId of seed.aps_content_document_ids) {
+    await expect(page.locator('#material-ledger-body')).toContainText(contentId);
+  }
+  await expectNoDeferredRawMixedControls(page);
+
+  const gateBRequestPromise = page.waitForRequest((gateBRequest) => (
+    gateBRequest.url().includes('/api/v1/layer3/gate-b/decision') && gateBRequest.method() === 'POST'
+  ));
+  const gateBResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/gate-b/decision')
+  ));
+  await page.locator('#gate-b-submit').click();
+  const gateBRequest = await gateBRequestPromise;
+  const gateBPayload = gateBRequest.postDataJSON();
+  expect(gateBPayload.material_preview_hash).toBe(material.material_preview_hash);
+  expect(gateBPayload.candidate_decisions).toHaveLength(3);
+  expect(gateBPayload).not.toHaveProperty('local_upload');
+  expect(gateBPayload).not.toHaveProperty('local_directory');
+  expect(gateBPayload).not.toHaveProperty('rag_plan');
+  expect(gateBPayload).not.toHaveProperty('provider_url');
+  expect(gateBPayload).not.toHaveProperty('public_url');
+  expect(gateBPayload).not.toHaveProperty('connector_dispatch');
+  const gateB = await expectJson(await gateBResponsePromise);
+  expect(gateB.status).toBe('ok');
+  expect(gateB.approved_candidate_ids).toHaveLength(3);
+  await expect(page.locator('#gate-c-preview')).toBeEnabled();
+  await expectNoDeferredRawMixedControls(page);
 });
 
 test('Layer 3 workbench renders selected APS DatasetVersion trace detail from material preview', async ({ page, request }) => {

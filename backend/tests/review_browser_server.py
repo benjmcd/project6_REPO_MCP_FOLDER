@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from itertools import count
 import json
 import os
 import sys
@@ -43,6 +44,10 @@ from app.models.models import (
     uuid_str,
 )
 from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services.layer3_raw_mixed_bridge import (
+    RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
+    RAW_MIXED_CORPUS_SEED_MODE,
+)
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -318,6 +323,83 @@ def _seed_browser_aps_dataset_version_candidate(db, temp_path: Path) -> dict[str
     }
 
 
+def _seed_browser_raw_mixed_authority(db, temp_path: Path, *, seed_id: str) -> dict[str, object]:
+    dataset_version_ids = (f"dv-{seed_id}-a", f"dv-{seed_id}-b")
+    dataset_ids = (f"ds-{seed_id}-a", f"ds-{seed_id}-b")
+    run_id = f"run-{seed_id}"
+    target_id = f"target-{seed_id}"
+    content_id = f"content-{seed_id}"
+    corpus_batch_id = f"batch-{seed_id}"
+
+    for index, dataset_version_id in enumerate(dataset_version_ids):
+        _seed_browser_dataset_version(
+            db,
+            temp_path,
+            seed_id=f"{seed_id}-{index + 1}",
+            dataset_id=dataset_ids[index],
+            dataset_version_id=dataset_version_id,
+        )
+
+    _seed_browser_aps_content_fixture(db, temp_path, run_id=run_id, target_id=target_id, content_id=content_id)
+
+    for dataset_version_id in dataset_version_ids:
+        db.add(
+            DatasetSourceProvenance(
+                dataset_version_id=dataset_version_id,
+                connector_run_id=run_id,
+                source_system="nrc_adams_aps",
+                source_mode="raw_mixed_corpus_bridge_seed_fixture",
+                source_artifact_key=f"aps://{run_id}/{target_id}/{dataset_version_id}",
+                sciencebase_file_name="browser-raw-mixed-fixture.csv",
+                downloaded_sha256=hashlib.sha256(dataset_version_id.encode("utf-8")).hexdigest(),
+                raw_storage_ref=f"dataset_version:{dataset_version_id}",
+                source_reference_json={
+                    "target_id": target_id,
+                    "content_id": content_id,
+                    "accession_number": "ML26001A777",
+                    "parser_family": "csv_table",
+                    "parser_contract_id": "aps_csv_parser_v1",
+                    "typed_content_contract_id": "aps_csv_table_units_v1",
+                },
+                fetch_policy_mode="seed_fixture",
+            )
+        )
+
+    manifest_ref = f"raw-mixed/{seed_id}.json"
+    manifest_path = Path(settings.storage_dir) / manifest_ref
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "schema_id": RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
+        "corpus_batch_id": corpus_batch_id,
+        "aps_run_id": run_id,
+        "target_ids": [target_id],
+        "source_classes": ["dataset_version", "aps_content_document"],
+        "dataset_version_ids": list(dataset_version_ids),
+        "aps_content_document_ids": [content_id],
+    }
+    manifest_path.write_bytes(_canonical_json_bytes(manifest))
+    manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    db.commit()
+
+    return {
+        "schema_id": "project6.review_browser_raw_mixed_seed_setup.v1",
+        "schema_version": 1,
+        "seed_request": {
+            "schema_id": "layer3.raw_mixed_corpus_seed_request.v1",
+            "schema_version": 1,
+            "client_request_id": f"browser-raw-mixed-seed-{seed_id}",
+            "seed_mode": RAW_MIXED_CORPUS_SEED_MODE,
+            "corpus_batch_id": corpus_batch_id,
+            "aps_run_id": run_id,
+            "target_ids": [target_id],
+            "artifact_manifest_ref": manifest_ref,
+            "artifact_manifest_hash": manifest_hash,
+            "requested_source_classes": ["dataset_version", "aps_content_document"],
+            "operator_confirmation": True,
+        },
+    }
+
+
 def _seed_browser_aps_content_fixture(
     db,
     temp_path: Path,
@@ -558,6 +640,7 @@ def _build_browser_aps_handoff_ready_session(db, temp_path: Path) -> str:
 def create_app() -> FastAPI:
     temp_dir = TemporaryDirectory(prefix="review-browser-", ignore_cleanup_errors=True)
     temp_path = Path(temp_dir.name)
+    raw_mixed_seed_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
     install_review_browser_patches(fixture)
     _install_layer3_browser_patches(temp_path)
@@ -632,6 +715,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-aps-dataset",
                 "/__test/layer3/seed-aps-document",
                 "/__test/layer3/seed-aps-handoff",
+                "/__test/layer3/seed-raw-mixed",
             ],
         }
 
@@ -678,6 +762,15 @@ def create_app() -> FastAPI:
         try:
             session_id = _build_browser_aps_handoff_ready_session(db, temp_path)
             return {"session_id": session_id}
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/seed-raw-mixed")
+    def seed_layer3_raw_mixed() -> dict[str, object]:
+        db = SessionLocal()
+        try:
+            seed_id = f"raw-mixed-browser-{next(raw_mixed_seed_counter):03d}"
+            return _seed_browser_raw_mixed_authority(db, temp_path, seed_id=seed_id)
         finally:
             db.close()
 
