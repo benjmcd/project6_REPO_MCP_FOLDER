@@ -13,11 +13,11 @@ Current post-PR #695 execution-handoff references:
 - `next_milestone_plans/Layer3_execution_handoff/07_L3_UI_MANUAL_RUNBOOK.md`
 - `next_milestone_plans/Layer3_execution_handoff/08_L3_POST_695_REFERENCE_PLAN.md`
 
-Current post-PR #703 qualitative APS package-review planning references:
+Current qualitative APS package-review runtime references:
 - `next_milestone_plans/Layer3_planning_docs/138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`
 
-These docs freeze only the future `qual_aps_package_review_preview_only` boundary after PR `#702` proved the standalone APS content-document qualitative API path stops at `qualitative_aps_package_review_preview_not_admitted`. They do not make qualitative package preview, package construction, package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls, source expansion, broad qualitative/hybrid/RAG, full mockup, or auth/security behavior live.
+These docs freeze the live read-only `qual_aps_package_review_preview_only` boundary after PR `#702` proved the standalone APS content-document qualitative API path through result review. Current runtime admits only qualitative APS package-review preview through `POST /api/v1/layer3/package/review/preview`; it keeps package construction blocked with `qualitative_aps_package_construction_commit_not_admitted` and still does not admit package-review submit, handoff/export, APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls, source expansion, broad qualitative/hybrid/RAG, full mockup, or auth/security behavior.
 
 Post-synthesis authority guardrail:
 - `next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`
@@ -1409,7 +1409,7 @@ Start with:
 Read docs `114`/`115` as historical planning/control only, then read docs `119` and `124` plus current code for live truth:
 - exact `single_aps_doc_qualitative_pass` is now the only admitted qualitative APS execution mode
 - current live APS document support includes selection, trace, material preview, Gate B snapshot, qualitative/document-chunk typing, and the bounded single-document qualitative pass
-- docs `138`/`139` select only the future read-only `qual_aps_package_review_preview_only` planning boundary; current main still blocks qualitative package preview at `qualitative_aps_package_review_preview_not_admitted`
+- docs `138`/`139` govern the live read-only `qual_aps_package_review_preview_only` runtime boundary; current main admits qualitative package preview only and still blocks qualitative package construction at `qualitative_aps_package_construction_commit_not_admitted`
 - the qualitative pass must not reuse `DatasetVersion` conversion or wrapped quantitative `run_analysis(...)`
 - APS document identity, chunk ordering/limits, citation/trace refs, execution owner, result/review vocabulary, idempotency, failure states, no-leakage behavior, and tests remain required for any future expansion beyond the exact admitted mode
 - associated-cohort qualitative execution, broad qualitative execution, hybrid/RAG/vector behavior, document trace changes, rendered controls, package/handoff/export, provider/public URLs, connector/destination dispatch, source ingestion, schema/runtime/source widening, and full mockup activation remain out unless separately frozen

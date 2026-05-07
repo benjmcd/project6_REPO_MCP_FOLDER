@@ -34,6 +34,16 @@ COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "external_export_download",
     "connector",
 )
+QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
+    "package_construction",
+    "package_review_submit",
+    "handoff",
+    "export",
+    "aps_handoff",
+    "external_export_download",
+    "connector_dispatch",
+    "provider_public_url",
+)
 PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_USER_FACING,
@@ -305,12 +315,17 @@ def package_review_submit_downstream_unavailable(
     return PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
 
 
-def package_review_candidate_projection(*, package_commit_enabled: bool = True) -> list[dict[str, Any]]:
-    readiness_reason = (
-        "candidate family is eligible for bounded package construction commit"
-        if package_commit_enabled
-        else "candidate family is preview-only for associated-cohort review; package construction is deferred"
-    )
+def package_review_candidate_projection(
+    *,
+    package_commit_enabled: bool = True,
+    readiness_reason: str | None = None,
+) -> list[dict[str, Any]]:
+    if readiness_reason is None:
+        readiness_reason = (
+            "candidate family is eligible for bounded package construction commit"
+            if package_commit_enabled
+            else "candidate family is preview-only for associated-cohort review; package construction is deferred"
+        )
     return [
         {
             "package_kind": package_kind,
@@ -336,12 +351,23 @@ def package_review_preview_summary(
         and int(review_state.get("unresolved_trace_count") or 0) == 0
     )
     associated_cohort = bool(review_state_is_admitted_associated_cohort(review_state))
+    qualitative_aps = bool(
+        isinstance(review_state, dict)
+        and review_state.get("engine_family") == "qualitative_aps_document"
+    )
     downstream_unavailable = (
         COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
         if associated_cohort
+        else QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
+        if qualitative_aps
         else PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
     )
-    package_commit_enabled = bool(approved)
+    package_commit_enabled = bool(approved and not qualitative_aps)
+    readiness_reason = (
+        "candidate descriptor is preview-only until qualitative APS package construction is separately frozen"
+        if qualitative_aps
+        else None
+    )
     return {
         "schema_id": PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
         "available": approved,
@@ -354,7 +380,10 @@ def package_review_preview_summary(
         "package_review_enabled": False,
         "handoff_enabled": False,
         "candidate_package_kinds": (
-            package_review_candidate_projection(package_commit_enabled=package_commit_enabled)
+            package_review_candidate_projection(
+                package_commit_enabled=package_commit_enabled,
+                readiness_reason=readiness_reason,
+            )
             if approved
             else []
         ),
