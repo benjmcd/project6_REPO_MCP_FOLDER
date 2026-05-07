@@ -12,7 +12,10 @@ from app.services.layer3_external_export_contract import (
     EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS,
     ExternalExportDownloadDelivery,
 )
-from app.services.layer3_package_entry import SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
+from app.services.layer3_package_entry import (
+    SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+    SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
+)
 from app.services.layer3_pass_entry import (
     COHORT_SHAPE_ALIGNED_WIDE_TABLE,
     PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
@@ -20,6 +23,11 @@ from app.services.layer3_pass_entry import (
     SOURCE_GATE_COHORT_DESC_FREEZE,
 )
 from app.services.layer3_preview_contract import preview_identity
+from app.services.layer3_qual_aps_execution import (
+    PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
+    QUAL_APS_SOURCE_GATE,
+    SOURCE_SHAPE_APS_CONTENT_DOCUMENT,
+)
 from app.services.layer3_response_contract import base_response
 from app.services.layer3_utils import json_clone
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -82,6 +90,16 @@ def associated_cohort_external_export_download(readiness_state: dict[str, Any]) 
         and readiness_state.get("method") == "descriptive_summary"
         and readiness_state.get("source_gate") == SOURCE_GATE_COHORT_DESC_FREEZE
         and readiness_state.get("source_shape") == COHORT_SHAPE_ALIGNED_WIDE_TABLE
+    )
+
+
+def qualitative_aps_external_export_download_deferred(readiness_state: dict[str, Any]) -> bool:
+    return bool(
+        readiness_state.get("pass_scope") == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+        or readiness_state.get("source_gate") == QUAL_APS_SOURCE_GATE
+        or readiness_state.get("package_construction_source_gate")
+        == SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE
+        or readiness_state.get("source_shape") == SOURCE_SHAPE_APS_CONTENT_DOCUMENT
     )
 
 
@@ -447,6 +465,25 @@ def external_export_download_prepare_summary(
                 recorded_readiness
             )
         return summary
+
+    if qualitative_aps_external_export_download_deferred(recorded_dispatch):
+        return {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+            "available": False,
+            "state": EXTERNAL_EXPORT_DOWNLOAD_UNAVAILABLE_STATE,
+            "blocked_reason": "qualitative_aps_external_export_download_not_admitted",
+            "reconciliation_record_id": reconciliation_record_id,
+            "aps_handoff_record_ref": aps_handoff_record_ref,
+            "export_download_target": "aps_evidence_bundle_download_reference",
+            "download_mode": "reference_only_prepare",
+            "external_export_download_prepare_enabled": False,
+            "browser_download_enabled": False,
+            "download_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_selection_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+        }
 
     try:
         bundle_identity = aps_bundle_identity_for_external_export_download(
