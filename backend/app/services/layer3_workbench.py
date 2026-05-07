@@ -6338,6 +6338,10 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             blocked_fields=["package_review_submit_schema_id"],
         )
 
+    recorded_package_review_submit_schema_id = str(
+        package_review_submit.get("package_review_submit_schema_id")
+        or expected_submit_schema_id
+    )
     submit_mismatches = [
         field
         for field, expected in {
@@ -6351,10 +6355,11 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_prepare else None,
             "reconciliation_record_id": reconciliation_record_id,
             "package_construction_source_gate": package_construction_source_gate,
-            "package_review_submit_schema_id": expected_submit_schema_id,
         }.items()
         if str(package_review_submit.get(field) or "") != str(expected or "")
     ]
+    if recorded_package_review_submit_schema_id != expected_submit_schema_id:
+        submit_mismatches.append("package_review_submit_schema_id")
     if list(package_review_submit.get("output_package_ids") or []) != expected_package_ids:
         submit_mismatches.append("output_package_ids")
     if list(package_review_submit.get("package_kinds") or []) != [package.package_kind for package in ordered_packages]:
