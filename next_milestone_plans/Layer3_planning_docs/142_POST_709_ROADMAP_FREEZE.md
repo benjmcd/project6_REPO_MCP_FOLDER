@@ -1,20 +1,21 @@
 # Layer 3 Qualitative APS Post-Submit Roadmap Freeze
 
-Status: current-main planning/control reference after qualitative APS APS handoff dispatch runtime.
+Status: current-main planning/control reference after qualitative APS external export/download runtime and rendered UI freeze.
 
-This document is the referenceable roadmap for the remaining bounded Layer 3 work after qualitative APS package-review submit, qualitative APS handoff/export prepare, and qualitative APS APS handoff dispatch became live. It does not implement or admit any new runtime behavior by itself. It exists to keep intended future passes scoped, ordered, and auditable before any new implementation branch starts.
+This document is the referenceable roadmap for the remaining bounded Layer 3 work after qualitative APS package-review submit, qualitative APS handoff/export prepare, qualitative APS APS handoff dispatch, and qualitative APS external export/download became live. It now points to docs `151` and `152` as the planning-only rendered qualitative APS UI freeze before any rendered qualitative controls change. It does not implement or admit any new runtime behavior by itself.
 
 ## Authority Snapshot
 
 - authoritative remote: `project6-origin/main`
-- current-main anchor: qualitative APS APS handoff dispatch runtime branch
-- latest live qualitative APS boundary: `qual_aps_aps_handoff_dispatch_entry`
-- latest live qualitative APS response schema: `layer3.qual_aps_aps_handoff_dispatch.v1`
+- current-main anchor: qualitative APS external export/download runtime branch
+- latest live qualitative APS boundary: `qual_aps_external_export_download_prepare_deliver`
+- latest live qualitative APS response schema: `layer3.qual_aps_external_export_download_prepare.v1` and `layer3.qual_aps_external_export_download_delivery.v1`
 - governing construction docs: `140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE.md` and `141_QUAL_APS_PACKAGE_CONSTRUCTION_CONTRACT.md`
 - governing submit docs: `143_QUAL_APS_PACKAGE_REVIEW_SUBMIT_FREEZE.md` and `144_QUAL_APS_PACKAGE_REVIEW_SUBMIT_CONTRACT.md`
 - governing handoff/export prepare docs: `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md` and `146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md`
 - governing APS handoff dispatch runtime docs: `147_QUAL_APS_APS_HANDOFF_DISPATCH_FREEZE.md` and `148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md`
 - governing qualitative APS external export/download freeze docs: `149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md` and `150_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md`
+- governing rendered qualitative APS UI freeze docs: `151_QUAL_APS_RENDERED_UI_FREEZE.md` and `152_QUAL_APS_RENDERED_UI_CONTRACT.md`
 - broader deferred-gate control: `105_deferred-gates.md`
 - proof/progress surfaces: `layer3_progress_board.md`, `layer3_progress_manifest.json`, `layer3_workbench_proof_manifest.json`, and `tools/l3-progress-check.py`
 
@@ -41,24 +42,23 @@ Current main still does not admit rendered qualitative package controls, provide
 
 Future work must proceed in this order unless a later live audit proves a different blocker:
 
-1. rendered qualitative APS package/downstream UI freeze;
-2. rendered qualitative APS package/downstream UI runtime, including theme proof;
-3. source-breadth freeze before any ingestion/source-adapter expansion;
-4. raw ingestion implementation only after source-breadth freeze;
-5. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
-6. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
-7. connector/destination dispatch and provider/public URL freezes before any external delivery expansion;
-8. browser/full mockup activation freeze before any mockup-derived UI activation;
-9. auth/security hardening freeze before behavior changes in authorization, tenancy, credentials, or public access;
-10. CI/performance/observability hardening once the admitted runtime path is broad enough to stress runtime cost or audit trace completeness.
+1. rendered qualitative APS package/downstream UI runtime, including theme proof, governed by docs `151` and `152`;
+2. source-breadth freeze before any ingestion/source-adapter expansion;
+3. raw ingestion implementation only after source-breadth freeze;
+4. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
+5. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
+6. connector/destination dispatch and provider/public URL freezes before any external delivery expansion;
+7. browser/full mockup activation freeze before any mockup-derived UI activation;
+8. auth/security hardening freeze before behavior changes in authorization, tenancy, credentials, or public access;
+9. CI/performance/observability hardening once the admitted runtime path is broad enough to stress runtime cost or audit trace completeness.
 
 ## Future Pass Specifications
 
-### 1. Rendered Qualitative APS UI Freeze And Runtime
+### 1. Rendered Qualitative APS UI Runtime
 
-- goal: decide and implement only the rendered controls needed for already-live qualitative APS backend/API steps.
-- current blocker: no dedicated rendered UI freeze exists after qualitative package construction/submit/prepare/dispatch.
-- implementation-entry freeze required: yes.
+- goal: implement only the rendered controls needed for already-live qualitative APS backend/API steps under docs `151` and `152`.
+- current blocker: no rendered runtime implementation exists yet for `qual_aps_rendered_downstream_existing_controls_only`.
+- implementation-entry freeze required: yes, already provided by docs `151` and `152`.
 - likely files: `backend/app/review_ui/static/layer3.html`, `backend/app/review_ui/static/layer3.js`, `e2e/layer3-workbench.spec.js`, `e2e/layer3-handoff.spec.js`, `e2e/layer3-helpers.js`, UI runbook docs.
 - required tests: Playwright headed and headless Chrome for relevant existing themes; stable selectors; no frontend-only durable authority; API setup separated from rendered actions; theme persistence/isolation/responsive/focus behavior where visible controls are touched.
 - negative invariants: no new source/ingestion controls, no manifest picker, no upload/directory controls, no RAG/vector/provider/connector controls unless separately frozen, no browser state as authority.
