@@ -449,6 +449,33 @@ class Layer3ApiDriver:
             },
         )
 
+    def qualitative_handoff_prepare_blocked(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+        commit: dict[str, Any],
+        submit: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.post_blocked(
+            "/api/v1/layer3/handoff/export/prepare",
+            _handoff_export_prepare_payload(
+                request_id="aps-qual-e2e-handoff-prepare-blocked",
+                session_id=session_id,
+                preview_body=preview,
+                approval_body=approval,
+                selection_body=selection,
+                start_body=start,
+                review_body=review,
+                commit_body=commit,
+                submit_body=submit,
+            ),
+        )
+
     def package_commit(
         self,
         *,
@@ -1309,6 +1336,28 @@ def _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
     assert "package_review_submit" not in package_submit["downstream_unavailable"]
     assert "handoff" in package_submit["downstream_unavailable"]
     assert "external_export_download" in package_submit["downstream_unavailable"]
+    assert state.counts() == commit_counts
+    assert state.files() == package_files
+    state.assert_forbidden_side_effects_absent(
+        seeded_counts=seeded_counts,
+        allowed_output_packages=3,
+        allowed_reconciliations=1,
+    )
+
+    handoff_prepare = driver.qualitative_handoff_prepare_blocked(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+    )
+    assert handoff_prepare["error_code"] == "qualitative_aps_handoff_export_prepare_not_admitted"
+    assert handoff_prepare["status"] == "blocked"
+    assert set(handoff_prepare["blocked_fields"]) == {"pass_run_id", "package_review_preview_hash"}
+    assert handoff_prepare["next_allowed_actions"] == ["inspect_qualitative_aps_package_review_submit_state"]
     assert state.counts() == commit_counts
     assert state.files() == package_files
     state.assert_forbidden_side_effects_absent(

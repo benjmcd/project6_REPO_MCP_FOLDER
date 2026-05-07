@@ -1,6 +1,6 @@
 # Layer 3 Qualitative APS Handoff Export Prepare Freeze
 
-Status: planning/control freeze for future `qual_aps_handoff_export_prepare_entry`.
+Status: planning/control freeze for future `qual_aps_handoff_export_prepare_entry`, with current-main fail-closed guard.
 
 This document selects the next eligible qualitative APS downstream boundary after the live `qual_aps_package_review_submit_entry` runtime. It admits no runtime behavior by itself. It freezes only a future internal handoff/export prepare decision over an already approved standalone APS qualitative package-review submit state.
 
@@ -18,7 +18,7 @@ This document selects the next eligible qualitative APS downstream boundary afte
 - selected future response schema: `layer3.qual_aps_handoff_export_prepare.v1`
 - companion contract: `146_QUAL_APS_HANDOFF_EXPORT_PREPARE_CONTRACT.md`
 
-Live source and tests outrank this planning document. This document is not proof that qualitative APS handoff/export prepare is live.
+Live source and tests outrank this planning document. This document is not proof that qualitative APS handoff/export prepare is live. Current main explicitly rejects qualitative APS handoff/export prepare with `qualitative_aps_handoff_export_prepare_not_admitted` until a later runtime pass implements this boundary.
 
 ## Decision
 
@@ -38,7 +38,7 @@ This pass must precede qualitative APS APS dispatch and external export/download
 
 ## Current Blocker
 
-Current main has generic and associated-cohort handoff/export prepare behavior, but no qualitative APS-specific prepare freeze/runtime authority. Direct reuse of the generic route is not sufficient by itself because qualitative APS package preview, construction, and submit use distinct qualitative authority hashes, source-shape fields, and no `AnalysisRun`.
+Current main has generic and associated-cohort handoff/export prepare behavior, but no qualitative APS-specific prepare runtime authority. Current main explicitly guards the qualitative APS path with `qualitative_aps_handoff_export_prepare_not_admitted` rather than relying on generic preview-hash mismatch. Direct reuse of the generic route is not sufficient by itself because qualitative APS package preview, construction, and submit use distinct qualitative authority hashes, source-shape fields, and no `AnalysisRun`.
 
 The future implementation must explicitly validate qualitative APS authority rather than relying on the generic single-item path.
 

@@ -2,7 +2,7 @@
 
 Status: planning/control API and state contract paired with `145_QUAL_APS_HANDOFF_EXPORT_PREPARE_FREEZE.md`.
 
-This contract defines the future API/state/proof shape for `qual_aps_handoff_export_prepare_entry`. It does not make qualitative APS handoff/export prepare live. Current main still blocks qualitative APS handoff/export runtime while admitting qualitative APS package-review submit through `POST /api/v1/layer3/package/review/submit`.
+This contract defines the future API/state/proof shape for `qual_aps_handoff_export_prepare_entry`. It does not make qualitative APS handoff/export prepare live. Current main still blocks qualitative APS handoff/export runtime while admitting qualitative APS package-review submit through `POST /api/v1/layer3/package/review/submit`, and it now does so with the explicit fail-closed error `qualitative_aps_handoff_export_prepare_not_admitted` instead of relying on generic preview-hash mismatch.
 
 ## Authority Order
 
@@ -128,6 +128,8 @@ An available qualitative APS handoff/export prepare requires:
 - no existing handoff/export prepare state conflicts with the request.
 
 Any missing, stale, malformed, mismatched, non-approved, duplicate-conflicting, or cross-session authority must fail closed before mutation.
+
+Until this future boundary is implemented, qualitative APS attempts against `POST /api/v1/layer3/handoff/export/prepare` must fail closed with `qualitative_aps_handoff_export_prepare_not_admitted` and must not write handoff/export prepare state.
 
 ## State Contract
 
