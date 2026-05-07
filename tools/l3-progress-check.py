@@ -30,6 +30,12 @@ CONNECTOR_ENTRY_FREEZE = PLANNING_DOCS / "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md
 PACKAGE_MUTATION_FREEZE = PLANNING_DOCS / "122_PACKAGE_MUTATION_FREEZE.md"
 SOURCE_EXPANSION_FREEZE = PLANNING_DOCS / "123_SOURCE_EXPANSION_FREEZE.md"
 RAW_MIXED_BRIDGE_FREEZE = PLANNING_DOCS / "137_RAW_MIXED_BRIDGE_FREEZE.md"
+QUAL_APS_PACKAGE_REVIEW_FREEZE = (
+    PLANNING_DOCS / "138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md"
+)
+QUAL_APS_PACKAGE_REVIEW_CONTRACT = (
+    PLANNING_DOCS / "139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -3640,6 +3646,104 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing qualitative boundary term: {term}")
+
+
+def _check_qualitative_aps_package_review_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        QUAL_APS_PACKAGE_REVIEW_FREEZE: (
+            "Status: planning/control freeze only",
+            "selected future mode: `qual_aps_package_review_preview_only`",
+            "qualitative_aps_package_review_preview_not_admitted",
+            "backend/app/services/layer3_workbench.py` raises `qualitative_aps_package_review_preview_not_admitted`",
+            "backend/tests/test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_stops_before_package",
+            "This mode, if later implemented, may add only read-only package-review preview/readiness",
+            "The future implementation may not write durable package or downstream state.",
+            "existing quantitative single-item and associated-cohort package preview behavior remains unchanged",
+            "Browser proof is not required for a backend/API-only preview implementation.",
+        ),
+        QUAL_APS_PACKAGE_REVIEW_CONTRACT: (
+            "Status: planning/control contract paired with `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md`.",
+            "future `qual_aps_package_review_preview_only` implementation",
+            "Default future route target:",
+            "`POST /api/v1/layer3/package/review/preview`",
+            "Route reuse is preferred only if the future audit proves",
+            "`analysis_run_id`, but it must be absent or null for qualitative APS execution",
+            "The server must derive source, document, unit, set, chunk, output, and package-compatibility authority",
+            "Any missing, stale, malformed, mismatched, non-approved, or cross-session authority must fail closed before row or file mutation.",
+            "`schema_id`, preferably `layer3.qual_aps_package_review_preview.v1`",
+            "package_commit_enabled",
+            "external_export_download_enabled",
+            "provider_public_url_enabled",
+            "Forbidden state effects:",
+            "create or mutate `L3OutputPackage`",
+            "Those names are descriptors until a later package-construction freeze defines qualitative APS package payloads.",
+            "headed and headless Chrome proof if UI changes",
+        ),
+        PHASE1A_README: (
+            "138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md",
+            "139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md",
+            "future `qual_aps_package_review_preview_only` boundary",
+            "qualitative_aps_package_review_preview_not_admitted",
+            "They do not make qualitative package preview",
+        ),
+        DEFERRED_GATES: (
+            "Docs `138_QUAL_APS_PACKAGE_REVIEW_FREEZE.md` and `139_QUAL_APS_PACKAGE_REVIEW_CONTRACT.md`",
+            "`qual_aps_package_review_preview_only` planning boundary",
+            "current-main code still blocks qualitative APS package review at `qualitative_aps_package_review_preview_not_admitted`",
+        ),
+        BOARD: (
+            "Qualitative APS package-review preview freeze",
+            "planning/control docs",
+            "qual_aps_package_review_preview_only",
+            "qualitative_aps_package_review_preview_not_admitted",
+            "explicitly keeps package construction, package-review submit, handoff/export, APS dispatch, external export/download",
+        ),
+        MANIFEST: (
+            "latest_qual_aps_package_review_freeze_branch",
+            "latest_qual_aps_package_review_freeze_pr",
+            "qual_aps_package_review_freeze",
+            "future qual_aps_package_review_preview_only planning boundary",
+            "qualitative_aps_package_review_preview_not_admitted",
+            "do not admit package construction, package-review submit, handoff/export, APS dispatch, external export/download",
+        ),
+        PROOF_MANIFEST: (
+            "latest_qual_aps_package_review_freeze_branch",
+            "latest_qual_aps_package_review_freeze_pr",
+            "latest_qual_aps_package_review_freeze_live_behavior_change",
+            "latest_qual_aps_package_review_freeze_summary",
+            "qual_aps_package_review_freeze_proof",
+            "qual_aps_package_review_preview_only",
+            "qualitative_aps_package_review_preview_not_admitted",
+            "no package preview runtime admission",
+            "no rendered controls or theme behavior change",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing qualitative APS package-review freeze term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "def _raise_if_qualitative_aps_downstream_not_admitted(",
+        "status_body.get(\"engine_family\") != ENGINE_FAMILY_QUAL_APS_DOCUMENT",
+        "error_code=\"qualitative_aps_package_review_preview_not_admitted\"",
+        "error_code=\"qualitative_aps_package_construction_commit_not_admitted\"",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing qualitative APS package-review blocker term: {term}")
+
+    e2e_test_text = _read_required_text(LAYER3_BOUNDED_E2E_TEST, errors)
+    for term in (
+        "test_layer3_standalone_aps_content_document_qualitative_e2e_stops_before_package",
+        "ENGINE_FAMILY_QUAL_APS_DOCUMENT",
+        "qualitative_aps_package_review_preview_not_admitted",
+        "assert state.counts() == start_counts",
+        "assert state.files() == execution_files",
+    ):
+        if term not in e2e_test_text:
+            errors.append(f"{_rel(LAYER3_BOUNDED_E2E_TEST)} missing qualitative APS package-review proof term: {term}")
 
 
 def _check_source_boundary_contract(errors: list[str]) -> None:
@@ -8446,6 +8550,8 @@ def main() -> int:
         PACKAGE_MUTATION_FREEZE,
         SOURCE_EXPANSION_FREEZE,
         RAW_MIXED_BRIDGE_FREEZE,
+        QUAL_APS_PACKAGE_REVIEW_FREEZE,
+        QUAL_APS_PACKAGE_REVIEW_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -8583,6 +8689,7 @@ def main() -> int:
     _check_package_replacement_namespace_freeze(errors)
     _check_package_replacement_namespace_entry_freeze(errors)
     _check_qualitative_capability_boundary(errors)
+    _check_qualitative_aps_package_review_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
