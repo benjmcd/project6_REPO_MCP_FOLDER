@@ -20,11 +20,13 @@ from app.services.layer3_pass_entry import (
     COHORT_SHAPE_ALIGNED_WIDE_TABLE,
     PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
     PASS_TYPE_ASSOCIATED_COHORT,
+    PASS_TYPE_SINGLE_ITEM,
     SOURCE_GATE_COHORT_DESC_FREEZE,
 )
 from app.services.layer3_preview_contract import preview_identity
 from app.services.layer3_qual_aps_execution import (
     PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
+    QUAL_APS_METHOD_NAME,
     QUAL_APS_SOURCE_GATE,
     SOURCE_SHAPE_APS_CONTENT_DOCUMENT,
 )
@@ -41,6 +43,8 @@ from app.services.layer3_workbench_package_state import (
 
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.external_export_download_prepare.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
+QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.qual_aps_external_export_download_prepare.v1"
+QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.qual_aps_external_export_download_delivery.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = "layer3.external_export_download_delivery_ui.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_external_export_download"
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
@@ -72,6 +76,14 @@ ASSOCIATED_COHORT_READINESS_IDENTITY_FIELDS = (
     "source_shape",
     "source_dataset_version_ids",
     "package_review_submit_schema_id",
+    "content_id",
+    "content_contract_id",
+    "chunking_contract_id",
+    "material_snapshot_id",
+    "analysis_unit_id",
+    "analysis_set_id",
+    "output_payload_ref",
+    "output_payload_hash",
 )
 
 
@@ -100,6 +112,27 @@ def qualitative_aps_external_export_download_deferred(readiness_state: dict[str,
         or readiness_state.get("package_construction_source_gate")
         == SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE
         or readiness_state.get("source_shape") == SOURCE_SHAPE_APS_CONTENT_DOCUMENT
+    )
+
+
+def qualitative_aps_external_export_download_admitted(readiness_state: dict[str, Any]) -> bool:
+    return bool(
+        readiness_state.get("pass_type") == PASS_TYPE_SINGLE_ITEM
+        and readiness_state.get("pass_scope") == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+        and readiness_state.get("method") == QUAL_APS_METHOD_NAME
+        and readiness_state.get("source_gate") == QUAL_APS_SOURCE_GATE
+        and readiness_state.get("package_construction_source_gate")
+        == SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE
+        and readiness_state.get("source_shape") == SOURCE_SHAPE_APS_CONTENT_DOCUMENT
+        and list(readiness_state.get("source_dataset_version_ids") or []) == []
+        and bool(str(readiness_state.get("content_id") or "").strip())
+        and bool(str(readiness_state.get("content_contract_id") or "").strip())
+        and bool(str(readiness_state.get("chunking_contract_id") or "").strip())
+        and bool(str(readiness_state.get("material_snapshot_id") or "").strip())
+        and bool(str(readiness_state.get("analysis_unit_id") or "").strip())
+        and bool(str(readiness_state.get("analysis_set_id") or "").strip())
+        and bool(str(readiness_state.get("output_payload_ref") or "").strip())
+        and bool(str(readiness_state.get("output_payload_hash") or "").strip())
     )
 
 
@@ -466,7 +499,10 @@ def external_export_download_prepare_summary(
             )
         return summary
 
-    if qualitative_aps_external_export_download_deferred(recorded_dispatch):
+    if (
+        qualitative_aps_external_export_download_deferred(recorded_dispatch)
+        and not qualitative_aps_external_export_download_admitted(recorded_dispatch)
+    ):
         return {
             "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
             "available": False,
@@ -576,7 +612,13 @@ def external_export_download_prepare_response(
 ) -> dict[str, Any]:
     ordered_packages = packages_in_review_order(packages)
     body = {
-        **base_response(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID, request_id=request_id, status=status),
+        **base_response(
+            QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+            if qualitative_aps_external_export_download_admitted(readiness_state)
+            else EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+            request_id=request_id,
+            status=status,
+        ),
         "session_id": session_id,
         "analysis_plan_id": analysis_plan_id,
         "pass_run_id": pass_run_id,
@@ -734,7 +776,11 @@ def external_export_download_delivery_response(
         media_type="application/json",
         filename=filename,
         headers={
-            "X-Layer3-Schema-Id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+            "X-Layer3-Schema-Id": (
+                QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID
+                if qualitative_aps_external_export_download_admitted(validation_body)
+                else EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID
+            ),
             "X-Layer3-Delivery-State": EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
             "X-Layer3-Source-Artifact-Hash": artifact_hash,
             "X-Layer3-External-Export-Download-Record-Ref": supplied_readiness_ref,

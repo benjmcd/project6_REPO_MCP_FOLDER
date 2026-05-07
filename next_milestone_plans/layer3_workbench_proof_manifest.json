@@ -626,10 +626,10 @@
     "latest_qual_aps_handoff_export_prepare_freeze_summary": "Admits only qual_aps_handoff_export_prepare_entry through POST /api/v1/layer3/handoff/export/prepare and response schema layer3.qual_aps_handoff_export_prepare.v1. The runtime records exactly one qualitative APS prepare-only handoff/export decision/envelope object in existing JSON-bearing state, creates no rows or files, preserves package refs, hashes, and payload files, and keeps APS dispatch, external export/download, connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration expansion, broad qualitative/hybrid behavior, package mutation/reconstruction, and package supersession blocked.",
     "latest_qual_aps_aps_handoff_dispatch_freeze_branch": "codex/l3-qual-aps-dispatch-runtime",
     "latest_qual_aps_aps_handoff_dispatch_freeze_live_behavior_change": true,
-    "latest_qual_aps_aps_handoff_dispatch_freeze_summary": "Docs 147 and 148 now govern live qual_aps_aps_handoff_dispatch_entry through POST /api/v1/layer3/handoff/aps/dispatch and response schema layer3.qual_aps_aps_handoff_dispatch.v1. The runtime requires live qualitative APS handoff/export prepare authority, creates exactly one APS evidence-bundle handoff package row, writes one server-owned APS bundle artifact, records dispatch state in existing JSON-bearing state, preserves qualitative package refs/hashes/output payload identity, keeps qualitative APS external export/download blocked with qualitative_aps_external_export_download_not_admitted, and admits no connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, broad qualitative/hybrid behavior, package mutation/reconstruction, or package supersession.",
-    "latest_qual_aps_external_export_download_freeze_branch": "codex/l3-qual-aps-export-download-freeze",
-    "latest_qual_aps_external_export_download_freeze_live_behavior_change": false,
-    "latest_qual_aps_external_export_download_freeze_summary": "Docs 149 and 150 freeze only future qual_aps_external_export_download_prepare_deliver through POST /api/v1/layer3/handoff/export/download/prepare and POST /api/v1/layer3/handoff/export/download/deliver. The freeze requires live qualitative APS dispatch authority, APS handoff package authority, and server-owned APS bundle artifact hash/size authority, selects future schemas layer3.qual_aps_external_export_download_prepare.v1 and layer3.qual_aps_external_export_download_delivery.v1, keeps current-main qualitative_aps_external_export_download_not_admitted behavior, and admits no runtime behavior, connector/destination dispatch, provider/public URLs, signed URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, broad qualitative/hybrid behavior, package mutation/reconstruction, or package supersession."
+    "latest_qual_aps_aps_handoff_dispatch_freeze_summary": "Docs 147 and 148 now govern live qual_aps_aps_handoff_dispatch_entry through POST /api/v1/layer3/handoff/aps/dispatch and response schema layer3.qual_aps_aps_handoff_dispatch.v1. The runtime requires live qualitative APS handoff/export prepare authority, creates exactly one APS evidence-bundle handoff package row, writes one server-owned APS bundle artifact, records dispatch state in existing JSON-bearing state, preserves qualitative package refs/hashes/output payload identity, and leaves qualitative APS external export/download to docs 149 and 150. It admits no connector/destination dispatch, provider/public URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, broad qualitative/hybrid behavior, package mutation/reconstruction, or package supersession.",
+    "latest_qual_aps_external_export_download_freeze_branch": "codex/l3-qual-aps-export-runtime",
+    "latest_qual_aps_external_export_download_freeze_live_behavior_change": true,
+    "latest_qual_aps_external_export_download_freeze_summary": "Docs 149 and 150 now govern live qual_aps_external_export_download_prepare_deliver through POST /api/v1/layer3/handoff/export/download/prepare and POST /api/v1/layer3/handoff/export/download/deliver. The runtime requires live qualitative APS dispatch authority, APS handoff package authority, and server-owned APS bundle artifact hash/size authority, selects schemas layer3.qual_aps_external_export_download_prepare.v1 and layer3.qual_aps_external_export_download_delivery.v1, reports external_export_download_ready after dispatch, records one readiness JSON object, streams the existing APS bundle with zero DB/file writes on delivery, and admits no connector/destination dispatch, provider/public URLs, signed URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, broad qualitative/hybrid behavior, package mutation/reconstruction, or package supersession."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -5317,14 +5317,14 @@
     "authority_basis": [
       "The live qualitative APS handoff/export prepare runtime records prepared envelope authority without creating rows or files.",
       "Current-main qualitative APS dispatch revalidates preview, construction, submit, prepare, envelope, package, payload, APS content, chunk, material, unit, and set authority before materializing APS handoff.",
-      "Current-main session summary blocks the next qualitative APS external export/download step with qualitative_aps_external_export_download_not_admitted."
+      "Current-main session summary now reports external_export_download_ready for the separately governed qualitative APS external export/download path."
     ],
     "selected_live_mode": "qual_aps_aps_handoff_dispatch_entry",
     "selected_live_route": "POST /api/v1/layer3/handoff/aps/dispatch",
     "selected_live_response_schema": "layer3.qual_aps_aps_handoff_dispatch.v1",
-    "deferred_next_blocker": "qualitative_aps_external_export_download_not_admitted",
+    "next_boundary": "Docs 149 and 150 separately govern qual_aps_external_export_download_prepare_deliver over the dispatched APS bundle.",
     "negative_invariants": [
-      "no external export/download",
+      "no external export/download behavior from dispatch by itself",
       "no connector or destination dispatch",
       "no provider/public URL generation",
       "no rendered controls or theme behavior change",
@@ -5345,12 +5345,12 @@
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"aps_handoff_dispatch_materializes_owner_service_bundle_without_mutating_sources or aps_handoff_dispatch_prechecks_fail_closed\"",
       "git diff --check"
     ],
-    "next_boundary": "The next runtime pass may implement only qual_aps_external_export_download_prepare_deliver and must stop before connector/destination dispatch, provider/public URL, signed URL, rendered control, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, package mutation/reconstruction, or model/migration work."
+    "next_boundary_after_dispatch": "The separate qualitative APS external export/download runtime is now live; connector/destination dispatch, provider/public URL, signed URL, rendered control, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, package mutation/reconstruction, and model/migration work remain blocked."
   },
   "qual_aps_external_export_download_freeze_proof": {
-    "scope": "Planning/control metadata for docs 149 and 150, which freeze the future qualitative APS external export/download prepare/deliver boundary only.",
-    "implementation_branch": "codex/l3-qual-aps-export-download-freeze",
-    "live_behavior_change": false,
+    "scope": "Current-main runtime proof for docs 149 and 150, which govern the live qualitative APS external export/download prepare/deliver boundary only.",
+    "implementation_branch": "codex/l3-qual-aps-export-runtime",
+    "live_behavior_change": true,
     "governing_docs": [
       "next_milestone_plans/Layer3_planning_docs/149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/150_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md"
@@ -5362,6 +5362,7 @@
       "backend/app/api/layer3.py"
     ],
     "proof_files": [
+      "backend/tests/test_layer3_bounded_e2e.py",
       "next_milestone_plans/Layer3_planning_docs/142_POST_709_ROADMAP_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
       "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
@@ -5371,17 +5372,16 @@
     ],
     "authority_basis": [
       "The live qualitative APS APS handoff dispatch runtime creates an APS evidence-bundle handoff package and server-owned APS bundle artifact.",
-      "Current-main session summary and prepare route still block qualitative APS external export/download with qualitative_aps_external_export_download_not_admitted.",
-      "The freeze selects only future same-origin artifact streaming over persisted qualitative APS dispatch and APS bundle artifact authority."
+      "Current-main session summary reports external_export_download_ready after exact qualitative APS APS handoff dispatch.",
+      "The runtime admits only same-origin artifact streaming over persisted qualitative APS dispatch and APS bundle artifact authority."
     ],
-    "selected_future_mode": "qual_aps_external_export_download_prepare_deliver",
-    "selected_future_prepare_route": "POST /api/v1/layer3/handoff/export/download/prepare",
-    "selected_future_prepare_response_schema": "layer3.qual_aps_external_export_download_prepare.v1",
-    "selected_future_deliver_route": "POST /api/v1/layer3/handoff/export/download/deliver",
-    "selected_future_delivery_schema": "layer3.qual_aps_external_export_download_delivery.v1",
-    "current_blocker": "qualitative_aps_external_export_download_not_admitted",
+    "selected_live_mode": "qual_aps_external_export_download_prepare_deliver",
+    "selected_live_prepare_route": "POST /api/v1/layer3/handoff/export/download/prepare",
+    "selected_live_prepare_response_schema": "layer3.qual_aps_external_export_download_prepare.v1",
+    "selected_live_deliver_route": "POST /api/v1/layer3/handoff/export/download/deliver",
+    "selected_live_delivery_schema": "layer3.qual_aps_external_export_download_delivery.v1",
+    "current_readiness_state": "external_export_download_ready",
     "negative_invariants": [
-      "no runtime behavior change",
       "no connector or destination dispatch",
       "no provider/public URL generation",
       "no signed URL generation",
@@ -5399,8 +5399,9 @@
       "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
       "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py::test_layer3_standalone_aps_content_document_qualitative_e2e_reaches_read_only_package_preview -q",
       "git diff --check"
     ],
-    "next_boundary": "The next runtime pass may implement only qual_aps_external_export_download_prepare_deliver and must stop before connector/destination dispatch, provider/public URL, signed URL, rendered control, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, package mutation/reconstruction, or model/migration work."
+    "next_boundary": "The next pass should freeze rendered qualitative APS package/downstream UI before any rendered controls; connector/destination dispatch, provider/public URL, signed URL, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, package mutation/reconstruction, and model/migration work remain blocked."
   }
 }

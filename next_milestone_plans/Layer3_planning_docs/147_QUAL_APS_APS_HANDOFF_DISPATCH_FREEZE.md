@@ -17,10 +17,10 @@ This document now records the bounded qualitative APS downstream runtime after t
 - selected live route: `POST /api/v1/layer3/handoff/aps/dispatch`
 - selected live response schema: `layer3.qual_aps_aps_handoff_dispatch.v1`
 - selected live mode: `qual_aps_aps_handoff_dispatch_entry`
-- current deferred next blocker in live session summary after dispatch: `qualitative_aps_external_export_download_not_admitted`
+- current downstream readiness after dispatch: `external_export_download_ready` for the separately admitted qualitative APS external export/download boundary
 - companion contract: `148_QUAL_APS_APS_HANDOFF_DISPATCH_CONTRACT.md`
 
-Live source, tests, models, migrations, routes, and proof-checker behavior outrank this planning document. Current main removes only the exact `qualitative_aps_aps_handoff_dispatch_not_admitted` blocker for this authority chain and still blocks qualitative APS external export/download with `qualitative_aps_external_export_download_not_admitted`.
+Live source, tests, models, migrations, routes, and proof-checker behavior outrank this planning document. Current main removes the exact `qualitative_aps_aps_handoff_dispatch_not_admitted` blocker for this authority chain; the later qualitative APS external export/download boundary is governed by docs `149` and `150`.
 
 ## Decision
 
@@ -30,11 +30,11 @@ The implemented boundary is:
 
 The runtime reuses the existing `POST /api/v1/layer3/handoff/aps/dispatch` route family only for an already prepared standalone APS qualitative package set. It materializes exactly one APS evidence-bundle handoff package through the existing APS handoff owner-service contract, then records exactly one qualitative APS APS handoff dispatch object in existing JSON-bearing state.
 
-The runtime stops before external export/download prepare or deliver, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, RAG/vector retrieval, package mutation/reconstruction, hidden LLM planning, full mockup activation, model/migration work, and authentication/security behavior.
+This dispatch runtime does not itself perform external export/download prepare or deliver, connector/destination dispatch, provider/public URLs, rendered UI controls, source expansion, RAG/vector retrieval, package mutation/reconstruction, hidden LLM planning, full mockup activation, model/migration work, or authentication/security behavior.
 
 ## Why This Comes Next
 
-Current main can produce a qualitative APS internal handoff/export envelope and can now hand that envelope to the APS evidence-bundle handoff owner service for the qualitative APS path. Qualitative APS external export/download remains deferred until a separate freeze admits readiness and delivery over the dispatched APS bundle identity.
+Current main can produce a qualitative APS internal handoff/export envelope and can hand that envelope to the APS evidence-bundle handoff owner service for the qualitative APS path. Qualitative APS external export/download is now separately admitted only by docs `149` and `150` over the dispatched APS bundle identity.
 
 The pass must remain narrower than generic connector dispatch. It is not a destination send, public URL generation, provider upload, broad package mutation, or external delivery pass.
 
@@ -107,7 +107,7 @@ The current boundary is acceptable only if it proves:
 Minimum implementation proof for the current runtime:
 
 - successful API dispatch after one prepared standalone APS qualitative handoff/export envelope;
-- bounded E2E extension from qualitative APS handoff/export prepare through APS handoff dispatch, stopping before external export/download;
+- bounded E2E extension from qualitative APS handoff/export prepare through APS handoff dispatch, with the later docs `149` and `150` path proving external export/download separately;
 - missing handoff/export prepare state fails closed;
 - non-prepared handoff/export state fails closed;
 - missing or stale prepare record ref fails closed;

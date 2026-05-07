@@ -32,39 +32,29 @@ Current main admits:
 - qualitative APS package construction commit, creating exactly one reconciliation record, exactly three package rows, and exactly three server-owned package payload files;
 - qualitative APS package-review submit over the constructed package set, recording the operator decision in existing summary state without creating rows or files;
 - qualitative APS handoff/export prepare over the approved package-review submit state, recording one prepare-only decision/envelope in existing summary state without creating rows or files;
-- qualitative APS APS handoff dispatch over the prepared qualitative envelope, creating exactly one APS evidence-bundle handoff package row, writing one server-owned APS bundle artifact, and recording dispatch state.
+- qualitative APS APS handoff dispatch over the prepared qualitative envelope, creating exactly one APS evidence-bundle handoff package row, writing one server-owned APS bundle artifact, and recording dispatch state;
+- qualitative APS external export/download prepare/deliver runtime, governed by docs `149` and `150`; this is qualitative APS external export/download prepare/deliver over the dispatched APS bundle, recording one readiness object and streaming the existing server-owned APS bundle artifact.
 
-Current main still does not admit qualitative APS external export/download, rendered qualitative package controls, provider/public URLs, real connector/destination dispatch, raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry expansion, broad qualitative/hybrid execution, hidden LLM planning, full mockup activation, auth/security behavior changes, or broad package mutation/reconstruction. The live post-dispatch blocker is `qualitative_aps_external_export_download_not_admitted`.
+Current main still does not admit rendered qualitative package controls, provider/public URLs, real connector/destination dispatch, raw ingestion, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, source adapter registry expansion, broad qualitative/hybrid execution, hidden LLM planning, full mockup activation, auth/security behavior changes, or broad package mutation/reconstruction. The live qualitative APS external export/download path is limited to `qual_aps_external_export_download_prepare_deliver`.
 
 ## Required Ordering
 
 Future work must proceed in this order unless a later live audit proves a different blocker:
 
-1. qualitative APS external export/download prepare/deliver runtime, governed by docs `149` and `150`;
-3. rendered qualitative APS package/downstream UI freeze;
-4. rendered qualitative APS package/downstream UI runtime, including theme proof;
-5. source-breadth freeze before any ingestion/source-adapter expansion;
-6. raw ingestion implementation only after source-breadth freeze;
-7. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
-8. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
-9. connector/destination dispatch and provider/public URL freezes before any external delivery expansion;
-10. browser/full mockup activation freeze before any mockup-derived UI activation;
-11. auth/security hardening freeze before behavior changes in authorization, tenancy, credentials, or public access;
-12. CI/performance/observability hardening once the admitted runtime path is broad enough to stress runtime cost or audit trace completeness.
+1. rendered qualitative APS package/downstream UI freeze;
+2. rendered qualitative APS package/downstream UI runtime, including theme proof;
+3. source-breadth freeze before any ingestion/source-adapter expansion;
+4. raw ingestion implementation only after source-breadth freeze;
+5. broader qualitative, hybrid, RAG/vector, and cross-document execution freezes before runtime work;
+6. output taxonomy and package lifecycle expansion freezes before package mutation/reconstruction work;
+7. connector/destination dispatch and provider/public URL freezes before any external delivery expansion;
+8. browser/full mockup activation freeze before any mockup-derived UI activation;
+9. auth/security hardening freeze before behavior changes in authorization, tenancy, credentials, or public access;
+10. CI/performance/observability hardening once the admitted runtime path is broad enough to stress runtime cost or audit trace completeness.
 
 ## Future Pass Specifications
 
-### 1. Qualitative APS External Export/Download Runtime
-
-- goal: implement same-origin prepare/deliver behavior for qualitative APS after exact APS dispatch authority.
-- current blocker: freeze/contract now exists in docs `149` and `150`; runtime still blocks the path with `qualitative_aps_external_export_download_not_admitted`.
-- implementation-entry freeze required: yes, already provided by docs `149` and `150`.
-- likely files: external export/download contract/response helpers, workbench/API DTOs, bounded E2E, qualitative APS tests, checker/proof metadata.
-- required tests: readiness, delivery, malformed token/payload fail-closed, same-origin artifact hash validation, no provider/public URL, no connector/destination dispatch.
-- negative invariants: no provider/public URLs, no external object-store ACL, no destination write, no package mutation, no UI/theme change unless separately frozen.
-- priority: P2.
-
-### 2. Rendered Qualitative APS UI Freeze And Runtime
+### 1. Rendered Qualitative APS UI Freeze And Runtime
 
 - goal: decide and implement only the rendered controls needed for already-live qualitative APS backend/API steps.
 - current blocker: no dedicated rendered UI freeze exists after qualitative package construction/submit/prepare/dispatch.
