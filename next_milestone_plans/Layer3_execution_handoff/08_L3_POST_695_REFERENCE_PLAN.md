@@ -21,7 +21,7 @@ Planning docs and progress/proof manifests must not be treated as stronger proof
 
 ## Current Live Baseline
 
-Current bounded Layer 3 posture after PR #695:
+Current bounded Layer 3 posture after PR #697:
 
 - `POST /api/v1/layer3/source/mixed-corpus/seed` is live only as `raw_mixed_corpus_bridge_seed_only`.
 - Supported source classes remain `dataset_version` and `aps_content_document`.
@@ -32,6 +32,7 @@ Current bounded Layer 3 posture after PR #695:
 - The raw mixed bridge-to-bounded API E2E proof exists.
 - The rendered `/review/layer3` raw mixed UI smoke proves bridge API setup can feed existing rendered source visibility, selection, material preview, Gate B, and Gate C preview enablement.
 - The manual `/review/layer3` runbook exists in `07_L3_UI_MANUAL_RUNBOOK.md`.
+- PR #697 restored Layer 3 browser-harness patch state so `test_review_browser_server.py` and `test_layer3_bounded_e2e.py` can run in the same pytest process without order-dependent Layer 3 patch leakage.
 
 Current no-go boundaries remain:
 
@@ -49,17 +50,23 @@ Current no-go boundaries remain:
 - no model or migration changes for this next tranche;
 - no auth/security behavior changes.
 
-## Immediate Critical Gap
+## Completed P0 Prerequisite
 
-The immediate next pass is not a deeper UI flow. It is a test-only browser-harness isolation hardening pass.
+The immediate browser-harness isolation prerequisite was completed by PR #697. It captured and restored the Layer 3-specific browser harness patches installed by `review_browser_server.py`, including:
 
-Observed failure:
+- the temporary `app.services.nrc_aps_evidence_bundle` module override;
+- `layer3_pass_entry.recommend_analysis`;
+- `layer3_pass_entry.run_analysis`;
+- `layer3_workbench.check_aps_handoff_compatibility`;
+- `layer3_workbench.materialize_aps_handoff`.
+
+The formerly failing order now passes:
 
 ```powershell
 python -m pytest .\backend\tests\test_review_browser_server.py .\backend\tests\test_layer3_bounded_e2e.py -q
 ```
 
-This order fails because the browser harness installs Layer 3-specific monkeypatches that are not restored by the existing review-browser patch-state helpers.
+The next immediate implementation pass is now the deeper Playwright bridge-to-rendered-UI path described below.
 
 Relevant live surfaces:
 
@@ -68,49 +75,13 @@ Relevant live surfaces:
 - `backend/tests/test_review_browser_server.py`
 - `backend/tests/test_layer3_bounded_e2e.py`
 
-Reason this matters:
-
-- Deeper UI automation will rely more heavily on the browser harness.
-- Same-process patch leakage makes validation order-sensitive.
-- Order-sensitive test state undermines non-fragility even when isolated target tests pass.
-- Fixing this first prevents future UI proof from resting on polluted process state.
-
-Allowed scope:
-
-- test-only;
-- restore/capture Layer 3 browser harness patches installed by `review_browser_server.py`;
-- add or adjust the narrowest tests needed to prove restoration.
-
-Forbidden scope:
-
-- production backend service changes;
-- production API route or DTO changes;
-- rendered UI control changes;
-- source/runtime behavior expansion;
-- model or migration changes;
-- raw ingestion or source adapter work;
-- package, connector, provider, RAG/vector, mockup, hidden LLM, or auth/security work.
-
-Required validation:
-
-```powershell
-python .\tools\l3-progress-check.py
-python -m pytest .\backend\tests\test_review_browser_server.py .\backend\tests\test_layer3_bounded_e2e.py -q
-python -m pytest .\backend\tests\test_layer3_bounded_e2e.py -q
-python -m pytest .\backend\tests -k layer3 -q
-npx playwright test e2e/layer3-workbench.spec.js
-git diff --check
-```
-
-Stop if the pass requires production behavior changes. Report the exact blocker instead.
-
 ## Planned Sequence
 
 ### 1. Browser-harness Layer 3 patch restoration
 
 Goal: make browser harness tests and bounded Layer 3 E2E tests safe to run in the same pytest process regardless of order.
 
-Current blocker: `review_browser_server.py` installs Layer 3 patches that are not included in `capture_review_browser_patch_state()` / `restore_review_browser_patches()`.
+Current blocker: resolved by PR #697.
 
 Implementation-entry freeze needed: no, if test-only.
 
@@ -133,7 +104,9 @@ Negative invariants:
 - no source expansion;
 - no package or connector expansion.
 
-Priority: P0.
+Status: complete.
+
+Priority: P0 completed.
 
 Why before other work: deeper UI proof depends on reliable harness isolation.
 
@@ -141,7 +114,7 @@ Why before other work: deeper UI proof depends on reliable harness isolation.
 
 Goal: use the raw mixed seed bridge as API setup and drive existing rendered `/review/layer3` controls beyond Gate B only as far as current controls and server-authoritative state already support.
 
-Current blocker: browser-harness patch isolation must be fixed first.
+Current blocker: no known blocker after PR #697, but the pass must stop if existing controls cannot drive beyond Gate B without production or rendered UI changes.
 
 Implementation-entry freeze needed: no, if test-only and no new controls are added.
 
