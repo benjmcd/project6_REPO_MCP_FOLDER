@@ -29,6 +29,10 @@ def test_external_export_download_contract_is_shared_without_behavior_change() -
         layer3_workbench.external_export_download_delivery_request_fields
         is contract.external_export_download_delivery_request_fields
     )
+    assert (
+        layer3_workbench.external_export_download_delivery_readiness_mismatches
+        is contract.external_export_download_delivery_readiness_mismatches
+    )
     delivery = contract.ExternalExportDownloadDelivery(
         artifact_path=Path("bundle.json"),
         media_type="application/json",
@@ -187,3 +191,50 @@ def test_external_export_download_delivery_request_fields_match_legacy_missing_o
     ]
     legacy_missing.extend(["output_package_ids", "payload_refs", "payload_hashes"])
     assert contract.external_export_download_delivery_request_fields(partial).missing_fields == legacy_missing
+
+
+def test_external_export_download_delivery_readiness_mismatches_match_legacy_comparison() -> None:
+    request_fields = contract.external_export_download_delivery_request_fields(
+        {
+            "client_request_id": "delivery-request",
+            "external_export_download_record_ref": "readiness-ref",
+            "export_download_descriptor_ref": "descriptor-ref",
+            "aps_bundle_ref": "aps-bundle-ref",
+            "aps_bundle_id": "aps-bundle-id",
+            "aps_schema_id": "aps.schema.v1",
+        }
+    )
+    readiness_state = {
+        "external_export_download_record_ref": "readiness-ref",
+        "export_download_descriptor_ref": "different-descriptor-ref",
+        "aps_bundle_ref": "aps-bundle-ref",
+        "aps_bundle_id": "different-aps-bundle-id",
+        "aps_schema_id": "aps.schema.v1",
+    }
+    legacy_mismatches = [
+        (field, supplied, expected)
+        for field, supplied, expected in (
+            (
+                "external_export_download_record_ref",
+                request_fields.supplied_readiness_ref,
+                readiness_state.get("external_export_download_record_ref"),
+            ),
+            (
+                "export_download_descriptor_ref",
+                request_fields.supplied_descriptor_ref,
+                readiness_state.get("export_download_descriptor_ref"),
+            ),
+            ("aps_bundle_ref", request_fields.supplied_aps_bundle_ref, readiness_state.get("aps_bundle_ref")),
+            ("aps_bundle_id", request_fields.supplied_aps_bundle_id, readiness_state.get("aps_bundle_id")),
+            ("aps_schema_id", request_fields.supplied_aps_schema_id, readiness_state.get("aps_schema_id")),
+        )
+        if str(supplied or "") != str(expected or "")
+    ]
+
+    assert (
+        contract.external_export_download_delivery_readiness_mismatches(
+            request_fields,
+            readiness_state,
+        )
+        == legacy_mismatches
+    )
