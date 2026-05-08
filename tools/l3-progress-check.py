@@ -230,6 +230,9 @@ NAMED_RUNTIME_USE_CASE_SELECTION_GATE = (
 PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION = (
     PLANNING_DOCS / "223_PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_IMPLEMENTATION_ENTRY_FREEZE = (
+    PLANNING_DOCS / "224_PROVIDER_PRIVATE_SIGNED_URL_IMPLEMENTATION_ENTRY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -11899,6 +11902,136 @@ def _check_provider_private_signed_url_use_case_selection(errors: list[str]) -> 
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_case_selection_proof recommended_next_actions must match the frozen list")
 
+def _check_provider_private_signed_url_implementation_entry_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_IMPLEMENTATION_ENTRY_FREEZE: (
+            "Status: current-main planning/control implementation-entry freeze for `provider_private_signed_url_implementation_entry_freeze`.",
+            "entry_decision: implementation_entry_frozen_runtime_blocked",
+            "selected_runtime_family: provider_public_url_runtime",
+            "selected_runtime_mode: provider_private_signed_url",
+            "named_use_case_selected: external_downstream_recipient_private_artifact_delivery",
+            "provider_storage_authority_status: unverified",
+            "selected_artifact_family_status: external_export_download_artifact_candidate_only",
+            "candidate_route_namespace: /api/v1/layer3/handoff/export/download/provider-private-signed-url",
+            "fake_provider_contract_double_required: true",
+            "runtime_implementation_allowed: false",
+            "prove_provider_storage_authority_and_fake_provider_contract_before_runtime",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Implementation Entry Freeze",
+            "224_PROVIDER_PRIVATE_SIGNED_URL_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "provider_private_signed_url_implementation_entry_freeze",
+            "entry_decision` is `implementation_entry_frozen_runtime_blocked",
+            "candidate_route_namespace` is `/api/v1/layer3/handoff/export/download/provider-private-signed-url",
+            "fake_provider_contract_double_required` is `true",
+            "runtime_implementation_allowed` is `false",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_implementation_entry_freeze_branch",
+            "latest_provider_private_signed_url_implementation_entry_freeze_live_behavior_change",
+            "provider_private_signed_url_implementation_entry_freeze",
+            "entry_decision is implementation_entry_frozen_runtime_blocked",
+            "candidate_route_namespace is /api/v1/layer3/handoff/export/download/provider-private-signed-url",
+            "runtime_implementation_allowed is false",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_implementation_entry_freeze_proof",
+            "224_PROVIDER_PRIVATE_SIGNED_URL_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "provider_private_signed_url_implementation_entry_freeze",
+            "implementation_entry_frozen_runtime_blocked",
+            "/api/v1/layer3/handoff/export/download/provider-private-signed-url",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL implementation-entry freeze term: {term}")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL implementation-entry freeze")
+    else:
+        if current_status.get("latest_provider_private_signed_url_implementation_entry_freeze_branch") != "codex/l3-provider-private-url-entry-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale provider private signed URL implementation-entry freeze branch")
+        if current_status.get("latest_provider_private_signed_url_implementation_entry_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark provider private signed URL implementation-entry freeze as planning-only")
+        summary = current_status.get("provider_private_signed_url_implementation_entry_freeze")
+        if not isinstance(summary, str) or "entry_decision is implementation_entry_frozen_runtime_blocked" not in summary or "runtime_implementation_allowed is false" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_implementation_entry_freeze must record blocked entry-freeze posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_implementation_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_implementation_entry_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-provider-private-url-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_implementation_entry_freeze",
+        "entry_decision": "implementation_entry_frozen_runtime_blocked",
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "runtime_status": "not_implemented",
+        "provider_storage_authority_status": "unverified",
+        "selected_artifact_family_status": "external_export_download_artifact_candidate_only",
+        "candidate_route_namespace": "/api/v1/layer3/handoff/export/download/provider-private-signed-url",
+        "fake_provider_contract_double_required": True,
+        "runtime_implementation_allowed": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_implementation_entry_freeze_proof.{key} must be {expected!r}")
+    expected_authority = [
+        "provider_storage_owner_and_backing_implementation",
+        "selected_artifact_family_row_hash_size_authority",
+        "exact_route_request_response_openapi_contract",
+        "owner_service_function_and_state_transition_contract",
+        "db_rows_read_written_and_idempotency_keys",
+        "files_artifacts_read_written_and_provider_materialization_policy",
+        "idempotency_replay_concurrency_stale_state_expiry_revocation_cancellation_recovery_semantics",
+        "fake_provider_or_provider_contract_double_test_architecture",
+        "leak_control_and_redaction_contract",
+        "cache_referrer_content_disposition_cors_csp_posture",
+        "audit_receipt_contract",
+        "auth_security_posture_for_operator_and_external_recipient",
+        "negative_cross_mode_upgrade_tests",
+        "headed_headless_light_dark_workbench_proof_plan_if_rendered_controls",
+        "explicit_stop_condition_for_unresolved_provider_storage_access_leakage_or_security_authority",
+    ]
+    if proof.get("required_runtime_authority_before_implementation") != expected_authority:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_implementation_entry_freeze_proof required_runtime_authority_before_implementation must match the frozen list")
+    expected_forbidden = [
+        "provider_private_signed_url_runtime",
+        "provider_public_url_runtime",
+        "public_proxy_url_runtime",
+        "provider_object_write_copy_acl_bucket_container_key_credential_or_network_behavior",
+        "provider_url_fields_on_existing_same_origin_routes",
+        "same_origin_delivery_or_signed_reference_semantics_change",
+        "external_connector_invocation",
+        "destination_write",
+        "source_adapter_registry_or_source_expansion",
+        "package_mutation_or_reconstruction",
+        "broad_qualitative_hybrid_rag_runtime",
+        "full_mockup_activation",
+        "hidden_llm_or_prompt_model_provider_runtime",
+        "auth_security_behavior_change",
+        "route_dto_model_migration_service_test_ui_playwright_or_ci_behavior_change",
+        "frontend_only_durable_authority",
+    ]
+    if proof.get("forbidden_runtime_changes") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_implementation_entry_freeze_proof forbidden_runtime_changes must match the frozen list")
+    expected_next = [
+        "prove_provider_storage_authority_and_fake_provider_contract_before_runtime",
+        "keep_runtime_blocked_if_provider_storage_authority_remains_unverified",
+        "stop_and_write_contract_only_no_runtime_if_exact_route_or_dto_is_requested_without_storage_authority",
+        "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_is_requested",
+        "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_implementation_entry_freeze_proof recommended_next_actions must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -16697,6 +16830,7 @@ def main() -> int:
     _check_current_main_runtime_entry_readiness_report(errors)
     _check_named_runtime_use_case_selection_gate(errors)
     _check_provider_private_signed_url_use_case_selection(errors)
+    _check_provider_private_signed_url_implementation_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
