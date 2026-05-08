@@ -1390,3 +1390,118 @@ class L3SignedReferenceAuditEvent(Base):
     reason_code: Mapped[str] = mapped_column(String(128), nullable=False)
     event_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class L3ProviderPrivateSignedUrlObjectAuthority(Base):
+    __tablename__ = "l3_provider_private_signed_url_object_authority"
+    __table_args__ = (
+        UniqueConstraint("authority_hash", name="uq_l3_provider_private_signed_url_authority_hash"),
+        Index("ix_l3_provider_private_signed_url_authority_session", "session_id"),
+        Index("ix_l3_provider_private_signed_url_authority_reconciliation", "reconciliation_record_id"),
+    )
+
+    provider_private_signed_url_object_authority_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    reconciliation_record_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_reconciliation_record.reconciliation_record_id"),
+        nullable=False,
+    )
+    external_export_download_record_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    export_download_descriptor_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_artifact_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    authority_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    authority_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    provider_object_identity_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class L3ProviderPrivateSignedUrlReceipt(Base):
+    __tablename__ = "l3_provider_private_signed_url_receipt"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_provider_private_signed_url_receipt_client_request"),
+        UniqueConstraint("request_basis_hash", name="uq_l3_provider_private_signed_url_receipt_request_basis"),
+        UniqueConstraint("provider_private_signed_url_token_hash", name="uq_l3_provider_private_signed_url_token_hash"),
+        Index("ix_l3_provider_private_signed_url_receipt_authority", "provider_private_signed_url_object_authority_id"),
+        Index("ix_l3_provider_private_signed_url_receipt_state_expiry", "provider_private_signed_url_state", "provider_private_signed_url_expires_at"),
+    )
+
+    provider_private_signed_url_receipt_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    provider_private_signed_url_object_authority_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_provider_private_signed_url_object_authority.provider_private_signed_url_object_authority_id"),
+        nullable=False,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider_private_signed_url_state: Mapped[str] = mapped_column(String(64), nullable=False, default="provider_private_signed_url_prepared")
+    provider_private_signed_url_replay_policy: Mapped[str] = mapped_column(String(32), nullable=False, default="single_use")
+    provider_private_signed_url_max_use_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    provider_private_signed_url_use_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    provider_private_signed_url_token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    provider_private_signed_url_token_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    provider_private_signed_url_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    authority_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_by_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class L3ProviderPrivateSignedUrlRevocation(Base):
+    __tablename__ = "l3_provider_private_signed_url_revocation"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider_private_signed_url_receipt_id",
+            "idempotency_key",
+            name="uq_l3_provider_private_signed_url_revoke_receipt_key",
+        ),
+        Index("ix_l3_provider_private_signed_url_revoke_receipt", "provider_private_signed_url_receipt_id"),
+    )
+
+    provider_private_signed_url_revocation_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    provider_private_signed_url_receipt_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_provider_private_signed_url_receipt.provider_private_signed_url_receipt_id"),
+        nullable=False,
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    revoked_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    revocation_reason_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    revocation_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class L3ProviderPrivateSignedUrlAuditEvent(Base):
+    __tablename__ = "l3_provider_private_signed_url_audit_event"
+    __table_args__ = (
+        Index("ix_l3_provider_private_signed_url_audit_receipt", "provider_private_signed_url_receipt_id"),
+        Index("ix_l3_provider_private_signed_url_audit_type_created", "event_type", "created_at"),
+    )
+
+    provider_private_signed_url_audit_event_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    provider_private_signed_url_receipt_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_provider_private_signed_url_receipt.provider_private_signed_url_receipt_id"),
+        nullable=False,
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    event_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_id: Mapped[str | None] = mapped_column(String(255))
+    authority_hash: Mapped[str | None] = mapped_column(String(64))
+    reason_code: Mapped[str] = mapped_column(String(128), nullable=False)
+    event_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
