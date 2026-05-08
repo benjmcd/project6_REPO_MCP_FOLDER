@@ -153,6 +153,12 @@ RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CONTRACT = (
 RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF = (
     PLANNING_DOCS / "183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md"
 )
+POST_745_DOWNSTREAM_EXPANSION_FREEZE = (
+    PLANNING_DOCS / "184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md"
+)
+POST_745_DOWNSTREAM_EXPANSION_CONTRACT = (
+    PLANNING_DOCS / "185_POST_745_DOWNSTREAM_EXPANSION_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -7004,6 +7010,97 @@ def _check_rendered_external_export_download_signed_reference_proof(errors: list
         errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference proof missing UI hardening summary")
 
 
+def _check_post_745_downstream_expansion_freeze(errors: list[str]) -> None:
+    required_terms = {
+        POST_745_DOWNSTREAM_EXPANSION_FREEZE: (
+            "Status: planning/control freeze only for `post_745_raw_mixed_rendered_downstream_expansion_governance`.",
+            "183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+            "provider_public_url_entry_freeze",
+            "connector_destination_dispatch_entry_freeze",
+            "package_mutation_reconstruction_rendered_entry_freeze",
+            "source_breadth_entry_freeze",
+            "qual_hybrid_rag_vector_entry_freeze",
+            "browser_full_mockup_activation_freeze",
+            "auth_security_entry_freeze",
+            "exact light, dark, and workbench theme obligations",
+            "No future implementation may start from this freeze alone.",
+            "no frontend-only durable authority",
+        ),
+        POST_745_DOWNSTREAM_EXPANSION_CONTRACT: (
+            "Selected mode: `post_745_raw_mixed_rendered_downstream_expansion_governance`.",
+            "Provider/Public URL Entry Contract",
+            "Connector/Destination Dispatch Entry Contract",
+            "Package Mutation/Reconstruction Entry Contract",
+            "Source Breadth Entry Contract",
+            "Qualitative/Hybrid/RAG/Vector Entry Contract",
+            "UI Theme Contract",
+            "headed and headless Chromium behavior is consistent",
+            "no provider/public URL behavior",
+            "no connector/destination dispatch",
+            "no frontend-only durable authority",
+        ),
+        BOARD: (
+            "Post-745 downstream expansion freeze",
+            "184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+            "185_POST_745_DOWNSTREAM_EXPANSION_CONTRACT.md",
+            "post_745_raw_mixed_rendered_downstream_expansion_governance",
+        ),
+        MANIFEST: (
+            "latest_post_745_downstream_expansion_freeze_branch",
+            "latest_post_745_downstream_expansion_freeze_live_behavior_change",
+            "post_745_downstream_expansion_freeze",
+            "post_745_raw_mixed_rendered_downstream_expansion_governance",
+        ),
+        PROOF_MANIFEST: (
+            "post_745_downstream_expansion_freeze_proof",
+            "184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+            "185_POST_745_DOWNSTREAM_EXPANSION_CONTRACT.md",
+            "post_745_raw_mixed_rendered_downstream_expansion_governance",
+            "provider_public_url_entry_freeze",
+            "connector_destination_dispatch_entry_freeze",
+            "no frontend-only durable authority",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing post-745 downstream expansion freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_post_745_downstream_expansion_freeze_branch") != "codex/l3-post-745-next":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale post-745 downstream expansion freeze branch")
+        if current_status.get("latest_post_745_downstream_expansion_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark post-745 downstream expansion freeze as planning-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("post_745_downstream_expansion_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing post_745_downstream_expansion_freeze_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} post-745 downstream expansion freeze proof must be planning-only")
+    if proof.get("selected_planning_mode") != "post_745_raw_mixed_rendered_downstream_expansion_governance":
+        errors.append(f"{_rel(PROOF_MANIFEST)} post-745 downstream expansion freeze proof has stale selected planning mode")
+    ranked = proof.get("ranked_future_passes")
+    if not isinstance(ranked, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} post-745 downstream expansion freeze proof missing ranked_future_passes")
+    else:
+        for future_pass in (
+            "provider_public_url_entry_freeze",
+            "connector_destination_dispatch_entry_freeze",
+            "package_mutation_reconstruction_rendered_entry_freeze",
+            "source_breadth_entry_freeze",
+            "qual_hybrid_rag_vector_entry_freeze",
+            "browser_full_mockup_activation_freeze",
+            "auth_security_entry_freeze",
+        ):
+            if future_pass not in ranked:
+                errors.append(f"{_rel(PROOF_MANIFEST)} post-745 ranked_future_passes missing {future_pass}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -11595,6 +11692,8 @@ def main() -> int:
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_FREEZE,
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CONTRACT,
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF,
+        POST_745_DOWNSTREAM_EXPANSION_FREEZE,
+        POST_745_DOWNSTREAM_EXPANSION_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -11770,6 +11869,7 @@ def main() -> int:
     _check_rendered_external_export_download_delivery_proof(errors)
     _check_rendered_external_export_download_signed_reference_freeze(errors)
     _check_rendered_external_export_download_signed_reference_proof(errors)
+    _check_post_745_downstream_expansion_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
