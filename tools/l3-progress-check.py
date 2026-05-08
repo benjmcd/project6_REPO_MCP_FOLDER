@@ -5393,7 +5393,7 @@ def _check_post_730_practical_readiness(errors: list[str]) -> None:
             "const SERVER_PORT = 8031;",
             "fullyParallel: false",
             "workers: 1",
-            "reuseExistingServer: !process.env.CI",
+            "reuseExistingServer: false",
         ),
     }
     for path, terms in required_doc_terms.items():
@@ -7084,21 +7084,40 @@ def _check_post_745_downstream_expansion_freeze(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} post-745 downstream expansion freeze proof must be planning-only")
     if proof.get("selected_planning_mode") != "post_745_raw_mixed_rendered_downstream_expansion_governance":
         errors.append(f"{_rel(PROOF_MANIFEST)} post-745 downstream expansion freeze proof has stale selected planning mode")
+    expected_ranked_future_passes = [
+        "provider_public_url_entry_freeze",
+        "connector_destination_dispatch_entry_freeze",
+        "package_mutation_reconstruction_rendered_entry_freeze",
+        "source_breadth_entry_freeze",
+        "qual_hybrid_rag_vector_entry_freeze",
+        "browser_full_mockup_activation_freeze",
+        "auth_security_entry_freeze",
+    ]
     ranked = proof.get("ranked_future_passes")
     if not isinstance(ranked, list):
         errors.append(f"{_rel(PROOF_MANIFEST)} post-745 downstream expansion freeze proof missing ranked_future_passes")
-    else:
-        for future_pass in (
-            "provider_public_url_entry_freeze",
-            "connector_destination_dispatch_entry_freeze",
-            "package_mutation_reconstruction_rendered_entry_freeze",
-            "source_breadth_entry_freeze",
-            "qual_hybrid_rag_vector_entry_freeze",
-            "browser_full_mockup_activation_freeze",
-            "auth_security_entry_freeze",
-        ):
-            if future_pass not in ranked:
-                errors.append(f"{_rel(PROOF_MANIFEST)} post-745 ranked_future_passes missing {future_pass}")
+    elif ranked != expected_ranked_future_passes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} post-745 ranked_future_passes must match the frozen future-pass order")
+    expected_negative_invariants = [
+        "no provider/public URL behavior",
+        "no provider object-store URL, signed URL, public ACL, object-store write, or URL revocation behavior",
+        "no connector-run creation, connector invocation, destination selection, destination write, or generic downstream dispatch",
+        "no package payload mutation, reconstruction, replacement, supersession, or rendered package mutation control",
+        "no source-family expansion beyond dataset_version and aps_content_document",
+        "no source adapter registry",
+        "no local upload, local-directory ingestion, arbitrary local path input, web connector retrieval, or unbounded runtime DB source read",
+        "no RAG/vector retrieval, vector index creation, broad qualitative execution, hybrid execution, or hidden LLM planning",
+        "no new route, DTO, model, migration, or production service behavior",
+        "no new rendered UI control",
+        "no frontend-only durable authority",
+        "no full mockup activation",
+        "no auth/security behavior change",
+    ]
+    negative_invariants = proof.get("negative_invariants")
+    if not isinstance(negative_invariants, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} post-745 downstream expansion freeze proof missing negative_invariants")
+    elif negative_invariants != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} post-745 negative_invariants must match the frozen structural list")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
