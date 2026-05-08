@@ -233,6 +233,9 @@ PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION = (
 PROVIDER_PRIVATE_SIGNED_URL_IMPLEMENTATION_ENTRY_FREEZE = (
     PLANNING_DOCS / "224_PROVIDER_PRIVATE_SIGNED_URL_IMPLEMENTATION_ENTRY_FREEZE.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_STORAGE_AUTHORITY_FAKE_PROVIDER_FREEZE = (
+    PLANNING_DOCS / "225_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_AUTHORITY_FAKE_PROVIDER_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -12032,6 +12035,141 @@ def _check_provider_private_signed_url_implementation_entry_freeze(errors: list[
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_implementation_entry_freeze_proof recommended_next_actions must match the frozen list")
 
+def _check_provider_private_signed_url_storage_authority_fake_provider_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_STORAGE_AUTHORITY_FAKE_PROVIDER_FREEZE: (
+            "Status: current-main planning/control storage-authority and fake-provider freeze for `provider_private_signed_url_storage_authority_fake_provider_freeze`.",
+            "entry_decision: authority_freeze_runtime_blocked",
+            "selected_runtime_family: provider_public_url_runtime",
+            "selected_runtime_mode: provider_private_signed_url",
+            "named_use_case_selected: external_downstream_recipient_private_artifact_delivery",
+            "provider_storage_authority_result: no_current_main_provider_storage_authority",
+            "provider_service_surface_status: absent",
+            "fake_provider_contract_double_status: required_not_implemented",
+            "runtime_implementation_allowed: false",
+            "write_provider_private_signed_url_contract_only_after_storage_authority_and_fake_provider_are_specified",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Storage Authority Fake Provider Freeze",
+            "225_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_AUTHORITY_FAKE_PROVIDER_FREEZE.md",
+            "provider_private_signed_url_storage_authority_fake_provider_freeze",
+            "entry_decision` is `authority_freeze_runtime_blocked",
+            "provider_storage_authority_result` is `no_current_main_provider_storage_authority",
+            "provider_service_surface_status` is `absent",
+            "fake_provider_contract_double_status` is `required_not_implemented",
+            "runtime_implementation_allowed` is `false",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_storage_authority_fake_provider_freeze_branch",
+            "latest_provider_private_signed_url_storage_authority_fake_provider_freeze_live_behavior_change",
+            "provider_private_signed_url_storage_authority_fake_provider_freeze",
+            "entry_decision is authority_freeze_runtime_blocked",
+            "provider_storage_authority_result is no_current_main_provider_storage_authority",
+            "fake_provider_contract_double_status is required_not_implemented",
+            "runtime_implementation_allowed is false",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_storage_authority_fake_provider_freeze_proof",
+            "225_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_AUTHORITY_FAKE_PROVIDER_FREEZE.md",
+            "provider_private_signed_url_storage_authority_fake_provider_freeze",
+            "no_current_main_provider_storage_authority",
+            "required_not_implemented",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL storage-authority/fake-provider freeze term: {term}")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL storage-authority/fake-provider freeze")
+    else:
+        if current_status.get("latest_provider_private_signed_url_storage_authority_fake_provider_freeze_branch") != "codex/l3-provider-storage-authority-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale provider private signed URL storage-authority/fake-provider freeze branch")
+        if current_status.get("latest_provider_private_signed_url_storage_authority_fake_provider_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark provider private signed URL storage-authority/fake-provider freeze as planning-only")
+        summary = current_status.get("provider_private_signed_url_storage_authority_fake_provider_freeze")
+        if not isinstance(summary, str) or "entry_decision is authority_freeze_runtime_blocked" not in summary or "runtime_implementation_allowed is false" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_storage_authority_fake_provider_freeze must record blocked authority-freeze posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_storage_authority_fake_provider_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_storage_authority_fake_provider_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-provider-storage-authority-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_storage_authority_fake_provider_freeze",
+        "entry_decision": "authority_freeze_runtime_blocked",
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "runtime_status": "not_implemented",
+        "provider_storage_authority_result": "no_current_main_provider_storage_authority",
+        "provider_service_surface_status": "absent",
+        "fake_provider_contract_double_status": "required_not_implemented",
+        "runtime_implementation_allowed": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_authority_fake_provider_freeze_proof.{key} must be {expected!r}")
+    expected_evidence = [
+        "backend_app_services_provider_glob_absent",
+        "backend_app_services_storage_glob_absent",
+        "same_origin_external_export_download_live_bounded",
+        "same_origin_signed_reference_live_bounded",
+        "provider_url_request_fields_forbidden_or_non_admitted",
+    ]
+    if proof.get("current_main_evidence") != expected_evidence:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_authority_fake_provider_freeze_proof current_main_evidence must match the frozen list")
+    expected_capabilities = [
+        "deterministic_provider_object_identity_from_artifact_authority",
+        "artifact_reference_or_materialization_with_hash_size_verification",
+        "private_signed_url_creation_with_ttl_expiry_recipient_scope_redacted_receipt",
+        "revocation_fail_closes_subsequent_use",
+        "replay_policy_or_replay_denial_receipt",
+        "stale_authority_rejection",
+        "deterministic_provider_failure_injection",
+        "redacted_audit_receipts",
+        "no_secret_signature_object_key_path_bucket_container_token_or_bearer_url_leakage",
+        "no_connector_destination_source_package_rag_mockup_hidden_llm_or_auth_security_side_effects",
+    ]
+    if proof.get("required_fake_provider_capabilities") != expected_capabilities:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_authority_fake_provider_freeze_proof required_fake_provider_capabilities must match the frozen list")
+    expected_forbidden = [
+        "provider_private_signed_url_runtime",
+        "provider_public_url_runtime",
+        "public_proxy_url_runtime",
+        "provider_adapter_or_fake_provider_implementation",
+        "provider_object_write_copy_acl_bucket_container_key_credential_or_network_behavior",
+        "provider_url_fields_on_existing_same_origin_routes",
+        "same_origin_delivery_or_signed_reference_semantics_change",
+        "external_connector_invocation",
+        "destination_write",
+        "source_adapter_registry_or_source_expansion",
+        "package_mutation_or_reconstruction",
+        "broad_qualitative_hybrid_rag_runtime",
+        "full_mockup_activation",
+        "hidden_llm_or_prompt_model_provider_runtime",
+        "auth_security_behavior_change",
+        "route_dto_model_migration_service_test_ui_playwright_or_ci_behavior_change",
+        "frontend_only_durable_authority",
+    ]
+    if proof.get("forbidden_runtime_changes") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_authority_fake_provider_freeze_proof forbidden_runtime_changes must match the frozen list")
+    expected_next = [
+        "write_provider_private_signed_url_contract_only_after_storage_authority_and_fake_provider_are_specified",
+        "keep_runtime_blocked_if_provider_storage_authority_remains_absent",
+        "stop_and_redesign_contract_if_fake_provider_contract_is_not_testable_without_real_network",
+        "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_is_requested",
+        "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_authority_fake_provider_freeze_proof recommended_next_actions must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -16831,6 +16969,7 @@ def main() -> int:
     _check_named_runtime_use_case_selection_gate(errors)
     _check_provider_private_signed_url_use_case_selection(errors)
     _check_provider_private_signed_url_implementation_entry_freeze(errors)
+    _check_provider_private_signed_url_storage_authority_fake_provider_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
