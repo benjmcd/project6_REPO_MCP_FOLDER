@@ -8670,5 +8670,101 @@
       "no auth/security behavior change"
     ],
     "next_boundary": "A later exact freeze must choose observability/audit event schema before any durable event, telemetry, audit receipt, or CI observability runtime is admitted."
+  },
+  "observability_audit_event_schema_freeze_proof": {
+    "implementation_branch": "codex/l3-observability-audit-schema-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "observability_audit_event_schema_freeze",
+    "runtime_status": "planning_event_schema_only",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/209_HEADED_HEADLESS_PARITY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md"
+    ],
+    "current_observability_posture": {
+      "observability_event_runtime": "not_implemented",
+      "audit_event_runtime": "not_implemented",
+      "metrics_log_shipping": "not_implemented",
+      "dashboard": "not_implemented",
+      "telemetry_receipt_artifact": "not_implemented",
+      "event_storage_table": "not_implemented",
+      "event_writer_service": "not_implemented",
+      "browser_storage_authority": "not_admitted",
+      "status": "schema_boundary_only"
+    },
+    "required_identity_fields": [
+      "schema_id",
+      "schema_version",
+      "event_id",
+      "event_family",
+      "event_name",
+      "emitted_at_utc"
+    ],
+    "allowed_correlation_fields": [
+      "pr_number",
+      "branch_name",
+      "commit_sha",
+      "workflow_run_id",
+      "check_name",
+      "job_name",
+      "test_title",
+      "phase_label",
+      "route_label",
+      "session_ref",
+      "package_ref",
+      "artifact_family"
+    ],
+    "forbidden_authority_fields": [
+      "browser_local_state",
+      "raw_request_body",
+      "raw_response_body",
+      "raw_package_payload",
+      "prompt_text",
+      "model_provider_internal",
+      "credential_value",
+      "bearer_token",
+      "proxy_identity_header",
+      "database_url",
+      "local_absolute_path",
+      "provider_url",
+      "connector_target",
+      "destination_target"
+    ],
+    "dependency_order": [
+      "observability_audit_event_schema_freeze",
+      "ci_performance_observability_runtime_entry"
+    ],
+    "negative_invariants": [
+      "no observability event runtime",
+      "no audit-event runtime",
+      "no event writer service",
+      "no event storage table",
+      "no telemetry receipt artifact",
+      "no metrics/log shipping",
+      "no dashboard",
+      "no CI workflow change",
+      "no Playwright configuration change",
+      "no executable test change",
+      "no dependency change",
+      "no artifact upload or retention change",
+      "no trace/screenshot/video policy change",
+      "no performance budget or timing gate",
+      "no headed-browser CI matrix",
+      "no sharding or parallelism",
+      "no route/API/DTO/model/migration/service behavior change",
+      "no rendered UI control",
+      "no browser-local durable authority",
+      "no frontend-only durable authority",
+      "no source expansion",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector/destination dispatch",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change"
+    ],
+    "next_boundary": "A later exact CI/performance/observability runtime entry freeze must choose one narrow mode or explicitly remain planning-only before any event, audit, telemetry, dashboard, artifact, workflow, or runtime change."
   }
 }
