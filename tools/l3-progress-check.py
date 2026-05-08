@@ -165,6 +165,12 @@ PROVIDER_PUBLIC_URL_ENTRY_FREEZE = (
 PROVIDER_PUBLIC_URL_ENTRY_CONTRACT = (
     PLANNING_DOCS / "188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md"
 )
+CONNECTOR_DESTINATION_ENTRY_FREEZE = (
+    PLANNING_DOCS / "189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md"
+)
+CONNECTOR_DESTINATION_ENTRY_CONTRACT = (
+    PLANNING_DOCS / "190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -7315,6 +7321,211 @@ def _check_provider_public_url_entry_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_entry_freeze_proof negative_invariants must match the frozen structural list")
 
+
+def _check_connector_destination_entry_freeze(errors: list[str]) -> None:
+    required_terms = {
+        CONNECTOR_DESTINATION_ENTRY_FREEZE: (
+            "Status: planning/control entry freeze only for `connector_destination_dispatch_entry_freeze`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_internal_record_only_status: already_admitted_by_doc_121",
+            "external_connector_destination_authority_named_use_case_destination_access_lifecycle_retry_receipt_and_security_posture_not_yet_verified",
+            "connector_destination_authority_discovery_freeze_or_entry_freeze_update",
+            "Evidence Ledger",
+            "Threat Model Minimum",
+            "Dispatch Exposure Model",
+            "Capability Isolation Matrix",
+            "no_cross_mode_privilege_escalation",
+            "internal_record_can_invoke_external_connector: false",
+            "new_connector_destination_runtime: false",
+            "external_connector_invocation: false",
+            "destination_write: false",
+            "connector_credentials_in_browser: forbidden",
+            "real_connector_credentials_in_ci: forbidden_by_default",
+            "post_749_provider_public_url_entry_freeze",
+            "no existing internal_dispatch_record_only behavior change",
+        ),
+        CONNECTOR_DESTINATION_ENTRY_CONTRACT: (
+            "Status: planning/control contract paired with `189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_internal_record_only_status: already_admitted_by_doc_121",
+            "Existing Internal Record Compatibility Contract",
+            "The first external runtime lane must not be generic dispatch",
+            "Real connector and destination credentials are forbidden in CI by default.",
+            "Checker Contract",
+            "The checker must not pretend to validate real connector credentials",
+        ),
+        BOARD: (
+            "Connector/Destination Dispatch Entry Freeze",
+            "189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md",
+            "190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md",
+            "connector_destination_dispatch_entry_freeze",
+            "selected_mode` is `null`",
+            "runtime_status` is `not_implemented`",
+            "internal_dispatch_record_only",
+        ),
+        MANIFEST: (
+            "latest_connector_destination_entry_freeze_branch",
+            "latest_connector_destination_entry_freeze_live_behavior_change",
+            "connector_destination_dispatch_entry_freeze",
+            "entry_decision is deferred",
+            "selected_mode is null",
+            "runtime_status is not_implemented",
+            "internal_dispatch_record_only",
+        ),
+        PROOF_MANIFEST: (
+            "connector_destination_entry_freeze_proof",
+            "189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md",
+            "190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md",
+            "connector_destination_dispatch_entry_freeze",
+            "already_admitted_by_doc_121",
+            "no existing internal_dispatch_record_only behavior change",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing connector/destination entry freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for connector/destination entry freeze")
+    else:
+        if current_status.get("latest_connector_destination_entry_freeze_branch") != "codex/l3-connector-dispatch-entry-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale connector/destination entry freeze branch")
+        if current_status.get("latest_connector_destination_entry_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark connector/destination entry freeze as planning-only")
+        summary = current_status.get("connector_destination_dispatch_entry_freeze")
+        if not isinstance(summary, str) or "entry_decision is deferred" not in summary or "selected_mode is null" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.connector_destination_dispatch_entry_freeze must record deferred/null entry decision")
+        if isinstance(summary, str) and "internal_dispatch_record_only" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.connector_destination_dispatch_entry_freeze must preserve internal record-only boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("connector_destination_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing connector_destination_entry_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-connector-dispatch-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "connector_destination_dispatch_entry_freeze",
+        "entry_decision": "deferred",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_internal_record_only_status": "already_admitted_by_doc_121",
+        "receipt_family": "no_receipt_planning_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_entry_freeze_proof.{key} must be {expected!r}")
+    governing_docs = proof.get("governing_docs")
+    if not isinstance(governing_docs, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_entry_freeze_proof missing governing_docs")
+    else:
+        for doc in (
+            "next_milestone_plans/Layer3_planning_docs/189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md",
+            "next_milestone_plans/Layer3_planning_docs/190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md",
+            "next_milestone_plans/Layer3_planning_docs/121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md",
+            "next_milestone_plans/Layer3_planning_docs/187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+            "next_milestone_plans/Layer3_planning_docs/188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
+        ):
+            if doc not in governing_docs:
+                errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_entry_freeze_proof governing_docs missing {doc}")
+    ledger = proof.get("evidence_ledger")
+    if not isinstance(ledger, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_entry_freeze_proof missing evidence_ledger")
+    else:
+        for key in ("current_internal_dispatch_record_only", "current_provider_public_url_entry_freeze"):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "verified":
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must be verified")
+        for key in (
+            "external_connector_authority",
+            "destination_authority",
+            "named_downstream_use_case",
+            "credential_and_access_model",
+            "lifecycle_retry_cancel_contract",
+            "receipt_and_audit_contract",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "unverified" or item.get("evidence") != []:
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must remain unverified with no evidence")
+    exposure = proof.get("dispatch_exposure_model")
+    if not isinstance(exposure, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_entry_freeze_proof missing dispatch_exposure_model")
+    else:
+        for key in (
+            "connector_family",
+            "destination_family",
+            "destination_audience",
+            "artifact_sensitivity",
+            "credential_authority",
+            "operator_authorization_model",
+            "retry_cancel_policy",
+            "receipt_visibility",
+        ):
+            if exposure.get(key) != "unknown":
+                errors.append(f"{_rel(PROOF_MANIFEST)} dispatch_exposure_model.{key} must remain unknown while decision is deferred")
+    matrix = proof.get("capability_isolation_matrix")
+    if not isinstance(matrix, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_entry_freeze_proof missing capability_isolation_matrix")
+    else:
+        for key, flag in (
+            ("internal_dispatch_record_only", "change_allowed_in_this_pass"),
+            ("single_named_connector_dispatch", "runtime_allowed_in_this_pass"),
+            ("single_named_destination_dispatch", "runtime_allowed_in_this_pass"),
+            ("generic_downstream_dispatch", "runtime_allowed_in_this_pass"),
+            ("provider_public_url", "runtime_allowed_in_this_pass"),
+            ("provider_object_write_or_copy", "runtime_allowed_in_this_pass"),
+            ("package_mutation_reconstruction", "runtime_allowed_in_this_pass"),
+            ("source_breadth_expansion", "runtime_allowed_in_this_pass"),
+            ("rag_vector_or_hybrid_execution", "runtime_allowed_in_this_pass"),
+            ("auth_security_behavior_change", "runtime_allowed_in_this_pass"),
+            ("rendered_connector_destination_controls", "runtime_allowed_in_this_pass"),
+        ):
+            item = matrix.get(key)
+            if not isinstance(item, dict) or item.get(flag) is not False:
+                errors.append(f"{_rel(PROOF_MANIFEST)} capability_isolation_matrix.{key}.{flag} must be false")
+    expected_negative_invariants = [
+        "no new connector/destination runtime",
+        "no external connector invocation",
+        "no destination write",
+        "no connector-run creation",
+        "no generic downstream dispatch",
+        "no provider/public URL runtime",
+        "no provider object ACL change",
+        "no provider object write or copy",
+        "no package mutation or reconstruction",
+        "no package payload rewrite",
+        "no source expansion",
+        "no local upload",
+        "no local-directory ingestion",
+        "no arbitrary local path input",
+        "no web connector retrieval",
+        "no RAG/vector retrieval",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no full mockup activation",
+        "no hidden LLM planning",
+        "no frontend-only durable state",
+        "no auth/security behavior change",
+        "no existing same-origin signed-reference semantics change",
+        "no existing internal_dispatch_record_only behavior change",
+        "no connector or destination credentials in browser or request",
+        "no connector/destination secrets, targets, URLs, or tokens in error bodies",
+        "no connector/destination secrets, targets, URLs, or tokens in logs",
+        "no cross-mode privilege escalation",
+        "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_entry_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -12085,6 +12296,7 @@ def main() -> int:
     _check_rendered_external_export_download_signed_reference_proof(errors)
     _check_post_745_downstream_expansion_freeze(errors)
     _check_provider_public_url_entry_freeze(errors)
+    _check_connector_destination_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
