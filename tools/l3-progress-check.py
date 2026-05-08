@@ -221,6 +221,9 @@ AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT = (
 POST_AUTHORITY_DISCOVERY_CHAIN_CLOSEOUT = (
     PLANNING_DOCS / "220_POST_AUTHORITY_DISCOVERY_CHAIN_CLOSEOUT.md"
 )
+CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT = (
+    PLANNING_DOCS / "221_CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -11564,6 +11567,106 @@ def _check_post_authority_discovery_chain_closeout(errors: list[str]) -> None:
     if proof.get("next_allowed_planning_moves") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} post_authority_discovery_chain_closeout_proof next_allowed_planning_moves must match the frozen list")
 
+def _check_current_main_runtime_entry_readiness_report(errors: list[str]) -> None:
+    required_terms = {
+        CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT: (
+            "Status: current-main planning/control report for `current_main_runtime_entry_readiness_report`.",
+            "entry_decision: report_only",
+            "selected_runtime_family: null",
+            "selected_runtime_mode: null",
+            "runtime_status: not_implemented",
+            "authority_chain_status: closed_no_product_runtime_selected",
+            "named_use_case_status: required_before_runtime",
+            "implementation_entry_freeze_required: true",
+            "Runtime Families Not Ready For Direct Implementation",
+            "Required Entry Freeze Contents",
+            "recommended_next_action: choose_named_runtime_use_case_or_stop_at_planning",
+            "no runtime implementation from this report alone",
+        ),
+        BOARD: (
+            "Current Main Runtime Entry Readiness Report",
+            "221_CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT.md",
+            "current_main_runtime_entry_readiness_report",
+            "entry_decision` is `report_only",
+            "selected_runtime_mode` remains `null",
+            "choose_named_runtime_use_case_or_stop_at_planning",
+        ),
+        MANIFEST: (
+            "latest_current_main_runtime_entry_readiness_report_branch",
+            "latest_current_main_runtime_entry_readiness_report_live_behavior_change",
+            "current_main_runtime_entry_readiness_report",
+            "entry_decision is report_only",
+            "selected_runtime_mode is null",
+            "choose_named_runtime_use_case_or_stop_at_planning",
+        ),
+        PROOF_MANIFEST: (
+            "current_main_runtime_entry_readiness_report_proof",
+            "221_CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT.md",
+            "current_main_runtime_entry_readiness_report",
+            "report_only",
+            "closed_no_product_runtime_selected",
+            "choose_named_runtime_use_case_or_stop_at_planning",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing current-main runtime entry readiness report term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for current-main runtime entry readiness report")
+    else:
+        if current_status.get("latest_current_main_runtime_entry_readiness_report_branch") != "codex/l3-runtime-entry-readiness":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale runtime entry readiness branch")
+        if current_status.get("latest_current_main_runtime_entry_readiness_report_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark runtime entry readiness report as planning-only")
+        summary = current_status.get("current_main_runtime_entry_readiness_report")
+        if not isinstance(summary, str) or "entry_decision is report_only" not in summary or "choose_named_runtime_use_case_or_stop_at_planning" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.current_main_runtime_entry_readiness_report must record report-only next decision")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("current_main_runtime_entry_readiness_report_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing current_main_runtime_entry_readiness_report_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-runtime-entry-readiness",
+        "live_behavior_change": False,
+        "selected_planning_mode": "current_main_runtime_entry_readiness_report",
+        "entry_decision": "report_only",
+        "selected_runtime_family": None,
+        "selected_runtime_mode": None,
+        "runtime_status": "not_implemented",
+        "authority_chain_status": "closed_no_product_runtime_selected",
+        "named_use_case_status": "required_before_runtime",
+        "implementation_entry_freeze_required": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} current_main_runtime_entry_readiness_report_proof.{key} must be {expected!r}")
+    expected_not_ready = [
+        "provider_public_url_runtime",
+        "external_connector_destination_runtime",
+        "source_breadth_runtime",
+        "package_mutation_rendered_runtime",
+        "broad_qual_hybrid_rag_runtime",
+        "browser_full_mockup_runtime",
+        "auth_security_runtime",
+    ]
+    if proof.get("runtime_families_not_directly_ready") != expected_not_ready:
+        errors.append(f"{_rel(PROOF_MANIFEST)} current_main_runtime_entry_readiness_report_proof runtime_families_not_directly_ready must match the frozen list")
+    expected_next = [
+        "choose_named_runtime_use_case_or_stop_at_planning",
+        "create_exact_runtime_implementation_entry_freeze_if_named_use_case_exists",
+        "do_not_start_runtime_work_if_no_named_use_case_exists",
+        "reconcile_review_or_checker_drift_before_new_planning_if_found",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} current_main_runtime_entry_readiness_report_proof recommended_next_actions must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -16359,6 +16462,7 @@ def main() -> int:
     _check_browser_full_mockup_authority_discovery_closeout(errors)
     _check_auth_security_authority_discovery_closeout(errors)
     _check_post_authority_discovery_chain_closeout(errors)
+    _check_current_main_runtime_entry_readiness_report(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
