@@ -775,6 +775,10 @@ Primary authority surfaces:
 - `frontend_UI_plans/nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 
+## Current Rendered Package-Review Proof
+
+Rendered package-review proof: `168_RENDERED_PACKAGE_REVIEW_PROOF.md` records the live test-only proof for `raw_mixed_rendered_package_review_preview_commit_submit`. The focused browser proof `Layer 3 workbench drives raw mixed rendered package-review preview commit and submit` drives existing `/review/layer3` controls through approved raw mixed result review, package preview, package construction commit, and package-review submit against the existing `/package/review/preview`, `/package/review/commit`, and `/package/review/submit` routes. It proves `package_review_approved`, server-returned preview hash, reconciliation id, package ids/kinds, payload refs/hashes, and submit ref, while preserving the negative boundary against handoff/export, APS dispatch, external export/download, provider/public URL, connector/destination dispatch, package mutation/reconstruction, package replacement/supersession, rendered UI control changes, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, and frontend-only durable authority.
+
 ## Refresh Inputs
 
 Refresh this board against:

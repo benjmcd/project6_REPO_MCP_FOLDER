@@ -105,6 +105,9 @@ RENDERED_PACKAGE_REVIEW_FREEZE = (
 RENDERED_PACKAGE_REVIEW_CONTRACT = (
     PLANNING_DOCS / "167_RENDERED_PACKAGE_REVIEW_CONTRACT.md"
 )
+RENDERED_PACKAGE_REVIEW_PROOF = (
+    PLANNING_DOCS / "168_RENDERED_PACKAGE_REVIEW_PROOF.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -6008,6 +6011,104 @@ def _check_rendered_package_review_freeze(errors: list[str]) -> None:
                 errors.append(f"{_rel(PROOF_MANIFEST)} future_selectors missing {selector}")
 
 
+def _check_rendered_package_review_proof(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_PACKAGE_REVIEW_PROOF: (
+            "Status: live test-only rendered browser proof for `raw_mixed_rendered_package_review_preview_commit_submit`.",
+            "Layer 3 workbench drives raw mixed rendered package-review preview commit and submit",
+            "inspectRenderedPackagePreview",
+            "commitRenderedPackageConstruction",
+            "submitRenderedPackageReview",
+            "POST /api/v1/layer3/package/review/preview",
+            "POST /api/v1/layer3/package/review/commit",
+            "POST /api/v1/layer3/package/review/submit",
+            "layer3.package_review_preview.v1",
+            "layer3.package_construction_commit.v1",
+            "layer3.cohort_package_review_submit.v1",
+            "server-returned `package_review_preview_hash`",
+            "server-returned `reconciliation_record_id`",
+            "package-review submit state `package_review_approved`",
+            "`construction_basis_hash` null",
+            "[data-operation-target=\"package-review-band\"]",
+            "no frontend-only durable authority",
+        ),
+        BOARD: (
+            "Rendered package-review proof",
+            "168_RENDERED_PACKAGE_REVIEW_PROOF.md",
+            "Layer 3 workbench drives raw mixed rendered package-review preview commit and submit",
+            "raw_mixed_rendered_package_review_preview_commit_submit",
+            "package_review_approved",
+        ),
+        MANIFEST: (
+            "latest_rendered_package_review_proof_branch",
+            "latest_rendered_package_review_proof_live_behavior_change",
+            "rendered_package_review_proof",
+            "168_RENDERED_PACKAGE_REVIEW_PROOF.md",
+            "Layer 3 workbench drives raw mixed rendered package-review preview commit and submit",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_package_review_proof",
+            "168_RENDERED_PACKAGE_REVIEW_PROOF.md",
+            "raw_mixed_rendered_package_review_preview_commit_submit",
+            "inspectRenderedPackagePreview",
+            "commitRenderedPackageConstruction",
+            "submitRenderedPackageReview",
+            "Layer 3 workbench drives raw mixed rendered package-review preview commit and submit",
+            "layer3.cohort_package_review_submit.v1",
+            "no frontend-only durable authority",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives raw mixed rendered package-review preview commit and submit",
+            "inspectRenderedPackagePreview",
+            "commitRenderedPackageConstruction",
+            "submitRenderedPackageReview",
+            "expect(previewPayload.result_review_record_ref).toBe(review.review_record_ref)",
+            "expect(commitPayload.expected_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS)",
+            "expect(submitPayload.operator_decision).toBe('approved')",
+            "expect(packageSubmit.package_review_state).toBe('package_review_approved')",
+            "expectNoRequestsToLayer3Paths(layer3ApiRequests",
+            "/handoff/",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered package-review proof term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_package_review_proof_branch") != "codex/l3-rendered-package-proof":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered package-review proof branch")
+        if current_status.get("latest_rendered_package_review_proof_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered package-review proof as test-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_package_review_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_package_review_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered package-review proof must be test-only")
+    if proof.get("selected_rendered_package_review_mode") != "raw_mixed_rendered_package_review_preview_commit_submit":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered package-review proof has stale selected mode")
+    routes = proof.get("routes_reused")
+    if not isinstance(routes, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered package-review proof missing routes_reused")
+    else:
+        for route in (
+            "POST /api/v1/layer3/package/review/preview",
+            "POST /api/v1/layer3/package/review/commit",
+            "POST /api/v1/layer3/package/review/submit",
+        ):
+            if route not in routes:
+                errors.append(f"{_rel(PROOF_MANIFEST)} rendered package-review routes_reused missing {route}")
+    browser_proof = proof.get("browser_proof")
+    if not isinstance(browser_proof, list) or "Layer 3 workbench drives raw mixed rendered package-review preview commit and submit" not in browser_proof:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered package-review proof missing browser proof test name")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -10583,6 +10684,7 @@ def main() -> int:
         RENDERED_RESULT_REVIEW_PROOF,
         RENDERED_PACKAGE_REVIEW_FREEZE,
         RENDERED_PACKAGE_REVIEW_CONTRACT,
+        RENDERED_PACKAGE_REVIEW_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -10747,6 +10849,7 @@ def main() -> int:
     _check_rendered_result_review_freeze(errors)
     _check_rendered_result_review_proof(errors)
     _check_rendered_package_review_freeze(errors)
+    _check_rendered_package_review_proof(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
