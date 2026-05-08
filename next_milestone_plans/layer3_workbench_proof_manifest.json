@@ -6765,5 +6765,120 @@
       "no auth/security behavior change"
     ],
     "next_boundary": "Choose exactly one implementation-entry freeze, starting with provider_public_url_entry_freeze only if live evidence proves same-origin delivery and durable signed references are insufficient for a concrete use case."
+  },
+  "provider_public_url_entry_freeze_proof": {
+    "scope": "Planning/control entry freeze for provider_public_url_entry_freeze after PR #748 review-debt reconciliation.",
+    "implementation_branch": "codex/l3-provider-url-entry-freeze",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/110_PROVIDER_URL_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/111_PROVIDER_URL_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/185_POST_745_DOWNSTREAM_EXPANSION_CONTRACT.md"
+    ],
+    "selected_planning_mode": "provider_public_url_entry_freeze",
+    "entry_decision": "deferred",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "receipt_family": "no_receipt_planning_only",
+    "evidence_ledger": {
+      "current_same_origin_signed_reference_proof": {
+        "status": "verified",
+        "evidence": [
+          "e2e/layer3-workbench.spec.js",
+          "next_milestone_plans/Layer3_planning_docs/183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md"
+        ]
+      },
+      "provider_storage_authority": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "named_use_case": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "exposure_classification": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "revocation_contract": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    "exposure_model": {
+      "audience": "unknown",
+      "artifact_sensitivity": "unknown",
+      "url_bearer_risk": "unknown",
+      "revocation_model": "unknown",
+      "auth_dependency": "unknown"
+    },
+    "capability_isolation_matrix": {
+      "same_origin_attachment_delivery": {
+        "change_allowed_in_this_pass": false
+      },
+      "same_origin_signed_reference_delivery": {
+        "change_allowed_in_this_pass": false
+      },
+      "provider_private_signed_url": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "provider_public_url": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "public_proxy_url": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "provider_object_write_or_copy": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "connector_destination_dispatch": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "package_mutation_reconstruction": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "source_breadth_expansion": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "rag_vector_or_hybrid_execution": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "auth_security_behavior_change": {
+        "runtime_allowed_in_this_pass": false
+      }
+    },
+    "negative_invariants": [
+      "no provider/public URL runtime",
+      "no provider private signed URL runtime",
+      "no public proxy URL runtime",
+      "no provider object ACL change",
+      "no provider object write or copy",
+      "no connector or destination dispatch",
+      "no generic downstream dispatch",
+      "no package mutation or reconstruction",
+      "no package payload rewrite",
+      "no source expansion",
+      "no local upload",
+      "no local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval",
+      "no broad qualitative execution",
+      "no hybrid execution",
+      "no full mockup activation",
+      "no hidden LLM planning",
+      "no frontend-only durable state",
+      "no auth/security behavior change",
+      "no existing same-origin signed-reference semantics change",
+      "no provider credentials in browser or request",
+      "no provider URL or token leakage in error bodies",
+      "no provider URL or token leakage in logs",
+      "no cross-mode privilege escalation",
+      "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control"
+    ],
+    "next_boundary": "Run provider_public_url_authority_discovery_freeze_or_entry_freeze_update before any runtime implementation if concrete evidence emerges."
   }
 }

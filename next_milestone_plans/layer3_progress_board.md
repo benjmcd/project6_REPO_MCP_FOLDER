@@ -807,6 +807,11 @@ Post-745 downstream expansion freeze: `184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.
 
 Post-746 review-debt reconciliation plan: `186_REVIEW_DEBT.md` records the current-main blocker discovered after the PR `#738` through PR `#746` audit. It classifies unresolved merged-review threads from PRs `#738`, `#744`, `#745`, and `#746`, ranks the live behavior, proof, test-harness, and checker risks, and freezes `post_746_review_debt_reconciliation` as the immediate next pass before any provider/public URL, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector, mockup, auth/security, or other new Layer 3 capability work. This planning note admits no runtime behavior and does not mark any review debt fixed.
 
+
+## Provider/Public URL Entry Freeze
+
+Provider/public URL entry freeze: `187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md` and `188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md` record the post-PR `#748` planning/control decision `provider_public_url_entry_freeze`. The selected entry decision is `deferred`, `selected_mode` is `null`, and `runtime_status` is `not_implemented` because provider storage authority, named use case, exposure classification, revocation contract, access authority, and security posture remain unverified. This boundary uses the V6 assurance pack only as reference context and admits no provider/public URL runtime, provider object write/copy/ACL change, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector retrieval, full mockup activation, hidden LLM planning, auth/security behavior change, new route/DTO/model/migration/service behavior, test behavior, rendered UI control, or frontend-only durable authority.
+
 ## Refresh Inputs
 
 Refresh this board against:
