@@ -179,6 +179,8 @@ PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT = (
 )
 SOURCE_BREADTH_ENTRY_FREEZE = PLANNING_DOCS / "193_SOURCE_BREADTH_ENTRY_FREEZE.md"
 SOURCE_BREADTH_ENTRY_CONTRACT = PLANNING_DOCS / "194_SOURCE_BREADTH_ENTRY_CONTRACT.md"
+QUAL_HYBRID_RAG_ENTRY_FREEZE = PLANNING_DOCS / "195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md"
+QUAL_HYBRID_RAG_ENTRY_CONTRACT = PLANNING_DOCS / "196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -7934,6 +7936,224 @@ def _check_source_breadth_entry_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_entry_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_qual_hybrid_rag_vector_entry_freeze(errors: list[str]) -> None:
+    required_terms = {
+        QUAL_HYBRID_RAG_ENTRY_FREEZE: (
+            "Status: planning/control entry freeze only for `qual_hybrid_rag_vector_entry_freeze`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_single_aps_doc_qualitative_status: single_aps_doc_qualitative_pass_only",
+            "live_qual_aps_downstream_status: bounded_qual_aps_backend_api_downstream_chain",
+            "live_rendered_qual_aps_status: qual_aps_rendered_downstream_existing_controls_only",
+            "broad_qualitative_hybrid_rag_vector_authority_model_execution_semantics_retrieval_model_output_taxonomy_and_theme_proof_plan_not_verified",
+            "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+            "qual_aps_external_export_download_prepare_deliver",
+            "Expansion Exposure Model",
+            "Capability Isolation Matrix",
+            "broad_qualitative_execution: false",
+            "rag_vector_retrieval: false",
+            "embedding_generation: false",
+            "no qualitative APS backend/API downstream behavior change",
+        ),
+        QUAL_HYBRID_RAG_ENTRY_CONTRACT: (
+            "Status: planning/control contract paired with `195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_single_aps_doc_qualitative_status: single_aps_doc_qualitative_pass_only",
+            "live_qual_aps_downstream_status: bounded_qual_aps_backend_api_downstream_chain",
+            "live_rendered_qual_aps_status: qual_aps_rendered_downstream_existing_controls_only",
+            "Existing Runtime Compatibility Contract",
+            "This entry freeze adds no rendered UI control.",
+            "Checker Contract",
+            "The checker must not pretend to validate actual broad qualitative execution",
+        ),
+        BOARD: (
+            "Qualitative Hybrid RAG Vector Entry Freeze",
+            "195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md",
+            "196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md",
+            "qual_hybrid_rag_vector_entry_freeze",
+            "selected_mode` is `null`",
+            "runtime_status` is `not_implemented`",
+            "single_aps_doc_qualitative_pass_only",
+            "qual_aps_rendered_downstream_existing_controls_only",
+        ),
+        MANIFEST: (
+            "latest_qual_hybrid_rag_vector_entry_freeze_branch",
+            "latest_qual_hybrid_rag_vector_entry_freeze_live_behavior_change",
+            "qual_hybrid_rag_vector_entry_freeze",
+            "entry_decision is deferred",
+            "selected_mode is null",
+            "runtime_status is not_implemented",
+            "bounded qualitative APS backend/API downstream chain",
+        ),
+        PROOF_MANIFEST: (
+            "qual_hybrid_rag_vector_entry_freeze_proof",
+            "195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md",
+            "196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md",
+            "qual_hybrid_rag_vector_entry_freeze",
+            "single_aps_doc_qualitative_pass_only",
+            "bounded_qual_aps_backend_api_downstream_chain",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing qualitative/hybrid/RAG/vector entry freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for qualitative/hybrid/RAG/vector entry freeze")
+    else:
+        if current_status.get("latest_qual_hybrid_rag_vector_entry_freeze_branch") != "codex/l3-qual-rag-entry-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale qualitative/hybrid/RAG/vector entry freeze branch")
+        if current_status.get("latest_qual_hybrid_rag_vector_entry_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark qualitative/hybrid/RAG/vector entry freeze as planning-only")
+        summary = current_status.get("qual_hybrid_rag_vector_entry_freeze")
+        if not isinstance(summary, str) or "entry_decision is deferred" not in summary or "selected_mode is null" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.qual_hybrid_rag_vector_entry_freeze must record deferred/null entry decision")
+        if isinstance(summary, str) and "single_aps_doc_qualitative_pass_only" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.qual_hybrid_rag_vector_entry_freeze must preserve single APS qualitative boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("qual_hybrid_rag_vector_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing qual_hybrid_rag_vector_entry_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-qual-rag-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "qual_hybrid_rag_vector_entry_freeze",
+        "entry_decision": "deferred",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_single_aps_doc_qualitative_status": "single_aps_doc_qualitative_pass_only",
+        "live_qual_aps_downstream_status": "bounded_qual_aps_backend_api_downstream_chain",
+        "live_rendered_qual_aps_status": "qual_aps_rendered_downstream_existing_controls_only",
+        "receipt_family": "no_receipt_planning_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_vector_entry_freeze_proof.{key} must be {expected!r}")
+    governing_docs = proof.get("governing_docs")
+    for doc in (
+        "next_milestone_plans/Layer3_planning_docs/195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/124_QUAL_HYBRID_RAG_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/149_QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/151_QUAL_APS_RENDERED_UI_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/193_SOURCE_BREADTH_ENTRY_FREEZE.md",
+    ):
+        if not isinstance(governing_docs, list) or doc not in governing_docs:
+            errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_vector_entry_freeze_proof governing_docs missing {doc}")
+    ledger = proof.get("evidence_ledger")
+    if not isinstance(ledger, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_vector_entry_freeze_proof missing evidence_ledger")
+    else:
+        for key in (
+            "current_single_aps_doc_qualitative_pass",
+            "current_qual_aps_backend_api_downstream_chain",
+            "current_qual_aps_rendered_existing_controls",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "verified":
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must be verified")
+        for key in (
+            "broad_qualitative_authority",
+            "qualitative_cohort_authority",
+            "comparative_cross_document_authority",
+            "hybrid_execution_semantics",
+            "rag_vector_retrieval_authority",
+            "embedding_vector_index_storage_model",
+            "model_prompt_provider_security_posture",
+            "output_taxonomy_and_package_compatibility",
+            "rendered_theme_headed_headless_proof_plan",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "unverified" or item.get("evidence") != []:
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must remain unverified with no evidence")
+    exposure = proof.get("qual_hybrid_rag_exposure_model")
+    for key in (
+        "selected_expansion_mode",
+        "execution_authority",
+        "source_scope",
+        "retrieval_corpus",
+        "vector_storage_boundary",
+        "embedding_model_authority",
+        "prompt_model_authority",
+        "output_taxonomy",
+        "package_compatibility",
+        "downstream_delivery_semantics",
+        "theme_surface",
+    ):
+        if not isinstance(exposure, dict) or exposure.get(key) != "unknown":
+            errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_exposure_model.{key} must remain unknown while decision is deferred")
+    matrix = proof.get("capability_isolation_matrix")
+    for key, flag in (
+        ("single_aps_doc_qualitative_pass", "change_allowed_in_this_pass"),
+        ("qual_aps_backend_api_downstream_chain", "change_allowed_in_this_pass"),
+        ("qual_aps_rendered_downstream_existing_controls_only", "change_allowed_in_this_pass"),
+        ("broad_qualitative_execution", "runtime_allowed_in_this_pass"),
+        ("qualitative_associated_cohort_execution", "runtime_allowed_in_this_pass"),
+        ("comparative_qualitative_execution", "runtime_allowed_in_this_pass"),
+        ("cross_document_synthesis", "runtime_allowed_in_this_pass"),
+        ("hybrid_execution", "runtime_allowed_in_this_pass"),
+        ("rag_vector_retrieval", "runtime_allowed_in_this_pass"),
+        ("vector_index_creation", "runtime_allowed_in_this_pass"),
+        ("embedding_generation", "runtime_allowed_in_this_pass"),
+        ("hidden_llm_planning", "runtime_allowed_in_this_pass"),
+        ("prompt_model_provider_runtime", "runtime_allowed_in_this_pass"),
+        ("output_taxonomy_expansion", "runtime_allowed_in_this_pass"),
+        ("package_mutation_reconstruction", "runtime_allowed_in_this_pass"),
+        ("provider_public_url", "runtime_allowed_in_this_pass"),
+        ("connector_destination_dispatch", "runtime_allowed_in_this_pass"),
+        ("source_breadth_expansion", "runtime_allowed_in_this_pass"),
+        ("auth_security_behavior_change", "runtime_allowed_in_this_pass"),
+    ):
+        item = matrix.get(key) if isinstance(matrix, dict) else None
+        if not isinstance(item, dict) or item.get(flag) is not False:
+            errors.append(f"{_rel(PROOF_MANIFEST)} capability_isolation_matrix.{key}.{flag} must be false")
+    expected_negative_invariants = [
+        "no broad qualitative execution",
+        "no qualitative associated-cohort execution",
+        "no comparative qualitative execution",
+        "no cross-document synthesis",
+        "no hybrid execution",
+        "no RAG/vector retrieval",
+        "no vector index creation",
+        "no embedding generation",
+        "no retrieval-augmented planning",
+        "no hidden LLM planning",
+        "no prompt/model/provider runtime",
+        "no qualitative runtime expansion beyond the exact single APS-document qualitative chain already live",
+        "no qualitative APS backend/API downstream behavior change",
+        "no qualitative APS rendered existing-control behavior change",
+        "no source expansion",
+        "no source adapter registry",
+        "no local upload",
+        "no local-directory ingestion",
+        "no web connector retrieval",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no destination write",
+        "no output taxonomy expansion",
+        "no package/handoff/export widening beyond the already-live qualitative APS chain",
+        "no full mockup activation",
+        "no frontend-only durable state",
+        "no browser-only execution authority",
+        "no auth/security behavior change",
+        "no prompt text, model credential, embedding vector, provider URL, connector target, destination target, local path, source credential, or token leakage in error bodies",
+        "no prompt text, model credential, embedding vector, provider URL, connector target, destination target, local path, source credential, or token leakage in logs",
+        "no cross-mode privilege escalation",
+        "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_vector_entry_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -12707,6 +12927,7 @@ def main() -> int:
     _check_connector_destination_entry_freeze(errors)
     _check_package_mutation_rendered_entry_freeze(errors)
     _check_source_breadth_entry_freeze(errors)
+    _check_qual_hybrid_rag_vector_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
