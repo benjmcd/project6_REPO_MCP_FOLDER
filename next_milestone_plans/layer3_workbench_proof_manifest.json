@@ -8831,7 +8831,7 @@
       "fixed port 8031",
       "trace on-first-retry",
       "playwright-report upload with 30-day retention",
-      "observability and audit event runtime not implemented"
+      "CI/performance/observability event and audit-event runtime not implemented; existing signed-reference audit-event runtime out of scope"
     ],
     "negative_invariants": [
       "no CI workflow change",
@@ -8856,9 +8856,9 @@
       "no visual diff runtime",
       "no theme test runtime",
       "no observability event runtime",
-      "no audit-event runtime",
-      "no event writer service",
-      "no event storage table",
+      "no CI/performance/observability audit-event runtime",
+      "no CI/performance/observability event writer service",
+      "no CI/performance/observability event storage table",
       "no metrics/log shipping",
       "no dashboard",
       "no route/API/DTO/model/migration/service behavior change",
