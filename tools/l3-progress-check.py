@@ -187,6 +187,7 @@ AUTH_SECURITY_ENTRY_FREEZE = PLANNING_DOCS / "199_AUTH_SECURITY_ENTRY_FREEZE.md"
 AUTH_SECURITY_ENTRY_CONTRACT = PLANNING_DOCS / "200_AUTH_SECURITY_ENTRY_CONTRACT.md"
 CI_OBSERVABILITY_ENTRY_FREEZE = PLANNING_DOCS / "201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md"
 CI_OBSERVABILITY_ENTRY_CONTRACT = PLANNING_DOCS / "202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md"
+POST_756_GOVERNANCE_CLOSEOUT = PLANNING_DOCS / "203_POST_756_GOVERNANCE_CLOSEOUT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -8808,6 +8809,119 @@ def _check_ci_performance_observability_entry_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} ci_performance_observability_entry_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_post_756_governance_closeout(errors: list[str]) -> None:
+    required_terms = {
+        POST_756_GOVERNANCE_CLOSEOUT: (
+            "Status: current-main planning/control closeout after the post-745 downstream entry-freeze chain.",
+            "184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+            "187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+            "201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "Implementation Entry Rule",
+            "No future implementation may start directly from this closeout.",
+            "provider_public_url_authority_discovery_freeze_or_entry_update",
+            "auth_security_authority_discovery_freeze_or_entry_update",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Post-756 Governance Closeout",
+            "203_POST_756_GOVERNANCE_CLOSEOUT.md",
+            "docs `187` through `202`",
+            "deferred entry boundaries",
+            "later exact implementation-entry freeze",
+        ),
+        MANIFEST: (
+            "latest_post_756_governance_closeout_branch",
+            "latest_post_756_governance_closeout_live_behavior_change",
+            "post_756_governance_closeout",
+            "Docs 187 through 202",
+            "selected_mode null",
+            "runtime_status not_implemented",
+        ),
+        PROOF_MANIFEST: (
+            "post_756_governance_closeout_proof",
+            "203_POST_756_GOVERNANCE_CLOSEOUT.md",
+            "provider_public_url_entry_freeze",
+            "ci_performance_observability_entry_freeze",
+            "implementation_entry_required_before_runtime",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing post-756 governance closeout term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for post-756 governance closeout")
+    else:
+        if current_status.get("latest_post_756_governance_closeout_branch") != "codex/l3-post756-governance-closeout":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale post-756 governance closeout branch")
+        if current_status.get("latest_post_756_governance_closeout_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark post-756 governance closeout as planning-only")
+        summary = current_status.get("post_756_governance_closeout")
+        if not isinstance(summary, str) or "Docs 187 through 202" not in summary or "requires a later exact implementation-entry freeze" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.post_756_governance_closeout must record completed freeze chain and implementation-entry rule")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("post_756_governance_closeout_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing post_756_governance_closeout_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-post756-governance-closeout",
+        "live_behavior_change": False,
+        "selected_planning_mode": "post_756_governance_closeout",
+        "runtime_status": "planning_control_closeout_only",
+        "implementation_entry_required_before_runtime": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} post_756_governance_closeout_proof.{key} must be {expected!r}")
+    expected_chain = [
+        "provider_public_url_entry_freeze",
+        "connector_destination_dispatch_entry_freeze",
+        "package_mutation_reconstruction_rendered_entry_freeze",
+        "source_breadth_entry_freeze",
+        "qual_hybrid_rag_vector_entry_freeze",
+        "browser_full_mockup_activation_freeze",
+        "auth_security_entry_freeze",
+        "ci_performance_observability_entry_freeze",
+    ]
+    if proof.get("completed_entry_freeze_chain") != expected_chain:
+        errors.append(f"{_rel(PROOF_MANIFEST)} post_756_governance_closeout_proof completed_entry_freeze_chain must match docs 187-202")
+    common = proof.get("common_entry_decision")
+    if common != {"entry_decision": "deferred", "selected_mode": None, "runtime_status": "not_implemented"}:
+        errors.append(f"{_rel(PROOF_MANIFEST)} post_756_governance_closeout_proof common_entry_decision must keep deferred/null/not_implemented posture")
+    expected_negative_invariants = [
+        "no runtime behavior change",
+        "no route/API behavior change",
+        "no DTO change",
+        "no model or migration change",
+        "no production service behavior change",
+        "no test behavior change",
+        "no CI workflow change",
+        "no rendered UI control",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no package mutation or reconstruction",
+        "no source expansion",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no CI/performance/observability runtime",
+        "no frontend-only durable authority",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} post_756_governance_closeout_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -13585,6 +13699,7 @@ def main() -> int:
     _check_browser_full_mockup_activation_entry_freeze(errors)
     _check_auth_security_entry_freeze(errors)
     _check_ci_performance_observability_entry_freeze(errors)
+    _check_post_756_governance_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
