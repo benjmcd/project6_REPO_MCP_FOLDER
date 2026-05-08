@@ -215,6 +215,9 @@ QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT = (
 BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT = (
     PLANNING_DOCS / "218_BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT.md"
 )
+AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT = (
+    PLANNING_DOCS / "219_AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -11265,6 +11268,159 @@ def _check_browser_full_mockup_authority_discovery_closeout(errors: list[str]) -
     if proof.get("next_product_boundaries") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
 
+def _check_auth_security_authority_discovery_closeout(errors: list[str]) -> None:
+    required_terms = {
+        AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT: (
+            "Status: current-main planning/control closeout for `auth_security_authority_discovery_closeout`.",
+            "entry_decision: no_runtime_now",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_deployment_profile: local_default_with_nonlocal_proxy_guardrails",
+            "live_layer3_auth_owner: none_or_proxy_config_only",
+            "live_storage_exposure_guardrail: nonlocal_direct_storage_disabled",
+            "authority_discovery_result: insufficient_authority_for_layer3_auth_security_runtime",
+            "implementation_entry_required_before_runtime: true",
+            "next_product_boundary_required: true",
+            "identity_authority_model",
+            "tenant_session_ownership_model",
+            "operator_role_permission_matrix",
+            "route_level_auth_dependency_contract",
+            "provider_connector_secret_policy",
+            "leakage_policy_and_threat_model",
+            "auth_security_behavior_change: false",
+            "route_level_auth_dependency: false",
+            "tenant_session_ownership_runtime: false",
+            "Theme And Browser Posture",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Auth Security Authority Discovery Closeout",
+            "219_AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "auth_security_authority_discovery_closeout",
+            "entry_decision` is `no_runtime_now",
+            "selected_mode` remains `null",
+            "insufficient_authority_for_layer3_auth_security_runtime",
+        ),
+        MANIFEST: (
+            "latest_auth_security_authority_discovery_closeout_branch",
+            "latest_auth_security_authority_discovery_closeout_live_behavior_change",
+            "auth_security_authority_discovery_closeout",
+            "entry_decision is no_runtime_now",
+            "selected_mode is null",
+            "insufficient_authority_for_layer3_auth_security_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "auth_security_authority_discovery_closeout_proof",
+            "219_AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "auth_security_authority_discovery_closeout",
+            "no_runtime_now",
+            "insufficient_authority_for_layer3_auth_security_runtime",
+            "auth_security_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing auth/security authority discovery closeout term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for auth/security authority discovery closeout")
+    else:
+        if current_status.get("latest_auth_security_authority_discovery_closeout_branch") != "codex/l3-auth-security-boundary":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale auth/security authority discovery branch")
+        if current_status.get("latest_auth_security_authority_discovery_closeout_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark auth/security authority discovery closeout as planning-only")
+        summary = current_status.get("auth_security_authority_discovery_closeout")
+        if not isinstance(summary, str) or "entry_decision is no_runtime_now" not in summary or "insufficient_authority_for_layer3_auth_security_runtime" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.auth_security_authority_discovery_closeout must record no-runtime authority discovery")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("auth_security_authority_discovery_closeout_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing auth_security_authority_discovery_closeout_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-auth-security-boundary",
+        "live_behavior_change": False,
+        "selected_planning_mode": "auth_security_authority_discovery_closeout",
+        "entry_decision": "no_runtime_now",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_deployment_profile": "local_default_with_nonlocal_proxy_guardrails",
+        "live_layer3_auth_owner": "none_or_proxy_config_only",
+        "live_storage_exposure_guardrail": "nonlocal_direct_storage_disabled",
+        "authority_discovery_result": "insufficient_authority_for_layer3_auth_security_runtime",
+        "implementation_entry_required_before_runtime": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_authority_discovery_closeout_proof.{key} must be {expected!r}")
+    expected_unverified = [
+        "identity_authority_model",
+        "tenant_session_ownership_model",
+        "operator_role_permission_matrix",
+        "route_level_auth_dependency_contract",
+        "audit_log_security_event_contract",
+        "provider_connector_secret_policy",
+        "browser_identity_theme_accessibility_plan",
+        "leakage_policy_and_threat_model",
+    ]
+    if proof.get("unverified_authority") != expected_unverified:
+        errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_authority_discovery_closeout_proof unverified_authority must match the frozen list")
+    expected_negative = [
+        "no auth/security behavior change",
+        "no route-level authentication dependency change",
+        "no authorization or permission enforcement change",
+        "no tenant, session-owner, or operator-role runtime admission",
+        "no proxy identity header trust expansion",
+        "no storage exposure expansion",
+        "no security audit-event runtime",
+        "no provider secret handling or provider public URL runtime",
+        "no connector credential handling or connector/destination dispatch",
+        "no destination write",
+        "no new rendered identity or permission controls",
+        "no frontend-only durable authority",
+        "no browser state treated as identity, permission, session-owner, or tenant authority",
+        "no route/API behavior change",
+        "no DTO behavior change",
+        "no model or migration change",
+        "no production service behavior change",
+        "no executable test behavior change",
+        "no Playwright configuration change",
+        "no browser mode change",
+        "no source expansion",
+        "no source adapter registry",
+        "no local upload",
+        "no local-directory ingestion",
+        "no web connector retrieval",
+        "no broad execution",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no package mutation or reconstruction",
+        "no full mockup activation",
+        "no local path, provider URL, connector target, destination target, source credential, auth token, proxy header, prompt, or browser storage secret leakage",
+        "no cross-mode privilege escalation",
+        "no route, DTO, model, migration, production service behavior, executable test behavior, rendered UI control, middleware behavior, or CI workflow change",
+    ]
+    if proof.get("negative_invariants") != expected_negative:
+        errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_authority_discovery_closeout_proof negative_invariants must match the frozen structural list")
+    expected_next = [
+        "auth_security_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+        "source_breadth_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+        "provider_public_url_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+        "connector_destination_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+        "package_mutation_rendered_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+        "qual_hybrid_rag_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+        "browser_full_mockup_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+    ]
+    if proof.get("next_product_boundaries") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -16058,6 +16214,7 @@ def main() -> int:
     _check_package_mutation_rendered_authority_discovery_closeout(errors)
     _check_qual_hybrid_rag_authority_discovery_closeout(errors)
     _check_browser_full_mockup_authority_discovery_closeout(errors)
+    _check_auth_security_authority_discovery_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

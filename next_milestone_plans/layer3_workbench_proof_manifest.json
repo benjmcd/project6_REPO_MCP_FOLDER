@@ -9451,5 +9451,99 @@
       "browser_full_mockup_runtime_entry_freeze_update_only_if_named_use_case_emerges",
       "single_rendered_control_extension_entry_freeze_update_only_if_server_authority_is_proven"
     ]
+  },
+  "auth_security_authority_discovery_closeout_proof": {
+    "scope": "Planning/control authority-discovery closeout for auth_security_authority_discovery_closeout after PR #774 browser/full mockup authority discovery closeout.",
+    "implementation_branch": "codex/l3-auth-security-boundary",
+    "live_behavior_change": false,
+    "selected_planning_mode": "auth_security_authority_discovery_closeout",
+    "entry_decision": "no_runtime_now",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "live_deployment_profile": "local_default_with_nonlocal_proxy_guardrails",
+    "live_layer3_auth_owner": "none_or_proxy_config_only",
+    "live_storage_exposure_guardrail": "nonlocal_direct_storage_disabled",
+    "authority_discovery_result": "insufficient_authority_for_layer3_auth_security_runtime",
+    "implementation_entry_required_before_runtime": true,
+    "next_product_boundary_required": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/199_AUTH_SECURITY_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/200_AUTH_SECURITY_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/203_POST_756_GOVERNANCE_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/218_BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/219_AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+    ],
+    "authority_evidence": {
+      "deployment_profile_guardrails": [
+        "backend/app/core/config.py defines local defaults and nonlocal proxy-owned guardrails.",
+        "backend/tests/test_layer3_api.py proves local/nonlocal deployment and storage exposure guardrails."
+      ],
+      "route_dependency_surface": [
+        "backend/app/api/layer3.py uses current Layer 3 route/DTO contracts without a route-level identity, tenant, or operator-role model."
+      ],
+      "storage_exposure_guardrail": [
+        "backend/app/core/config.py and backend/main.py govern storage mount exposure."
+      ],
+      "forbidden_auth_security_request_fields": [
+        "backend/app/api/layer3.py and backend/tests/test_layer3_api.py keep auth/security override fields deferred where declared.",
+        "e2e/layer3-workbench.spec.js and e2e/layer3-handoff.spec.js assert auth controls and auth-context payload fields are absent on covered rendered paths."
+      ]
+    },
+    "unverified_authority": [
+      "identity_authority_model",
+      "tenant_session_ownership_model",
+      "operator_role_permission_matrix",
+      "route_level_auth_dependency_contract",
+      "audit_log_security_event_contract",
+      "provider_connector_secret_policy",
+      "browser_identity_theme_accessibility_plan",
+      "leakage_policy_and_threat_model"
+    ],
+    "negative_invariants": [
+      "no auth/security behavior change",
+      "no route-level authentication dependency change",
+      "no authorization or permission enforcement change",
+      "no tenant, session-owner, or operator-role runtime admission",
+      "no proxy identity header trust expansion",
+      "no storage exposure expansion",
+      "no security audit-event runtime",
+      "no provider secret handling or provider public URL runtime",
+      "no connector credential handling or connector/destination dispatch",
+      "no destination write",
+      "no new rendered identity or permission controls",
+      "no frontend-only durable authority",
+      "no browser state treated as identity, permission, session-owner, or tenant authority",
+      "no route/API behavior change",
+      "no DTO behavior change",
+      "no model or migration change",
+      "no production service behavior change",
+      "no executable test behavior change",
+      "no Playwright configuration change",
+      "no browser mode change",
+      "no source expansion",
+      "no source adapter registry",
+      "no local upload",
+      "no local-directory ingestion",
+      "no web connector retrieval",
+      "no broad execution",
+      "no broad qualitative execution",
+      "no hybrid execution",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no package mutation or reconstruction",
+      "no full mockup activation",
+      "no local path, provider URL, connector target, destination target, source credential, auth token, proxy header, prompt, or browser storage secret leakage",
+      "no cross-mode privilege escalation",
+      "no route, DTO, model, migration, production service behavior, executable test behavior, rendered UI control, middleware behavior, or CI workflow change"
+    ],
+    "next_product_boundaries": [
+      "auth_security_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+      "source_breadth_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+      "provider_public_url_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+      "connector_destination_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+      "package_mutation_rendered_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+      "qual_hybrid_rag_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+      "browser_full_mockup_runtime_entry_freeze_update_only_if_named_use_case_emerges"
+    ]
   }
 }
