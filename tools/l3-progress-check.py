@@ -8701,9 +8701,47 @@ def _check_ci_performance_observability_entry_freeze(errors: list[str]) -> None:
         "next_milestone_plans/Layer3_planning_docs/142_POST_709_ROADMAP_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/199_AUTH_SECURITY_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/200_AUTH_SECURITY_ENTRY_CONTRACT.md",
     ):
         if not isinstance(governing_docs, list) or doc not in governing_docs:
             errors.append(f"{_rel(PROOF_MANIFEST)} ci_performance_observability_entry_freeze_proof governing_docs missing {doc}")
+
+    workflow_text = _read_required_text(PLAYWRIGHT_WORKFLOW, errors)
+    for term in (
+        "backend-layer3-api:",
+        "timeout-minutes: 20",
+        "python -m pytest ./backend/tests/test_layer3_*.py -q",
+        "test:",
+        "npx playwright test --project=chromium",
+        "name: playwright-report",
+        "path: playwright-report/",
+        "retention-days: 30",
+    ):
+        if term not in workflow_text:
+            errors.append(f"{_rel(PLAYWRIGHT_WORKFLOW)} missing CI/performance/observability frozen workflow term: {term}")
+    config_text = _read_required_text(PLAYWRIGHT_CONFIG, errors)
+    for term in (
+        "const SERVER_PORT = 8031;",
+        "fullyParallel: false",
+        "workers: 1",
+        "trace: 'on-first-retry'",
+        "reuseExistingServer: false",
+    ):
+        if term not in config_text:
+            errors.append(f"{_rel(PLAYWRIGHT_CONFIG)} missing CI/performance/observability frozen browser config term: {term}")
+
+    for path in (CI_OBSERVABILITY_ENTRY_FREEZE, CI_OBSERVABILITY_ENTRY_CONTRACT):
+        body = _read_required_text(path, errors)
+        for forbidden in (
+            "entry_decision: admitted",
+            "runtime_status: implemented",
+            "ci_workflow_change: true",
+            "performance_budget_gate: true",
+            "observability_event_runtime: true",
+            "selected_mode: full_ci_performance_observability_program",
+        ):
+            if forbidden in body:
+                errors.append(f"{_rel(path)} contains contradictory CI/performance/observability live-hardening claim: {forbidden}")
     ledger = proof.get("evidence_ledger")
     if not isinstance(ledger, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} ci_performance_observability_entry_freeze_proof missing evidence_ledger")
@@ -8829,8 +8867,13 @@ def _check_post_756_governance_closeout(errors: list[str]) -> None:
             "runtime_status: not_implemented",
             "Implementation Entry Rule",
             "No future implementation may start directly from this closeout.",
-            "provider_public_url_authority_discovery_freeze_or_entry_update",
-            "auth_security_authority_discovery_freeze_or_entry_update",
+            "provider_public_url_authority_discovery_freeze_or_entry_freeze_update",
+            "connector_destination_authority_discovery_freeze_or_entry_freeze_update",
+            "package_mutation_rendered_authority_discovery_freeze_or_entry_freeze_update",
+            "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+            "browser_full_mockup_authority_discovery_freeze_or_entry_freeze_update",
+            "auth_security_authority_discovery_freeze_or_entry_freeze_update",
+            "ci_performance_observability_authority_discovery_freeze_or_entry_freeze_update",
             "Stop before implementation",
         ),
         BOARD: (
@@ -8890,6 +8933,28 @@ def _check_post_756_governance_closeout(errors: list[str]) -> None:
     for key, expected in expected_scalars.items():
         if proof.get(key) != expected:
             errors.append(f"{_rel(PROOF_MANIFEST)} post_756_governance_closeout_proof.{key} must be {expected!r}")
+    expected_governing_docs = [
+        "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/191_PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/192_PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/193_SOURCE_BREADTH_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/194_SOURCE_BREADTH_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/199_AUTH_SECURITY_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/200_AUTH_SECURITY_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/203_POST_756_GOVERNANCE_CLOSEOUT.md",
+    ]
+    if proof.get("governing_docs") != expected_governing_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} post_756_governance_closeout_proof governing_docs must include the complete paired doc chain")
     expected_chain = [
         "provider_public_url_entry_freeze",
         "connector_destination_dispatch_entry_freeze",
@@ -8926,6 +8991,11 @@ def _check_post_756_governance_closeout(errors: list[str]) -> None:
         "no auth/security behavior change",
         "no CI/performance/observability runtime",
         "no frontend-only durable authority",
+        "no source adapter registry, local upload, local-directory ingestion, arbitrary local path input, broad file upload, web connector retrieval, or unbounded runtime DB source read",
+        "no broad qualitative execution, qualitative associated-cohort execution, comparative execution, cross-document synthesis, hybrid execution, RAG/vector retrieval, vector index creation, embedding generation, prompt/model/provider runtime, or hidden LLM planning",
+        "no full mockup activation, browser-local persistence as authority, frontend-only durable state, or theme-specific durable authority",
+        "no route-level auth dependency change, authorization/permission enforcement change, tenant/session-owner runtime, proxy identity trust expansion, storage exposure expansion, or security audit-event runtime",
+        "no CI workflow change, Playwright configuration change, performance budget gate, runtime timing assertion, headed browser CI matrix, sharding/parallelism change, observability event runtime, metrics/log shipping, dashboard, or artifact retention policy change",
     ]
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} post_756_governance_closeout_proof negative_invariants must match the frozen structural list")
@@ -9108,6 +9178,7 @@ def _check_ci_failure_signal_owner_runbook(errors: list[str]) -> None:
             "ci_failure_signal_and_owner_runbook",
             "layer3_backend_api_proof_owner",
             "failed required check without repo-external cause",
+            "local path, credential, token, prompt, metric payload, trace payload, provider URL, connector target, destination target, or browser storage leakage",
         ),
     }
     for path, terms in required_terms.items():
@@ -9203,6 +9274,7 @@ def _check_ci_failure_signal_owner_runbook(errors: list[str]) -> None:
         "no full mockup activation",
         "no auth/security behavior change",
         "no frontend-only durable authority",
+        "no local path, credential, token, prompt, metric payload, trace payload, provider URL, connector target, destination target, or browser storage leakage",
     ]
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof negative_invariants must match the frozen structural list")
@@ -9861,6 +9933,8 @@ def _check_observability_audit_event_schema_freeze(errors: list[str]) -> None:
             "210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md",
             "observability_audit_event_schema_freeze",
             "response-safe event schema allowlist",
+            "allowed_status_fields",
+            "allowed_hash_fields",
             "forbidden authority fields",
         ),
         MANIFEST: (
@@ -9875,6 +9949,8 @@ def _check_observability_audit_event_schema_freeze(errors: list[str]) -> None:
             "210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md",
             "observability_audit_event_schema_freeze",
             "schema_boundary_only",
+            "allowed_status_fields",
+            "allowed_hash_fields",
             "raw_request_body",
         ),
     }
@@ -9911,18 +9987,29 @@ def _check_observability_audit_event_schema_freeze(errors: list[str]) -> None:
     for key, expected in expected_scalars.items():
         if proof.get(key) != expected:
             errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof.{key} must be {expected!r}")
+    expected_governing_docs = [
+        "next_milestone_plans/Layer3_planning_docs/206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/207_FLAKE_POLICY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/209_HEADED_HEADLESS_PARITY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md",
+    ]
+    if proof.get("governing_docs") != expected_governing_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof governing_docs must preserve the flake/performance/browser/schema chain")
     posture = proof.get("current_observability_posture")
     if not isinstance(posture, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof missing current_observability_posture")
     else:
         expected_posture = {
-            "observability_event_runtime": "not_implemented",
-            "audit_event_runtime": "not_implemented",
+            "ci_observability_event_runtime": "not_implemented",
+            "ci_observability_audit_event_runtime": "not_implemented",
             "metrics_log_shipping": "not_implemented",
             "dashboard": "not_implemented",
             "telemetry_receipt_artifact": "not_implemented",
-            "event_storage_table": "not_implemented",
-            "event_writer_service": "not_implemented",
+            "ci_observability_event_storage_table": "not_implemented",
+            "ci_observability_event_writer_service": "not_implemented",
+            "existing_signed_reference_audit_event_runtime": "out_of_scope_existing_runtime",
+            "existing_signed_reference_audit_event_storage_table": "out_of_scope_existing_runtime",
             "browser_storage_authority": "not_admitted",
             "status": "schema_boundary_only",
         }
@@ -9947,6 +10034,25 @@ def _check_observability_audit_event_schema_freeze(errors: list[str]) -> None:
     ]
     if proof.get("allowed_correlation_fields") != expected_correlation:
         errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof allowed_correlation_fields must match the frozen list")
+    expected_status = [
+        "status",
+        "response_safe_failure_code",
+        "response_safe_failure_reason",
+        "duration_ms",
+        "attempt_number",
+        "retry_classification",
+        "threshold_label",
+        "owner_label",
+    ]
+    if proof.get("allowed_status_fields") != expected_status:
+        errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof allowed_status_fields must match the frozen list")
+    expected_hash = [
+        "policy_hash",
+        "artifact_hash",
+        "payload_shape_hash",
+    ]
+    if proof.get("allowed_hash_fields") != expected_hash:
+        errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof allowed_hash_fields must match the frozen list")
     expected_forbidden = [
         "browser_local_state",
         "raw_request_body",
@@ -9969,9 +10075,9 @@ def _check_observability_audit_event_schema_freeze(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof dependency_order must match the frozen order")
     expected_negative_invariants = [
         "no observability event runtime",
-        "no audit-event runtime",
-        "no event writer service",
-        "no event storage table",
+        "no CI/performance/observability audit-event runtime",
+        "no CI/performance/observability event writer service",
+        "no CI/performance/observability event storage table",
         "no telemetry receipt artifact",
         "no metrics/log shipping",
         "no dashboard",
