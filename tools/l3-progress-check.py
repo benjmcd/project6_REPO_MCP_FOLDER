@@ -212,6 +212,9 @@ PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT = (
 QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT = (
     PLANNING_DOCS / "217_QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT.md"
 )
+BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT = (
+    PLANNING_DOCS / "218_BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -11113,6 +11116,155 @@ def _check_qual_hybrid_rag_authority_discovery_closeout(errors: list[str]) -> No
     if proof.get("next_product_boundaries") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
 
+def _check_browser_full_mockup_authority_discovery_closeout(errors: list[str]) -> None:
+    required_terms = {
+        BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT: (
+            "Status: current-main planning/control closeout for `browser_full_mockup_authority_discovery_closeout`.",
+            "entry_decision: no_runtime_now",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_mockup_truth_state: mockups_target_state_only",
+            "live_rendered_workbench_status: existing_server_authoritative_controls_only",
+            "live_browser_proof_status: bounded_headed_headless_proofs_for_admitted_paths",
+            "authority_discovery_result: insufficient_authority_for_full_mockup_activation_runtime",
+            "implementation_entry_required_before_runtime: true",
+            "next_product_boundary_required: true",
+            "full_mockup_source_owner",
+            "selected_activation_mode",
+            "mockup_route_api_contract",
+            "server_authority_contract",
+            "browser_storage_authority_policy",
+            "theme_accessibility_headed_headless_plan",
+            "full_mockup_activation: false",
+            "frontend_only_durable_state: false",
+            "browser_local_persistence_as_authority: false",
+            "Theme And Browser Posture",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Browser Full Mockup Authority Discovery Closeout",
+            "218_BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "browser_full_mockup_authority_discovery_closeout",
+            "entry_decision` is `no_runtime_now",
+            "selected_mode` remains `null",
+            "insufficient_authority_for_full_mockup_activation_runtime",
+        ),
+        MANIFEST: (
+            "latest_browser_full_mockup_authority_discovery_closeout_branch",
+            "latest_browser_full_mockup_authority_discovery_closeout_live_behavior_change",
+            "browser_full_mockup_authority_discovery_closeout",
+            "entry_decision is no_runtime_now",
+            "selected_mode is null",
+            "insufficient_authority_for_full_mockup_activation_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "browser_full_mockup_authority_discovery_closeout_proof",
+            "218_BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "browser_full_mockup_authority_discovery_closeout",
+            "no_runtime_now",
+            "insufficient_authority_for_full_mockup_activation_runtime",
+            "auth_security_authority_discovery_freeze_or_entry_freeze_update",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing browser/full mockup authority discovery closeout term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for browser/full mockup authority discovery closeout")
+    else:
+        if current_status.get("latest_browser_full_mockup_authority_discovery_closeout_branch") != "codex/l3-mockup-boundary":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale browser/full mockup authority discovery branch")
+        if current_status.get("latest_browser_full_mockup_authority_discovery_closeout_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark browser/full mockup authority discovery closeout as planning-only")
+        summary = current_status.get("browser_full_mockup_authority_discovery_closeout")
+        if not isinstance(summary, str) or "entry_decision is no_runtime_now" not in summary or "insufficient_authority_for_full_mockup_activation_runtime" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.browser_full_mockup_authority_discovery_closeout must record no-runtime authority discovery")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("browser_full_mockup_authority_discovery_closeout_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing browser_full_mockup_authority_discovery_closeout_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-mockup-boundary",
+        "live_behavior_change": False,
+        "selected_planning_mode": "browser_full_mockup_authority_discovery_closeout",
+        "entry_decision": "no_runtime_now",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_mockup_truth_state": "mockups_target_state_only",
+        "live_rendered_workbench_status": "existing_server_authoritative_controls_only",
+        "live_browser_proof_status": "bounded_headed_headless_proofs_for_admitted_paths",
+        "authority_discovery_result": "insufficient_authority_for_full_mockup_activation_runtime",
+        "implementation_entry_required_before_runtime": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_authority_discovery_closeout_proof.{key} must be {expected!r}")
+    expected_unverified = [
+        "full_mockup_source_owner",
+        "selected_activation_mode",
+        "mockup_route_api_contract",
+        "server_authority_contract",
+        "mockup_to_live_state_mapping",
+        "durable_state_owner",
+        "browser_storage_authority_policy",
+        "operator_journey_scope",
+        "theme_accessibility_headed_headless_plan",
+        "leakage_policy_and_auth_security_posture",
+    ]
+    if proof.get("unverified_authority") != expected_unverified:
+        errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_authority_discovery_closeout_proof unverified_authority must match the frozen list")
+    expected_negative = [
+        "no full mockup activation",
+        "no frontend-only durable state",
+        "no browser-local persistence as authority",
+        "no browser-only workflow authority",
+        "no mockup text treated as server authority",
+        "no screenshot or manually clicked flow treated as server authority",
+        "no new rendered controls",
+        "no route/API behavior change",
+        "no DTO behavior change",
+        "no model or migration change",
+        "no production service behavior change",
+        "no executable test behavior change",
+        "no Playwright configuration change",
+        "no browser mode change",
+        "no source expansion",
+        "no source adapter registry",
+        "no local upload",
+        "no local-directory ingestion",
+        "no web connector retrieval",
+        "no broad execution",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no destination write",
+        "no theme-specific durable authority",
+        "no auth/security behavior change",
+        "no local path, provider URL, connector target, destination target, source credential, auth token, prompt, or browser storage secret leakage",
+        "no cross-mode privilege escalation",
+        "no route, DTO, model, migration, production service behavior, executable test behavior, rendered UI control, or CI workflow change",
+    ]
+    if proof.get("negative_invariants") != expected_negative:
+        errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_authority_discovery_closeout_proof negative_invariants must match the frozen structural list")
+    expected_next = [
+        "auth_security_authority_discovery_freeze_or_entry_freeze_update",
+        "browser_full_mockup_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+        "single_rendered_control_extension_entry_freeze_update_only_if_server_authority_is_proven",
+    ]
+    if proof.get("next_product_boundaries") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -15905,6 +16057,7 @@ def main() -> int:
     _check_source_breadth_authority_discovery_closeout(errors)
     _check_package_mutation_rendered_authority_discovery_closeout(errors)
     _check_qual_hybrid_rag_authority_discovery_closeout(errors)
+    _check_browser_full_mockup_authority_discovery_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
