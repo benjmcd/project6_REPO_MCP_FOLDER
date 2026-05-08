@@ -1651,6 +1651,7 @@ function canUseExternalExportDownloadSignedReference() {
     return Boolean(
         State.externalExportDownloadSignedReference?.signed_reference_token
         && State.externalExportDownloadSignedReference?.signed_reference_state === 'external_export_download_signed_reference_ready'
+        && !State.externalExportDownloadSignedReferenceUse
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && !State.externalExportDownloadSignedReferencePending

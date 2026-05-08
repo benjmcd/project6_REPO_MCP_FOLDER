@@ -144,6 +144,15 @@ RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT = (
 RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF = (
     PLANNING_DOCS / "180_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF.md"
 )
+RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_FREEZE = (
+    PLANNING_DOCS / "181_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_FREEZE.md"
+)
+RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CONTRACT = (
+    PLANNING_DOCS / "182_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CONTRACT.md"
+)
+RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF = (
+    PLANNING_DOCS / "183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -6800,6 +6809,201 @@ def _check_rendered_external_export_download_delivery_proof(errors: list[str]) -
         errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery proof missing browser proof test name")
 
 
+def _check_rendered_external_export_download_signed_reference_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_FREEZE: (
+            "Status: planning/control freeze only for `raw_mixed_rendered_external_export_download_signed_reference`.",
+            "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+            "POST /api/v1/layer3/handoff/export/download/signed-reference/use",
+            "Layer3ExternalExportDownloadDeliveryRequest",
+            "layer3.external_export_download_signed_reference.v1",
+            "layer3.external_export_download_signed_reference_use.v1",
+            "#external-export-download-signed-reference-generate",
+            "#external-export-download-signed-reference-use",
+            "[data-operation-target=\"external-export-download-band\"]",
+            "no frontend-only durable authority",
+        ),
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CONTRACT: (
+            "Selected mode: `raw_mixed_rendered_external_export_download_signed_reference`.",
+            "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+            "POST /api/v1/layer3/handoff/export/download/signed-reference/use",
+            "Layer3ExternalExportDownloadDeliveryRequest",
+            "layer3.external_export_download_signed_reference.v1",
+            "layer3.external_export_download_signed_reference_use.v1",
+            "server_hmac_with_durable_state",
+            "single_use",
+            "The future browser proof must",
+        ),
+        BOARD: (
+            "Rendered external export/download signed-reference proof",
+            "181_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_FREEZE.md",
+            "182_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CONTRACT.md",
+            "raw_mixed_rendered_external_export_download_signed_reference",
+        ),
+        MANIFEST: (
+            "latest_rendered_external_export_download_signed_reference_freeze_branch",
+            "latest_rendered_external_export_download_signed_reference_freeze_live_behavior_change",
+            "rendered_external_export_download_signed_reference_freeze",
+            "raw_mixed_rendered_external_export_download_signed_reference",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_external_export_download_signed_reference_freeze_proof",
+            "181_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_FREEZE.md",
+            "182_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CONTRACT.md",
+            "raw_mixed_rendered_external_export_download_signed_reference",
+            "#external-export-download-signed-reference-generate",
+            "#external-export-download-signed-reference-use",
+            "no frontend-only durable authority",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered external export/download signed-reference freeze term: {term}"
+                )
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_external_export_download_signed_reference_freeze_branch") != "codex/l3-rendered-signed-reference-proof":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered external export/download signed-reference freeze branch")
+        if current_status.get("latest_rendered_external_export_download_signed_reference_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered external export/download signed-reference freeze as planning-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_external_export_download_signed_reference_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_external_export_download_signed_reference_freeze_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference freeze proof must be planning-only")
+    if proof.get("selected_rendered_external_export_download_mode") != "raw_mixed_rendered_external_export_download_signed_reference":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference freeze proof has stale selected mode")
+    routes = proof.get("routes_to_reuse")
+    expected_routes = {
+        "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+        "POST /api/v1/layer3/handoff/export/download/signed-reference/use",
+    }
+    if not isinstance(routes, list) or not expected_routes.issubset(set(routes)):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference freeze proof missing routes to reuse")
+    selectors = proof.get("future_selectors")
+    if not isinstance(selectors, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference freeze proof missing future_selectors")
+    else:
+        for selector in (
+            "[data-operation-target=\"external-export-download-band\"]",
+            "#external-export-download-signed-reference-generate",
+            "#external-export-download-signed-reference-use",
+            "#external-export-download-signed-reference-panel",
+        ):
+            if selector not in selectors:
+                errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference future_selectors missing {selector}")
+
+
+def _check_rendered_external_export_download_signed_reference_proof(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF: (
+            "Status: live rendered browser proof for `raw_mixed_rendered_external_export_download_signed_reference`.",
+            "Layer 3 workbench drives raw mixed rendered external export download signed reference",
+            "submitRenderedExternalExportDownloadSignedReference",
+            "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+            "POST /api/v1/layer3/handoff/export/download/signed-reference/use",
+            "layer3.external_export_download_signed_reference.v1",
+            "layer3.external_export_download_signed_reference_use.v1",
+            "external_export_download_signed_reference_ready",
+            "external_export_download_signed_reference_delivered",
+            "server_hmac_with_durable_state",
+            "single_use",
+            "canUseExternalExportDownloadSignedReference()",
+            "no frontend-only durable authority",
+        ),
+        BOARD: (
+            "Rendered external export/download signed-reference proof",
+            "183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+            "Layer 3 workbench drives raw mixed rendered external export download signed reference",
+            "raw_mixed_rendered_external_export_download_signed_reference",
+            "external_export_download_signed_reference_delivered",
+        ),
+        MANIFEST: (
+            "latest_rendered_external_export_download_signed_reference_proof_branch",
+            "latest_rendered_external_export_download_signed_reference_proof_live_behavior_change",
+            "rendered_external_export_download_signed_reference_proof",
+            "183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+            "Layer 3 workbench drives raw mixed rendered external export download signed reference",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_external_export_download_signed_reference_proof",
+            "183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+            "raw_mixed_rendered_external_export_download_signed_reference",
+            "submitRenderedExternalExportDownloadSignedReference",
+            "Layer 3 workbench drives raw mixed rendered external export download signed reference",
+            "ui_hardening",
+            "test_harness_env",
+            "no frontend-only durable authority",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives raw mixed rendered external export download signed reference",
+            "submitRenderedExternalExportDownloadSignedReference",
+            "expect(signedPayload.operator_decision).toBe('deliver_external_export_download')",
+            "expect(signedPayload.delivery_mode).toBe('same_origin_artifact_stream')",
+            "expect(signedReference.signed_reference_state).toBe('external_export_download_signed_reference_ready')",
+            "expect(useHeaders['x-layer3-signed-reference-state']).toBe(",
+            "external_export_download_signed_reference_delivered",
+            "/handoff/export/download/signed-reference/generate",
+            "/handoff/export/download/signed-reference/use",
+            "/handoff/export/download/deliver",
+        ),
+        LAYER3_JS: (
+            "function canUseExternalExportDownloadSignedReference()",
+            "&& !State.externalExportDownloadSignedReferenceUse",
+            "external-export-download-signed-reference-use",
+        ),
+        PLAYWRIGHT_CONFIG: (
+            "LAYER3_SIGNED_REFERENCE_SECRET",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered external export/download signed-reference proof term: {term}"
+                )
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_external_export_download_signed_reference_proof_branch") != "codex/l3-rendered-signed-reference-proof":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered external export/download signed-reference proof branch")
+        if current_status.get("latest_rendered_external_export_download_signed_reference_proof_live_behavior_change") is not True:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered external export/download signed-reference proof as a narrow rendered UI behavior hardening")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_external_export_download_signed_reference_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_external_export_download_signed_reference_proof object")
+        return
+    if proof.get("live_behavior_change") is not True:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference proof must record the narrow rendered UI behavior hardening")
+    if proof.get("selected_rendered_external_export_download_mode") != "raw_mixed_rendered_external_export_download_signed_reference":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference proof has stale selected mode")
+    routes = proof.get("routes_reused")
+    expected_routes = {
+        "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+        "POST /api/v1/layer3/handoff/export/download/signed-reference/use",
+    }
+    if not isinstance(routes, list) or not expected_routes.issubset(set(routes)):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference proof missing routes reused")
+    browser_proof = proof.get("browser_proof")
+    if not isinstance(browser_proof, list) or "Layer 3 workbench drives raw mixed rendered external export download signed reference" not in browser_proof:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference proof missing browser proof test name")
+    ui_hardening = proof.get("ui_hardening")
+    if not isinstance(ui_hardening, str) or "State.externalExportDownloadSignedReferenceUse" not in ui_hardening:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download signed-reference proof missing UI hardening summary")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -11388,6 +11592,9 @@ def main() -> int:
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE,
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT,
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF,
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_FREEZE,
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CONTRACT,
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -11561,6 +11768,8 @@ def main() -> int:
     _check_rendered_external_export_download_prepare_proof(errors)
     _check_rendered_external_export_download_delivery_freeze(errors)
     _check_rendered_external_export_download_delivery_proof(errors)
+    _check_rendered_external_export_download_signed_reference_freeze(errors)
+    _check_rendered_external_export_download_signed_reference_proof(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
