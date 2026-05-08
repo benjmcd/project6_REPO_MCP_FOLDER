@@ -9545,5 +9545,78 @@
       "qual_hybrid_rag_runtime_entry_freeze_update_only_if_named_use_case_emerges",
       "browser_full_mockup_runtime_entry_freeze_update_only_if_named_use_case_emerges"
     ]
+  },
+  "post_authority_discovery_chain_closeout_proof": {
+    "scope": "Planning/control synthesis closeout after authority-discovery docs 213 through 219.",
+    "implementation_branch": "codex/l3-authority-chain-closeout",
+    "live_behavior_change": false,
+    "selected_planning_mode": "post_authority_discovery_chain_closeout",
+    "entry_decision": "no_runtime_now",
+    "selected_runtime_mode": null,
+    "runtime_status": "not_implemented",
+    "chain_result": "no_product_runtime_selected",
+    "implementation_entry_required_before_runtime": true,
+    "named_use_case_required_before_runtime": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/213_PROVIDER_PUBLIC_URL_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/214_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/215_SOURCE_BREADTH_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/216_PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/217_QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/218_BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/219_AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/220_POST_AUTHORITY_DISCOVERY_CHAIN_CLOSEOUT.md"
+    ],
+    "closed_authority_boundaries": [
+      "provider_public_url_authority_discovery_closeout",
+      "connector_destination_authority_discovery_closeout",
+      "source_breadth_authority_discovery_closeout",
+      "package_mutation_rendered_authority_discovery_closeout",
+      "qual_hybrid_rag_authority_discovery_closeout",
+      "browser_full_mockup_authority_discovery_closeout",
+      "auth_security_authority_discovery_closeout"
+    ],
+    "negative_invariants": [
+      "no provider/public URL runtime",
+      "no external connector invocation",
+      "no destination write",
+      "no generic downstream dispatch",
+      "no source adapter registry",
+      "no local upload",
+      "no local-directory ingestion",
+      "no web connector retrieval",
+      "no broad source expansion",
+      "no package mutation or reconstruction",
+      "no package payload rewrite outside already-admitted package commit behavior",
+      "no broad qualitative execution",
+      "no qualitative associated-cohort execution",
+      "no comparative qualitative execution",
+      "no cross-document synthesis",
+      "no hybrid execution",
+      "no RAG/vector retrieval",
+      "no vector index creation",
+      "no embedding generation",
+      "no hidden LLM planning",
+      "no prompt/model/provider runtime",
+      "no full mockup activation",
+      "no frontend-only durable authority",
+      "no browser state treated as durable workflow authority",
+      "no auth/security behavior change",
+      "no route/API behavior change",
+      "no DTO behavior change",
+      "no model or migration change",
+      "no production service behavior change",
+      "no executable test behavior change",
+      "no rendered UI control",
+      "no Playwright configuration change",
+      "no CI workflow change",
+      "no local path, provider URL, connector target, destination target, source credential, auth token, proxy header, prompt, model credential, embedding vector, or browser storage secret leakage",
+      "no cross-mode privilege escalation"
+    ],
+    "next_allowed_planning_moves": [
+      "exact_runtime_implementation_entry_freeze_only_after_named_use_case",
+      "review_debt_or_checker_drift_reconciliation_only_if_found",
+      "current_main_roadmap_readiness_report_if_operator_decision_needs_it"
+    ]
   }
 }
