@@ -183,6 +183,8 @@ QUAL_HYBRID_RAG_ENTRY_FREEZE = PLANNING_DOCS / "195_QUAL_HYBRID_RAG_VECTOR_ENTRY
 QUAL_HYBRID_RAG_ENTRY_CONTRACT = PLANNING_DOCS / "196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md"
 BROWSER_MOCKUP_ENTRY_FREEZE = PLANNING_DOCS / "197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md"
 BROWSER_MOCKUP_ENTRY_CONTRACT = PLANNING_DOCS / "198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md"
+AUTH_SECURITY_ENTRY_FREEZE = PLANNING_DOCS / "199_AUTH_SECURITY_ENTRY_FREEZE.md"
+AUTH_SECURITY_ENTRY_CONTRACT = PLANNING_DOCS / "200_AUTH_SECURITY_ENTRY_CONTRACT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -8365,6 +8367,221 @@ def _check_browser_full_mockup_activation_entry_freeze(errors: list[str]) -> Non
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_activation_entry_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_auth_security_entry_freeze(errors: list[str]) -> None:
+    required_terms = {
+        AUTH_SECURITY_ENTRY_FREEZE: (
+            "Status: planning/control entry freeze only for `auth_security_entry_freeze`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_deployment_profile: local_default_with_nonlocal_proxy_guardrails",
+            "live_layer3_auth_owner: none_or_proxy_config_only",
+            "live_storage_exposure_guardrail: nonlocal_direct_storage_disabled",
+            "route_identity_tenant_session_permission_audit_policy_and_operator_role_model_not_verified",
+            "auth_security_authority_discovery_freeze_or_entry_freeze_update",
+            "Auth Security Exposure Model",
+            "Capability Isolation Matrix",
+            "auth_security_behavior_change: false",
+            "route_level_auth_dependency: false",
+            "tenant_session_ownership_runtime: false",
+            "no browser state treated as identity, permission, session-owner, or tenant authority",
+        ),
+        AUTH_SECURITY_ENTRY_CONTRACT: (
+            "Status: planning/control contract paired with `199_AUTH_SECURITY_ENTRY_FREEZE.md`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_deployment_profile: local_default_with_nonlocal_proxy_guardrails",
+            "live_layer3_auth_owner: none_or_proxy_config_only",
+            "live_storage_exposure_guardrail: nonlocal_direct_storage_disabled",
+            "Existing Runtime Compatibility Contract",
+            "This entry freeze adds no rendered UI control.",
+            "Checker Contract",
+            "The checker must not pretend to validate actual authentication",
+        ),
+        BOARD: (
+            "Auth Security Entry Freeze",
+            "199_AUTH_SECURITY_ENTRY_FREEZE.md",
+            "200_AUTH_SECURITY_ENTRY_CONTRACT.md",
+            "auth_security_entry_freeze",
+            "selected_mode` is `null`",
+            "runtime_status` is `not_implemented`",
+            "nonlocal proxy-owned deployment guardrails",
+            "forbidden auth/security override request fields",
+        ),
+        MANIFEST: (
+            "latest_auth_security_entry_freeze_branch",
+            "latest_auth_security_entry_freeze_live_behavior_change",
+            "auth_security_entry_freeze",
+            "entry_decision is deferred",
+            "selected_mode is null",
+            "runtime_status is not_implemented",
+            "local_default_with_nonlocal_proxy_guardrails",
+        ),
+        PROOF_MANIFEST: (
+            "auth_security_entry_freeze_proof",
+            "199_AUTH_SECURITY_ENTRY_FREEZE.md",
+            "200_AUTH_SECURITY_ENTRY_CONTRACT.md",
+            "auth_security_entry_freeze",
+            "local_default_with_nonlocal_proxy_guardrails",
+            "none_or_proxy_config_only",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing auth/security entry freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for auth/security entry freeze")
+    else:
+        if current_status.get("latest_auth_security_entry_freeze_branch") != "codex/l3-auth-security-entry-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale auth/security entry freeze branch")
+        if current_status.get("latest_auth_security_entry_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark auth/security entry freeze as planning-only")
+        summary = current_status.get("auth_security_entry_freeze")
+        if not isinstance(summary, str) or "entry_decision is deferred" not in summary or "selected_mode is null" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.auth_security_entry_freeze must record deferred/null entry decision")
+        if isinstance(summary, str) and "local_default_with_nonlocal_proxy_guardrails" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.auth_security_entry_freeze must preserve deployment guardrail posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("auth_security_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing auth_security_entry_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-auth-security-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "auth_security_entry_freeze",
+        "entry_decision": "deferred",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_deployment_profile": "local_default_with_nonlocal_proxy_guardrails",
+        "live_layer3_auth_owner": "none_or_proxy_config_only",
+        "live_storage_exposure_guardrail": "nonlocal_direct_storage_disabled",
+        "receipt_family": "no_receipt_planning_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_entry_freeze_proof.{key} must be {expected!r}")
+    governing_docs = proof.get("governing_docs")
+    for doc in (
+        "next_milestone_plans/Layer3_planning_docs/199_AUTH_SECURITY_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/200_AUTH_SECURITY_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md",
+    ):
+        if not isinstance(governing_docs, list) or doc not in governing_docs:
+            errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_entry_freeze_proof governing_docs missing {doc}")
+    ledger = proof.get("evidence_ledger")
+    if not isinstance(ledger, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_entry_freeze_proof missing evidence_ledger")
+    else:
+        for key in (
+            "current_deployment_profile_guardrails",
+            "current_layer3_route_dependency_surface",
+            "current_forbidden_auth_security_request_fields",
+            "current_storage_exposure_guardrail",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "verified":
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must be verified")
+        for key in (
+            "identity_authority_model",
+            "tenant_session_ownership_model",
+            "operator_role_permission_matrix",
+            "route_level_auth_dependency_contract",
+            "audit_log_security_event_contract",
+            "provider_connector_secret_policy",
+            "browser_identity_theme_accessibility_plan",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "unverified" or item.get("evidence") != []:
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must remain unverified with no evidence")
+    exposure = proof.get("auth_security_exposure_model")
+    for key in (
+        "selected_auth_mode",
+        "identity_authority",
+        "tenant_authority",
+        "session_owner_authority",
+        "operator_role_authority",
+        "permission_matrix",
+        "route_dependency_contract",
+        "storage_access_contract",
+        "provider_secret_contract",
+        "connector_secret_contract",
+        "audit_event_contract",
+        "browser_identity_surface",
+        "headed_headless_theme_proof_scope",
+        "negative_side_effect_surface",
+    ):
+        if not isinstance(exposure, dict) or exposure.get(key) != "unknown":
+            errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_exposure_model.{key} must remain unknown while decision is deferred")
+    matrix = proof.get("capability_isolation_matrix")
+    for key, flag in (
+        ("deployment_profile_guardrails", "change_allowed_in_this_pass"),
+        ("route_level_auth_dependencies", "runtime_allowed_in_this_pass"),
+        ("identity_session_tenant_authority", "runtime_allowed_in_this_pass"),
+        ("operator_permission_matrix", "runtime_allowed_in_this_pass"),
+        ("security_audit_event_runtime", "runtime_allowed_in_this_pass"),
+        ("provider_secret_handling", "runtime_allowed_in_this_pass"),
+        ("connector_credential_handling", "runtime_allowed_in_this_pass"),
+        ("browser_identity_controls", "runtime_allowed_in_this_pass"),
+        ("full_mockup_activation", "runtime_allowed_in_this_pass"),
+        ("frontend_only_durable_state", "runtime_allowed_in_this_pass"),
+        ("source_breadth_expansion", "runtime_allowed_in_this_pass"),
+        ("package_mutation_reconstruction", "runtime_allowed_in_this_pass"),
+        ("provider_public_url", "runtime_allowed_in_this_pass"),
+        ("connector_destination_dispatch", "runtime_allowed_in_this_pass"),
+        ("rag_vector_or_hybrid_execution", "runtime_allowed_in_this_pass"),
+        ("hidden_llm_planning", "runtime_allowed_in_this_pass"),
+    ):
+        item = matrix.get(key) if isinstance(matrix, dict) else None
+        if not isinstance(item, dict) or item.get(flag) is not False:
+            errors.append(f"{_rel(PROOF_MANIFEST)} capability_isolation_matrix.{key}.{flag} must be false")
+    expected_negative_invariants = [
+        "no auth/security behavior change",
+        "no route-level authentication dependency change",
+        "no authorization or permission enforcement change",
+        "no tenant, session-owner, or operator-role runtime admission",
+        "no proxy identity header trust expansion",
+        "no storage exposure expansion",
+        "no security audit-event runtime",
+        "no provider secret handling or provider public URL runtime",
+        "no connector credential handling or connector/destination dispatch",
+        "no destination write",
+        "no new rendered identity or permission controls",
+        "no frontend-only durable authority",
+        "no browser state treated as identity, permission, session-owner, or tenant authority",
+        "no route/API behavior change",
+        "no DTO change",
+        "no model or migration change",
+        "no production service behavior change",
+        "no test behavior change",
+        "no source expansion",
+        "no source adapter registry",
+        "no local upload",
+        "no local-directory ingestion",
+        "no web connector retrieval",
+        "no broad execution",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no package mutation or reconstruction",
+        "no full mockup activation",
+        "no local path, provider URL, connector target, destination target, source credential, auth token, proxy header, prompt, or browser storage secret leakage in error bodies",
+        "no local path, provider URL, connector target, destination target, source credential, auth token, proxy header, prompt, or browser storage secret leakage in logs",
+        "no cross-mode privilege escalation",
+        "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_entry_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -13140,6 +13357,7 @@ def main() -> int:
     _check_source_breadth_entry_freeze(errors)
     _check_qual_hybrid_rag_vector_entry_freeze(errors)
     _check_browser_full_mockup_activation_entry_freeze(errors)
+    _check_auth_security_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
