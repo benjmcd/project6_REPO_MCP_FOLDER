@@ -14,6 +14,19 @@ def _version_storage_path(version_id: str) -> Path:
     return Path(settings.dataset_storage_dir) / f"{version_id}.parquet"
 
 
+def resolve_version_storage_ref(storage_ref: str) -> Path:
+    path = Path(storage_ref)
+    if path.is_absolute():
+        return path
+    storage_root = Path(settings.storage_dir).resolve()
+    resolved = (storage_root / path).resolve()
+    try:
+        resolved.relative_to(storage_root)
+    except ValueError as exc:
+        raise ValueError("dataset storage_ref escapes storage root") from exc
+    return resolved
+
+
 def persist_dataframe_as_version_rows(db: Session, version: DatasetVersion, df: pd.DataFrame, time_column: str | None) -> None:
     frame = df.copy()
     if time_column and time_column in frame.columns:
@@ -34,7 +47,7 @@ def load_version_dataframe(db: Session, dataset_version_id: str) -> pd.DataFrame
     storage_ref = version.storage_ref
     if not storage_ref:
         raise ValueError("dataset version has no storage_ref")
-    path = Path(storage_ref)
+    path = resolve_version_storage_ref(storage_ref)
     if not path.exists():
         raise ValueError(f"dataset storage file does not exist: {storage_ref}")
     suffix = path.suffix.lower()
