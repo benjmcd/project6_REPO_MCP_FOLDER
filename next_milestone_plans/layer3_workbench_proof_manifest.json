@@ -6880,5 +6880,143 @@
       "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control"
     ],
     "next_boundary": "Run provider_public_url_authority_discovery_freeze_or_entry_freeze_update before any runtime implementation if concrete evidence emerges."
+  },
+  "connector_destination_entry_freeze_proof": {
+    "scope": "Planning/control entry freeze for connector_destination_dispatch_entry_freeze after PR #749 provider/public URL entry freeze.",
+    "implementation_branch": "codex/l3-connector-dispatch-entry-freeze",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/112_CONNECTOR_DISPATCH_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/113_CONNECTOR_DISPATCH_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md"
+    ],
+    "selected_planning_mode": "connector_destination_dispatch_entry_freeze",
+    "entry_decision": "deferred",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "live_internal_record_only_status": "already_admitted_by_doc_121",
+    "receipt_family": "no_receipt_planning_only",
+    "evidence_ledger": {
+      "current_internal_dispatch_record_only": {
+        "status": "verified",
+        "evidence": [
+          "next_milestone_plans/Layer3_planning_docs/121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md",
+          "backend/app/services/layer3_connector_dispatch_entry.py",
+          "tools/l3-progress-check.py"
+        ]
+      },
+      "current_provider_public_url_entry_freeze": {
+        "status": "verified",
+        "evidence": [
+          "next_milestone_plans/Layer3_planning_docs/187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+          "next_milestone_plans/Layer3_planning_docs/188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md"
+        ]
+      },
+      "external_connector_authority": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "destination_authority": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "named_downstream_use_case": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "credential_and_access_model": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "lifecycle_retry_cancel_contract": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "receipt_and_audit_contract": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    "dispatch_exposure_model": {
+      "connector_family": "unknown",
+      "destination_family": "unknown",
+      "destination_audience": "unknown",
+      "artifact_sensitivity": "unknown",
+      "credential_authority": "unknown",
+      "operator_authorization_model": "unknown",
+      "retry_cancel_policy": "unknown",
+      "receipt_visibility": "unknown"
+    },
+    "capability_isolation_matrix": {
+      "internal_dispatch_record_only": {
+        "change_allowed_in_this_pass": false
+      },
+      "single_named_connector_dispatch": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "single_named_destination_dispatch": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "generic_downstream_dispatch": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "provider_public_url": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "provider_object_write_or_copy": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "package_mutation_reconstruction": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "source_breadth_expansion": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "rag_vector_or_hybrid_execution": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "auth_security_behavior_change": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "rendered_connector_destination_controls": {
+        "runtime_allowed_in_this_pass": false
+      }
+    },
+    "negative_invariants": [
+      "no new connector/destination runtime",
+      "no external connector invocation",
+      "no destination write",
+      "no connector-run creation",
+      "no generic downstream dispatch",
+      "no provider/public URL runtime",
+      "no provider object ACL change",
+      "no provider object write or copy",
+      "no package mutation or reconstruction",
+      "no package payload rewrite",
+      "no source expansion",
+      "no local upload",
+      "no local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval",
+      "no broad qualitative execution",
+      "no hybrid execution",
+      "no full mockup activation",
+      "no hidden LLM planning",
+      "no frontend-only durable state",
+      "no auth/security behavior change",
+      "no existing same-origin signed-reference semantics change",
+      "no existing internal_dispatch_record_only behavior change",
+      "no connector or destination credentials in browser or request",
+      "no connector/destination secrets, targets, URLs, or tokens in error bodies",
+      "no connector/destination secrets, targets, URLs, or tokens in logs",
+      "no cross-mode privilege escalation",
+      "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control"
+    ],
+    "next_boundary": "Run connector_destination_authority_discovery_freeze_or_entry_freeze_update before any external connector or destination runtime implementation if concrete evidence emerges."
   }
 }
