@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 import sys
@@ -37,6 +38,7 @@ NOW_EPOCH = 1_800_000_000
 SOURCE_ARTIFACT_HASH = "a" * 64
 SOURCE_ARTIFACT_SIZE_BYTES = 512
 RAW_TOKEN = "provider-private-signed-url-sensitive-token"
+RECIPIENT_SCOPE = "external-recipient:pytest"
 
 
 @pytest.fixture()
@@ -62,6 +64,7 @@ def test_prepare_persists_redacted_authority_and_idempotent_receipt_state(sessio
             request_id="prepare-1",
             client_request_id="client-request-provider-private-1",
             authority_basis=_authority_basis(),
+            recipient_scope=RECIPIENT_SCOPE,
             requested_ttl_seconds=300,
             now_epoch=NOW_EPOCH,
             provider_private_signed_url_token=RAW_TOKEN,
@@ -76,6 +79,7 @@ def test_prepare_persists_redacted_authority_and_idempotent_receipt_state(sessio
             request_id="prepare-2",
             client_request_id="client-request-provider-private-1",
             authority_basis=_authority_basis(),
+            recipient_scope=RECIPIENT_SCOPE,
             requested_ttl_seconds=300,
             now_epoch=NOW_EPOCH + 1,
             provider_private_signed_url_token=RAW_TOKEN,
@@ -84,6 +88,8 @@ def test_prepare_persists_redacted_authority_and_idempotent_receipt_state(sessio
         db.close()
 
     assert first.provider_private_signed_url_receipt_id == second.provider_private_signed_url_receipt_id
+    assert first.provider_private_signed_url_receipt_id.startswith("ppsu_")
+    assert len(first.provider_private_signed_url_receipt_id) == 36
 
     db = session_factory()
     try:
@@ -95,6 +101,7 @@ def test_prepare_persists_redacted_authority_and_idempotent_receipt_state(sessio
         assert authority.source_artifact_hash == SOURCE_ARTIFACT_HASH
         assert authority.source_artifact_size_bytes == SOURCE_ARTIFACT_SIZE_BYTES
         assert authority.provider_object_identity_hash
+        assert receipt.recipient_scope == RECIPIENT_SCOPE
         assert receipt.provider_private_signed_url_token_hash != RAW_TOKEN
         assert receipt.provider_private_signed_url_token_prefix == receipt.provider_private_signed_url_token_hash[:16]
         serialized = json.dumps(
@@ -123,6 +130,7 @@ def test_prepare_conflict_rejects_changed_authority_for_same_client_request_id(s
             request_id="prepare-conflict-1",
             client_request_id="client-request-provider-private-conflict",
             authority_basis=_authority_basis(),
+            recipient_scope=RECIPIENT_SCOPE,
             requested_ttl_seconds=300,
             now_epoch=NOW_EPOCH,
             provider_private_signed_url_token=RAW_TOKEN,
@@ -138,11 +146,78 @@ def test_prepare_conflict_rejects_changed_authority_for_same_client_request_id(s
                 request_id="prepare-conflict-2",
                 client_request_id="client-request-provider-private-conflict",
                 authority_basis=_authority_basis(source_artifact_size_bytes=SOURCE_ARTIFACT_SIZE_BYTES + 1),
+                recipient_scope=RECIPIENT_SCOPE,
                 requested_ttl_seconds=300,
                 now_epoch=NOW_EPOCH + 1,
                 provider_private_signed_url_token=RAW_TOKEN,
             )
         assert conflict.value.error_code == "provider_private_signed_url_state_idempotency_conflict"
+    finally:
+        db.close()
+
+
+def test_prepare_conflict_rejects_changed_recipient_scope_for_same_client_request_id(session_factory) -> None:
+    db = session_factory()
+    try:
+        record_prepared_provider_private_signed_url_receipt(
+            db,
+            request_id="prepare-recipient-conflict-1",
+            client_request_id="client-request-provider-private-recipient-conflict",
+            authority_basis=_authority_basis(),
+            recipient_scope="external-recipient:alpha",
+            requested_ttl_seconds=300,
+            now_epoch=NOW_EPOCH,
+            provider_private_signed_url_token=RAW_TOKEN,
+        )
+    finally:
+        db.close()
+
+    db = session_factory()
+    try:
+        with pytest.raises(ProviderPrivateSignedUrlStateError) as conflict:
+            record_prepared_provider_private_signed_url_receipt(
+                db,
+                request_id="prepare-recipient-conflict-2",
+                client_request_id="client-request-provider-private-recipient-conflict",
+                authority_basis=_authority_basis(),
+                recipient_scope="external-recipient:beta",
+                requested_ttl_seconds=300,
+                now_epoch=NOW_EPOCH + 1,
+                provider_private_signed_url_token=RAW_TOKEN,
+            )
+        assert conflict.value.error_code == "provider_private_signed_url_state_idempotency_conflict"
+        assert "recipient_scope" in conflict.value.blocked_fields
+    finally:
+        db.close()
+
+
+def test_prepare_concurrent_authority_creation_records_one_authority(session_factory) -> None:
+    def prepare(client_suffix: str) -> str:
+        db = session_factory()
+        try:
+            state = record_prepared_provider_private_signed_url_receipt(
+                db,
+                request_id=f"prepare-concurrent-{client_suffix}",
+                client_request_id=f"client-request-provider-private-concurrent-{client_suffix}",
+                authority_basis=_authority_basis(external_export_download_record_ref="external-export-download:concurrent"),
+                recipient_scope=f"external-recipient:{client_suffix}",
+                requested_ttl_seconds=300,
+                now_epoch=NOW_EPOCH,
+                provider_private_signed_url_token=f"{RAW_TOKEN}-{client_suffix}",
+            )
+            return state.provider_private_signed_url_object_authority_id
+        finally:
+            db.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        authority_ids = list(executor.map(prepare, ("a", "b")))
+
+    assert len(set(authority_ids)) == 1
+
+    db = session_factory()
+    try:
+        assert db.query(L3ProviderPrivateSignedUrlObjectAuthority).count() == 1
+        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 2
     finally:
         db.close()
 
@@ -155,6 +230,7 @@ def test_use_blocks_stale_session_and_artifact_authority(session_factory) -> Non
             request_id="prepare-stale-1",
             client_request_id="client-request-provider-private-stale",
             authority_basis=_authority_basis(),
+            recipient_scope=RECIPIENT_SCOPE,
             requested_ttl_seconds=300,
             now_epoch=NOW_EPOCH,
             provider_private_signed_url_token=RAW_TOKEN,
@@ -194,6 +270,7 @@ def test_use_enforces_expiry_and_single_use_replay(session_factory) -> None:
             request_id="prepare-expiry-1",
             client_request_id="client-request-provider-private-expiry",
             authority_basis=_authority_basis(),
+            recipient_scope=RECIPIENT_SCOPE,
             requested_ttl_seconds=10,
             now_epoch=NOW_EPOCH,
             provider_private_signed_url_token=RAW_TOKEN,
@@ -230,6 +307,7 @@ def test_use_enforces_expiry_and_single_use_replay(session_factory) -> None:
             request_id="prepare-replay-1",
             client_request_id="client-request-provider-private-replay",
             authority_basis=_authority_basis(external_export_download_record_ref="external-export-download:replay"),
+            recipient_scope=RECIPIENT_SCOPE,
             requested_ttl_seconds=300,
             now_epoch=NOW_EPOCH,
             provider_private_signed_url_token="provider-private-signed-url-replay-token",
@@ -276,6 +354,7 @@ def test_revoke_blocks_future_use_and_redacts_audit(session_factory) -> None:
             request_id="prepare-revoke-1",
             client_request_id="client-request-provider-private-revoke",
             authority_basis=_authority_basis(external_export_download_record_ref="external-export-download:revoke"),
+            recipient_scope=RECIPIENT_SCOPE,
             requested_ttl_seconds=300,
             now_epoch=NOW_EPOCH,
             provider_private_signed_url_token="provider-private-signed-url-revoke-token",
@@ -328,6 +407,66 @@ def test_revoke_blocks_future_use_and_redacts_audit(session_factory) -> None:
         assert "operator removed downstream access" not in serialized
         assert revocation.revocation_reason_hash
         assert revoke_audit.reason_code == "revoked_by_operator"
+    finally:
+        db.close()
+
+
+def test_revoke_rejects_conflicting_idempotency_retry(session_factory) -> None:
+    db = session_factory()
+    try:
+        state = record_prepared_provider_private_signed_url_receipt(
+            db,
+            request_id="prepare-revoke-conflict-1",
+            client_request_id="client-request-provider-private-revoke-conflict",
+            authority_basis=_authority_basis(external_export_download_record_ref="external-export-download:revoke-conflict"),
+            recipient_scope=RECIPIENT_SCOPE,
+            requested_ttl_seconds=300,
+            now_epoch=NOW_EPOCH,
+            provider_private_signed_url_token="provider-private-signed-url-revoke-conflict-token",
+        )
+    finally:
+        db.close()
+
+    db = session_factory()
+    try:
+        revoke_provider_private_signed_url_receipt(
+            db,
+            provider_private_signed_url_receipt_id=state.provider_private_signed_url_receipt_id,
+            idempotency_key="revoke-key-conflict",
+            revoked_by="operator@example.test",
+            revocation_reason="operator removed downstream access",
+            now_epoch=NOW_EPOCH + 20,
+            request_id="revoke-conflict-1",
+        )
+    finally:
+        db.close()
+
+    db = session_factory()
+    try:
+        with pytest.raises(ProviderPrivateSignedUrlStateError) as conflict:
+            revoke_provider_private_signed_url_receipt(
+                db,
+                provider_private_signed_url_receipt_id=state.provider_private_signed_url_receipt_id,
+                idempotency_key="revoke-key-conflict",
+                revoked_by="other-operator@example.test",
+                revocation_reason="different revocation reason",
+                now_epoch=NOW_EPOCH + 21,
+                request_id="revoke-conflict-2",
+            )
+        assert conflict.value.error_code == "provider_private_signed_url_state_revocation_idempotency_conflict"
+        assert "revoked_by" in conflict.value.blocked_fields
+        assert "revocation_reason" in conflict.value.blocked_fields
+    finally:
+        db.close()
+
+    db = session_factory()
+    try:
+        rejected = (
+            db.query(L3ProviderPrivateSignedUrlAuditEvent)
+            .filter_by(reason_code="revocation_idempotency_conflict")
+            .one()
+        )
+        assert rejected.event_status == "rejected"
     finally:
         db.close()
 

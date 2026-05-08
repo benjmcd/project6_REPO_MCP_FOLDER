@@ -10301,6 +10301,7 @@
     "implemented_files": [
       "backend/app/models/models.py",
       "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+      "backend/alembic/versions/0023_layer3_provider_private_signed_url_recipient_scope.py",
       "backend/app/services/layer3_provider_private_signed_url_state.py",
       "backend/tests/test_layer3_provider_private_signed_url_state.py"
     ],
@@ -10310,9 +10311,12 @@
     ],
     "durable_state_guards": [
       "durable_receipt_identity",
+      "recipient_scope_request_basis_binding",
+      "concurrent_authority_creation_reuse",
       "session_and_artifact_authority_binding",
       "provider_object_identity_hash_binding",
       "client_request_id_idempotency",
+      "revocation_idempotency_conflict",
       "expiry_fail_closed",
       "revocation_fail_closed",
       "single_use_replay_denial",

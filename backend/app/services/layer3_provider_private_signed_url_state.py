@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.models.models import (
@@ -25,6 +25,7 @@ PROVIDER_PRIVATE_SIGNED_URL_STATE_EXPIRED = "provider_private_signed_url_expired
 PROVIDER_PRIVATE_SIGNED_URL_REPLAY_POLICY_SINGLE_USE = "single_use"
 PROVIDER_PRIVATE_SIGNED_URL_MAX_TTL_SECONDS = 900
 INTERNAL_ARTIFACT_REF_PLACEHOLDER = "artifact://provider-private-signed-url-redacted"
+PROVIDER_PRIVATE_SIGNED_URL_RECEIPT_ID_PREFIX = "ppsu_"
 
 
 @dataclass(frozen=True)
@@ -160,6 +161,27 @@ def _provider_object_identity_hash(authority_basis: dict[str, Any]) -> str:
     )
 
 
+def _request_basis_hash(
+    *,
+    authority_hash: str,
+    client_request_id: str,
+    recipient_scope: str,
+    requested_ttl_seconds: int,
+) -> str:
+    return _canonical_hash(
+        {
+            "authority_hash": authority_hash,
+            "client_request_id": client_request_id,
+            "recipient_scope": recipient_scope,
+            "requested_ttl_seconds": requested_ttl_seconds,
+        }
+    )
+
+
+def _receipt_id_from_request_basis(*, request_basis_hash: str) -> str:
+    return f"{PROVIDER_PRIVATE_SIGNED_URL_RECEIPT_ID_PREFIX}{request_basis_hash[:31]}"
+
+
 def _state_from_rows(
     receipt: L3ProviderPrivateSignedUrlReceipt,
     audit: L3ProviderPrivateSignedUrlAuditEvent,
@@ -210,12 +232,62 @@ def _revocation_exists(db: Session, *, receipt_id: str) -> bool:
     )
 
 
+def _authority_by_hash(
+    db: Session,
+    *,
+    authority_hash: str,
+) -> L3ProviderPrivateSignedUrlObjectAuthority | None:
+    return (
+        db.query(L3ProviderPrivateSignedUrlObjectAuthority)
+        .filter(L3ProviderPrivateSignedUrlObjectAuthority.authority_hash == authority_hash)
+        .with_for_update()
+        .one_or_none()
+    )
+
+
+def _get_or_create_authority(
+    db: Session,
+    *,
+    normalized_authority: dict[str, Any],
+    authority_hash: str,
+    provider_object_identity_hash: str,
+    now: datetime,
+) -> L3ProviderPrivateSignedUrlObjectAuthority:
+    authority = _authority_by_hash(db, authority_hash=authority_hash)
+    if authority is not None:
+        return authority
+
+    authority = L3ProviderPrivateSignedUrlObjectAuthority(
+        provider_private_signed_url_object_authority_id=uuid_str(),
+        session_id=normalized_authority["session_id"],
+        reconciliation_record_id=normalized_authority["reconciliation_record_id"],
+        external_export_download_record_ref=normalized_authority["external_export_download_record_ref"],
+        export_download_descriptor_ref=normalized_authority["export_download_descriptor_ref"],
+        source_artifact_hash=normalized_authority["source_artifact_hash"],
+        source_artifact_size_bytes=normalized_authority["source_artifact_size_bytes"],
+        authority_hash=authority_hash,
+        authority_snapshot_json=_response_safe_authority_basis(normalized_authority),
+        provider_object_identity_hash=provider_object_identity_hash,
+        created_at=now,
+    )
+    db.add(authority)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        authority = _authority_by_hash(db, authority_hash=authority_hash)
+        if authority is None:
+            raise
+    return authority
+
+
 def record_prepared_provider_private_signed_url_receipt(
     db: Session,
     *,
     request_id: str,
     client_request_id: str,
     authority_basis: dict[str, Any],
+    recipient_scope: str,
     requested_ttl_seconds: int,
     now_epoch: int,
     provider_private_signed_url_token: str,
@@ -227,6 +299,14 @@ def record_prepared_provider_private_signed_url_receipt(
             status="invalid",
             blocked_fields=("client_request_id",),
             next_allowed_actions=("submit_provider_private_signed_url_client_request_id",),
+        )
+    if not recipient_scope.strip():
+        raise ProviderPrivateSignedUrlStateError(
+            "provider_private_signed_url_state_recipient_scope_required",
+            "recipient_scope is required.",
+            status="invalid",
+            blocked_fields=("recipient_scope",),
+            next_allowed_actions=("submit_provider_private_signed_url_recipient_scope",),
         )
     if not provider_private_signed_url_token.strip():
         raise ProviderPrivateSignedUrlStateError(
@@ -246,21 +326,23 @@ def record_prepared_provider_private_signed_url_receipt(
         )
 
     now = _epoch_to_utc(now_epoch)
+    normalized_client_request_id = client_request_id.strip()
+    normalized_recipient_scope = recipient_scope.strip()
     normalized_authority = _validate_authority_basis(authority_basis=authority_basis)
     authority_hash = _authority_hash(normalized_authority)
     provider_object_identity_hash = _provider_object_identity_hash(normalized_authority)
-    request_basis_hash = _canonical_hash(
-        {
-            "authority_hash": authority_hash,
-            "client_request_id": client_request_id.strip(),
-            "requested_ttl_seconds": requested_ttl_seconds,
-        }
+    request_basis_hash = _request_basis_hash(
+        authority_hash=authority_hash,
+        client_request_id=normalized_client_request_id,
+        recipient_scope=normalized_recipient_scope,
+        requested_ttl_seconds=requested_ttl_seconds,
     )
+    receipt_id = _receipt_id_from_request_basis(request_basis_hash=request_basis_hash)
     token_hash = _token_hash(provider_private_signed_url_token.strip())
     try:
         existing = (
             db.query(L3ProviderPrivateSignedUrlReceipt)
-            .filter(L3ProviderPrivateSignedUrlReceipt.client_request_id == client_request_id.strip())
+            .filter(L3ProviderPrivateSignedUrlReceipt.client_request_id == normalized_client_request_id)
             .with_for_update()
             .one_or_none()
         )
@@ -273,7 +355,13 @@ def record_prepared_provider_private_signed_url_receipt(
                 raise ProviderPrivateSignedUrlStateError(
                     "provider_private_signed_url_state_idempotency_conflict",
                     "client_request_id was already used for different provider-private signed URL authority.",
-                    blocked_fields=("client_request_id", "source_artifact_hash", "source_artifact_size_bytes"),
+                    blocked_fields=(
+                        "client_request_id",
+                        "recipient_scope",
+                        "requested_ttl_seconds",
+                        "source_artifact_hash",
+                        "source_artifact_size_bytes",
+                    ),
                     next_allowed_actions=("submit_new_client_request_id",),
                 )
             audit = L3ProviderPrivateSignedUrlAuditEvent(
@@ -296,33 +384,19 @@ def record_prepared_provider_private_signed_url_receipt(
             db.refresh(audit)
             return _state_from_rows(existing, audit)
 
-        authority = (
-            db.query(L3ProviderPrivateSignedUrlObjectAuthority)
-            .filter(L3ProviderPrivateSignedUrlObjectAuthority.authority_hash == authority_hash)
-            .with_for_update()
-            .one_or_none()
+        authority = _get_or_create_authority(
+            db,
+            normalized_authority=normalized_authority,
+            authority_hash=authority_hash,
+            provider_object_identity_hash=provider_object_identity_hash,
+            now=now,
         )
-        if authority is None:
-            authority = L3ProviderPrivateSignedUrlObjectAuthority(
-                provider_private_signed_url_object_authority_id=uuid_str(),
-                session_id=normalized_authority["session_id"],
-                reconciliation_record_id=normalized_authority["reconciliation_record_id"],
-                external_export_download_record_ref=normalized_authority["external_export_download_record_ref"],
-                export_download_descriptor_ref=normalized_authority["export_download_descriptor_ref"],
-                source_artifact_hash=normalized_authority["source_artifact_hash"],
-                source_artifact_size_bytes=normalized_authority["source_artifact_size_bytes"],
-                authority_hash=authority_hash,
-                authority_snapshot_json=_response_safe_authority_basis(normalized_authority),
-                provider_object_identity_hash=provider_object_identity_hash,
-                created_at=now,
-            )
-            db.add(authority)
-            db.flush()
 
         receipt = L3ProviderPrivateSignedUrlReceipt(
-            provider_private_signed_url_receipt_id=uuid_str(),
+            provider_private_signed_url_receipt_id=receipt_id,
             provider_private_signed_url_object_authority_id=authority.provider_private_signed_url_object_authority_id,
-            client_request_id=client_request_id.strip(),
+            client_request_id=normalized_client_request_id,
+            recipient_scope=normalized_recipient_scope,
             provider_private_signed_url_state=PROVIDER_PRIVATE_SIGNED_URL_STATE_PREPARED,
             provider_private_signed_url_replay_policy=PROVIDER_PRIVATE_SIGNED_URL_REPLAY_POLICY_SINGLE_USE,
             provider_private_signed_url_max_use_count=1,
@@ -348,6 +422,7 @@ def record_prepared_provider_private_signed_url_receipt(
             event_payload_json={
                 "authority_snapshot": authority.authority_snapshot_json,
                 "provider_object_identity_hash": provider_object_identity_hash,
+                "recipient_scope_hash": _canonical_hash(normalized_recipient_scope),
                 "provider_private_signed_url_token_hash": token_hash,
             },
             created_at=now,
@@ -653,6 +728,8 @@ def revoke_provider_private_signed_url_receipt(
         )
 
     now = _epoch_to_utc(now_epoch)
+    normalized_revoked_by = revoked_by.strip()
+    normalized_idempotency_key = idempotency_key.strip()
     revocation_reason_hash = _canonical_hash(revocation_reason.strip())
     try:
         receipt = _receipt_row(db, receipt_id=provider_private_signed_url_receipt_id)
@@ -669,12 +746,38 @@ def revoke_provider_private_signed_url_receipt(
             .filter(
                 L3ProviderPrivateSignedUrlRevocation.provider_private_signed_url_receipt_id
                 == receipt.provider_private_signed_url_receipt_id,
-                L3ProviderPrivateSignedUrlRevocation.idempotency_key == idempotency_key.strip(),
+                L3ProviderPrivateSignedUrlRevocation.idempotency_key == normalized_idempotency_key,
             )
             .with_for_update()
             .one_or_none()
         )
         if existing_revocation is not None:
+            if (
+                existing_revocation.revocation_reason_hash != revocation_reason_hash
+                or existing_revocation.revoked_by != normalized_revoked_by
+            ):
+                audit = L3ProviderPrivateSignedUrlAuditEvent(
+                    provider_private_signed_url_audit_event_id=uuid_str(),
+                    provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
+                    event_type="revoke",
+                    event_status="rejected",
+                    request_id=request_id,
+                    authority_hash=receipt.authority_hash,
+                    reason_code="revocation_idempotency_conflict",
+                    event_payload_json={
+                        "existing_revocation_reason_hash": existing_revocation.revocation_reason_hash,
+                        "incoming_revocation_reason_hash": revocation_reason_hash,
+                    },
+                    created_at=now,
+                )
+                db.add(audit)
+                db.commit()
+                raise ProviderPrivateSignedUrlStateError(
+                    "provider_private_signed_url_state_revocation_idempotency_conflict",
+                    "idempotency_key was already used for a different provider-private signed URL revocation.",
+                    blocked_fields=("idempotency_key", "revoked_by", "revocation_reason"),
+                    next_allowed_actions=("submit_new_revocation_idempotency_key",),
+                )
             audit = L3ProviderPrivateSignedUrlAuditEvent(
                 provider_private_signed_url_audit_event_id=uuid_str(),
                 provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
@@ -717,8 +820,8 @@ def revoke_provider_private_signed_url_receipt(
         revocation = L3ProviderPrivateSignedUrlRevocation(
             provider_private_signed_url_revocation_id=uuid_str(),
             provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
-            idempotency_key=idempotency_key.strip(),
-            revoked_by=revoked_by.strip(),
+            idempotency_key=normalized_idempotency_key,
+            revoked_by=normalized_revoked_by,
             revocation_reason_hash=revocation_reason_hash,
             revocation_payload_json={"revocation_reason_hash": revocation_reason_hash},
             created_at=now,

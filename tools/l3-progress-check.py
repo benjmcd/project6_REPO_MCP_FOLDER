@@ -369,6 +369,13 @@ REPLACEMENT_PACKAGE_NAMESPACE_MIGRATION = (
 PROVIDER_PRIVATE_SIGNED_URL_STATE_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0022_layer3_provider_private_signed_url_state.py"
 )
+PROVIDER_PRIVATE_SIGNED_URL_RECIPIENT_SCOPE_MIGRATION = (
+    ROOT
+    / "backend"
+    / "alembic"
+    / "versions"
+    / "0023_layer3_provider_private_signed_url_recipient_scope.py"
+)
 LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
 MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
@@ -13019,6 +13026,7 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
             "same_origin_signed_reference_semantics_changed` is `false",
             "backend/app/services/layer3_provider_private_signed_url_state.py",
             "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+            "backend/alembic/versions/0023_layer3_provider_private_signed_url_recipient_scope.py",
             "backend/tests/test_layer3_provider_private_signed_url_state.py",
         ),
         MANIFEST: (
@@ -13034,6 +13042,7 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
             "durable_state_substrate_status",
             "backend/app/services/layer3_provider_private_signed_url_state.py",
             "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+            "backend/alembic/versions/0023_layer3_provider_private_signed_url_recipient_scope.py",
             "backend/tests/test_layer3_provider_private_signed_url_state.py",
         ),
         MODELS: (
@@ -13044,6 +13053,7 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
             "uq_l3_provider_private_signed_url_authority_hash",
             "uq_l3_provider_private_signed_url_receipt_client_request",
             "uq_l3_provider_private_signed_url_revoke_receipt_key",
+            "recipient_scope",
         ),
         PROVIDER_PRIVATE_SIGNED_URL_STATE_MIGRATION: (
             "revision = \"0022_layer3_provider_private_signed_url_state\"",
@@ -13053,13 +13063,26 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
             "l3_provider_private_signed_url_revocation",
             "l3_provider_private_signed_url_audit_event",
         ),
+        PROVIDER_PRIVATE_SIGNED_URL_RECIPIENT_SCOPE_MIGRATION: (
+            "revision = \"0023_layer3_provider_private_signed_url_recipient_scope\"",
+            "down_revision = \"0022_layer3_provider_private_signed_url_state\"",
+            "recipient_scope",
+            "add_column_idempotent",
+            "drop_column_idempotent",
+        ),
         PROVIDER_PRIVATE_SIGNED_URL_STATE_SERVICE: (
             "record_prepared_provider_private_signed_url_receipt",
             "record_used_provider_private_signed_url_receipt",
             "revoke_provider_private_signed_url_receipt",
             "PROVIDER_PRIVATE_SIGNED_URL_REPLAY_POLICY_SINGLE_USE",
             "INTERNAL_ARTIFACT_REF_PLACEHOLDER",
+            "_request_basis_hash",
+            "_receipt_id_from_request_basis",
+            "_get_or_create_authority",
+            "IntegrityError",
+            "recipient_scope",
             "provider_private_signed_url_state_idempotency_conflict",
+            "provider_private_signed_url_state_revocation_idempotency_conflict",
             "provider_private_signed_url_state_replay_denied",
             "provider_private_signed_url_state_revoked",
             "provider_private_signed_url_state_expired",
@@ -13067,9 +13090,12 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
         PROVIDER_PRIVATE_SIGNED_URL_STATE_TEST: (
             "test_prepare_persists_redacted_authority_and_idempotent_receipt_state",
             "test_prepare_conflict_rejects_changed_authority_for_same_client_request_id",
+            "test_prepare_conflict_rejects_changed_recipient_scope_for_same_client_request_id",
+            "test_prepare_concurrent_authority_creation_records_one_authority",
             "test_use_blocks_stale_session_and_artifact_authority",
             "test_use_enforces_expiry_and_single_use_replay",
             "test_revoke_blocks_future_use_and_redacts_audit",
+            "test_revoke_rejects_conflicting_idempotency_retry",
         ),
         PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_TEST: (
             "test_fake_provider_prepare_is_deterministic_idempotent_and_redacted",
@@ -13143,6 +13169,7 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
     expected_files = [
         "backend/app/models/models.py",
         "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+        "backend/alembic/versions/0023_layer3_provider_private_signed_url_recipient_scope.py",
         "backend/app/services/layer3_provider_private_signed_url_state.py",
         "backend/tests/test_layer3_provider_private_signed_url_state.py",
     ]
@@ -13156,9 +13183,12 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_durable_state_substrate_proof compatibility_validation_files must match the compatibility suites")
     expected_guards = [
         "durable_receipt_identity",
+        "recipient_scope_request_basis_binding",
+        "concurrent_authority_creation_reuse",
         "session_and_artifact_authority_binding",
         "provider_object_identity_hash_binding",
         "client_request_id_idempotency",
+        "revocation_idempotency_conflict",
         "expiry_fail_closed",
         "revocation_fail_closed",
         "single_use_replay_denial",
