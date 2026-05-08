@@ -9657,5 +9657,55 @@
       "do_not_start_runtime_work_if_no_named_use_case_exists",
       "reconcile_review_or_checker_drift_before_new_planning_if_found"
     ]
+  },
+  "named_runtime_use_case_selection_gate_proof": {
+    "scope": "Planning/control selection gate after current-main runtime-entry readiness report.",
+    "implementation_branch": "codex/l3-use-case-selection-gate",
+    "live_behavior_change": false,
+    "selected_planning_mode": "named_runtime_use_case_selection_gate",
+    "entry_decision": "selection_gate_only",
+    "selected_runtime_family": null,
+    "selected_runtime_mode": null,
+    "named_use_case_selected": false,
+    "runtime_status": "not_implemented",
+    "implementation_entry_freeze_required": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/220_POST_AUTHORITY_DISCOVERY_CHAIN_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/221_CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT.md",
+      "next_milestone_plans/Layer3_planning_docs/222_NAMED_RUNTIME_USE_CASE_SELECTION_GATE.md"
+    ],
+    "candidate_runtime_families": [
+      "provider_public_url_runtime",
+      "external_connector_destination_runtime",
+      "source_breadth_runtime",
+      "package_mutation_rendered_runtime",
+      "broad_qual_hybrid_rag_runtime",
+      "browser_full_mockup_runtime",
+      "auth_security_runtime",
+      "ci_performance_observability_runtime"
+    ],
+    "required_future_freeze_fields": [
+      "exactly_one_selected_runtime_family",
+      "exactly_one_selected_runtime_mode",
+      "one_named_operator_product_use_case",
+      "current_bounded_behavior_insufficiency_evidence",
+      "canonical_source_of_truth_and_authority_order",
+      "route_api_request_response_contract",
+      "owner_service_function_and_state_transition_contract",
+      "db_rows_read_written",
+      "files_artifacts_read_written",
+      "idempotency_concurrency_stale_state_replay_recovery_semantics",
+      "failure_mode_and_forbidden_side_effect_contract",
+      "required_tests_including_negative_invariants",
+      "theme_accessibility_headed_headless_proof_plan_if_rendered_ui_changes",
+      "auth_security_leakage_posture",
+      "explicit_stop_condition"
+    ],
+    "recommended_next_actions": [
+      "choose_exact_named_runtime_use_case_before_any_runtime_implementation",
+      "write_one_implementation_entry_freeze_if_exact_named_use_case_exists",
+      "stop_at_planning_if_exact_named_use_case_does_not_exist",
+      "reconcile_review_or_checker_drift_before_any_new_runtime_selection"
+    ]
   }
 }
