@@ -7563,5 +7563,181 @@
       "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control"
     ],
     "next_boundary": "Run qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update before any broad qualitative, qualitative cohort, comparative, cross-document, hybrid, RAG/vector, embedding, prompt/model/provider, or rendered qualitative/RAG implementation if concrete evidence emerges."
+  },
+  "browser_full_mockup_activation_entry_freeze_proof": {
+    "scope": "Planning/control entry freeze for browser_full_mockup_activation_freeze after PR #753 qualitative/hybrid/RAG/vector entry freeze.",
+    "implementation_branch": "codex/l3-mockup-activation-entry-freeze",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/125_MOCKUP_TRUTH_STATE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/151_QUAL_APS_RENDERED_UI_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/152_QUAL_APS_RENDERED_UI_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/155_RAW_MIXED_RENDERED_UI_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+      "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md"
+    ],
+    "selected_planning_mode": "browser_full_mockup_activation_freeze",
+    "entry_decision": "deferred",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "live_mockup_truth_state": "mockups_target_state_only",
+    "live_rendered_workbench_status": "existing_server_authoritative_controls_only",
+    "live_browser_proof_status": "bounded_headed_headless_proofs_for_admitted_paths",
+    "receipt_family": "no_receipt_planning_only",
+    "evidence_ledger": {
+      "current_mockup_truth_state": {
+        "status": "verified",
+        "evidence": [
+          "next_milestone_plans/Layer3_planning_docs/125_MOCKUP_TRUTH_STATE_FREEZE.md",
+          "backend/app/services/layer3_mockup_boundary.py",
+          "backend/tests/test_layer3_mockup_boundary.py",
+          "tools/l3-progress-check.py"
+        ]
+      },
+      "current_rendered_raw_mixed_existing_controls": {
+        "status": "verified",
+        "evidence": [
+          "next_milestone_plans/Layer3_planning_docs/155_RAW_MIXED_RENDERED_UI_FREEZE.md",
+          "next_milestone_plans/Layer3_planning_docs/183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+          "e2e/layer3-workbench.spec.js",
+          "e2e/layer3-handoff.spec.js"
+        ]
+      },
+      "current_rendered_qual_aps_existing_controls": {
+        "status": "verified",
+        "evidence": [
+          "next_milestone_plans/Layer3_planning_docs/151_QUAL_APS_RENDERED_UI_FREEZE.md",
+          "next_milestone_plans/Layer3_planning_docs/152_QUAL_APS_RENDERED_UI_CONTRACT.md",
+          "e2e/layer3-workbench.spec.js",
+          "e2e/layer3-handoff.spec.js"
+        ]
+      },
+      "full_mockup_source_owner": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "mockup_route_api_contract": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "server_authority_contract": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "mockup_to_live_state_mapping": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "operator_journey_scope": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "theme_accessibility_headed_headless_plan": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "frontend_durable_authority_policy": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    "browser_full_mockup_exposure_model": {
+      "selected_activation_mode": "unknown",
+      "mockup_source_owner": "unknown",
+      "route_api_contract": "unknown",
+      "server_authority_contract": "unknown",
+      "durable_state_owner": "unknown",
+      "browser_storage_policy": "unknown",
+      "operator_journey_scope": "unknown",
+      "theme_surface": "unknown",
+      "accessibility_surface": "unknown",
+      "headed_headless_proof_scope": "unknown",
+      "negative_side_effect_surface": "unknown"
+    },
+    "capability_isolation_matrix": {
+      "mockups_target_state_only": {
+        "change_allowed_in_this_pass": false
+      },
+      "existing_rendered_workbench_controls": {
+        "change_allowed_in_this_pass": false
+      },
+      "existing_headed_headless_browser_proofs": {
+        "change_allowed_in_this_pass": false
+      },
+      "full_mockup_activation": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "frontend_only_durable_state": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "browser_local_persistence_as_authority": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "new_rendered_controls": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "broad_execution": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "source_breadth_expansion": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "package_mutation_reconstruction": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "provider_public_url": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "connector_destination_dispatch": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "rag_vector_or_hybrid_execution": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "hidden_llm_planning": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "auth_security_behavior_change": {
+        "runtime_allowed_in_this_pass": false
+      }
+    },
+    "negative_invariants": [
+      "no full mockup activation",
+      "no frontend-only durable state",
+      "no browser-local persistence as authority",
+      "no new rendered controls",
+      "no route/API behavior change",
+      "no DTO change",
+      "no model or migration change",
+      "no production service behavior change",
+      "no test behavior change",
+      "no source expansion",
+      "no source adapter registry",
+      "no local upload",
+      "no local-directory ingestion",
+      "no web connector retrieval",
+      "no broad execution",
+      "no broad qualitative execution",
+      "no hybrid execution",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector or destination dispatch",
+      "no destination write",
+      "no mockup state treated as server authority",
+      "no browser state treated as server authority",
+      "no theme-specific durable authority",
+      "no auth/security behavior change",
+      "no local path, provider URL, connector target, destination target, source credential, auth token, prompt, or browser storage secret leakage in error bodies",
+      "no local path, provider URL, connector target, destination target, source credential, auth token, prompt, or browser storage secret leakage in logs",
+      "no cross-mode privilege escalation",
+      "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control"
+    ],
+    "next_boundary": "Run browser_full_mockup_authority_discovery_freeze_or_entry_freeze_update before any full mockup activation, frontend durable state, browser-local authority, or new rendered mockup control if concrete evidence emerges."
   }
 }
