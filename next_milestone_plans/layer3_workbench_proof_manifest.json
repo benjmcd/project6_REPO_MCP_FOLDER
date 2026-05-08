@@ -6722,5 +6722,48 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Freeze the next raw mixed rendered downstream provider URL, connector/destination, package mutation, source breadth, RAG/vector, full mockup, or auth/security slice before proving it."
+  },
+  "post_745_downstream_expansion_freeze_proof": {
+    "scope": "Planning/control freeze for post-745 raw mixed rendered downstream expansion ordering after signed-reference proof.",
+    "implementation_branch": "codex/l3-post-745-next",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/185_POST_745_DOWNSTREAM_EXPANSION_CONTRACT.md"
+    ],
+    "selected_planning_mode": "post_745_raw_mixed_rendered_downstream_expansion_governance",
+    "current_upstream_proof": "next_milestone_plans/Layer3_planning_docs/183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+    "ranked_future_passes": [
+      "provider_public_url_entry_freeze",
+      "connector_destination_dispatch_entry_freeze",
+      "package_mutation_reconstruction_rendered_entry_freeze",
+      "source_breadth_entry_freeze",
+      "qual_hybrid_rag_vector_entry_freeze",
+      "browser_full_mockup_activation_freeze",
+      "auth_security_entry_freeze"
+    ],
+    "proof_summary": "This docs/proof-only freeze prevents the rendered signed-reference proof from being over-claimed as provider/public URL, connector/destination dispatch, package mutation, source expansion, RAG/vector, full mockup, hidden LLM, or auth/security readiness. It ranks the next future passes, requires a more specific implementation-entry freeze before code, and carries explicit light/dark/workbench theme obligations for future rendered changes.",
+    "theme_invariants": [
+      "light remains valid for status, preview, and review inspection",
+      "dark remains valid for execution and package construction surfaces",
+      "workbench remains valid for package submit, handoff/export, APS handoff, external export/download, and downstream operation-dock flows",
+      "headed and headless Chromium consistency is required for any future rendered implementation-entry proof"
+    ],
+    "negative_invariants": [
+      "no provider/public URL behavior",
+      "no provider object-store URL, signed URL, public ACL, object-store write, or URL revocation behavior",
+      "no connector-run creation, connector invocation, destination selection, destination write, or generic downstream dispatch",
+      "no package payload mutation, reconstruction, replacement, supersession, or rendered package mutation control",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload, local-directory ingestion, arbitrary local path input, web connector retrieval, or unbounded runtime DB source read",
+      "no RAG/vector retrieval, vector index creation, broad qualitative execution, hybrid execution, or hidden LLM planning",
+      "no new route, DTO, model, migration, or production service behavior",
+      "no new rendered UI control",
+      "no frontend-only durable authority",
+      "no full mockup activation",
+      "no auth/security behavior change"
+    ],
+    "next_boundary": "Choose exactly one implementation-entry freeze, starting with provider_public_url_entry_freeze only if live evidence proves same-origin delivery and durable signed references are insufficient for a concrete use case."
   }
 }
