@@ -9363,5 +9363,93 @@
       "auth_security_authority_discovery_freeze_or_entry_freeze_update",
       "qual_hybrid_rag_runtime_entry_freeze_update_only_if_named_use_case_emerges"
     ]
+  },
+  "browser_full_mockup_authority_discovery_closeout_proof": {
+    "scope": "Planning/control authority-discovery closeout for browser_full_mockup_authority_discovery_closeout after PR #773 qualitative/hybrid/RAG authority discovery closeout.",
+    "implementation_branch": "codex/l3-mockup-boundary",
+    "live_behavior_change": false,
+    "selected_planning_mode": "browser_full_mockup_authority_discovery_closeout",
+    "entry_decision": "no_runtime_now",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "live_mockup_truth_state": "mockups_target_state_only",
+    "live_rendered_workbench_status": "existing_server_authoritative_controls_only",
+    "live_browser_proof_status": "bounded_headed_headless_proofs_for_admitted_paths",
+    "authority_discovery_result": "insufficient_authority_for_full_mockup_activation_runtime",
+    "implementation_entry_required_before_runtime": true,
+    "next_product_boundary_required": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/125_MOCKUP_TRUTH_STATE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/203_POST_756_GOVERNANCE_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/217_QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/218_BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+    ],
+    "authority_evidence": {
+      "mockup_truth_state": [
+        "backend/app/services/layer3_mockup_boundary.py reports mockups_target_state_only and full mockup activation disabled.",
+        "backend/tests/test_layer3_mockup_boundary.py proves the fail-closed mockup truth-state contract."
+      ],
+      "rendered_workbench_existing_controls": [
+        "backend/app/review_ui/static/layer3.html, layer3.js, and layer3.css contain current rendered workbench and theme behavior.",
+        "e2e/layer3-workbench.spec.js and e2e/layer3-handoff.spec.js prove existing admitted rendered controls and absence of deferred controls."
+      ],
+      "mockup_target_state_inputs": [
+        "next_milestone_plans/layer3-mockups/assets.md and mockup-spec.txt remain target-state design/specification inputs only."
+      ]
+    },
+    "unverified_authority": [
+      "full_mockup_source_owner",
+      "selected_activation_mode",
+      "mockup_route_api_contract",
+      "server_authority_contract",
+      "mockup_to_live_state_mapping",
+      "durable_state_owner",
+      "browser_storage_authority_policy",
+      "operator_journey_scope",
+      "theme_accessibility_headed_headless_plan",
+      "leakage_policy_and_auth_security_posture"
+    ],
+    "negative_invariants": [
+      "no full mockup activation",
+      "no frontend-only durable state",
+      "no browser-local persistence as authority",
+      "no browser-only workflow authority",
+      "no mockup text treated as server authority",
+      "no screenshot or manually clicked flow treated as server authority",
+      "no new rendered controls",
+      "no route/API behavior change",
+      "no DTO behavior change",
+      "no model or migration change",
+      "no production service behavior change",
+      "no executable test behavior change",
+      "no Playwright configuration change",
+      "no browser mode change",
+      "no source expansion",
+      "no source adapter registry",
+      "no local upload",
+      "no local-directory ingestion",
+      "no web connector retrieval",
+      "no broad execution",
+      "no broad qualitative execution",
+      "no hybrid execution",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector or destination dispatch",
+      "no destination write",
+      "no theme-specific durable authority",
+      "no auth/security behavior change",
+      "no local path, provider URL, connector target, destination target, source credential, auth token, prompt, or browser storage secret leakage",
+      "no cross-mode privilege escalation",
+      "no route, DTO, model, migration, production service behavior, executable test behavior, rendered UI control, or CI workflow change"
+    ],
+    "next_product_boundaries": [
+      "auth_security_authority_discovery_freeze_or_entry_freeze_update",
+      "browser_full_mockup_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+      "single_rendered_control_extension_entry_freeze_update_only_if_server_authority_is_proven"
+    ]
   }
 }
