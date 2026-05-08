@@ -845,6 +845,11 @@ CI/performance/observability entry freeze: `201_CI_PERFORMANCE_OBSERVABILITY_ENT
 
 Post-756 governance closeout: `203_POST_756_GOVERNANCE_CLOSEOUT.md` records the current-main planning/control closeout after the post-745 downstream entry-freeze chain. It confirms docs `187` through `202` now cover provider/public URL, connector/destination dispatch, rendered package mutation/reconstruction, source breadth, qualitative/hybrid/RAG/vector, browser/full mockup activation, auth/security, and CI/performance/observability as deferred entry boundaries with `selected_mode` null and `runtime_status` not implemented. It admits no runtime behavior and requires a later exact implementation-entry freeze before any broad provider, connector, package, source, RAG, mockup, auth/security, CI/performance/observability, or frontend durable-authority work.
 
+
+## CI Observability Gap Inventory
+
+CI observability gap inventory: `204_CI_OBSERVABILITY_GAP_INVENTORY.md` records the planning/control-only `ci_observability_gap_inventory_only` follow-up after the post-756 governance closeout. It inventories the current-main CI and browser harness posture from `.github/workflows/playwright.yml`, `playwright.config.js`, and `backend/tests/review_browser_server.py`, then freezes unresolved gaps for performance budget authority, flake policy, headed/headless parity, artifact taxonomy/redaction, observability event schema, audit-trace completeness, metrics/log/dashboard targets, runtime isolation/scaling, secret/path leakage, and ownership/triage. It admits no CI workflow change, Playwright configuration change, executable test change, runtime observability, audit-event runtime, artifact retention change, route/DTO/model/migration/service behavior, rendered UI control, source expansion, package mutation/reconstruction, provider/public URL runtime, connector/destination dispatch, RAG/vector retrieval, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority.
+
 ## Refresh Inputs
 
 Refresh this board against:
