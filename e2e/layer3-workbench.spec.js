@@ -159,6 +159,10 @@ function expectNoDeferredRawMixedPayloadFields(payload) {
   }
 }
 
+function valuesByPackageKind(keyedValues) {
+  return EXPECTED_PACKAGE_REVIEW_KINDS.map((packageKind) => keyedValues[packageKind]);
+}
+
 function trackLayer3ApiRequests(page) {
   const requests = [];
   page.on('request', (request) => {
@@ -1207,6 +1211,175 @@ async function submitRenderedHandoffExportPrepare(
   return handoffPrepare;
 }
 
+async function submitRenderedApsHandoffDispatch(
+  page,
+  sessionId,
+  approval,
+  planPreview,
+  execution,
+  review,
+  commit,
+  packageSubmit,
+  handoffPrepare,
+) {
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
+  await page.locator('[data-operation-target="aps-handoff-band"]').click();
+  await expect(page.locator('#aps-handoff-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('aps_handoff_ready');
+  await expect(page.locator('#aps-handoff-dispatch-submit')).toBeEnabled();
+
+  const dispatchRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/handoff/aps/dispatch') && apiRequest.method() === 'POST'
+  ));
+  const dispatchResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/handoff/aps/dispatch')
+  ));
+  await page.locator('#aps-handoff-dispatch-submit').click();
+  const dispatchPayload = (await dispatchRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(dispatchPayload, [
+    'analysis_plan_id',
+    'analysis_run_id',
+    'aps_handoff_target',
+    'client_request_id',
+    'dispatch_mode',
+    'export_mode',
+    'handoff_export_envelope_ref',
+    'handoff_export_state',
+    'handoff_target',
+    'operator_decision',
+    'output_package_ids',
+    'package_kinds',
+    'package_review_preview_hash',
+    'package_review_state',
+    'package_review_submit_record_ref',
+    'pass_run_id',
+    'payload_hashes',
+    'payload_refs',
+    'prepare_record_ref',
+    'preview_hash',
+    'preview_id',
+    'reconciliation_record_id',
+    'result_review_record_ref',
+    'session_id',
+  ]);
+  expect(dispatchPayload.session_id).toBe(sessionId);
+  expect(dispatchPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(dispatchPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(dispatchPayload.preview_id).toBe(planPreview.preview_id);
+  expect(dispatchPayload.preview_hash).toBe(planPreview.preview_hash);
+  expect(dispatchPayload.analysis_run_id).toBe(execution.start.analysis_run_id);
+  expect(dispatchPayload.result_review_record_ref).toBe(review.review_record_ref);
+  expect(dispatchPayload.package_review_preview_hash).toBe(commit.package_review_preview_hash);
+  expect(dispatchPayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(dispatchPayload.output_package_ids).toEqual(commit.output_package_ids);
+  expect(dispatchPayload.package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(dispatchPayload.payload_refs).toEqual(commit.payload_refs);
+  expect(dispatchPayload.payload_hashes).toEqual(commit.payload_hashes);
+  expect(dispatchPayload.package_review_submit_record_ref).toBe(packageSubmit.submit_record_ref);
+  expect(dispatchPayload.package_review_state).toBe('package_review_approved');
+  expect(dispatchPayload.prepare_record_ref).toBe(handoffPrepare.prepare_record_ref);
+  expect(dispatchPayload.handoff_export_state).toBe('handoff_export_prepared');
+  expect(dispatchPayload.handoff_export_envelope_ref).toBe(handoffPrepare.handoff_export_envelope.envelope_ref);
+  expect(dispatchPayload.handoff_target).toBe('internal_export_envelope');
+  expect(dispatchPayload.export_mode).toBe('prepare_only');
+  expect(dispatchPayload.aps_handoff_target).toBe('aps_evidence_bundle');
+  expect(dispatchPayload.dispatch_mode).toBe('server_side_aps_handoff');
+  expect(dispatchPayload.operator_decision).toBe('dispatch_aps_handoff');
+  expectNoDeferredRawMixedPayloadFields(dispatchPayload);
+  for (const forbiddenKey of [
+    'external_export',
+    'external_target',
+    'download',
+    'download_url',
+    'destination',
+    'destination_selector',
+    'connector_run_id',
+    'connector_dispatch',
+    'dispatch',
+    'send',
+    'runtime_db_write',
+    'analysis_artifact',
+    'artifact_manifest',
+    'create_package',
+    'rebuild_package',
+    'package_payload',
+    'package_variant_content',
+    'rewrite_output',
+    'edited_findings',
+    'result_review_amendment',
+    'package_review_amendment',
+    'rerun',
+    'retry',
+    'recover',
+    'cancel',
+    'selected_pass_ids',
+    'pass_run_ids',
+    'new_analysis_plan',
+    'plan_revision',
+    'source_expansion',
+    'local_upload',
+    'local_directory',
+    'schema_migration',
+  ]) {
+    expect(dispatchPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  const apsDispatch = await expectJson(await dispatchResponsePromise);
+  expect(apsDispatch.schema_id).toBe('layer3.aps_handoff_dispatch.v1');
+  expect(apsDispatch.status).toBe('dispatched');
+  expect(apsDispatch.session_id).toBe(sessionId);
+  expect(apsDispatch.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(apsDispatch.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(apsDispatch.preview_identity.preview_id).toBe(planPreview.preview_id);
+  expect(apsDispatch.preview_identity.preview_hash).toBe(planPreview.preview_hash);
+  expect(apsDispatch.analysis_run_id).toBe(execution.start.analysis_run_id);
+  expect(apsDispatch.result_review_record_ref).toBe(review.review_record_ref);
+  expect(apsDispatch.package_review_preview_hash).toBe(commit.package_review_preview_hash);
+  expect(apsDispatch.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(apsDispatch.output_package_ids).toEqual(commit.output_package_ids);
+  expect(apsDispatch.package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(apsDispatch.payload_refs).toEqual(commit.payload_refs);
+  expect(apsDispatch.payload_hashes).toEqual(commit.payload_hashes);
+  expect(apsDispatch.package_review_submit_record_ref).toBe(packageSubmit.submit_record_ref);
+  expect(apsDispatch.package_review_state).toBe('package_review_approved');
+  expect(apsDispatch.prepare_record_ref).toBe(handoffPrepare.prepare_record_ref);
+  expect(apsDispatch.handoff_export_state).toBe('handoff_export_prepared');
+  expect(apsDispatch.handoff_export_envelope_ref).toBe(handoffPrepare.handoff_export_envelope.envelope_ref);
+  expect(apsDispatch.handoff_target).toBe('internal_export_envelope');
+  expect(apsDispatch.export_mode).toBe('prepare_only');
+  expect(apsDispatch.aps_handoff_target).toBe('aps_evidence_bundle');
+  expect(apsDispatch.dispatch_mode).toBe('server_side_aps_handoff');
+  expect(apsDispatch.operator_decision).toBe('dispatch_aps_handoff');
+  expect(apsDispatch.aps_handoff_state).toBe('aps_handoff_dispatched');
+  expect(apsDispatch.aps_handoff_record_ref).toBeTruthy();
+  expect(apsDispatch.aps_output_package_id).toBeTruthy();
+  expect(apsDispatch.aps_output_package_kind).toBe('aps_evidence_bundle_handoff');
+  expect(apsDispatch.aps_bundle_ref).toBeTruthy();
+  expect(apsDispatch.aps_bundle_id).toBeTruthy();
+  expect(apsDispatch.aps_schema_id).toBeTruthy();
+  expect(Object.keys(apsDispatch.source_package_refs).sort()).toEqual([...EXPECTED_PACKAGE_REVIEW_KINDS].sort());
+  expect(Object.keys(apsDispatch.source_package_hashes).sort()).toEqual([...EXPECTED_PACKAGE_REVIEW_KINDS].sort());
+  expect(valuesByPackageKind(apsDispatch.source_package_refs)).toEqual(commit.payload_refs);
+  expect(valuesByPackageKind(apsDispatch.source_package_hashes)).toEqual(commit.payload_hashes);
+  expect(apsDispatch.external_export_enabled).toBe(false);
+  expect(apsDispatch.download_enabled).toBe(false);
+  expect(apsDispatch.connector_dispatch_enabled).toBe(false);
+  expect(apsDispatch.provider_public_url_enabled).toBe(false);
+  expect(apsDispatch.downstream_unavailable).toEqual(
+    expect.arrayContaining(['external_export', 'download', 'connector_dispatch', 'non_aps_dispatch']),
+  );
+  expect(apsDispatch.next_state).toBe('aps_handoff_dispatched');
+  expect(apsDispatch.authority_rail).toBeTruthy();
+
+  await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('aps_handoff_dispatched');
+  await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeEnabled();
+  await expect(page.locator('#external-export-download-delivery-submit')).toBeDisabled();
+  await expectNoDeferredRawMixedControls(page);
+  return apsDispatch;
+}
+
 function qualitativeApsPackageSubmitUiFixture() {
   const sessionId = 'session-qual-aps-submit-ui';
   const analysisPlanId = 'plan-qual-aps-submit-ui';
@@ -2082,6 +2255,95 @@ test('Layer 3 workbench drives raw mixed rendered handoff export prepare', async
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/prepare'))).toHaveLength(1);
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
     '/handoff/aps/dispatch',
+    '/handoff/export/download',
+    '/package/mutation',
+    '/package/replacement',
+    '/package/supersession',
+  ]);
+});
+
+test('Layer 3 workbench drives raw mixed rendered APS handoff dispatch', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  const status = await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+  const review = await submitRenderedResultReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    status,
+    {
+      operatorDecision: 'approved',
+      reviewNotes: 'Raw mixed rendered result review approves APS handoff dispatch.',
+      packageReviewEnabled: true,
+    },
+  );
+  const packagePreview = await inspectRenderedPackagePreview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+  );
+  const commit = await commitRenderedPackageConstruction(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    packagePreview,
+  );
+  const packageSubmit = await submitRenderedPackageReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+  );
+  const handoffPrepare = await submitRenderedHandoffExportPrepare(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+    packageSubmit,
+  );
+  const apsDispatch = await submitRenderedApsHandoffDispatch(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+    packageSubmit,
+    handoffPrepare,
+  );
+
+  expect(handoffPrepare.handoff_export_state).toBe('handoff_export_prepared');
+  expect(apsDispatch.aps_handoff_state).toBe('aps_handoff_dispatched');
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/execution/result/review'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/preview'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/commit'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/submit'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/prepare'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/aps/dispatch'))).toHaveLength(1);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
     '/handoff/export/download',
     '/package/mutation',
     '/package/replacement',
