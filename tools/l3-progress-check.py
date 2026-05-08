@@ -209,6 +209,9 @@ SOURCE_BREADTH_AUTHORITY_DISCOVERY_CLOSEOUT = (
 PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT = (
     PLANNING_DOCS / "216_PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT.md"
 )
+QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT = (
+    PLANNING_DOCS / "217_QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -10962,6 +10965,154 @@ def _check_package_mutation_rendered_authority_discovery_closeout(errors: list[s
     if proof.get("next_product_boundaries") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
 
+def _check_qual_hybrid_rag_authority_discovery_closeout(errors: list[str]) -> None:
+    required_terms = {
+        QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT: (
+            "Status: current-main planning/control closeout for `qual_hybrid_rag_authority_discovery_closeout`.",
+            "entry_decision: no_runtime_now",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_single_aps_doc_qualitative_status: single_aps_doc_qualitative_pass_only",
+            "live_qual_aps_downstream_status: bounded_qual_aps_backend_api_downstream_chain",
+            "live_rendered_qual_aps_status: qual_aps_rendered_downstream_existing_controls_only",
+            "authority_discovery_result: insufficient_authority_for_broad_qual_hybrid_rag_runtime",
+            "implementation_entry_required_before_runtime: true",
+            "next_product_boundary_required: true",
+            "broad_qualitative_authority",
+            "qualitative_cohort_authority",
+            "retrieval_corpus_authority",
+            "rag_vector_retrieval_authority",
+            "prompt_model_provider_security_posture",
+            "broad_qualitative_execution: false",
+            "rag_vector_retrieval: false",
+            "embedding_generation: false",
+            "prompt_model_provider_runtime: false",
+            "Theme And UI Posture",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Qualitative Hybrid RAG Authority Discovery Closeout",
+            "217_QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "qual_hybrid_rag_authority_discovery_closeout",
+            "entry_decision` is `no_runtime_now",
+            "selected_mode` remains `null",
+            "insufficient_authority_for_broad_qual_hybrid_rag_runtime",
+        ),
+        MANIFEST: (
+            "latest_qual_hybrid_rag_authority_discovery_closeout_branch",
+            "latest_qual_hybrid_rag_authority_discovery_closeout_live_behavior_change",
+            "qual_hybrid_rag_authority_discovery_closeout",
+            "entry_decision is no_runtime_now",
+            "selected_mode is null",
+            "insufficient_authority_for_broad_qual_hybrid_rag_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "qual_hybrid_rag_authority_discovery_closeout_proof",
+            "217_QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "qual_hybrid_rag_authority_discovery_closeout",
+            "no_runtime_now",
+            "insufficient_authority_for_broad_qual_hybrid_rag_runtime",
+            "browser_full_mockup_authority_discovery_freeze_or_entry_freeze_update",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing qualitative/hybrid/RAG authority discovery closeout term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for qualitative/hybrid/RAG authority discovery closeout")
+    else:
+        if current_status.get("latest_qual_hybrid_rag_authority_discovery_closeout_branch") != "codex/l3-qual-rag-boundary":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale qualitative/hybrid/RAG authority discovery branch")
+        if current_status.get("latest_qual_hybrid_rag_authority_discovery_closeout_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark qualitative/hybrid/RAG authority discovery closeout as planning-only")
+        summary = current_status.get("qual_hybrid_rag_authority_discovery_closeout")
+        if not isinstance(summary, str) or "entry_decision is no_runtime_now" not in summary or "insufficient_authority_for_broad_qual_hybrid_rag_runtime" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.qual_hybrid_rag_authority_discovery_closeout must record no-runtime authority discovery")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("qual_hybrid_rag_authority_discovery_closeout_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing qual_hybrid_rag_authority_discovery_closeout_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-qual-rag-boundary",
+        "live_behavior_change": False,
+        "selected_planning_mode": "qual_hybrid_rag_authority_discovery_closeout",
+        "entry_decision": "no_runtime_now",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_single_aps_doc_qualitative_status": "single_aps_doc_qualitative_pass_only",
+        "live_qual_aps_downstream_status": "bounded_qual_aps_backend_api_downstream_chain",
+        "live_rendered_qual_aps_status": "qual_aps_rendered_downstream_existing_controls_only",
+        "authority_discovery_result": "insufficient_authority_for_broad_qual_hybrid_rag_runtime",
+        "implementation_entry_required_before_runtime": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_authority_discovery_closeout_proof.{key} must be {expected!r}")
+    expected_unverified = [
+        "broad_qualitative_authority",
+        "qualitative_cohort_authority",
+        "comparative_cross_document_authority",
+        "hybrid_execution_semantics",
+        "retrieval_corpus_authority",
+        "rag_vector_retrieval_authority",
+        "vector_index_storage_model",
+        "embedding_model_authority",
+        "prompt_model_provider_security_posture",
+        "output_taxonomy_and_package_compatibility",
+        "leakage_policy_and_auth_security_posture",
+        "rendered_theme_headed_headless_proof_plan",
+    ]
+    if proof.get("unverified_authority") != expected_unverified:
+        errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_authority_discovery_closeout_proof unverified_authority must match the frozen list")
+    expected_negative = [
+        "no broad qualitative execution",
+        "no qualitative associated-cohort execution",
+        "no comparative qualitative execution",
+        "no cross-document synthesis",
+        "no hybrid execution",
+        "no RAG/vector retrieval",
+        "no vector index creation",
+        "no embedding generation",
+        "no retrieval-augmented planning",
+        "no hidden LLM planning",
+        "no prompt/model/provider runtime",
+        "no arbitrary prompt text accepted from UI or API",
+        "no model credentials accepted from UI or API",
+        "no qualitative runtime expansion beyond the exact single APS-document qualitative chain already live",
+        "no qualitative APS backend/API downstream behavior change",
+        "no qualitative APS rendered existing-control behavior change",
+        "no source expansion",
+        "no source adapter registry",
+        "no local upload",
+        "no local-directory ingestion",
+        "no web connector retrieval",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no output taxonomy expansion",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no rendered UI control",
+        "no CI workflow change",
+        "no route, DTO, model, migration, production service behavior, or executable test behavior change",
+    ]
+    if proof.get("negative_invariants") != expected_negative:
+        errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_authority_discovery_closeout_proof negative_invariants must match the frozen structural list")
+    expected_next = [
+        "browser_full_mockup_authority_discovery_freeze_or_entry_freeze_update",
+        "auth_security_authority_discovery_freeze_or_entry_freeze_update",
+        "qual_hybrid_rag_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+    ]
+    if proof.get("next_product_boundaries") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -15753,6 +15904,7 @@ def main() -> int:
     _check_connector_destination_authority_discovery_closeout(errors)
     _check_source_breadth_authority_discovery_closeout(errors)
     _check_package_mutation_rendered_authority_discovery_closeout(errors)
+    _check_qual_hybrid_rag_authority_discovery_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
