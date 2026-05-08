@@ -185,6 +185,8 @@ BROWSER_MOCKUP_ENTRY_FREEZE = PLANNING_DOCS / "197_BROWSER_FULL_MOCKUP_ACTIVATIO
 BROWSER_MOCKUP_ENTRY_CONTRACT = PLANNING_DOCS / "198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md"
 AUTH_SECURITY_ENTRY_FREEZE = PLANNING_DOCS / "199_AUTH_SECURITY_ENTRY_FREEZE.md"
 AUTH_SECURITY_ENTRY_CONTRACT = PLANNING_DOCS / "200_AUTH_SECURITY_ENTRY_CONTRACT.md"
+CI_OBSERVABILITY_ENTRY_FREEZE = PLANNING_DOCS / "201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md"
+CI_OBSERVABILITY_ENTRY_CONTRACT = PLANNING_DOCS / "202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -8582,6 +8584,230 @@ def _check_auth_security_entry_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_entry_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_ci_performance_observability_entry_freeze(errors: list[str]) -> None:
+    required_terms = {
+        CI_OBSERVABILITY_ENTRY_FREEZE: (
+            "Status: planning/control entry freeze only for `ci_performance_observability_entry_freeze`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_ci_profile: focused_layer3_backend_pytest_plus_serial_chromium_playwright",
+            "live_browser_harness_profile: fixed_port_8031_single_worker_trace_on_first_retry",
+            "live_artifact_profile: playwright_html_report_upload_only",
+            "performance_budget_flake_policy_observability_schema_audit_event_contract_and_ci_expansion_scope_not_verified",
+            "ci_performance_observability_authority_discovery_freeze_or_entry_freeze_update",
+            "CI Performance Observability Exposure Model",
+            "Capability Isolation Matrix",
+            "ci_workflow_change: false",
+            "performance_budget_gate: false",
+            "observability_event_runtime: false",
+            "no CI workflow change",
+        ),
+        CI_OBSERVABILITY_ENTRY_CONTRACT: (
+            "Status: planning/control contract paired with `201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_ci_profile: focused_layer3_backend_pytest_plus_serial_chromium_playwright",
+            "live_browser_harness_profile: fixed_port_8031_single_worker_trace_on_first_retry",
+            "live_artifact_profile: playwright_html_report_upload_only",
+            "Existing Runtime Compatibility Contract",
+            "This entry freeze adds no rendered UI control.",
+            "Checker Contract",
+            "The checker must not pretend to validate actual CI capacity",
+        ),
+        BOARD: (
+            "CI Performance Observability Entry Freeze",
+            "201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+            "202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md",
+            "ci_performance_observability_entry_freeze",
+            "selected_mode` is `null`",
+            "runtime_status` is `not_implemented`",
+            "focused Layer 3 backend pytest CI job",
+            "serial Chromium Playwright job",
+        ),
+        MANIFEST: (
+            "latest_ci_performance_observability_entry_freeze_branch",
+            "latest_ci_performance_observability_entry_freeze_live_behavior_change",
+            "ci_performance_observability_entry_freeze",
+            "entry_decision is deferred",
+            "selected_mode is null",
+            "runtime_status is not_implemented",
+            "focused_layer3_backend_pytest_plus_serial_chromium_playwright",
+        ),
+        PROOF_MANIFEST: (
+            "ci_performance_observability_entry_freeze_proof",
+            "201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+            "202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md",
+            "ci_performance_observability_entry_freeze",
+            "focused_layer3_backend_pytest_plus_serial_chromium_playwright",
+            "fixed_port_8031_single_worker_trace_on_first_retry",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing CI/performance/observability entry freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for CI/performance/observability entry freeze")
+    else:
+        if current_status.get("latest_ci_performance_observability_entry_freeze_branch") != "codex/l3-ci-observability-entry-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale CI/performance/observability entry freeze branch")
+        if current_status.get("latest_ci_performance_observability_entry_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark CI/performance/observability entry freeze as planning-only")
+        summary = current_status.get("ci_performance_observability_entry_freeze")
+        if not isinstance(summary, str) or "entry_decision is deferred" not in summary or "selected_mode is null" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.ci_performance_observability_entry_freeze must record deferred/null entry decision")
+        if isinstance(summary, str) and "focused_layer3_backend_pytest_plus_serial_chromium_playwright" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.ci_performance_observability_entry_freeze must preserve CI profile posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("ci_performance_observability_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing ci_performance_observability_entry_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-ci-observability-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "ci_performance_observability_entry_freeze",
+        "entry_decision": "deferred",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_ci_profile": "focused_layer3_backend_pytest_plus_serial_chromium_playwright",
+        "live_browser_harness_profile": "fixed_port_8031_single_worker_trace_on_first_retry",
+        "live_artifact_profile": "playwright_html_report_upload_only",
+        "receipt_family": "no_receipt_planning_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} ci_performance_observability_entry_freeze_proof.{key} must be {expected!r}")
+    governing_docs = proof.get("governing_docs")
+    for doc in (
+        "next_milestone_plans/Layer3_planning_docs/201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/142_POST_709_ROADMAP_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/199_AUTH_SECURITY_ENTRY_FREEZE.md",
+    ):
+        if not isinstance(governing_docs, list) or doc not in governing_docs:
+            errors.append(f"{_rel(PROOF_MANIFEST)} ci_performance_observability_entry_freeze_proof governing_docs missing {doc}")
+    ledger = proof.get("evidence_ledger")
+    if not isinstance(ledger, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_performance_observability_entry_freeze_proof missing evidence_ledger")
+    else:
+        for key in (
+            "current_backend_layer3_api_ci_job",
+            "current_playwright_ci_job",
+            "current_serial_browser_harness_profile",
+            "current_progress_checker_profile",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "verified":
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must be verified")
+        for key in (
+            "performance_budget_model",
+            "flake_quarantine_policy",
+            "headed_headless_ci_matrix_policy",
+            "observability_event_schema",
+            "audit_trace_completeness_contract",
+            "metrics_log_shipping_dashboard_policy",
+            "artifact_retention_taxonomy",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "unverified" or item.get("evidence") != []:
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must remain unverified with no evidence")
+    exposure = proof.get("ci_performance_observability_exposure_model")
+    for key in (
+        "selected_ci_mode",
+        "performance_budget_authority",
+        "test_duration_budget",
+        "flake_policy",
+        "headed_headless_matrix",
+        "browser_artifact_policy",
+        "observability_event_schema",
+        "audit_trace_completeness_contract",
+        "log_metric_export_target",
+        "dashboard_or_report_authority",
+        "retention_policy",
+        "security_redaction_policy",
+        "negative_side_effect_surface",
+    ):
+        if not isinstance(exposure, dict) or exposure.get(key) != "unknown":
+            errors.append(f"{_rel(PROOF_MANIFEST)} ci_performance_observability_exposure_model.{key} must remain unknown while decision is deferred")
+    matrix = proof.get("capability_isolation_matrix")
+    for key, flag in (
+        ("existing_backend_layer3_api_ci_job", "change_allowed_in_this_pass"),
+        ("existing_playwright_ci_job", "change_allowed_in_this_pass"),
+        ("existing_serial_browser_harness_profile", "change_allowed_in_this_pass"),
+        ("ci_workflow_change", "runtime_allowed_in_this_pass"),
+        ("performance_budget_gate", "runtime_allowed_in_this_pass"),
+        ("headed_browser_ci_matrix", "runtime_allowed_in_this_pass"),
+        ("sharding_or_parallelism_change", "runtime_allowed_in_this_pass"),
+        ("observability_event_runtime", "runtime_allowed_in_this_pass"),
+        ("audit_trace_runtime", "runtime_allowed_in_this_pass"),
+        ("metrics_log_shipping_dashboard", "runtime_allowed_in_this_pass"),
+        ("artifact_retention_policy_change", "runtime_allowed_in_this_pass"),
+        ("auth_security_behavior_change", "runtime_allowed_in_this_pass"),
+        ("full_mockup_activation", "runtime_allowed_in_this_pass"),
+        ("frontend_only_durable_state", "runtime_allowed_in_this_pass"),
+        ("source_breadth_expansion", "runtime_allowed_in_this_pass"),
+        ("package_mutation_reconstruction", "runtime_allowed_in_this_pass"),
+        ("provider_public_url", "runtime_allowed_in_this_pass"),
+        ("connector_destination_dispatch", "runtime_allowed_in_this_pass"),
+        ("rag_vector_or_hybrid_execution", "runtime_allowed_in_this_pass"),
+        ("hidden_llm_planning", "runtime_allowed_in_this_pass"),
+    ):
+        item = matrix.get(key) if isinstance(matrix, dict) else None
+        if not isinstance(item, dict) or item.get(flag) is not False:
+            errors.append(f"{_rel(PROOF_MANIFEST)} capability_isolation_matrix.{key}.{flag} must be false")
+    expected_negative_invariants = [
+        "no CI workflow change",
+        "no Playwright configuration change",
+        "no backend test dependency change",
+        "no browser harness dependency change",
+        "no performance budget gate",
+        "no runtime timing assertion",
+        "no sharding or parallelism change",
+        "no headed browser CI matrix",
+        "no observability event runtime",
+        "no security audit-event runtime",
+        "no metrics, log shipping, dashboard, or external telemetry target",
+        "no artifact retention policy change",
+        "no route/API behavior change",
+        "no DTO change",
+        "no model or migration change",
+        "no production service behavior change",
+        "no test behavior change",
+        "no rendered UI control",
+        "no source expansion",
+        "no source adapter registry",
+        "no local upload",
+        "no local-directory ingestion",
+        "no web connector retrieval",
+        "no broad execution",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no destination write",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no frontend-only durable authority",
+        "no local path, provider URL, connector target, destination target, source credential, auth token, proxy header, prompt, metric payload, trace payload, or browser storage secret leakage in error bodies",
+        "no local path, provider URL, connector target, destination target, source credential, auth token, proxy header, prompt, metric payload, trace payload, or browser storage secret leakage in logs",
+        "no cross-mode privilege escalation",
+        "no new route, DTO, model, migration, production service behavior, test behavior, rendered UI control, or CI behavior",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_performance_observability_entry_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -13358,6 +13584,7 @@ def main() -> int:
     _check_qual_hybrid_rag_vector_entry_freeze(errors)
     _check_browser_full_mockup_activation_entry_freeze(errors)
     _check_auth_security_entry_freeze(errors)
+    _check_ci_performance_observability_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
