@@ -8419,5 +8419,91 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "A later exact freeze must choose flake policy, performance budget discovery, headed/headless parity, or observability/audit schema before any artifact, workflow, config, telemetry, or runtime proof expansion."
+  },
+  "flake_policy_freeze_proof": {
+    "implementation_branch": "codex/l3-flake-policy-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "flake_policy_freeze",
+    "runtime_status": "planning_flake_policy_only",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/204_CI_OBSERVABILITY_GAP_INVENTORY.md",
+      "next_milestone_plans/Layer3_planning_docs/205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md",
+      "next_milestone_plans/Layer3_planning_docs/206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/207_FLAKE_POLICY_FREEZE.md"
+    ],
+    "current_retry_posture": {
+      "backend_layer3_api_retry_policy": "no_explicit_pytest_retry",
+      "playwright_retry_policy": "retries_on_ci_only",
+      "playwright_ci_retries": 2,
+      "playwright_local_retries": 0,
+      "workers": 1,
+      "fully_parallel": false,
+      "quarantine_runtime": "not_implemented",
+      "automatic_rerun_bot": "not_implemented",
+      "flake_ledger_runtime": "not_implemented",
+      "status": "classification_only"
+    },
+    "classification_vocabulary": [
+      "deterministic_failure",
+      "infrastructure_noise",
+      "candidate_flake",
+      "recurring_flake",
+      "unknown_intermittent"
+    ],
+    "single_rerun_allowed_only_for": [
+      "external package registry failure",
+      "GitHub runner stall or cancellation",
+      "transient Playwright browser install infrastructure failure",
+      "candidate flake where retry evidence is part of classification and no recurring pattern is known"
+    ],
+    "rerun_not_substitute_for_fix": [
+      "deterministic pytest failure",
+      "deterministic Playwright assertion failure",
+      "application startup traceback",
+      "checker/proof/manifest failure",
+      "repeated timeout in the same phase",
+      "repeated selector or rendered state failure",
+      "recurring flake evidence"
+    ],
+    "dependency_order": [
+      "flake_policy_freeze",
+      "performance_budget_discovery_freeze",
+      "headed_headless_parity_freeze",
+      "observability_audit_event_schema_freeze",
+      "ci_performance_observability_runtime_entry"
+    ],
+    "negative_invariants": [
+      "no CI workflow change",
+      "no Playwright configuration change",
+      "no retry count change",
+      "no worker count change",
+      "no sharding or parallelism",
+      "no executable test change",
+      "no dependency change",
+      "no automatic rerun bot",
+      "no quarantine runtime",
+      "no skip/xfail policy change",
+      "no branch protection change",
+      "no CODEOWNERS change",
+      "no artifact upload or retention change",
+      "no trace/screenshot/video policy change",
+      "no performance budget or timing gate",
+      "no headed-browser CI matrix",
+      "no observability event runtime",
+      "no audit-event runtime",
+      "no metrics/log shipping or dashboard",
+      "no route/API/DTO/model/migration/service behavior change",
+      "no rendered UI control",
+      "no source expansion",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector/destination dispatch",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "A later exact freeze must choose performance budget discovery before timing gates or headed/headless parity changes are admitted."
   }
 }
