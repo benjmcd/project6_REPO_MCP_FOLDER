@@ -6366,5 +6366,92 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Freeze the next raw mixed rendered downstream APS dispatch, external export/download, provider URL, connector/destination, or package mutation slice before proving it."
+  },
+  "rendered_aps_handoff_freeze_proof": {
+    "scope": "Planning/control freeze for future rendered raw mixed APS handoff dispatch after handoff/export prepared authority.",
+    "implementation_branch": "codex/l3-rendered-aps-proof",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/172_RENDERED_APS_HANDOFF_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/173_RENDERED_APS_HANDOFF_CONTRACT.md"
+    ],
+    "selected_rendered_aps_handoff_mode": "raw_mixed_rendered_aps_handoff_dispatch",
+    "routes_to_reuse": [
+      "POST /api/v1/layer3/handoff/aps/dispatch"
+    ],
+    "future_selectors": [
+      "[data-operation-target=\"aps-handoff-band\"]",
+      "#aps-handoff-dispatch-submit",
+      "#aps-handoff-dispatch-panel"
+    ],
+    "proof_summary": "The next pass may use only existing rendered APS handoff controls after raw mixed rendered handoff/export prepared authority. It must assert the /handoff/aps/dispatch request allowlist, prove dispatched state and APS bundle authority, preserve light/dark/workbench theme behavior across the upstream path, and stop before external export/download unless a separate freeze admits the next downstream slice.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no rendered UI control change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no external export/download prepare or deliver",
+      "no broad package mutation or reconstruction",
+      "no package replacement or package supersession",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Implement only a focused raw mixed rendered APS handoff dispatch proof if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
+  },
+  "rendered_aps_handoff_proof": {
+    "scope": "Live test-only rendered /review/layer3 proof for raw mixed APS handoff dispatch.",
+    "implementation_branch": "codex/l3-rendered-aps-proof",
+    "live_behavior_change": false,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/174_RENDERED_APS_HANDOFF_PROOF.md",
+    "selected_rendered_aps_handoff_mode": "raw_mixed_rendered_aps_handoff_dispatch",
+    "routes_reused": [
+      "POST /api/v1/layer3/handoff/aps/dispatch"
+    ],
+    "live_selectors": [
+      "[data-operation-target=\"aps-handoff-band\"]",
+      "#aps-handoff-dispatch-submit",
+      "#aps-handoff-dispatch-panel"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/174_RENDERED_APS_HANDOFF_PROOF.md",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "tools/l3-progress-check.py"
+    ],
+    "browser_proof": [
+      "Layer 3 workbench drives raw mixed rendered APS handoff dispatch",
+      "submitRenderedApsHandoffDispatch"
+    ],
+    "proof_summary": "The focused Playwright proof drives raw mixed rendered materialization through handoff/export prepared authority, then uses existing rendered APS handoff controls to dispatch an aps_evidence_bundle server_side_aps_handoff. It asserts the request allowlist, verifies layer3.aps_handoff_dispatch.v1 response state, checks aps_handoff_dispatched, aps_handoff_record_ref, aps_bundle_ref, aps_bundle_id, aps_schema_id, source package refs/hashes, light/dark/workbench theme posture, and avoids external export/download, package mutation, replacement, and supersession routes.",
+    "readiness_nuance": "Current rendered UI may enable #external-export-download-prepare-submit after APS handoff dispatch; this proof records that readiness but does not click it or send /handoff/export/download.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no rendered UI control change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no external export/download prepare or deliver",
+      "no broad package mutation or reconstruction",
+      "no package replacement or package supersession",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Freeze the next raw mixed rendered downstream external export/download, provider URL, connector/destination, or package mutation slice before proving it."
   }
 }
