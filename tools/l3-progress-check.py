@@ -10117,6 +10117,10 @@ def _check_ci_observability_chain_closeout(errors: list[str]) -> None:
             "implementation_entry_required_before_runtime: true",
             "current `backend-layer3-api` job",
             "current `test` job",
+            "provider_public_url_authority_discovery_freeze_or_entry_freeze_update",
+            "connector_destination_authority_discovery_freeze_or_entry_freeze_update",
+            "source_breadth_authority_discovery_freeze_or_entry_freeze_update",
+            "Existing signed-reference audit-event runtime remains out of scope",
             "A later exact implementation-entry freeze remains required",
             "Stop before implementation",
         ),
@@ -10131,6 +10135,8 @@ def _check_ci_observability_chain_closeout(errors: list[str]) -> None:
             "latest_ci_observability_chain_closeout_live_behavior_change",
             "ci_observability_chain_closeout",
             "docs 204 through 210",
+            "absence of durable CI/performance/observability event or audit-event runtime",
+            "existing signed-reference audit-event runtime out of scope",
             "A later exact implementation-entry freeze remains required",
         ),
         PROOF_MANIFEST: (
@@ -10203,7 +10209,7 @@ def _check_ci_observability_chain_closeout(errors: list[str]) -> None:
         "fixed port 8031",
         "trace on-first-retry",
         "playwright-report upload with 30-day retention",
-        "observability and audit event runtime not implemented",
+        "CI/performance/observability event and audit-event runtime not implemented; existing signed-reference audit-event runtime out of scope",
     ]
     if proof.get("preserved_live_behavior") != expected_preserved:
         errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_chain_closeout_proof preserved_live_behavior must match the frozen live behavior list")
@@ -10230,9 +10236,9 @@ def _check_ci_observability_chain_closeout(errors: list[str]) -> None:
         "no visual diff runtime",
         "no theme test runtime",
         "no observability event runtime",
-        "no audit-event runtime",
-        "no event writer service",
-        "no event storage table",
+        "no CI/performance/observability audit-event runtime",
+        "no CI/performance/observability event writer service",
+        "no CI/performance/observability event storage table",
         "no metrics/log shipping",
         "no dashboard",
         "no route/API/DTO/model/migration/service behavior change",
