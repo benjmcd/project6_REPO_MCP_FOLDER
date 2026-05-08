@@ -10127,5 +10127,157 @@
       "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_is_requested",
       "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested"
     ]
+  },
+  "provider_private_signed_url_storage_receipt_durable_state_freeze_proof": {
+    "scope": "Planning/control durable-state freeze lock for the selected provider-private signed URL use case, before route/model/migration admission.",
+    "implementation_branch": "codex/l3-provider-storage-receipt-durable-state-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "provider_private_signed_url_storage_receipt_durable_state_freeze",
+    "entry_decision": "storage_receipt_durable_state_freeze_runtime_blocked",
+    "selected_runtime_family": "provider_public_url_runtime",
+    "selected_runtime_mode": "provider_private_signed_url",
+    "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+    "runtime_status": "not_implemented",
+    "fake_provider_contract_double_status": "implemented_tested",
+    "provider_storage_authority_result": "absent_for_provider_private_signed_url",
+    "same_origin_signed_reference_state_precedent": "available_not_provider_private_authority",
+    "provider_private_signed_url_runtime": false,
+    "route_dto_model_migration_ui_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/228_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/229_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_FREEZE.md"
+    ],
+    "required_durable_state_requirements": [
+      "durable_receipt_identity",
+      "artifact_authority_binding",
+      "provider_object_identity_binding",
+      "client_request_id_idempotency",
+      "receipt_expiry_enforcement",
+      "revocation_fail_closed",
+      "replay_single_use_or_explicit_replay_policy",
+      "durable_audit_events",
+      "redaction_requirements",
+      "fake_provider_failure_mode_anchoring",
+      "stale_authority_fail_closed",
+      "same_origin_signed_reference_compatibility_guard"
+    ],
+    "required_future_storage_authority": [
+      "provider_storage_owner_and_backing_mode",
+      "artifact_hash_size_validation_owner",
+      "provider_object_identity_owner",
+      "durable_receipt_owner",
+      "durable_revocation_owner",
+      "durable_audit_event_owner",
+      "idempotency_key_owner",
+      "expiry_and_replay_owner",
+      "stale_readiness_owner",
+      "provider_private_signed_url_log_trace_manifest_redaction_owner",
+      "same_origin_signed_reference_compatibility_owner"
+    ],
+    "forbidden_runtime_changes": [
+      "provider_private_signed_url_runtime_route",
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "provider_storage_authority",
+      "provider_private_signed_url_model_or_migration",
+      "provider_object_write_copy_acl_bucket_container_key_credential_or_network_behavior",
+      "provider_url_fields_on_existing_same_origin_routes",
+      "same_origin_delivery_or_signed_reference_semantics_change",
+      "external_connector_invocation",
+      "destination_write",
+      "source_adapter_registry_or_source_expansion",
+      "package_mutation_or_reconstruction",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_mockup_activation",
+      "hidden_llm_or_prompt_model_provider_runtime",
+      "auth_security_behavior_change",
+      "route_dto_model_migration_ui_playwright_or_ci_behavior_change",
+      "frontend_only_durable_authority"
+    ],
+    "recommended_next_actions": [
+      "write_provider_private_signed_url_storage_receipt_durable_state_contract",
+      "keep_runtime_blocked_if_provider_private_signed_url_state_contract_not_locked",
+      "stop_if_route_or_dto_is_requested_before_contract",
+      "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_requested",
+      "stop_for_connector_destination_runtime_family_if_connector_delivery_requested"
+    ]
+  },
+  "provider_private_signed_url_storage_receipt_durable_state_contract_proof": {
+    "scope": "Contract design lock for provider-private storage receipt durable state before route/model/migration admission.",
+    "implementation_branch": "codex/l3-provider-storage-receipt-durable-state-contract",
+    "live_behavior_change": false,
+    "selected_planning_mode": "provider_private_signed_url_storage_receipt_durable_state_contract",
+    "entry_decision": "storage_receipt_durable_state_contract_runtime_blocked",
+    "selected_runtime_family": "provider_public_url_runtime",
+    "selected_runtime_mode": "provider_private_signed_url",
+    "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+    "runtime_status": "not_implemented",
+    "fake_provider_contract_double_status": "implemented_tested",
+    "provider_storage_authority_result": "absent_for_provider_private_signed_url",
+    "same_origin_signed_reference_state_precedent": "available_not_provider_private_authority",
+    "provider_private_signed_url_runtime": false,
+    "route_dto_model_migration_ui_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/228_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/229_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/230_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_CONTRACT.md"
+    ],
+    "candidate_state_module": "backend/app/services/layer3_provider_private_signed_url_state.py",
+    "candidate_migration": "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+    "candidate_rows": [
+      "L3ProviderPrivateSignedUrlReceipt",
+      "L3ProviderPrivateSignedUrlObjectAuthority",
+      "L3ProviderPrivateSignedUrlRevocation",
+      "L3ProviderPrivateSignedUrlAuditEvent"
+    ],
+    "durable_state_contract_requirements": [
+      "durable_receipt_identity_from_client_request_id_and_authority_tuple",
+      "artifact_authority_and_hash_size_binding",
+      "provider_object_identity_binding",
+      "client_request_id_conflict_policy",
+      "expiry_rejects_and_status_reflects_staleness",
+      "revocation_fail_closed",
+      "replay_single_use_or_explicit_replay_policy",
+      "durable_audit_recording_with_redaction",
+      "stale_authority_rejection_and_recovery_guard",
+      "fake_provider_failure_injection_contract_anchor",
+      "same_origin_signed_reference_compatibility_guard"
+    ],
+    "validation_requirements": [
+      "proof_manifest_entry_and_current_status_lockstep",
+      "progress_board_entry_for_freeze_and_contract",
+      "checker_pass_for_freeze_and_contract_before_routes",
+      "no_provider_private_route_or_dto_before_contract",
+      "no_provider_private_model_or_migration_before_contract",
+      "redacted_fields_without_secret_or_raw_path_leakage",
+      "idempotency_and_replay_fail_closed_validation"
+    ],
+    "forbidden_runtime_changes": [
+      "provider_private_signed_url_runtime_route",
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "provider_storage_service",
+      "provider_private_signed_url_model_or_migration",
+      "provider_object_write_copy_acl_bucket_container_key_credential_or_network_behavior",
+      "provider_url_fields_on_existing_same_origin_routes",
+      "same_origin_delivery_or_signed_reference_semantics_change",
+      "external_connector_invocation",
+      "destination_write",
+      "source_adapter_registry_or_source_expansion",
+      "package_mutation_or_reconstruction",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_mockup_activation",
+      "hidden_llm_or_prompt_model_provider_runtime",
+      "auth_security_behavior_change",
+      "route_dto_model_migration_ui_playwright_or_ci_behavior_change",
+      "frontend_only_durable_authority"
+    ],
+    "recommended_next_actions": [
+      "implement_storage_receipt_state_service_and_migration_with_contract_locked",
+      "keep_runtime_blocked_if_provider_private_signed_url_authority_remains_absent",
+      "stop_if_same_origin_signed_reference_semantics_are_mutated",
+      "stop_if_route_or_dto_or_migration_is_requested_without_contract_lock",
+      "stop_if_auth_or_leakage_posture_not_fixed"
+    ]
   }
 }
