@@ -100,10 +100,14 @@ No future implementation may start directly from this closeout. The next impleme
 The next pass should not be broad implementation. It should be one of these narrow options, chosen only when there is a concrete product/operator need:
 
 1. `ci_observability_gap_inventory_only` if the next concern is proof/runtime reliability rather than product capability.
-2. `provider_public_url_authority_discovery_freeze_or_entry_update` if same-origin signed-reference delivery is insufficient for a named downstream use case.
-3. `connector_destination_authority_discovery_freeze_or_entry_update` if a named downstream destination must receive packages directly.
-4. `source_breadth_authority_discovery_freeze_or_entry_update` if source classes beyond the current admitted families are required.
-5. `auth_security_authority_discovery_freeze_or_entry_update` if nonlocal deployment or operator isolation becomes the concrete blocker.
+2. `provider_public_url_authority_discovery_freeze_or_entry_freeze_update` if same-origin signed-reference delivery is insufficient for a named downstream use case.
+3. `connector_destination_authority_discovery_freeze_or_entry_freeze_update` if a named downstream destination must receive packages directly.
+4. `package_mutation_rendered_authority_discovery_freeze_or_entry_freeze_update` if rendered package mutation, reconstruction, replacement, or supersession becomes the concrete blocker.
+5. `source_breadth_authority_discovery_freeze_or_entry_freeze_update` if source classes beyond the current admitted families are required.
+6. `qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update` if broad qualitative, hybrid, RAG, or vector behavior becomes the concrete blocker.
+7. `browser_full_mockup_authority_discovery_freeze_or_entry_freeze_update` if full mockup activation or browser durable-authority behavior becomes the concrete blocker.
+8. `auth_security_authority_discovery_freeze_or_entry_freeze_update` if nonlocal deployment or operator isolation becomes the concrete blocker.
+9. `ci_performance_observability_authority_discovery_freeze_or_entry_freeze_update` if CI/performance/observability runtime hardening becomes the concrete blocker.
 
 Until one of those is selected with evidence, remain in planning/control or audit mode.
 

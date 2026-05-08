@@ -22,13 +22,15 @@ Live source, routes, models, migrations, workflow files, Playwright config, test
 
 ```yaml
 current_observability_posture:
-  observability_event_runtime: not_implemented
-  audit_event_runtime: not_implemented
+  ci_observability_event_runtime: not_implemented
+  ci_observability_audit_event_runtime: not_implemented
   metrics_log_shipping: not_implemented
   dashboard: not_implemented
   telemetry_receipt_artifact: not_implemented
-  event_storage_table: not_implemented
-  event_writer_service: not_implemented
+  ci_observability_event_storage_table: not_implemented
+  ci_observability_event_writer_service: not_implemented
+  existing_signed_reference_audit_event_runtime: out_of_scope_existing_runtime
+  existing_signed_reference_audit_event_storage_table: out_of_scope_existing_runtime
   browser_storage_authority: not_admitted
   status: schema_boundary_only
 ```
@@ -109,9 +111,9 @@ This freeze admits no:
 
 - observability event runtime;
 - no observability event runtime;
-- audit-event runtime;
-- event writer service;
-- event storage table;
+- CI/performance/observability audit-event runtime;
+- CI/performance/observability event writer service;
+- CI/performance/observability event storage table;
 - telemetry receipt artifact;
 - metrics/log shipping;
 - dashboard;
