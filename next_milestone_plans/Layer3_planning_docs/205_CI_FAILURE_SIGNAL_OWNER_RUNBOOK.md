@@ -133,7 +133,8 @@ This runbook admits no:
 - hidden LLM planning;
 - full mockup activation;
 - auth/security behavior change;
-- frontend-only durable authority.
+- frontend-only durable authority;
+- local path, credential, token, prompt, metric payload, trace payload, provider URL, connector target, destination target, or browser storage leakage.
 
 ## Stop Condition
 
