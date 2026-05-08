@@ -192,6 +192,7 @@ CI_OBSERVABILITY_GAP_INVENTORY = PLANNING_DOCS / "204_CI_OBSERVABILITY_GAP_INVEN
 CI_FAILURE_SIGNAL_OWNER_RUNBOOK = PLANNING_DOCS / "205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md"
 PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE = PLANNING_DOCS / "206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md"
 FLAKE_POLICY_FREEZE = PLANNING_DOCS / "207_FLAKE_POLICY_FREEZE.md"
+PERFORMANCE_BUDGET_DISCOVERY_FREEZE = PLANNING_DOCS / "208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -9539,6 +9540,162 @@ def _check_flake_policy_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} flake_policy_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_performance_budget_discovery_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PERFORMANCE_BUDGET_DISCOVERY_FREEZE: (
+            "Status: planning/control freeze only for `performance_budget_discovery_freeze`.",
+            "transient log hints only",
+            "Current Timing Posture",
+            "Discovery Segments",
+            "backend_layer3_api_pytest_duration",
+            "playwright_browser_install_duration",
+            "rendered_layer3_path_duration",
+            "no performance budget gate",
+            "no durable timing artifact",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Performance Budget Discovery Freeze",
+            "208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md",
+            "performance_budget_discovery_freeze",
+            "transient log hints only",
+            "runtime timing assertion",
+        ),
+        MANIFEST: (
+            "latest_performance_budget_discovery_freeze_branch",
+            "latest_performance_budget_discovery_freeze_live_behavior_change",
+            "performance_budget_discovery_freeze",
+            "transient log hints only",
+            "not budgets, baselines, SLOs, or merge gates",
+        ),
+        PROOF_MANIFEST: (
+            "performance_budget_discovery_freeze_proof",
+            "208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md",
+            "performance_budget_discovery_freeze",
+            "transient_log_hints_only",
+            "review_browser_server_startup_duration",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing performance budget discovery freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for performance budget discovery freeze")
+    else:
+        if current_status.get("latest_performance_budget_discovery_freeze_branch") != "codex/l3-performance-budget-discovery-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale performance budget discovery freeze branch")
+        if current_status.get("latest_performance_budget_discovery_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark performance budget discovery freeze as planning-only")
+        summary = current_status.get("performance_budget_discovery_freeze")
+        if not isinstance(summary, str) or "performance budget gate" not in summary or "frontend-only durable authority" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.performance_budget_discovery_freeze must record no timing/runtime expansion boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("performance_budget_discovery_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing performance_budget_discovery_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-performance-budget-discovery-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "performance_budget_discovery_freeze",
+        "runtime_status": "planning_performance_discovery_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} performance_budget_discovery_freeze_proof.{key} must be {expected!r}")
+    posture = proof.get("current_timing_posture")
+    if not isinstance(posture, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} performance_budget_discovery_freeze_proof missing current_timing_posture")
+    else:
+        expected_posture = {
+            "backend_layer3_api_timeout_minutes": 20,
+            "playwright_job_timeout_minutes": 60,
+            "browser_install_echo": "playwright_browser_install_seconds",
+            "playwright_test_echo": "playwright_test_seconds",
+            "timing_gate": "not_implemented",
+            "timing_baseline": "not_implemented",
+            "variance_policy": "not_implemented",
+            "performance_budget_owner": "not_implemented",
+            "metrics_artifact": "not_implemented",
+            "status": "transient_log_hints_only",
+        }
+        for key, expected in expected_posture.items():
+            if posture.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} performance_budget_discovery_freeze_proof current_timing_posture.{key} must be {expected!r}")
+    expected_segments = [
+        "backend_layer3_api_pytest_duration",
+        "npm_install_duration",
+        "browser_harness_dependency_install_duration",
+        "playwright_browser_install_duration",
+        "playwright_test_duration",
+        "review_browser_server_startup_duration",
+        "rendered_layer3_path_duration",
+    ]
+    if proof.get("discovery_segments") != expected_segments:
+        errors.append(f"{_rel(PROOF_MANIFEST)} performance_budget_discovery_freeze_proof discovery_segments must match the frozen list")
+    expected_contract = [
+        "selected segment or segments",
+        "measurement source",
+        "baseline collection method and sample count",
+        "allowed variance and platform assumptions",
+        "local vs CI applicability",
+        "retry and flake interaction",
+        "artifact family and retention",
+        "redaction posture",
+        "owner for budget review",
+        "failure action",
+        "no-cross-scope proof",
+    ]
+    if proof.get("required_future_budget_contract") != expected_contract:
+        errors.append(f"{_rel(PROOF_MANIFEST)} performance_budget_discovery_freeze_proof required_future_budget_contract must match the frozen list")
+    expected_dependency_order = [
+        "performance_budget_discovery_freeze",
+        "headed_headless_parity_freeze",
+        "observability_audit_event_schema_freeze",
+        "ci_performance_observability_runtime_entry",
+    ]
+    if proof.get("dependency_order") != expected_dependency_order:
+        errors.append(f"{_rel(PROOF_MANIFEST)} performance_budget_discovery_freeze_proof dependency_order must match the frozen order")
+    expected_negative_invariants = [
+        "no CI workflow change",
+        "no Playwright configuration change",
+        "no timeout change",
+        "no retry count change",
+        "no worker count change",
+        "no sharding or parallelism",
+        "no executable test change",
+        "no dependency change",
+        "no performance budget gate",
+        "no runtime timing assertion",
+        "no durable timing artifact",
+        "no metrics/log shipping or dashboard",
+        "no observability event runtime",
+        "no audit-event runtime",
+        "no artifact upload or retention change",
+        "no trace/screenshot/video policy change",
+        "no flake quarantine runtime",
+        "no headed-browser CI matrix",
+        "no route/API/DTO/model/migration/service behavior change",
+        "no rendered UI control",
+        "no source expansion",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector/destination dispatch",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no frontend-only durable authority",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} performance_budget_discovery_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -14321,6 +14478,7 @@ def main() -> int:
     _check_ci_failure_signal_owner_runbook(errors)
     _check_playwright_artifact_taxonomy_redaction_freeze(errors)
     _check_flake_policy_freeze(errors)
+    _check_performance_budget_discovery_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

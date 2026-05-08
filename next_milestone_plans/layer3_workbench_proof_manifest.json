@@ -8505,5 +8505,88 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "A later exact freeze must choose performance budget discovery before timing gates or headed/headless parity changes are admitted."
+  },
+  "performance_budget_discovery_freeze_proof": {
+    "implementation_branch": "codex/l3-performance-budget-discovery-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "performance_budget_discovery_freeze",
+    "runtime_status": "planning_performance_discovery_only",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/207_FLAKE_POLICY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md"
+    ],
+    "current_timing_posture": {
+      "backend_layer3_api_timeout_minutes": 20,
+      "playwright_job_timeout_minutes": 60,
+      "browser_install_echo": "playwright_browser_install_seconds",
+      "playwright_test_echo": "playwright_test_seconds",
+      "timing_gate": "not_implemented",
+      "timing_baseline": "not_implemented",
+      "variance_policy": "not_implemented",
+      "performance_budget_owner": "not_implemented",
+      "metrics_artifact": "not_implemented",
+      "status": "transient_log_hints_only"
+    },
+    "discovery_segments": [
+      "backend_layer3_api_pytest_duration",
+      "npm_install_duration",
+      "browser_harness_dependency_install_duration",
+      "playwright_browser_install_duration",
+      "playwright_test_duration",
+      "review_browser_server_startup_duration",
+      "rendered_layer3_path_duration"
+    ],
+    "required_future_budget_contract": [
+      "selected segment or segments",
+      "measurement source",
+      "baseline collection method and sample count",
+      "allowed variance and platform assumptions",
+      "local vs CI applicability",
+      "retry and flake interaction",
+      "artifact family and retention",
+      "redaction posture",
+      "owner for budget review",
+      "failure action",
+      "no-cross-scope proof"
+    ],
+    "dependency_order": [
+      "performance_budget_discovery_freeze",
+      "headed_headless_parity_freeze",
+      "observability_audit_event_schema_freeze",
+      "ci_performance_observability_runtime_entry"
+    ],
+    "negative_invariants": [
+      "no CI workflow change",
+      "no Playwright configuration change",
+      "no timeout change",
+      "no retry count change",
+      "no worker count change",
+      "no sharding or parallelism",
+      "no executable test change",
+      "no dependency change",
+      "no performance budget gate",
+      "no runtime timing assertion",
+      "no durable timing artifact",
+      "no metrics/log shipping or dashboard",
+      "no observability event runtime",
+      "no audit-event runtime",
+      "no artifact upload or retention change",
+      "no trace/screenshot/video policy change",
+      "no flake quarantine runtime",
+      "no headed-browser CI matrix",
+      "no route/API/DTO/model/migration/service behavior change",
+      "no rendered UI control",
+      "no source expansion",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector/destination dispatch",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "A later exact freeze must choose headed/headless parity before adding browser-mode matrix, visual parity, or CI browser expansion behavior."
   }
 }
