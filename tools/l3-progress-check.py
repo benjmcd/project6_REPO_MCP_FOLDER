@@ -189,6 +189,7 @@ CI_OBSERVABILITY_ENTRY_FREEZE = PLANNING_DOCS / "201_CI_PERFORMANCE_OBSERVABILIT
 CI_OBSERVABILITY_ENTRY_CONTRACT = PLANNING_DOCS / "202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md"
 POST_756_GOVERNANCE_CLOSEOUT = PLANNING_DOCS / "203_POST_756_GOVERNANCE_CLOSEOUT.md"
 CI_OBSERVABILITY_GAP_INVENTORY = PLANNING_DOCS / "204_CI_OBSERVABILITY_GAP_INVENTORY.md"
+CI_FAILURE_SIGNAL_OWNER_RUNBOOK = PLANNING_DOCS / "205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -9067,6 +9068,139 @@ def _check_ci_observability_gap_inventory(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_gap_inventory_proof negative_invariants must match the frozen structural list")
 
+def _check_ci_failure_signal_owner_runbook(errors: list[str]) -> None:
+    required_terms = {
+        CI_FAILURE_SIGNAL_OWNER_RUNBOOK: (
+            "Status: planning/control runbook only for `ci_failure_signal_and_owner_runbook`.",
+            "Owner labels below are planning/triage owners only.",
+            "Current Check Surface",
+            "Failure Signal Matrix",
+            "Merge And Stop Rules",
+            "layer3_backend_api_proof_owner",
+            "browser_harness_dependency_owner",
+            "Rerun allowed before fix?",
+            "no CI workflow change",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "CI Failure Signal And Owner Runbook",
+            "205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md",
+            "ci_failure_signal_and_owner_runbook",
+            "logical triage owners",
+            "stop-before-merge rules",
+        ),
+        MANIFEST: (
+            "latest_ci_failure_signal_owner_runbook_branch",
+            "latest_ci_failure_signal_owner_runbook_live_behavior_change",
+            "ci_failure_signal_owner_runbook",
+            "planning/control-only ci_failure_signal_and_owner_runbook",
+            "Owner labels are planning/triage labels only",
+        ),
+        PROOF_MANIFEST: (
+            "ci_failure_signal_owner_runbook_proof",
+            "205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md",
+            "ci_failure_signal_and_owner_runbook",
+            "layer3_backend_api_proof_owner",
+            "failed required check without repo-external cause",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing CI failure signal owner runbook term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for CI failure signal owner runbook")
+    else:
+        if current_status.get("latest_ci_failure_signal_owner_runbook_branch") != "codex/l3-ci-failure-signal-owner-runbook":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale CI failure signal owner runbook branch")
+        if current_status.get("latest_ci_failure_signal_owner_runbook_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark CI failure signal owner runbook as planning-only")
+        summary = current_status.get("ci_failure_signal_owner_runbook")
+        if not isinstance(summary, str) or "rerun boundaries" not in summary or "no CI workflow change" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.ci_failure_signal_owner_runbook must record rerun and no-workflow-change boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("ci_failure_signal_owner_runbook_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing ci_failure_signal_owner_runbook_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-ci-failure-signal-owner-runbook",
+        "live_behavior_change": False,
+        "selected_planning_mode": "ci_failure_signal_and_owner_runbook",
+        "runtime_status": "planning_runbook_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof.{key} must be {expected!r}")
+    surface = proof.get("check_surface")
+    if not isinstance(surface, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof missing check_surface")
+    else:
+        backend = surface.get("backend-layer3-api")
+        browser = surface.get("test")
+        if not isinstance(backend, dict) or backend.get("logical_owner") != "layer3_backend_api_proof_owner":
+            errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof backend-layer3-api owner must remain layer3_backend_api_proof_owner")
+        if not isinstance(browser, dict) or browser.get("logical_owner") != "layer3_browser_harness_proof_owner":
+            errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof test owner must remain layer3_browser_harness_proof_owner")
+    expected_owner_labels = [
+        "layer3_backend_api_proof_owner",
+        "layer3_browser_harness_proof_owner",
+        "layer3_rendered_workbench_proof_owner",
+        "ci_dependency_owner",
+        "browser_harness_dependency_owner",
+        "ci_runtime_owner",
+        "flake_triage_owner",
+    ]
+    if proof.get("logical_owner_labels") != expected_owner_labels:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof logical_owner_labels must match the frozen owner list")
+    if proof.get("rerun_allowed_only_for") != [
+        "external package registry failure",
+        "GitHub runner stall or cancellation",
+        "transient browser install infrastructure failure",
+    ]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof rerun_allowed_only_for must match the frozen list")
+    if proof.get("stop_before_merge_on") != [
+        "failed required check without repo-external cause",
+        "unresolved review thread",
+        "code-review comment requiring amendment",
+        "main drift that changes the touched planning/checker surface",
+    ]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof stop_before_merge_on must match the frozen list")
+    expected_negative_invariants = [
+        "no CI workflow change",
+        "no Playwright configuration change",
+        "no backend or browser dependency change",
+        "no executable test change",
+        "no CODEOWNERS or branch protection change",
+        "no automatic rerun bot",
+        "no flake quarantine runtime",
+        "no performance budget or timing gate",
+        "no headed-browser CI matrix",
+        "no sharding or parallelism",
+        "no observability event runtime",
+        "no audit-event runtime",
+        "no metrics/log shipping or dashboard",
+        "no artifact retention change",
+        "no route/API/DTO/model/migration/service behavior change",
+        "no rendered UI control",
+        "no source expansion",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector/destination dispatch",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no frontend-only durable authority",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -13846,6 +13980,7 @@ def main() -> int:
     _check_ci_performance_observability_entry_freeze(errors)
     _check_post_756_governance_closeout(errors)
     _check_ci_observability_gap_inventory(errors)
+    _check_ci_failure_signal_owner_runbook(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
