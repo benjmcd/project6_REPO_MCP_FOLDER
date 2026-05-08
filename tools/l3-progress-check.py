@@ -206,6 +206,9 @@ CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT = (
 SOURCE_BREADTH_AUTHORITY_DISCOVERY_CLOSEOUT = (
     PLANNING_DOCS / "215_SOURCE_BREADTH_AUTHORITY_DISCOVERY_CLOSEOUT.md"
 )
+PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT = (
+    PLANNING_DOCS / "216_PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -10819,6 +10822,146 @@ def _check_source_breadth_authority_discovery_closeout(errors: list[str]) -> Non
     if proof.get("next_product_boundaries") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
 
+def _check_package_mutation_rendered_authority_discovery_closeout(errors: list[str]) -> None:
+    required_terms = {
+        PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT: (
+            "Status: current-main planning/control closeout for `package_mutation_rendered_authority_discovery_closeout`.",
+            "entry_decision: no_runtime_now",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_backend_package_lifecycle_status: existing_bounded_backend_api_runtimes_admitted",
+            "live_rendered_package_review_status: existing_package_review_construct_submit_controls_admitted",
+            "authority_discovery_result: insufficient_authority_for_rendered_package_mutation_runtime",
+            "implementation_entry_required_before_runtime: true",
+            "next_product_boundary_required: true",
+            "rendered_package_mutation_control_authority",
+            "selected_rendered_mutation_mode",
+            "operator_mutation_use_case",
+            "package_payload_source",
+            "downstream_invalidation_policy",
+            "rendered_package_mutation_runtime: false",
+            "rendered_package_mutation_control: false",
+            "package_payload_rewrite: false",
+            "source_l3_output_package_row_mutation: false",
+            "Theme And UI Posture",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Package Mutation Rendered Authority Discovery Closeout",
+            "216_PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "package_mutation_rendered_authority_discovery_closeout",
+            "entry_decision` is `no_runtime_now",
+            "selected_mode` remains `null",
+            "insufficient_authority_for_rendered_package_mutation_runtime",
+        ),
+        MANIFEST: (
+            "latest_package_mutation_rendered_authority_discovery_closeout_branch",
+            "latest_package_mutation_rendered_authority_discovery_closeout_live_behavior_change",
+            "package_mutation_rendered_authority_discovery_closeout",
+            "entry_decision is no_runtime_now",
+            "selected_mode is null",
+            "insufficient_authority_for_rendered_package_mutation_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "package_mutation_rendered_authority_discovery_closeout_proof",
+            "216_PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "package_mutation_rendered_authority_discovery_closeout",
+            "no_runtime_now",
+            "insufficient_authority_for_rendered_package_mutation_runtime",
+            "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing package mutation rendered authority discovery closeout term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for package mutation rendered authority discovery closeout")
+    else:
+        if current_status.get("latest_package_mutation_rendered_authority_discovery_closeout_branch") != "codex/l3-package-mutation-boundary":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale package mutation rendered authority discovery branch")
+        if current_status.get("latest_package_mutation_rendered_authority_discovery_closeout_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark package mutation rendered authority discovery closeout as planning-only")
+        summary = current_status.get("package_mutation_rendered_authority_discovery_closeout")
+        if not isinstance(summary, str) or "entry_decision is no_runtime_now" not in summary or "insufficient_authority_for_rendered_package_mutation_runtime" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.package_mutation_rendered_authority_discovery_closeout must record no-runtime authority discovery")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("package_mutation_rendered_authority_discovery_closeout_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing package_mutation_rendered_authority_discovery_closeout_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-package-mutation-boundary",
+        "live_behavior_change": False,
+        "selected_planning_mode": "package_mutation_rendered_authority_discovery_closeout",
+        "entry_decision": "no_runtime_now",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_backend_package_lifecycle_status": "existing_bounded_backend_api_runtimes_admitted",
+        "live_rendered_package_review_status": "existing_package_review_construct_submit_controls_admitted",
+        "authority_discovery_result": "insufficient_authority_for_rendered_package_mutation_runtime",
+        "implementation_entry_required_before_runtime": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_authority_discovery_closeout_proof.{key} must be {expected!r}")
+    expected_unverified = [
+        "rendered_package_mutation_control_authority",
+        "selected_rendered_mutation_mode",
+        "operator_mutation_use_case",
+        "package_payload_source",
+        "downstream_invalidation_policy",
+        "re_delivery_compatibility_rule",
+        "receipt_and_audit_compatibility",
+        "stale_authority_failure_plan",
+        "idempotency_replay_recovery_policy",
+        "headed_headless_theme_proof_plan",
+    ]
+    if proof.get("unverified_authority") != expected_unverified:
+        errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_authority_discovery_closeout_proof unverified_authority must match the frozen list")
+    expected_negative = [
+        "no rendered package mutation runtime",
+        "no rendered package mutation control",
+        "no rendered package supersession preview control",
+        "no rendered package supersession commit control",
+        "no rendered replacement package namespace review control",
+        "no rendered package lifecycle dashboard",
+        "no package payload rewrite",
+        "no package payload generation",
+        "no source L3OutputPackage row creation, update, or deletion",
+        "no source package payload creation, overwrite, or deletion",
+        "no browser-supplied package diff",
+        "no edited package content accepted from UI or API",
+        "no downstream invalidation runtime",
+        "no re-delivery runtime",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no source expansion",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no existing backend package lifecycle runtime behavior change",
+        "no existing rendered package review behavior change",
+        "no rendered UI control",
+        "no CI workflow change",
+        "no route, DTO, model, migration, production service behavior, or executable test behavior change",
+    ]
+    if proof.get("negative_invariants") != expected_negative:
+        errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_authority_discovery_closeout_proof negative_invariants must match the frozen structural list")
+    expected_next = [
+        "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+        "package_mutation_rendered_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+        "source_breadth_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+    ]
+    if proof.get("next_product_boundaries") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -15609,6 +15752,7 @@ def main() -> int:
     _check_provider_public_url_authority_discovery_closeout(errors)
     _check_connector_destination_authority_discovery_closeout(errors)
     _check_source_breadth_authority_discovery_closeout(errors)
+    _check_package_mutation_rendered_authority_discovery_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
