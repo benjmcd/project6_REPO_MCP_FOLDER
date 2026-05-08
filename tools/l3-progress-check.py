@@ -99,6 +99,12 @@ RENDERED_RESULT_REVIEW_CONTRACT = (
 RENDERED_RESULT_REVIEW_PROOF = (
     PLANNING_DOCS / "165_RENDERED_RESULT_REVIEW_PROOF.md"
 )
+RENDERED_PACKAGE_REVIEW_FREEZE = (
+    PLANNING_DOCS / "166_RENDERED_PACKAGE_REVIEW_FREEZE.md"
+)
+RENDERED_PACKAGE_REVIEW_CONTRACT = (
+    PLANNING_DOCS / "167_RENDERED_PACKAGE_REVIEW_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -5845,6 +5851,163 @@ def _check_rendered_result_review_proof(errors: list[str]) -> None:
                 errors.append(f"{_rel(PROOF_MANIFEST)} live_selectors missing {selector}")
 
 
+def _check_rendered_package_review_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_PACKAGE_REVIEW_FREEZE: (
+            "Status: planning/control freeze only for `raw_mixed_rendered_package_review_preview_commit_submit`.",
+            "POST /api/v1/layer3/package/review/preview",
+            "POST /api/v1/layer3/package/review/commit",
+            "POST /api/v1/layer3/package/review/submit",
+            "Layer3PackageReviewPreviewRequest",
+            "Layer3PackageConstructionCommitRequest",
+            "Layer3PackageReviewSubmitRequest",
+            "Layer3PackageReviewPreviewResponse",
+            "Layer3PackageConstructionCommitResponse",
+            "Layer3PackageReviewSubmitResponse",
+            "#package-review-preview-inspect",
+            "#package-construction-commit",
+            "#package-review-submit-decision",
+            "#package-review-submit-notes",
+            "#package-review-submit",
+            "approved` result-review",
+            "light`, `dark`, and `workbench`",
+            "no frontend-only durable authority",
+        ),
+        RENDERED_PACKAGE_REVIEW_CONTRACT: (
+            "Selected mode: `raw_mixed_rendered_package_review_preview_commit_submit`.",
+            "POST /api/v1/layer3/package/review/preview",
+            "POST /api/v1/layer3/package/review/commit",
+            "POST /api/v1/layer3/package/review/submit",
+            "Layer3PackageReviewPreviewRequest",
+            "Layer3PackageConstructionCommitRequest",
+            "Layer3PackageReviewSubmitRequest",
+            "Layer3PackageReviewPreviewResponse",
+            "Layer3PackageConstructionCommitResponse",
+            "Layer3PackageReviewSubmitResponse",
+            "#package-review-preview-inspect",
+            "#package-construction-commit",
+            "#package-review-submit-decision",
+            "#package-review-submit-notes",
+            "#package-review-submit",
+            "#package-review-preview-panel",
+            "light`, `dark`, and `workbench`",
+            "frontend-only durable authority",
+        ),
+        BOARD: (
+            "Rendered package-review freeze",
+            "166_RENDERED_PACKAGE_REVIEW_FREEZE.md",
+            "167_RENDERED_PACKAGE_REVIEW_CONTRACT.md",
+            "raw_mixed_rendered_package_review_preview_commit_submit",
+            "POST /api/v1/layer3/package/review/submit",
+        ),
+        MANIFEST: (
+            "latest_rendered_package_review_freeze_branch",
+            "latest_rendered_package_review_freeze_live_behavior_change",
+            "rendered_package_review_freeze",
+            "raw_mixed_rendered_package_review_preview_commit_submit",
+            "/package/review/preview request allowlist",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_package_review_freeze_proof",
+            "166_RENDERED_PACKAGE_REVIEW_FREEZE.md",
+            "167_RENDERED_PACKAGE_REVIEW_CONTRACT.md",
+            "raw_mixed_rendered_package_review_preview_commit_submit",
+            "#package-review-submit",
+            "no frontend-only durable authority",
+        ),
+        LAYER3_API: (
+            "class Layer3PackageReviewPreviewRequest(BaseModel):",
+            "class Layer3PackageConstructionCommitRequest(BaseModel):",
+            "class Layer3PackageReviewSubmitRequest(BaseModel):",
+            "class Layer3PackageReviewPreviewResponse(Layer3BaseResponse):",
+            "class Layer3PackageConstructionCommitResponse(Layer3BaseResponse):",
+            "class Layer3PackageReviewSubmitResponse(Layer3BaseResponse):",
+            '"/package/review/preview"',
+            '"/package/review/commit"',
+            '"/package/review/submit"',
+            "package_payload: Any | None = None",
+            "package_variant_content: Any | None = None",
+        ),
+        LAYER3_HTML: (
+            "package-review-preview-inspect",
+            "package-construction-commit",
+            "package-review-submit-form",
+            "package-review-submit-decision",
+            "package-review-submit-notes",
+            "package-review-submit",
+            "package-review-preview-panel",
+        ),
+        LAYER3_JS: (
+            "function recordedApprovedResultReview",
+            "function canInspectPackageReviewPreview",
+            "function canCommitPackageConstruction",
+            "function canSubmitPackageReview",
+            "function packageReviewPreviewPayload",
+            "function packageConstructionPayload",
+            "function packageReviewSubmitPayload",
+            "postJson('/package/review/preview'",
+            "postJson('/package/review/commit'",
+            "postJson('/package/review/submit'",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives raw mixed rendered result-review submit",
+            "submitRenderedResultReview",
+            "expect(reviewPayload.operator_decision).toBe('changes_requested')",
+            "expect(review.package_review_enabled).toBe(false)",
+            "expectNoRequestsToLayer3Paths(layer3ApiRequests",
+            "/package/review/",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered package-review freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_package_review_freeze_branch") != "codex/l3-package-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered package-review freeze branch")
+        if current_status.get("latest_rendered_package_review_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered package-review freeze as planning-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_package_review_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_package_review_freeze_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered package-review freeze proof must be planning-only")
+    if proof.get("selected_rendered_package_review_mode") != "raw_mixed_rendered_package_review_preview_commit_submit":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered package-review freeze proof has stale selected mode")
+    routes = proof.get("routes_to_reuse")
+    if not isinstance(routes, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered package-review freeze proof missing routes_to_reuse")
+    else:
+        for route in (
+            "POST /api/v1/layer3/package/review/preview",
+            "POST /api/v1/layer3/package/review/commit",
+            "POST /api/v1/layer3/package/review/submit",
+        ):
+            if route not in routes:
+                errors.append(f"{_rel(PROOF_MANIFEST)} routes_to_reuse missing {route}")
+    selectors = proof.get("future_selectors")
+    if not isinstance(selectors, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered package-review freeze proof missing future_selectors")
+    else:
+        for selector in (
+            "#package-review-preview-inspect",
+            "#package-construction-commit",
+            "#package-review-submit-decision",
+            "#package-review-submit-notes",
+            "#package-review-submit",
+            "#package-review-preview-panel",
+        ):
+            if selector not in selectors:
+                errors.append(f"{_rel(PROOF_MANIFEST)} future_selectors missing {selector}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -10418,6 +10581,8 @@ def main() -> int:
         RENDERED_RESULT_REVIEW_FREEZE,
         RENDERED_RESULT_REVIEW_CONTRACT,
         RENDERED_RESULT_REVIEW_PROOF,
+        RENDERED_PACKAGE_REVIEW_FREEZE,
+        RENDERED_PACKAGE_REVIEW_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -10581,6 +10746,7 @@ def main() -> int:
     _check_rendered_execution_selection_start_runtime(errors)
     _check_rendered_result_review_freeze(errors)
     _check_rendered_result_review_proof(errors)
+    _check_rendered_package_review_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
