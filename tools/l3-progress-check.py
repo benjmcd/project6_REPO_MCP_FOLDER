@@ -171,6 +171,12 @@ CONNECTOR_DESTINATION_ENTRY_FREEZE = (
 CONNECTOR_DESTINATION_ENTRY_CONTRACT = (
     PLANNING_DOCS / "190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md"
 )
+PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE = (
+    PLANNING_DOCS / "191_PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE.md"
+)
+PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT = (
+    PLANNING_DOCS / "192_PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -7526,6 +7532,205 @@ def _check_connector_destination_entry_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_entry_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_package_mutation_rendered_entry_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE: (
+            "Status: planning/control entry freeze only for `package_mutation_reconstruction_rendered_entry_freeze`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_backend_package_lifecycle_status: existing_bounded_backend_api_runtimes_admitted",
+            "rendered_operator_mutation_use_case_downstream_invalidation_re_delivery_receipt_and_theme_control_authority_not_yet_verified",
+            "package_mutation_rendered_authority_discovery_freeze_or_entry_freeze_update",
+            "current_backend_package_lifecycle_runtimes",
+            "current_rendered_raw_mixed_downstream_proofs",
+            "rendered_package_mutation_control_authority",
+            "Rendered Mutation Exposure Model",
+            "Capability Isolation Matrix",
+            "rendered_package_mutation_runtime: false",
+            "rendered_package_mutation_control: false",
+            "source_l3_output_package_row_mutation: false",
+            "light` for status/preview/review inspection",
+            "headed and headless Chromium consistency",
+            "no existing backend package lifecycle runtime behavior change",
+        ),
+        PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT: (
+            "Status: planning/control contract paired with `191_PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE.md`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_backend_package_lifecycle_status: existing_bounded_backend_api_runtimes_admitted",
+            "Existing Backend Package Lifecycle Compatibility Contract",
+            "This entry freeze adds no rendered UI control.",
+            "Checker Contract",
+            "The checker must not pretend to validate actual rendered controls",
+        ),
+        BOARD: (
+            "Package Mutation/Reconstruction Rendered Entry Freeze",
+            "191_PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE.md",
+            "192_PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT.md",
+            "package_mutation_reconstruction_rendered_entry_freeze",
+            "selected_mode` is `null`",
+            "runtime_status` is `not_implemented`",
+            "package_supersession_preview_only",
+            "replacement_package_namespace_rows",
+        ),
+        MANIFEST: (
+            "latest_package_mutation_rendered_entry_freeze_branch",
+            "latest_package_mutation_rendered_entry_freeze_live_behavior_change",
+            "package_mutation_reconstruction_rendered_entry_freeze",
+            "entry_decision is deferred",
+            "selected_mode is null",
+            "runtime_status is not_implemented",
+            "existing backend/API package lifecycle runtimes",
+        ),
+        PROOF_MANIFEST: (
+            "package_mutation_rendered_entry_freeze_proof",
+            "191_PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE.md",
+            "192_PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT.md",
+            "package_mutation_reconstruction_rendered_entry_freeze",
+            "existing_bounded_backend_api_runtimes_admitted",
+            "no existing backend package lifecycle runtime behavior change",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package mutation rendered entry freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for package mutation rendered entry freeze")
+    else:
+        if current_status.get("latest_package_mutation_rendered_entry_freeze_branch") != "codex/l3-package-mutation-rendered-entry-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale package mutation rendered entry freeze branch")
+        if current_status.get("latest_package_mutation_rendered_entry_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark package mutation rendered entry freeze as planning-only")
+        summary = current_status.get("package_mutation_reconstruction_rendered_entry_freeze")
+        if not isinstance(summary, str) or "entry_decision is deferred" not in summary or "selected_mode is null" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.package_mutation_reconstruction_rendered_entry_freeze must record deferred/null entry decision")
+        if isinstance(summary, str) and "existing backend/API package lifecycle runtimes" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.package_mutation_reconstruction_rendered_entry_freeze must preserve backend package lifecycle runtimes")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("package_mutation_rendered_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing package_mutation_rendered_entry_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-package-mutation-rendered-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "package_mutation_reconstruction_rendered_entry_freeze",
+        "entry_decision": "deferred",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_backend_package_lifecycle_status": "existing_bounded_backend_api_runtimes_admitted",
+        "receipt_family": "no_receipt_planning_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_entry_freeze_proof.{key} must be {expected!r}")
+    governing_docs = proof.get("governing_docs")
+    for doc in (
+        "next_milestone_plans/Layer3_planning_docs/191_PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/192_PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/122_PACKAGE_MUTATION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/126_PACKAGE_COMMIT_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE.md",
+    ):
+        if not isinstance(governing_docs, list) or doc not in governing_docs:
+            errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_entry_freeze_proof governing_docs missing {doc}")
+    ledger = proof.get("evidence_ledger")
+    if not isinstance(ledger, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_entry_freeze_proof missing evidence_ledger")
+    else:
+        for key in ("current_backend_package_lifecycle_runtimes", "current_rendered_raw_mixed_downstream_proofs"):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "verified":
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must be verified")
+        for key in (
+            "rendered_package_mutation_control_authority",
+            "operator_mutation_use_case",
+            "downstream_invalidation_policy",
+            "re_delivery_compatibility_rule",
+            "receipt_and_audit_compatibility",
+            "theme_and_headed_headless_control_proof_plan",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "unverified" or item.get("evidence") != []:
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must remain unverified with no evidence")
+    exposure = proof.get("rendered_mutation_exposure_model")
+    for key in (
+        "mutation_ui_surface",
+        "operator_intent",
+        "package_payload_source",
+        "downstream_dependency_policy",
+        "re_delivery_policy",
+        "receipt_compatibility",
+        "theme_surface",
+        "idempotency_recovery_policy",
+    ):
+        if not isinstance(exposure, dict) or exposure.get(key) != "unknown":
+            errors.append(f"{_rel(PROOF_MANIFEST)} rendered_mutation_exposure_model.{key} must remain unknown while decision is deferred")
+    matrix = proof.get("capability_isolation_matrix")
+    for key, flag in (
+        ("package_supersession_preview_only", "change_allowed_in_this_pass"),
+        ("replacement_package_set_authority", "change_allowed_in_this_pass"),
+        ("package_supersession_commit_entry", "change_allowed_in_this_pass"),
+        ("replacement_package_artifact_manifest_only", "change_allowed_in_this_pass"),
+        ("replacement_package_namespace_rows", "change_allowed_in_this_pass"),
+        ("rendered_package_mutation_control", "runtime_allowed_in_this_pass"),
+        ("package_payload_rewrite", "runtime_allowed_in_this_pass"),
+        ("in_place_package_row_mutation", "runtime_allowed_in_this_pass"),
+        ("replacement_package_generation", "runtime_allowed_in_this_pass"),
+        ("downstream_invalidation_re_delivery", "runtime_allowed_in_this_pass"),
+        ("provider_public_url", "runtime_allowed_in_this_pass"),
+        ("connector_destination_dispatch", "runtime_allowed_in_this_pass"),
+        ("source_breadth_expansion", "runtime_allowed_in_this_pass"),
+        ("rag_vector_or_hybrid_execution", "runtime_allowed_in_this_pass"),
+        ("full_mockup_activation", "runtime_allowed_in_this_pass"),
+        ("auth_security_behavior_change", "runtime_allowed_in_this_pass"),
+    ):
+        item = matrix.get(key) if isinstance(matrix, dict) else None
+        if not isinstance(item, dict) or item.get(flag) is not False:
+            errors.append(f"{_rel(PROOF_MANIFEST)} capability_isolation_matrix.{key}.{flag} must be false")
+    expected_negative_invariants = [
+        "no rendered package mutation runtime",
+        "no rendered package mutation control",
+        "no package payload rewrite",
+        "no source L3OutputPackage row creation, update, or deletion",
+        "no source package payload creation, overwrite, or deletion",
+        "no replacement package payload generation",
+        "no downstream invalidation runtime",
+        "no re-delivery runtime",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no generic downstream dispatch",
+        "no source expansion",
+        "no local upload",
+        "no local-directory ingestion",
+        "no arbitrary local path input",
+        "no web connector retrieval",
+        "no RAG/vector retrieval",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no full mockup activation",
+        "no hidden LLM planning",
+        "no frontend-only durable state",
+        "no auth/security behavior change",
+        "no existing same-origin signed-reference semantics change",
+        "no existing backend package lifecycle runtime behavior change",
+        "no browser-only package lifecycle authority",
+        "no package payload, package diff, provider URL, connector target, destination target, or token leakage in error bodies",
+        "no package payload, package diff, provider URL, connector target, destination target, or token leakage in logs",
+        "no cross-mode privilege escalation",
+        "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_entry_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -12297,6 +12502,7 @@ def main() -> int:
     _check_post_745_downstream_expansion_freeze(errors)
     _check_provider_public_url_entry_freeze(errors)
     _check_connector_destination_entry_freeze(errors)
+    _check_package_mutation_rendered_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
