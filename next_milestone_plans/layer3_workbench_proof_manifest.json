@@ -8247,5 +8247,76 @@
       "no local path, credential, token, prompt, metric payload, trace payload, provider URL, connector target, destination target, or browser storage leakage"
     ],
     "next_boundary": "Choose one exact CI/performance/observability authority freeze before any workflow, config, artifact, budget, telemetry, audit-event, headed CI, sharding, parallelism, or runtime observability change."
+  },
+  "ci_failure_signal_owner_runbook_proof": {
+    "implementation_branch": "codex/l3-ci-failure-signal-owner-runbook",
+    "live_behavior_change": false,
+    "selected_planning_mode": "ci_failure_signal_and_owner_runbook",
+    "runtime_status": "planning_runbook_only",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/204_CI_OBSERVABILITY_GAP_INVENTORY.md",
+      "next_milestone_plans/Layer3_planning_docs/205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md"
+    ],
+    "check_surface": {
+      "backend-layer3-api": {
+        "command": "python -m pytest ./backend/tests/test_layer3_*.py -q",
+        "logical_owner": "layer3_backend_api_proof_owner",
+        "primary_failure_meaning": "backend_layer3_api_or_contract_regression_until_proven_otherwise"
+      },
+      "test": {
+        "command": "npx playwright test --project=chromium",
+        "logical_owner": "layer3_browser_harness_proof_owner",
+        "primary_failure_meaning": "browser_harness_or_rendered_path_regression_until_proven_otherwise"
+      }
+    },
+    "logical_owner_labels": [
+      "layer3_backend_api_proof_owner",
+      "layer3_browser_harness_proof_owner",
+      "layer3_rendered_workbench_proof_owner",
+      "ci_dependency_owner",
+      "browser_harness_dependency_owner",
+      "ci_runtime_owner",
+      "flake_triage_owner"
+    ],
+    "rerun_allowed_only_for": [
+      "external package registry failure",
+      "GitHub runner stall or cancellation",
+      "transient browser install infrastructure failure"
+    ],
+    "stop_before_merge_on": [
+      "failed required check without repo-external cause",
+      "unresolved review thread",
+      "code-review comment requiring amendment",
+      "main drift that changes the touched planning/checker surface"
+    ],
+    "negative_invariants": [
+      "no CI workflow change",
+      "no Playwright configuration change",
+      "no backend or browser dependency change",
+      "no executable test change",
+      "no CODEOWNERS or branch protection change",
+      "no automatic rerun bot",
+      "no flake quarantine runtime",
+      "no performance budget or timing gate",
+      "no headed-browser CI matrix",
+      "no sharding or parallelism",
+      "no observability event runtime",
+      "no audit-event runtime",
+      "no metrics/log shipping or dashboard",
+      "no artifact retention change",
+      "no route/API/DTO/model/migration/service behavior change",
+      "no rendered UI control",
+      "no source expansion",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector/destination dispatch",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "A later exact freeze must choose artifact taxonomy/redaction, flake policy, performance budget discovery, headed/headless parity, or observability/audit schema before any runtime or workflow change."
   }
 }
