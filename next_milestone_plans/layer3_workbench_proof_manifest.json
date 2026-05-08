@@ -9103,5 +9103,86 @@
       "connector_destination_runtime_entry_freeze_update_only_if_named_use_case_emerges"
     ],
     "next_boundary": "Move to source breadth authority discovery unless a concrete named downstream use case proves external connector/destination dispatch is required."
+  },
+  "source_breadth_authority_discovery_closeout_proof": {
+    "implementation_branch": "codex/l3-source-breadth-boundary",
+    "live_behavior_change": false,
+    "selected_planning_mode": "source_breadth_authority_discovery_closeout",
+    "entry_decision": "no_runtime_now",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "live_supported_source_boundary_status": "supported_source_classes_only",
+    "live_raw_mixed_seed_status": "raw_mixed_corpus_bridge_seed_only",
+    "live_raw_mixed_materialization_status": "raw_mixed_existing_source_materialization_entry",
+    "authority_discovery_result": "insufficient_authority_for_source_breadth_runtime",
+    "implementation_entry_required_before_runtime": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/123_SOURCE_EXPANSION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/137_RAW_MIXED_BRIDGE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/154_RAW_INGESTION_MATERIALIZATION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/193_SOURCE_BREADTH_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/194_SOURCE_BREADTH_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/214_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/215_SOURCE_BREADTH_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+    ],
+    "source_test_evidence": [
+      "backend/app/services/layer3_source_boundary.py keeps SUPPORTED_SOURCE_CLASSES to dataset_version and aps_content_document",
+      "backend/tests/test_layer3_source_boundary.py proves unsupported source classes and deferred source expansion fail closed",
+      "backend/app/services/layer3_raw_mixed_bridge.py keeps raw mixed bridge seed-only and admitted-source-class bounded",
+      "backend/tests/test_layer3_raw_mixed_bridge.py proves seed-only source boundary and failure modes",
+      "backend/app/services/layer3_raw_mixed_materialization.py keeps materialization bounded to existing source authority",
+      "backend/tests/test_layer3_raw_mixed_materialization.py proves current-class materialization boundary",
+      "backend/tests/test_layer3_preflight_request_contract.py rejects source-expansion manual constraints",
+      "backend/tests/test_layer3_bounded_e2e.py asserts source expansion negative side effects remain absent"
+    ],
+    "unverified_authority": [
+      "new_source_family_authority",
+      "selected_source_family",
+      "selected_adapter_or_input_mode",
+      "source_adapter_contract",
+      "operator_input_and_storage_security_model",
+      "network_retrieval_policy",
+      "provenance_model",
+      "downstream_source_semantics",
+      "rendered_source_control_theme_proof_plan"
+    ],
+    "preserved_theme_posture": [
+      "light inspection/status/preview/review theme surface remains unchanged",
+      "dark execution/package-construction theme surface remains unchanged",
+      "workbench source selection, material preview, Gate B/Gate C, package submit, handoff/export, APS handoff, external export/download, signed-reference, and downstream operation-dock theme surface remains unchanged",
+      "headed and headless proof remains required for any later rendered source-breadth controls"
+    ],
+    "negative_invariants": [
+      "no new source family runtime",
+      "no source adapter registry",
+      "no local upload",
+      "no local-directory ingestion",
+      "no broad file upload",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval",
+      "no vector index creation",
+      "no unbounded runtime DB source read",
+      "no source-class expansion beyond dataset_version and aps_content_document",
+      "no raw mixed seed behavior change",
+      "no raw mixed materialization behavior change",
+      "no Layer 3 flow start inside source seeding or materialization",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector or destination dispatch",
+      "no broad qualitative execution",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no rendered UI control",
+      "no CI workflow change",
+      "no route, DTO, model, migration, production service behavior, or test behavior change"
+    ],
+    "next_product_boundaries": [
+      "package_mutation_rendered_authority_discovery_freeze_or_entry_freeze_update",
+      "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+      "source_breadth_runtime_entry_freeze_update_only_if_named_use_case_emerges"
+    ],
+    "next_boundary": "Move to package mutation rendered authority discovery unless a concrete named source-family use case proves source breadth runtime is required."
   }
 }
