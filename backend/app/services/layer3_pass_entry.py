@@ -457,6 +457,17 @@ def _load_source_profile(
     )
 
 
+def _dataset_storage_ref_exists(storage_ref: str) -> bool:
+    from app.services.dataframe_io import resolve_version_storage_ref
+
+    if not storage_ref:
+        return False
+    try:
+        return resolve_version_storage_ref(storage_ref).exists()
+    except ValueError:
+        return False
+
+
 def _prepare_cohort_candidate(
     db: Session,
     *,
@@ -504,7 +515,8 @@ def _prepare_cohort_candidate(
         dataset_version = db.get(DatasetVersion, dataset_version_id)
         if dataset_version is None:
             return None, "dataset_version_missing"
-        if not str(dataset_version.storage_ref or "").strip() or not Path(str(dataset_version.storage_ref)).exists():
+        storage_ref = str(dataset_version.storage_ref or "").strip()
+        if not _dataset_storage_ref_exists(storage_ref):
             return None, "dataset_storage_missing"
 
         dataset = db.get(Dataset, dataset_version.dataset_id)
@@ -752,7 +764,7 @@ def _classify_sets(
             )
             continue
         storage_ref = str(dataset_version.storage_ref or "").strip()
-        if not storage_ref or not Path(storage_ref).exists():
+        if not _dataset_storage_ref_exists(storage_ref):
             excluded.append(
                 _exclusion_entry(
                     analysis_set,

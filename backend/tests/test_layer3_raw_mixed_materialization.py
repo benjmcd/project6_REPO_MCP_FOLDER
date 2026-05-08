@@ -65,6 +65,7 @@ class RawMixedMaterializationFixture:
     dataset_id: str
     dataset_version_id: str
     dataset_version_ids: tuple[str, ...]
+    dataset_storage_refs: tuple[str, ...]
     aps_run_id: str
     aps_target_id: str
     aps_content_id: str
@@ -129,6 +130,9 @@ def test_layer3_raw_mixed_materialize_creates_admitted_sources_for_bounded_previ
     }
     _assert_no_layer3_flow_delta(before_counts, after_counts)
     assert _storage_files() == before_files
+    with client.layer3_session_factory() as db:
+        stored_version = db.get(DatasetVersion, fixture.dataset_version_id)
+        assert stored_version.storage_ref == fixture.dataset_storage_refs[0]
 
     duplicate = client.post(
         "/api/v1/layer3/source/mixed-corpus/materialize",
@@ -435,6 +439,7 @@ def _write_materialization_manifest(
         dataset_id=dataset_id,
         dataset_version_id=dataset_version_id,
         dataset_version_ids=dataset_version_ids,
+        dataset_storage_refs=tuple(entry["storage_ref"] for entry in dataset_versions),
         aps_run_id=aps_run_id,
         aps_target_id=aps_target_id,
         aps_content_id=aps_content_id,
@@ -464,7 +469,7 @@ def _dataset_version_manifest_entry(
             else f"row-raw-materialized-{index + 1:03d}-{row_index + 1:03d}",
             "row_number": row_index + 1,
             "values_json": {
-                "period": f"2026-{row_index + 1:02d}",
+                "period": _month_period(row_index),
                 "value": 4.5 + index + (row_index * 0.25),
             },
         }
@@ -532,6 +537,12 @@ def _dataset_version_manifest_entry(
     }
     entry.update(overrides or {})
     return entry
+
+
+def _month_period(row_index: int) -> str:
+    year = 2026 + (row_index // 12)
+    month = (row_index % 12) + 1
+    return f"{year}-{month:02d}"
 
 
 def _write_storage_ref(ref: str, content: str) -> tuple[str, str]:

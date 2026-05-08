@@ -60,13 +60,13 @@ The UI must not send deferred fields for local upload, local-directory ingestion
 
 Rendered materialization controls become enabled only when:
 
-1. selected source classes are a non-empty subset of `dataset_version` and `aps_content_document`;
+1. selected source classes are exactly both `dataset_version` and `aps_content_document`;
 2. the materialization mode is exactly `raw_mixed_existing_source_materialization_entry`;
 3. the manifest reference is treated as a server-owned storage-root ref, not as a local path;
 4. a manifest SHA-256 hash is present;
 5. the operator explicitly confirms server-owned manifest authority;
 6. no deferred source, provider, connector, RAG/vector, package mutation, mockup, hidden LLM, auth/security, or frontend-only durable fields are present;
-7. downstream source selection uses only IDs returned by the server materialization response or refreshed candidate APIs;
+7. downstream source selection uses only IDs returned by the server materialization response; refreshed candidate APIs may only verify those returned IDs are visible and must not replace or expand the selected IDs;
 8. normal Layer 3 flow state starts only after rendered preflight/source/material/Gate B progression.
 
 The browser may keep in-flight request state and display response summaries. It must not repair failed materialization, synthesize missing source IDs, treat browser state as durable authority, or bypass server candidate refresh.
