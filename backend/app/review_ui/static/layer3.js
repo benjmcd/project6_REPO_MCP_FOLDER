@@ -579,7 +579,7 @@ function canMaterializeRawMixed() {
         && form.manifestRef
         && form.manifestHash
         && form.operatorConfirmed
-        && form.requestedSourceClasses.length
+        && form.requestedSourceClasses.length === RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES.size
         && !State.rawMixedMaterializationPending
     );
 }
@@ -622,11 +622,31 @@ function materializedSourceIdsVisible(materialization) {
 function applyMaterializedSourceIds(materialization) {
     const datasetIds = materialization?.dataset_version_ids || [];
     const contentIds = materialization?.aps_content_document_ids || [];
+    document.querySelectorAll('input[name="dataset-version-candidate"]:checked')
+        .forEach((input) => { input.checked = false; });
+    document.querySelectorAll('input[name="aps-content-document-candidate"]:checked')
+        .forEach((input) => { input.checked = false; });
     if (elements.datasetVersionIds) {
         elements.datasetVersionIds.value = datasetIds.join('\n');
     }
     if (elements.apsContentDocumentIds) {
         elements.apsContentDocumentIds.value = contentIds.join('\n');
+    }
+}
+
+function clearRawMixedMaterializationState() {
+    State.rawMixedMaterialization = null;
+    State.rawMixedMaterializationError = null;
+}
+
+function handleRawMixedMaterializationInputChange() {
+    clearRawMixedMaterializationState();
+    renderAll();
+}
+
+function preventRawMixedManifestEnterSubmit(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
     }
 }
 
@@ -2716,8 +2736,8 @@ function renderRawMixedMaterializationPanel() {
     const ready = canMaterializeRawMixed();
     elements.rawMixedMaterializationState.textContent = ready ? 'Ready' : 'Not materialized';
     elements.rawMixedMaterializationState.className = ready ? 'status-pill ok' : 'status-pill preview';
-    if (!form.requestedSourceClasses.length) {
-        elements.rawMixedMaterializationStatus.textContent = 'Select at least one admitted source class.';
+    if (form.requestedSourceClasses.length !== RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES.size) {
+        elements.rawMixedMaterializationStatus.textContent = 'Select both Dataset version and APS content document source classes.';
     } else if (!form.corpusBatchId || !form.manifestRef || !form.manifestHash || !form.operatorConfirmed) {
         elements.rawMixedMaterializationStatus.textContent = 'Awaiting server-owned manifest authority.';
     } else {
@@ -5469,8 +5489,17 @@ async function materializeRawMixedSources() {
     setBusy(elements.rawMixedMaterialize, true, 'Materialize Source IDs');
     try {
         const materialization = await postJson('/source/mixed-corpus/materialize', rawMixedMaterializationPayload());
-        await loadDatasetVersionCandidates();
-        await loadApsContentDocumentCandidates();
+        const datasetCandidatesRefreshed = await loadDatasetVersionCandidates();
+        const apsContentCandidatesRefreshed = await loadApsContentDocumentCandidates();
+        if (!datasetCandidatesRefreshed || !apsContentCandidatesRefreshed) {
+            State.rawMixedMaterializationError = {
+                schema_id: 'layer3.workbench_error.v1',
+                error_code: 'raw_mixed_materialized_source_candidate_refresh_failed',
+                message: 'Materialized source IDs were not applied because candidate refresh failed.',
+            };
+            addEvent('Raw mixed materialization blocked after candidate refresh failure.');
+            return;
+        }
         if (!materializedSourceIdsVisible(materialization)) {
             State.rawMixedMaterializationError = {
                 schema_id: 'layer3.workbench_error.v1',
@@ -5743,9 +5772,11 @@ async function loadDatasetVersionCandidates() {
         State.datasetVersionCandidates = await getJson('/dataset-version-candidates');
         State.datasetVersionCandidateError = null;
         addEvent(`Loaded ${State.datasetVersionCandidates.candidate_count || 0} APS-derived DatasetVersion candidate(s).`);
+        return true;
     } catch (error) {
         State.datasetVersionCandidateError = error.message;
         addEvent(`DatasetVersion candidate lookup blocked: ${error.message}`);
+        return false;
     }
 }
 
@@ -5754,9 +5785,11 @@ async function loadApsContentDocumentCandidates() {
         State.apsContentDocumentCandidates = await getJson('/aps-content-document-candidates');
         State.apsContentDocumentCandidateError = null;
         addEvent(`Loaded ${State.apsContentDocumentCandidates.candidate_count || 0} APS content document candidate(s).`);
+        return true;
     } catch (error) {
         State.apsContentDocumentCandidateError = error.message;
         addEvent(`APS content document lookup blocked: ${error.message}`);
+        return false;
     }
 }
 
@@ -5798,14 +5831,22 @@ elements.stepChips.forEach((chip) => {
 });
 elements.intentForm.addEventListener('submit', runPreflightFlow);
 elements.intentInput.addEventListener('input', renderSublayerMap);
-elements.sourceFieldset.addEventListener('change', () => {
+elements.sourceFieldset.addEventListener('change', (event) => {
+    if (event.target?.name === 'source-class') {
+        clearRawMixedMaterializationState();
+    }
     renderSublayerMap();
     renderAll();
 });
-elements.rawMixedCorpusBatchId.addEventListener('input', renderAll);
-elements.rawMixedManifestRef.addEventListener('input', renderAll);
-elements.rawMixedManifestHash.addEventListener('input', renderAll);
-elements.rawMixedOperatorConfirmation.addEventListener('change', renderAll);
+[
+    elements.rawMixedCorpusBatchId,
+    elements.rawMixedManifestRef,
+    elements.rawMixedManifestHash,
+].forEach((input) => {
+    input.addEventListener('input', handleRawMixedMaterializationInputChange);
+    input.addEventListener('keydown', preventRawMixedManifestEnterSubmit);
+});
+elements.rawMixedOperatorConfirmation.addEventListener('change', handleRawMixedMaterializationInputChange);
 elements.rawMixedMaterialize.addEventListener('click', materializeRawMixedSources);
 elements.datasetVersionIds.addEventListener('input', renderAll);
 elements.datasetVersionCandidates.addEventListener('change', renderAll);

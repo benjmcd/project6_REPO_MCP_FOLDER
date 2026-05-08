@@ -184,7 +184,7 @@ def _materialize_dataset_version(db: Session, entry: Mapping[str, Any], written:
     )
     storage_ref = _entry_string(entry, "storage_ref", "artifact_manifest.dataset_versions[].storage_ref")
     storage_hash = _entry_sha256(entry, "storage_sha256", "artifact_manifest.dataset_versions[].storage_sha256")
-    storage_path = _check_storage_ref(storage_ref, storage_hash, "artifact_manifest.dataset_versions[].storage_ref")
+    _check_storage_ref(storage_ref, storage_hash, "artifact_manifest.dataset_versions[].storage_ref")
 
     dataset_values = {
         "name": str(entry.get("name") or f"Dataset {dataset_id}"),
@@ -202,7 +202,7 @@ def _materialize_dataset_version(db: Session, entry: Mapping[str, Any], written:
         "version_label": str(entry.get("version_label") or "v1"),
         "version_type": str(entry.get("version_type") or "raw_mixed_materialized"),
         "status": str(entry.get("status") or "ready"),
-        "storage_ref": str(storage_path),
+        "storage_ref": storage_ref,
         "row_count": int(entry.get("row_count") or 0),
         "notes": entry.get("notes"),
     }
