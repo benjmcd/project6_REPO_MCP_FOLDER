@@ -6164,5 +6164,57 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Freeze the next raw mixed rendered downstream package-review preview boundary before proving package, handoff/export, APS dispatch, or external export/download."
+  },
+  "rendered_package_review_freeze_proof": {
+    "scope": "Planning/control freeze for future rendered raw mixed package review preview, construction commit, and package review submit after approved rendered result-review authority.",
+    "implementation_branch": "codex/l3-package-freeze",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/166_RENDERED_PACKAGE_REVIEW_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/167_RENDERED_PACKAGE_REVIEW_CONTRACT.md"
+    ],
+    "selected_rendered_package_review_mode": "raw_mixed_rendered_package_review_preview_commit_submit",
+    "routes_to_reuse": [
+      "POST /api/v1/layer3/package/review/preview",
+      "POST /api/v1/layer3/package/review/commit",
+      "POST /api/v1/layer3/package/review/submit"
+    ],
+    "future_selectors": [
+      "#package-review-preview-inspect",
+      "#package-construction-commit",
+      "#package-review-submit-decision",
+      "#package-review-submit-notes",
+      "#package-review-submit",
+      "#package-review-preview-panel"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/166_RENDERED_PACKAGE_REVIEW_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/167_RENDERED_PACKAGE_REVIEW_CONTRACT.md",
+      "backend/app/api/layer3.py",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "tools/l3-progress-check.py"
+    ],
+    "proof_summary": "The next pass may use only existing rendered package-review controls after raw mixed rendered result/status authority and an approved result-review submit. It must assert the /package/review/preview request allowlist plus package construction commit and package review submit request allowlists, prove server-returned preview hash, reconciliation id, package ids, package kinds, payload refs, payload hashes, package-review state, and submit ref, preserve light/dark/workbench theme behavior, and stop before handoff/export, APS dispatch, and external export/download unless a separate freeze admits the next downstream slice.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no new rendered controls unless a blocker is reported first",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no package replacement, supersession, amendment, or payload rewrite",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Implement only a focused raw mixed rendered package-review preview, construction commit, and package review submit proof if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
   }
 }
