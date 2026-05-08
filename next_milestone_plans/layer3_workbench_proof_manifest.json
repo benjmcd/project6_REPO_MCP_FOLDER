@@ -9029,5 +9029,79 @@
       "provider_public_url_runtime_entry_freeze_update_only_if_named_use_case_emerges"
     ],
     "next_boundary": "Move to connector/destination authority discovery unless a concrete named downstream use case proves same-origin delivery and signed references are insufficient."
+  },
+  "connector_destination_authority_discovery_closeout_proof": {
+    "implementation_branch": "codex/l3-connector-destination-boundary",
+    "live_behavior_change": false,
+    "selected_planning_mode": "connector_destination_authority_discovery_closeout",
+    "entry_decision": "no_runtime_now",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "live_internal_record_only_status": "already_admitted_by_doc_121",
+    "authority_discovery_result": "insufficient_authority_for_external_connector_destination_runtime",
+    "implementation_entry_required_before_runtime": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/203_POST_756_GOVERNANCE_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/213_PROVIDER_PUBLIC_URL_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/214_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+    ],
+    "source_test_evidence": [
+      "backend/app/services/layer3_connector_dispatch_entry.py owns internal_dispatch_record_only and disables external connector invocation, destination write, connector-run creation, and provider_public_url",
+      "backend/app/api/layer3.py exposes connector/destination terms only through internal record-only behavior, forbidden fields, or disabled flags",
+      "backend/app/services/layer3_preflight_request_contract.py rejects broad connector_destination_dispatch request fields",
+      "backend/app/services/layer3_state_action_contract.py keeps connector_destination_dispatch deferred while admitting exact internal_dispatch_record_only",
+      "backend/tests/test_layer3_api.py asserts deferred connector_destination_dispatch and internal record-only disabled downstream flags",
+      "backend/tests/test_layer3_bounded_e2e.py asserts connector/destination negative side effects remain absent",
+      "backend/tests/test_layer3_mockup_boundary.py asserts connector_destination_dispatch_enabled remains false",
+      "backend/tests/test_layer3_preflight_request_contract.py asserts connector_destination_dispatch remains forbidden under manual constraints"
+    ],
+    "unverified_authority": [
+      "external_connector_authority",
+      "destination_authority",
+      "named_downstream_use_case",
+      "selected_connector_or_destination_family",
+      "credential_and_access_model",
+      "lifecycle_retry_cancel_timeout_contract",
+      "receipt_and_audit_contract",
+      "fake_connector_destination_test_architecture",
+      "leak_control_runtime_proof"
+    ],
+    "preserved_theme_posture": [
+      "light inspection/status/preview/review theme surface remains unchanged",
+      "dark execution/package-construction theme surface remains unchanged",
+      "workbench package submit, handoff/export, APS handoff, external export/download, signed-reference, provider/public URL governance, and downstream operation-dock theme surface remains unchanged",
+      "headed and headless proof remains required for any later rendered connector/destination controls"
+    ],
+    "negative_invariants": [
+      "no new connector/destination runtime",
+      "no external connector invocation",
+      "no destination write",
+      "no connector-run creation",
+      "no generic downstream dispatch",
+      "no internal_dispatch_record_only behavior expansion",
+      "no provider/public URL runtime",
+      "no connector, destination, or provider credentials leakage",
+      "no connector/destination secrets, targets, URLs, tokens, or receipts leakage",
+      "no package mutation or reconstruction",
+      "no source expansion",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no rendered UI control",
+      "no CI workflow change",
+      "no same-origin delivery, signed-reference, provider/public URL governance, package, handoff, APS, external export/download, artifact, or internal dispatch semantics change",
+      "no route, DTO, model, migration, production service behavior, or test behavior change"
+    ],
+    "next_product_boundaries": [
+      "source_breadth_authority_discovery_freeze_or_entry_freeze_update",
+      "package_mutation_rendered_authority_discovery_freeze_or_entry_freeze_update",
+      "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+      "connector_destination_runtime_entry_freeze_update_only_if_named_use_case_emerges"
+    ],
+    "next_boundary": "Move to source breadth authority discovery unless a concrete named downstream use case proves external connector/destination dispatch is required."
   }
 }
