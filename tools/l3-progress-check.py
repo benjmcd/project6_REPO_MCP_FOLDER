@@ -159,6 +159,12 @@ POST_745_DOWNSTREAM_EXPANSION_FREEZE = (
 POST_745_DOWNSTREAM_EXPANSION_CONTRACT = (
     PLANNING_DOCS / "185_POST_745_DOWNSTREAM_EXPANSION_CONTRACT.md"
 )
+PROVIDER_PUBLIC_URL_ENTRY_FREEZE = (
+    PLANNING_DOCS / "187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md"
+)
+PROVIDER_PUBLIC_URL_ENTRY_CONTRACT = (
+    PLANNING_DOCS / "188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -7120,6 +7126,195 @@ def _check_post_745_downstream_expansion_freeze(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} post-745 negative_invariants must match the frozen structural list")
 
 
+
+def _check_provider_public_url_entry_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PUBLIC_URL_ENTRY_FREEZE: (
+            "Status: planning/control entry freeze only for `provider_public_url_entry_freeze`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "provider_storage_authority_named_use_case_exposure_model_revocation_contract_and_security_posture_not_yet_verified",
+            "provider_public_url_authority_discovery_freeze_or_entry_freeze_update",
+            "Evidence Ledger",
+            "Threat Model Minimum",
+            "Exposure Model",
+            "Capability Isolation Matrix",
+            "no_cross_mode_privilege_escalation",
+            "Provider/public URL admission, if later selected, is a URL exposure mode over already-authorized server-owned artifacts",
+            "signed_reference_semantics_change_allowed: false",
+            "provider_credentials_in_browser: forbidden",
+            "runtime_header_behavior_admitted: false",
+            "receipt_family: no_receipt_planning_only",
+            "real_provider_credentials_in_ci: forbidden_by_default",
+            "post_748_checkpoint",
+            "no provider/public URL runtime",
+            "no provider object write or copy",
+            "no auth/security behavior change",
+        ),
+        PROVIDER_PUBLIC_URL_ENTRY_CONTRACT: (
+            "Status: planning/control contract paired with `187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "provider_private_signed_url",
+            "provider_public_url",
+            "public_proxy_url",
+            "A same-origin signed reference must not be renamed or represented as a provider/public URL.",
+            "Provider/public URL work is not provider object materialization.",
+            "Real provider credentials are forbidden in CI by default.",
+            "Checker Contract",
+            "The checker must not pretend to validate real provider configuration",
+            "no-cross-mode privilege escalation proof",
+        ),
+        BOARD: (
+            "Provider/Public URL Entry Freeze",
+            "187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+            "188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
+            "provider_public_url_entry_freeze",
+            "selected_mode` is `null`",
+            "runtime_status` is `not_implemented`",
+        ),
+        MANIFEST: (
+            "latest_provider_public_url_entry_freeze_branch",
+            "latest_provider_public_url_entry_freeze_live_behavior_change",
+            "provider_public_url_entry_freeze",
+            "entry_decision is deferred",
+            "selected_mode is null",
+            "runtime_status is not_implemented",
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_url_entry_freeze_proof",
+            "187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+            "188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
+            "provider_public_url_entry_freeze",
+            "no provider/public URL runtime",
+            "no existing same-origin signed-reference semantics change",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing provider/public URL entry freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider/public URL entry freeze")
+    else:
+        if current_status.get("latest_provider_public_url_entry_freeze_branch") != "codex/l3-provider-url-entry-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale provider/public URL entry freeze branch")
+        if current_status.get("latest_provider_public_url_entry_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark provider/public URL entry freeze as planning-only")
+        summary = current_status.get("provider_public_url_entry_freeze")
+        if not isinstance(summary, str) or "entry_decision is deferred" not in summary or "selected_mode is null" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_public_url_entry_freeze must record deferred/null entry decision")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_public_url_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_public_url_entry_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-provider-url-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_public_url_entry_freeze",
+        "entry_decision": "deferred",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "receipt_family": "no_receipt_planning_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_entry_freeze_proof.{key} must be {expected!r}")
+    governing_docs = proof.get("governing_docs")
+    if not isinstance(governing_docs, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_entry_freeze_proof missing governing_docs")
+    else:
+        for doc in (
+            "next_milestone_plans/Layer3_planning_docs/187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+            "next_milestone_plans/Layer3_planning_docs/188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
+            "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+            "next_milestone_plans/Layer3_planning_docs/185_POST_745_DOWNSTREAM_EXPANSION_CONTRACT.md",
+        ):
+            if doc not in governing_docs:
+                errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_entry_freeze_proof governing_docs missing {doc}")
+    ledger = proof.get("evidence_ledger")
+    if not isinstance(ledger, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_entry_freeze_proof missing evidence_ledger")
+    else:
+        verified = ledger.get("current_same_origin_signed_reference_proof")
+        if not isinstance(verified, dict) or verified.get("status") != "verified":
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_entry_freeze_proof must verify current signed-reference evidence")
+        for key in (
+            "provider_storage_authority",
+            "named_use_case",
+            "exposure_classification",
+            "revocation_contract",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "unverified" or item.get("evidence") != []:
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must remain unverified with no evidence")
+    exposure = proof.get("exposure_model")
+    if not isinstance(exposure, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_entry_freeze_proof missing exposure_model")
+    else:
+        for key in ("audience", "artifact_sensitivity", "url_bearer_risk", "revocation_model", "auth_dependency"):
+            if exposure.get(key) != "unknown":
+                errors.append(f"{_rel(PROOF_MANIFEST)} exposure_model.{key} must remain unknown while decision is deferred")
+    matrix = proof.get("capability_isolation_matrix")
+    if not isinstance(matrix, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_entry_freeze_proof missing capability_isolation_matrix")
+    else:
+        for key, flag in (
+            ("same_origin_attachment_delivery", "change_allowed_in_this_pass"),
+            ("same_origin_signed_reference_delivery", "change_allowed_in_this_pass"),
+            ("provider_private_signed_url", "runtime_allowed_in_this_pass"),
+            ("provider_public_url", "runtime_allowed_in_this_pass"),
+            ("public_proxy_url", "runtime_allowed_in_this_pass"),
+            ("provider_object_write_or_copy", "runtime_allowed_in_this_pass"),
+            ("connector_destination_dispatch", "runtime_allowed_in_this_pass"),
+            ("package_mutation_reconstruction", "runtime_allowed_in_this_pass"),
+            ("source_breadth_expansion", "runtime_allowed_in_this_pass"),
+            ("rag_vector_or_hybrid_execution", "runtime_allowed_in_this_pass"),
+            ("auth_security_behavior_change", "runtime_allowed_in_this_pass"),
+        ):
+            item = matrix.get(key)
+            if not isinstance(item, dict) or item.get(flag) is not False:
+                errors.append(f"{_rel(PROOF_MANIFEST)} capability_isolation_matrix.{key}.{flag} must be false")
+    expected_negative_invariants = [
+        "no provider/public URL runtime",
+        "no provider private signed URL runtime",
+        "no public proxy URL runtime",
+        "no provider object ACL change",
+        "no provider object write or copy",
+        "no connector or destination dispatch",
+        "no generic downstream dispatch",
+        "no package mutation or reconstruction",
+        "no package payload rewrite",
+        "no source expansion",
+        "no local upload",
+        "no local-directory ingestion",
+        "no arbitrary local path input",
+        "no web connector retrieval",
+        "no RAG/vector retrieval",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no full mockup activation",
+        "no hidden LLM planning",
+        "no frontend-only durable state",
+        "no auth/security behavior change",
+        "no existing same-origin signed-reference semantics change",
+        "no provider credentials in browser or request",
+        "no provider URL or token leakage in error bodies",
+        "no provider URL or token leakage in logs",
+        "no cross-mode privilege escalation",
+        "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_entry_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -11889,6 +12084,7 @@ def main() -> int:
     _check_rendered_external_export_download_signed_reference_freeze(errors)
     _check_rendered_external_export_download_signed_reference_proof(errors)
     _check_post_745_downstream_expansion_freeze(errors)
+    _check_provider_public_url_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
