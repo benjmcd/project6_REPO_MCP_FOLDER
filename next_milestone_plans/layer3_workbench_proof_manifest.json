@@ -9707,5 +9707,55 @@
       "stop_at_planning_if_exact_named_use_case_does_not_exist",
       "reconcile_review_or_checker_drift_before_any_new_runtime_selection"
     ]
+  },
+  "provider_private_signed_url_use_case_selection_proof": {
+    "scope": "Planning/control use-case selection for the future provider-private signed URL implementation-entry target.",
+    "implementation_branch": "codex/l3-provider-private-url-use-case",
+    "live_behavior_change": false,
+    "selected_planning_mode": "provider_private_signed_url_use_case_selection",
+    "entry_decision": "use_case_selected_implementation_blocked",
+    "selected_runtime_family": "provider_public_url_runtime",
+    "selected_runtime_mode": "provider_private_signed_url",
+    "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+    "runtime_status": "not_implemented",
+    "implementation_entry_freeze_required": true,
+    "provider_storage_authority_status": "unverified",
+    "runtime_implementation_allowed": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/213_PROVIDER_PUBLIC_URL_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/221_CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT.md",
+      "next_milestone_plans/Layer3_planning_docs/222_NAMED_RUNTIME_USE_CASE_SELECTION_GATE.md",
+      "next_milestone_plans/Layer3_planning_docs/223_PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION.md"
+    ],
+    "current_bounded_behavior_insufficiency": [
+      "same_origin_delivery_requires_same_origin_app_session_boundary",
+      "selected_external_downstream_recipient_cannot_use_same_origin_review_ui_session",
+      "provider_private_signed_url_requires_provider_storage_authority_before_runtime"
+    ],
+    "required_future_entry_authority": [
+      "provider_storage_owner_and_backing_implementation",
+      "selected_artifact_family_and_server_side_artifact_authority",
+      "route_api_request_response_schema",
+      "owner_service_function_and_state_transition_contract",
+      "db_rows_read_written",
+      "files_artifacts_read_written",
+      "idempotency_replay_concurrency_stale_state_expiry_revocation_recovery_semantics",
+      "fake_provider_or_provider_contract_double_test_architecture",
+      "leak_control_and_redaction_contract",
+      "cache_referrer_content_disposition_cors_csp_posture",
+      "audit_receipt_contract",
+      "auth_security_posture",
+      "negative_cross_mode_upgrade_tests",
+      "headed_headless_theme_proof_plan_if_rendered_controls",
+      "explicit_stop_condition"
+    ],
+    "recommended_next_actions": [
+      "write_provider_private_signed_url_implementation_entry_freeze",
+      "keep_runtime_blocked_if_provider_storage_authority_remains_unverified",
+      "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_is_requested",
+      "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested"
+    ]
   }
 }
