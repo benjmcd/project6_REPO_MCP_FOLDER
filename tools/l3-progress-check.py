@@ -242,6 +242,9 @@ PROVIDER_PRIVATE_SIGNED_URL_CONTRACT_ONLY_FREEZE = (
 PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_CONTRACT = (
     PLANNING_DOCS / "227_PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_CONTRACT.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE = (
+    PLANNING_DOCS / "228_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -12509,6 +12512,178 @@ def _check_provider_private_signed_url_fake_provider_contract(errors: list[str])
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_fake_provider_contract_proof recommended_next_actions must match the frozen list")
 
+def _check_provider_private_signed_url_storage_receipt_authority_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE: (
+            "Status: current-main planning/control storage and durable-receipt authority freeze for `provider_private_signed_url_storage_receipt_authority_freeze`.",
+            "entry_decision: storage_receipt_authority_frozen_runtime_blocked",
+            "selected_runtime_family: provider_public_url_runtime",
+            "selected_runtime_mode: provider_private_signed_url",
+            "named_use_case_selected: external_downstream_recipient_private_artifact_delivery",
+            "fake_provider_contract_double_status: implemented_tested",
+            "provider_storage_authority_result: absent_for_provider_private_signed_url",
+            "same_origin_signed_reference_state_precedent: available_not_provider_private_authority",
+            "provider_private_signed_url_runtime: false",
+            "route_dto_model_migration_ui_change: false",
+            "freeze_provider_private_route_dto_runtime_entry_after_storage_receipt_authority",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Storage Receipt Authority Freeze",
+            "228_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE.md",
+            "provider_private_signed_url_storage_receipt_authority_freeze",
+            "entry_decision` is `storage_receipt_authority_frozen_runtime_blocked",
+            "same_origin_signed_reference_state_precedent` is `available_not_provider_private_authority",
+            "provider_private_signed_url_runtime` is `false",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_storage_receipt_authority_freeze_branch",
+            "latest_provider_private_signed_url_storage_receipt_authority_freeze_live_behavior_change",
+            "provider_private_signed_url_storage_receipt_authority_freeze",
+            "entry_decision is storage_receipt_authority_frozen_runtime_blocked",
+            "provider_storage_authority_result is absent_for_provider_private_signed_url",
+            "same_origin_signed_reference_state_precedent is available_not_provider_private_authority",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_storage_receipt_authority_freeze_proof",
+            "228_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE.md",
+            "provider_private_signed_url_storage_receipt_authority_freeze",
+            "storage_receipt_authority_frozen_runtime_blocked",
+            "freeze_provider_private_route_dto_runtime_entry_after_storage_receipt_authority",
+        ),
+        MODELS: (
+            "class L3SignedReferenceToken",
+            "class L3SignedReferenceReceipt",
+            "class L3SignedReferenceRevocation",
+            "class L3SignedReferenceAuditEvent",
+        ),
+        SIGNED_REFERENCE_STATE_SERVICE: (
+            "record_generated_signed_reference",
+            "record_used_signed_reference",
+            "SIGNED_REFERENCE_REPLAY_POLICY_SINGLE_USE",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL storage/receipt authority term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    if "provider-private-signed-url" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes before storage/receipt authority runtime")
+    model_text = _read_required_text(MODELS, errors)
+    for forbidden in (
+        "L3ProviderPrivateSignedUrlReceipt",
+        "L3ProviderPrivateSignedUrlRevocation",
+        "L3ProviderPrivateSignedUrlAuditEvent",
+        "L3ProviderPrivateSignedUrlObjectAuthority",
+    ):
+        if forbidden in model_text:
+            errors.append(f"{_rel(MODELS)} must not define {forbidden} before provider-private storage/receipt runtime")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL storage/receipt authority freeze")
+    else:
+        if current_status.get("latest_provider_private_signed_url_storage_receipt_authority_freeze_branch") != "codex/l3-provider-storage-receipt-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale provider private signed URL storage/receipt authority freeze branch")
+        if current_status.get("latest_provider_private_signed_url_storage_receipt_authority_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark provider private signed URL storage/receipt authority freeze as planning-only")
+        summary = current_status.get("provider_private_signed_url_storage_receipt_authority_freeze")
+        if not isinstance(summary, str) or "provider_storage_authority_result is absent_for_provider_private_signed_url" not in summary or "provider_private_signed_url_runtime is false" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_storage_receipt_authority_freeze must record absent provider-private authority/no-runtime posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_storage_receipt_authority_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_storage_receipt_authority_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-provider-storage-receipt-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_storage_receipt_authority_freeze",
+        "entry_decision": "storage_receipt_authority_frozen_runtime_blocked",
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "runtime_status": "not_implemented",
+        "fake_provider_contract_double_status": "implemented_tested",
+        "provider_storage_authority_result": "absent_for_provider_private_signed_url",
+        "same_origin_signed_reference_state_precedent": "available_not_provider_private_authority",
+        "provider_private_signed_url_runtime": False,
+        "route_dto_model_migration_ui_change": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_authority_freeze_proof.{key} must be {expected!r}")
+    expected_precedent = [
+        "L3SignedReferenceToken",
+        "L3SignedReferenceReceipt",
+        "L3SignedReferenceRevocation",
+        "L3SignedReferenceAuditEvent",
+        "backend/app/services/layer3_signed_reference_state.py",
+        "backend/alembic/versions/0016_layer3_signed_reference_state.py",
+    ]
+    if proof.get("same_origin_signed_reference_precedent") != expected_precedent:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_authority_freeze_proof same_origin_signed_reference_precedent must match the frozen list")
+    expected_absent = [
+        "provider_private_signed_url_route",
+        "provider_private_signed_url_dto",
+        "provider_private_signed_url_model",
+        "provider_private_signed_url_migration",
+        "provider_storage_service",
+        "provider_object_materialization_service",
+    ]
+    if proof.get("provider_private_authority_absent") != expected_absent:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_authority_freeze_proof provider_private_authority_absent must match the frozen list")
+    expected_authority = [
+        "provider_storage_owner_and_backing_mode",
+        "server_side_artifact_materialization_or_reference_only_authority",
+        "provider_object_identity_contract",
+        "provider_object_lifecycle_and_cleanup_policy",
+        "durable_receipt_storage_owner",
+        "durable_revocation_storage_owner",
+        "durable_audit_event_owner",
+        "expiry_and_replay_enforcement_owner",
+        "idempotency_key_and_conflict_policy",
+        "stale_external_export_download_readiness_reconciliation_owner",
+        "leak_redaction_policy",
+        "auth_security_policy_for_operator_and_external_recipient",
+    ]
+    if proof.get("required_future_storage_authority") != expected_authority:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_authority_freeze_proof required_future_storage_authority must match the frozen list")
+    expected_forbidden = [
+        "provider_private_signed_url_runtime_route",
+        "provider_public_url_runtime",
+        "public_proxy_url_runtime",
+        "provider_storage_service",
+        "provider_private_signed_url_model_or_migration",
+        "provider_object_write_copy_acl_bucket_container_key_credential_or_network_behavior",
+        "provider_url_fields_on_existing_same_origin_routes",
+        "same_origin_delivery_or_signed_reference_semantics_change",
+        "external_connector_invocation",
+        "destination_write",
+        "source_adapter_registry_or_source_expansion",
+        "package_mutation_or_reconstruction",
+        "broad_qualitative_hybrid_rag_runtime",
+        "full_mockup_activation",
+        "hidden_llm_or_prompt_model_provider_runtime",
+        "auth_security_behavior_change",
+        "route_dto_ui_playwright_or_ci_behavior_change",
+        "frontend_only_durable_authority",
+    ]
+    if proof.get("forbidden_runtime_changes") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_authority_freeze_proof forbidden_runtime_changes must match the frozen list")
+    expected_next = [
+        "freeze_provider_private_route_dto_runtime_entry_after_storage_receipt_authority",
+        "keep_runtime_blocked_if_provider_storage_authority_remains_absent",
+        "stop_if_runtime_route_or_dto_is_requested_before_storage_authority",
+        "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_is_requested",
+        "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_authority_freeze_proof recommended_next_actions must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -17311,6 +17486,7 @@ def main() -> int:
     _check_provider_private_signed_url_storage_authority_fake_provider_freeze(errors)
     _check_provider_private_signed_url_contract_only_freeze(errors)
     _check_provider_private_signed_url_fake_provider_contract(errors)
+    _check_provider_private_signed_url_storage_receipt_authority_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
