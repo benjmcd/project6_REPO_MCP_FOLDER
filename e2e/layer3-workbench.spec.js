@@ -1618,6 +1618,7 @@ async function submitRenderedExternalExportDownloadDelivery(
   const deliveryResponsePromise = page.waitForResponse((response) => (
     response.url().includes('/api/v1/layer3/handoff/export/download/deliver')
   ));
+  const downloadPromise = page.waitForEvent('download');
   await page.locator('#external-export-download-delivery-submit').click();
   const deliveryRequest = await deliveryRequestPromise;
   const deliveryPayload = formPostPayload(deliveryRequest);
@@ -1754,9 +1755,14 @@ async function submitRenderedExternalExportDownloadDelivery(
   expect(headers).not.toHaveProperty('download_url');
   expect(headers).not.toHaveProperty('public_url');
   expect(headers).not.toHaveProperty('signed_url');
+  expect(headers).not.toHaveProperty('download-url');
+  expect(headers).not.toHaveProperty('public-url');
+  expect(headers).not.toHaveProperty('signed-url');
   if (headers['content-length']) {
     expect(Number(headers['content-length'])).toBe(downloadPrepare.source_artifact_size_bytes);
   }
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toContain('layer3-');
 
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
     /external_export_download_delivery_(submitted|delivered)/,
@@ -1764,6 +1770,9 @@ async function submitRenderedExternalExportDownloadDelivery(
   );
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
     downloadPrepare.external_export_download_record_ref,
+  );
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
+    downloadPrepare.source_artifact_hash,
   );
   await expectNoDeferredRawMixedControls(page);
   return { headers, payload: deliveryPayload };
@@ -2689,6 +2698,8 @@ test('Layer 3 workbench fail-closes raw mixed rendered materialization review gu
   await page.locator('#raw-mixed-manifest-hash').fill(`${materializeRequest.artifact_manifest_hash}0`);
   await expect(page.locator('#raw-mixed-materialization-state')).toHaveText('Ready');
   await expect(page.locator('#raw-mixed-materialization-status')).toContainText('Ready to call the server-owned materialization route.');
+  await expect(page.locator('#dataset-version-ids')).toHaveValue('');
+  await expect(page.locator('#aps-content-document-ids')).toHaveValue('');
   expectNoRequestsToLayer3Paths(layer3ApiRequests, ['/preflight']);
   await expectNoDeferredRawMixedControls(page);
 });

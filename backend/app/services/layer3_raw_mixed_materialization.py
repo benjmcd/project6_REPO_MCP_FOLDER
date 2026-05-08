@@ -530,7 +530,7 @@ def _ensure_row(
     mismatched = [
         field
         for field, expected in values.items()
-        if not _same_value(getattr(existing, field), expected)
+        if not _same_value(getattr(existing, field), expected, field=field)
     ]
     if mismatched:
         raise Layer3WorkbenchError(
@@ -566,10 +566,24 @@ def _ensure_unique_identity(
     )
 
 
-def _same_value(actual: Any, expected: Any) -> bool:
+def _same_value(actual: Any, expected: Any, *, field: str | None = None) -> bool:
     if isinstance(actual, datetime) and isinstance(expected, datetime):
         return actual.isoformat() == expected.isoformat()
+    if field == "storage_ref" and isinstance(actual, str) and isinstance(expected, str):
+        return _same_storage_ref(actual, expected)
     return actual == expected
+
+
+def _same_storage_ref(actual: str, expected: str) -> bool:
+    if actual == expected:
+        return True
+    try:
+        return _server_owned_path(actual, "storage_ref") == _server_owned_path(
+            expected,
+            "storage_ref",
+        )
+    except Layer3WorkbenchError:
+        return False
 
 
 def _check_storage_ref(ref: str, expected_sha256: str, field: str) -> Path:
