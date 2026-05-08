@@ -117,6 +117,15 @@ RENDERED_HANDOFF_EXPORT_CONTRACT = (
 RENDERED_HANDOFF_EXPORT_PROOF = (
     PLANNING_DOCS / "171_RENDERED_HANDOFF_EXPORT_PROOF.md"
 )
+RENDERED_APS_HANDOFF_FREEZE = (
+    PLANNING_DOCS / "172_RENDERED_APS_HANDOFF_FREEZE.md"
+)
+RENDERED_APS_HANDOFF_CONTRACT = (
+    PLANNING_DOCS / "173_RENDERED_APS_HANDOFF_CONTRACT.md"
+)
+RENDERED_APS_HANDOFF_PROOF = (
+    PLANNING_DOCS / "174_RENDERED_APS_HANDOFF_PROOF.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -6280,6 +6289,168 @@ def _check_rendered_handoff_export_proof(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} rendered handoff/export proof missing browser proof test name")
 
 
+def _check_rendered_aps_handoff_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_APS_HANDOFF_FREEZE: (
+            "Status: planning/control freeze only for `raw_mixed_rendered_aps_handoff_dispatch`.",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            "Layer3ApsHandoffDispatchRequest",
+            "Layer3ApsHandoffDispatchResponse",
+            "#aps-handoff-dispatch-submit",
+            "[data-operation-target=\"aps-handoff-band\"]",
+            "Current rendered workbench behavior may enable `#external-export-download-prepare-submit`",
+            "no frontend-only durable authority",
+        ),
+        RENDERED_APS_HANDOFF_CONTRACT: (
+            "Selected mode: `raw_mixed_rendered_aps_handoff_dispatch`.",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            "Layer3ApsHandoffDispatchRequest",
+            "Layer3ApsHandoffDispatchResponse",
+            "operator_decision",
+            "server_side_aps_handoff",
+            "#aps-handoff-dispatch-panel",
+            "The future browser proof must",
+        ),
+        BOARD: (
+            "Rendered APS handoff dispatch proof",
+            "172_RENDERED_APS_HANDOFF_FREEZE.md",
+            "173_RENDERED_APS_HANDOFF_CONTRACT.md",
+            "raw_mixed_rendered_aps_handoff_dispatch",
+        ),
+        MANIFEST: (
+            "latest_rendered_aps_handoff_freeze_branch",
+            "latest_rendered_aps_handoff_freeze_live_behavior_change",
+            "rendered_aps_handoff_freeze",
+            "raw_mixed_rendered_aps_handoff_dispatch",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_aps_handoff_freeze_proof",
+            "172_RENDERED_APS_HANDOFF_FREEZE.md",
+            "173_RENDERED_APS_HANDOFF_CONTRACT.md",
+            "raw_mixed_rendered_aps_handoff_dispatch",
+            "#aps-handoff-dispatch-submit",
+            "no frontend-only durable authority",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered APS handoff freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_aps_handoff_freeze_branch") != "codex/l3-rendered-aps-proof":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered APS handoff freeze branch")
+        if current_status.get("latest_rendered_aps_handoff_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered APS handoff freeze as planning-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_aps_handoff_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_aps_handoff_freeze_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered APS handoff freeze proof must be planning-only")
+    if proof.get("selected_rendered_aps_handoff_mode") != "raw_mixed_rendered_aps_handoff_dispatch":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered APS handoff freeze proof has stale selected mode")
+    routes = proof.get("routes_to_reuse")
+    if not isinstance(routes, list) or "POST /api/v1/layer3/handoff/aps/dispatch" not in routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered APS handoff freeze proof missing route to reuse")
+    selectors = proof.get("future_selectors")
+    if not isinstance(selectors, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered APS handoff freeze proof missing future_selectors")
+    else:
+        for selector in (
+            "[data-operation-target=\"aps-handoff-band\"]",
+            "#aps-handoff-dispatch-submit",
+            "#aps-handoff-dispatch-panel",
+        ):
+            if selector not in selectors:
+                errors.append(f"{_rel(PROOF_MANIFEST)} rendered APS handoff future_selectors missing {selector}")
+
+
+def _check_rendered_aps_handoff_proof(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_APS_HANDOFF_PROOF: (
+            "Status: live test-only rendered browser proof for `raw_mixed_rendered_aps_handoff_dispatch`.",
+            "Layer 3 workbench drives raw mixed rendered APS handoff dispatch",
+            "submitRenderedApsHandoffDispatch",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            "layer3.aps_handoff_dispatch.v1",
+            "aps_handoff_dispatched",
+            "server-returned `aps_handoff_record_ref`",
+            "server-returned `aps_bundle_ref`",
+            "`#external-export-download-prepare-submit` as enabled",
+            "no `/handoff/export/download` request is made",
+            "no frontend-only durable authority",
+        ),
+        BOARD: (
+            "Rendered APS handoff dispatch proof",
+            "174_RENDERED_APS_HANDOFF_PROOF.md",
+            "Layer 3 workbench drives raw mixed rendered APS handoff dispatch",
+            "raw_mixed_rendered_aps_handoff_dispatch",
+            "aps_handoff_dispatched",
+        ),
+        MANIFEST: (
+            "latest_rendered_aps_handoff_proof_branch",
+            "latest_rendered_aps_handoff_proof_live_behavior_change",
+            "rendered_aps_handoff_proof",
+            "174_RENDERED_APS_HANDOFF_PROOF.md",
+            "Layer 3 workbench drives raw mixed rendered APS handoff dispatch",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_aps_handoff_proof",
+            "174_RENDERED_APS_HANDOFF_PROOF.md",
+            "raw_mixed_rendered_aps_handoff_dispatch",
+            "submitRenderedApsHandoffDispatch",
+            "Layer 3 workbench drives raw mixed rendered APS handoff dispatch",
+            "readiness_nuance",
+            "no frontend-only durable authority",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives raw mixed rendered APS handoff dispatch",
+            "submitRenderedApsHandoffDispatch",
+            "expect(dispatchPayload.aps_handoff_target).toBe('aps_evidence_bundle')",
+            "expect(dispatchPayload.dispatch_mode).toBe('server_side_aps_handoff')",
+            "expect(apsDispatch.aps_handoff_state).toBe('aps_handoff_dispatched')",
+            "expect(page.locator('#external-export-download-prepare-submit')).toBeEnabled()",
+            "/handoff/aps/dispatch",
+            "/handoff/export/download",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered APS handoff proof term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_aps_handoff_proof_branch") != "codex/l3-rendered-aps-proof":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered APS handoff proof branch")
+        if current_status.get("latest_rendered_aps_handoff_proof_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered APS handoff proof as test-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_aps_handoff_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_aps_handoff_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered APS handoff proof must be test-only")
+    if proof.get("selected_rendered_aps_handoff_mode") != "raw_mixed_rendered_aps_handoff_dispatch":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered APS handoff proof has stale selected mode")
+    routes = proof.get("routes_reused")
+    if not isinstance(routes, list) or "POST /api/v1/layer3/handoff/aps/dispatch" not in routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered APS handoff proof missing route reused")
+    browser_proof = proof.get("browser_proof")
+    if not isinstance(browser_proof, list) or "Layer 3 workbench drives raw mixed rendered APS handoff dispatch" not in browser_proof:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered APS handoff proof missing browser proof test name")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -10859,6 +11030,9 @@ def main() -> int:
         RENDERED_HANDOFF_EXPORT_FREEZE,
         RENDERED_HANDOFF_EXPORT_CONTRACT,
         RENDERED_HANDOFF_EXPORT_PROOF,
+        RENDERED_APS_HANDOFF_FREEZE,
+        RENDERED_APS_HANDOFF_CONTRACT,
+        RENDERED_APS_HANDOFF_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -11026,6 +11200,8 @@ def main() -> int:
     _check_rendered_package_review_proof(errors)
     _check_rendered_handoff_export_freeze(errors)
     _check_rendered_handoff_export_proof(errors)
+    _check_rendered_aps_handoff_freeze(errors)
+    _check_rendered_aps_handoff_proof(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
