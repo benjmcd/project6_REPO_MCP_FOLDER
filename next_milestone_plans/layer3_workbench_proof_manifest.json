@@ -7919,5 +7919,203 @@
       "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control"
     ],
     "next_boundary": "A later auth/security authority discovery freeze must choose exactly one mode before any route dependency, identity, tenant/session ownership, permission, audit, provider/connector secret, rendered identity, or deployment storage-exposure behavior change."
+  },
+  "ci_performance_observability_entry_freeze_proof": {
+    "implementation_branch": "codex/l3-ci-observability-entry-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "ci_performance_observability_entry_freeze",
+    "entry_decision": "deferred",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "live_ci_profile": "focused_layer3_backend_pytest_plus_serial_chromium_playwright",
+    "live_browser_harness_profile": "fixed_port_8031_single_worker_trace_on_first_retry",
+    "live_artifact_profile": "playwright_html_report_upload_only",
+    "receipt_family": "no_receipt_planning_only",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/142_POST_709_ROADMAP_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/199_AUTH_SECURITY_ENTRY_FREEZE.md"
+    ],
+    "evidence_ledger": {
+      "current_backend_layer3_api_ci_job": {
+        "status": "verified",
+        "evidence": [
+          ".github/workflows/playwright.yml",
+          "backend/tests/requirements-layer3-api.txt"
+        ]
+      },
+      "current_playwright_ci_job": {
+        "status": "verified",
+        "evidence": [
+          ".github/workflows/playwright.yml",
+          "playwright.config.js",
+          "backend/tests/requirements-browser.txt"
+        ]
+      },
+      "current_serial_browser_harness_profile": {
+        "status": "verified",
+        "evidence": [
+          "playwright.config.js",
+          "backend/tests/review_browser_server.py"
+        ]
+      },
+      "current_progress_checker_profile": {
+        "status": "verified",
+        "evidence": [
+          "tools/l3-progress-check.py",
+          "next_milestone_plans/layer3_progress_manifest.json",
+          "next_milestone_plans/layer3_workbench_proof_manifest.json"
+        ]
+      },
+      "performance_budget_model": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "flake_quarantine_policy": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "headed_headless_ci_matrix_policy": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "observability_event_schema": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "audit_trace_completeness_contract": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "metrics_log_shipping_dashboard_policy": {
+        "status": "unverified",
+        "evidence": []
+      },
+      "artifact_retention_taxonomy": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    "ci_performance_observability_exposure_model": {
+      "selected_ci_mode": "unknown",
+      "performance_budget_authority": "unknown",
+      "test_duration_budget": "unknown",
+      "flake_policy": "unknown",
+      "headed_headless_matrix": "unknown",
+      "browser_artifact_policy": "unknown",
+      "observability_event_schema": "unknown",
+      "audit_trace_completeness_contract": "unknown",
+      "log_metric_export_target": "unknown",
+      "dashboard_or_report_authority": "unknown",
+      "retention_policy": "unknown",
+      "security_redaction_policy": "unknown",
+      "negative_side_effect_surface": "unknown"
+    },
+    "capability_isolation_matrix": {
+      "existing_backend_layer3_api_ci_job": {
+        "change_allowed_in_this_pass": false
+      },
+      "existing_playwright_ci_job": {
+        "change_allowed_in_this_pass": false
+      },
+      "existing_serial_browser_harness_profile": {
+        "change_allowed_in_this_pass": false
+      },
+      "ci_workflow_change": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "performance_budget_gate": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "headed_browser_ci_matrix": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "sharding_or_parallelism_change": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "observability_event_runtime": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "audit_trace_runtime": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "metrics_log_shipping_dashboard": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "artifact_retention_policy_change": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "auth_security_behavior_change": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "full_mockup_activation": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "frontend_only_durable_state": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "source_breadth_expansion": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "package_mutation_reconstruction": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "provider_public_url": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "connector_destination_dispatch": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "rag_vector_or_hybrid_execution": {
+        "runtime_allowed_in_this_pass": false
+      },
+      "hidden_llm_planning": {
+        "runtime_allowed_in_this_pass": false
+      }
+    },
+    "negative_invariants": [
+      "no CI workflow change",
+      "no Playwright configuration change",
+      "no backend test dependency change",
+      "no browser harness dependency change",
+      "no performance budget gate",
+      "no runtime timing assertion",
+      "no sharding or parallelism change",
+      "no headed browser CI matrix",
+      "no observability event runtime",
+      "no security audit-event runtime",
+      "no metrics, log shipping, dashboard, or external telemetry target",
+      "no artifact retention policy change",
+      "no route/API behavior change",
+      "no DTO change",
+      "no model or migration change",
+      "no production service behavior change",
+      "no test behavior change",
+      "no rendered UI control",
+      "no source expansion",
+      "no source adapter registry",
+      "no local upload",
+      "no local-directory ingestion",
+      "no web connector retrieval",
+      "no broad execution",
+      "no broad qualitative execution",
+      "no hybrid execution",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector or destination dispatch",
+      "no destination write",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority",
+      "no local path, provider URL, connector target, destination target, source credential, auth token, proxy header, prompt, metric payload, trace payload, or browser storage secret leakage in error bodies",
+      "no local path, provider URL, connector target, destination target, source credential, auth token, proxy header, prompt, metric payload, trace payload, or browser storage secret leakage in logs",
+      "no cross-mode privilege escalation",
+      "no new route, DTO, model, migration, production service behavior, test behavior, rendered UI control, or CI behavior"
+    ],
+    "next_boundary": "A later CI/performance/observability authority discovery freeze must choose exactly one mode before any workflow, timing, budget, flake policy, observability schema, audit trace, metric/log shipping, artifact retention, headed CI, or CI parallelism change."
   }
 }
