@@ -7936,7 +7936,8 @@
       "next_milestone_plans/Layer3_planning_docs/202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/142_POST_709_ROADMAP_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
-      "next_milestone_plans/Layer3_planning_docs/199_AUTH_SECURITY_ENTRY_FREEZE.md"
+      "next_milestone_plans/Layer3_planning_docs/199_AUTH_SECURITY_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/200_AUTH_SECURITY_ENTRY_CONTRACT.md"
     ],
     "evidence_ledger": {
       "current_backend_layer3_api_ci_job": {
@@ -8126,13 +8127,21 @@
     "governing_docs": [
       "next_milestone_plans/Layer3_planning_docs/184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/191_PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/192_PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/193_SOURCE_BREADTH_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/194_SOURCE_BREADTH_ENTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/199_AUTH_SECURITY_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/200_AUTH_SECURITY_ENTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/203_POST_756_GOVERNANCE_CLOSEOUT.md"
     ],
     "completed_entry_freeze_chain": [
@@ -8171,7 +8180,12 @@
       "no full mockup activation",
       "no auth/security behavior change",
       "no CI/performance/observability runtime",
-      "no frontend-only durable authority"
+      "no frontend-only durable authority",
+      "no source adapter registry, local upload, local-directory ingestion, arbitrary local path input, broad file upload, web connector retrieval, or unbounded runtime DB source read",
+      "no broad qualitative execution, qualitative associated-cohort execution, comparative execution, cross-document synthesis, hybrid execution, RAG/vector retrieval, vector index creation, embedding generation, prompt/model/provider runtime, or hidden LLM planning",
+      "no full mockup activation, browser-local persistence as authority, frontend-only durable state, or theme-specific durable authority",
+      "no route-level auth dependency change, authorization/permission enforcement change, tenant/session-owner runtime, proxy identity trust expansion, storage exposure expansion, or security audit-event runtime",
+      "no CI workflow change, Playwright configuration change, performance budget gate, runtime timing assertion, headed browser CI matrix, sharding/parallelism change, observability event runtime, metrics/log shipping, dashboard, or artifact retention policy change"
     ],
     "next_boundary": "Choose one exact implementation-entry freeze or authority-discovery update before any runtime work beyond the completed post-745 governance chain."
   },
@@ -8315,7 +8329,8 @@
       "no hidden LLM planning",
       "no full mockup activation",
       "no auth/security behavior change",
-      "no frontend-only durable authority"
+      "no frontend-only durable authority",
+      "no local path, credential, token, prompt, metric payload, trace payload, provider URL, connector target, destination target, or browser storage leakage"
     ],
     "next_boundary": "A later exact freeze must choose artifact taxonomy/redaction, flake policy, performance budget discovery, headed/headless parity, or observability/audit schema before any runtime or workflow change."
   },
@@ -8678,18 +8693,21 @@
     "runtime_status": "planning_event_schema_only",
     "governing_docs": [
       "next_milestone_plans/Layer3_planning_docs/206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/207_FLAKE_POLICY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/209_HEADED_HEADLESS_PARITY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md"
     ],
     "current_observability_posture": {
-      "observability_event_runtime": "not_implemented",
-      "audit_event_runtime": "not_implemented",
+      "ci_observability_event_runtime": "not_implemented",
+      "ci_observability_audit_event_runtime": "not_implemented",
       "metrics_log_shipping": "not_implemented",
       "dashboard": "not_implemented",
       "telemetry_receipt_artifact": "not_implemented",
-      "event_storage_table": "not_implemented",
-      "event_writer_service": "not_implemented",
+      "ci_observability_event_storage_table": "not_implemented",
+      "ci_observability_event_writer_service": "not_implemented",
+      "existing_signed_reference_audit_event_runtime": "out_of_scope_existing_runtime",
+      "existing_signed_reference_audit_event_storage_table": "out_of_scope_existing_runtime",
       "browser_storage_authority": "not_admitted",
       "status": "schema_boundary_only"
     },
@@ -8715,6 +8733,21 @@
       "package_ref",
       "artifact_family"
     ],
+    "allowed_status_fields": [
+      "status",
+      "response_safe_failure_code",
+      "response_safe_failure_reason",
+      "duration_ms",
+      "attempt_number",
+      "retry_classification",
+      "threshold_label",
+      "owner_label"
+    ],
+    "allowed_hash_fields": [
+      "policy_hash",
+      "artifact_hash",
+      "payload_shape_hash"
+    ],
     "forbidden_authority_fields": [
       "browser_local_state",
       "raw_request_body",
@@ -8737,9 +8770,9 @@
     ],
     "negative_invariants": [
       "no observability event runtime",
-      "no audit-event runtime",
-      "no event writer service",
-      "no event storage table",
+      "no CI/performance/observability audit-event runtime",
+      "no CI/performance/observability event writer service",
+      "no CI/performance/observability event storage table",
       "no telemetry receipt artifact",
       "no metrics/log shipping",
       "no dashboard",
