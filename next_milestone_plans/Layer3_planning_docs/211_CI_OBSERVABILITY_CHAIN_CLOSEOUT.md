@@ -2,7 +2,7 @@
 
 Status: current-main planning/control closeout for the CI/performance/observability prerequisite chain.
 
-This document records that the post-756 CI/performance/observability planning chain has been carried through the bounded prerequisite freezes selected by `203_POST_756_GOVERNANCE_CLOSEOUT.md` and `204_CI_OBSERVABILITY_GAP_INVENTORY.md`. It does not implement runtime behavior, change CI, change Playwright configuration, add tests, add routes, change DTOs, edit models or migrations, change production services, add rendered UI controls, add observability events, add audit events, add metrics/log shipping, add dashboards, alter artifacts, activate headed CI, add performance gates, mutate packages, expand sources, activate provider/public URLs, dispatch connectors/destinations, activate RAG/vector behavior, activate full mockups, change auth/security behavior, or create frontend-only durable authority.
+This document records that the post-756 CI/performance/observability planning chain has been carried through the bounded prerequisite freezes selected by `203_POST_756_GOVERNANCE_CLOSEOUT.md` and `204_CI_OBSERVABILITY_GAP_INVENTORY.md`. It does not implement runtime behavior, change CI, change Playwright configuration, add tests, add routes, change DTOs, edit models or migrations, change production services, add rendered UI controls, add CI/performance/observability events, add CI/performance/observability audit events, add metrics/log shipping, add dashboards, alter artifacts, activate headed CI, add performance gates, mutate packages, expand sources, activate provider/public URLs, dispatch connectors/destinations, activate RAG/vector behavior, activate full mockups, change auth/security behavior, or create frontend-only durable authority. Existing signed-reference audit-event runtime remains out of scope for this CI/performance/observability closeout.
 
 ## Authority Snapshot
 
@@ -91,9 +91,9 @@ This closeout admits no:
 - visual diff runtime;
 - theme test runtime;
 - observability event runtime;
-- audit-event runtime;
-- event writer service;
-- event storage table;
+- CI/performance/observability audit-event runtime;
+- CI/performance/observability event writer service;
+- CI/performance/observability event storage table;
 - metrics/log shipping;
 - dashboard;
 - route/API/DTO/model/migration/service behavior change;
@@ -130,10 +130,10 @@ The next pass should not be broad runtime implementation. It should be one of:
 
 1. `ci_performance_observability_runtime_entry_freeze_update` if there is a concrete need to implement one narrow CI/observability runtime mode;
 2. `ci_observability_no_runtime_closeout` if the correct decision is to keep all CI/performance/observability work planning-only for now;
-3. `provider_public_url_authority_discovery_freeze_or_entry_update` if downstream delivery, not CI reliability, is the next concrete blocker;
-4. `connector_destination_authority_discovery_freeze_or_entry_update` if direct downstream dispatch is the next concrete blocker;
-5. `source_breadth_authority_discovery_freeze_or_entry_update` if new source families are the next concrete blocker.
+3. `provider_public_url_authority_discovery_freeze_or_entry_freeze_update` if downstream delivery, not CI reliability, is the next concrete blocker;
+4. `connector_destination_authority_discovery_freeze_or_entry_freeze_update` if direct downstream dispatch is the next concrete blocker;
+5. `source_breadth_authority_discovery_freeze_or_entry_freeze_update` if new source families are the next concrete blocker.
 
 ## Stop Condition
 
-Stop before implementation if a proposed next task changes CI workflows, Playwright config, executable tests, dependencies, retry/worker/sharding behavior, browser modes, artifacts, timing gates, flake quarantine behavior, observability events, audit events, metrics/log shipping, dashboards, routes, DTOs, models, migrations, services, rendered UI, source/package/provider/connector/RAG/mockup/auth behavior, or frontend durable authority without a later exact implementation-entry freeze.
+Stop before implementation if a proposed next task changes CI workflows, Playwright config, executable tests, dependencies, retry/worker/sharding behavior, browser modes, artifacts, timing gates, flake quarantine behavior, CI/performance/observability events, CI/performance/observability audit events, metrics/log shipping, dashboards, routes, DTOs, models, migrations, services, rendered UI, source/package/provider/connector/RAG/mockup/auth behavior, or frontend durable authority without a later exact implementation-entry freeze.
