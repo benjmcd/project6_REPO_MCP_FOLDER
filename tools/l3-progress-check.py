@@ -96,6 +96,9 @@ RENDERED_RESULT_REVIEW_FREEZE = (
 RENDERED_RESULT_REVIEW_CONTRACT = (
     PLANNING_DOCS / "164_RENDERED_RESULT_REVIEW_CONTRACT.md"
 )
+RENDERED_RESULT_REVIEW_PROOF = (
+    PLANNING_DOCS / "165_RENDERED_RESULT_REVIEW_PROOF.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -5752,6 +5755,94 @@ def _check_rendered_result_review_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} future_selectors missing {selector}")
 
 
+def _check_rendered_result_review_proof(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_RESULT_REVIEW_PROOF: (
+            "Status: live rendered browser proof for `raw_mixed_rendered_result_review_submit`.",
+            "POST /api/v1/layer3/execution/result/review",
+            "Layer3ExecutionResultReviewRequest",
+            "Layer3ExecutionResultReviewResponse",
+            "Layer 3 workbench drives raw mixed rendered result-review submit",
+            "submitRenderedResultReview",
+            "#result-review-decision",
+            "#result-review-notes",
+            "#result-review-submit",
+            "#package-review-preview-inspect",
+            "light` from rendered result/status inspection",
+            "no frontend-only durable authority",
+        ),
+        BOARD: (
+            "Rendered result-review proof",
+            "165_RENDERED_RESULT_REVIEW_PROOF.md",
+            "raw_mixed_rendered_result_review_submit",
+            "Layer 3 workbench drives raw mixed rendered result-review submit",
+        ),
+        MANIFEST: (
+            "latest_rendered_result_review_proof_branch",
+            "latest_rendered_result_review_proof_live_behavior_change",
+            "rendered_result_review_proof",
+            "Layer 3 workbench drives raw mixed rendered result-review submit",
+            "notes-required changes_requested branch",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_result_review_proof",
+            "165_RENDERED_RESULT_REVIEW_PROOF.md",
+            "raw_mixed_rendered_result_review_submit",
+            "Layer 3 workbench drives raw mixed rendered result-review submit",
+            "submitRenderedResultReview",
+            "no frontend-only durable authority",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives raw mixed rendered result-review submit",
+            "submitRenderedResultReview",
+            "cohort_result_review_ui_review_ready",
+            "cohort_result_review_ui_recorded",
+            "expectOnlyPayloadKeys(reviewPayload",
+            "expect(reviewPayload.operator_decision).toBe('changes_requested')",
+            "expect(reviewPayload).not.toHaveProperty('artifact_manifest')",
+            "expect(review.package_review_enabled).toBe(false)",
+            "expect(review.handoff_enabled).toBe(false)",
+            "expectNoRequestsToLayer3Paths(layer3ApiRequests",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered result-review proof term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_result_review_proof_branch") != "codex/l3-rendered-result-review-proof":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered result-review proof branch")
+        if current_status.get("latest_rendered_result_review_proof_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered result-review proof as test-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_result_review_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_result_review_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered result-review proof must be test-only")
+    if proof.get("selected_rendered_result_review_mode") != "raw_mixed_rendered_result_review_submit":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered result-review proof has stale selected mode")
+    selectors = proof.get("live_selectors")
+    if not isinstance(selectors, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered result-review proof missing live_selectors")
+    else:
+        for selector in (
+            "#result-review-decision",
+            "#result-review-notes",
+            "#result-review-submit",
+            "#result-review-panel",
+            "#package-review-preview-inspect",
+        ):
+            if selector not in selectors:
+                errors.append(f"{_rel(PROOF_MANIFEST)} live_selectors missing {selector}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -10324,6 +10415,7 @@ def main() -> int:
         RENDERED_EXECUTION_SELECTION_START_RUNTIME,
         RENDERED_RESULT_REVIEW_FREEZE,
         RENDERED_RESULT_REVIEW_CONTRACT,
+        RENDERED_RESULT_REVIEW_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -10486,6 +10578,7 @@ def main() -> int:
     _check_rendered_execution_selection_start_freeze(errors)
     _check_rendered_execution_selection_start_runtime(errors)
     _check_rendered_result_review_freeze(errors)
+    _check_rendered_result_review_proof(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
