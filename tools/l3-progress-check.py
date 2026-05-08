@@ -177,6 +177,8 @@ PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE = (
 PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT = (
     PLANNING_DOCS / "192_PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT.md"
 )
+SOURCE_BREADTH_ENTRY_FREEZE = PLANNING_DOCS / "193_SOURCE_BREADTH_ENTRY_FREEZE.md"
+SOURCE_BREADTH_ENTRY_CONTRACT = PLANNING_DOCS / "194_SOURCE_BREADTH_ENTRY_CONTRACT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -7731,6 +7733,207 @@ def _check_package_mutation_rendered_entry_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_rendered_entry_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_source_breadth_entry_freeze(errors: list[str]) -> None:
+    required_terms = {
+        SOURCE_BREADTH_ENTRY_FREEZE: (
+            "Status: planning/control entry freeze only for `source_breadth_entry_freeze`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_supported_source_boundary_status: supported_source_classes_only",
+            "live_raw_mixed_seed_status: raw_mixed_corpus_bridge_seed_only",
+            "live_raw_mixed_materialization_status: raw_mixed_existing_source_materialization_entry",
+            "new_source_family_authority_adapter_contract_operator_input_storage_security_and_downstream_semantics_not_yet_verified",
+            "source_breadth_authority_discovery_freeze_or_entry_freeze_update",
+            "Source Expansion Exposure Model",
+            "Capability Isolation Matrix",
+            "new_source_family_runtime: false",
+            "source_adapter_registry: false",
+            "local_upload: false",
+            "web_connector_retrieval: false",
+            "rag_vector_retrieval: false",
+            "no raw mixed materialization behavior change",
+        ),
+        SOURCE_BREADTH_ENTRY_CONTRACT: (
+            "Status: planning/control contract paired with `193_SOURCE_BREADTH_ENTRY_FREEZE.md`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_supported_source_boundary_status: supported_source_classes_only",
+            "live_raw_mixed_seed_status: raw_mixed_corpus_bridge_seed_only",
+            "live_raw_mixed_materialization_status: raw_mixed_existing_source_materialization_entry",
+            "Existing Source Runtime Compatibility Contract",
+            "This entry freeze adds no rendered UI control.",
+            "Checker Contract",
+            "The checker must not pretend to validate actual source adapters",
+        ),
+        BOARD: (
+            "Source Breadth Entry Freeze",
+            "193_SOURCE_BREADTH_ENTRY_FREEZE.md",
+            "194_SOURCE_BREADTH_ENTRY_CONTRACT.md",
+            "source_breadth_entry_freeze",
+            "selected_mode` is `null`",
+            "runtime_status` is `not_implemented`",
+            "raw_mixed_corpus_bridge_seed_only",
+            "raw_mixed_existing_source_materialization_entry",
+        ),
+        MANIFEST: (
+            "latest_source_breadth_entry_freeze_branch",
+            "latest_source_breadth_entry_freeze_live_behavior_change",
+            "source_breadth_entry_freeze",
+            "entry_decision is deferred",
+            "selected_mode is null",
+            "runtime_status is not_implemented",
+            "raw_mixed_existing_source_materialization_entry",
+        ),
+        PROOF_MANIFEST: (
+            "source_breadth_entry_freeze_proof",
+            "193_SOURCE_BREADTH_ENTRY_FREEZE.md",
+            "194_SOURCE_BREADTH_ENTRY_CONTRACT.md",
+            "source_breadth_entry_freeze",
+            "supported_source_classes_only",
+            "raw_mixed_existing_source_materialization_entry",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source breadth entry freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for source breadth entry freeze")
+    else:
+        if current_status.get("latest_source_breadth_entry_freeze_branch") != "codex/l3-source-breadth-entry-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale source breadth entry freeze branch")
+        if current_status.get("latest_source_breadth_entry_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark source breadth entry freeze as planning-only")
+        summary = current_status.get("source_breadth_entry_freeze")
+        if not isinstance(summary, str) or "entry_decision is deferred" not in summary or "selected_mode is null" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.source_breadth_entry_freeze must record deferred/null entry decision")
+        if isinstance(summary, str) and "raw_mixed_existing_source_materialization_entry" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.source_breadth_entry_freeze must preserve materialization boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("source_breadth_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_breadth_entry_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-source-breadth-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "source_breadth_entry_freeze",
+        "entry_decision": "deferred",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_supported_source_boundary_status": "supported_source_classes_only",
+        "live_raw_mixed_seed_status": "raw_mixed_corpus_bridge_seed_only",
+        "live_raw_mixed_materialization_status": "raw_mixed_existing_source_materialization_entry",
+        "receipt_family": "no_receipt_planning_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_entry_freeze_proof.{key} must be {expected!r}")
+    governing_docs = proof.get("governing_docs")
+    for doc in (
+        "next_milestone_plans/Layer3_planning_docs/193_SOURCE_BREADTH_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/194_SOURCE_BREADTH_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/123_SOURCE_EXPANSION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/137_RAW_MIXED_BRIDGE_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/154_RAW_INGESTION_MATERIALIZATION_FREEZE.md",
+    ):
+        if not isinstance(governing_docs, list) or doc not in governing_docs:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_entry_freeze_proof governing_docs missing {doc}")
+    ledger = proof.get("evidence_ledger")
+    if not isinstance(ledger, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_entry_freeze_proof missing evidence_ledger")
+    else:
+        for key in ("current_supported_source_boundary", "current_raw_mixed_seed_only", "current_raw_mixed_materialization"):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "verified":
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must be verified")
+        for key in (
+            "new_source_family_authority",
+            "source_adapter_contract",
+            "operator_input_and_storage_security_model",
+            "downstream_source_semantics",
+            "rendered_source_control_theme_proof_plan",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "unverified" or item.get("evidence") != []:
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must remain unverified with no evidence")
+    exposure = proof.get("source_expansion_exposure_model")
+    for key in (
+        "source_family",
+        "operator_input_surface",
+        "storage_boundary",
+        "adapter_authority",
+        "retrieval_network_policy",
+        "provenance_model",
+        "downstream_materialization_semantics",
+        "theme_surface",
+    ):
+        if not isinstance(exposure, dict) or exposure.get(key) != "unknown":
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_expansion_exposure_model.{key} must remain unknown while decision is deferred")
+    matrix = proof.get("capability_isolation_matrix")
+    for key, flag in (
+        ("dataset_version", "change_allowed_in_this_pass"),
+        ("aps_content_document", "change_allowed_in_this_pass"),
+        ("raw_mixed_corpus_bridge_seed_only", "change_allowed_in_this_pass"),
+        ("raw_mixed_existing_source_materialization_entry", "change_allowed_in_this_pass"),
+        ("single_named_source_family_expansion", "runtime_allowed_in_this_pass"),
+        ("source_adapter_registry", "runtime_allowed_in_this_pass"),
+        ("local_upload", "runtime_allowed_in_this_pass"),
+        ("local_directory_ingestion", "runtime_allowed_in_this_pass"),
+        ("broad_file_upload", "runtime_allowed_in_this_pass"),
+        ("web_connector_retrieval", "runtime_allowed_in_this_pass"),
+        ("rag_vector_retrieval", "runtime_allowed_in_this_pass"),
+        ("unbounded_runtime_db_source_read", "runtime_allowed_in_this_pass"),
+        ("provider_public_url", "runtime_allowed_in_this_pass"),
+        ("connector_destination_dispatch", "runtime_allowed_in_this_pass"),
+        ("package_mutation_reconstruction", "runtime_allowed_in_this_pass"),
+        ("full_mockup_activation", "runtime_allowed_in_this_pass"),
+        ("auth_security_behavior_change", "runtime_allowed_in_this_pass"),
+    ):
+        item = matrix.get(key) if isinstance(matrix, dict) else None
+        if not isinstance(item, dict) or item.get(flag) is not False:
+            errors.append(f"{_rel(PROOF_MANIFEST)} capability_isolation_matrix.{key}.{flag} must be false")
+    expected_negative_invariants = [
+        "no new source family runtime",
+        "no source adapter registry",
+        "no local upload",
+        "no local-directory ingestion",
+        "no broad file upload",
+        "no arbitrary local path input",
+        "no web connector retrieval",
+        "no RAG/vector retrieval",
+        "no vector index creation",
+        "no unbounded runtime DB source read",
+        "no source-class expansion beyond dataset_version and aps_content_document",
+        "no raw mixed seed behavior change",
+        "no raw mixed materialization behavior change",
+        "no Layer 3 flow start inside source seeding or materialization",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no generic downstream dispatch",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no full mockup activation",
+        "no hidden LLM planning",
+        "no frontend-only durable state",
+        "no auth/security behavior change",
+        "no browser-only source authority",
+        "no source credentials, local paths, provider URL, connector target, destination target, or token leakage in error bodies",
+        "no source credentials, local paths, provider URL, connector target, destination target, or token leakage in logs",
+        "no cross-mode privilege escalation",
+        "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_entry_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -12503,6 +12706,7 @@ def main() -> int:
     _check_provider_public_url_entry_freeze(errors)
     _check_connector_destination_entry_freeze(errors)
     _check_package_mutation_rendered_entry_freeze(errors)
+    _check_source_breadth_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
