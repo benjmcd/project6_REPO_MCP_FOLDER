@@ -236,6 +236,9 @@ PROVIDER_PRIVATE_SIGNED_URL_IMPLEMENTATION_ENTRY_FREEZE = (
 PROVIDER_PRIVATE_SIGNED_URL_STORAGE_AUTHORITY_FAKE_PROVIDER_FREEZE = (
     PLANNING_DOCS / "225_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_AUTHORITY_FAKE_PROVIDER_FREEZE.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_CONTRACT_ONLY_FREEZE = (
+    PLANNING_DOCS / "226_PROVIDER_PRIVATE_SIGNED_URL_CONTRACT_ONLY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -12170,6 +12173,163 @@ def _check_provider_private_signed_url_storage_authority_fake_provider_freeze(er
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_authority_fake_provider_freeze_proof recommended_next_actions must match the frozen list")
 
+def _check_provider_private_signed_url_contract_only_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_CONTRACT_ONLY_FREEZE: (
+            "Status: current-main planning/control contract-only freeze for `provider_private_signed_url_contract_only_freeze`.",
+            "entry_decision: contract_frozen_runtime_blocked",
+            "selected_runtime_family: provider_public_url_runtime",
+            "selected_runtime_mode: provider_private_signed_url",
+            "named_use_case_selected: external_downstream_recipient_private_artifact_delivery",
+            "provider_storage_authority_result: no_current_main_provider_storage_authority",
+            "fake_provider_contract_double_status: required_not_implemented",
+            "candidate_route_namespace: /api/v1/layer3/handoff/export/download/provider-private-signed-url",
+            "contract_only: true",
+            "runtime_implementation_allowed: false",
+            "implement_fake_provider_contract_tests_before_runtime_routes",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Contract Only Freeze",
+            "226_PROVIDER_PRIVATE_SIGNED_URL_CONTRACT_ONLY_FREEZE.md",
+            "provider_private_signed_url_contract_only_freeze",
+            "entry_decision` is `contract_frozen_runtime_blocked",
+            "contract_only` is `true",
+            "candidate_route_namespace` is `/api/v1/layer3/handoff/export/download/provider-private-signed-url",
+            "runtime_implementation_allowed` is `false",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_contract_only_freeze_branch",
+            "latest_provider_private_signed_url_contract_only_freeze_live_behavior_change",
+            "provider_private_signed_url_contract_only_freeze",
+            "entry_decision is contract_frozen_runtime_blocked",
+            "contract_only is true",
+            "candidate_route_namespace is /api/v1/layer3/handoff/export/download/provider-private-signed-url",
+            "runtime_implementation_allowed is false",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_contract_only_freeze_proof",
+            "226_PROVIDER_PRIVATE_SIGNED_URL_CONTRACT_ONLY_FREEZE.md",
+            "provider_private_signed_url_contract_only_freeze",
+            "contract_frozen_runtime_blocked",
+            "implement_fake_provider_contract_tests_before_runtime_routes",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL contract-only freeze term: {term}")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL contract-only freeze")
+    else:
+        if current_status.get("latest_provider_private_signed_url_contract_only_freeze_branch") != "codex/l3-provider-private-url-contract-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale provider private signed URL contract-only freeze branch")
+        if current_status.get("latest_provider_private_signed_url_contract_only_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark provider private signed URL contract-only freeze as planning-only")
+        summary = current_status.get("provider_private_signed_url_contract_only_freeze")
+        if not isinstance(summary, str) or "entry_decision is contract_frozen_runtime_blocked" not in summary or "runtime_implementation_allowed is false" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_contract_only_freeze must record blocked contract-only posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_contract_only_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_contract_only_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-provider-private-url-contract-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_contract_only_freeze",
+        "entry_decision": "contract_frozen_runtime_blocked",
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "runtime_status": "not_implemented",
+        "provider_storage_authority_result": "no_current_main_provider_storage_authority",
+        "fake_provider_contract_double_status": "required_not_implemented",
+        "candidate_route_namespace": "/api/v1/layer3/handoff/export/download/provider-private-signed-url",
+        "contract_only": True,
+        "runtime_implementation_allowed": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_contract_only_freeze_proof.{key} must be {expected!r}")
+    expected_routes = [
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use",
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+        "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+    ]
+    if proof.get("candidate_routes") != expected_routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_contract_only_freeze_proof candidate_routes must match the frozen list")
+    expected_functions = [
+        "provider_private_signed_url_prepare",
+        "provider_private_signed_url_use",
+        "provider_private_signed_url_revoke",
+        "provider_private_signed_url_status",
+    ]
+    if proof.get("candidate_owner_functions") != expected_functions:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_contract_only_freeze_proof candidate_owner_functions must match the frozen list")
+    expected_states = [
+        "provider_private_signed_url_prepared",
+        "provider_private_signed_url_delivered",
+        "provider_private_signed_url_used",
+        "provider_private_signed_url_revoked",
+        "provider_private_signed_url_expired",
+        "provider_private_signed_url_blocked",
+        "provider_private_signed_url_conflict",
+    ]
+    if proof.get("candidate_states") != expected_states:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_contract_only_freeze_proof candidate_states must match the frozen list")
+    expected_tests = [
+        "openapi_request_response_schema_and_forbidden_fields",
+        "fake_provider_deterministic_object_identity_hash_size_validation",
+        "idempotent_prepare",
+        "stale_external_export_download_readiness_rejection",
+        "stale_artifact_hash_size_rejection",
+        "provider_failure_injection",
+        "ttl_expiry",
+        "revocation_and_post_revocation_use_denial",
+        "replay_policy",
+        "redaction_in_responses_errors_logs_traces_screenshots_manifests_audit_receipts",
+        "no_provider_url_fields_on_existing_same_origin_routes",
+        "no_connector_destination_source_package_rag_mockup_hidden_llm_or_auth_security_side_effects",
+        "headed_headless_light_dark_workbench_proof_if_rendered_controls",
+    ]
+    if proof.get("required_future_tests") != expected_tests:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_contract_only_freeze_proof required_future_tests must match the frozen list")
+    expected_forbidden = [
+        "provider_private_signed_url_runtime",
+        "provider_public_url_runtime",
+        "public_proxy_url_runtime",
+        "provider_adapter_or_fake_provider_implementation",
+        "provider_object_write_copy_acl_bucket_container_key_credential_or_network_behavior",
+        "provider_url_fields_on_existing_same_origin_routes",
+        "same_origin_delivery_or_signed_reference_semantics_change",
+        "external_connector_invocation",
+        "destination_write",
+        "source_adapter_registry_or_source_expansion",
+        "package_mutation_or_reconstruction",
+        "broad_qualitative_hybrid_rag_runtime",
+        "full_mockup_activation",
+        "hidden_llm_or_prompt_model_provider_runtime",
+        "auth_security_behavior_change",
+        "route_dto_model_migration_service_test_ui_playwright_or_ci_behavior_change",
+        "frontend_only_durable_authority",
+    ]
+    if proof.get("forbidden_runtime_changes") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_contract_only_freeze_proof forbidden_runtime_changes must match the frozen list")
+    expected_next = [
+        "implement_fake_provider_contract_tests_before_runtime_routes",
+        "keep_runtime_blocked_if_provider_storage_authority_remains_absent",
+        "stop_if_runtime_route_or_dto_is_requested_before_fake_provider_tests",
+        "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_is_requested",
+        "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_contract_only_freeze_proof recommended_next_actions must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -16970,6 +17130,7 @@ def main() -> int:
     _check_provider_private_signed_url_use_case_selection(errors)
     _check_provider_private_signed_url_implementation_entry_freeze(errors)
     _check_provider_private_signed_url_storage_authority_fake_provider_freeze(errors)
+    _check_provider_private_signed_url_contract_only_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
