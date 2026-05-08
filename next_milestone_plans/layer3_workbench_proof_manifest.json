@@ -6453,5 +6453,94 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Freeze the next raw mixed rendered downstream external export/download, provider URL, connector/destination, or package mutation slice before proving it."
+  },
+  "rendered_external_export_download_prepare_freeze_proof": {
+    "scope": "Planning/control freeze for future rendered raw mixed external export/download prepare after APS handoff dispatched authority.",
+    "implementation_branch": "codex/l3-rendered-download-prepare-proof",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/175_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/176_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CONTRACT.md"
+    ],
+    "selected_rendered_external_export_download_mode": "raw_mixed_rendered_external_export_download_prepare",
+    "routes_to_reuse": [
+      "POST /api/v1/layer3/handoff/export/download/prepare"
+    ],
+    "future_selectors": [
+      "[data-operation-target=\"external-export-download-band\"]",
+      "#external-export-download-prepare-submit",
+      "#external-export-download-prepare-panel"
+    ],
+    "proof_summary": "The next pass may use only existing rendered external export/download prepare controls after raw mixed rendered APS handoff dispatched authority. It must assert the /handoff/export/download/prepare request allowlist, prove external_export_download_prepared state and server-returned descriptor authority, preserve light/dark/workbench theme behavior across the upstream path, and stop before delivery, signed-reference, provider/public URL, connector/destination, package mutation, replacement, or supersession behavior.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no rendered UI control change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no external export/download deliver",
+      "no signed-reference generation or use",
+      "no broad package mutation or reconstruction",
+      "no package replacement or package supersession",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Implement only a focused raw mixed rendered external export/download prepare proof if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
+  },
+  "rendered_external_export_download_prepare_proof": {
+    "scope": "Live test-only rendered /review/layer3 proof for raw mixed external export/download prepare.",
+    "implementation_branch": "codex/l3-rendered-download-prepare-proof",
+    "live_behavior_change": false,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/177_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PROOF.md",
+    "selected_rendered_external_export_download_mode": "raw_mixed_rendered_external_export_download_prepare",
+    "routes_reused": [
+      "POST /api/v1/layer3/handoff/export/download/prepare"
+    ],
+    "live_selectors": [
+      "[data-operation-target=\"external-export-download-band\"]",
+      "#external-export-download-prepare-submit",
+      "#external-export-download-prepare-panel"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/177_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PROOF.md",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "tools/l3-progress-check.py"
+    ],
+    "browser_proof": [
+      "Layer 3 workbench drives raw mixed rendered external export download prepare",
+      "submitRenderedExternalExportDownloadPrepare"
+    ],
+    "proof_summary": "The focused Playwright proof drives raw mixed rendered materialization through APS handoff dispatched authority, then uses existing rendered external export/download prepare controls to record aps_evidence_bundle_download_reference reference_only_prepare readiness. It asserts the request allowlist, verifies layer3.external_export_download_prepare.v1 response state, checks external_export_download_prepared, external_export_download_record_ref, export_download_descriptor_ref, source artifact ref/hash/size, light/dark/workbench theme posture, and avoids delivery, signed-reference, package mutation, replacement, and supersession routes.",
+    "readiness_nuance": "Current rendered UI may enable #external-export-download-delivery-submit after external export/download prepare; this proof records that readiness but does not click it or send /handoff/export/download/deliver.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no rendered UI control change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no external export/download deliver",
+      "no signed-reference generation or use",
+      "no broad package mutation or reconstruction",
+      "no package replacement or package supersession",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Freeze the next raw mixed rendered downstream delivery, signed-reference, provider URL, connector/destination, or package mutation slice before proving it."
   }
 }
