@@ -224,6 +224,9 @@ POST_AUTHORITY_DISCOVERY_CHAIN_CLOSEOUT = (
 CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT = (
     PLANNING_DOCS / "221_CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT.md"
 )
+NAMED_RUNTIME_USE_CASE_SELECTION_GATE = (
+    PLANNING_DOCS / "222_NAMED_RUNTIME_USE_CASE_SELECTION_GATE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -11667,6 +11670,120 @@ def _check_current_main_runtime_entry_readiness_report(errors: list[str]) -> Non
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} current_main_runtime_entry_readiness_report_proof recommended_next_actions must match the frozen list")
 
+def _check_named_runtime_use_case_selection_gate(errors: list[str]) -> None:
+    required_terms = {
+        NAMED_RUNTIME_USE_CASE_SELECTION_GATE: (
+            "Status: current-main planning/control gate for `named_runtime_use_case_selection_gate`.",
+            "entry_decision: selection_gate_only",
+            "selected_runtime_family: null",
+            "selected_runtime_mode: null",
+            "named_use_case_selected: false",
+            "runtime_status: not_implemented",
+            "implementation_entry_freeze_required: true",
+            "Candidate Families",
+            "choose_exact_named_runtime_use_case_before_any_runtime_implementation",
+        ),
+        BOARD: (
+            "Named Runtime Use Case Selection Gate",
+            "222_NAMED_RUNTIME_USE_CASE_SELECTION_GATE.md",
+            "named_runtime_use_case_selection_gate",
+            "entry_decision` is `selection_gate_only",
+            "named_use_case_selected` is `false",
+            "one concrete operator/product use case",
+        ),
+        MANIFEST: (
+            "latest_named_runtime_use_case_selection_gate_branch",
+            "latest_named_runtime_use_case_selection_gate_live_behavior_change",
+            "named_runtime_use_case_selection_gate",
+            "entry_decision is selection_gate_only",
+            "named_use_case_selected is false",
+            "one concrete operator/product use case",
+        ),
+        PROOF_MANIFEST: (
+            "named_runtime_use_case_selection_gate_proof",
+            "222_NAMED_RUNTIME_USE_CASE_SELECTION_GATE.md",
+            "named_runtime_use_case_selection_gate",
+            "selection_gate_only",
+            "choose_exact_named_runtime_use_case_before_any_runtime_implementation",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing named runtime use-case selection gate term: {term}")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for named runtime use-case selection gate")
+    else:
+        if current_status.get("latest_named_runtime_use_case_selection_gate_branch") != "codex/l3-use-case-selection-gate":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale named runtime use-case selection gate branch")
+        if current_status.get("latest_named_runtime_use_case_selection_gate_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark named runtime use-case selection gate as planning-only")
+        summary = current_status.get("named_runtime_use_case_selection_gate")
+        if not isinstance(summary, str) or "entry_decision is selection_gate_only" not in summary or "named_use_case_selected is false" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.named_runtime_use_case_selection_gate must record selection-gate-only posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("named_runtime_use_case_selection_gate_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing named_runtime_use_case_selection_gate_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-use-case-selection-gate",
+        "live_behavior_change": False,
+        "selected_planning_mode": "named_runtime_use_case_selection_gate",
+        "entry_decision": "selection_gate_only",
+        "selected_runtime_family": None,
+        "selected_runtime_mode": None,
+        "named_use_case_selected": False,
+        "runtime_status": "not_implemented",
+        "implementation_entry_freeze_required": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} named_runtime_use_case_selection_gate_proof.{key} must be {expected!r}")
+    expected_candidates = [
+        "provider_public_url_runtime",
+        "external_connector_destination_runtime",
+        "source_breadth_runtime",
+        "package_mutation_rendered_runtime",
+        "broad_qual_hybrid_rag_runtime",
+        "browser_full_mockup_runtime",
+        "auth_security_runtime",
+        "ci_performance_observability_runtime",
+    ]
+    if proof.get("candidate_runtime_families") != expected_candidates:
+        errors.append(f"{_rel(PROOF_MANIFEST)} named_runtime_use_case_selection_gate_proof candidate_runtime_families must match the frozen list")
+    expected_fields = [
+        "exactly_one_selected_runtime_family",
+        "exactly_one_selected_runtime_mode",
+        "one_named_operator_product_use_case",
+        "current_bounded_behavior_insufficiency_evidence",
+        "canonical_source_of_truth_and_authority_order",
+        "route_api_request_response_contract",
+        "owner_service_function_and_state_transition_contract",
+        "db_rows_read_written",
+        "files_artifacts_read_written",
+        "idempotency_concurrency_stale_state_replay_recovery_semantics",
+        "failure_mode_and_forbidden_side_effect_contract",
+        "required_tests_including_negative_invariants",
+        "theme_accessibility_headed_headless_proof_plan_if_rendered_ui_changes",
+        "auth_security_leakage_posture",
+        "explicit_stop_condition",
+    ]
+    if proof.get("required_future_freeze_fields") != expected_fields:
+        errors.append(f"{_rel(PROOF_MANIFEST)} named_runtime_use_case_selection_gate_proof required_future_freeze_fields must match the frozen list")
+    expected_next = [
+        "choose_exact_named_runtime_use_case_before_any_runtime_implementation",
+        "write_one_implementation_entry_freeze_if_exact_named_use_case_exists",
+        "stop_at_planning_if_exact_named_use_case_does_not_exist",
+        "reconcile_review_or_checker_drift_before_any_new_runtime_selection",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} named_runtime_use_case_selection_gate_proof recommended_next_actions must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -16463,6 +16580,7 @@ def main() -> int:
     _check_auth_security_authority_discovery_closeout(errors)
     _check_post_authority_discovery_chain_closeout(errors)
     _check_current_main_runtime_entry_readiness_report(errors)
+    _check_named_runtime_use_case_selection_gate(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
