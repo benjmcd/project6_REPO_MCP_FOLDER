@@ -6116,5 +6116,53 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Implement only a focused raw mixed rendered result-review submit proof if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
+  },
+  "rendered_result_review_proof": {
+    "scope": "Live test-only rendered /review/layer3 proof for raw mixed result-review submit.",
+    "implementation_branch": "codex/l3-rendered-result-review-proof",
+    "live_behavior_change": false,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/165_RENDERED_RESULT_REVIEW_PROOF.md",
+    "selected_rendered_result_review_mode": "raw_mixed_rendered_result_review_submit",
+    "routes_reused": [
+      "POST /api/v1/layer3/execution/result/review"
+    ],
+    "live_selectors": [
+      "#result-review-decision",
+      "#result-review-notes",
+      "#result-review-submit",
+      "#result-review-panel",
+      "#package-review-preview-inspect"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/165_RENDERED_RESULT_REVIEW_PROOF.md",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "tools/l3-progress-check.py"
+    ],
+    "browser_proof": [
+      "Layer 3 workbench drives raw mixed rendered result-review submit",
+      "submitRenderedResultReview"
+    ],
+    "proof_summary": "The focused Playwright proof drives raw mixed rendered materialization through result/status authority, submits one changes_requested result review with notes through the existing rendered controls, asserts the /execution/result/review request allowlist, verifies recorded result-review response state, checks light/dark/workbench theme posture, and keeps package/handoff/export controls disabled.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no rendered UI control change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no broad package mutation or reconstruction",
+      "no package payload rewrite or package row creation from this pass",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Freeze the next raw mixed rendered downstream package-review preview boundary before proving package, handoff/export, APS dispatch, or external export/download."
   }
 }
