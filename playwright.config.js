@@ -52,7 +52,7 @@ export default defineConfig({
       LAYER3_SIGNED_REFERENCE_SECRET: 'playwright-layer3-signed-reference-secret',
     },
     url: `http://127.0.0.1:${SERVER_PORT}/health`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120000,
   },
 });

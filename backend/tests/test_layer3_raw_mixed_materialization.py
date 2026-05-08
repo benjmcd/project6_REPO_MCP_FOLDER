@@ -161,6 +161,46 @@ def test_layer3_raw_mixed_materialize_creates_admitted_sources_for_bounded_previ
     ] == [fixture.aps_content_id]
 
 
+def test_layer3_raw_mixed_materialize_accepts_existing_absolute_storage_ref_idempotently(
+    client: TestClient,
+) -> None:
+    fixture = _write_materialization_manifest()
+    response = client.post(
+        "/api/v1/layer3/source/mixed-corpus/materialize",
+        json=_materialize_payload(fixture),
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    absolute_storage_ref = str(
+        (Path(settings.storage_dir) / fixture.dataset_storage_refs[0]).resolve(strict=False)
+    )
+    with client.layer3_session_factory() as db:
+        stored_version = db.get(DatasetVersion, fixture.dataset_version_id)
+        assert stored_version is not None
+        stored_version.storage_ref = absolute_storage_ref
+        db.commit()
+
+    before_counts = _counts(client)
+    before_files = _storage_files()
+    duplicate = client.post(
+        "/api/v1/layer3/source/mixed-corpus/materialize",
+        json=_materialize_payload(fixture),
+    )
+
+    assert duplicate.status_code == 200, duplicate.text
+    duplicate_body = duplicate.json()
+    assert duplicate_body["source_materialization_id"] == body["source_materialization_id"]
+    assert duplicate_body["database_rows_written"] == {
+        key: 0 for key in body["database_rows_written"]
+    }
+    assert _counts(client) == before_counts
+    assert _storage_files() == before_files
+    with client.layer3_session_factory() as db:
+        stored_version = db.get(DatasetVersion, fixture.dataset_version_id)
+        assert stored_version.storage_ref == absolute_storage_ref
+
+
 def test_layer3_raw_mixed_materialize_rejects_bad_manifest_hash_without_side_effects(
     client: TestClient,
 ) -> None:
