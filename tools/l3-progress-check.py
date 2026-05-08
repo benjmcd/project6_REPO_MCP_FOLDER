@@ -227,6 +227,9 @@ CURRENT_MAIN_RUNTIME_ENTRY_READINESS_REPORT = (
 NAMED_RUNTIME_USE_CASE_SELECTION_GATE = (
     PLANNING_DOCS / "222_NAMED_RUNTIME_USE_CASE_SELECTION_GATE.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION = (
+    PLANNING_DOCS / "223_PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -11784,6 +11787,118 @@ def _check_named_runtime_use_case_selection_gate(errors: list[str]) -> None:
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} named_runtime_use_case_selection_gate_proof recommended_next_actions must match the frozen list")
 
+def _check_provider_private_signed_url_use_case_selection(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION: (
+            "Status: current-main planning/control use-case selection for `provider_private_signed_url_use_case_selection`.",
+            "entry_decision: use_case_selected_implementation_blocked",
+            "selected_runtime_family: provider_public_url_runtime",
+            "selected_runtime_mode: provider_private_signed_url",
+            "named_use_case_selected: external_downstream_recipient_private_artifact_delivery",
+            "runtime_status: not_implemented",
+            "provider_storage_authority_status: unverified",
+            "runtime_implementation_allowed: false",
+            "write_provider_private_signed_url_implementation_entry_freeze",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Use Case Selection",
+            "223_PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION.md",
+            "provider_private_signed_url_use_case_selection",
+            "entry_decision` is `use_case_selected_implementation_blocked",
+            "selected_runtime_mode` is `provider_private_signed_url",
+            "provider_storage_authority_status` is `unverified",
+            "runtime_implementation_allowed` is `false",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_use_case_selection_branch",
+            "latest_provider_private_signed_url_use_case_selection_live_behavior_change",
+            "provider_private_signed_url_use_case_selection",
+            "entry_decision is use_case_selected_implementation_blocked",
+            "selected_runtime_mode is provider_private_signed_url",
+            "runtime_implementation_allowed is false",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_use_case_selection_proof",
+            "223_PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION.md",
+            "provider_private_signed_url_use_case_selection",
+            "provider_private_signed_url",
+            "external_downstream_recipient_private_artifact_delivery",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL use-case selection term: {term}")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL use-case selection")
+    else:
+        if current_status.get("latest_provider_private_signed_url_use_case_selection_branch") != "codex/l3-provider-private-url-use-case":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale provider private signed URL use-case selection branch")
+        if current_status.get("latest_provider_private_signed_url_use_case_selection_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark provider private signed URL use-case selection as planning-only")
+        summary = current_status.get("provider_private_signed_url_use_case_selection")
+        if not isinstance(summary, str) or "entry_decision is use_case_selected_implementation_blocked" not in summary or "runtime_implementation_allowed is false" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_use_case_selection must record blocked selection posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_use_case_selection_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_use_case_selection_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-provider-private-url-use-case",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_use_case_selection",
+        "entry_decision": "use_case_selected_implementation_blocked",
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "runtime_status": "not_implemented",
+        "implementation_entry_freeze_required": True,
+        "provider_storage_authority_status": "unverified",
+        "runtime_implementation_allowed": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_case_selection_proof.{key} must be {expected!r}")
+    expected_insufficiency = [
+        "same_origin_delivery_requires_same_origin_app_session_boundary",
+        "selected_external_downstream_recipient_cannot_use_same_origin_review_ui_session",
+        "provider_private_signed_url_requires_provider_storage_authority_before_runtime",
+    ]
+    if proof.get("current_bounded_behavior_insufficiency") != expected_insufficiency:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_case_selection_proof current_bounded_behavior_insufficiency must match the frozen list")
+    expected_authority = [
+        "provider_storage_owner_and_backing_implementation",
+        "selected_artifact_family_and_server_side_artifact_authority",
+        "route_api_request_response_schema",
+        "owner_service_function_and_state_transition_contract",
+        "db_rows_read_written",
+        "files_artifacts_read_written",
+        "idempotency_replay_concurrency_stale_state_expiry_revocation_recovery_semantics",
+        "fake_provider_or_provider_contract_double_test_architecture",
+        "leak_control_and_redaction_contract",
+        "cache_referrer_content_disposition_cors_csp_posture",
+        "audit_receipt_contract",
+        "auth_security_posture",
+        "negative_cross_mode_upgrade_tests",
+        "headed_headless_theme_proof_plan_if_rendered_controls",
+        "explicit_stop_condition",
+    ]
+    if proof.get("required_future_entry_authority") != expected_authority:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_case_selection_proof required_future_entry_authority must match the frozen list")
+    expected_next = [
+        "write_provider_private_signed_url_implementation_entry_freeze",
+        "keep_runtime_blocked_if_provider_storage_authority_remains_unverified",
+        "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_is_requested",
+        "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_case_selection_proof recommended_next_actions must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -16581,6 +16696,7 @@ def main() -> int:
     _check_post_authority_discovery_chain_closeout(errors)
     _check_current_main_runtime_entry_readiness_report(errors)
     _check_named_runtime_use_case_selection_gate(errors)
+    _check_provider_private_signed_url_use_case_selection(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
