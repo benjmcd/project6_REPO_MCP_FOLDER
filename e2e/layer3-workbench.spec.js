@@ -151,6 +151,8 @@ const DEFERRED_RAW_MIXED_PAYLOAD_FIELDS = [
   'web_connector',
 ];
 
+const EXPECTED_PACKAGE_REVIEW_KINDS = ['canonical_internal', 'user_facing', 'review_facing'];
+
 function expectNoDeferredRawMixedPayloadFields(payload) {
   for (const field of DEFERRED_RAW_MIXED_PAYLOAD_FIELDS) {
     expect(payload).not.toHaveProperty(field);
@@ -685,7 +687,12 @@ async function inspectRenderedResultStatus(page, sessionId, approval, planPrevie
   return status;
 }
 
-async function submitRenderedResultReview(page, sessionId, approval, planPreview, execution, status) {
+async function submitRenderedResultReview(page, sessionId, approval, planPreview, execution, status, options = {}) {
+  const {
+    operatorDecision = 'changes_requested',
+    reviewNotes = 'Raw mixed rendered result review requires a follow-up caveat before packaging.',
+    packageReviewEnabled = false,
+  } = options;
   await page.locator('#theme-selector').selectOption('dark');
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
   await expect(page.locator('#result-review-panel')).toBeVisible();
@@ -696,9 +703,13 @@ async function submitRenderedResultReview(page, sessionId, approval, planPreview
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await expect(page.locator('#result-review-panel')).toBeVisible();
   await expect(page.locator('#result-review-submit')).toBeEnabled();
-  await page.locator('#result-review-decision').selectOption('changes_requested');
-  await expect(page.locator('#result-review-submit')).toBeDisabled();
-  await page.locator('#result-review-notes').fill('Raw mixed rendered result review requires a follow-up caveat before packaging.');
+  await page.locator('#result-review-decision').selectOption(operatorDecision);
+  if (operatorDecision === 'approved') {
+    await expect(page.locator('#result-review-submit')).toBeEnabled();
+  } else {
+    await expect(page.locator('#result-review-submit')).toBeDisabled();
+  }
+  await page.locator('#result-review-notes').fill(reviewNotes);
   await expect(page.locator('#result-review-submit')).toBeEnabled();
 
   const reviewRequestPromise = page.waitForRequest((reviewRequest) => (
@@ -734,8 +745,12 @@ async function submitRenderedResultReview(page, sessionId, approval, planPreview
   expect(reviewPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
   expect(reviewPayload.preview_id).toBe(planPreview.preview_id);
   expect(reviewPayload.preview_hash).toBe(planPreview.preview_hash);
-  expect(reviewPayload.operator_decision).toBe('changes_requested');
-  expect(reviewPayload.review_notes).toContain('follow-up caveat');
+  if (operatorDecision === 'changes_requested') {
+    expect(reviewPayload.operator_decision).toBe('changes_requested');
+  } else {
+    expect(reviewPayload.operator_decision).toBe(operatorDecision);
+  }
+  expect(reviewPayload.review_notes).toBe(reviewNotes);
   expectNoDeferredRawMixedPayloadFields(reviewPayload);
   expect(reviewPayload).not.toHaveProperty('package');
   expect(reviewPayload).not.toHaveProperty('handoff');
@@ -752,26 +767,287 @@ async function submitRenderedResultReview(page, sessionId, approval, planPreview
   expect(review.preview_identity.preview_id).toBe(planPreview.preview_id);
   expect(review.preview_identity.preview_hash).toBe(planPreview.preview_hash);
   expect(review.analysis_run_id).toBe(status.analysis_run_id);
-  expect(review.operator_decision).toBe('changes_requested');
+  expect(review.operator_decision).toBe(operatorDecision);
   expect(review.result_status_available).toBe(true);
   expect(review.result_review_enabled).toBe(true);
   expect(review.package_review_enabled).toBe(false);
   expect(review.handoff_enabled).toBe(false);
-  expect(review.downstream_unavailable).toEqual(expect.arrayContaining(['package', 'handoff']));
+  expect(review.downstream_unavailable).toEqual(
+    expect.arrayContaining(operatorDecision === 'approved' ? ['handoff'] : ['package', 'handoff']),
+  );
   expect(review.review_notes_recorded).toBe(true);
   expect(review.cohort_shape).toBeTruthy();
 
   await expect(page.locator('#result-review-panel')).toContainText('cohort_result_review_ui_recorded');
-  await expect(page.locator('#result-review-panel')).toContainText('changes_requested');
+  await expect(page.locator('#result-review-panel')).toContainText(operatorDecision);
   await expect(page.locator('#result-review-submit')).toBeDisabled();
-  await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
-  await expect(page.locator('#package-construction-commit')).toBeDisabled();
-  await expect(page.locator('#package-review-submit')).toBeDisabled();
+  if (packageReviewEnabled) {
+    await expect(page.locator('#package-review-preview-inspect')).toBeEnabled();
+  } else {
+    await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+    await expect(page.locator('#package-construction-commit')).toBeDisabled();
+    await expect(page.locator('#package-review-submit')).toBeDisabled();
+  }
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
   await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
   await expectNoDeferredRawMixedControls(page);
   return review;
+}
+
+async function inspectRenderedPackagePreview(page, sessionId, approval, planPreview, execution, review) {
+  await page.locator('#theme-selector').selectOption('light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_preview_available');
+  await expect(page.locator('#package-review-preview-inspect')).toBeEnabled();
+  await expect(page.locator('#package-construction-commit')).toBeDisabled();
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
+
+  const previewRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/package/review/preview') && apiRequest.method() === 'POST'
+  ));
+  const previewResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/review/preview')
+  ));
+  await page.locator('#package-review-preview-inspect').click();
+  const previewPayload = (await previewRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(previewPayload, [
+    'analysis_plan_id',
+    'analysis_run_id',
+    'client_request_id',
+    'pass_run_id',
+    'preview_hash',
+    'preview_id',
+    'result_review_record_ref',
+    'session_id',
+  ]);
+  expect(previewPayload.session_id).toBe(sessionId);
+  expect(previewPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(previewPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(previewPayload.preview_id).toBe(planPreview.preview_id);
+  expect(previewPayload.preview_hash).toBe(planPreview.preview_hash);
+  expect(previewPayload.analysis_run_id).toBe(execution.start.analysis_run_id);
+  expect(previewPayload.result_review_record_ref).toBe(review.review_record_ref);
+  expectNoDeferredRawMixedPayloadFields(previewPayload);
+  for (const forbiddenKey of [
+    'create_package',
+    'handoff',
+    'export',
+    'rerun',
+    'rewrite_output',
+    'package_payload',
+  ]) {
+    expect(previewPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  const packagePreview = await expectJson(await previewResponsePromise);
+  expect(packagePreview.schema_id).toBe('layer3.package_review_preview.v1');
+  expect(packagePreview.status).toBe('available');
+  expect(packagePreview.session_id).toBe(sessionId);
+  expect(packagePreview.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(packagePreview.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(packagePreview.preview_identity.preview_id).toBe(planPreview.preview_id);
+  expect(packagePreview.preview_identity.preview_hash).toBe(planPreview.preview_hash);
+  expect(packagePreview.analysis_run_id).toBe(execution.start.analysis_run_id);
+  expect(packagePreview.result_review_record_ref).toBe(review.review_record_ref);
+  expect(packagePreview.result_review_state).toBe('execution_result_review_approved');
+  expect(packagePreview.package_review_preview_hash).toBeTruthy();
+  expect(packagePreview.package_review_preview_enabled).toBe(true);
+  expect(packagePreview.package_commit_enabled).toBe(true);
+  expect(packagePreview.package_review_enabled).toBe(false);
+  expect(packagePreview.downstream_unavailable).toEqual(expect.arrayContaining(['handoff', 'export']));
+  expect(packagePreview.candidate_package_kinds.map((candidate) => candidate.package_kind)).toEqual(
+    EXPECTED_PACKAGE_REVIEW_KINDS,
+  );
+  expect(packagePreview.pass_type).toBe('associated_cohort');
+  expect(packagePreview.selected_method_name).toBe('descriptive_summary');
+
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_preview_ready');
+  await expect(page.locator('#package-construction-commit')).toBeEnabled();
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await expectNoDeferredRawMixedControls(page);
+  return packagePreview;
+}
+
+async function commitRenderedPackageConstruction(page, sessionId, approval, planPreview, execution, review, packagePreview) {
+  await page.locator('#theme-selector').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  await expect(page.locator('#package-construction-commit')).toBeEnabled();
+
+  const commitRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/package/review/commit') && apiRequest.method() === 'POST'
+  ));
+  const commitResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/review/commit')
+  ));
+  await page.locator('#package-construction-commit').click();
+  const commitPayload = (await commitRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(commitPayload, [
+    'analysis_plan_id',
+    'analysis_run_id',
+    'client_request_id',
+    'expected_package_kinds',
+    'package_review_preview_hash',
+    'pass_run_id',
+    'preview_hash',
+    'preview_id',
+    'result_review_record_ref',
+    'session_id',
+  ]);
+  expect(commitPayload.session_id).toBe(sessionId);
+  expect(commitPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(commitPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(commitPayload.preview_id).toBe(planPreview.preview_id);
+  expect(commitPayload.preview_hash).toBe(planPreview.preview_hash);
+  expect(commitPayload.analysis_run_id).toBe(execution.start.analysis_run_id);
+  expect(commitPayload.result_review_record_ref).toBe(review.review_record_ref);
+  expect(commitPayload.package_review_preview_hash).toBe(packagePreview.package_review_preview_hash);
+  expect(commitPayload.expected_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expectNoDeferredRawMixedPayloadFields(commitPayload);
+  for (const forbiddenKey of [
+    'handoff',
+    'export',
+    'rerun',
+    'rewrite_output',
+    'package_payload',
+    'submit_package_review',
+  ]) {
+    expect(commitPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  const commit = await expectJson(await commitResponsePromise);
+  expect(commit.schema_id).toBe('layer3.package_construction_commit.v1');
+  expect(['committed', 'already_committed']).toContain(commit.status);
+  expect(commit.session_id).toBe(sessionId);
+  expect(commit.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(commit.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(commit.preview_identity.preview_id).toBe(planPreview.preview_id);
+  expect(commit.preview_identity.preview_hash).toBe(planPreview.preview_hash);
+  expect(commit.analysis_run_id).toBe(execution.start.analysis_run_id);
+  expect(commit.result_review_record_ref).toBe(review.review_record_ref);
+  expect(commit.package_review_preview_hash).toBe(packagePreview.package_review_preview_hash);
+  expect(commit.reconciliation_record_id).toBeTruthy();
+  expect(commit.output_packages).toHaveLength(3);
+  expect(commit.output_package_ids).toHaveLength(3);
+  expect(commit.package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(commit.payload_refs).toHaveLength(3);
+  expect(commit.payload_hashes).toHaveLength(3);
+  expect(commit.package_review_submit_enabled).toBe(true);
+  expect(commit.handoff_enabled).toBe(false);
+  expect(commit.aps_handoff_enabled).toBe(false);
+  expect(commit.external_export_download_enabled).toBe(false);
+  expect(commit.connector_dispatch_enabled).toBe(false);
+  expect(commit.provider_public_url_enabled).toBe(false);
+  expect(commit.downstream_unavailable).toEqual(expect.arrayContaining(['handoff', 'export']));
+
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_ready');
+  await expect(page.locator('#package-construction-commit')).toBeDisabled();
+  await expect(page.locator('#package-review-submit')).toBeEnabled();
+  await expectNoDeferredRawMixedControls(page);
+  return commit;
+}
+
+async function submitRenderedPackageReview(page, sessionId, approval, planPreview, execution, review, commit) {
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
+  await page.locator('[data-operation-target="package-review-band"]').click();
+  await expect(page.locator('#package-review-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#package-review-submit')).toBeEnabled();
+  await page.locator('#package-review-submit-decision').selectOption('changes_requested');
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await page.locator('#package-review-submit-decision').selectOption('approved');
+  await page.locator('#package-review-submit-notes').fill('Raw mixed rendered package review approves the constructed package set.');
+  await expect(page.locator('#package-review-submit')).toBeEnabled();
+
+  const submitRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/package/review/submit') && apiRequest.method() === 'POST'
+  ));
+  const submitResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/review/submit')
+  ));
+  await page.locator('#package-review-submit').click();
+  const submitPayload = (await submitRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(submitPayload, [
+    'analysis_plan_id',
+    'analysis_run_id',
+    'client_request_id',
+    'construction_basis_hash',
+    'decision_notes',
+    'expected_package_kinds',
+    'operator_decision',
+    'output_package_ids',
+    'package_review_preview_hash',
+    'pass_run_id',
+    'payload_hashes',
+    'payload_refs',
+    'preview_hash',
+    'preview_id',
+    'reconciliation_record_id',
+    'result_review_record_ref',
+    'session_id',
+  ]);
+  expect(submitPayload.session_id).toBe(sessionId);
+  expect(submitPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(submitPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(submitPayload.preview_id).toBe(planPreview.preview_id);
+  expect(submitPayload.preview_hash).toBe(planPreview.preview_hash);
+  expect(submitPayload.analysis_run_id).toBe(execution.start.analysis_run_id);
+  expect(submitPayload.result_review_record_ref).toBe(review.review_record_ref);
+  expect(submitPayload.package_review_preview_hash).toBe(commit.package_review_preview_hash);
+  expect(submitPayload.construction_basis_hash).toBe(commit.construction_basis_hash);
+  expect(submitPayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(submitPayload.output_package_ids).toEqual(commit.output_package_ids);
+  expect(submitPayload.payload_refs).toEqual(commit.payload_refs);
+  expect(submitPayload.payload_hashes).toEqual(commit.payload_hashes);
+  expect(submitPayload.expected_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(submitPayload.operator_decision).toBe('approved');
+  expect(submitPayload.decision_notes).toContain('approves the constructed package set');
+  expectNoDeferredRawMixedPayloadFields(submitPayload);
+  for (const forbiddenKey of [
+    'handoff',
+    'export',
+    'aps_handoff',
+    'create_package',
+    'rebuild_package',
+    'package_payload',
+    'rewrite_output',
+    'result_review_amendment',
+  ]) {
+    expect(submitPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  const packageSubmit = await expectJson(await submitResponsePromise);
+  expect(packageSubmit.schema_id).toBe('layer3.cohort_package_review_submit.v1');
+  expect(packageSubmit.status).toBe('submitted');
+  expect(packageSubmit.session_id).toBe(sessionId);
+  expect(packageSubmit.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(packageSubmit.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(packageSubmit.preview_identity.preview_id).toBe(planPreview.preview_id);
+  expect(packageSubmit.preview_identity.preview_hash).toBe(planPreview.preview_hash);
+  expect(packageSubmit.analysis_run_id).toBe(execution.start.analysis_run_id);
+  expect(packageSubmit.result_review_record_ref).toBe(review.review_record_ref);
+  expect(packageSubmit.package_review_preview_hash).toBe(commit.package_review_preview_hash);
+  expect([commit.construction_basis_hash, null]).toContain(packageSubmit.construction_basis_hash);
+  expect(packageSubmit.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(packageSubmit.output_package_ids).toEqual(commit.output_package_ids);
+  expect(packageSubmit.package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(packageSubmit.payload_refs).toEqual(commit.payload_refs);
+  expect(packageSubmit.payload_hashes).toEqual(commit.payload_hashes);
+  expect(packageSubmit.operator_decision).toBe('approved');
+  expect(packageSubmit.package_review_state).toBe('package_review_approved');
+  expect(packageSubmit.submit_record_ref).toBeTruthy();
+  expect(packageSubmit.package_review_submit_enabled).toBe(false);
+  expect(packageSubmit.handoff_enabled).toBe(false);
+  expect(packageSubmit.aps_handoff_enabled).toBe(false);
+  expect(packageSubmit.external_export_download_enabled).toBe(false);
+  expect(packageSubmit.connector_dispatch_enabled).toBe(false);
+  expect(packageSubmit.provider_public_url_enabled).toBe(false);
+  expect(packageSubmit.downstream_unavailable).toEqual(expect.arrayContaining(['handoff', 'export']));
+
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await expectNoDeferredRawMixedControls(page);
+  return packageSubmit;
 }
 
 function qualitativeApsPackageSubmitUiFixture() {
@@ -1508,6 +1784,72 @@ test('Layer 3 workbench drives raw mixed rendered result-review submit', async (
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
     '/package/review/',
     '/handoff/',
+  ]);
+});
+
+test('Layer 3 workbench drives raw mixed rendered package-review preview commit and submit', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  const status = await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+  const review = await submitRenderedResultReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    status,
+    {
+      operatorDecision: 'approved',
+      reviewNotes: 'Raw mixed rendered result review approves package-review inspection.',
+      packageReviewEnabled: true,
+    },
+  );
+  const packagePreview = await inspectRenderedPackagePreview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+  );
+  const commit = await commitRenderedPackageConstruction(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    packagePreview,
+  );
+  const packageSubmit = await submitRenderedPackageReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+  );
+
+  expect(review.review_state).toBe('execution_result_review_approved');
+  expect(packageSubmit.package_review_state).toBe('package_review_approved');
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/execution/result/review'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/preview'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/commit'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/submit'))).toHaveLength(1);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/handoff/',
+    '/package/mutation',
+    '/package/replacement',
+    '/package/supersession',
   ]);
 });
 
