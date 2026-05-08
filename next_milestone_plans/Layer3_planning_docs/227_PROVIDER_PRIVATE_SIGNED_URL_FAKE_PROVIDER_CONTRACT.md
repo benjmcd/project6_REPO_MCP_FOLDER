@@ -2,6 +2,8 @@
 
 Status: current-main implementation/test contract-double proof for `provider_private_signed_url_fake_provider_contract`.
 
+Supersession note: `228_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE.md` freezes the next provider/storage and durable-receipt authority boundary. Runtime routes, DTOs, models, migrations, rendered controls, provider object writes, and durable provider-private receipt rows remain blocked after that freeze.
+
 This document follows `226_PROVIDER_PRIVATE_SIGNED_URL_CONTRACT_ONLY_FREEZE.md`. It records the narrow fake-provider contract double now present in `backend/app/services/layer3_provider_private_signed_url_fake_provider.py` and covered by `backend/tests/test_layer3_provider_private_signed_url_fake_provider.py`.
 
 This pass does not add provider-private signed URL API routes, DTO route wiring, models, migrations, rendered UI controls, Playwright behavior, provider object writes, provider credentials, provider network calls, public URLs, connector/destination dispatch, package mutation, source expansion, RAG/vector behavior, hidden LLM behavior, full mockup activation, auth/security behavior, or changes to the existing same-origin delivery and same-origin signed-reference routes.
