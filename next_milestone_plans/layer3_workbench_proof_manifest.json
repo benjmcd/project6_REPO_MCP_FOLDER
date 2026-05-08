@@ -9184,5 +9184,95 @@
       "source_breadth_runtime_entry_freeze_update_only_if_named_use_case_emerges"
     ],
     "next_boundary": "Move to package mutation rendered authority discovery unless a concrete named source-family use case proves source breadth runtime is required."
+  },
+  "package_mutation_rendered_authority_discovery_closeout_proof": {
+    "scope": "Planning/control authority-discovery closeout for package_mutation_rendered_authority_discovery_closeout after PR #771 source-breadth authority discovery closeout.",
+    "implementation_branch": "codex/l3-package-mutation-boundary",
+    "live_behavior_change": false,
+    "selected_planning_mode": "package_mutation_rendered_authority_discovery_closeout",
+    "entry_decision": "no_runtime_now",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "live_backend_package_lifecycle_status": "existing_bounded_backend_api_runtimes_admitted",
+    "live_rendered_package_review_status": "existing_package_review_construct_submit_controls_admitted",
+    "authority_discovery_result": "insufficient_authority_for_rendered_package_mutation_runtime",
+    "implementation_entry_required_before_runtime": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/191_PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/192_PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/203_POST_756_GOVERNANCE_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/213_PROVIDER_PUBLIC_URL_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/214_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/215_SOURCE_BREADTH_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/216_PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+    ],
+    "authority_evidence": {
+      "existing_backend_package_lifecycle_runtimes": {
+        "status": "verified",
+        "evidence": [
+          "backend/app/api/layer3.py exposes bounded package lifecycle endpoints",
+          "backend/app/services/layer3_package_mutation_entry.py keeps supersession preview read-only",
+          "backend/app/services/layer3_replacement_package_set_authority.py records replacement set authority only",
+          "backend/app/services/layer3_package_supersession_commit.py records lineage without source package mutation",
+          "backend/app/services/layer3_replacement_package_artifact_manifest.py records replacement artifact manifests without package payload writes",
+          "backend/app/services/layer3_replacement_package_namespace.py records replacement namespace rows without source L3OutputPackage mutation",
+          "backend/tests/test_layer3_api.py proves OpenAPI, idempotency, stale-authority, and negative side-effect behavior"
+        ]
+      },
+      "existing_rendered_package_review_controls": {
+        "status": "verified",
+        "evidence": [
+          "backend/app/review_ui/static/layer3.html exposes rendered package review controls",
+          "backend/app/review_ui/static/layer3.js drives package review preview, commit, and submit only",
+          "e2e/layer3-workbench.spec.js proves rendered package review path and forbidden package payload fields",
+          "e2e/layer3-handoff.spec.js proves package handoff path without rendered mutation controls"
+        ]
+      }
+    },
+    "unverified_authority": [
+      "rendered_package_mutation_control_authority",
+      "selected_rendered_mutation_mode",
+      "operator_mutation_use_case",
+      "package_payload_source",
+      "downstream_invalidation_policy",
+      "re_delivery_compatibility_rule",
+      "receipt_and_audit_compatibility",
+      "stale_authority_failure_plan",
+      "idempotency_replay_recovery_policy",
+      "headed_headless_theme_proof_plan"
+    ],
+    "negative_invariants": [
+      "no rendered package mutation runtime",
+      "no rendered package mutation control",
+      "no rendered package supersession preview control",
+      "no rendered package supersession commit control",
+      "no rendered replacement package namespace review control",
+      "no rendered package lifecycle dashboard",
+      "no package payload rewrite",
+      "no package payload generation",
+      "no source L3OutputPackage row creation, update, or deletion",
+      "no source package payload creation, overwrite, or deletion",
+      "no browser-supplied package diff",
+      "no edited package content accepted from UI or API",
+      "no downstream invalidation runtime",
+      "no re-delivery runtime",
+      "no provider/public URL runtime",
+      "no connector or destination dispatch",
+      "no source expansion",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no existing backend package lifecycle runtime behavior change",
+      "no existing rendered package review behavior change",
+      "no rendered UI control",
+      "no CI workflow change",
+      "no route, DTO, model, migration, production service behavior, or executable test behavior change"
+    ],
+    "next_product_boundaries": [
+      "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+      "package_mutation_rendered_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+      "source_breadth_runtime_entry_freeze_update_only_if_named_use_case_emerges"
+    ]
   }
 }
