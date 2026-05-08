@@ -193,6 +193,7 @@ CI_FAILURE_SIGNAL_OWNER_RUNBOOK = PLANNING_DOCS / "205_CI_FAILURE_SIGNAL_OWNER_R
 PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE = PLANNING_DOCS / "206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md"
 FLAKE_POLICY_FREEZE = PLANNING_DOCS / "207_FLAKE_POLICY_FREEZE.md"
 PERFORMANCE_BUDGET_DISCOVERY_FREEZE = PLANNING_DOCS / "208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md"
+HEADED_HEADLESS_PARITY_FREEZE = PLANNING_DOCS / "209_HEADED_HEADLESS_PARITY_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -9696,6 +9697,149 @@ def _check_performance_budget_discovery_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} performance_budget_discovery_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_headed_headless_parity_freeze(errors: list[str]) -> None:
+    required_terms = {
+        HEADED_HEADLESS_PARITY_FREEZE: (
+            "Status: planning/control freeze only for `headed_headless_parity_freeze`.",
+            "Current main remains one serial Chromium project",
+            "Current Browser Mode Posture",
+            "Theme And UI Obligations For Later Changes",
+            "required_theme_labels",
+            "light",
+            "dark",
+            "workbench",
+            "single_chromium_project_only",
+            "no headed-browser CI matrix",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Headed Headless Parity Freeze",
+            "209_HEADED_HEADLESS_PARITY_FREEZE.md",
+            "headed_headless_parity_freeze",
+            "current single serial Chromium project",
+            "theme obligations for `light`, `dark`, and `workbench`",
+        ),
+        MANIFEST: (
+            "latest_headed_headless_parity_freeze_branch",
+            "latest_headed_headless_parity_freeze_live_behavior_change",
+            "headed_headless_parity_freeze",
+            "current single serial Chromium project",
+            "theme obligations for light, dark, and workbench",
+        ),
+        PROOF_MANIFEST: (
+            "headed_headless_parity_freeze_proof",
+            "209_HEADED_HEADLESS_PARITY_FREEZE.md",
+            "headed_headless_parity_freeze",
+            "single_chromium_project_only",
+            "theme-specific durable authority divergence",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing headed/headless parity freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for headed/headless parity freeze")
+    else:
+        if current_status.get("latest_headed_headless_parity_freeze_branch") != "codex/l3-headed-headless-parity-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale headed/headless parity freeze branch")
+        if current_status.get("latest_headed_headless_parity_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark headed/headless parity freeze as planning-only")
+        summary = current_status.get("headed_headless_parity_freeze")
+        if not isinstance(summary, str) or "headed-browser CI matrix" not in summary or "auth/security behavior change" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.headed_headless_parity_freeze must record browser parity and no-runtime-expansion boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("headed_headless_parity_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing headed_headless_parity_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-headed-headless-parity-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "headed_headless_parity_freeze",
+        "runtime_status": "planning_browser_parity_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} headed_headless_parity_freeze_proof.{key} must be {expected!r}")
+    posture = proof.get("current_browser_mode_posture")
+    if not isinstance(posture, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} headed_headless_parity_freeze_proof missing current_browser_mode_posture")
+    else:
+        expected_posture = {
+            "ci_project_count": 1,
+            "ci_project_name": "chromium",
+            "ci_device_profile": "Desktop Chrome",
+            "headed_ci_matrix": "not_implemented",
+            "headed_local_runbook": "operator_only_when_needed",
+            "headless_ci_run": "current_playwright_default",
+            "workers": 1,
+            "fully_parallel": False,
+            "fixed_port": 8031,
+            "theme_matrix_runtime": "not_implemented",
+            "visual_diff_runtime": "not_implemented",
+            "status": "single_chromium_project_only",
+        }
+        for key, expected in expected_posture.items():
+            if posture.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} headed_headless_parity_freeze_proof current_browser_mode_posture.{key} must be {expected!r}")
+    if proof.get("required_theme_labels_for_later_changes") != ["light", "dark", "workbench"]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} headed_headless_parity_freeze_proof required_theme_labels_for_later_changes must be light/dark/workbench")
+    if proof.get("required_state_labels_for_later_changes") != ["default", "loading", "disabled", "error", "focused"]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} headed_headless_parity_freeze_proof required_state_labels_for_later_changes must match the frozen state list")
+    if proof.get("forbidden_authority") != [
+        "browser-local state as durable workflow authority",
+        "screenshot-only proof of server-side state",
+        "theme-specific durable authority divergence",
+    ]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} headed_headless_parity_freeze_proof forbidden_authority must match the frozen list")
+    if proof.get("dependency_order") != [
+        "headed_headless_parity_freeze",
+        "observability_audit_event_schema_freeze",
+        "ci_performance_observability_runtime_entry",
+    ]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} headed_headless_parity_freeze_proof dependency_order must match the frozen order")
+    expected_negative_invariants = [
+        "no CI workflow change",
+        "no Playwright configuration change",
+        "no browser project change",
+        "no headed-browser CI matrix",
+        "no headed mode runtime",
+        "no worker count change",
+        "no sharding or parallelism",
+        "no fixed-port behavior change",
+        "no executable test change",
+        "no dependency change",
+        "no artifact upload or retention change",
+        "no trace/screenshot/video policy change",
+        "no visual diff runtime",
+        "no theme test runtime",
+        "no rendered UI control",
+        "no browser-local durable authority",
+        "no frontend-only durable authority",
+        "no performance budget or timing gate",
+        "no flake quarantine runtime",
+        "no observability event runtime",
+        "no audit-event runtime",
+        "no metrics/log shipping or dashboard",
+        "no route/API/DTO/model/migration/service behavior change",
+        "no source expansion",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector/destination dispatch",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} headed_headless_parity_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -14479,6 +14623,7 @@ def main() -> int:
     _check_playwright_artifact_taxonomy_redaction_freeze(errors)
     _check_flake_policy_freeze(errors)
     _check_performance_budget_discovery_freeze(errors)
+    _check_headed_headless_parity_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

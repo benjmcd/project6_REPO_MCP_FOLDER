@@ -8588,5 +8588,87 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "A later exact freeze must choose headed/headless parity before adding browser-mode matrix, visual parity, or CI browser expansion behavior."
+  },
+  "headed_headless_parity_freeze_proof": {
+    "implementation_branch": "codex/l3-headed-headless-parity-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "headed_headless_parity_freeze",
+    "runtime_status": "planning_browser_parity_only",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/207_FLAKE_POLICY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/209_HEADED_HEADLESS_PARITY_FREEZE.md"
+    ],
+    "current_browser_mode_posture": {
+      "ci_project_count": 1,
+      "ci_project_name": "chromium",
+      "ci_device_profile": "Desktop Chrome",
+      "headed_ci_matrix": "not_implemented",
+      "headed_local_runbook": "operator_only_when_needed",
+      "headless_ci_run": "current_playwright_default",
+      "workers": 1,
+      "fully_parallel": false,
+      "fixed_port": 8031,
+      "theme_matrix_runtime": "not_implemented",
+      "visual_diff_runtime": "not_implemented",
+      "status": "single_chromium_project_only"
+    },
+    "required_theme_labels_for_later_changes": [
+      "light",
+      "dark",
+      "workbench"
+    ],
+    "required_state_labels_for_later_changes": [
+      "default",
+      "loading",
+      "disabled",
+      "error",
+      "focused"
+    ],
+    "forbidden_authority": [
+      "browser-local state as durable workflow authority",
+      "screenshot-only proof of server-side state",
+      "theme-specific durable authority divergence"
+    ],
+    "dependency_order": [
+      "headed_headless_parity_freeze",
+      "observability_audit_event_schema_freeze",
+      "ci_performance_observability_runtime_entry"
+    ],
+    "negative_invariants": [
+      "no CI workflow change",
+      "no Playwright configuration change",
+      "no browser project change",
+      "no headed-browser CI matrix",
+      "no headed mode runtime",
+      "no worker count change",
+      "no sharding or parallelism",
+      "no fixed-port behavior change",
+      "no executable test change",
+      "no dependency change",
+      "no artifact upload or retention change",
+      "no trace/screenshot/video policy change",
+      "no visual diff runtime",
+      "no theme test runtime",
+      "no rendered UI control",
+      "no browser-local durable authority",
+      "no frontend-only durable authority",
+      "no performance budget or timing gate",
+      "no flake quarantine runtime",
+      "no observability event runtime",
+      "no audit-event runtime",
+      "no metrics/log shipping or dashboard",
+      "no route/API/DTO/model/migration/service behavior change",
+      "no source expansion",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector/destination dispatch",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change"
+    ],
+    "next_boundary": "A later exact freeze must choose observability/audit event schema before any durable event, telemetry, audit receipt, or CI observability runtime is admitted."
   }
 }
