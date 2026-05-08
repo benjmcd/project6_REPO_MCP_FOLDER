@@ -181,6 +181,8 @@ SOURCE_BREADTH_ENTRY_FREEZE = PLANNING_DOCS / "193_SOURCE_BREADTH_ENTRY_FREEZE.m
 SOURCE_BREADTH_ENTRY_CONTRACT = PLANNING_DOCS / "194_SOURCE_BREADTH_ENTRY_CONTRACT.md"
 QUAL_HYBRID_RAG_ENTRY_FREEZE = PLANNING_DOCS / "195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md"
 QUAL_HYBRID_RAG_ENTRY_CONTRACT = PLANNING_DOCS / "196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md"
+BROWSER_MOCKUP_ENTRY_FREEZE = PLANNING_DOCS / "197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md"
+BROWSER_MOCKUP_ENTRY_CONTRACT = PLANNING_DOCS / "198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -8154,6 +8156,215 @@ def _check_qual_hybrid_rag_vector_entry_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_vector_entry_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_browser_full_mockup_activation_entry_freeze(errors: list[str]) -> None:
+    required_terms = {
+        BROWSER_MOCKUP_ENTRY_FREEZE: (
+            "Status: planning/control entry freeze only for `browser_full_mockup_activation_freeze`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_mockup_truth_state: mockups_target_state_only",
+            "live_rendered_workbench_status: existing_server_authoritative_controls_only",
+            "live_browser_proof_status: bounded_headed_headless_proofs_for_admitted_paths",
+            "full_mockup_source_authority_route_mapping_server_state_contract_operator_journey_theme_accessibility_and_frontend_durable_authority_not_verified",
+            "browser_full_mockup_authority_discovery_freeze_or_entry_freeze_update",
+            "Activation Exposure Model",
+            "Capability Isolation Matrix",
+            "full_mockup_activation: false",
+            "frontend_only_durable_state: false",
+            "browser_local_persistence_as_authority: false",
+            "no mockup state treated as server authority",
+        ),
+        BROWSER_MOCKUP_ENTRY_CONTRACT: (
+            "Status: planning/control contract paired with `197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md`.",
+            "entry_decision: deferred",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_mockup_truth_state: mockups_target_state_only",
+            "live_rendered_workbench_status: existing_server_authoritative_controls_only",
+            "live_browser_proof_status: bounded_headed_headless_proofs_for_admitted_paths",
+            "Existing Runtime Compatibility Contract",
+            "This entry freeze adds no rendered UI control.",
+            "Checker Contract",
+            "The checker must not pretend to validate actual browser usability",
+        ),
+        BOARD: (
+            "Browser Full Mockup Activation Entry Freeze",
+            "197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md",
+            "198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md",
+            "browser_full_mockup_activation_freeze",
+            "selected_mode` is `null`",
+            "runtime_status` is `not_implemented`",
+            "mockups_target_state_only",
+            "existing server-authoritative rendered workbench controls",
+        ),
+        MANIFEST: (
+            "latest_browser_full_mockup_activation_entry_freeze_branch",
+            "latest_browser_full_mockup_activation_entry_freeze_live_behavior_change",
+            "browser_full_mockup_activation_freeze",
+            "entry_decision is deferred",
+            "selected_mode is null",
+            "runtime_status is not_implemented",
+            "mockups_target_state_only",
+        ),
+        PROOF_MANIFEST: (
+            "browser_full_mockup_activation_entry_freeze_proof",
+            "197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md",
+            "198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md",
+            "browser_full_mockup_activation_freeze",
+            "mockups_target_state_only",
+            "existing_server_authoritative_controls_only",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing browser/full mockup activation entry freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for browser/full mockup activation entry freeze")
+    else:
+        if current_status.get("latest_browser_full_mockup_activation_entry_freeze_branch") != "codex/l3-mockup-activation-entry-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale browser/full mockup activation entry freeze branch")
+        if current_status.get("latest_browser_full_mockup_activation_entry_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark browser/full mockup activation entry freeze as planning-only")
+        summary = current_status.get("browser_full_mockup_activation_freeze")
+        if not isinstance(summary, str) or "entry_decision is deferred" not in summary or "selected_mode is null" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.browser_full_mockup_activation_freeze must record deferred/null entry decision")
+        if isinstance(summary, str) and "mockups_target_state_only" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.browser_full_mockup_activation_freeze must preserve mockup truth boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("browser_full_mockup_activation_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing browser_full_mockup_activation_entry_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-mockup-activation-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "browser_full_mockup_activation_freeze",
+        "entry_decision": "deferred",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_mockup_truth_state": "mockups_target_state_only",
+        "live_rendered_workbench_status": "existing_server_authoritative_controls_only",
+        "live_browser_proof_status": "bounded_headed_headless_proofs_for_admitted_paths",
+        "receipt_family": "no_receipt_planning_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_activation_entry_freeze_proof.{key} must be {expected!r}")
+    governing_docs = proof.get("governing_docs")
+    for doc in (
+        "next_milestone_plans/Layer3_planning_docs/197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/125_MOCKUP_TRUTH_STATE_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/151_QUAL_APS_RENDERED_UI_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+        "next_milestone_plans/Layer3_planning_docs/195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md",
+    ):
+        if not isinstance(governing_docs, list) or doc not in governing_docs:
+            errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_activation_entry_freeze_proof governing_docs missing {doc}")
+    ledger = proof.get("evidence_ledger")
+    if not isinstance(ledger, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_activation_entry_freeze_proof missing evidence_ledger")
+    else:
+        for key in (
+            "current_mockup_truth_state",
+            "current_rendered_raw_mixed_existing_controls",
+            "current_rendered_qual_aps_existing_controls",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "verified":
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must be verified")
+        for key in (
+            "full_mockup_source_owner",
+            "mockup_route_api_contract",
+            "server_authority_contract",
+            "mockup_to_live_state_mapping",
+            "operator_journey_scope",
+            "theme_accessibility_headed_headless_plan",
+            "frontend_durable_authority_policy",
+        ):
+            item = ledger.get(key)
+            if not isinstance(item, dict) or item.get("status") != "unverified" or item.get("evidence") != []:
+                errors.append(f"{_rel(PROOF_MANIFEST)} evidence_ledger.{key} must remain unverified with no evidence")
+    exposure = proof.get("browser_full_mockup_exposure_model")
+    for key in (
+        "selected_activation_mode",
+        "mockup_source_owner",
+        "route_api_contract",
+        "server_authority_contract",
+        "durable_state_owner",
+        "browser_storage_policy",
+        "operator_journey_scope",
+        "theme_surface",
+        "accessibility_surface",
+        "headed_headless_proof_scope",
+        "negative_side_effect_surface",
+    ):
+        if not isinstance(exposure, dict) or exposure.get(key) != "unknown":
+            errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_exposure_model.{key} must remain unknown while decision is deferred")
+    matrix = proof.get("capability_isolation_matrix")
+    for key, flag in (
+        ("mockups_target_state_only", "change_allowed_in_this_pass"),
+        ("existing_rendered_workbench_controls", "change_allowed_in_this_pass"),
+        ("existing_headed_headless_browser_proofs", "change_allowed_in_this_pass"),
+        ("full_mockup_activation", "runtime_allowed_in_this_pass"),
+        ("frontend_only_durable_state", "runtime_allowed_in_this_pass"),
+        ("browser_local_persistence_as_authority", "runtime_allowed_in_this_pass"),
+        ("new_rendered_controls", "runtime_allowed_in_this_pass"),
+        ("broad_execution", "runtime_allowed_in_this_pass"),
+        ("source_breadth_expansion", "runtime_allowed_in_this_pass"),
+        ("package_mutation_reconstruction", "runtime_allowed_in_this_pass"),
+        ("provider_public_url", "runtime_allowed_in_this_pass"),
+        ("connector_destination_dispatch", "runtime_allowed_in_this_pass"),
+        ("rag_vector_or_hybrid_execution", "runtime_allowed_in_this_pass"),
+        ("hidden_llm_planning", "runtime_allowed_in_this_pass"),
+        ("auth_security_behavior_change", "runtime_allowed_in_this_pass"),
+    ):
+        item = matrix.get(key) if isinstance(matrix, dict) else None
+        if not isinstance(item, dict) or item.get(flag) is not False:
+            errors.append(f"{_rel(PROOF_MANIFEST)} capability_isolation_matrix.{key}.{flag} must be false")
+    expected_negative_invariants = [
+        "no full mockup activation",
+        "no frontend-only durable state",
+        "no browser-local persistence as authority",
+        "no new rendered controls",
+        "no route/API behavior change",
+        "no DTO change",
+        "no model or migration change",
+        "no production service behavior change",
+        "no test behavior change",
+        "no source expansion",
+        "no source adapter registry",
+        "no local upload",
+        "no local-directory ingestion",
+        "no web connector retrieval",
+        "no broad execution",
+        "no broad qualitative execution",
+        "no hybrid execution",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no destination write",
+        "no mockup state treated as server authority",
+        "no browser state treated as server authority",
+        "no theme-specific durable authority",
+        "no auth/security behavior change",
+        "no local path, provider URL, connector target, destination target, source credential, auth token, prompt, or browser storage secret leakage in error bodies",
+        "no local path, provider URL, connector target, destination target, source credential, auth token, prompt, or browser storage secret leakage in logs",
+        "no cross-mode privilege escalation",
+        "no new route, DTO, model, migration, production service behavior, test behavior, or rendered UI control",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} browser_full_mockup_activation_entry_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -12928,6 +13139,7 @@ def main() -> int:
     _check_package_mutation_rendered_entry_freeze(errors)
     _check_source_breadth_entry_freeze(errors)
     _check_qual_hybrid_rag_vector_entry_freeze(errors)
+    _check_browser_full_mockup_activation_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
