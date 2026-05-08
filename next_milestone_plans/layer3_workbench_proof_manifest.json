@@ -9975,5 +9975,79 @@
       "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_is_requested",
       "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested"
     ]
+  },
+  "provider_private_signed_url_fake_provider_contract_proof": {
+    "scope": "Implementation/test contract double for the selected provider-private signed URL use case, without runtime route activation.",
+    "implementation_branch": "codex/l3-provider-fake-contract",
+    "live_behavior_change": false,
+    "selected_planning_mode": "provider_private_signed_url_fake_provider_contract",
+    "entry_decision": "fake_provider_contract_implemented_runtime_blocked",
+    "selected_runtime_family": "provider_public_url_runtime",
+    "selected_runtime_mode": "provider_private_signed_url",
+    "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+    "runtime_status": "not_implemented",
+    "provider_storage_authority_result": "no_current_main_provider_storage_authority",
+    "fake_provider_contract_double_status": "implemented_tested",
+    "provider_private_signed_url_runtime": false,
+    "route_dto_model_migration_ui_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/224_PROVIDER_PRIVATE_SIGNED_URL_IMPLEMENTATION_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/225_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_AUTHORITY_FAKE_PROVIDER_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/226_PROVIDER_PRIVATE_SIGNED_URL_CONTRACT_ONLY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/227_PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_CONTRACT.md"
+    ],
+    "implemented_files": [
+      "backend/app/services/layer3_provider_private_signed_url_fake_provider.py",
+      "backend/tests/test_layer3_provider_private_signed_url_fake_provider.py"
+    ],
+    "covered_fake_provider_tests": [
+      "fake_provider_deterministic_object_identity_hash_size_validation",
+      "idempotent_prepare",
+      "idempotency_conflict",
+      "stale_artifact_hash_size_rejection",
+      "provider_failure_injection",
+      "ttl_expiry",
+      "revocation_and_post_revocation_use_denial",
+      "single_use_replay_policy",
+      "redaction_in_prepare_status_error_and_audit_surfaces",
+      "no_connector_destination_source_package_rag_mockup_hidden_llm_or_auth_security_side_effects"
+    ],
+    "still_blocked_before_runtime": [
+      "provider_storage_authority",
+      "selected_server_side_artifact_materialization_owner",
+      "durable_receipt_revocation_audit_expiry_idempotency_replay_rows",
+      "route_api_dto_request_response_schema",
+      "stale_external_export_download_readiness_reconciliation_against_live_workbench_state",
+      "safe_delivery_envelope_for_usable_bearer_url",
+      "logs_traces_screenshots_manifests_and_audit_redaction_policy",
+      "auth_security_posture_for_operator_and_external_recipient",
+      "headed_headless_light_dark_workbench_proof_if_rendered_controls_are_admitted"
+    ],
+    "forbidden_runtime_changes": [
+      "provider_private_signed_url_runtime_route",
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "provider_storage_authority",
+      "provider_object_write_copy_acl_bucket_container_key_credential_or_network_behavior",
+      "provider_url_fields_on_existing_same_origin_routes",
+      "same_origin_delivery_or_signed_reference_semantics_change",
+      "external_connector_invocation",
+      "destination_write",
+      "source_adapter_registry_or_source_expansion",
+      "package_mutation_or_reconstruction",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_mockup_activation",
+      "hidden_llm_or_prompt_model_provider_runtime",
+      "auth_security_behavior_change",
+      "route_dto_model_migration_ui_playwright_or_ci_behavior_change",
+      "frontend_only_durable_authority"
+    ],
+    "recommended_next_actions": [
+      "freeze_provider_storage_and_durable_receipt_authority_before_routes",
+      "keep_runtime_blocked_if_provider_storage_authority_remains_absent",
+      "stop_if_runtime_route_or_dto_is_requested_before_storage_authority",
+      "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_is_requested",
+      "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested"
+    ]
   }
 }
