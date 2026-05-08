@@ -622,10 +622,7 @@ function materializedSourceIdsVisible(materialization) {
 function applyMaterializedSourceIds(materialization) {
     const datasetIds = materialization?.dataset_version_ids || [];
     const contentIds = materialization?.aps_content_document_ids || [];
-    document.querySelectorAll('input[name="dataset-version-candidate"]:checked')
-        .forEach((input) => { input.checked = false; });
-    document.querySelectorAll('input[name="aps-content-document-candidate"]:checked')
-        .forEach((input) => { input.checked = false; });
+    clearMaterializedSourceSelection();
     if (elements.datasetVersionIds) {
         elements.datasetVersionIds.value = datasetIds.join('\n');
     }
@@ -634,13 +631,31 @@ function applyMaterializedSourceIds(materialization) {
     }
 }
 
-function clearRawMixedMaterializationState() {
+function clearMaterializedSourceSelection() {
+    document.querySelectorAll('input[name="dataset-version-candidate"]:checked')
+        .forEach((input) => { input.checked = false; });
+    document.querySelectorAll('input[name="aps-content-document-candidate"]:checked')
+        .forEach((input) => { input.checked = false; });
+    if (elements.datasetVersionIds) {
+        elements.datasetVersionIds.value = '';
+    }
+    if (elements.apsContentDocumentIds) {
+        elements.apsContentDocumentIds.value = '';
+    }
+}
+
+function clearRawMixedMaterializationState({ clearAppliedSources = false } = {}) {
+    const hadMaterialization = Boolean(State.rawMixedMaterialization);
     State.rawMixedMaterialization = null;
     State.rawMixedMaterializationError = null;
+    if (clearAppliedSources && hadMaterialization) {
+        clearMaterializedSourceSelection();
+        clearLayer3FlowStateForSourceChange();
+    }
 }
 
 function handleRawMixedMaterializationInputChange() {
-    clearRawMixedMaterializationState();
+    clearRawMixedMaterializationState({ clearAppliedSources: true });
     renderAll();
 }
 
@@ -5834,7 +5849,7 @@ elements.intentForm.addEventListener('submit', runPreflightFlow);
 elements.intentInput.addEventListener('input', renderSublayerMap);
 elements.sourceFieldset.addEventListener('change', (event) => {
     if (event.target?.name === 'source-class') {
-        clearRawMixedMaterializationState();
+        clearRawMixedMaterializationState({ clearAppliedSources: true });
     }
     renderSublayerMap();
     renderAll();
