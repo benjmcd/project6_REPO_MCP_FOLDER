@@ -200,6 +200,9 @@ CI_OBSERVABILITY_NO_RUNTIME_CLOSEOUT = PLANNING_DOCS / "212_CI_OBSERVABILITY_NO_
 PROVIDER_PUBLIC_URL_AUTHORITY_DISCOVERY_CLOSEOUT = (
     PLANNING_DOCS / "213_PROVIDER_PUBLIC_URL_AUTHORITY_DISCOVERY_CLOSEOUT.md"
 )
+CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT = (
+    PLANNING_DOCS / "214_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -10546,6 +10549,135 @@ def _check_provider_public_url_authority_discovery_closeout(errors: list[str]) -
     if proof.get("next_product_boundaries") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_public_url_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
 
+def _check_connector_destination_authority_discovery_closeout(errors: list[str]) -> None:
+    required_terms = {
+        CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT: (
+            "Status: current-main planning/control closeout for `connector_destination_authority_discovery_closeout`.",
+            "entry_decision: no_runtime_now",
+            "selected_mode: null",
+            "runtime_status: not_implemented",
+            "live_internal_record_only_status: already_admitted_by_doc_121",
+            "authority_discovery_result: insufficient_authority_for_external_connector_destination_runtime",
+            "implementation_entry_required_before_runtime: true",
+            "next_product_boundary_required: true",
+            "external_connector_authority",
+            "destination_authority",
+            "fake_connector_destination_test_architecture",
+            "new_connector_destination_runtime: false",
+            "external_connector_invocation: false",
+            "destination_write: false",
+            "internal_dispatch_record_only_expansion: false",
+            "Theme And UI Posture",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Connector Destination Authority Discovery Closeout",
+            "214_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "connector_destination_authority_discovery_closeout",
+            "entry_decision` is `no_runtime_now",
+            "selected_mode` remains `null",
+            "insufficient_authority_for_external_connector_destination_runtime",
+        ),
+        MANIFEST: (
+            "latest_connector_destination_authority_discovery_closeout_branch",
+            "latest_connector_destination_authority_discovery_closeout_live_behavior_change",
+            "connector_destination_authority_discovery_closeout",
+            "entry_decision is no_runtime_now",
+            "selected_mode is null",
+            "insufficient_authority_for_external_connector_destination_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "connector_destination_authority_discovery_closeout_proof",
+            "214_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "connector_destination_authority_discovery_closeout",
+            "no_runtime_now",
+            "insufficient_authority_for_external_connector_destination_runtime",
+            "source_breadth_authority_discovery_freeze_or_entry_freeze_update",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing connector/destination authority discovery closeout term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for connector/destination authority discovery closeout")
+    else:
+        if current_status.get("latest_connector_destination_authority_discovery_closeout_branch") != "codex/l3-connector-destination-boundary":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale connector/destination authority discovery branch")
+        if current_status.get("latest_connector_destination_authority_discovery_closeout_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark connector/destination authority discovery closeout as planning-only")
+        summary = current_status.get("connector_destination_authority_discovery_closeout")
+        if not isinstance(summary, str) or "entry_decision is no_runtime_now" not in summary or "insufficient_authority_for_external_connector_destination_runtime" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.connector_destination_authority_discovery_closeout must record no-runtime authority discovery")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("connector_destination_authority_discovery_closeout_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing connector_destination_authority_discovery_closeout_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-connector-destination-boundary",
+        "live_behavior_change": False,
+        "selected_planning_mode": "connector_destination_authority_discovery_closeout",
+        "entry_decision": "no_runtime_now",
+        "selected_mode": None,
+        "runtime_status": "not_implemented",
+        "live_internal_record_only_status": "already_admitted_by_doc_121",
+        "authority_discovery_result": "insufficient_authority_for_external_connector_destination_runtime",
+        "implementation_entry_required_before_runtime": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_authority_discovery_closeout_proof.{key} must be {expected!r}")
+    expected_unverified = [
+        "external_connector_authority",
+        "destination_authority",
+        "named_downstream_use_case",
+        "selected_connector_or_destination_family",
+        "credential_and_access_model",
+        "lifecycle_retry_cancel_timeout_contract",
+        "receipt_and_audit_contract",
+        "fake_connector_destination_test_architecture",
+        "leak_control_runtime_proof",
+    ]
+    if proof.get("unverified_authority") != expected_unverified:
+        errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_authority_discovery_closeout_proof unverified_authority must match the frozen list")
+    expected_negative = [
+        "no new connector/destination runtime",
+        "no external connector invocation",
+        "no destination write",
+        "no connector-run creation",
+        "no generic downstream dispatch",
+        "no internal_dispatch_record_only behavior expansion",
+        "no provider/public URL runtime",
+        "no connector, destination, or provider credentials leakage",
+        "no connector/destination secrets, targets, URLs, tokens, or receipts leakage",
+        "no package mutation or reconstruction",
+        "no source expansion",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no rendered UI control",
+        "no CI workflow change",
+        "no same-origin delivery, signed-reference, provider/public URL governance, package, handoff, APS, external export/download, artifact, or internal dispatch semantics change",
+        "no route, DTO, model, migration, production service behavior, or test behavior change",
+    ]
+    if proof.get("negative_invariants") != expected_negative:
+        errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_authority_discovery_closeout_proof negative_invariants must match the frozen structural list")
+    expected_next = [
+        "source_breadth_authority_discovery_freeze_or_entry_freeze_update",
+        "package_mutation_rendered_authority_discovery_freeze_or_entry_freeze_update",
+        "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+        "connector_destination_runtime_entry_freeze_update_only_if_named_use_case_emerges",
+    ]
+    if proof.get("next_product_boundaries") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_authority_discovery_closeout_proof next_product_boundaries must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -15334,6 +15466,7 @@ def main() -> int:
     _check_ci_observability_chain_closeout(errors)
     _check_ci_observability_no_runtime_closeout(errors)
     _check_provider_public_url_authority_discovery_closeout(errors)
+    _check_connector_destination_authority_discovery_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
