@@ -194,6 +194,7 @@ PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE = PLANNING_DOCS / "206_PLAYWRIGHT_
 FLAKE_POLICY_FREEZE = PLANNING_DOCS / "207_FLAKE_POLICY_FREEZE.md"
 PERFORMANCE_BUDGET_DISCOVERY_FREEZE = PLANNING_DOCS / "208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md"
 HEADED_HEADLESS_PARITY_FREEZE = PLANNING_DOCS / "209_HEADED_HEADLESS_PARITY_FREEZE.md"
+OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE = PLANNING_DOCS / "210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -9840,6 +9841,164 @@ def _check_headed_headless_parity_freeze(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} headed_headless_parity_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_observability_audit_event_schema_freeze(errors: list[str]) -> None:
+    required_terms = {
+        OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE: (
+            "Status: planning/control freeze only for `observability_audit_event_schema_freeze`.",
+            "Observability and audit events remain not implemented",
+            "Current Observability Posture",
+            "Future Event Schema Allowlist",
+            "required_identity_fields",
+            "allowed_correlation_fields",
+            "forbidden_authority_fields",
+            "schema_boundary_only",
+            "no observability event runtime",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Observability Audit Event Schema Freeze",
+            "210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md",
+            "observability_audit_event_schema_freeze",
+            "response-safe event schema allowlist",
+            "forbidden authority fields",
+        ),
+        MANIFEST: (
+            "latest_observability_audit_event_schema_freeze_branch",
+            "latest_observability_audit_event_schema_freeze_live_behavior_change",
+            "observability_audit_event_schema_freeze",
+            "response-safe event schema allowlist",
+            "not implemented",
+        ),
+        PROOF_MANIFEST: (
+            "observability_audit_event_schema_freeze_proof",
+            "210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md",
+            "observability_audit_event_schema_freeze",
+            "schema_boundary_only",
+            "raw_request_body",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing observability/audit event schema freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for observability/audit event schema freeze")
+    else:
+        if current_status.get("latest_observability_audit_event_schema_freeze_branch") != "codex/l3-observability-audit-schema-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale observability/audit event schema freeze branch")
+        if current_status.get("latest_observability_audit_event_schema_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark observability/audit event schema freeze as planning-only")
+        summary = current_status.get("observability_audit_event_schema_freeze")
+        if not isinstance(summary, str) or "event storage table" not in summary or "auth/security behavior change" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.observability_audit_event_schema_freeze must record event schema and no-runtime-expansion boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("observability_audit_event_schema_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing observability_audit_event_schema_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-observability-audit-schema-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "observability_audit_event_schema_freeze",
+        "runtime_status": "planning_event_schema_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof.{key} must be {expected!r}")
+    posture = proof.get("current_observability_posture")
+    if not isinstance(posture, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof missing current_observability_posture")
+    else:
+        expected_posture = {
+            "observability_event_runtime": "not_implemented",
+            "audit_event_runtime": "not_implemented",
+            "metrics_log_shipping": "not_implemented",
+            "dashboard": "not_implemented",
+            "telemetry_receipt_artifact": "not_implemented",
+            "event_storage_table": "not_implemented",
+            "event_writer_service": "not_implemented",
+            "browser_storage_authority": "not_admitted",
+            "status": "schema_boundary_only",
+        }
+        for key, expected in expected_posture.items():
+            if posture.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof current_observability_posture.{key} must be {expected!r}")
+    if proof.get("required_identity_fields") != ["schema_id", "schema_version", "event_id", "event_family", "event_name", "emitted_at_utc"]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof required_identity_fields must match the frozen list")
+    expected_correlation = [
+        "pr_number",
+        "branch_name",
+        "commit_sha",
+        "workflow_run_id",
+        "check_name",
+        "job_name",
+        "test_title",
+        "phase_label",
+        "route_label",
+        "session_ref",
+        "package_ref",
+        "artifact_family",
+    ]
+    if proof.get("allowed_correlation_fields") != expected_correlation:
+        errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof allowed_correlation_fields must match the frozen list")
+    expected_forbidden = [
+        "browser_local_state",
+        "raw_request_body",
+        "raw_response_body",
+        "raw_package_payload",
+        "prompt_text",
+        "model_provider_internal",
+        "credential_value",
+        "bearer_token",
+        "proxy_identity_header",
+        "database_url",
+        "local_absolute_path",
+        "provider_url",
+        "connector_target",
+        "destination_target",
+    ]
+    if proof.get("forbidden_authority_fields") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof forbidden_authority_fields must match the frozen list")
+    if proof.get("dependency_order") != ["observability_audit_event_schema_freeze", "ci_performance_observability_runtime_entry"]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof dependency_order must match the frozen order")
+    expected_negative_invariants = [
+        "no observability event runtime",
+        "no audit-event runtime",
+        "no event writer service",
+        "no event storage table",
+        "no telemetry receipt artifact",
+        "no metrics/log shipping",
+        "no dashboard",
+        "no CI workflow change",
+        "no Playwright configuration change",
+        "no executable test change",
+        "no dependency change",
+        "no artifact upload or retention change",
+        "no trace/screenshot/video policy change",
+        "no performance budget or timing gate",
+        "no headed-browser CI matrix",
+        "no sharding or parallelism",
+        "no route/API/DTO/model/migration/service behavior change",
+        "no rendered UI control",
+        "no browser-local durable authority",
+        "no frontend-only durable authority",
+        "no source expansion",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector/destination dispatch",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} observability_audit_event_schema_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -14624,6 +14783,7 @@ def main() -> int:
     _check_flake_policy_freeze(errors)
     _check_performance_budget_discovery_freeze(errors)
     _check_headed_headless_parity_freeze(errors)
+    _check_observability_audit_event_schema_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
