@@ -6629,5 +6629,98 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Freeze the next raw mixed rendered downstream signed-reference, provider URL, connector/destination, or package mutation slice before proving it."
+  },
+  "rendered_external_export_download_signed_reference_freeze_proof": {
+    "scope": "Planning/control freeze for future rendered raw mixed external export/download signed-reference generation and use after external export/download prepared authority.",
+    "implementation_branch": "codex/l3-rendered-signed-reference-proof",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/181_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/182_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CONTRACT.md"
+    ],
+    "selected_rendered_external_export_download_mode": "raw_mixed_rendered_external_export_download_signed_reference",
+    "routes_to_reuse": [
+      "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+      "POST /api/v1/layer3/handoff/export/download/signed-reference/use"
+    ],
+    "future_selectors": [
+      "[data-operation-target=\"external-export-download-band\"]",
+      "#external-export-download-signed-reference-generate",
+      "#external-export-download-signed-reference-use",
+      "#external-export-download-signed-reference-panel"
+    ],
+    "proof_summary": "The next pass may use only existing rendered external export/download signed-reference controls after raw mixed rendered external_export_download_prepared authority. It must assert signed-reference generate request allowlists, server-owned single-use signed-reference authority, token-only use, same-origin use response headers, use-control replay prevention, headed/headless browser posture, and stop before provider/public URL, connector/destination, package mutation, replacement, or supersession behavior.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no rendered UI control change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no direct same-origin attachment delivery in this proof",
+      "no broad package mutation or reconstruction",
+      "no package replacement or package supersession",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Implement only a focused raw mixed rendered external export/download signed-reference proof if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
+  },
+  "rendered_external_export_download_signed_reference_proof": {
+    "scope": "Live rendered /review/layer3 proof for raw mixed external export/download signed-reference generation and use.",
+    "implementation_branch": "codex/l3-rendered-signed-reference-proof",
+    "live_behavior_change": true,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+    "selected_rendered_external_export_download_mode": "raw_mixed_rendered_external_export_download_signed_reference",
+    "routes_reused": [
+      "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+      "POST /api/v1/layer3/handoff/export/download/signed-reference/use"
+    ],
+    "live_selectors": [
+      "[data-operation-target=\"external-export-download-band\"]",
+      "#external-export-download-signed-reference-generate",
+      "#external-export-download-signed-reference-use",
+      "#external-export-download-signed-reference-panel"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/183_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF.md",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "playwright.config.js",
+      "tools/l3-progress-check.py"
+    ],
+    "browser_proof": [
+      "Layer 3 workbench drives raw mixed rendered external export download signed reference",
+      "submitRenderedExternalExportDownloadSignedReference"
+    ],
+    "ui_hardening": "canUseExternalExportDownloadSignedReference now requires !State.externalExportDownloadSignedReferenceUse so #external-export-download-signed-reference-use disables after successful single-use delivery.",
+    "test_harness_env": "playwright.config.js sets LAYER3_SIGNED_REFERENCE_SECRET only for the review-browser server harness so live signed-reference generation/use can be proven in Playwright.",
+    "proof_summary": "The focused Playwright proof drives raw mixed rendered materialization through external_export_download_prepared authority, then uses existing rendered signed-reference controls to generate one server-owned same-origin signed reference and use it through the token-only endpoint. It asserts the generate request allowlist, verifies layer3.external_export_download_signed_reference.v1, external_export_download_signed_reference_ready, same_origin_signed_delivery_reference, server_hmac_with_durable_state, single_use, source artifact hash/size authority, token-only use request, layer3.external_export_download_signed_reference_use.v1 response headers, external_export_download_signed_reference_delivered, and use-control disabled-after-use behavior, while avoiding direct delivery, provider/public URL, connector/destination, package mutation, replacement, and supersession routes.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no new rendered UI control",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no direct same-origin attachment delivery in this proof",
+      "no broad package mutation or reconstruction",
+      "no package replacement or package supersession",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Freeze the next raw mixed rendered downstream provider URL, connector/destination, package mutation, source breadth, RAG/vector, full mockup, or auth/security slice before proving it."
   }
 }
