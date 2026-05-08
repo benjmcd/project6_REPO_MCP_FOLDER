@@ -1388,6 +1388,89 @@ test('Layer 3 workbench materializes raw mixed manifest through rendered control
   await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
 });
 
+test('Layer 3 workbench fail-closes raw mixed rendered materialization review guards', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const preselectedSeed = await seedRawMixedBridgeSetup(request);
+  const setup = await expectJson(await request.post('/__test/layer3/materialize-raw-mixed'));
+  const materializeRequest = setup.materialize_request;
+  const initialDatasetCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/dataset-version-candidates')
+  ));
+  const initialApsCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/aps-content-document-candidates')
+  ));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expectJson(await initialDatasetCandidatesResponsePromise);
+  await expectJson(await initialApsCandidatesResponsePromise);
+  await selectSeededSources(page, preselectedSeed);
+
+  await page.locator('#raw-mixed-corpus-batch-id').fill(materializeRequest.corpus_batch_id);
+  await page.locator('#raw-mixed-manifest-ref').fill(materializeRequest.artifact_manifest_ref);
+  await page.locator('#raw-mixed-manifest-hash').fill(materializeRequest.artifact_manifest_hash);
+  await page.locator('#raw-mixed-operator-confirmation').check();
+  await expect(page.locator('#raw-mixed-materialize')).toBeEnabled();
+
+  await page.locator('input[name="source-class"][value="aps_content_document"]').uncheck();
+  await expect(page.locator('#raw-mixed-materialize')).toBeDisabled();
+  await expect(page.locator('#raw-mixed-materialization-status')).toContainText(
+    'Select both Dataset version and APS content document source classes.',
+  );
+  await page.locator('#raw-mixed-manifest-ref').press('Enter');
+  await page.waitForTimeout(100);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, ['/preflight']);
+
+  await page.locator('input[name="source-class"][value="aps_content_document"]').check();
+  await expect(page.locator('#raw-mixed-materialize')).toBeEnabled();
+  await page.route('**/api/v1/layer3/dataset-version-candidates', (route) => route.abort());
+  const failedMaterializeResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/source/mixed-corpus/materialize')
+    && response.request().method() === 'POST'
+  ));
+  await page.locator('#raw-mixed-materialize').click();
+  await expectJson(await failedMaterializeResponsePromise);
+  await expect(page.locator('#raw-mixed-materialization-state')).toHaveText('Blocked');
+  await expect(page.locator('#raw-mixed-materialization-status')).toContainText('candidate refresh failed');
+  await expect(page.locator('#dataset-version-ids')).toHaveValue('');
+  await expect(page.locator('#aps-content-document-ids')).toHaveValue('');
+  await page.unroute('**/api/v1/layer3/dataset-version-candidates');
+
+  const materializeRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/source/mixed-corpus/materialize')
+    && apiRequest.method() === 'POST'
+  ));
+  const materializeResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/source/mixed-corpus/materialize')
+    && response.request().method() === 'POST'
+  ));
+  const datasetCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/dataset-version-candidates')
+  ));
+  const apsCandidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/aps-content-document-candidates')
+  ));
+  await page.locator('#raw-mixed-materialize').click();
+  const requestPayload = (await materializeRequestPromise).postDataJSON();
+  expect(requestPayload.requested_source_classes).toEqual(['dataset_version', 'aps_content_document']);
+  const materialization = await expectJson(await materializeResponsePromise);
+  await expectJson(await datasetCandidatesResponsePromise);
+  await expectJson(await apsCandidatesResponsePromise);
+  await expect(page.locator('#raw-mixed-materialization-state')).toHaveText('Materialized');
+  await expect(page.locator('#dataset-version-ids')).toHaveValue(materialization.dataset_version_ids.join('\n'));
+  await expect(page.locator('#aps-content-document-ids')).toHaveValue(materialization.aps_content_document_ids.join('\n'));
+  for (const datasetVersionId of preselectedSeed.dataset_version_ids) {
+    await expect(page.locator(`input[name="dataset-version-candidate"][value="${datasetVersionId}"]`)).not.toBeChecked();
+  }
+  for (const contentId of preselectedSeed.aps_content_document_ids) {
+    await expect(page.locator(`input[name="aps-content-document-candidate"][value="${contentId}"]`)).not.toBeChecked();
+  }
+
+  await page.locator('#raw-mixed-manifest-hash').fill(`${materializeRequest.artifact_manifest_hash}0`);
+  await expect(page.locator('#raw-mixed-materialization-state')).toHaveText('Ready');
+  await expect(page.locator('#raw-mixed-materialization-status')).toContainText('Ready to call the server-owned materialization route.');
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, ['/preflight']);
+  await expectNoDeferredRawMixedControls(page);
+});
+
 test('Layer 3 workbench drives raw mixed rendered execution selection and start', async ({ page, request }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   const materialization = await openRawMixedMaterializedWorkbench(page, request);

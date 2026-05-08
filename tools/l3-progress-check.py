@@ -5062,8 +5062,8 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         "layer3_flow_started",
         "DatasetRow",
         "ApsContentLinkage",
-        "storage_path = _check_storage_ref",
-        '"storage_ref": str(storage_path)',
+        '_check_storage_ref(storage_ref, storage_hash, "artifact_manifest.dataset_versions[].storage_ref")',
+        '"storage_ref": storage_ref',
     ):
         if term not in service_text:
             errors.append(f"{_rel(RAW_MIXED_MATERIALIZATION_SERVICE)} missing materialization runtime term: {term}")
@@ -5096,6 +5096,8 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
         "test_layer3_raw_mixed_materialize_rolls_back_existing_authority_conflicts",
         "_drive_preview_only_flow",
         "_assert_no_layer3_flow_delta",
+        "dataset_storage_refs",
+        "_month_period",
         "database_rows_written",
         "files_written",
     ):
