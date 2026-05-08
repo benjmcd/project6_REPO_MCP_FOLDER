@@ -8174,5 +8174,78 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Choose one exact implementation-entry freeze or authority-discovery update before any runtime work beyond the completed post-745 governance chain."
+  },
+  "ci_observability_gap_inventory_proof": {
+    "implementation_branch": "codex/l3-ci-observability-gap-inventory",
+    "live_behavior_change": false,
+    "selected_planning_mode": "ci_observability_gap_inventory_only",
+    "runtime_status": "planning_gap_inventory_only",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/203_POST_756_GOVERNANCE_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/204_CI_OBSERVABILITY_GAP_INVENTORY.md"
+    ],
+    "current_live_posture": {
+      "backend_layer3_api_job": "python -m pytest ./backend/tests/test_layer3_*.py -q",
+      "playwright_job": "npx playwright test --project=chromium",
+      "playwright_port": 8031,
+      "playwright_workers": 1,
+      "playwright_fully_parallel": false,
+      "playwright_trace": "on-first-retry",
+      "artifact_posture": "playwright_html_report_30_day_retention"
+    },
+    "gap_inventory": [
+      "performance_budget_authority",
+      "flake_policy",
+      "headed_headless_parity",
+      "artifact_taxonomy_redaction",
+      "observability_event_schema",
+      "audit_trace_completeness",
+      "metrics_log_dashboard_target",
+      "runtime_isolation_scaling",
+      "secret_path_leakage",
+      "ownership_triage"
+    ],
+    "dependency_order": [
+      "ci_observability_gap_inventory_only",
+      "ci_failure_signal_and_owner_runbook",
+      "playwright_artifact_taxonomy_redaction_freeze",
+      "flake_policy_freeze",
+      "performance_budget_discovery_freeze",
+      "headed_headless_parity_freeze",
+      "observability_audit_event_schema_freeze",
+      "ci_performance_observability_runtime_entry"
+    ],
+    "negative_invariants": [
+      "no CI workflow change",
+      "no Playwright configuration change",
+      "no backend or browser test dependency change",
+      "no test behavior change",
+      "no performance budget gate",
+      "no runtime timing assertion",
+      "no sharding or parallelism change",
+      "no headed browser CI matrix",
+      "no observability event runtime",
+      "no audit-event runtime",
+      "no metrics, log shipping, dashboard, or external telemetry target",
+      "no artifact retention policy change",
+      "no route/API behavior change",
+      "no DTO change",
+      "no model or migration change",
+      "no production service behavior change",
+      "no rendered UI control",
+      "no source expansion",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector or destination dispatch",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority",
+      "no local path, credential, token, prompt, metric payload, trace payload, provider URL, connector target, destination target, or browser storage leakage"
+    ],
+    "next_boundary": "Choose one exact CI/performance/observability authority freeze before any workflow, config, artifact, budget, telemetry, audit-event, headed CI, sharding, parallelism, or runtime observability change."
   }
 }
