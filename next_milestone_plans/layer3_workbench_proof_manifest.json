@@ -8318,5 +8318,106 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "A later exact freeze must choose artifact taxonomy/redaction, flake policy, performance budget discovery, headed/headless parity, or observability/audit schema before any runtime or workflow change."
+  },
+  "playwright_artifact_taxonomy_redaction_freeze_proof": {
+    "implementation_branch": "codex/l3-artifact-taxonomy-redaction-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "playwright_artifact_taxonomy_redaction_freeze",
+    "runtime_status": "planning_artifact_taxonomy_only",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/204_CI_OBSERVABILITY_GAP_INVENTORY.md",
+      "next_milestone_plans/Layer3_planning_docs/205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md",
+      "next_milestone_plans/Layer3_planning_docs/206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md"
+    ],
+    "current_artifact_posture": {
+      "uploaded_artifact_name": "playwright-report",
+      "uploaded_artifact_path": "playwright-report/",
+      "retention_days": 30,
+      "reporter": "html",
+      "trace_policy": "on-first-retry",
+      "screenshot_policy": "not_explicitly_enabled",
+      "video_policy": "not_explicitly_enabled",
+      "structured_ci_receipt": "not_implemented",
+      "redaction_scanner": "not_implemented",
+      "status": "live_html_report_only"
+    },
+    "artifact_families": [
+      "html_report",
+      "retry_trace",
+      "screenshot",
+      "video",
+      "server_log",
+      "api_payload_receipt",
+      "performance_timing_receipt",
+      "observability_event_receipt"
+    ],
+    "forbidden_in_artifacts": [
+      "local filesystem paths outside repo-relative safe labels",
+      "credentials or bearer tokens",
+      "proxy identity headers or auth internals",
+      "provider URLs or storage object URLs not explicitly admitted",
+      "connector targets or destination targets not explicitly admitted",
+      "source credential material",
+      "raw package payload bodies unless explicitly admitted",
+      "prompt text or model/provider internals",
+      "browser storage secrets",
+      "environment variable values except approved non-secret labels",
+      "database connection strings",
+      "arbitrary API request or response bodies"
+    ],
+    "allowed_without_later_freeze": [
+      "check name",
+      "workflow run URL",
+      "PR number",
+      "branch name",
+      "response-safe failure code",
+      "response-safe failure phase",
+      "repo-relative file label",
+      "test title",
+      "artifact family label",
+      "retention label for current playwright-report only"
+    ],
+    "dependency_order": [
+      "playwright_artifact_taxonomy_redaction_freeze",
+      "flake_policy_freeze",
+      "performance_budget_discovery_freeze",
+      "headed_headless_parity_freeze",
+      "observability_audit_event_schema_freeze",
+      "ci_performance_observability_runtime_entry"
+    ],
+    "negative_invariants": [
+      "no CI workflow change",
+      "no Playwright configuration change",
+      "no backend or browser dependency change",
+      "no executable test change",
+      "no artifact upload behavior change",
+      "no artifact retention change",
+      "no trace policy change",
+      "no screenshot policy change",
+      "no video policy change",
+      "no server-log artifact creation",
+      "no API payload receipt artifact",
+      "no performance timing receipt artifact",
+      "no observability event receipt artifact",
+      "no redaction scanner runtime",
+      "no metrics/log shipping or dashboard",
+      "no performance budget or timing gate",
+      "no flake quarantine runtime",
+      "no headed-browser CI matrix",
+      "no sharding or parallelism",
+      "no route/API/DTO/model/migration/service behavior change",
+      "no rendered UI control",
+      "no source expansion",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector/destination dispatch",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "A later exact freeze must choose flake policy, performance budget discovery, headed/headless parity, or observability/audit schema before any artifact, workflow, config, telemetry, or runtime proof expansion."
   }
 }
