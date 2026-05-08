@@ -135,6 +135,15 @@ RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CONTRACT = (
 RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PROOF = (
     PLANNING_DOCS / "177_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PROOF.md"
 )
+RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE = (
+    PLANNING_DOCS / "178_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md"
+)
+RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT = (
+    PLANNING_DOCS / "179_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md"
+)
+RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF = (
+    PLANNING_DOCS / "180_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -6626,6 +6635,171 @@ def _check_rendered_external_export_download_prepare_proof(errors: list[str]) ->
         errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download prepare proof missing browser proof test name")
 
 
+def _check_rendered_external_export_download_delivery_freeze(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE: (
+            "Status: planning/control freeze only for `raw_mixed_rendered_external_export_download_delivery`.",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "Layer3ExternalExportDownloadDeliveryRequest",
+            "layer3.external_export_download_delivery.v1",
+            "#external-export-download-delivery-submit",
+            "[data-operation-target=\"external-export-download-band\"]",
+            "Current rendered workbench behavior may enable same-origin signed-reference controls",
+            "no frontend-only durable authority",
+        ),
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT: (
+            "Selected mode: `raw_mixed_rendered_external_export_download_delivery`.",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "Layer3ExternalExportDownloadDeliveryRequest",
+            "layer3.external_export_download_delivery.v1",
+            "same_origin_artifact_stream",
+            "deliver_external_export_download",
+            "external_export_download_prepared",
+            "The future browser proof must",
+        ),
+        BOARD: (
+            "Rendered external export/download delivery proof",
+            "178_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+            "179_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md",
+            "raw_mixed_rendered_external_export_download_delivery",
+        ),
+        MANIFEST: (
+            "latest_rendered_external_export_download_delivery_freeze_branch",
+            "latest_rendered_external_export_download_delivery_freeze_live_behavior_change",
+            "rendered_external_export_download_delivery_freeze",
+            "raw_mixed_rendered_external_export_download_delivery",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_external_export_download_delivery_freeze_proof",
+            "178_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+            "179_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md",
+            "raw_mixed_rendered_external_export_download_delivery",
+            "#external-export-download-delivery-submit",
+            "no frontend-only durable authority",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered external export/download delivery freeze term: {term}"
+                )
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_external_export_download_delivery_freeze_branch") != "codex/l3-rendered-download-delivery-proof":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered external export/download delivery freeze branch")
+        if current_status.get("latest_rendered_external_export_download_delivery_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered external export/download delivery freeze as planning-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_external_export_download_delivery_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_external_export_download_delivery_freeze_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery freeze proof must be planning-only")
+    if proof.get("selected_rendered_external_export_download_mode") != "raw_mixed_rendered_external_export_download_delivery":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery freeze proof has stale selected mode")
+    routes = proof.get("routes_to_reuse")
+    if not isinstance(routes, list) or "POST /api/v1/layer3/handoff/export/download/deliver" not in routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery freeze proof missing route to reuse")
+    selectors = proof.get("future_selectors")
+    if not isinstance(selectors, list):
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery freeze proof missing future_selectors")
+    else:
+        for selector in (
+            "[data-operation-target=\"external-export-download-band\"]",
+            "#external-export-download-delivery-submit",
+            "#external-export-download-delivery-panel",
+        ):
+            if selector not in selectors:
+                errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery future_selectors missing {selector}")
+
+
+def _check_rendered_external_export_download_delivery_proof(errors: list[str]) -> None:
+    required_doc_terms = {
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF: (
+            "Status: live test-only rendered browser proof for `raw_mixed_rendered_external_export_download_delivery`.",
+            "Layer 3 workbench drives raw mixed rendered external export download delivery",
+            "submitRenderedExternalExportDownloadDelivery",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "layer3.external_export_download_delivery.v1",
+            "external_export_download_delivered",
+            "x-layer3-delivery-state",
+            "x-layer3-source-artifact-hash",
+            "no `/handoff/export/download/signed-reference`",
+            "no frontend-only durable authority",
+        ),
+        BOARD: (
+            "Rendered external export/download delivery proof",
+            "180_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF.md",
+            "Layer 3 workbench drives raw mixed rendered external export download delivery",
+            "raw_mixed_rendered_external_export_download_delivery",
+            "external_export_download_delivered",
+        ),
+        MANIFEST: (
+            "latest_rendered_external_export_download_delivery_proof_branch",
+            "latest_rendered_external_export_download_delivery_proof_live_behavior_change",
+            "rendered_external_export_download_delivery_proof",
+            "180_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF.md",
+            "Layer 3 workbench drives raw mixed rendered external export download delivery",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_external_export_download_delivery_proof",
+            "180_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF.md",
+            "raw_mixed_rendered_external_export_download_delivery",
+            "submitRenderedExternalExportDownloadDelivery",
+            "Layer 3 workbench drives raw mixed rendered external export download delivery",
+            "readiness_nuance",
+            "no frontend-only durable authority",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives raw mixed rendered external export download delivery",
+            "submitRenderedExternalExportDownloadDelivery",
+            "expect(deliveryPayload.operator_decision).toBe('deliver_external_export_download')",
+            "expect(deliveryPayload.delivery_mode).toBe('same_origin_artifact_stream')",
+            "expect(headers['x-layer3-delivery-state']).toBe('external_export_download_delivered')",
+            "expect(headers['x-layer3-source-artifact-hash']).toBe(downloadPrepare.source_artifact_hash)",
+            "/handoff/export/download/deliver",
+            "/handoff/export/download/signed-reference",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered external export/download delivery proof term: {term}"
+                )
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if isinstance(current_status, dict):
+        if current_status.get("latest_rendered_external_export_download_delivery_proof_branch") != "codex/l3-rendered-download-delivery-proof":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale rendered external export/download delivery proof branch")
+        if current_status.get("latest_rendered_external_export_download_delivery_proof_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark rendered external export/download delivery proof as test-only")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("rendered_external_export_download_delivery_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered_external_export_download_delivery_proof object")
+        return
+    if proof.get("live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery proof must be test-only")
+    if proof.get("selected_rendered_external_export_download_mode") != "raw_mixed_rendered_external_export_download_delivery":
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery proof has stale selected mode")
+    routes = proof.get("routes_reused")
+    if not isinstance(routes, list) or "POST /api/v1/layer3/handoff/export/download/deliver" not in routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery proof missing route reused")
+    browser_proof = proof.get("browser_proof")
+    if not isinstance(browser_proof, list) or "Layer 3 workbench drives raw mixed rendered external export download delivery" not in browser_proof:
+        errors.append(f"{_rel(PROOF_MANIFEST)} rendered external export/download delivery proof missing browser proof test name")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -11211,6 +11385,9 @@ def main() -> int:
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FREEZE,
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CONTRACT,
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PROOF,
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE,
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT,
+        RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -11382,6 +11559,8 @@ def main() -> int:
     _check_rendered_aps_handoff_proof(errors)
     _check_rendered_external_export_download_prepare_freeze(errors)
     _check_rendered_external_export_download_prepare_proof(errors)
+    _check_rendered_external_export_download_delivery_freeze(errors)
+    _check_rendered_external_export_download_delivery_proof(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
