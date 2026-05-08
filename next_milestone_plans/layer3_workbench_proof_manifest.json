@@ -8958,5 +8958,76 @@
       "ci_performance_observability_runtime_entry_freeze_update"
     ],
     "next_boundary": "Choose one concrete product/operator boundary before implementation; keep CI/performance/observability runtime parked unless CI itself becomes the concrete blocker."
+  },
+  "provider_public_url_authority_discovery_closeout_proof": {
+    "implementation_branch": "codex/l3-provider-public-url-boundary",
+    "live_behavior_change": false,
+    "selected_planning_mode": "provider_public_url_authority_discovery_closeout",
+    "entry_decision": "no_runtime_now",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "authority_discovery_result": "insufficient_authority_for_provider_public_url_runtime",
+    "implementation_entry_required_before_runtime": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/203_POST_756_GOVERNANCE_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/211_CI_OBSERVABILITY_CHAIN_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/212_CI_OBSERVABILITY_NO_RUNTIME_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/213_PROVIDER_PUBLIC_URL_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+    ],
+    "source_test_evidence": [
+      "backend/app/api/layer3.py provider/public URL terms are forbidden fields or disabled flags",
+      "backend/app/services/layer3_preflight_request_contract.py rejects provider/public URL request fields",
+      "backend/app/services/layer3_external_export_response.py preserves public_url_enabled false",
+      "backend/app/services/layer3_handoff_export_response.py preserves provider_public_url_enabled false",
+      "backend/app/services/layer3_workbench.py preserves disabled provider/public URL response posture",
+      "backend/tests/test_layer3_api.py asserts forbidden fields, disabled flags, and absent public URL headers",
+      "backend/tests/test_layer3_bounded_e2e.py asserts provider/public URL negative side effects remain absent",
+      "backend/tests/test_layer3_page.py asserts rendered signed-reference UI does not expose public_url as live authority"
+    ],
+    "unverified_authority": [
+      "provider_storage_authority",
+      "named_use_case",
+      "artifact_family_selected_for_provider_url",
+      "exposure_classification",
+      "ttl_revocation_audit_contract",
+      "access_authority",
+      "fake_provider_test_architecture",
+      "leak_control_runtime_proof"
+    ],
+    "preserved_theme_posture": [
+      "light inspection/status/preview/review theme surface remains unchanged",
+      "dark execution/package-construction theme surface remains unchanged",
+      "workbench package submit, handoff/export, APS handoff, external export/download, signed-reference, and downstream operation-dock theme surface remains unchanged",
+      "headed and headless proof remains required for any later rendered provider/public URL controls"
+    ],
+    "negative_invariants": [
+      "no provider/public URL runtime",
+      "no provider private signed URL runtime",
+      "no public proxy URL runtime",
+      "no provider object write, copy, mutation, materialization, ACL change, or lifecycle management",
+      "no provider credentials in browser, request payloads, responses, logs, traces, screenshots, or error bodies",
+      "no provider URL or token leakage",
+      "no connector/destination dispatch",
+      "no package mutation or reconstruction",
+      "no source expansion",
+      "no RAG/vector retrieval",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no rendered UI control",
+      "no CI workflow change",
+      "no same-origin attachment delivery or same-origin signed-reference semantics change",
+      "no route, DTO, model, migration, production service behavior, or test behavior change"
+    ],
+    "next_product_boundaries": [
+      "connector_destination_authority_discovery_freeze_or_entry_freeze_update",
+      "source_breadth_authority_discovery_freeze_or_entry_freeze_update",
+      "package_mutation_rendered_authority_discovery_freeze_or_entry_freeze_update",
+      "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+      "provider_public_url_runtime_entry_freeze_update_only_if_named_use_case_emerges"
+    ],
+    "next_boundary": "Move to connector/destination authority discovery unless a concrete named downstream use case proves same-origin delivery and signed references are insufficient."
   }
 }
