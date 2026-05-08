@@ -188,6 +188,7 @@ AUTH_SECURITY_ENTRY_CONTRACT = PLANNING_DOCS / "200_AUTH_SECURITY_ENTRY_CONTRACT
 CI_OBSERVABILITY_ENTRY_FREEZE = PLANNING_DOCS / "201_CI_PERFORMANCE_OBSERVABILITY_ENTRY_FREEZE.md"
 CI_OBSERVABILITY_ENTRY_CONTRACT = PLANNING_DOCS / "202_CI_PERFORMANCE_OBSERVABILITY_ENTRY_CONTRACT.md"
 POST_756_GOVERNANCE_CLOSEOUT = PLANNING_DOCS / "203_POST_756_GOVERNANCE_CLOSEOUT.md"
+CI_OBSERVABILITY_GAP_INVENTORY = PLANNING_DOCS / "204_CI_OBSERVABILITY_GAP_INVENTORY.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -8922,6 +8923,150 @@ def _check_post_756_governance_closeout(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} post_756_governance_closeout_proof negative_invariants must match the frozen structural list")
 
+def _check_ci_observability_gap_inventory(errors: list[str]) -> None:
+    required_terms = {
+        CI_OBSERVABILITY_GAP_INVENTORY: (
+            "Status: planning/control gap inventory only for `ci_observability_gap_inventory_only`.",
+            "This pass admits no runtime behavior and changes no executable test or workflow.",
+            "Current Live CI And Browser Harness Posture",
+            "performance_budget_authority",
+            "flake_policy",
+            "headed_headless_parity_freeze",
+            "observability_audit_event_schema_freeze",
+            "no CI workflow change",
+            "no Playwright configuration change",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "CI Observability Gap Inventory",
+            "204_CI_OBSERVABILITY_GAP_INVENTORY.md",
+            "ci_observability_gap_inventory_only",
+            "performance budget authority",
+            "artifact taxonomy/redaction",
+            "ownership/triage",
+        ),
+        MANIFEST: (
+            "latest_ci_observability_gap_inventory_branch",
+            "latest_ci_observability_gap_inventory_live_behavior_change",
+            "ci_observability_gap_inventory",
+            "planning/control-only ci_observability_gap_inventory_only",
+            "runtime observability",
+        ),
+        PROOF_MANIFEST: (
+            "ci_observability_gap_inventory_proof",
+            "204_CI_OBSERVABILITY_GAP_INVENTORY.md",
+            "ci_observability_gap_inventory_only",
+            "performance_budget_authority",
+            "ci_performance_observability_runtime_entry",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing CI observability gap inventory term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for CI observability gap inventory")
+    else:
+        if current_status.get("latest_ci_observability_gap_inventory_branch") != "codex/l3-ci-observability-gap-inventory":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale CI observability gap inventory branch")
+        if current_status.get("latest_ci_observability_gap_inventory_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark CI observability gap inventory as planning-only")
+        summary = current_status.get("ci_observability_gap_inventory")
+        if not isinstance(summary, str) or "performance budget authority" not in summary or "no CI workflow change" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.ci_observability_gap_inventory must record gap inventory and no-workflow-change boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("ci_observability_gap_inventory_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing ci_observability_gap_inventory_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-ci-observability-gap-inventory",
+        "live_behavior_change": False,
+        "selected_planning_mode": "ci_observability_gap_inventory_only",
+        "runtime_status": "planning_gap_inventory_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_gap_inventory_proof.{key} must be {expected!r}")
+    posture = proof.get("current_live_posture")
+    if not isinstance(posture, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_gap_inventory_proof missing current_live_posture")
+    else:
+        expected_posture = {
+            "backend_layer3_api_job": "python -m pytest ./backend/tests/test_layer3_*.py -q",
+            "playwright_job": "npx playwright test --project=chromium",
+            "playwright_port": 8031,
+            "playwright_workers": 1,
+            "playwright_fully_parallel": False,
+            "playwright_trace": "on-first-retry",
+            "artifact_posture": "playwright_html_report_30_day_retention",
+        }
+        for key, expected in expected_posture.items():
+            if posture.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_gap_inventory_proof current_live_posture.{key} must be {expected!r}")
+    expected_gaps = [
+        "performance_budget_authority",
+        "flake_policy",
+        "headed_headless_parity",
+        "artifact_taxonomy_redaction",
+        "observability_event_schema",
+        "audit_trace_completeness",
+        "metrics_log_dashboard_target",
+        "runtime_isolation_scaling",
+        "secret_path_leakage",
+        "ownership_triage",
+    ]
+    if proof.get("gap_inventory") != expected_gaps:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_gap_inventory_proof gap_inventory must match the frozen gap list")
+    expected_dependency_order = [
+        "ci_observability_gap_inventory_only",
+        "ci_failure_signal_and_owner_runbook",
+        "playwright_artifact_taxonomy_redaction_freeze",
+        "flake_policy_freeze",
+        "performance_budget_discovery_freeze",
+        "headed_headless_parity_freeze",
+        "observability_audit_event_schema_freeze",
+        "ci_performance_observability_runtime_entry",
+    ]
+    if proof.get("dependency_order") != expected_dependency_order:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_gap_inventory_proof dependency_order must match the frozen order")
+    expected_negative_invariants = [
+        "no CI workflow change",
+        "no Playwright configuration change",
+        "no backend or browser test dependency change",
+        "no test behavior change",
+        "no performance budget gate",
+        "no runtime timing assertion",
+        "no sharding or parallelism change",
+        "no headed browser CI matrix",
+        "no observability event runtime",
+        "no audit-event runtime",
+        "no metrics, log shipping, dashboard, or external telemetry target",
+        "no artifact retention policy change",
+        "no route/API behavior change",
+        "no DTO change",
+        "no model or migration change",
+        "no production service behavior change",
+        "no rendered UI control",
+        "no source expansion",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector or destination dispatch",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no frontend-only durable authority",
+        "no local path, credential, token, prompt, metric payload, trace payload, provider URL, connector target, destination target, or browser storage leakage",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_gap_inventory_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -13700,6 +13845,7 @@ def main() -> int:
     _check_auth_security_entry_freeze(errors)
     _check_ci_performance_observability_entry_freeze(errors)
     _check_post_756_governance_closeout(errors)
+    _check_ci_observability_gap_inventory(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
