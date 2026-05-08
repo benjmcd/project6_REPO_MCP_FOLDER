@@ -6542,5 +6542,92 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Freeze the next raw mixed rendered downstream delivery, signed-reference, provider URL, connector/destination, or package mutation slice before proving it."
+  },
+  "rendered_external_export_download_delivery_freeze_proof": {
+    "scope": "Planning/control freeze for future rendered raw mixed external export/download delivery after external export/download prepared authority.",
+    "implementation_branch": "codex/l3-rendered-download-delivery-proof",
+    "live_behavior_change": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/178_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/179_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md"
+    ],
+    "selected_rendered_external_export_download_mode": "raw_mixed_rendered_external_export_download_delivery",
+    "routes_to_reuse": [
+      "POST /api/v1/layer3/handoff/export/download/deliver"
+    ],
+    "future_selectors": [
+      "[data-operation-target=\"external-export-download-band\"]",
+      "#external-export-download-delivery-submit",
+      "#external-export-download-delivery-panel"
+    ],
+    "proof_summary": "The next pass may use only existing rendered external export/download delivery controls after raw mixed rendered external export/download prepared authority. It must assert the /handoff/export/download/deliver form request allowlist, prove same-origin delivery response headers and browser-managed delivery panel state, preserve light/dark/workbench theme behavior across the upstream path, and stop before signed-reference, provider/public URL, connector/destination, package mutation, replacement, or supersession behavior.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no rendered UI control change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no signed-reference generation or use",
+      "no broad package mutation or reconstruction",
+      "no package replacement or package supersession",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Implement only a focused raw mixed rendered external export/download delivery proof if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
+  },
+  "rendered_external_export_download_delivery_proof": {
+    "scope": "Live test-only rendered /review/layer3 proof for raw mixed external export/download delivery.",
+    "implementation_branch": "codex/l3-rendered-download-delivery-proof",
+    "live_behavior_change": false,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/180_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF.md",
+    "selected_rendered_external_export_download_mode": "raw_mixed_rendered_external_export_download_delivery",
+    "routes_reused": [
+      "POST /api/v1/layer3/handoff/export/download/deliver"
+    ],
+    "live_selectors": [
+      "[data-operation-target=\"external-export-download-band\"]",
+      "#external-export-download-delivery-submit",
+      "#external-export-download-delivery-panel"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/180_RENDERED_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PROOF.md",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "tools/l3-progress-check.py"
+    ],
+    "browser_proof": [
+      "Layer 3 workbench drives raw mixed rendered external export download delivery",
+      "submitRenderedExternalExportDownloadDelivery"
+    ],
+    "proof_summary": "The focused Playwright proof drives raw mixed rendered materialization through external export/download prepared authority, then uses existing rendered external export/download delivery controls to submit same_origin_artifact_stream delivery. It asserts the form request allowlist, verifies layer3.external_export_download_delivery.v1 response headers, checks external_export_download_delivered, content-disposition attachment, source artifact hash, external export/download record ref, light/dark/workbench theme posture, and avoids signed-reference, package mutation, replacement, and supersession routes.",
+    "readiness_nuance": "Current rendered UI may enable same-origin signed-reference controls after external export/download prepare; this proof records same-origin delivery only and does not click signed-reference controls or send /handoff/export/download/signed-reference.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no rendered UI control change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no signed-reference generation or use",
+      "no broad package mutation or reconstruction",
+      "no package replacement or package supersession",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Freeze the next raw mixed rendered downstream signed-reference, provider URL, connector/destination, or package mutation slice before proving it."
   }
 }
