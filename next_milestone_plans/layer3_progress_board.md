@@ -803,6 +803,10 @@ Rendered external export/download signed-reference proof: `183_RENDERED_EXTERNAL
 
 Post-745 downstream expansion freeze: `184_POST_745_DOWNSTREAM_EXPANSION_FREEZE.md` and `185_POST_745_DOWNSTREAM_EXPANSION_CONTRACT.md` record the docs/proof-only planning boundary `post_745_raw_mixed_rendered_downstream_expansion_governance` after the rendered signed-reference proof. The selected future ordering is provider/public URL entry freeze, connector/destination dispatch entry freeze, rendered package mutation/reconstruction entry freeze, source breadth entry freeze, qualitative/hybrid/RAG/vector entry freeze, browser/full mockup activation freeze, and auth/security entry freeze. This boundary admits no implementation by itself and specifically blocks provider/public URLs, connector/destination dispatch, package mutation/reconstruction, source expansion beyond `dataset_version` and `aps_content_document`, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, hidden LLM planning, full mockup activation, auth/security behavior changes, new rendered controls, backend route/DTO/service/model/migration changes, and frontend-only durable authority. Future rendered work must preserve explicit light, dark, and workbench theme obligations and prove headed/headless Chromium consistency in the specific implementation-entry freeze that admits it.
 
+## Post-746 Review-Debt Reconciliation Plan
+
+Post-746 review-debt reconciliation plan: `186_REVIEW_DEBT.md` records the current-main blocker discovered after the PR `#738` through PR `#746` audit. It classifies unresolved merged-review threads from PRs `#738`, `#744`, `#745`, and `#746`, ranks the live behavior, proof, test-harness, and checker risks, and freezes `post_746_review_debt_reconciliation` as the immediate next pass before any provider/public URL, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector, mockup, auth/security, or other new Layer 3 capability work. This planning note admits no runtime behavior and does not mark any review debt fixed.
+
 ## Refresh Inputs
 
 Refresh this board against:
