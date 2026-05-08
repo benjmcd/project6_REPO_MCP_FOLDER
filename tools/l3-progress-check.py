@@ -245,6 +245,12 @@ PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_CONTRACT = (
 PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE = (
     PLANNING_DOCS / "228_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_DURABLE_STATE_FREEZE = (
+    PLANNING_DOCS / "229_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_FREEZE.md"
+)
+PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_DURABLE_STATE_CONTRACT = (
+    PLANNING_DOCS / "230_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -12684,6 +12690,306 @@ def _check_provider_private_signed_url_storage_receipt_authority_freeze(errors: 
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_authority_freeze_proof recommended_next_actions must match the frozen list")
 
+def _check_provider_private_signed_url_storage_receipt_durable_state_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_DURABLE_STATE_FREEZE: (
+            "Status: current-main planning/control storage and durable-receipt state authority freeze for `provider_private_signed_url_storage_receipt_durable_state_freeze`.",
+            "entry_decision: storage_receipt_durable_state_freeze_runtime_blocked",
+            "selected_runtime_family: provider_public_url_runtime",
+            "selected_runtime_mode: provider_private_signed_url",
+            "named_use_case_selected: external_downstream_recipient_private_artifact_delivery",
+            "fake_provider_contract_double_status: implemented_tested",
+            "provider_storage_authority_result: absent_for_provider_private_signed_url",
+            "same_origin_signed_reference_state_precedent: available_not_provider_private_authority",
+            "provider_private_signed_url_runtime: false",
+            "route_dto_model_migration_ui_change: false",
+            "storage_receipt_durable_state",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Storage Receipt Durable State Freeze",
+            "229_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_FREEZE.md",
+            "provider_private_signed_url_storage_receipt_durable_state_freeze",
+            "entry_decision` is `storage_receipt_durable_state_freeze_runtime_blocked",
+            "durable_receipt_identity",
+            "artifact authority binding",
+            "provider_object_identity_binding",
+            "client_request_id_idempotency",
+            "provider_private_signed_url_runtime` is `false",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_storage_receipt_durable_state_freeze_branch",
+            "latest_provider_private_signed_url_storage_receipt_durable_state_freeze_live_behavior_change",
+            "provider_private_signed_url_storage_receipt_durable_state_freeze",
+            "entry_decision is storage_receipt_durable_state_freeze_runtime_blocked",
+            "provider_storage_authority_result is absent_for_provider_private_signed_url",
+            "storage_receipt_durable_state",
+            "provider_private_signed_url_runtime is false",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_storage_receipt_durable_state_freeze_proof",
+            "229_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_FREEZE.md",
+            "provider_private_signed_url_storage_receipt_durable_state_freeze",
+            "storage_receipt_durable_state_freeze_runtime_blocked",
+            "write_provider_private_signed_url_storage_receipt_durable_state_contract",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL storage/receipt durable-state freeze term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    if "provider-private-signed-url" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes before durable-state freeze")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL storage/receipt durable-state freeze")
+    else:
+        if current_status.get("latest_provider_private_signed_url_storage_receipt_durable_state_freeze_branch") != "codex/l3-provider-storage-receipt-durable-state-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale provider private signed URL storage/receipt durable-state freeze branch")
+        if current_status.get("latest_provider_private_signed_url_storage_receipt_durable_state_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark provider private signed URL storage/receipt durable-state freeze as planning-only")
+        summary = current_status.get("provider_private_signed_url_storage_receipt_durable_state_freeze")
+        if (
+            not isinstance(summary, str)
+            or "entry_decision is storage_receipt_durable_state_freeze_runtime_blocked" not in summary
+            or "provider_private_signed_url_runtime is false" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_storage_receipt_durable_state_freeze must record storage/receipt durable-state planning posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_storage_receipt_durable_state_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_storage_receipt_durable_state_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-provider-storage-receipt-durable-state-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_storage_receipt_durable_state_freeze",
+        "entry_decision": "storage_receipt_durable_state_freeze_runtime_blocked",
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "runtime_status": "not_implemented",
+        "fake_provider_contract_double_status": "implemented_tested",
+        "provider_storage_authority_result": "absent_for_provider_private_signed_url",
+        "same_origin_signed_reference_state_precedent": "available_not_provider_private_authority",
+        "provider_private_signed_url_runtime": False,
+        "route_dto_model_migration_ui_change": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_freeze_proof.{key} must be {expected!r}")
+    expected_requirements = [
+        "durable_receipt_identity",
+        "artifact_authority_binding",
+        "provider_object_identity_binding",
+        "client_request_id_idempotency",
+        "receipt_expiry_enforcement",
+        "revocation_fail_closed",
+        "replay_single_use_or_explicit_replay_policy",
+        "durable_audit_events",
+        "redaction_requirements",
+        "fake_provider_failure_mode_anchoring",
+        "stale_authority_fail_closed",
+        "same_origin_signed_reference_compatibility_guard",
+    ]
+    if proof.get("required_durable_state_requirements") != expected_requirements:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_freeze_proof required_durable_state_requirements must match the frozen list")
+    expected_forbidden = [
+        "provider_private_signed_url_runtime_route",
+        "provider_public_url_runtime",
+        "public_proxy_url_runtime",
+        "provider_storage_authority",
+        "provider_private_signed_url_model_or_migration",
+        "provider_object_write_copy_acl_bucket_container_key_credential_or_network_behavior",
+        "provider_url_fields_on_existing_same_origin_routes",
+        "same_origin_delivery_or_signed_reference_semantics_change",
+        "external_connector_invocation",
+        "destination_write",
+        "source_adapter_registry_or_source_expansion",
+        "package_mutation_or_reconstruction",
+        "broad_qualitative_hybrid_rag_runtime",
+        "full_mockup_activation",
+        "hidden_llm_or_prompt_model_provider_runtime",
+        "auth_security_behavior_change",
+        "route_dto_model_migration_ui_playwright_or_ci_behavior_change",
+        "frontend_only_durable_authority",
+    ]
+    if proof.get("forbidden_runtime_changes") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_freeze_proof forbidden_runtime_changes must match the frozen list")
+    expected_next = [
+        "write_provider_private_signed_url_storage_receipt_durable_state_contract",
+        "keep_runtime_blocked_if_provider_private_signed_url_state_contract_not_locked",
+        "stop_if_route_or_dto_is_requested_before_contract",
+        "stop_for_separate_public_url_or_proxy_freeze_if_public_exposure_requested",
+        "stop_for_connector_destination_runtime_family_if_connector_delivery_requested",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_freeze_proof recommended_next_actions must match the frozen list")
+
+def _check_provider_private_signed_url_storage_receipt_durable_state_contract(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_DURABLE_STATE_CONTRACT: (
+            "Status: current-main planning/control durable-state contract for `provider_private_signed_url_storage_receipt_durable_state_contract`.",
+            "entry_decision: storage_receipt_durable_state_contract_runtime_blocked",
+            "selected_runtime_family: provider_public_url_runtime",
+            "selected_runtime_mode: provider_private_signed_url",
+            "named_use_case_selected: external_downstream_recipient_private_artifact_delivery",
+            "fake_provider_contract_double_status: implemented_tested",
+            "provider_storage_authority_result: absent_for_provider_private_signed_url",
+            "same_origin_signed_reference_state_precedent: available_not_provider_private_authority",
+            "provider_private_signed_url_runtime: false",
+            "route_dto_model_migration_ui_change: false",
+            "candidate_state_module: backend/app/services/layer3_provider_private_signed_url_state.py",
+            "candidate_migration: backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Storage Receipt Durable State Contract",
+            "230_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_CONTRACT.md",
+            "provider_private_signed_url_storage_receipt_durable_state_contract",
+            "entry_decision` is `storage_receipt_durable_state_contract_runtime_blocked",
+            "deterministic durable receipt identity",
+            "artifact and provider-object authority binding",
+            "provider_private_signed_url_runtime` is `false",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_storage_receipt_durable_state_contract_branch",
+            "latest_provider_private_signed_url_storage_receipt_durable_state_contract_live_behavior_change",
+            "provider_private_signed_url_storage_receipt_durable_state_contract",
+            "entry_decision is storage_receipt_durable_state_contract_runtime_blocked",
+            "provider_storage_authority_result is absent_for_provider_private_signed_url",
+            "provider_private_signed_url_runtime is false",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_storage_receipt_durable_state_contract_proof",
+            "230_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_CONTRACT.md",
+            "provider_private_signed_url_storage_receipt_durable_state_contract",
+            "storage_receipt_durable_state_contract_runtime_blocked",
+            "implement_storage_receipt_state_service_and_migration_with_contract_locked",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL storage/receipt durable-state contract term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    if "provider-private-signed-url" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes before durable-state contract lock")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL storage/receipt durable-state contract")
+    else:
+        if current_status.get("latest_provider_private_signed_url_storage_receipt_durable_state_contract_branch") != "codex/l3-provider-storage-receipt-durable-state-contract":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale provider private signed URL storage/receipt durable-state contract branch")
+        if current_status.get("latest_provider_private_signed_url_storage_receipt_durable_state_contract_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark provider private signed URL storage/receipt durable-state contract as planning-only")
+        summary = current_status.get("provider_private_signed_url_storage_receipt_durable_state_contract")
+        if (
+            not isinstance(summary, str)
+            or "entry_decision is storage_receipt_durable_state_contract_runtime_blocked" not in summary
+            or "provider_private_signed_url_runtime is false" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_storage_receipt_durable_state_contract must record contract lock for durable state")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_storage_receipt_durable_state_contract_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_storage_receipt_durable_state_contract_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-provider-storage-receipt-durable-state-contract",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_storage_receipt_durable_state_contract",
+        "entry_decision": "storage_receipt_durable_state_contract_runtime_blocked",
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "runtime_status": "not_implemented",
+        "fake_provider_contract_double_status": "implemented_tested",
+        "provider_storage_authority_result": "absent_for_provider_private_signed_url",
+        "same_origin_signed_reference_state_precedent": "available_not_provider_private_authority",
+        "provider_private_signed_url_runtime": False,
+        "route_dto_model_migration_ui_change": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_contract_proof.{key} must be {expected!r}")
+    expected_candidate_rows = [
+        "L3ProviderPrivateSignedUrlReceipt",
+        "L3ProviderPrivateSignedUrlObjectAuthority",
+        "L3ProviderPrivateSignedUrlRevocation",
+        "L3ProviderPrivateSignedUrlAuditEvent",
+    ]
+    if proof.get("candidate_rows") != expected_candidate_rows:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_contract_proof candidate_rows must match the frozen list")
+    if proof.get("candidate_state_module") != "backend/app/services/layer3_provider_private_signed_url_state.py":
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_contract_proof.candidate_state_module must be backend/app/services/layer3_provider_private_signed_url_state.py")
+    if proof.get("candidate_migration") != "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py":
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_contract_proof.candidate_migration must be backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py")
+    expected_contract_requirements = [
+        "durable_receipt_identity_from_client_request_id_and_authority_tuple",
+        "artifact_authority_and_hash_size_binding",
+        "provider_object_identity_binding",
+        "client_request_id_conflict_policy",
+        "expiry_rejects_and_status_reflects_staleness",
+        "revocation_fail_closed",
+        "replay_single_use_or_explicit_replay_policy",
+        "durable_audit_recording_with_redaction",
+        "stale_authority_rejection_and_recovery_guard",
+        "fake_provider_failure_injection_contract_anchor",
+        "same_origin_signed_reference_compatibility_guard",
+    ]
+    if proof.get("durable_state_contract_requirements") != expected_contract_requirements:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_contract_proof durable_state_contract_requirements must match the frozen list")
+    expected_validation_requirements = [
+        "proof_manifest_entry_and_current_status_lockstep",
+        "progress_board_entry_for_freeze_and_contract",
+        "checker_pass_for_freeze_and_contract_before_routes",
+        "no_provider_private_route_or_dto_before_contract",
+        "no_provider_private_model_or_migration_before_contract",
+        "redacted_fields_without_secret_or_raw_path_leakage",
+        "idempotency_and_replay_fail_closed_validation",
+    ]
+    if proof.get("validation_requirements") != expected_validation_requirements:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_contract_proof validation_requirements must match the frozen list")
+    expected_forbidden = [
+        "provider_private_signed_url_runtime_route",
+        "provider_public_url_runtime",
+        "public_proxy_url_runtime",
+        "provider_storage_service",
+        "provider_private_signed_url_model_or_migration",
+        "provider_object_write_copy_acl_bucket_container_key_credential_or_network_behavior",
+        "provider_url_fields_on_existing_same_origin_routes",
+        "same_origin_delivery_or_signed_reference_semantics_change",
+        "external_connector_invocation",
+        "destination_write",
+        "source_adapter_registry_or_source_expansion",
+        "package_mutation_or_reconstruction",
+        "broad_qualitative_hybrid_rag_runtime",
+        "full_mockup_activation",
+        "hidden_llm_or_prompt_model_provider_runtime",
+        "auth_security_behavior_change",
+        "route_dto_model_migration_ui_playwright_or_ci_behavior_change",
+        "frontend_only_durable_authority",
+    ]
+    if proof.get("forbidden_runtime_changes") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_contract_proof forbidden_runtime_changes must match the frozen list")
+    expected_next = [
+        "implement_storage_receipt_state_service_and_migration_with_contract_locked",
+        "keep_runtime_blocked_if_provider_private_signed_url_authority_remains_absent",
+        "stop_if_same_origin_signed_reference_semantics_are_mutated",
+        "stop_if_route_or_dto_or_migration_is_requested_without_contract_lock",
+        "stop_if_auth_or_leakage_posture_not_fixed",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_contract_proof recommended_next_actions must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -17487,6 +17793,8 @@ def main() -> int:
     _check_provider_private_signed_url_contract_only_freeze(errors)
     _check_provider_private_signed_url_fake_provider_contract(errors)
     _check_provider_private_signed_url_storage_receipt_authority_freeze(errors)
+    _check_provider_private_signed_url_storage_receipt_durable_state_freeze(errors)
+    _check_provider_private_signed_url_storage_receipt_durable_state_contract(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
