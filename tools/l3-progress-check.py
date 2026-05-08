@@ -366,6 +366,9 @@ REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_MIGRATION = (
 REPLACEMENT_PACKAGE_NAMESPACE_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0021_layer3_replacement_output_package.py"
 )
+PROVIDER_PRIVATE_SIGNED_URL_STATE_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0022_layer3_provider_private_signed_url_state.py"
+)
 LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
 MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
@@ -388,6 +391,9 @@ GATE_B_STATE_SERVICE = (
 )
 SIGNED_REFERENCE_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_signed_reference_state.py"
+)
+PROVIDER_PRIVATE_SIGNED_URL_STATE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_provider_private_signed_url_state.py"
 )
 PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_provider_private_signed_url_fake_provider.py"
@@ -466,6 +472,9 @@ REPLACEMENT_PACKAGE_NAMESPACE_TEST = (
 )
 SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
+)
+PROVIDER_PRIVATE_SIGNED_URL_STATE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_provider_private_signed_url_state.py"
 )
 PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_provider_private_signed_url_fake_provider.py"
@@ -12577,15 +12586,27 @@ def _check_provider_private_signed_url_storage_receipt_authority_freeze(errors: 
     api_text = _read_required_text(LAYER3_API, errors)
     if "provider-private-signed-url" in api_text:
         errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes before storage/receipt authority runtime")
-    model_text = _read_required_text(MODELS, errors)
-    for forbidden in (
-        "L3ProviderPrivateSignedUrlReceipt",
-        "L3ProviderPrivateSignedUrlRevocation",
-        "L3ProviderPrivateSignedUrlAuditEvent",
-        "L3ProviderPrivateSignedUrlObjectAuthority",
-    ):
-        if forbidden in model_text:
-            errors.append(f"{_rel(MODELS)} must not define {forbidden} before provider-private storage/receipt runtime")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    durable_state_substrate = (
+        proof_data.get("provider_private_signed_url_durable_state_substrate_proof")
+        if isinstance(proof_data, dict)
+        else None
+    )
+    substrate_is_implemented = (
+        isinstance(durable_state_substrate, dict)
+        and durable_state_substrate.get("durable_state_substrate_status") == "implemented_tested"
+    )
+    if not substrate_is_implemented:
+        model_text = _read_required_text(MODELS, errors)
+        for forbidden in (
+            "L3ProviderPrivateSignedUrlReceipt",
+            "L3ProviderPrivateSignedUrlRevocation",
+            "L3ProviderPrivateSignedUrlAuditEvent",
+            "L3ProviderPrivateSignedUrlObjectAuthority",
+        ):
+            if forbidden in model_text:
+                errors.append(f"{_rel(MODELS)} must not define {forbidden} before provider-private storage/receipt runtime")
 
     current_status = _load_json(MANIFEST, errors).get("current_status", {})
     if not isinstance(current_status, dict):
@@ -12599,7 +12620,6 @@ def _check_provider_private_signed_url_storage_receipt_authority_freeze(errors: 
         if not isinstance(summary, str) or "provider_storage_authority_result is absent_for_provider_private_signed_url" not in summary or "provider_private_signed_url_runtime is false" not in summary:
             errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_storage_receipt_authority_freeze must record absent provider-private authority/no-runtime posture")
 
-    proof_data = _load_json(PROOF_MANIFEST, errors)
     proof = proof_data.get("provider_private_signed_url_storage_receipt_authority_freeze_proof") if isinstance(proof_data, dict) else None
     if not isinstance(proof, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_storage_receipt_authority_freeze_proof object")
@@ -12989,6 +13009,180 @@ def _check_provider_private_signed_url_storage_receipt_durable_state_contract(er
     ]
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_storage_receipt_durable_state_contract_proof recommended_next_actions must match the frozen list")
+
+def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]) -> None:
+    required_terms = {
+        BOARD: (
+            "Provider Private Signed URL Durable State Substrate",
+            "durable_state_substrate_status` is `implemented_tested",
+            "provider_private_signed_url_runtime` is `false",
+            "same_origin_signed_reference_semantics_changed` is `false",
+            "backend/app/services/layer3_provider_private_signed_url_state.py",
+            "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+            "backend/tests/test_layer3_provider_private_signed_url_state.py",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_durable_state_substrate_branch",
+            "latest_provider_private_signed_url_durable_state_substrate_live_behavior_change",
+            "provider_private_signed_url_durable_state_substrate",
+            "durable_state_substrate_status is implemented_tested",
+            "provider_private_signed_url_runtime is false",
+            "same_origin_signed_reference_semantics_changed is false",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_durable_state_substrate_proof",
+            "durable_state_substrate_status",
+            "backend/app/services/layer3_provider_private_signed_url_state.py",
+            "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+            "backend/tests/test_layer3_provider_private_signed_url_state.py",
+        ),
+        MODELS: (
+            "class L3ProviderPrivateSignedUrlObjectAuthority",
+            "class L3ProviderPrivateSignedUrlReceipt",
+            "class L3ProviderPrivateSignedUrlRevocation",
+            "class L3ProviderPrivateSignedUrlAuditEvent",
+            "uq_l3_provider_private_signed_url_authority_hash",
+            "uq_l3_provider_private_signed_url_receipt_client_request",
+            "uq_l3_provider_private_signed_url_revoke_receipt_key",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_STATE_MIGRATION: (
+            "revision = \"0022_layer3_provider_private_signed_url_state\"",
+            "down_revision = \"0021_layer3_replacement_output_package\"",
+            "l3_provider_private_signed_url_object_authority",
+            "l3_provider_private_signed_url_receipt",
+            "l3_provider_private_signed_url_revocation",
+            "l3_provider_private_signed_url_audit_event",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_STATE_SERVICE: (
+            "record_prepared_provider_private_signed_url_receipt",
+            "record_used_provider_private_signed_url_receipt",
+            "revoke_provider_private_signed_url_receipt",
+            "PROVIDER_PRIVATE_SIGNED_URL_REPLAY_POLICY_SINGLE_USE",
+            "INTERNAL_ARTIFACT_REF_PLACEHOLDER",
+            "provider_private_signed_url_state_idempotency_conflict",
+            "provider_private_signed_url_state_replay_denied",
+            "provider_private_signed_url_state_revoked",
+            "provider_private_signed_url_state_expired",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_STATE_TEST: (
+            "test_prepare_persists_redacted_authority_and_idempotent_receipt_state",
+            "test_prepare_conflict_rejects_changed_authority_for_same_client_request_id",
+            "test_use_blocks_stale_session_and_artifact_authority",
+            "test_use_enforces_expiry_and_single_use_replay",
+            "test_revoke_blocks_future_use_and_redacts_audit",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_TEST: (
+            "test_fake_provider_prepare_is_deterministic_idempotent_and_redacted",
+            "test_fake_provider_rejects_stale_hash_size_authority_and_idempotency_conflicts",
+            "test_fake_provider_enforces_ttl_expiry_replay_and_revocation",
+        ),
+        SIGNED_REFERENCE_STATE_TEST: (
+            "test_record_generated_signed_reference_persists_sanitized_durable_state",
+            "test_single_use_reference_records_one_delivery_and_rejects_replay",
+            "test_revoked_reference_fails_closed_and_records_rejected_audit",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL durable-state substrate term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    if "provider-private-signed-url" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes after durable-state substrate implementation")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL durable-state substrate")
+    else:
+        branch = current_status.get("latest_provider_private_signed_url_durable_state_substrate_branch")
+        if not isinstance(branch, str) or not branch.startswith("codex/l3-provider-private-signed-url-state-impl"):
+            errors.append(f"{_rel(MANIFEST)} current_status has stale provider private signed URL durable-state substrate branch")
+        if current_status.get("latest_provider_private_signed_url_durable_state_substrate_live_behavior_change") is not True:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark provider private signed URL durable-state substrate as live behavior change")
+        summary = current_status.get("provider_private_signed_url_durable_state_substrate")
+        if (
+            not isinstance(summary, str)
+            or "durable_state_substrate_status is implemented_tested" not in summary
+            or "provider_private_signed_url_runtime is false" not in summary
+            or "same_origin_signed_reference_semantics_changed is false" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_durable_state_substrate must record implemented substrate guardrails")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_durable_state_substrate_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_durable_state_substrate_proof object")
+        return
+    branch = proof.get("implementation_branch")
+    if not isinstance(branch, str) or not branch.startswith("codex/l3-provider-private-signed-url-state-impl"):
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_durable_state_substrate_proof implementation_branch must use the Branch C prefix")
+    expected_scalars = {
+        "live_behavior_change": True,
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "runtime_status": "not_implemented",
+        "durable_state_substrate_status": "implemented_tested",
+        "provider_private_signed_url_runtime": False,
+        "provider_private_signed_url_route_dto_change": False,
+        "provider_private_signed_url_rendered_ui_change": False,
+        "same_origin_signed_reference_semantics_changed": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_durable_state_substrate_proof.{key} must be {expected!r}")
+    expected_docs = [
+        "next_milestone_plans/Layer3_planning_docs/228_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/229_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/230_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_CONTRACT.md",
+    ]
+    if proof.get("governing_docs") != expected_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_durable_state_substrate_proof governing_docs must match the storage/receipt durable-state authority chain")
+    expected_files = [
+        "backend/app/models/models.py",
+        "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+        "backend/app/services/layer3_provider_private_signed_url_state.py",
+        "backend/tests/test_layer3_provider_private_signed_url_state.py",
+    ]
+    if proof.get("implemented_files") != expected_files:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_durable_state_substrate_proof implemented_files must match the durable-state substrate surface")
+    expected_compat = [
+        "backend/tests/test_layer3_provider_private_signed_url_fake_provider.py",
+        "backend/tests/test_layer3_signed_reference_state.py",
+    ]
+    if proof.get("compatibility_validation_files") != expected_compat:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_durable_state_substrate_proof compatibility_validation_files must match the compatibility suites")
+    expected_guards = [
+        "durable_receipt_identity",
+        "session_and_artifact_authority_binding",
+        "provider_object_identity_hash_binding",
+        "client_request_id_idempotency",
+        "expiry_fail_closed",
+        "revocation_fail_closed",
+        "single_use_replay_denial",
+        "redacted_audit_events",
+        "wrong_session_or_artifact_authority_rejection",
+        "no_raw_bearer_token_storage",
+        "same_origin_signed_reference_compatibility",
+    ]
+    if proof.get("durable_state_guards") != expected_guards:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_durable_state_substrate_proof durable_state_guards must match the implemented guard set")
+    expected_forbidden = [
+        "provider_private_signed_url_runtime_route",
+        "provider_private_signed_url_dto_exposure",
+        "provider_private_signed_url_rendered_controls",
+        "provider_object_store_network_writes",
+        "provider_public_url_runtime",
+        "public_proxy_url_runtime",
+        "connector_destination_dispatch",
+        "package_mutation_or_reconstruction",
+        "same_origin_delivery_semantics_change",
+        "same_origin_signed_reference_semantics_change",
+    ]
+    if proof.get("forbidden_runtime_changes") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_durable_state_substrate_proof forbidden_runtime_changes must match the durable-state lane boundaries")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -17795,6 +17989,7 @@ def main() -> int:
     _check_provider_private_signed_url_storage_receipt_authority_freeze(errors)
     _check_provider_private_signed_url_storage_receipt_durable_state_freeze(errors)
     _check_provider_private_signed_url_storage_receipt_durable_state_contract(errors)
+    _check_provider_private_signed_url_durable_state_substrate(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
