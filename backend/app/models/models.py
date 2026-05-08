@@ -1440,6 +1440,7 @@ class L3ProviderPrivateSignedUrlReceipt(Base):
         nullable=False,
     )
     client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    recipient_scope: Mapped[str] = mapped_column(String(255), nullable=False)
     provider_private_signed_url_state: Mapped[str] = mapped_column(String(64), nullable=False, default="provider_private_signed_url_prepared")
     provider_private_signed_url_replay_policy: Mapped[str] = mapped_column(String(32), nullable=False, default="single_use")
     provider_private_signed_url_max_use_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
