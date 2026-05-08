@@ -10279,5 +10279,59 @@
       "stop_if_route_or_dto_or_migration_is_requested_without_contract_lock",
       "stop_if_auth_or_leakage_posture_not_fixed"
     ]
+  },
+  "provider_private_signed_url_durable_state_substrate_proof": {
+    "scope": "Live provider-private signed URL durable-state substrate implementation before any route, DTO, or rendered UI admission.",
+    "implementation_branch": "codex/l3-provider-private-signed-url-state-impl-2",
+    "live_behavior_change": true,
+    "selected_runtime_family": "provider_public_url_runtime",
+    "selected_runtime_mode": "provider_private_signed_url",
+    "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+    "runtime_status": "not_implemented",
+    "durable_state_substrate_status": "implemented_tested",
+    "provider_private_signed_url_runtime": false,
+    "provider_private_signed_url_route_dto_change": false,
+    "provider_private_signed_url_rendered_ui_change": false,
+    "same_origin_signed_reference_semantics_changed": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/228_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_AUTHORITY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/229_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/230_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_CONTRACT.md"
+    ],
+    "implemented_files": [
+      "backend/app/models/models.py",
+      "backend/alembic/versions/0022_layer3_provider_private_signed_url_state.py",
+      "backend/app/services/layer3_provider_private_signed_url_state.py",
+      "backend/tests/test_layer3_provider_private_signed_url_state.py"
+    ],
+    "compatibility_validation_files": [
+      "backend/tests/test_layer3_provider_private_signed_url_fake_provider.py",
+      "backend/tests/test_layer3_signed_reference_state.py"
+    ],
+    "durable_state_guards": [
+      "durable_receipt_identity",
+      "session_and_artifact_authority_binding",
+      "provider_object_identity_hash_binding",
+      "client_request_id_idempotency",
+      "expiry_fail_closed",
+      "revocation_fail_closed",
+      "single_use_replay_denial",
+      "redacted_audit_events",
+      "wrong_session_or_artifact_authority_rejection",
+      "no_raw_bearer_token_storage",
+      "same_origin_signed_reference_compatibility"
+    ],
+    "forbidden_runtime_changes": [
+      "provider_private_signed_url_runtime_route",
+      "provider_private_signed_url_dto_exposure",
+      "provider_private_signed_url_rendered_controls",
+      "provider_object_store_network_writes",
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_or_reconstruction",
+      "same_origin_delivery_semantics_change",
+      "same_origin_signed_reference_semantics_change"
+    ]
   }
 }
