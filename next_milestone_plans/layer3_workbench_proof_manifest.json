@@ -9274,5 +9274,94 @@
       "package_mutation_rendered_runtime_entry_freeze_update_only_if_named_use_case_emerges",
       "source_breadth_runtime_entry_freeze_update_only_if_named_use_case_emerges"
     ]
+  },
+  "qual_hybrid_rag_authority_discovery_closeout_proof": {
+    "scope": "Planning/control authority-discovery closeout for qual_hybrid_rag_authority_discovery_closeout after PR #772 package mutation rendered authority discovery closeout.",
+    "implementation_branch": "codex/l3-qual-rag-boundary",
+    "live_behavior_change": false,
+    "selected_planning_mode": "qual_hybrid_rag_authority_discovery_closeout",
+    "entry_decision": "no_runtime_now",
+    "selected_mode": null,
+    "runtime_status": "not_implemented",
+    "live_single_aps_doc_qualitative_status": "single_aps_doc_qualitative_pass_only",
+    "live_qual_aps_downstream_status": "bounded_qual_aps_backend_api_downstream_chain",
+    "live_rendered_qual_aps_status": "qual_aps_rendered_downstream_existing_controls_only",
+    "authority_discovery_result": "insufficient_authority_for_broad_qual_hybrid_rag_runtime",
+    "implementation_entry_required_before_runtime": true,
+    "next_product_boundary_required": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/203_POST_756_GOVERNANCE_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/216_PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/217_QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+    ],
+    "authority_evidence": {
+      "single_aps_doc_qualitative_pass": [
+        "backend/app/services/layer3_qual_aps_execution.py owns only single_aps_doc_qualitative_pass.",
+        "backend/tests/test_layer3_qual_aps_execution.py proves the exact single APS document qualitative boundary."
+      ],
+      "qualitative_aps_backend_api_downstream_chain": [
+        "backend/tests/test_layer3_bounded_e2e.py proves the bounded APS content document qualitative API path through package and downstream stages."
+      ],
+      "rendered_qualitative_aps_existing_controls": [
+        "e2e/layer3-workbench.spec.js and e2e/layer3-handoff.spec.js cover existing rendered qualitative APS controls without adding broad qualitative, hybrid, or RAG controls."
+      ],
+      "deferred_broad_qual_hybrid_rag_fields": [
+        "backend/app/api/layer3.py and boundary tests keep broad qualitative, hybrid, RAG, and vector request fields non-admitted.",
+        "backend/tests/test_layer3_source_boundary.py proves rag_vector_index remains unsupported and RAG disabled."
+      ]
+    },
+    "unverified_authority": [
+      "broad_qualitative_authority",
+      "qualitative_cohort_authority",
+      "comparative_cross_document_authority",
+      "hybrid_execution_semantics",
+      "retrieval_corpus_authority",
+      "rag_vector_retrieval_authority",
+      "vector_index_storage_model",
+      "embedding_model_authority",
+      "prompt_model_provider_security_posture",
+      "output_taxonomy_and_package_compatibility",
+      "leakage_policy_and_auth_security_posture",
+      "rendered_theme_headed_headless_proof_plan"
+    ],
+    "negative_invariants": [
+      "no broad qualitative execution",
+      "no qualitative associated-cohort execution",
+      "no comparative qualitative execution",
+      "no cross-document synthesis",
+      "no hybrid execution",
+      "no RAG/vector retrieval",
+      "no vector index creation",
+      "no embedding generation",
+      "no retrieval-augmented planning",
+      "no hidden LLM planning",
+      "no prompt/model/provider runtime",
+      "no arbitrary prompt text accepted from UI or API",
+      "no model credentials accepted from UI or API",
+      "no qualitative runtime expansion beyond the exact single APS-document qualitative chain already live",
+      "no qualitative APS backend/API downstream behavior change",
+      "no qualitative APS rendered existing-control behavior change",
+      "no source expansion",
+      "no source adapter registry",
+      "no local upload",
+      "no local-directory ingestion",
+      "no web connector retrieval",
+      "no package mutation or reconstruction",
+      "no provider/public URL runtime",
+      "no connector or destination dispatch",
+      "no output taxonomy expansion",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no rendered UI control",
+      "no CI workflow change",
+      "no route, DTO, model, migration, production service behavior, or executable test behavior change"
+    ],
+    "next_product_boundaries": [
+      "browser_full_mockup_authority_discovery_freeze_or_entry_freeze_update",
+      "auth_security_authority_discovery_freeze_or_entry_freeze_update",
+      "qual_hybrid_rag_runtime_entry_freeze_update_only_if_named_use_case_emerges"
+    ]
   }
 }
