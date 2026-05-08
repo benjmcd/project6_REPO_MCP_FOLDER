@@ -6216,5 +6216,62 @@
       "no frontend-only durable authority"
     ],
     "next_boundary": "Implement only a focused raw mixed rendered package-review preview, construction commit, and package review submit proof if this freeze remains aligned with live API/UI contracts; otherwise stop and refresh the freeze before code."
+  },
+  "rendered_package_review_proof": {
+    "scope": "Live test-only rendered /review/layer3 proof for raw mixed package-review preview, construction commit, and package-review submit.",
+    "implementation_branch": "codex/l3-rendered-package-proof",
+    "live_behavior_change": false,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/168_RENDERED_PACKAGE_REVIEW_PROOF.md",
+    "selected_rendered_package_review_mode": "raw_mixed_rendered_package_review_preview_commit_submit",
+    "routes_reused": [
+      "POST /api/v1/layer3/package/review/preview",
+      "POST /api/v1/layer3/package/review/commit",
+      "POST /api/v1/layer3/package/review/submit"
+    ],
+    "live_selectors": [
+      "#package-review-preview-inspect",
+      "#package-construction-commit",
+      "#package-review-submit-decision",
+      "#package-review-submit-notes",
+      "#package-review-submit",
+      "#package-review-preview-panel",
+      "[data-operation-target=\"package-review-band\"]"
+    ],
+    "reference_files": [
+      "next_milestone_plans/Layer3_planning_docs/168_RENDERED_PACKAGE_REVIEW_PROOF.md",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "tools/l3-progress-check.py"
+    ],
+    "browser_proof": [
+      "Layer 3 workbench drives raw mixed rendered package-review preview commit and submit",
+      "inspectRenderedPackagePreview",
+      "commitRenderedPackageConstruction",
+      "submitRenderedPackageReview"
+    ],
+    "proof_summary": "The focused Playwright proof drives raw mixed rendered materialization through approved result-review authority, then uses existing rendered package-review controls to inspect package preview, commit the package set, and submit an approved package review. It asserts the preview, commit, and submit request allowlists, verifies layer3.package_review_preview.v1, layer3.package_construction_commit.v1, and layer3.cohort_package_review_submit.v1 responses, checks server-returned package_review_preview_hash, reconciliation id, package ids/kinds, payload refs/hashes, package_review_approved state, submit ref, and light/dark/workbench theme posture, and avoids handoff/export, APS dispatch, external export/download, package mutation, replacement, and supersession routes.",
+    "negative_invariants": [
+      "no production backend route, DTO, service, model, or migration change",
+      "no rendered UI control change",
+      "no source-family expansion beyond dataset_version and aps_content_document",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval or index creation",
+      "no provider/public URL or signed public URL generation",
+      "no real connector or destination dispatch",
+      "no handoff/export prepare",
+      "no APS handoff dispatch",
+      "no external export/download prepare or deliver",
+      "no broad package mutation or reconstruction",
+      "no package replacement or package supersession",
+      "no hidden LLM planning",
+      "no full mockup activation",
+      "no auth/security behavior change",
+      "no frontend-only durable authority"
+    ],
+    "next_boundary": "Freeze the next raw mixed rendered downstream handoff/export, APS dispatch, external export/download, provider URL, connector/destination, or package mutation slice before proving it."
   }
 }
