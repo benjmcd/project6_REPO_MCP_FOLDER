@@ -191,6 +191,7 @@ POST_756_GOVERNANCE_CLOSEOUT = PLANNING_DOCS / "203_POST_756_GOVERNANCE_CLOSEOUT
 CI_OBSERVABILITY_GAP_INVENTORY = PLANNING_DOCS / "204_CI_OBSERVABILITY_GAP_INVENTORY.md"
 CI_FAILURE_SIGNAL_OWNER_RUNBOOK = PLANNING_DOCS / "205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md"
 PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE = PLANNING_DOCS / "206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md"
+FLAKE_POLICY_FREEZE = PLANNING_DOCS / "207_FLAKE_POLICY_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -9378,6 +9379,166 @@ def _check_playwright_artifact_taxonomy_redaction_freeze(errors: list[str]) -> N
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} playwright_artifact_taxonomy_redaction_freeze_proof negative_invariants must match the frozen structural list")
 
+def _check_flake_policy_freeze(errors: list[str]) -> None:
+    required_terms = {
+        FLAKE_POLICY_FREEZE: (
+            "Status: planning/control freeze only for `flake_policy_freeze`.",
+            "Current main remains a serial Chromium Playwright job",
+            "Current Retry Posture",
+            "Flake Classification Vocabulary",
+            "deterministic_failure",
+            "infrastructure_noise",
+            "candidate_flake",
+            "recurring_flake",
+            "unknown_intermittent",
+            "no retry count change",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Flake Policy Freeze",
+            "207_FLAKE_POLICY_FREEZE.md",
+            "flake_policy_freeze",
+            "CI-only retries",
+            "deterministic_failure",
+            "candidate_flake",
+        ),
+        MANIFEST: (
+            "latest_flake_policy_freeze_branch",
+            "latest_flake_policy_freeze_live_behavior_change",
+            "flake_policy_freeze",
+            "planning/control-only flake_policy_freeze",
+            "CI-only retries",
+        ),
+        PROOF_MANIFEST: (
+            "flake_policy_freeze_proof",
+            "207_FLAKE_POLICY_FREEZE.md",
+            "flake_policy_freeze",
+            "classification_only",
+            "unknown_intermittent",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing flake policy freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for flake policy freeze")
+    else:
+        if current_status.get("latest_flake_policy_freeze_branch") != "codex/l3-flake-policy-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale flake policy freeze branch")
+        if current_status.get("latest_flake_policy_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark flake policy freeze as planning-only")
+        summary = current_status.get("flake_policy_freeze")
+        if not isinstance(summary, str) or "retry count changes" not in summary or "frontend-only durable authority" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.flake_policy_freeze must record retry and no-runtime-expansion boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("flake_policy_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing flake_policy_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-flake-policy-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "flake_policy_freeze",
+        "runtime_status": "planning_flake_policy_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} flake_policy_freeze_proof.{key} must be {expected!r}")
+    posture = proof.get("current_retry_posture")
+    if not isinstance(posture, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} flake_policy_freeze_proof missing current_retry_posture")
+    else:
+        expected_posture = {
+            "backend_layer3_api_retry_policy": "no_explicit_pytest_retry",
+            "playwright_retry_policy": "retries_on_ci_only",
+            "playwright_ci_retries": 2,
+            "playwright_local_retries": 0,
+            "workers": 1,
+            "fully_parallel": False,
+            "quarantine_runtime": "not_implemented",
+            "automatic_rerun_bot": "not_implemented",
+            "flake_ledger_runtime": "not_implemented",
+            "status": "classification_only",
+        }
+        for key, expected in expected_posture.items():
+            if posture.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} flake_policy_freeze_proof current_retry_posture.{key} must be {expected!r}")
+    expected_vocabulary = [
+        "deterministic_failure",
+        "infrastructure_noise",
+        "candidate_flake",
+        "recurring_flake",
+        "unknown_intermittent",
+    ]
+    if proof.get("classification_vocabulary") != expected_vocabulary:
+        errors.append(f"{_rel(PROOF_MANIFEST)} flake_policy_freeze_proof classification_vocabulary must match the frozen list")
+    if proof.get("single_rerun_allowed_only_for") != [
+        "external package registry failure",
+        "GitHub runner stall or cancellation",
+        "transient Playwright browser install infrastructure failure",
+        "candidate flake where retry evidence is part of classification and no recurring pattern is known",
+    ]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} flake_policy_freeze_proof single_rerun_allowed_only_for must match the frozen list")
+    if proof.get("rerun_not_substitute_for_fix") != [
+        "deterministic pytest failure",
+        "deterministic Playwright assertion failure",
+        "application startup traceback",
+        "checker/proof/manifest failure",
+        "repeated timeout in the same phase",
+        "repeated selector or rendered state failure",
+        "recurring flake evidence",
+    ]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} flake_policy_freeze_proof rerun_not_substitute_for_fix must match the frozen list")
+    expected_dependency_order = [
+        "flake_policy_freeze",
+        "performance_budget_discovery_freeze",
+        "headed_headless_parity_freeze",
+        "observability_audit_event_schema_freeze",
+        "ci_performance_observability_runtime_entry",
+    ]
+    if proof.get("dependency_order") != expected_dependency_order:
+        errors.append(f"{_rel(PROOF_MANIFEST)} flake_policy_freeze_proof dependency_order must match the frozen order")
+    expected_negative_invariants = [
+        "no CI workflow change",
+        "no Playwright configuration change",
+        "no retry count change",
+        "no worker count change",
+        "no sharding or parallelism",
+        "no executable test change",
+        "no dependency change",
+        "no automatic rerun bot",
+        "no quarantine runtime",
+        "no skip/xfail policy change",
+        "no branch protection change",
+        "no CODEOWNERS change",
+        "no artifact upload or retention change",
+        "no trace/screenshot/video policy change",
+        "no performance budget or timing gate",
+        "no headed-browser CI matrix",
+        "no observability event runtime",
+        "no audit-event runtime",
+        "no metrics/log shipping or dashboard",
+        "no route/API/DTO/model/migration/service behavior change",
+        "no rendered UI control",
+        "no source expansion",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector/destination dispatch",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no frontend-only durable authority",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} flake_policy_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -14159,6 +14320,7 @@ def main() -> int:
     _check_ci_observability_gap_inventory(errors)
     _check_ci_failure_signal_owner_runbook(errors)
     _check_playwright_artifact_taxonomy_redaction_freeze(errors)
+    _check_flake_policy_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
