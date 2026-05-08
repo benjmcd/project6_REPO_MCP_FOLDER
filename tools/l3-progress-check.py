@@ -196,6 +196,7 @@ PERFORMANCE_BUDGET_DISCOVERY_FREEZE = PLANNING_DOCS / "208_PERFORMANCE_BUDGET_DI
 HEADED_HEADLESS_PARITY_FREEZE = PLANNING_DOCS / "209_HEADED_HEADLESS_PARITY_FREEZE.md"
 OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE = PLANNING_DOCS / "210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md"
 CI_OBSERVABILITY_CHAIN_CLOSEOUT = PLANNING_DOCS / "211_CI_OBSERVABILITY_CHAIN_CLOSEOUT.md"
+CI_OBSERVABILITY_NO_RUNTIME_CLOSEOUT = PLANNING_DOCS / "212_CI_OBSERVABILITY_NO_RUNTIME_CLOSEOUT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -10257,6 +10258,166 @@ def _check_ci_observability_chain_closeout(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_chain_closeout_proof negative_invariants must match the frozen structural list")
 
+def _check_ci_observability_no_runtime_closeout(errors: list[str]) -> None:
+    required_terms = {
+        CI_OBSERVABILITY_NO_RUNTIME_CLOSEOUT: (
+            "Status: current-main planning/control closeout for `ci_observability_no_runtime_closeout`.",
+            "entry_decision: no_runtime_now",
+            "selected_runtime_mode: null",
+            "runtime_status: not_implemented",
+            "implementation_entry_required_before_runtime: true",
+            "next_product_boundary_required: true",
+            "Existing signed-reference audit-event runtime remains out of scope",
+            "provider_public_url_authority_discovery_freeze_or_entry_freeze_update",
+            "connector_destination_authority_discovery_freeze_or_entry_freeze_update",
+            "source_breadth_authority_discovery_freeze_or_entry_freeze_update",
+            "ci_performance_observability_runtime_entry_freeze_update",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "CI Observability No Runtime Closeout",
+            "212_CI_OBSERVABILITY_NO_RUNTIME_CLOSEOUT.md",
+            "ci_observability_no_runtime_closeout",
+            "entry_decision` is `no_runtime_now",
+            "selected_runtime_mode` remains `null",
+            "runtime_status` remains `not_implemented",
+            "existing signed-reference audit-event runtime out of scope",
+        ),
+        MANIFEST: (
+            "latest_ci_observability_no_runtime_closeout_branch",
+            "latest_ci_observability_no_runtime_closeout_live_behavior_change",
+            "ci_observability_no_runtime_closeout",
+            "entry_decision is no_runtime_now",
+            "selected_runtime_mode is null",
+            "runtime_status is not_implemented",
+            "existing signed-reference audit-event runtime out of scope",
+        ),
+        PROOF_MANIFEST: (
+            "ci_observability_no_runtime_closeout_proof",
+            "212_CI_OBSERVABILITY_NO_RUNTIME_CLOSEOUT.md",
+            "ci_observability_no_runtime_closeout",
+            "no_runtime_now",
+            "provider_public_url_authority_discovery_freeze_or_entry_freeze_update",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing CI observability no-runtime closeout term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for CI observability no-runtime closeout")
+    else:
+        if current_status.get("latest_ci_observability_no_runtime_closeout_branch") != "codex/l3-ci-no-runtime-closeout":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale CI observability no-runtime closeout branch")
+        if current_status.get("latest_ci_observability_no_runtime_closeout_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark CI observability no-runtime closeout as planning-only")
+        summary = current_status.get("ci_observability_no_runtime_closeout")
+        if not isinstance(summary, str) or "entry_decision is no_runtime_now" not in summary or "concrete product/operator boundary" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.ci_observability_no_runtime_closeout must record no-runtime and next-boundary posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("ci_observability_no_runtime_closeout_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing ci_observability_no_runtime_closeout_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-ci-no-runtime-closeout",
+        "live_behavior_change": False,
+        "selected_planning_mode": "ci_observability_no_runtime_closeout",
+        "entry_decision": "no_runtime_now",
+        "selected_runtime_mode": None,
+        "runtime_status": "not_implemented",
+        "implementation_entry_required_before_runtime": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_no_runtime_closeout_proof.{key} must be {expected!r}")
+    expected_docs = [
+        "next_milestone_plans/Layer3_planning_docs/204_CI_OBSERVABILITY_GAP_INVENTORY.md",
+        "next_milestone_plans/Layer3_planning_docs/205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md",
+        "next_milestone_plans/Layer3_planning_docs/206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/207_FLAKE_POLICY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/208_PERFORMANCE_BUDGET_DISCOVERY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/209_HEADED_HEADLESS_PARITY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/210_OBSERVABILITY_AUDIT_EVENT_SCHEMA_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/211_CI_OBSERVABILITY_CHAIN_CLOSEOUT.md",
+        "next_milestone_plans/Layer3_planning_docs/212_CI_OBSERVABILITY_NO_RUNTIME_CLOSEOUT.md",
+    ]
+    if proof.get("completed_docs") != expected_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_no_runtime_closeout_proof completed_docs must match docs 204-212")
+    expected_preserved = [
+        "backend-layer3-api job runs python -m pytest ./backend/tests/test_layer3_*.py -q",
+        "test job runs npx playwright test --project=chromium",
+        "single Chromium project",
+        "workers 1",
+        "fullyParallel false",
+        "fixed port 8031",
+        "trace on-first-retry",
+        "playwright-report upload with 30-day retention",
+        "CI/performance/observability event and audit-event runtime not implemented; existing signed-reference audit-event runtime out of scope",
+    ]
+    if proof.get("preserved_live_behavior") != expected_preserved:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_no_runtime_closeout_proof preserved_live_behavior must match the frozen live behavior list")
+    expected_negative_invariants = [
+        "no CI workflow change",
+        "no Playwright configuration change",
+        "no executable test change",
+        "no dependency change",
+        "no retry count change",
+        "no worker count change",
+        "no sharding or parallelism",
+        "no headed-browser CI matrix",
+        "no fixed-port behavior change",
+        "no artifact upload or retention change",
+        "no trace/screenshot/video policy change",
+        "no server-log artifact",
+        "no API payload receipt",
+        "no performance timing receipt",
+        "no observability event receipt",
+        "no redaction scanner runtime",
+        "no flake quarantine runtime",
+        "no performance budget gate",
+        "no runtime timing assertion",
+        "no visual diff runtime",
+        "no theme test runtime",
+        "no observability event runtime",
+        "no CI/performance/observability audit-event runtime",
+        "no CI/performance/observability event writer service",
+        "no CI/performance/observability event storage table",
+        "no metrics/log shipping",
+        "no dashboard",
+        "no route/API/DTO/model/migration/service behavior change",
+        "no rendered UI control",
+        "no browser-local durable authority",
+        "no frontend-only durable authority",
+        "no source expansion",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector/destination dispatch",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_no_runtime_closeout_proof negative_invariants must match the frozen structural list")
+    expected_next = [
+        "provider_public_url_authority_discovery_freeze_or_entry_freeze_update",
+        "connector_destination_authority_discovery_freeze_or_entry_freeze_update",
+        "source_breadth_authority_discovery_freeze_or_entry_freeze_update",
+        "package_mutation_rendered_authority_discovery_freeze_or_entry_freeze_update",
+        "qual_hybrid_rag_authority_discovery_freeze_or_entry_freeze_update",
+        "browser_full_mockup_authority_discovery_freeze_or_entry_freeze_update",
+        "auth_security_authority_discovery_freeze_or_entry_freeze_update",
+        "ci_performance_observability_runtime_entry_freeze_update",
+    ]
+    if proof.get("next_product_boundaries") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} ci_observability_no_runtime_closeout_proof next_product_boundaries must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -15043,6 +15204,7 @@ def main() -> int:
     _check_headed_headless_parity_freeze(errors)
     _check_observability_audit_event_schema_freeze(errors)
     _check_ci_observability_chain_closeout(errors)
+    _check_ci_observability_no_runtime_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
