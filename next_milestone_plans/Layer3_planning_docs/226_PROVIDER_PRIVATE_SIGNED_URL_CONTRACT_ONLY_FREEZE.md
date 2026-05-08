@@ -2,6 +2,8 @@
 
 Status: current-main planning/control contract-only freeze for `provider_private_signed_url_contract_only_freeze`.
 
+Supersession note: `227_PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_CONTRACT.md` implements and tests the deterministic fake-provider contract double that this document listed as a required future step. The provider-private signed URL runtime routes, durable provider/storage authority, models, migrations, rendered UI controls, and route DTO wiring remain blocked.
+
 This document follows `225_PROVIDER_PRIVATE_SIGNED_URL_STORAGE_AUTHORITY_FAKE_PROVIDER_FREEZE.md`. It freezes the exact candidate route, DTO, owner-service, state, and negative-invariant contract shape for a future provider-private signed URL runtime, but it does not implement runtime behavior, change routes, DTOs, models, migrations, services, executable tests, rendered UI controls, Playwright configuration, CI workflow, source handling, package behavior, connector behavior, provider object behavior, RAG/vector behavior, mockup behavior, auth/security behavior, hidden LLM behavior, or frontend-only durable authority.
 
 ## Decision
