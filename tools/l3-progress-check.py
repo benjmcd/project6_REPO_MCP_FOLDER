@@ -190,6 +190,7 @@ CI_OBSERVABILITY_ENTRY_CONTRACT = PLANNING_DOCS / "202_CI_PERFORMANCE_OBSERVABIL
 POST_756_GOVERNANCE_CLOSEOUT = PLANNING_DOCS / "203_POST_756_GOVERNANCE_CLOSEOUT.md"
 CI_OBSERVABILITY_GAP_INVENTORY = PLANNING_DOCS / "204_CI_OBSERVABILITY_GAP_INVENTORY.md"
 CI_FAILURE_SIGNAL_OWNER_RUNBOOK = PLANNING_DOCS / "205_CI_FAILURE_SIGNAL_OWNER_RUNBOOK.md"
+PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE = PLANNING_DOCS / "206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -9201,6 +9202,182 @@ def _check_ci_failure_signal_owner_runbook(errors: list[str]) -> None:
     if proof.get("negative_invariants") != expected_negative_invariants:
         errors.append(f"{_rel(PROOF_MANIFEST)} ci_failure_signal_owner_runbook_proof negative_invariants must match the frozen structural list")
 
+def _check_playwright_artifact_taxonomy_redaction_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE: (
+            "Status: planning/control freeze only for `playwright_artifact_taxonomy_redaction_freeze`.",
+            "Current main remains `playwright-report` upload only with 30-day retention",
+            "Frozen Artifact Families",
+            "Redaction Boundary",
+            "html_report",
+            "retry_trace",
+            "api_payload_receipt",
+            "forbidden_in_artifacts",
+            "allowed_without_later_freeze",
+            "no artifact upload behavior change",
+            "Stop before implementation",
+        ),
+        BOARD: (
+            "Playwright Artifact Taxonomy Redaction Freeze",
+            "206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md",
+            "playwright_artifact_taxonomy_redaction_freeze",
+            "artifact family labels",
+            "forbidden artifact leakage classes",
+        ),
+        MANIFEST: (
+            "latest_playwright_artifact_taxonomy_redaction_freeze_branch",
+            "latest_playwright_artifact_taxonomy_redaction_freeze_live_behavior_change",
+            "playwright_artifact_taxonomy_redaction_freeze",
+            "current playwright-report upload with 30-day retention",
+            "forbidden artifact leakage classes",
+        ),
+        PROOF_MANIFEST: (
+            "playwright_artifact_taxonomy_redaction_freeze_proof",
+            "206_PLAYWRIGHT_ARTIFACT_TAXONOMY_REDACTION_FREEZE.md",
+            "playwright_artifact_taxonomy_redaction_freeze",
+            "live_html_report_only",
+            "observability_event_receipt",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing Playwright artifact taxonomy redaction freeze term: {term}")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for Playwright artifact taxonomy redaction freeze")
+    else:
+        if current_status.get("latest_playwright_artifact_taxonomy_redaction_freeze_branch") != "codex/l3-artifact-taxonomy-redaction-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status has stale Playwright artifact taxonomy redaction freeze branch")
+        if current_status.get("latest_playwright_artifact_taxonomy_redaction_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status must mark Playwright artifact taxonomy redaction freeze as planning-only")
+        summary = current_status.get("playwright_artifact_taxonomy_redaction_freeze")
+        if not isinstance(summary, str) or "artifact upload behavior change" not in summary or "frontend-only durable authority" not in summary:
+            errors.append(f"{_rel(MANIFEST)} current_status.playwright_artifact_taxonomy_redaction_freeze must record no artifact/runtime expansion boundary")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("playwright_artifact_taxonomy_redaction_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing playwright_artifact_taxonomy_redaction_freeze_proof object")
+        return
+    expected_scalars = {
+        "implementation_branch": "codex/l3-artifact-taxonomy-redaction-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "playwright_artifact_taxonomy_redaction_freeze",
+        "runtime_status": "planning_artifact_taxonomy_only",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} playwright_artifact_taxonomy_redaction_freeze_proof.{key} must be {expected!r}")
+    posture = proof.get("current_artifact_posture")
+    if not isinstance(posture, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} playwright_artifact_taxonomy_redaction_freeze_proof missing current_artifact_posture")
+    else:
+        expected_posture = {
+            "uploaded_artifact_name": "playwright-report",
+            "uploaded_artifact_path": "playwright-report/",
+            "retention_days": 30,
+            "reporter": "html",
+            "trace_policy": "on-first-retry",
+            "screenshot_policy": "not_explicitly_enabled",
+            "video_policy": "not_explicitly_enabled",
+            "structured_ci_receipt": "not_implemented",
+            "redaction_scanner": "not_implemented",
+            "status": "live_html_report_only",
+        }
+        for key, expected in expected_posture.items():
+            if posture.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} playwright_artifact_taxonomy_redaction_freeze_proof current_artifact_posture.{key} must be {expected!r}")
+    expected_artifact_families = [
+        "html_report",
+        "retry_trace",
+        "screenshot",
+        "video",
+        "server_log",
+        "api_payload_receipt",
+        "performance_timing_receipt",
+        "observability_event_receipt",
+    ]
+    if proof.get("artifact_families") != expected_artifact_families:
+        errors.append(f"{_rel(PROOF_MANIFEST)} playwright_artifact_taxonomy_redaction_freeze_proof artifact_families must match the frozen list")
+    expected_forbidden = [
+        "local filesystem paths outside repo-relative safe labels",
+        "credentials or bearer tokens",
+        "proxy identity headers or auth internals",
+        "provider URLs or storage object URLs not explicitly admitted",
+        "connector targets or destination targets not explicitly admitted",
+        "source credential material",
+        "raw package payload bodies unless explicitly admitted",
+        "prompt text or model/provider internals",
+        "browser storage secrets",
+        "environment variable values except approved non-secret labels",
+        "database connection strings",
+        "arbitrary API request or response bodies",
+    ]
+    if proof.get("forbidden_in_artifacts") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} playwright_artifact_taxonomy_redaction_freeze_proof forbidden_in_artifacts must match the frozen list")
+    expected_allowed = [
+        "check name",
+        "workflow run URL",
+        "PR number",
+        "branch name",
+        "response-safe failure code",
+        "response-safe failure phase",
+        "repo-relative file label",
+        "test title",
+        "artifact family label",
+        "retention label for current playwright-report only",
+    ]
+    if proof.get("allowed_without_later_freeze") != expected_allowed:
+        errors.append(f"{_rel(PROOF_MANIFEST)} playwright_artifact_taxonomy_redaction_freeze_proof allowed_without_later_freeze must match the frozen list")
+    expected_dependency_order = [
+        "playwright_artifact_taxonomy_redaction_freeze",
+        "flake_policy_freeze",
+        "performance_budget_discovery_freeze",
+        "headed_headless_parity_freeze",
+        "observability_audit_event_schema_freeze",
+        "ci_performance_observability_runtime_entry",
+    ]
+    if proof.get("dependency_order") != expected_dependency_order:
+        errors.append(f"{_rel(PROOF_MANIFEST)} playwright_artifact_taxonomy_redaction_freeze_proof dependency_order must match the frozen order")
+    expected_negative_invariants = [
+        "no CI workflow change",
+        "no Playwright configuration change",
+        "no backend or browser dependency change",
+        "no executable test change",
+        "no artifact upload behavior change",
+        "no artifact retention change",
+        "no trace policy change",
+        "no screenshot policy change",
+        "no video policy change",
+        "no server-log artifact creation",
+        "no API payload receipt artifact",
+        "no performance timing receipt artifact",
+        "no observability event receipt artifact",
+        "no redaction scanner runtime",
+        "no metrics/log shipping or dashboard",
+        "no performance budget or timing gate",
+        "no flake quarantine runtime",
+        "no headed-browser CI matrix",
+        "no sharding or parallelism",
+        "no route/API/DTO/model/migration/service behavior change",
+        "no rendered UI control",
+        "no source expansion",
+        "no package mutation or reconstruction",
+        "no provider/public URL runtime",
+        "no connector/destination dispatch",
+        "no RAG/vector retrieval",
+        "no hidden LLM planning",
+        "no full mockup activation",
+        "no auth/security behavior change",
+        "no frontend-only durable authority",
+    ]
+    if proof.get("negative_invariants") != expected_negative_invariants:
+        errors.append(f"{_rel(PROOF_MANIFEST)} playwright_artifact_taxonomy_redaction_freeze_proof negative_invariants must match the frozen structural list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -13981,6 +14158,7 @@ def main() -> int:
     _check_post_756_governance_closeout(errors)
     _check_ci_observability_gap_inventory(errors)
     _check_ci_failure_signal_owner_runbook(errors)
+    _check_playwright_artifact_taxonomy_redaction_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
