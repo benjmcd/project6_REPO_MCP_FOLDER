@@ -170,6 +170,12 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "draft.state_action_contract_signature !== currentContract" in js.text
     assert "isSharedThemePreference" in js.text
     assert "value === 'workbench'" in js.text
+    assert "value === 'workbench' || value === 'claude'" in js.text
+    assert "if (preference === 'claude') return 'workbench'" in js.text
+    assert "document.documentElement.dataset.themeVariant = 'claude'" in js.text
+    assert "window.location.assign('/review/layer3/static/claude.html')" not in js.text
+    assert 'html[data-theme-variant="claude"]' in review_css.text
+    assert 'html[data-theme-variant="claude"] body.layer3-page' in css.text
     assert "localStorage.removeItem(LAYER3_THEME_STORAGE_KEY)" in js.text
     assert "localStorage.removeItem(THEME_STORAGE_KEY)" in js.text
     assert "localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY" in js.text
