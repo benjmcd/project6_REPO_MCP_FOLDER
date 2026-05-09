@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.models.models import (
@@ -1033,7 +1034,16 @@ def aps_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str,
     normalized_limit = max(1, min(int(limit or 50), 200))
     rows = (
         db.query(DatasetSourceProvenance)
-        .filter(DatasetSourceProvenance.source_system == "nrc_adams_aps")
+        .filter(
+            or_(
+                DatasetSourceProvenance.source_system == "nrc_adams_aps",
+                and_(
+                    DatasetSourceProvenance.source_mode == "raw_mixed_materialized",
+                    DatasetSourceProvenance.artifact_locator_type == "server_owned_ref",
+                    DatasetSourceProvenance.fetch_policy_mode == "server_owned_manifest",
+                ),
+            )
+        )
         .order_by(
             DatasetSourceProvenance.created_at.desc(),
             DatasetSourceProvenance.dataset_source_provenance_id.desc(),

@@ -131,7 +131,10 @@ def _seed_aps_derived_dataset_version(
     dataset_version_id: str = "dv-aps-csv-001",
     parser_family: str = "csv_table",
     typed_content_contract_id: str = "aps_csv_table_units_v1",
+    source_system: str = "nrc_adams_aps",
     source_mode: str = "artifact_csv_parser",
+    artifact_locator_type: str | None = None,
+    fetch_policy_mode: str | None = None,
     parser_contract_id: str = "aps_csv_parser_v1",
 ) -> str:
     dataset_id = f"ds-{dataset_version_id}"
@@ -182,12 +185,14 @@ def _seed_aps_derived_dataset_version(
     provenance = DatasetSourceProvenance(
         dataset_version_id=dataset_version_id,
         connector_run_id=None,
-        source_system="nrc_adams_aps",
+        source_system=source_system,
         source_mode=source_mode,
         source_artifact_key="aps-target-artifacts/run-001/target-001/extraction.json",
         sciencebase_file_name="fixture.csv",
         downloaded_sha256="0" * 64,
         raw_storage_ref="aps-target-artifacts/run-001/target-001/blob.csv",
+        artifact_locator_type=artifact_locator_type,
+        fetch_policy_mode=fetch_policy_mode,
         source_reference_json={
             "target_id": "target-001",
             "accession_number": "ML000000001",
@@ -707,6 +712,30 @@ def test_aps_dataset_version_candidates_surface_sec_edgar_family_scope(db_sessio
     assert candidate["source_family_label"] == "SEC/EDGAR text table"
     assert "complete-submission text" in candidate["source_family_scope"]
     assert result["source_family_summary"]["observed_candidate_counts"] == {"sec_edgar_filing": 1}
+
+
+def test_dataset_version_candidates_include_server_owned_raw_mixed_materialization(db_session, tmp_path) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-local-raw-mixed-001",
+        source_system="local_operator_staged_server_owned_manifest",
+        source_mode="raw_mixed_materialized",
+        artifact_locator_type="server_owned_ref",
+        fetch_policy_mode="server_owned_manifest",
+    )
+
+    result = layer3_workbench.aps_dataset_version_candidates(db_session)
+
+    assert result["schema_id"] == "layer3.aps_dataset_version_candidates.v1"
+    candidate = result["dataset_version_candidates"][0]
+    assert candidate["dataset_version_id"] == dataset_version_id
+    assert candidate["source_system"] == "local_operator_staged_server_owned_manifest"
+    assert candidate["source_mode"] == "raw_mixed_materialized"
+    assert candidate["source_admission_state"] == "admitted_materialized_dataset_version"
+    assert result["source_family_summary"]["ui_scope"].startswith(
+        "This endpoint surfaces server-backed materialized DatasetVersion choices only"
+    )
 
 
 def test_aps_content_document_candidates_list_uses_content_linkage(db_session, tmp_path) -> None:
