@@ -19,6 +19,7 @@ from app.services import (
     layer3_replacement_package_namespace,
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_set_authority,
+    layer3_provider_private_signed_url,
     layer3_workbench,
 )
 from app.services.layer3_preflight_request_contract import PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS
@@ -1191,6 +1192,69 @@ class Layer3ExternalExportDownloadPrepareRequest(BaseModel):
     schema_migration: Any | None = None
 
 
+class Layer3ProviderPrivateSignedUrlPrepareRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    external_export_download_record_ref: str | None = None
+    export_download_descriptor_ref: str | None = None
+    external_export_download_state: str | None = None
+    export_download_target: str | None = None
+    download_mode: str | None = None
+    delivery_mode: str | None = None
+    operator_decision: str | None = None
+    source_artifact_hash: str | None = None
+    source_artifact_size_bytes: int | None = None
+    recipient_scope: str | None = None
+    requested_ttl_seconds: int | None = None
+    decision_notes: str | None = None
+    provider_credentials: Any | None = None
+    provider_secret: Any | None = None
+    provider_bucket: Any | None = None
+    provider_container: Any | None = None
+    provider_object_key: Any | None = None
+    provider_object_identity: Any | None = None
+    raw_provider_signature: Any | None = None
+    raw_provider_object_key: Any | None = None
+    raw_local_path: Any | None = None
+    local_path: Any | None = None
+    local_file_path: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    destination: Any | None = None
+    destination_selector: Any | None = None
+    connector_payload: Any | None = None
+    connector_secret: Any | None = None
+    connector_run_id: Any | None = None
+    connector_dispatch: Any | None = None
+    source_upload: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    web_connector: Any | None = None
+    package_mutation: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rebuild_package: Any | None = None
+    rewrite_output: Any | None = None
+    rag_vector_settings: Any | None = None
+    rag_vector_state: Any | None = None
+    prompt_model_settings: Any | None = None
+    prompt_or_model_payload: Any | None = None
+    auth_security_override: Any | None = None
+    auth_internal_state: Any | None = None
+    browser_durable_authority: Any | None = None
+    public_url: Any | None = None
+    public_proxy_url: Any | None = None
+    download_url: Any | None = None
+    signed_reference_token: Any | None = None
+    signed_url: Any | None = None
+
+
 class Layer3ConnectorDispatchRecordRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -2066,6 +2130,49 @@ class Layer3ExternalExportDownloadSignedReferenceResponse(Layer3BaseResponse):
     next_state: str
 
 
+class Layer3ProviderPrivateSignedUrlPrepareResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    reconciliation_record_id: str
+    external_export_download_record_ref: str
+    export_download_descriptor_ref: str
+    provider_signed_url_receipt_id: str
+    provider_signed_url_state: str
+    delivery_mode: str
+    provider_url_redacted: str
+    provider_url_expires_at: str
+    provider_url_expires_in_seconds: int
+    provider_url_replay_policy: str
+    provider_url_revocation_supported: bool
+    provider_url_use_count: int
+    provider_url_max_use_count: int
+    provider_url_revoked: bool
+    source_artifact_hash: str
+    source_artifact_size_bytes: int
+    authority_rail: dict[str, Any]
+    audit_receipt: dict[str, Any]
+    next_allowed_actions: list[str]
+    next_state: str
+
+
+class Layer3ProviderPrivateSignedUrlStatusResponse(Layer3BaseResponse):
+    provider_signed_url_receipt_id: str
+    provider_signed_url_state: str
+    delivery_mode: str
+    provider_url_redacted: str
+    provider_url_expires_at: str
+    provider_url_replay_policy: str
+    provider_url_revocation_supported: bool
+    provider_url_use_count: int
+    provider_url_max_use_count: int
+    provider_url_revoked: bool
+    source_artifact_hash: str
+    source_artifact_size_bytes: int
+    audit_receipt: dict[str, Any]
+    next_allowed_actions: list[str]
+
+
 class Layer3WorkbenchErrorResponse(Layer3BaseResponse):
     error_code: str
     message: str
@@ -2232,6 +2339,100 @@ EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_REQUEST_SCHEMA: dict[str, Any] = {
         "signed_reference_token": {
             "type": "string",
             "description": "Server-generated short-lived signed delivery reference token.",
+        },
+    },
+}
+
+PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_REQUEST_FIELDS = (
+    "provider_credentials",
+    "provider_secret",
+    "provider_bucket",
+    "provider_container",
+    "provider_object_key",
+    "provider_object_identity",
+    "raw_provider_signature",
+    "raw_provider_object_key",
+    "raw_local_path",
+    "local_path",
+    "local_file_path",
+    "destination_id",
+    "destination_url",
+    "destination",
+    "destination_selector",
+    "connector_payload",
+    "connector_secret",
+    "connector_run_id",
+    "connector_dispatch",
+    "source_upload",
+    "source_expansion",
+    "local_upload",
+    "local_directory",
+    "web_connector",
+    "package_mutation",
+    "package_payload",
+    "package_variant_content",
+    "rebuild_package",
+    "rewrite_output",
+    "rag_vector_settings",
+    "rag_vector_state",
+    "prompt_model_settings",
+    "prompt_or_model_payload",
+    "auth_security_override",
+    "auth_internal_state",
+    "browser_durable_authority",
+    "public_url",
+    "public_proxy_url",
+    "download_url",
+    "signed_reference_token",
+    "signed_url",
+)
+
+
+PROVIDER_PRIVATE_SIGNED_URL_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Backend/API-only provider-private signed URL prepare over existing "
+        "external_export_download_prepared authority; use/revoke and rendered UI are deferred."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "external_export_download_state",
+        "export_download_target",
+        "download_mode",
+        "delivery_mode",
+        "operator_decision",
+        "source_artifact_hash",
+        "source_artifact_size_bytes",
+        "recipient_scope",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "external_export_download_record_ref": {"type": "string"},
+        "export_download_descriptor_ref": {"type": "string"},
+        "external_export_download_state": {"type": "string", "enum": ["external_export_download_prepared"]},
+        "export_download_target": {"type": "string", "enum": ["aps_evidence_bundle_download_reference"]},
+        "download_mode": {"type": "string", "enum": ["reference_only_prepare"]},
+        "delivery_mode": {"type": "string", "enum": ["provider_private_signed_url"]},
+        "operator_decision": {"type": "string", "enum": ["prepare_provider_private_signed_url"]},
+        "source_artifact_hash": {"type": "string"},
+        "source_artifact_size_bytes": {"type": "integer"},
+        "recipient_scope": {"type": "string"},
+        "requested_ttl_seconds": {"type": "integer", "minimum": 1, "maximum": 900, "default": 300},
+        "decision_notes": {"type": "string"},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_REQUEST_FIELDS
         },
     },
 }
@@ -4382,6 +4583,41 @@ def post_external_export_download_signed_reference_generate(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.external_export_download_generate_signed_reference(db, payload))
+
+
+@router.post(
+    "/handoff/export/download/provider-private-signed-url/prepare",
+    response_model=Layer3ProviderPrivateSignedUrlPrepareResponse,
+    openapi_extra={"requestBody": _json_request_body(PROVIDER_PRIVATE_SIGNED_URL_PREPARE_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_provider_private_signed_url_prepare(
+    payload: Layer3ProviderPrivateSignedUrlPrepareRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_provider_private_signed_url.provider_private_signed_url_prepare(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.get(
+    "/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+    response_model=Layer3ProviderPrivateSignedUrlStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_provider_private_signed_url_status(
+    provider_signed_url_receipt_id: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_provider_private_signed_url.provider_private_signed_url_status(
+            db,
+            provider_signed_url_receipt_id,
+        )
+    )
 
 
 @router.post(
