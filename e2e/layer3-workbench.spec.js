@@ -2489,7 +2489,7 @@ test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails
   await expect(summary).toContainText('Deferred / refused guardrails');
   await expect(summary).toContainText('XML/HTML/inline XBRL');
   await expect(summary).toContainText(
-    'This endpoint surfaces server-backed APS-derived DatasetVersion choices only; refused/deferred families are explanatory guardrails, not selectable source classes.',
+    'This endpoint surfaces server-backed materialized DatasetVersion choices only; refused/deferred families are explanatory guardrails, not selectable source classes.',
   );
 });
 
