@@ -257,6 +257,9 @@ PROVIDER_PRIVATE_SIGNED_URL_ROUTE_ENTRY_FREEZE = (
 PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT = (
     PLANNING_DOCS / "232_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_PREPARE_STATUS_API = (
+    PLANNING_DOCS / "233_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_STATUS_API.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -411,6 +414,9 @@ PROVIDER_PRIVATE_SIGNED_URL_STATE_SERVICE = (
 PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_provider_private_signed_url_fake_provider.py"
 )
+PROVIDER_PRIVATE_SIGNED_URL_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_provider_private_signed_url.py"
+)
 WORKBENCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
 )
@@ -492,6 +498,7 @@ PROVIDER_PRIVATE_SIGNED_URL_STATE_TEST = (
 PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_provider_private_signed_url_fake_provider.py"
 )
+PROVIDER_PRIVATE_SIGNED_URL_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 LAYER3_BOUNDED_E2E_TEST = ROOT / "backend" / "tests" / "test_layer3_bounded_e2e.py"
 LAYER3_PAGE_TEST = ROOT / "backend" / "tests" / "test_layer3_page.py"
@@ -11836,6 +11843,20 @@ def _check_named_runtime_use_case_selection_gate(errors: list[str]) -> None:
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} named_runtime_use_case_selection_gate_proof recommended_next_actions must match the frozen list")
 
+def _check_provider_private_signed_url_no_deferred_routes(
+    api_text: str,
+    errors: list[str],
+    *,
+    context: str,
+) -> None:
+    for route in (
+        "/handoff/export/download/provider-private-signed-url/use",
+        "/handoff/export/download/provider-private-signed-url/revoke",
+    ):
+        if route in api_text:
+            errors.append(f"{_rel(LAYER3_API)} must not expose deferred provider-private signed URL route {route} during {context}")
+
+
 def _check_provider_private_signed_url_use_case_selection(errors: list[str]) -> None:
     required_terms = {
         PROVIDER_PRIVATE_SIGNED_URL_USE_CASE_SELECTION: (
@@ -12439,8 +12460,11 @@ def _check_provider_private_signed_url_fake_provider_contract(errors: list[str])
                 errors.append(f"{_rel(path)} missing provider private signed URL fake-provider contract term: {term}")
 
     api_text = _read_required_text(LAYER3_API, errors)
-    if "provider-private-signed-url" in api_text:
-        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes before runtime authority freeze")
+    _check_provider_private_signed_url_no_deferred_routes(
+        api_text,
+        errors,
+        context="runtime authority freeze",
+    )
 
     current_status = _load_json(MANIFEST, errors).get("current_status", {})
     if not isinstance(current_status, dict):
@@ -12597,8 +12621,11 @@ def _check_provider_private_signed_url_storage_receipt_authority_freeze(errors: 
                 errors.append(f"{_rel(path)} missing provider private signed URL storage/receipt authority term: {term}")
 
     api_text = _read_required_text(LAYER3_API, errors)
-    if "provider-private-signed-url" in api_text:
-        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes before storage/receipt authority runtime")
+    _check_provider_private_signed_url_no_deferred_routes(
+        api_text,
+        errors,
+        context="storage/receipt authority runtime",
+    )
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     durable_state_substrate = (
@@ -12773,8 +12800,11 @@ def _check_provider_private_signed_url_storage_receipt_durable_state_freeze(erro
                 errors.append(f"{_rel(path)} missing provider private signed URL storage/receipt durable-state freeze term: {term}")
 
     api_text = _read_required_text(LAYER3_API, errors)
-    if "provider-private-signed-url" in api_text:
-        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes before durable-state freeze")
+    _check_provider_private_signed_url_no_deferred_routes(
+        api_text,
+        errors,
+        context="durable-state freeze",
+    )
 
     current_status = _load_json(MANIFEST, errors).get("current_status", {})
     if not isinstance(current_status, dict):
@@ -12911,8 +12941,11 @@ def _check_provider_private_signed_url_storage_receipt_durable_state_contract(er
                 errors.append(f"{_rel(path)} missing provider private signed URL storage/receipt durable-state contract term: {term}")
 
     api_text = _read_required_text(LAYER3_API, errors)
-    if "provider-private-signed-url" in api_text:
-        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes before durable-state contract lock")
+    _check_provider_private_signed_url_no_deferred_routes(
+        api_text,
+        errors,
+        context="durable-state contract lock",
+    )
 
     current_status = _load_json(MANIFEST, errors).get("current_status", {})
     if not isinstance(current_status, dict):
@@ -13121,8 +13154,11 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
                 errors.append(f"{_rel(path)} missing provider private signed URL durable-state substrate term: {term}")
 
     api_text = _read_required_text(LAYER3_API, errors)
-    if "provider-private-signed-url" in api_text:
-        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes after durable-state substrate implementation")
+    _check_provider_private_signed_url_no_deferred_routes(
+        api_text,
+        errors,
+        context="durable-state substrate implementation",
+    )
 
     current_status = _load_json(MANIFEST, errors).get("current_status", {})
     if not isinstance(current_status, dict):
@@ -13275,8 +13311,11 @@ def _check_provider_private_signed_url_route_entry_contract(errors: list[str]) -
                 errors.append(f"{_rel(path)} missing provider private signed URL route-entry/contract term: {term}")
 
     api_text = _read_required_text(LAYER3_API, errors)
-    if "provider-private-signed-url" in api_text:
-        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes in route-entry freeze")
+    _check_provider_private_signed_url_no_deferred_routes(
+        api_text,
+        errors,
+        context="route-entry freeze",
+    )
 
     current_status = _load_json(MANIFEST, errors).get("current_status", {})
     if not isinstance(current_status, dict):
@@ -13391,6 +13430,122 @@ def _check_provider_private_signed_url_route_entry_contract(errors: list[str]) -
     ]
     if route_contract_proof.get("required_tests") != expected_required_tests:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_api_contract_proof required_tests must match the frozen list")
+
+    implementation_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_PREPARE_STATUS_API: (
+            "Status: current-main implementation/proof for `provider_private_signed_url_prepare_status_api`.",
+            "runtime_status: prepare_status_backend_api_only_implemented",
+            "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+            "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+            "use_route_status: deferred_not_implemented",
+            "revoke_route_status: deferred_not_implemented",
+            "rendered_ui_change: false",
+            "provider_network_or_object_store_write: false",
+            "same_origin_delivery_semantics_changed: false",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Prepare/Status API",
+            "233_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_STATUS_API.md",
+            "provider_private_signed_url_prepare_status_api",
+            "prepare/status backend API only",
+            "use/revoke deferred",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_prepare_status_api_branch",
+            "latest_provider_private_signed_url_prepare_status_api_live_behavior_change",
+            "provider_private_signed_url_prepare_status_api",
+            "prepare_status_backend_api_only_implemented",
+            "use/revoke deferred",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_prepare_status_api_proof",
+            "233_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_STATUS_API.md",
+            "backend/app/services/layer3_provider_private_signed_url.py",
+            "backend/tests/test_layer3_api.py",
+            "prepare_status_backend_api_only",
+        ),
+        LAYER3_API: (
+            "/handoff/export/download/provider-private-signed-url/prepare",
+            "/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+            "Layer3ProviderPrivateSignedUrlPrepareRequest",
+            "Layer3ProviderPrivateSignedUrlPrepareResponse",
+            "Layer3ProviderPrivateSignedUrlStatusResponse",
+            "PROVIDER_PRIVATE_SIGNED_URL_PREPARE_REQUEST_SCHEMA",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_SERVICE: (
+            "def provider_private_signed_url_prepare",
+            "def provider_private_signed_url_status",
+            "external_export_download_prepare_from_reconciliation",
+            "ProviderPrivateSignedUrlFakeProvider",
+            "record_prepared_provider_private_signed_url_receipt",
+            "PROVIDER_PRIVATE_SIGNED_URL_REDACTED_MARKER",
+            "provider_private_signed_url_scope_not_admitted",
+            "provider_private_signed_url_receipt_not_found",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_API_TEST: (
+            "test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema",
+            "test_layer3_api_provider_private_signed_url_prepare_success_status_idempotent_and_negative_side_effect_absence",
+            "test_layer3_api_provider_private_signed_url_fail_closed_stale_authority_forbidden_ttl_and_fake_provider_failure",
+            "provider_private_signed_url_scope_not_admitted",
+            "provider_private_signed_url_source_artifact_hash_mismatch",
+            "provider_private_signed_url_ttl_not_admitted",
+            "provider_private_signed_url_receipt_not_found",
+        ),
+    }
+    for path, terms in implementation_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL prepare/status API term: {term}")
+
+    if "/handoff/export/download/provider-private-signed-url/use" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use route in prepare/status slice")
+    if "/handoff/export/download/provider-private-signed-url/revoke" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL revoke route in prepare/status slice")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if isinstance(current_status, dict):
+        if current_status.get("latest_provider_private_signed_url_prepare_status_api_branch") != "codex/l3-provider-private-prepare-status-api":
+            errors.append(f"{_rel(MANIFEST)} current_status latest provider private signed URL prepare/status branch is stale")
+        if current_status.get("latest_provider_private_signed_url_prepare_status_api_live_behavior_change") is not True:
+            errors.append(f"{_rel(MANIFEST)} current_status provider private signed URL prepare/status live behavior flag must be true")
+        summary = current_status.get("provider_private_signed_url_prepare_status_api")
+        if (
+            not isinstance(summary, str)
+            or "prepare_status_backend_api_only_implemented" not in summary
+            or "use/revoke deferred" not in summary
+            or "rendered_ui_change is false" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_prepare_status_api must record implemented backend/API-only posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    implementation_proof = proof_data.get("provider_private_signed_url_prepare_status_api_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(implementation_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_prepare_status_api_proof object")
+    else:
+        expected_proof_scalars = {
+            "implementation_branch": "codex/l3-provider-private-prepare-status-api",
+            "live_behavior_change": True,
+            "first_runtime_slice": "prepare_status_backend_api_only",
+            "runtime_status": "prepare_status_backend_api_only_implemented",
+            "provider_private_signed_url_runtime": True,
+            "use_route_implemented": False,
+            "revoke_route_implemented": False,
+            "rendered_ui_change": False,
+            "provider_network_or_object_store_write": False,
+            "same_origin_delivery_semantics_changed": False,
+            "same_origin_signed_reference_semantics_changed": False,
+        }
+        for key, expected in expected_proof_scalars.items():
+            if implementation_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_prepare_status_api_proof.{key} must be {expected!r}")
+        expected_files = [
+            "backend/app/api/layer3.py",
+            "backend/app/services/layer3_provider_private_signed_url.py",
+            "backend/tests/test_layer3_api.py",
+        ]
+        if implementation_proof.get("implemented_files") != expected_files:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_prepare_status_api_proof implemented_files must match prepare/status slice")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
