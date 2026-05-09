@@ -123,6 +123,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "ML26001A001" in claude.text
     assert "aps_content_units_v2" in claude.text
     assert "traceable_aps_content_document" in claude.text
+    assert "No corpus-backed manual/custom specification loaded." in claude.text
+    assert "const SPEC_CHIPS = [];" in claude.text
+    assert "Manual spec choices are intentionally empty" in claude.text
     assert "String(MATERIALS.length)" in claude.text
     assert 'html[data-theme="workbench"]' in review_css.text
     assert ".authority-rail" in css.text
