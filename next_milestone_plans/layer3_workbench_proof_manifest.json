@@ -10448,5 +10448,66 @@
       "write_second_slice_freeze_before_use_or_revoke",
       "write_rendered_ui_freeze_before_rendered_controls"
     ]
+  },
+  "provider_private_signed_url_prepare_status_api_proof": {
+    "scope": "Implemented backend/API-only prepare/status provider-private signed URL slice over existing external export/download readiness authority.",
+    "implementation_branch": "codex/l3-provider-private-prepare-status-api",
+    "live_behavior_change": true,
+    "selected_runtime_family": "provider_public_url_runtime",
+    "selected_runtime_mode": "provider_private_signed_url",
+    "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+    "first_runtime_slice": "prepare_status_backend_api_only",
+    "runtime_status": "prepare_status_backend_api_only_implemented",
+    "provider_private_signed_url_runtime": true,
+    "use_route_implemented": false,
+    "revoke_route_implemented": false,
+    "rendered_ui_change": false,
+    "provider_network_or_object_store_write": false,
+    "same_origin_delivery_semantics_changed": false,
+    "same_origin_signed_reference_semantics_changed": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/231_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/232_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/233_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_STATUS_API.md"
+    ],
+    "implemented_files": [
+      "backend/app/api/layer3.py",
+      "backend/app/services/layer3_provider_private_signed_url.py",
+      "backend/tests/test_layer3_api.py"
+    ],
+    "allowed_routes": [
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+      "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}"
+    ],
+    "deferred_routes": [
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use",
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke"
+    ],
+    "owner_service": "backend/app/services/layer3_provider_private_signed_url.py",
+    "owner_functions": [
+      "provider_private_signed_url_prepare",
+      "provider_private_signed_url_status"
+    ],
+    "validation_tests": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"provider_private_signed_url\""
+    ],
+    "negative_invariants": [
+      "no_provider_private_signed_url_use_route",
+      "no_provider_private_signed_url_revoke_route",
+      "no_rendered_provider_private_signed_url_controls",
+      "no_provider_network_or_object_store_write",
+      "no_provider_public_url_runtime",
+      "no_public_proxy_url_runtime",
+      "no_same_origin_delivery_semantics_change",
+      "no_same_origin_signed_reference_semantics_change",
+      "no_connector_destination_dispatch",
+      "no_package_mutation_or_reconstruction",
+      "no_source_expansion",
+      "no_broad_qualitative_hybrid_rag_vector_runtime",
+      "no_hidden_llm_planning",
+      "no_full_mockup_activation",
+      "no_auth_security_behavior_change",
+      "no_frontend_only_durable_authority"
+    ]
   }
 }
