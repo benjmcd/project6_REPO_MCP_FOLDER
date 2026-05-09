@@ -10337,5 +10337,116 @@
       "same_origin_delivery_semantics_change",
       "same_origin_signed_reference_semantics_change"
     ]
+  },
+  "provider_private_signed_url_route_entry_freeze_proof": {
+    "scope": "Planning/control route-entry freeze after provider-private fake-provider and durable-state substrates.",
+    "implementation_branch": "codex/l3-provider-private-route-entry-freeze",
+    "live_behavior_change": false,
+    "selected_runtime_family": "provider_public_url_runtime",
+    "selected_runtime_mode": "provider_private_signed_url",
+    "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+    "runtime_status": "not_implemented",
+    "fake_provider_contract_double_status": "implemented_tested",
+    "durable_state_substrate_status": "implemented_tested",
+    "provider_private_signed_url_runtime": false,
+    "route_dto_change": false,
+    "rendered_ui_change": false,
+    "first_runtime_slice_candidate": "prepare_status_backend_api_only",
+    "implementation_entry_allowed_next": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/231_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/232_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT.md"
+    ],
+    "allowed_next_runtime_slice": [
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+      "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}"
+    ],
+    "deferred_runtime_slices": [
+      "provider_private_signed_url_use_route",
+      "provider_private_signed_url_revoke_route",
+      "rendered_provider_private_signed_url_controls"
+    ],
+    "forbidden_runtime_changes": [
+      "provider_object_store_network_writes",
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_or_reconstruction",
+      "source_expansion",
+      "same_origin_delivery_semantics_change",
+      "same_origin_signed_reference_semantics_change",
+      "auth_security_behavior_change",
+      "frontend_only_durable_authority"
+    ],
+    "recommended_next_actions": [
+      "implement_provider_private_signed_url_prepare_status_backend_api",
+      "stop_before_use_or_revoke_without_second_slice_freeze",
+      "stop_before_rendered_controls_without_ui_freeze",
+      "stop_before_real_provider_network_or_public_url_without_public_url_freeze"
+    ]
+  },
+  "provider_private_signed_url_route_api_contract_proof": {
+    "scope": "Planning/control prepare/status backend/API contract for the first provider-private signed URL runtime slice.",
+    "implementation_branch": "codex/l3-provider-private-route-entry-freeze",
+    "live_behavior_change": false,
+    "selected_runtime_family": "provider_public_url_runtime",
+    "selected_runtime_mode": "provider_private_signed_url",
+    "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+    "runtime_status": "not_implemented",
+    "fake_provider_contract_double_status": "implemented_tested",
+    "durable_state_substrate_status": "implemented_tested",
+    "provider_private_signed_url_runtime": false,
+    "route_dto_change": false,
+    "rendered_ui_change": false,
+    "first_runtime_slice": "prepare_status_backend_api_only",
+    "runtime_implementation_allowed_next": true,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/231_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/232_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT.md"
+    ],
+    "allowed_routes": [
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+      "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}"
+    ],
+    "owner_service": "backend/app/services/layer3_provider_private_signed_url.py",
+    "required_tests": [
+      "prepare_success_over_existing_external_export_download_authority",
+      "status_success_over_durable_receipt",
+      "openapi_prepare_status_schema",
+      "forbidden_request_fields_fail_closed",
+      "stale_authority_fail_closed",
+      "idempotent_retry_and_conflict_behavior",
+      "recipient_scope_request_basis_binding",
+      "ttl_validation_and_status_projection",
+      "fake_provider_failure_controlled_error",
+      "redaction_success_and_error_surfaces",
+      "same_origin_routes_do_not_gain_provider_private_fields",
+      "negative_side_effect_absence"
+    ],
+    "deferred_routes": [
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use",
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke"
+    ],
+    "forbidden_runtime_changes": [
+      "provider_private_signed_url_use_route_first_slice",
+      "provider_private_signed_url_revoke_route_first_slice",
+      "provider_private_signed_url_rendered_controls",
+      "provider_object_store_network_writes",
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_or_reconstruction",
+      "source_expansion",
+      "same_origin_delivery_semantics_change",
+      "same_origin_signed_reference_semantics_change",
+      "auth_security_behavior_change",
+      "frontend_only_durable_authority"
+    ],
+    "recommended_next_actions": [
+      "implement_provider_private_signed_url_prepare_status_backend_api",
+      "stop_if_prepare_status_requires_client_provider_identifier",
+      "write_second_slice_freeze_before_use_or_revoke",
+      "write_rendered_ui_freeze_before_rendered_controls"
+    ]
   }
 }
