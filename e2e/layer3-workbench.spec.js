@@ -4096,6 +4096,8 @@ test('Layer 3 workbench opens the exact Claude prototype as a durable standalone
   await expect(page.locator('.nav-tab[data-screen="overview"]')).toContainText('Overview');
   await expect(page.locator('.state-btn[data-state="loaded"]')).toHaveClass(/active/);
   await expect(page.locator('#screen-intent')).toHaveClass(/active/);
+  await expect(page.locator('#screen-intent')).toContainText('No corpus-backed manual/custom specification loaded.');
+  await expect(page.locator('#spec-chips-grid .spec-chip')).toHaveCount(0);
 
   await page.locator('.nav-tab[data-screen="overview"]').click();
   await expect(page.locator('#screen-overview')).toHaveClass(/active/);
