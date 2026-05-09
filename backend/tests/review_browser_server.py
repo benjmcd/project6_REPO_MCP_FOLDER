@@ -486,9 +486,11 @@ def _browser_materialized_dataset_entry(
         ],
         "source_provenance": {
             "dataset_source_provenance_id": f"prov-materialized-{seed_id}-{index + 1}",
-            "source_system": "nrc_adams_aps",
+            "source_system": "local_operator_staged_server_owned_manifest",
             "source_mode": "raw_mixed_materialized",
             "source_artifact_key": f"aps://{run_id}/{target_id}/{dataset_version_id}",
+            "artifact_locator_type": "server_owned_ref",
+            "fetch_policy_mode": "server_owned_manifest",
             "source_reference_json": {
                 "content_id": content_id,
                 "parser_family": "csv_table",
@@ -547,7 +549,7 @@ def _build_browser_raw_mixed_materialization_setup(*, seed_id: str) -> dict[str,
             {
                 "connector_run": {
                     "connector_run_id": run_id,
-                    "source_system": "nrc_adams_aps",
+                    "source_system": "local_operator_staged_server_owned_manifest",
                     "source_mode": "server_owned_manifest",
                     "status": "completed",
                     "request_config_json": {"fixture": "browser_raw_mixed_materialization"},
