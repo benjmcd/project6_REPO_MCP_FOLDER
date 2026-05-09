@@ -536,20 +536,10 @@ async function reloadRecoveredExecutionSession(page, sessionId) {
   return sessionSummary;
 }
 
-async function selectWorkflowTheme(page, themePreference) {
-  await page.locator('#theme-selector').selectOption(themePreference);
-  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', themePreference);
-  if (themePreference === 'claude') {
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
-    await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant');
-  }
-  await expect(page.locator('#theme-selector')).toHaveValue(themePreference);
-}
-
-async function selectAndStartRenderedExecution(page, sessionId, approval, planPreview, options = {}) {
-  const workflowTheme = options.themePreference;
+async function selectAndStartRenderedExecution(page, sessionId, approval, planPreview) {
   await expect(page.locator('#execution-selection-start-panel')).toContainText('execution_selection_ready');
-  await selectWorkflowTheme(page, workflowTheme || 'dark');
+  await page.locator('#theme-selector').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
   const recoveredBeforeSelection = await reloadRecoveredExecutionSession(page, sessionId);
   expect(recoveredBeforeSelection.execution_selection.available).toBe(true);
@@ -605,7 +595,8 @@ async function selectAndStartRenderedExecution(page, sessionId, approval, planPr
   await expect(page.locator('#execution-select')).toBeDisabled();
   await expect(page.locator('#execution-start')).toBeEnabled();
 
-  await selectWorkflowTheme(page, workflowTheme || 'workbench');
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await page.locator('#execution-step-chip').click();
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
 
@@ -651,8 +642,9 @@ async function selectAndStartRenderedExecution(page, sessionId, approval, planPr
   return { selection, start };
 }
 
-async function inspectRenderedResultStatus(page, sessionId, approval, planPreview, execution, options = {}) {
-  await selectWorkflowTheme(page, options.themePreference || 'light');
+async function inspectRenderedResultStatus(page, sessionId, approval, planPreview, execution) {
+  await page.locator('#theme-selector').selectOption('light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
   await page.locator('#execution-step-chip').click();
   const statusRequestPromise = page.waitForRequest((statusRequest) => (
     statusRequest.url().includes('/api/v1/layer3/execution/result/status') && statusRequest.method() === 'POST'
@@ -704,19 +696,15 @@ async function submitRenderedResultReview(page, sessionId, approval, planPreview
     operatorDecision = 'changes_requested',
     reviewNotes = 'Raw mixed rendered result review requires a follow-up caveat before packaging.',
     packageReviewEnabled = false,
-    themePreference,
   } = options;
-  if (themePreference) {
-    await selectWorkflowTheme(page, themePreference);
-  } else {
-    await page.locator('#theme-selector').selectOption('dark');
-    await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
-  }
+  await page.locator('#theme-selector').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
   await expect(page.locator('#result-review-panel')).toBeVisible();
   await expect(page.locator('#result-review-panel')).toContainText('cohort_result_review_ui_review_ready');
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
 
-  await selectWorkflowTheme(page, themePreference || 'workbench');
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await expect(page.locator('#result-review-panel')).toBeVisible();
   await expect(page.locator('#result-review-submit')).toBeEnabled();
   await page.locator('#result-review-decision').selectOption(operatorDecision);
@@ -811,13 +799,9 @@ async function submitRenderedResultReview(page, sessionId, approval, planPreview
   return review;
 }
 
-async function inspectRenderedPackagePreview(page, sessionId, approval, planPreview, execution, review, options = {}) {
-  await selectWorkflowTheme(page, options.themePreference || 'light');
-  const packageOperationTab = page.locator('[data-operation-target="package-review-band"]');
-  if (await packageOperationTab.isVisible()) {
-    await packageOperationTab.click();
-    await expect(page.locator('#package-review-band')).toHaveAttribute('data-operation-active', 'true');
-  }
+async function inspectRenderedPackagePreview(page, sessionId, approval, planPreview, execution, review) {
+  await page.locator('#theme-selector').selectOption('light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_preview_available');
   await expect(page.locator('#package-review-preview-inspect')).toBeEnabled();
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
@@ -889,8 +873,9 @@ async function inspectRenderedPackagePreview(page, sessionId, approval, planPrev
   return packagePreview;
 }
 
-async function commitRenderedPackageConstruction(page, sessionId, approval, planPreview, execution, review, packagePreview, options = {}) {
-  await selectWorkflowTheme(page, options.themePreference || 'dark');
+async function commitRenderedPackageConstruction(page, sessionId, approval, planPreview, execution, review, packagePreview) {
+  await page.locator('#theme-selector').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
   await expect(page.locator('#package-construction-commit')).toBeEnabled();
 
   const commitRequestPromise = page.waitForRequest((apiRequest) => (
@@ -966,8 +951,9 @@ async function commitRenderedPackageConstruction(page, sessionId, approval, plan
   return commit;
 }
 
-async function submitRenderedPackageReview(page, sessionId, approval, planPreview, execution, review, commit, options = {}) {
-  await selectWorkflowTheme(page, options.themePreference || 'workbench');
+async function submitRenderedPackageReview(page, sessionId, approval, planPreview, execution, review, commit) {
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await page.locator('[data-operation-target="package-review-band"]').click();
   await expect(page.locator('#package-review-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#package-review-submit')).toBeEnabled();
@@ -1077,9 +1063,9 @@ async function submitRenderedHandoffExportPrepare(
   review,
   commit,
   packageSubmit,
-  options = {},
 ) {
-  await selectWorkflowTheme(page, options.themePreference || 'workbench');
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await page.locator('[data-operation-target="handoff-export-band"]').click();
   await expect(page.locator('#handoff-export-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#handoff-export-prepare-panel')).toContainText('handoff_export_ready');
@@ -1235,9 +1221,9 @@ async function submitRenderedApsHandoffDispatch(
   commit,
   packageSubmit,
   handoffPrepare,
-  options = {},
 ) {
-  await selectWorkflowTheme(page, options.themePreference || 'workbench');
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await page.locator('[data-operation-target="aps-handoff-band"]').click();
   await expect(page.locator('#aps-handoff-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('aps_handoff_ready');
@@ -1405,9 +1391,9 @@ async function submitRenderedExternalExportDownloadPrepare(
   packageSubmit,
   handoffPrepare,
   apsDispatch,
-  options = {},
 ) {
-  await selectWorkflowTheme(page, options.themePreference || 'workbench');
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await page.locator('[data-operation-target="external-export-download-band"]').click();
   await expect(page.locator('#external-export-download-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#external-export-download-prepare-panel')).toContainText('external_export_download_ready');
@@ -1616,9 +1602,9 @@ async function submitRenderedExternalExportDownloadDelivery(
   handoffPrepare,
   apsDispatch,
   downloadPrepare,
-  options = {},
 ) {
-  await selectWorkflowTheme(page, options.themePreference || 'workbench');
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await page.locator('[data-operation-target="external-export-download-band"]').click();
   await expect(page.locator('#external-export-download-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
@@ -1804,9 +1790,9 @@ async function submitRenderedExternalExportDownloadSignedReference(
   handoffPrepare,
   apsDispatch,
   downloadPrepare,
-  options = {},
 ) {
-  await selectWorkflowTheme(page, options.themePreference || 'workbench');
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await page.locator('[data-operation-target="external-export-download-band"]').click();
   await expect(page.locator('#external-export-download-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText(
@@ -2291,27 +2277,38 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
 
-  await page.locator('#theme-selector').selectOption('claude');
-  await expect(page).toHaveTitle('Layer 3 Workbench');
-  await expect(page).toHaveURL(/\/review\/layer3$/);
-  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant');
+  await Promise.all([
+    page.waitForURL('**/review/layer3/static/claude.html'),
+    page.locator('#theme-selector').selectOption('claude'),
+  ]);
+  await expect(page).toHaveTitle(/Layer 3 Workbench.*Prototype/);
+  await expect(page.locator('.app-shell')).toBeVisible();
+  await expect(page.locator('.chrome-bar')).toHaveCount(0);
   await expect(page.locator('header.app-header.layer3-header')).toBeVisible();
   await expect(page.locator('a.back-link')).toHaveAttribute('href', '/review/nrc-aps');
+  await expect(page.locator('.proto-badge')).toHaveText('PROTOTYPE');
   await expect(page.locator('#theme-selector')).toHaveValue('claude');
-  await expect(page.locator('#source-fieldset')).toBeVisible();
-  await expect(page.locator('#run-preflight')).toBeVisible();
+  await page.locator('[data-screen="overview"]').click();
+  await expect(page.locator('#ov-sources')).toContainText('APS content document');
+  await page.locator('[data-screen="3a"]').click();
+  await expect(page.locator('#detail-3a-gate')).toContainText('aps-doc-operator-evidence-001');
+  await expect(page.locator('#detail-3a-gate')).toContainText('ML26001A001');
+  await expect(page.locator('#detail-3a-gate')).toContainText('aps_content_units_v2');
+  await expect(page.locator('#detail-3a-gate')).toContainText('traceable_aps_content_document');
+  await expect(page.locator('#detail-3a-status')).toContainText('21');
   const storageAfterClaude = await page.evaluate(() => ({
     sharedTheme: localStorage.getItem('nrc_aps_review_theme'),
     layer3Theme: localStorage.getItem('layer3_workbench_theme'),
   }));
   expect(storageAfterClaude).toEqual({
     sharedTheme: 'light',
-    layer3Theme: 'claude',
+    layer3Theme: 'workbench',
   });
 
-  await page.locator('#theme-selector').selectOption('workbench');
+  await Promise.all([
+    page.waitForURL('**/review/layer3'),
+    page.locator('#theme-selector').selectOption('workbench'),
+  ]);
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await expect(page.locator('#theme-selector')).toHaveValue('workbench');
 
@@ -3184,151 +3181,6 @@ test('Layer 3 workbench drives raw mixed rendered external export download deliv
 
   expect(downloadPrepare.external_export_download_state).toBe('external_export_download_prepared');
   expect(delivery.headers['x-layer3-delivery-state']).toBe('external_export_download_delivered');
-  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/prepare'))).toHaveLength(1);
-  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/deliver'))).toHaveLength(1);
-  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
-    '/handoff/export/download/signed-reference',
-    '/package/mutation',
-    '/package/replacement',
-    '/package/supersession',
-    '/handoff/connector',
-  ]);
-});
-
-test('Layer 3 workbench drives Claude theme from raw mixed materialization through external export download delivery', async ({ page, request }) => {
-  const layer3ApiRequests = trackLayer3ApiRequests(page);
-  const workflowTheme = { themePreference: 'claude' };
-  const initialDatasetCandidatesResponsePromise = page.waitForResponse((response) => (
-    response.url().includes('/api/v1/layer3/dataset-version-candidates')
-  ));
-  const initialApsCandidatesResponsePromise = page.waitForResponse((response) => (
-    response.url().includes('/api/v1/layer3/aps-content-document-candidates')
-  ));
-  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
-  await expectJson(await initialDatasetCandidatesResponsePromise);
-  await expectJson(await initialApsCandidatesResponsePromise);
-  await selectWorkflowTheme(page, 'claude');
-  await expect(page).toHaveURL(/\/review\/layer3$/);
-  await expect(page.locator('header.app-header.layer3-header')).toBeVisible();
-  await expect(page.locator('#source-fieldset')).toBeVisible();
-  await expect(page.locator('#run-preflight')).toBeVisible();
-
-  const materialization = await materializeRawMixedThroughRenderedControls(page, request);
-  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant');
-
-  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
-  const gateB = await submitRenderedGateB(page, material);
-  await previewRenderedGateC(page, gateB.session_id);
-  await commitRenderedGateC(page, gateB.session_id);
-  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
-  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
-  await page.locator('[data-operation-target="result-review-band"]').click();
-  await expect(page.locator('#result-review-band')).toHaveAttribute('data-operation-active', 'true');
-  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
-  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview, workflowTheme);
-  const status = await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution, workflowTheme);
-  const review = await submitRenderedResultReview(
-    page,
-    gateB.session_id,
-    approval,
-    planPreview,
-    execution,
-    status,
-    {
-      operatorDecision: 'approved',
-      reviewNotes: 'Claude theme raw mixed rendered result review approves same-origin external delivery.',
-      packageReviewEnabled: true,
-      themePreference: 'claude',
-    },
-  );
-  const packagePreview = await inspectRenderedPackagePreview(
-    page,
-    gateB.session_id,
-    approval,
-    planPreview,
-    execution,
-    review,
-    workflowTheme,
-  );
-  const commit = await commitRenderedPackageConstruction(
-    page,
-    gateB.session_id,
-    approval,
-    planPreview,
-    execution,
-    review,
-    packagePreview,
-    workflowTheme,
-  );
-  const packageSubmit = await submitRenderedPackageReview(
-    page,
-    gateB.session_id,
-    approval,
-    planPreview,
-    execution,
-    review,
-    commit,
-    workflowTheme,
-  );
-  const handoffPrepare = await submitRenderedHandoffExportPrepare(
-    page,
-    gateB.session_id,
-    approval,
-    planPreview,
-    execution,
-    review,
-    commit,
-    packageSubmit,
-    workflowTheme,
-  );
-  const apsDispatch = await submitRenderedApsHandoffDispatch(
-    page,
-    gateB.session_id,
-    approval,
-    planPreview,
-    execution,
-    review,
-    commit,
-    packageSubmit,
-    handoffPrepare,
-    workflowTheme,
-  );
-  const downloadPrepare = await submitRenderedExternalExportDownloadPrepare(
-    page,
-    gateB.session_id,
-    approval,
-    planPreview,
-    execution,
-    review,
-    commit,
-    packageSubmit,
-    handoffPrepare,
-    apsDispatch,
-    workflowTheme,
-  );
-  const delivery = await submitRenderedExternalExportDownloadDelivery(
-    page,
-    gateB.session_id,
-    approval,
-    planPreview,
-    execution,
-    review,
-    commit,
-    packageSubmit,
-    handoffPrepare,
-    apsDispatch,
-    downloadPrepare,
-    workflowTheme,
-  );
-
-  expect(downloadPrepare.external_export_download_state).toBe('external_export_download_prepared');
-  expect(delivery.headers['x-layer3-delivery-state']).toBe('external_export_download_delivered');
-  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant');
-  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/source/mixed-corpus/materialize'))).toHaveLength(1);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/prepare'))).toHaveLength(1);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/deliver'))).toHaveLength(1);
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
@@ -4228,9 +4080,13 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   expect(mobileApsControlColumns).toBe(1);
 });
 
-test('Layer 3 static assets keep the Claude prototype available directly', async ({ page }) => {
+test('Layer 3 workbench opens the exact Claude prototype as a durable standalone mode', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.goto('/review/layer3/static/claude.html', { waitUntil: 'domcontentloaded' });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await Promise.all([
+    page.waitForURL('**/review/layer3/static/claude.html'),
+    page.locator('#theme-selector').selectOption('claude'),
+  ]);
 
   await expect(page).toHaveTitle(/Layer 3 Workbench.*Prototype/);
   await expect(page.locator('.chrome-bar')).toHaveCount(0);
