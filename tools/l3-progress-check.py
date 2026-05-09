@@ -251,6 +251,12 @@ PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_DURABLE_STATE_FREEZE = (
 PROVIDER_PRIVATE_SIGNED_URL_STORAGE_RECEIPT_DURABLE_STATE_CONTRACT = (
     PLANNING_DOCS / "230_PROVIDER_PRIVATE_SIGNED_URL_DURABLE_STATE_CONTRACT.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_ROUTE_ENTRY_FREEZE = (
+    PLANNING_DOCS / "231_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_ENTRY_FREEZE.md"
+)
+PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT = (
+    PLANNING_DOCS / "232_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -13214,6 +13220,178 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
     if proof.get("forbidden_runtime_changes") != expected_forbidden:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_durable_state_substrate_proof forbidden_runtime_changes must match the durable-state lane boundaries")
 
+def _check_provider_private_signed_url_route_entry_contract(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_ROUTE_ENTRY_FREEZE: (
+            "Status: current-main planning/control route-entry freeze for `provider_private_signed_url_route_entry_freeze`.",
+            "entry_decision: route_entry_frozen_runtime_blocked",
+            "first_runtime_slice_candidate: prepare_status_backend_api_only",
+            "implementation_entry_allowed_next: true",
+            "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+            "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+            "no rendered provider-private signed URL UI control",
+            "recommended_next_action: write_provider_private_signed_url_route_api_contract",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT: (
+            "Status: current-main planning/control route/API contract for `provider_private_signed_url_route_api_contract`.",
+            "entry_decision: route_api_contract_frozen_runtime_blocked",
+            "first_runtime_slice: prepare_status_backend_api_only",
+            "runtime_implementation_allowed_next: true",
+            "owner_module: backend/app/services/layer3_provider_private_signed_url.py",
+            "provider_private_signed_url_use_route_first_slice",
+            "provider_private_signed_url_revoke_route_first_slice",
+            "recommended_next_action: implement_provider_private_signed_url_prepare_status_backend_api",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Route Entry Freeze",
+            "231_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_ENTRY_FREEZE.md",
+            "provider_private_signed_url_route_entry_freeze",
+            "first_runtime_slice_candidate` is `prepare_status_backend_api_only",
+            "Provider Private Signed URL Route API Contract",
+            "232_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT.md",
+            "provider_private_signed_url_route_api_contract",
+            "first_runtime_slice` is `prepare_status_backend_api_only",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_route_entry_freeze_branch",
+            "latest_provider_private_signed_url_route_entry_freeze_live_behavior_change",
+            "provider_private_signed_url_route_entry_freeze",
+            "latest_provider_private_signed_url_route_api_contract_branch",
+            "latest_provider_private_signed_url_route_api_contract_live_behavior_change",
+            "provider_private_signed_url_route_api_contract",
+            "prepare_status_backend_api_only",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_route_entry_freeze_proof",
+            "provider_private_signed_url_route_api_contract_proof",
+            "prepare_status_backend_api_only",
+            "backend/app/services/layer3_provider_private_signed_url.py",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL route-entry/contract term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    if "provider-private-signed-url" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private-signed-url routes in route-entry freeze")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL route-entry contract")
+    else:
+        expected_status = {
+            "latest_provider_private_signed_url_route_entry_freeze_branch": "codex/l3-provider-private-route-entry-freeze",
+            "latest_provider_private_signed_url_route_entry_freeze_live_behavior_change": False,
+            "latest_provider_private_signed_url_route_api_contract_branch": "codex/l3-provider-private-route-entry-freeze",
+            "latest_provider_private_signed_url_route_api_contract_live_behavior_change": False,
+        }
+        for key, expected in expected_status.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        route_entry = current_status.get("provider_private_signed_url_route_entry_freeze")
+        if (
+            not isinstance(route_entry, str)
+            or "implementation_entry_allowed_next is true" not in route_entry
+            or "prepare_status_backend_api_only" not in route_entry
+            or "provider_private_signed_url_runtime is false" not in route_entry
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_route_entry_freeze must record backend/API-only entry posture")
+        route_contract = current_status.get("provider_private_signed_url_route_api_contract")
+        if (
+            not isinstance(route_contract, str)
+            or "runtime_implementation_allowed_next is true" not in route_contract
+            or "prepare_status_backend_api_only" not in route_contract
+            or "provider_private_signed_url_runtime is false" not in route_contract
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_route_api_contract must record backend/API-only contract posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    route_entry_proof = proof_data.get("provider_private_signed_url_route_entry_freeze_proof") if isinstance(proof_data, dict) else None
+    route_contract_proof = proof_data.get("provider_private_signed_url_route_api_contract_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(route_entry_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_route_entry_freeze_proof object")
+    if not isinstance(route_contract_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_route_api_contract_proof object")
+    if not isinstance(route_entry_proof, dict) or not isinstance(route_contract_proof, dict):
+        return
+
+    expected_common = {
+        "implementation_branch": "codex/l3-provider-private-route-entry-freeze",
+        "live_behavior_change": False,
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "runtime_status": "not_implemented",
+        "fake_provider_contract_double_status": "implemented_tested",
+        "durable_state_substrate_status": "implemented_tested",
+        "provider_private_signed_url_runtime": False,
+        "route_dto_change": False,
+        "rendered_ui_change": False,
+    }
+    for proof_name, proof in (
+        ("provider_private_signed_url_route_entry_freeze_proof", route_entry_proof),
+        ("provider_private_signed_url_route_api_contract_proof", route_contract_proof),
+    ):
+        for key, expected in expected_common.items():
+            if proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} {proof_name}.{key} must be {expected!r}")
+
+    if route_entry_proof.get("first_runtime_slice_candidate") != "prepare_status_backend_api_only":
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_entry_freeze_proof.first_runtime_slice_candidate must be prepare_status_backend_api_only")
+    if route_entry_proof.get("implementation_entry_allowed_next") is not True:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_entry_freeze_proof.implementation_entry_allowed_next must be true")
+    if route_contract_proof.get("first_runtime_slice") != "prepare_status_backend_api_only":
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_api_contract_proof.first_runtime_slice must be prepare_status_backend_api_only")
+    if route_contract_proof.get("runtime_implementation_allowed_next") is not True:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_api_contract_proof.runtime_implementation_allowed_next must be true")
+    if route_contract_proof.get("owner_service") != "backend/app/services/layer3_provider_private_signed_url.py":
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_api_contract_proof.owner_service must name the provider-private owner service")
+
+    expected_docs = [
+        "next_milestone_plans/Layer3_planning_docs/231_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/232_PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT.md",
+    ]
+    if route_entry_proof.get("governing_docs") != expected_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_entry_freeze_proof governing_docs must match docs 231/232")
+    if route_contract_proof.get("governing_docs") != expected_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_api_contract_proof governing_docs must match docs 231/232")
+
+    expected_allowed_routes = [
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+        "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+    ]
+    if route_entry_proof.get("allowed_next_runtime_slice") != expected_allowed_routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_entry_freeze_proof allowed_next_runtime_slice must match prepare/status")
+    if route_contract_proof.get("allowed_routes") != expected_allowed_routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_api_contract_proof allowed_routes must match prepare/status")
+
+    expected_deferred_routes = [
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use",
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+    ]
+    if route_contract_proof.get("deferred_routes") != expected_deferred_routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_api_contract_proof deferred_routes must keep use/revoke out")
+
+    expected_required_tests = [
+        "prepare_success_over_existing_external_export_download_authority",
+        "status_success_over_durable_receipt",
+        "openapi_prepare_status_schema",
+        "forbidden_request_fields_fail_closed",
+        "stale_authority_fail_closed",
+        "idempotent_retry_and_conflict_behavior",
+        "recipient_scope_request_basis_binding",
+        "ttl_validation_and_status_projection",
+        "fake_provider_failure_controlled_error",
+        "redaction_success_and_error_surfaces",
+        "same_origin_routes_do_not_gain_provider_private_fields",
+        "negative_side_effect_absence",
+    ]
+    if route_contract_proof.get("required_tests") != expected_required_tests:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_route_api_contract_proof required_tests must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -18020,6 +18198,7 @@ def main() -> int:
     _check_provider_private_signed_url_storage_receipt_durable_state_freeze(errors)
     _check_provider_private_signed_url_storage_receipt_durable_state_contract(errors)
     _check_provider_private_signed_url_durable_state_substrate(errors)
+    _check_provider_private_signed_url_route_entry_contract(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
