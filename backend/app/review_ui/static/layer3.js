@@ -2776,7 +2776,7 @@ function renderDatasetVersionCandidates() {
     if (!candidates.length) {
         elements.datasetVersionCandidates.innerHTML = `
             ${summaryMarkup}
-            <span class="dataset-version-empty">No APS-derived dataset versions were found in the active runtime. Paste explicit IDs if you have them from an APS bridge report.</span>
+            <span class="dataset-version-empty">No server-backed materialized dataset versions were found in the active runtime. Paste explicit IDs if you have them from a materialization report.</span>
         `;
         return;
     }

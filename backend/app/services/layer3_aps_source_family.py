@@ -96,7 +96,7 @@ def source_family_summary(candidates: Iterable[Mapping[str, Any]]) -> dict[str, 
         "not_admitted_or_deferred_families": [dict(item) for item in APS_NOT_ADMITTED_SOURCE_FAMILIES],
         "observed_candidate_counts": observed_counts,
         "ui_scope": (
-            "This endpoint surfaces server-backed APS-derived DatasetVersion choices only; "
+            "This endpoint surfaces server-backed materialized DatasetVersion choices only; "
             "refused/deferred families are explanatory guardrails, not selectable source classes."
         ),
     }
