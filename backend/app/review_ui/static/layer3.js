@@ -234,33 +234,28 @@ function isSharedThemePreference(value) {
 }
 
 function isLayer3ThemePreference(value) {
-    return value === 'workbench';
-}
-
-function isClaudePrototypePreference(value) {
-    return value === 'claude';
+    return value === 'workbench' || value === 'claude';
 }
 
 function isValidThemePreference(value) {
-    return isSharedThemePreference(value) || isLayer3ThemePreference(value) || isClaudePrototypePreference(value);
+    return isSharedThemePreference(value) || isLayer3ThemePreference(value);
 }
 
 function resolveTheme(preference) {
-    if (preference === 'light' || preference === 'dark' || preference === 'workbench') return preference;
+    if (preference === 'claude') return 'workbench';
+    if (preference === 'light' || preference === 'dark' || isLayer3ThemePreference(preference)) return preference;
     return systemThemeQuery?.matches ? 'dark' : 'light';
 }
 
 function applyThemePreference(preference, { persist = true } = {}) {
     const normalized = isValidThemePreference(preference) ? preference : 'system';
-    if (isClaudePrototypePreference(normalized)) {
-        if (persist) {
-            window.location.assign('/review/layer3/static/claude.html');
-        }
-        return;
-    }
     document.documentElement.dataset.themePreference = normalized;
     document.documentElement.dataset.theme = resolveTheme(normalized);
-    delete document.documentElement.dataset.themeVariant;
+    if (normalized === 'claude') {
+        document.documentElement.dataset.themeVariant = 'claude';
+    } else {
+        delete document.documentElement.dataset.themeVariant;
+    }
     State.themePreference = normalized;
     if (elements.themeSelector) {
         elements.themeSelector.value = normalized;
