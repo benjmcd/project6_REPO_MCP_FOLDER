@@ -1243,14 +1243,14 @@ html, body {
             </div>
             <div class="intent-panel-body">
               <div class="intent-helper-text" style="margin-bottom:10px;">
-                "User manually chooses specific keywords, topics/focuses/themes, etc. to include/fetch/retrieve within this layer" — mockup-observed label
+                No corpus-backed manual/custom specification is loaded for this standalone prototype. Manual spec choices stay empty until they are supplied by real selected corpus authority.
               </div>
               <div class="spec-chips-grid" id="spec-chips-grid">
                 <!-- Chips injected by JS -->
               </div>
             </div>
             <div class="intent-submit-row">
-              <span class="intent-submit-note">prototype/sample-state · real source-picker contract unspecified</span>
+              <span class="intent-submit-note">prototype/sample-state · manual spec unbound</span>
               <button class="submit-btn" onclick="submitIntent()">Confirm / Submit →</button>
             </div>
           </div>
@@ -1557,40 +1557,9 @@ const SOURCE_NODES = [
   { title: 'Manual source classes<br>and intent chips', sub: 'operator_spec' },
 ];
 
-// Manual spec chips
-const SPEC_CHIPS = [
-  { label: 'Dept. of Commerce',         group: 'quant' },
-  { label: 'NSC / OSTP',                group: 'qual' },
-  { label: 'Auto Manufacturing',         group: 'hybrid' },
-  { label: 'SEC Earnings Reports',       group: 'quant' },
-  { label: 'Census Import/Export Data',  group: 'quant' },
-  { label: 'Taiwan Semiconductor Trade', group: 'quant' },
-  { label: 'Korea / WSTS',              group: 'quant' },
-  { label: 'BLS / DOL Workforce',        group: 'quant' },
-  { label: 'UAW',                        group: 'qual' },
-  { label: 'NAM',                        group: 'qual' },
-  { label: 'NRC APS',                    group: 'hybrid' },
-  { label: 'APS content documents',       group: 'qual' },
-  { label: 'NIST Supply Chain',          group: 'qual' },
-  { label: 'NSF / STEM',                 group: 'qual' },
-  { label: 'DOE / AMO',                  group: 'qual' },
-  { label: 'NHTSA / EV Regulation',      group: 'qual' },
-  { label: 'CapEx Reports',              group: 'quant' },
-  { label: 'Plant Expansion',            group: 'quant' },
-  { label: 'IHS Markit',                 group: 'hybrid' },
-  { label: 'AGA / Global Automakers',    group: 'hybrid' },
-  { label: 'BEA',                        group: 'quant' },
-  { label: 'Policy / Subsidies',         group: 'qual' },
-  { label: 'Semiconductor Investment',   group: 'quant' },
-  { label: 'Semiconductor Capacity',     group: 'quant' },
-  { label: 'Auto Supply Chain',          group: 'hybrid' },
-  { label: 'Import Dependency',          group: 'hybrid' },
-  { label: 'Labor Market Shifts',        group: 'qual' },
-  { label: 'State Economic Dev. Agencies', group: 'hybrid' },
-  { label: 'Ford / GM / Tesla / Toyota', group: 'quant' },
-  { label: 'TSMC',                       group: 'quant' },
-  { label: 'Workforce Trends',           group: 'qual' },
-];
+// Manual spec choices are intentionally empty in the standalone prototype.
+// They must not imply corpus-backed authority unless supplied by real selected corpus state.
+const SPEC_CHIPS = [];
 
 /* ── Helpers ────────────────────────────────────────────── */
 function getMaterialsByType(type) {
@@ -2067,6 +2036,10 @@ function renderPlanetDetailConfigHTML(type, inputIds) {
 function initSpecChips() {
   var container = document.getElementById('spec-chips-grid');
   if (!container) return;
+  if (!SPEC_CHIPS.length) {
+    container.innerHTML = '<div class="empty-slot"><div class="empty-icon">⬚</div>No corpus-backed manual/custom specification loaded.</div>';
+    return;
+  }
   container.innerHTML = SPEC_CHIPS.map(function(chip, i) {
     sessionData.selectedChips.push(chip.label);
     var cls = 'selected-' + chip.group;
