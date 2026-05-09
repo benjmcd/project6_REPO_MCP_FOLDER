@@ -114,32 +114,6 @@ html[data-theme="workbench"] body.layer3-page {
     background: #0d0d0d;
 }
 
-html[data-theme="claude"] body.layer3-page,
-html[data-theme-variant="claude"] body.layer3-page {
-    --bg-color: #1f1d1a;
-    --text-color: #f4efe7;
-    --muted-text: #b9afa3;
-    --border-color: #4a433b;
-    --border-strong-color: #746757;
-    --header-bg: #28231e;
-    --primary-color: #d5a15c;
-    --pane-bg: #27231f;
-    --pane-header-bg: #332d26;
-    --control-bg: #312b25;
-    --control-hover-bg: #3c342c;
-    --layout-section-bg: #29241f;
-    --layout-divider-color: #453d35;
-    --l3-stage-accent: #d5a15c;
-    --diagram-flow-color: #e9d5b8;
-    background: #1f1d1a;
-}
-
-html[data-theme="claude"] body.layer3-page .layer3-header,
-html[data-theme-variant="claude"] body.layer3-page .layer3-header {
-    background: #28231e;
-    border-bottom-color: #4a433b;
-}
-
 html[data-theme="workbench"] body.layer3-page .layer3-header {
     background: #242424;
     border-bottom-color: #535353;
@@ -3947,78 +3921,4 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         margin-left: 10px;
         margin-right: 10px;
     }
-}
-
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page {
-    background: #1f1d1a;
-}
-
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .layer3-header {
-    background: #28231e;
-    border-bottom-color: #4a433b;
-    box-shadow: inset 0 -1px 0 #3b342c;
-}
-
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .layer3-body {
-    background:
-        linear-gradient(90deg, rgba(244, 239, 231, 0.03) 1px, transparent 1px),
-        linear-gradient(180deg, rgba(244, 239, 231, 0.02) 1px, transparent 1px),
-        #1f1d1a;
-}
-
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .layer3-stepper,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .context-panel {
-    background: rgba(39, 35, 31, 0.78);
-    border-color: #4a433b;
-}
-
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .context-panel,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .operations-dock,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .operations-dock-nav,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .operations-dock-summary {
-    background:
-        linear-gradient(180deg, rgba(244, 239, 231, 0.04), rgba(244, 239, 231, 0.008)),
-        rgba(33, 30, 26, 0.64);
-    border-color: rgba(213, 161, 92, 0.36);
-}
-
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .workband,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .source-fieldset,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .raw-mixed-materialization,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .dataset-version-selector,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .aps-content-document-selector,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .plan-summary-card,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .plan-list,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .result-review-card,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .typing-card {
-    background: rgba(41, 36, 31, 0.68);
-    border-color: #574c40;
-}
-
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .step-chip,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .operation-dock-tab {
-    background:
-        linear-gradient(90deg, rgba(213, 161, 92, 0.08), transparent 74%),
-        #312b25;
-    border-color: #574c40;
-    color: #f4efe7;
-}
-
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .step-chip.active,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .operation-dock-tab.active {
-    background:
-        linear-gradient(90deg, rgba(213, 161, 92, 0.18), transparent 76%),
-        #3c342c;
-    border-color: #d5a15c;
-    color: #fff1d6;
-}
-
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .section-heading,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .material-table th,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading,
-html[data-theme="workbench"][data-theme-variant="claude"] body.layer3-page .workband:not(.sublayer-map-band) > .section-heading {
-    background:
-        linear-gradient(90deg, rgba(213, 161, 92, 0.12), transparent 48%),
-        rgba(51, 45, 38, 0.84);
-    border-color: rgba(213, 161, 92, 0.34);
 }

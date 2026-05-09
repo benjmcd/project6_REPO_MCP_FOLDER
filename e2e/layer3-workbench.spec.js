@@ -541,7 +541,7 @@ async function selectWorkflowTheme(page, themePreference) {
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', themePreference);
   if (themePreference === 'claude') {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
-    await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'claude');
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant');
   }
   await expect(page.locator('#theme-selector')).toHaveValue(themePreference);
 }
@@ -2296,7 +2296,7 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
   await expect(page).toHaveURL(/\/review\/layer3$/);
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
-  await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'claude');
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant');
   await expect(page.locator('header.app-header.layer3-header')).toBeVisible();
   await expect(page.locator('a.back-link')).toHaveAttribute('href', '/review/nrc-aps');
   await expect(page.locator('#theme-selector')).toHaveValue('claude');
@@ -3216,17 +3216,7 @@ test('Layer 3 workbench drives Claude theme from raw mixed materialization throu
   const materialization = await materializeRawMixedThroughRenderedControls(page, request);
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
-  await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'claude');
-  const claudeThemeStyles = await page.evaluate(() => ({
-    bodyBackground: window.getComputedStyle(document.body).backgroundColor,
-    headerBackground: window.getComputedStyle(document.querySelector('.layer3-header')).backgroundColor,
-    activeStepBackground: window.getComputedStyle(document.querySelector('.step-chip.active')).backgroundColor,
-  }));
-  expect(claudeThemeStyles).toMatchObject({
-    bodyBackground: 'rgb(31, 29, 26)',
-    headerBackground: 'rgb(40, 35, 30)',
-  });
-  expect(claudeThemeStyles.activeStepBackground).not.toBe('rgb(36, 36, 36)');
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant');
 
   const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
   const gateB = await submitRenderedGateB(page, material);
@@ -3337,7 +3327,7 @@ test('Layer 3 workbench drives Claude theme from raw mixed materialization throu
   expect(delivery.headers['x-layer3-delivery-state']).toBe('external_export_download_delivered');
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
-  await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'claude');
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant');
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/source/mixed-corpus/materialize'))).toHaveLength(1);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/prepare'))).toHaveLength(1);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/deliver'))).toHaveLength(1);

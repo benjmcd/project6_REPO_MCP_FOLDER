@@ -251,11 +251,7 @@ function applyThemePreference(preference, { persist = true } = {}) {
     const normalized = isValidThemePreference(preference) ? preference : 'system';
     document.documentElement.dataset.themePreference = normalized;
     document.documentElement.dataset.theme = resolveTheme(normalized);
-    if (normalized === 'claude') {
-        document.documentElement.dataset.themeVariant = 'claude';
-    } else {
-        delete document.documentElement.dataset.themeVariant;
-    }
+    delete document.documentElement.dataset.themeVariant;
     State.themePreference = normalized;
     if (elements.themeSelector) {
         elements.themeSelector.value = normalized;
