@@ -45,6 +45,14 @@ Themes must not change:
 
 Browser state may hold form draft, UI focus, theme preference, and recovery hints. Browser state is never source authority, package authority, provider authority, connector authority, or final workflow authority.
 
+## Extensibility Contract
+
+Theme extensibility is presentation-only until a later freeze says otherwise. A new theme must bind to the same route state, endpoint sequence, source IDs, readiness payloads, artifact references, package identifiers, and stop reasons as the standard workbench. Any theme-specific adapter must be a thin mapping layer for DOM structure, selectors, labels, or visual affordances, not a parallel workflow or a second source of runtime truth.
+
+Scalability depends on shared contracts rather than copied flows. Future pages or themes must reuse the existing source/material/Gate B/Gate C/plan/execution/package/handoff/export progression wherever the route is admitted. If a page cannot reuse that progression, classify it as prototype, manual, or deferred instead of partially claiming live parity.
+
+Non-fragile proof requires stable selectors, server-returned identifiers, deterministic source setup, headed and headless evidence where browser behavior is relevant, and explicit negative assertions for forbidden controls. Do not accept proof that relies on local storage alone, fixture row order, incidental timing, viewport-specific visibility, or sample text that appears authoritative.
+
 ## Claude-Specific Boundary
 
 Claude is currently a static prototype. A live Claude implementation is not admitted until a future freeze answers all of these:

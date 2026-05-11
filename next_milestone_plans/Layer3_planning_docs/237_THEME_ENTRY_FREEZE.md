@@ -47,6 +47,14 @@ The narrowest next implementation pass is:
 Implement one test-only Layer 3 live-theme parity proof for /review/layer3 across system, light, dark, and workbench. Do not include Claude. Do not add UI controls or backend behavior. Use existing admitted source setup/materialization, drive the maximum currently supported rendered path, assert request-shape parity, visual/focus coherence, and forbidden-control absence in headed and headless Chromium. Stop and report if existing controls cannot support the proof.
 ```
 
+## Quality Gate
+
+This freeze only admits work that improves confidence in the shared Layer 3 route contract. It must not create theme-specific runtime branches, copied browser workflows, hidden sample-state dependencies, or one-off selectors that cannot be reused by later page/theme rows.
+
+The implementation must stay modular: source setup, API progression, DB/artifact checks, browser theme selection, and forbidden-control assertions should remain separable. If the current test harness cannot support that separation without broad rewrites, stop and report the harness gap instead of mixing harness refactor with runtime behavior.
+
+The implementation must stay scalable and non-fragile: add live-theme coverage through parameterized cases or equivalent reusable structure, prove both headed and headless behavior where browser rendering matters, and bind assertions to server-returned IDs or stable selectors rather than local timing, row order, viewport coincidence, or local storage alone.
+
 ## Claude Implementation Entry
 
 Claude can enter implementation only after a separate freeze states:
