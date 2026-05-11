@@ -132,4 +132,3 @@ Stop before implementation if any of these remain true:
 - historical claim of execution-select/start absence is used while asserting downstream rendered proof past plan approval
 - any category above is executed without a dedicated category freeze
 - any doc/task claims a route/UI behavior not present on current main
-
