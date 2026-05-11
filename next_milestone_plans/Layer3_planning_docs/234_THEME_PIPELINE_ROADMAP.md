@@ -37,6 +37,14 @@ The target state is:
 - manual local real-corpus runbook coverage for operator inspection without implying unsupported arbitrary-folder ingestion;
 - explicit no-go boundaries for deferred source, execution, package, delivery, provider, connector, mockup, and security categories.
 
+## Cross-Cutting Engineering Guardrails
+
+Every pass in this roadmap must preserve flexibility, non-fragility, modularity, and scalability by keeping presentation themes separate from runtime contracts. A theme may change layout, styling, focus behavior, and selector visibility only through the shared `/review/layer3` contract; it must not create theme-specific request payloads, browser-owned durable state, source authority, package semantics, provider behavior, connector behavior, or auth behavior.
+
+Future expansion must enter through one bounded category at a time. New source families, execution modes, package behavior, provider URL behavior, connector dispatch, mockup activation, and security hardening each require their own freeze, owner surface, test plan, and fail-closed behavior. Do not treat the theme roadmap as permission to combine categories in one broad implementation pass.
+
+The scalable path is contract-first: classify the page/theme, prove request-shape parity, prove DB/artifact side effects outside browser state, and then add only the smallest reusable helper or harness abstraction needed by the next admitted category. Avoid one-off theme forks, copied sample-state workflows, hidden fixture assumptions, and proof that depends on row order, timing, viewport coincidence, or local operator state unless those are declared contracts.
+
 ## Roadmap
 
 ```mermaid
