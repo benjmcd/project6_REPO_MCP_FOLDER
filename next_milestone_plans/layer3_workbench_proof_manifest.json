@@ -1806,11 +1806,13 @@
     "pr": "#255"
   },
   "state_notes": [
-    "Docs 82/83 are current-main planning/control governance for selected-pass associated-cohort result review after PR #432; PR #438 is the separate bounded backend/API implementation and docs 82/83 by themselves are not live behavior."
+    "Docs 82/83 are current-main planning/control governance for selected-pass associated-cohort result review after PR #432; PR #438 is the separate bounded backend/API implementation and docs 82/83 by themselves are not live behavior.",
+    "Theme synthesis pack 238 is planning/reference-only: it consolidates the admitted /review/layer3 themes and the static Claude prototype boundary, but it does not admit runtime behavior."
   ],
   "authoritative_file_refs": [
     "next_milestone_plans/Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/57_L3_WB_HANDOFF_EXPORT_UI_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/238_LAYER3_THEME_TO_FULL_PIPELINE_SYNTHESIS.md",
     "backend/app/services/layer3_workbench.py",
     "backend/tests/test_layer3_api.py",
     "next_milestone_plans/Layer3_planning_docs/58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md",
