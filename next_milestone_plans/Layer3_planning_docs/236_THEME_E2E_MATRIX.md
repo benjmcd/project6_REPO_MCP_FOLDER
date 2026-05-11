@@ -18,6 +18,14 @@ The harness must keep these responsibilities separate:
 
 The harness must use deterministic source IDs, deterministic content, stable hashes, stable selectors, and contract-returned artifact references. It must avoid incidental timestamp, row-order, path, viewport, and browser-local assumptions unless those are explicit contracts.
 
+## Harness Modularity And Scale Rules
+
+The E2E matrix should grow by reusable fixtures and parameterized theme/page cases, not by copied scenario scripts. Shared setup must own source seeding, API progression, session IDs, artifact IDs, and DB/artifact assertions. Per-theme code may only select the theme, locate stable controls, and assert presentation/focus visibility.
+
+Every new matrix row must declare its authority source, route, theme, admitted source classes, expected stop point, forbidden controls, and browser mode coverage. A row that cannot provide those declarations is underspecified and must remain deferred.
+
+When adding coverage, prefer expanding the same contract harness across admitted themes before adding new runtime behavior. If a proof requires route/DTO/service/model/migration changes, stop the test-only pass and require a separate implementation-entry freeze.
+
 ## Coverage Matrix
 
 | Segment | API proof | UI proof on live themes | Claude proof today | Future Claude proof |

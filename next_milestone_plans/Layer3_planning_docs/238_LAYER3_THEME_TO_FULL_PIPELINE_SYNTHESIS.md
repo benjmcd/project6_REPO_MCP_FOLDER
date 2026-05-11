@@ -54,6 +54,12 @@ Notes:
 
 Claude can only enter this target set as a dedicated runtime-admitted live theme under its own freeze; until then, it remains prototype.
 
+## Architecture Quality Posture
+
+The planning pack is intentionally contract-centered. Flexibility comes from allowing new admitted themes/pages to reuse the same server-authoritative route progression while changing presentation only. Non-fragility comes from stable selectors, deterministic source setup, server-returned identifiers, explicit stop reasons, and fail-closed negative assertions. Modularity comes from keeping source setup, API progression, DB/artifact proof, browser theme selection, package/handoff/export behavior, provider behavior, connector behavior, and auth/security gates as separate owner surfaces. Scalability comes from parameterized theme/page proof and one-category-at-a-time admission, not from parallel theme forks.
+
+Any future pass that weakens those properties must stop before implementation. Examples include creating a theme-specific payload shape, treating local storage as durable authority, copying sample-state workflow into live runtime, combining source expansion with package/provider/connector changes, or claiming parity from a single browser mode, single viewport, or undocumented fixture assumption.
+
 ## Execution Strategy (from current state to target)
 
 ```mermaid
