@@ -737,6 +737,72 @@ def test_dataset_version_candidates_include_server_owned_raw_mixed_materializati
         "This endpoint surfaces server-backed materialized DatasetVersion choices only"
     )
 
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-raw-mixed-dataset",
+            "natural_language_intent": "Review server-owned raw mixed materialized dataset.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-raw-mixed-dataset",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        }
+    )
+    material = layer3_workbench.material_preview(
+        {
+            "client_request_id": "req-material-raw-mixed-dataset",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [
+                source["source_candidates"][0]["source_candidate_id"],
+            ],
+            "dataset_version_ids": [dataset_version_id],
+            "query_basis": {"terms": ["raw", "mixed"]},
+        },
+        db_session,
+    )
+
+    material_candidate = material["material_candidates"][0]
+    source_provenance = material_candidate["source_provenance"]
+    assert material_candidate["source_family"] == "csv"
+    assert material_candidate["source_admission_state"] == "admitted_materialized_dataset_version"
+    assert source_provenance["aps_derived"] is True
+    assert source_provenance["source_family"] == "csv"
+    assert source_provenance["source_admission_state"] == "admitted_materialized_dataset_version"
+    assert (
+        material_candidate["source_trace"]["trace_readiness"]
+        == "traceable_aps_dataset_version"
+    )
+    assert (
+        source_provenance["aps_source_provenance"][0]["source_system"]
+        == "local_operator_staged_server_owned_manifest"
+    )
+    assert source_provenance["aps_source_provenance"][0]["source_mode"] == (
+        "raw_mixed_materialized"
+    )
+
+
+def test_dataset_version_candidates_reject_unrecognized_server_owned_raw_mixed_source_system(
+    db_session, tmp_path
+) -> None:
+    _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-other-raw-mixed-001",
+        source_system="unrecognized_server_owned_manifest",
+        source_mode="raw_mixed_materialized",
+        artifact_locator_type="server_owned_ref",
+        fetch_policy_mode="server_owned_manifest",
+    )
+
+    result = layer3_workbench.aps_dataset_version_candidates(db_session)
+
+    assert result["candidate_count"] == 0
+    assert result["dataset_version_candidates"] == []
+
 
 def test_aps_content_document_candidates_list_uses_content_linkage(db_session, tmp_path) -> None:
     content_id = _seed_aps_content_document(db_session, tmp_path)

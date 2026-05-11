@@ -126,6 +126,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "No corpus-backed manual/custom specification loaded." in claude.text
     assert "const SPEC_CHIPS = [];" in claude.text
     assert "Manual spec choices are intentionally empty" in claude.text
+    assert "Manual source classes<br>and intent chips" not in claude.text
     assert "String(MATERIALS.length)" in claude.text
     assert 'html[data-theme="workbench"]' in review_css.text
     assert ".authority-rail" in css.text
