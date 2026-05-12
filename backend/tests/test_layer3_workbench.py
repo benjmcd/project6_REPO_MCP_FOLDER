@@ -804,6 +804,117 @@ def test_dataset_version_candidates_reject_unrecognized_server_owned_raw_mixed_s
     assert result["dataset_version_candidates"] == []
 
 
+def test_raw_mixed_aps_shortcut_is_not_admitted_without_server_owned_sentinel(
+    db_session, tmp_path
+) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-aps-raw-mixed-shortcut-001",
+        source_system="nrc_adams_aps",
+        source_mode="raw_mixed_materialized",
+        artifact_locator_type="server_owned_ref",
+        fetch_policy_mode="server_owned_manifest",
+    )
+
+    result = layer3_workbench.aps_dataset_version_candidates(db_session)
+
+    assert result["candidate_count"] == 0
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-aps-raw-mixed-shortcut",
+            "natural_language_intent": "Reject raw mixed APS shortcut provenance.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-aps-raw-mixed-shortcut",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        }
+    )
+    with pytest.raises(layer3_workbench.Layer3WorkbenchError) as exc:
+        layer3_workbench.material_preview(
+            {
+                "client_request_id": "req-material-aps-raw-mixed-shortcut",
+                "preflight_id": preflight["preflight_id"],
+                "source_set_id": source["source_set_id"],
+                "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+                "dataset_version_ids": [dataset_version_id],
+                "query_basis": {"terms": ["raw", "mixed"]},
+            },
+            db_session,
+        )
+    assert exc.value.error_code == "dataset_version_provenance_not_admitted"
+
+
+def test_newest_rejected_raw_mixed_provenance_blocks_stale_accepted_fallback(
+    db_session, tmp_path
+) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(db_session, tmp_path)
+    older = (
+        db_session.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.dataset_version_id == dataset_version_id)
+        .one()
+    )
+    older.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    db_session.add(
+        DatasetSourceProvenance(
+            dataset_version_id=dataset_version_id,
+            connector_run_id=None,
+            source_system="nrc_adams_aps",
+            source_mode="raw_mixed_materialized",
+            source_artifact_key="aps-target-artifacts/run-raw/target-raw/extraction.json",
+            sciencebase_file_name="fixture-raw.csv",
+            downloaded_sha256="2" * 64,
+            raw_storage_ref="aps-target-artifacts/run-raw/target-raw/blob.csv",
+            artifact_locator_type="server_owned_ref",
+            fetch_policy_mode="server_owned_manifest",
+            source_reference_json={
+                "target_id": "target-raw",
+                "accession_number": "ML000000RAW",
+                "parser_family": "csv_table",
+                "parser_contract_id": "aps_csv_parser_v1",
+                "typed_content_contract_id": "aps_csv_table_units_v1",
+            },
+            created_at=datetime(2026, 1, 3, tzinfo=timezone.utc),
+        )
+    )
+    db_session.flush()
+
+    result = layer3_workbench.aps_dataset_version_candidates(db_session)
+
+    assert result["candidate_count"] == 0
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-newest-raw-mixed-rejected",
+            "natural_language_intent": "Reject stale fallback after newer raw mixed provenance.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-newest-raw-mixed-rejected",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        }
+    )
+    with pytest.raises(layer3_workbench.Layer3WorkbenchError) as exc:
+        layer3_workbench.material_preview(
+            {
+                "client_request_id": "req-material-newest-raw-mixed-rejected",
+                "preflight_id": preflight["preflight_id"],
+                "source_set_id": source["source_set_id"],
+                "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+                "dataset_version_ids": [dataset_version_id],
+                "query_basis": {"terms": ["aps", "latest"]},
+            },
+            db_session,
+        )
+    assert exc.value.error_code == "dataset_version_provenance_not_admitted"
+
+
 def test_aps_content_document_candidates_list_uses_content_linkage(db_session, tmp_path) -> None:
     content_id = _seed_aps_content_document(db_session, tmp_path)
 

@@ -21045,15 +21045,26 @@ def _check_pr798_review_debt_closeout(errors: list[str]) -> None:
     for term in (
         'RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM = "local_operator_staged_server_owned_manifest"',
         "def _admitted_dataset_version_provenance_filter():",
-        ".filter(_admitted_dataset_version_provenance_filter())",
+        'DatasetSourceProvenance.source_mode != "raw_mixed_materialized"',
+        "def _is_admitted_dataset_version_provenance(row: DatasetSourceProvenance) -> bool:",
+        'row.source_mode == "raw_mixed_materialized"',
+        'row.source_system == RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM',
+        'row.artifact_locator_type == "server_owned_ref"',
+        'row.fetch_policy_mode == "server_owned_manifest"',
+        '"dataset_version_provenance_not_admitted"',
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing PR #798 workbench guard term: {term}")
+    if workbench_text.count("_is_admitted_dataset_version_provenance(row)") < 2:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} must apply the PR #798 provenance guard in both candidate listing and material preview")
 
     workbench_test_text = _read_required_text(LAYER3_WORKBENCH_TEST, errors)
     for term in (
         "test_dataset_version_candidates_include_server_owned_raw_mixed_materialization",
         "test_dataset_version_candidates_reject_unrecognized_server_owned_raw_mixed_source_system",
+        "test_raw_mixed_aps_shortcut_is_not_admitted_without_server_owned_sentinel",
+        "test_newest_rejected_raw_mixed_provenance_blocks_stale_accepted_fallback",
+        "dataset_version_provenance_not_admitted",
         "traceable_aps_dataset_version",
         "unrecognized_server_owned_manifest",
     ):
