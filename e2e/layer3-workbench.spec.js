@@ -4840,6 +4840,14 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('#mockup-theme-shell')).toContainText('server state mapping required');
   await expect(page.locator('#mockup-theme-shell')).toContainText('browser storage presentation only');
   await expect(page.locator('#mockup-theme-shell')).toContainText('New source family unavailable');
+  await expect(page.locator('#mockup-sublayers-ab-board')).toBeVisible();
+  await expect(page.locator('#mockup-sublayers-ab-board')).toHaveAttribute('data-visual-source', 'focus_on_these/sublayer3A_and_sublayer3B.png');
+  await expect(page.locator('#mockup-sublayers-ab-board')).toContainText('Gate B / Session Entry / Material Ledger');
+  await expect(page.locator('#mockup-sublayers-ab-board')).toContainText('Hybrid/Mixed Data');
+  await expect(page.locator('.mockup-ab-ledger .mockup-ab-object')).toHaveCount(20);
+  await expect(page.locator('.mockup-ab-quant .mockup-ab-object')).toHaveCount(7);
+  await expect(page.locator('.mockup-ab-qual .mockup-ab-object')).toHaveCount(7);
+  await expect(page.locator('.mockup-ab-hybrid .mockup-ab-object')).toHaveCount(6);
   await expect(page.locator('#mockup-userflow-board')).toBeVisible();
   await expect(page.locator('#mockup-userflow-board')).toHaveAttribute('data-visual-source', 'userflow/layer3_user-flow-overview1.png');
   await expect(page.locator('#mockup-userflow-board')).toHaveAttribute('data-usecase-source', 'clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png');
@@ -4858,6 +4866,7 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('#mockup-frame-list li')).toHaveCount(8);
   await expect(page.locator('#mockup-frame-list')).toContainText('userflow/layer3_user-flow-overview1.png');
   await expect(page.locator('#mockup-frame-list')).toContainText('focus_on_these/sublayer3C.png');
+  await expect(page.locator('#mockup-frame-list')).toContainText('focus_on_these/sublayer3A_and_sublayer3B.png');
   await expect(page.locator('#mockup-frame-list')).toContainText('example-use-case-location-in-pdf.png');
   await expect(page.locator('#mockup-theme-shell button')).toHaveCount(0);
   await expect(page.locator('#mockup-execution-lanes button')).toHaveCount(0);
@@ -4867,11 +4876,36 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     body: mockupShellScreenshot,
     contentType: 'image/png',
   });
+  const sublayersAbScreenshot = await page.locator('#mockup-sublayers-ab-board').screenshot();
+  expect(sublayersAbScreenshot.length).toBeGreaterThan(9000);
+  await testInfo.attach('layer3-mockup-sublayers-ab-board.png', {
+    body: sublayersAbScreenshot,
+    contentType: 'image/png',
+  });
   const userflowScreenshot = await page.locator('#mockup-userflow-board').screenshot();
   expect(userflowScreenshot.length).toBeGreaterThan(7000);
   await testInfo.attach('layer3-mockup-userflow-board.png', {
     body: userflowScreenshot,
     contentType: 'image/png',
+  });
+
+  const sublayersAbAcceptance = await page.locator('#mockup-sublayers-ab-board').evaluate((board) => ({
+    visualSource: board.getAttribute('data-visual-source'),
+    boardColumns: window.getComputedStyle(board).gridTemplateColumns.split(' ').filter(Boolean).length,
+    ledgerObjects: board.querySelectorAll('.mockup-ab-ledger .mockup-ab-object').length,
+    groupCount: board.querySelectorAll('.mockup-ab-group').length,
+    quantitativeObjects: board.querySelectorAll('.mockup-ab-quant .mockup-ab-object').length,
+    qualitativeObjects: board.querySelectorAll('.mockup-ab-qual .mockup-ab-object').length,
+    hybridObjects: board.querySelectorAll('.mockup-ab-hybrid .mockup-ab-object').length,
+  }));
+  expect(sublayersAbAcceptance).toEqual({
+    visualSource: 'focus_on_these/sublayer3A_and_sublayer3B.png',
+    boardColumns: 3,
+    ledgerObjects: 20,
+    groupCount: 3,
+    quantitativeObjects: 7,
+    qualitativeObjects: 7,
+    hybridObjects: 6,
   });
 
   const userflowAcceptance = await page.locator('#mockup-userflow-board').evaluate((board) => ({
