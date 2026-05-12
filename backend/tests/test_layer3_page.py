@@ -29,9 +29,16 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'data-first-slice="mockup_theme_shell_and_fixture_projection"' in response.text
     assert 'id="mockup-fixture-scenario"' in response.text
     assert 'id="mockup-execution-lanes"' in response.text
+    assert 'id="mockup-userflow-board"' in response.text
+    assert 'data-visual-source="userflow/layer3_user-flow-overview1.png"' in response.text
+    assert 'data-usecase-source="clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png"' in response.text
+    assert 'data-pdf-location-source="example-use-case-location-in-pdf.png"' in response.text
     assert 'data-visual-source="focus_on_these/sublayer3C.png"' in response.text
     assert "semiconductor_infrastructure_auto_supply_chain" in response.text
     assert "Analysis Execution Environments" in response.text
+    assert "User Natural Language Query Input" in response.text
+    assert "Layer manually chooses the specific, relevant, logic/context/thematic data" in response.text
+    assert "PDF evidence location" in response.text
     assert "Quantitative (and/or/AKA 'Deterministic') Environment/Container/Plane" in response.text
     assert "Qualitative Data Analysis Environment/Container/Plane" in response.text
     assert "browser storage presentation only" in response.text
@@ -147,6 +154,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert 'html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-shell' in css.text
     assert ".mockup-theme-flow" in css.text
     assert ".mockup-execution-lanes" in css.text
+    assert ".mockup-userflow-board" in css.text
+    assert ".mockup-pdf-location-card" in css.text
+    assert ".mockup-userflow-stage" in css.text
     assert ".mockup-canvas-title" in css.text
     assert ".mockup-process-note" in css.text
     assert ".mockup-ingress-stack::after" in css.text
@@ -186,6 +196,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "dataset.themeVariant = LAYER3_MOCKUP_WORKBENCH_THEME" in js.text
     assert "userflow/layer3_user-flow-overview1.png" in js.text
     assert "focus_on_these/sublayer3C.png" in js.text
+    assert "example-use-case-location-in-pdf.png" in js.text
     assert "const LAYER3_SESSION_RECOVERY_STORAGE_KEY = 'layer3_workbench_session_recovery_v1';" in js.text
     assert "const LAYER3_GATE_B_DRAFT_STORAGE_KEY = 'layer3_workbench_gate_b_draft_v1';" in js.text
     assert "const LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY = 'layer3_provider_private_receipt_v1';" in js.text

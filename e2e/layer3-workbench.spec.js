@@ -27,7 +27,7 @@ function loadMockupFrameManifest() {
   expect(manifest.schema_id).toBe('layer3.mockup_visual_acceptance_frames.v1');
   expect(manifest.selected_theme_target).toBe('layer3_mockup_workbench_theme');
   expect(manifest.selected_first_slice).toBe('mockup_theme_shell_and_fixture_projection');
-  expect(manifest.frames).toHaveLength(7);
+  expect(manifest.frames).toHaveLength(8);
   return manifest.frames.map((frame) => {
     const buffer = readFileSync(path.resolve(frame.repo_path));
     expect(createHash('sha256').update(buffer).digest('hex')).toBe(frame.sha256);
@@ -4819,8 +4819,11 @@ test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-
 test('Layer 3 mockup workbench theme exposes fixture projection without backend widening', async ({ page }, testInfo) => {
   const frames = loadMockupFrameManifest();
   const sublayerCFrame = frames.find((frame) => frame.repo_path.endsWith('sublayer-c.png'));
+  const pdfLocationFrame = frames.find((frame) => frame.repo_path.endsWith('pdf-location.png'));
   expect(sublayerCFrame).toBeTruthy();
+  expect(pdfLocationFrame).toBeTruthy();
   expect(sublayerCFrame.dimensions).toEqual({ width: 1022, height: 903 });
+  expect(pdfLocationFrame.dimensions).toEqual({ width: 1610, height: 446 });
 
   const apiRequests = trackLayer3ApiRequests(page);
   await page.setViewportSize({ width: 1440, height: 1100 });
@@ -4837,6 +4840,14 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('#mockup-theme-shell')).toContainText('server state mapping required');
   await expect(page.locator('#mockup-theme-shell')).toContainText('browser storage presentation only');
   await expect(page.locator('#mockup-theme-shell')).toContainText('New source family unavailable');
+  await expect(page.locator('#mockup-userflow-board')).toBeVisible();
+  await expect(page.locator('#mockup-userflow-board')).toHaveAttribute('data-visual-source', 'userflow/layer3_user-flow-overview1.png');
+  await expect(page.locator('#mockup-userflow-board')).toHaveAttribute('data-usecase-source', 'clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png');
+  await expect(page.locator('#mockup-userflow-board')).toHaveAttribute('data-pdf-location-source', 'example-use-case-location-in-pdf.png');
+  await expect(page.locator('#mockup-userflow-board')).toContainText('User Natural Language Query Input');
+  await expect(page.locator('#mockup-userflow-board')).toContainText('PDF evidence location');
+  await expect(page.locator('#mockup-userflow-board')).toContainText('Layer manually chooses the specific, relevant');
+  await expect(page.locator('.mockup-userflow-node')).toHaveCount(5);
   await expect(page.locator('#mockup-execution-lanes')).toBeVisible();
   await expect(page.locator('#mockup-execution-lanes')).toHaveAttribute('data-visual-source', 'focus_on_these/sublayer3C.png');
   await expect(page.locator('#mockup-execution-lanes')).toContainText('Analysis Execution Environments');
@@ -4844,9 +4855,10 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('#mockup-execution-lanes')).toContainText('Qualitative Data Analysis Environment/Container/Plane');
   await expect(page.locator('.mockup-process-note')).toHaveCount(2);
   await expect(page.locator('.mockup-output-card')).toHaveCount(12);
-  await expect(page.locator('#mockup-frame-list li')).toHaveCount(7);
+  await expect(page.locator('#mockup-frame-list li')).toHaveCount(8);
   await expect(page.locator('#mockup-frame-list')).toContainText('userflow/layer3_user-flow-overview1.png');
   await expect(page.locator('#mockup-frame-list')).toContainText('focus_on_these/sublayer3C.png');
+  await expect(page.locator('#mockup-frame-list')).toContainText('example-use-case-location-in-pdf.png');
   await expect(page.locator('#mockup-theme-shell button')).toHaveCount(0);
   await expect(page.locator('#mockup-execution-lanes button')).toHaveCount(0);
   const mockupShellScreenshot = await page.locator('#mockup-theme-shell').screenshot();
@@ -4854,6 +4866,33 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await testInfo.attach('layer3-mockup-theme-shell.png', {
     body: mockupShellScreenshot,
     contentType: 'image/png',
+  });
+  const userflowScreenshot = await page.locator('#mockup-userflow-board').screenshot();
+  expect(userflowScreenshot.length).toBeGreaterThan(7000);
+  await testInfo.attach('layer3-mockup-userflow-board.png', {
+    body: userflowScreenshot,
+    contentType: 'image/png',
+  });
+
+  const userflowAcceptance = await page.locator('#mockup-userflow-board').evaluate((board) => ({
+    visualSource: board.getAttribute('data-visual-source'),
+    usecaseSource: board.getAttribute('data-usecase-source'),
+    pdfLocationSource: board.getAttribute('data-pdf-location-source'),
+    promptCount: board.querySelectorAll('.mockup-userflow-prompt').length,
+    specCount: board.querySelectorAll('.mockup-userflow-spec').length,
+    evidenceSheets: board.querySelectorAll('.mockup-evidence-sheet').length,
+    stageCount: board.querySelectorAll('.mockup-userflow-node').length,
+    stageColumns: window.getComputedStyle(board.querySelector('.mockup-userflow-stage')).gridTemplateColumns.split(' ').filter(Boolean).length,
+  }));
+  expect(userflowAcceptance).toEqual({
+    visualSource: 'userflow/layer3_user-flow-overview1.png',
+    usecaseSource: 'clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png',
+    pdfLocationSource: 'example-use-case-location-in-pdf.png',
+    promptCount: 1,
+    specCount: 1,
+    evidenceSheets: 2,
+    stageCount: 5,
+    stageColumns: 5,
   });
 
   const visualAcceptance = await page.locator('#mockup-execution-lanes').evaluate((lanes) => {
