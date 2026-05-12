@@ -1074,3 +1074,7 @@ Refresh this board against:
 ## Qual Hybrid RAG Reentry Decision
 
 `256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md` records the current-main qualitative/hybrid/RAG posture after package mutation reentry: the single APS-document qualitative pass and bounded qualitative APS downstream chain are live; broad qualitative execution, cohort/comparative/cross-document analysis, hybrid execution, RAG/vector retrieval, vector indexes, embeddings, prompt/model/provider runtime, rendered qualitative/RAG controls, source expansion, package mutation side effects, provider/public URL behavior, connector/destination dispatch, full mockup activation, and browser-owned execution authority remain blocked.
+
+## Full Mockup Activation Reentry Decision
+
+`257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md` records the current-main mockup/browser posture after qualitative/hybrid/RAG reentry: mockups remain target-state design/specification inputs and existing rendered controls remain live only where server-authoritative paths are already proven; full mockup activation, frontend-only durable workflow state, browser-local persistence as authority, new rendered mockup controls, route/API changes, source expansion, package mutation, provider/public URL behavior, connector/destination dispatch, broad qualitative/hybrid/RAG behavior, hidden LLM planning, auth/security behavior, and browser-owned workflow authority remain blocked.
