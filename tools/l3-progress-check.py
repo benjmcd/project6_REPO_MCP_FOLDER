@@ -346,6 +346,9 @@ FULL_MOCKUP_NAMED_JOURNEY_PACKET = (
 AUTH_SECURITY_NAMED_MODE_PACKET = (
     PLANNING_DOCS / "266_AUTH_SECURITY_NAMED_MODE_PACKET.md"
 )
+POST_REENTRY_NAMED_PACKET_CLOSEOUT = (
+    PLANNING_DOCS / "267_POST_REENTRY_NAMED_PACKET_CLOSEOUT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -16003,6 +16006,104 @@ def _check_auth_security_named_mode_packet(errors: list[str]) -> None:
             if packet_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_named_mode_packet_proof.{key} must be {expected!r}")
 
+
+def _check_post_reentry_named_packet_closeout(errors: list[str]) -> None:
+    doc_text = _read_required_text(POST_REENTRY_NAMED_PACKET_CLOSEOUT, errors)
+    for term in (
+        "Status: current-main closeout for `post_reentry_named_packet_closeout`.",
+        "entry_decision: named_packet_stack_closed_no_runtime_selected",
+        "259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md",
+        "260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md",
+        "261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md",
+        "262_CONNECTOR_DESTINATION_NAMED_TARGET_PACKET.md",
+        "263_PACKAGE_MUTATION_NAMED_ACTION_PACKET.md",
+        "264_QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET.md",
+        "265_FULL_MOCKUP_NAMED_JOURNEY_PACKET.md",
+        "266_AUTH_SECURITY_NAMED_MODE_PACKET.md",
+        "selected_runtime_family: null",
+        "selected_runtime_mode: null",
+        "named_product_operator_use_case: null",
+        "source_breadth_runtime_status: blocked_named_source_use_case_absent",
+        "external_connector_destination_runtime_status: blocked_named_target_absent",
+        "rendered_package_mutation_runtime_status: blocked_named_package_action_absent",
+        "broad_qual_hybrid_rag_runtime_status: blocked_named_analysis_mode_absent",
+        "full_mockup_activation_status: blocked_named_mockup_journey_absent",
+        "auth_security_runtime_status: blocked_named_auth_mode_absent",
+        "implementation_entry_allowed_next: false",
+        "next_required_boundary: user_or_product_named_use_case_before_runtime",
+        "This closeout admits no runtime behavior",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(POST_REENTRY_NAMED_PACKET_CLOSEOUT)} missing closeout term: {term}")
+
+    readme_text = _read_required_text(PHASE1A_README, errors)
+    for term in (
+        "267_POST_REENTRY_NAMED_PACKET_CLOSEOUT.md",
+        "post-reentry named packet stack",
+        "user/product-named use case before runtime",
+    ):
+        if term not in readme_text:
+            errors.append(f"{_rel(PHASE1A_README)} missing post-reentry closeout term: {term}")
+
+    board_text = _read_required_text(BOARD, errors)
+    for term in (
+        "## Post Reentry Named Packet Closeout",
+        "no runtime selected",
+        "Docs `259` through `266`",
+    ):
+        if term not in board_text:
+            errors.append(f"{_rel(BOARD)} missing post-reentry closeout term: {term}")
+
+    manifest = json.loads(_read_required_text(MANIFEST, errors))
+    current_status = manifest.get("current_status", {})
+    for key, expected in (
+        ("latest_post_reentry_named_packet_closeout_branch", "codex/l3-post-reentry-packet-closeout"),
+        ("latest_post_reentry_named_packet_closeout_live_behavior_change", False),
+    ):
+        if current_status.get(key) != expected:
+            errors.append(f"{_rel(MANIFEST)} current_status {key} expected {expected!r}")
+    if "post_reentry_named_packet_closeout" not in current_status:
+        errors.append(f"{_rel(MANIFEST)} missing current_status post_reentry_named_packet_closeout")
+    if manifest.get("scope_status", {}).get("post_reentry_named_packet_closeout") != "completed_named_packet_stack_closed_no_runtime_selected":
+        errors.append(f"{_rel(MANIFEST)} missing completed post_reentry_named_packet_closeout scope status")
+    if "user/product authority names one exact use case" not in manifest.get("post_reentry_named_packet_closeout", ""):
+        errors.append(f"{_rel(MANIFEST)} missing top-level post_reentry_named_packet_closeout summary")
+
+    proof = json.loads(_read_required_text(PROOF_MANIFEST, errors))
+    proof_entry = proof.get("post_reentry_named_packet_closeout_proof", {})
+    for key, expected in (
+        ("status", "completed_named_packet_stack_closed_no_runtime_selected"),
+        ("implementation_branch", "codex/l3-post-reentry-packet-closeout"),
+        ("live_behavior_change", False),
+        ("selected_planning_mode", "post_reentry_named_packet_closeout"),
+        ("entry_decision", "named_packet_stack_closed_no_runtime_selected"),
+        ("selected_runtime_family", None),
+        ("selected_runtime_mode", None),
+        ("named_product_operator_use_case", None),
+        ("source_breadth_runtime_status", "blocked_named_source_use_case_absent"),
+        ("external_connector_destination_runtime_status", "blocked_named_target_absent"),
+        ("rendered_package_mutation_runtime_status", "blocked_named_package_action_absent"),
+        ("broad_qual_hybrid_rag_runtime_status", "blocked_named_analysis_mode_absent"),
+        ("full_mockup_activation_status", "blocked_named_mockup_journey_absent"),
+        ("auth_security_runtime_status", "blocked_named_auth_mode_absent"),
+        ("implementation_entry_allowed_next", False),
+        ("next_required_boundary", "user_or_product_named_use_case_before_runtime"),
+    ):
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} post_reentry_named_packet_closeout_proof {key} expected {expected!r}")
+    for doc_name in (
+        "259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md",
+        "260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md",
+        "261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md",
+        "262_CONNECTOR_DESTINATION_NAMED_TARGET_PACKET.md",
+        "263_PACKAGE_MUTATION_NAMED_ACTION_PACKET.md",
+        "264_QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET.md",
+        "265_FULL_MOCKUP_NAMED_JOURNEY_PACKET.md",
+        "266_AUTH_SECURITY_NAMED_MODE_PACKET.md",
+    ):
+        if doc_name not in proof_entry.get("closed_docs", []):
+            errors.append(f"{_rel(PROOF_MANIFEST)} post_reentry_named_packet_closeout_proof missing closed doc {doc_name}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -20913,6 +21014,7 @@ def main() -> int:
     _check_qual_hybrid_rag_named_analysis_packet(errors)
     _check_full_mockup_named_journey_packet(errors)
     _check_auth_security_named_mode_packet(errors)
+    _check_post_reentry_named_packet_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

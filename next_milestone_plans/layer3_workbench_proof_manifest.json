@@ -709,7 +709,10 @@
     "latest_full_mockup_named_journey_packet_summary": "Current main now includes the full_mockup_named_journey_packet as a no-runtime closeout: mockups remain target-state design/specification inputs and no operator journey or activation mode is selected. Full mockup activation remains blocked until a packet names route/API contract, server authority, durable state owner, browser storage policy, mockup-to-live mapping, leak controls, and theme/accessibility/headed/headless proof. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
     "latest_auth_security_named_mode_packet_branch": "codex/l3-auth-mode-packet",
     "latest_auth_security_named_mode_packet_live_behavior_change": false,
-    "latest_auth_security_named_mode_packet_summary": "Current main now includes the auth_security_named_mode_packet as a no-runtime closeout: local/proxy deployment guardrails remain live, but no security/operator-access use case or selected auth/security mode is present. Auth/security runtime remains blocked until a packet names identity authority, tenant/session ownership, permission matrix, route dependency contract, secret policy, audit contract, rendered identity plan, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
+    "latest_auth_security_named_mode_packet_summary": "Current main now includes the auth_security_named_mode_packet as a no-runtime closeout: local/proxy deployment guardrails remain live, but no security/operator-access use case or selected auth/security mode is present. Auth/security runtime remains blocked until a packet names identity authority, tenant/session ownership, permission matrix, route dependency contract, secret policy, audit contract, rendered identity plan, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
+    "latest_post_reentry_named_packet_closeout_branch": "codex/l3-post-reentry-packet-closeout",
+    "latest_post_reentry_named_packet_closeout_live_behavior_change": false,
+    "latest_post_reentry_named_packet_closeout_summary": "Docs 259 through 266 are closed as a no-runtime named-packet stack; next implementation requires a user/product-named use case before runtime."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -11881,6 +11884,42 @@
       "provider_secret_handling",
       "connector_credential_handling",
       "rendered_identity_controls"
+    ]
+  },
+  "post_reentry_named_packet_closeout_proof": {
+    "status": "completed_named_packet_stack_closed_no_runtime_selected",
+    "implementation_branch": "codex/l3-post-reentry-packet-closeout",
+    "live_behavior_change": false,
+    "selected_planning_mode": "post_reentry_named_packet_closeout",
+    "entry_decision": "named_packet_stack_closed_no_runtime_selected",
+    "selected_runtime_family": null,
+    "selected_runtime_mode": null,
+    "named_product_operator_use_case": null,
+    "source_breadth_runtime_status": "blocked_named_source_use_case_absent",
+    "external_connector_destination_runtime_status": "blocked_named_target_absent",
+    "rendered_package_mutation_runtime_status": "blocked_named_package_action_absent",
+    "broad_qual_hybrid_rag_runtime_status": "blocked_named_analysis_mode_absent",
+    "full_mockup_activation_status": "blocked_named_mockup_journey_absent",
+    "auth_security_runtime_status": "blocked_named_auth_mode_absent",
+    "implementation_entry_allowed_next": false,
+    "next_required_boundary": "user_or_product_named_use_case_before_runtime",
+    "closed_docs": [
+      "259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md",
+      "260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md",
+      "261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md",
+      "262_CONNECTOR_DESTINATION_NAMED_TARGET_PACKET.md",
+      "263_PACKAGE_MUTATION_NAMED_ACTION_PACKET.md",
+      "264_QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET.md",
+      "265_FULL_MOCKUP_NAMED_JOURNEY_PACKET.md",
+      "266_AUTH_SECURITY_NAMED_MODE_PACKET.md"
+    ],
+    "blocked_runtime": [
+      "source_breadth_runtime_without_named_source_use_case",
+      "external_connector_destination_runtime_without_named_target",
+      "rendered_package_mutation_without_named_package_action",
+      "broad_qualitative_hybrid_rag_without_named_analysis_mode",
+      "full_mockup_activation_without_named_operator_journey",
+      "auth_security_runtime_without_named_auth_security_mode"
     ]
   }
 }
