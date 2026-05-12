@@ -1025,20 +1025,18 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         errors.append("layer3_workbench_current_decision.next_required_decision must be a non-empty string")
     else:
         required_terms = [
-            (
-                "After direct owner-service proof hardening for "
-                "plan_revision_recovery_preview_refresh_entry and "
-                "approved_plan_cancel_without_replacement"
-            ),
-            "keep remaining authentication/security",
-            "approved-plan supersession runtime",
-            "no-behavior-change service extraction",
-            "proof/state drift checker",
+            "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection",
+            "pixel-faithful mockup-theme continuation",
+            "mockup frame mapping",
+            "visual parity",
+            "headed/headless theme coverage",
+            "exactly one named server-authoritative runtime/use-case freeze",
         ]
         for term in required_terms:
             if term not in next_required:
                 errors.append(f"next_required_decision missing local near-term direction term: {term}")
         stale_terms = [
+            "After direct owner-service proof hardening",
             "future runtime implementation for exactly approved_plan_cancel_without_replacement",
             "approved_plan_cancel_without_replacement as implementation-entry only",
         ]
@@ -1052,20 +1050,18 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         return
     allowed_text = "\n".join(str(item) for item in allowed_actions)
     required_allowed = [
+        "mockup-theme pixel-faithful acceptance",
+        "mockup frame mapping",
+        "visual-diff/headed/headless proof",
+        "review-thread/proof metadata settlement",
         "progress/proof/state drift checker",
-        "state/action contract drift checker",
-        "preview hash/idempotency follow-up",
-        (
-            "plan revision recovery or approved-plan cancel owner-service "
-            "proof maintenance only if fresh drift appears"
-        ),
-        "no-behavior-change service extraction",
-        "future implementation-entry freeze",
+        "exactly one named server-authoritative runtime/use-case freeze",
     ]
     for term in required_allowed:
         if term not in allowed_text:
             errors.append(f"next_allowed_actions missing non-security option: {term}")
     blocked_allowed = [
+        "source breadth implementation without named use case",
         "provider/public URL implementation-entry",
         "connector/destination implementation-entry",
         "qualitative APS execution implementation-entry",
@@ -1171,9 +1167,9 @@ def _check_plan_revision_recovery_freeze(manifest: dict[str, Any], errors: list[
         errors.append("manifest next_required_decision missing for revision recovery freeze")
     else:
         for term in (
-            "After the bounded plan_revision_recovery_preview_refresh_entry runtime",
-            "approved-plan supersession",
-            "separate freeze and proof plan",
+            "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection",
+            "pixel-faithful mockup-theme continuation",
+            "exactly one named server-authoritative runtime/use-case freeze",
         ):
             if term not in next_required:
                 errors.append(f"manifest next_required_decision missing revision recovery term: {term}")
@@ -1436,9 +1432,9 @@ def _check_plan_revision_recovery_entry_freeze(
         errors.append("manifest next_required_decision missing for revision recovery runtime")
     else:
         for term in (
-            "After the bounded plan_revision_recovery_preview_refresh_entry runtime",
-            "approved-plan supersession",
-            "separate freeze and proof plan",
+            "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection",
+            "pixel-faithful mockup-theme continuation",
+            "exactly one named server-authoritative runtime/use-case freeze",
         ):
             if term not in next_required:
                 errors.append(f"manifest next_required_decision missing revision runtime term: {term}")
