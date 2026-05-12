@@ -706,7 +706,7 @@
     "latest_qual_hybrid_rag_named_analysis_packet_summary": "Current main now includes the qual_hybrid_rag_named_analysis_packet as a no-runtime closeout: the single APS-document qualitative path remains live, but no broad analysis use case or selected qualitative/hybrid/RAG mode is present. Broad qualitative/hybrid/RAG runtime remains blocked until an analysis packet names source scope, retrieval corpus, vector storage, embedding/model/prompt/provider authority, output taxonomy, package compatibility, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
     "latest_full_mockup_named_journey_packet_branch": "codex/l3-mockup-journey-packet",
     "latest_full_mockup_named_journey_packet_live_behavior_change": false,
-    "latest_full_mockup_named_journey_packet_summary": "Current main now includes the full_mockup_named_journey_packet as a no-runtime closeout: mockups remain target-state design/specification inputs and no operator journey or activation mode is selected. Full mockup activation remains blocked until a packet names route/API contract, server authority, durable state owner, browser storage policy, mockup-to-live mapping, leak controls, and theme/accessibility/headed/headless proof. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
+    "latest_full_mockup_named_journey_packet_summary": "Current main now includes the full_mockup_named_journey_packet as a no-runtime closeout for durable full-mockup activation: full workflow activation remains target-state design/specification only, while the separate dedicated mockup workbench theme target is governed by docs 268 through 270. Durable full mockup activation remains blocked until a packet names route/API contract, server authority, durable state owner, browser storage policy, mockup-to-live mapping, leak controls, and theme/accessibility/headed/headless proof. This pass admits no route/API/DTO/model/migration/service behavior, executable test behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
     "latest_auth_security_named_mode_packet_branch": "codex/l3-auth-mode-packet",
     "latest_auth_security_named_mode_packet_live_behavior_change": false,
     "latest_auth_security_named_mode_packet_summary": "Current main now includes the auth_security_named_mode_packet as a no-runtime closeout: local/proxy deployment guardrails remain live, but no security/operator-access use case or selected auth/security mode is present. Auth/security runtime remains blocked until a packet names identity authority, tenant/session ownership, permission matrix, route dependency contract, secret policy, audit contract, rendered identity plan, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
@@ -11961,15 +11961,33 @@
       "C:\\Users\\benny\\Downloads\\layer3mockups\\clear-screenshots",
       "C:\\Users\\benny\\Downloads\\layer3mockups\\userflow"
     ],
+    "repo_visual_acceptance_manifest": "next_milestone_plans/layer3-mockups/frames/manifest.json",
+    "repo_visual_acceptance_frames": [
+      "next_milestone_plans/layer3-mockups/frames/flow-1.png",
+      "next_milestone_plans/layer3-mockups/frames/flow-2.png",
+      "next_milestone_plans/layer3-mockups/frames/slide-1.png",
+      "next_milestone_plans/layer3-mockups/frames/slide-general.png",
+      "next_milestone_plans/layer3-mockups/frames/slide-usecase.png",
+      "next_milestone_plans/layer3-mockups/frames/sublayers-ab.png",
+      "next_milestone_plans/layer3-mockups/frames/sublayer-c.png"
+    ],
     "blocked_runtime": [
       "route_api_behavior_change_without_entry_freeze",
       "source_expansion",
+      "local_upload",
+      "local_directory_ingestion",
+      "web_connector_retrieval",
       "rag_vector_retrieval",
+      "provider_public_url_runtime",
+      "public_proxy_runtime",
       "external_connector_destination_runtime",
       "package_mutation_runtime",
       "broad_qualitative_hybrid_rag_runtime",
       "full_mockup_activation_without_server_mapping",
       "auth_security_runtime",
+      "rendered_ui_behavior_without_entry_freeze",
+      "ci_workflow_change",
+      "playwright_configuration_change",
       "frontend_only_durable_authority"
     ]
   },
@@ -12060,13 +12078,14 @@
     "fixture_scenario": "semiconductor_infrastructure_auto_supply_chain",
     "server_state_mapping_preserved": true,
     "browser_storage_policy": "presentation_cache_only_no_durable_authority",
-    "implemented_surfaces": [
-      "backend/app/review_ui/static/layer3.html",
-      "backend/app/review_ui/static/layer3.css",
-      "backend/app/review_ui/static/layer3.js",
-      "backend/tests/test_layer3_page.py",
-      "e2e/layer3-workbench.spec.js"
-    ],
+      "implemented_surfaces": [
+        "backend/app/review_ui/static/layer3.html",
+        "backend/app/review_ui/static/layer3.css",
+        "backend/app/review_ui/static/layer3.js",
+        "backend/tests/test_layer3_page.py",
+        "e2e/layer3-workbench.spec.js",
+        "next_milestone_plans/layer3-mockups/frames/manifest.json"
+      ],
     "implemented_ui_terms": [
       "Mockup Workbench theme selector option",
       "data-theme-variant layer3_mockup_workbench_theme",
