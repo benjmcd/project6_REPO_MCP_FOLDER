@@ -328,6 +328,9 @@ POST_REENTRY_RUNTIME_SELECTION_SYNC = (
 POST_REENTRY_NAMED_USE_CASE_ADJUDICATION = (
     PLANNING_DOCS / "260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md"
 )
+SOURCE_BREADTH_NAMED_USE_CASE_PACKET = (
+    PLANNING_DOCS / "261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -15359,6 +15362,107 @@ def _check_post_reentry_named_use_case_adjudication(errors: list[str]) -> None:
             if adjudication_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} post_reentry_named_use_case_adjudication_proof.{key} must be {expected!r}")
 
+
+def _check_source_breadth_named_use_case_packet(errors: list[str]) -> None:
+    packet_text = _read_required_text(SOURCE_BREADTH_NAMED_USE_CASE_PACKET, errors)
+    required_terms = [
+        "Status: current-main source-breadth named-use-case packet for `source_breadth_named_use_case_packet`.",
+        "entry_decision: no_runtime_now_named_source_use_case_absent",
+        "upstream_adjudication_doc: 260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md",
+        "named_source_use_case: null",
+        "source_family_selected: false",
+        "selected_source_family: none_selected_runtime_blocked",
+        "adapter_input_mode_selected: false",
+        "source_of_truth: current_classes_only_server_owned_manifest_hash_authority",
+        "current_supported_sources_sufficient_for_named_new_use_case: unproven",
+        "implementation_entry_allowed_next: false",
+        "next_required_boundary: user_or_product_named_source_use_case_before_runtime",
+        "source_breadth_runtime_status: blocked",
+        "This packet admits no runtime behavior",
+    ]
+    for term in required_terms:
+        if term not in packet_text:
+            errors.append(f"{_rel(SOURCE_BREADTH_NAMED_USE_CASE_PACKET)} missing source-breadth named use case packet term: {term}")
+
+    required_surfaces = {
+        PHASE1A_README: (
+            "261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md",
+            "no concrete source use case is present in current authority",
+        ),
+        BOARD: (
+            "Source Breadth Named Use Case Packet",
+            "no concrete new source use case is present",
+        ),
+        MANIFEST: (
+            "source_breadth_named_use_case_packet",
+            "no concrete source use case is present in current authority",
+        ),
+        PROOF_MANIFEST: (
+            "source_breadth_named_use_case_packet_proof",
+            "user_or_product_named_source_use_case_before_runtime",
+        ),
+    }
+    for path, terms in required_surfaces.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing source-breadth named use case packet term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for source-breadth named use case packet")
+    else:
+        expected_current = {
+            "latest_source_breadth_named_use_case_packet_branch": "codex/l3-source-use-case-packet",
+            "latest_source_breadth_named_use_case_packet_live_behavior_change": False,
+        }
+        for key, expected in expected_current.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        summary = current_status.get("source_breadth_named_use_case_packet")
+        if (
+            not isinstance(summary, str)
+            or "no concrete source use case is present in current authority" not in summary
+            or "Current source truth remains bounded to dataset_version and aps_content_document" not in summary
+            or "admits no runtime behavior" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.source_breadth_named_use_case_packet must record no-runtime named source use case posture")
+
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict):
+        errors.append(f"{_rel(MANIFEST)} scope_status missing for source-breadth named use case packet")
+    elif scope_status.get("source_breadth_named_use_case_packet") != "completed_no_runtime_named_source_use_case_absent":
+        errors.append(f"{_rel(MANIFEST)} scope_status.source_breadth_named_use_case_packet must be completed_no_runtime_named_source_use_case_absent")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    packet_proof = proof_data.get("source_breadth_named_use_case_packet_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(packet_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_breadth_named_use_case_packet_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_no_runtime_named_source_use_case_absent",
+            "implementation_branch": "codex/l3-source-use-case-packet",
+            "live_behavior_change": False,
+            "selected_planning_mode": "source_breadth_named_use_case_packet",
+            "entry_decision": "no_runtime_now_named_source_use_case_absent",
+            "upstream_adjudication_doc": "260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md",
+            "named_source_use_case": None,
+            "source_family_selected": False,
+            "selected_source_family": "none_selected_runtime_blocked",
+            "adapter_input_mode_selected": False,
+            "source_of_truth": "current_classes_only_server_owned_manifest_hash_authority",
+            "current_supported_sources_sufficient_for_named_new_use_case": "unproven",
+            "implementation_entry_allowed_next": False,
+            "next_required_boundary": "user_or_product_named_source_use_case_before_runtime",
+            "source_breadth_runtime_status": "blocked",
+        }
+        for key, expected in expected_scalars.items():
+            if packet_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_named_use_case_packet_proof.{key} must be {expected!r}")
+        if packet_proof.get("current_supported_sources") != ["dataset_version", "aps_content_document"]:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_named_use_case_packet_proof.current_supported_sources must remain dataset_version and aps_content_document")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -20029,6 +20133,7 @@ def main() -> int:
         GOAL_STACK_REENTRY_CLOSEOUT,
         POST_REENTRY_RUNTIME_SELECTION_SYNC,
         POST_REENTRY_NAMED_USE_CASE_ADJUDICATION,
+        SOURCE_BREADTH_NAMED_USE_CASE_PACKET,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -20257,6 +20362,7 @@ def main() -> int:
     _check_goal_stack_reentry_closeout(errors)
     _check_post_reentry_runtime_selection_sync(errors)
     _check_post_reentry_named_use_case_adjudication(errors)
+    _check_source_breadth_named_use_case_packet(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
