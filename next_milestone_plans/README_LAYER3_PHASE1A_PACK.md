@@ -1698,3 +1698,10 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - The PDF-location board keeps the same rendered selectors and server-state boundaries while reducing dense text mass and replacing the dark read-only placeholder patch with a gray disabled chip.
 - Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` at `360 x 220`; this is not a full pixel-perfect claim.
 - Runtime/backend/source/connector/package/RAG/auth/full-activation scope remains blocked until separately refrozen as a named server-authoritative implementation slice.
+
+
+## Mockup Pixel Proof Closeout
+
+- `Layer3_planning_docs/284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md` freezes the current bounded mockup visual proof state for `mockup_pixel_proof_closeout`.
+- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` at `360 x 220`; this is not a full durable mockup activation claim.
+- The next non-visual implementation boundary is `exact_named_server_authoritative_runtime_use_case_freeze`; runtime/backend/source/connector/package/RAG/auth/full-activation work remains blocked until exactly one named server-authoritative slice is selected.
