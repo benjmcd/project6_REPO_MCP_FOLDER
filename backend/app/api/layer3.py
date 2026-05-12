@@ -1250,9 +1250,12 @@ class Layer3ProviderPrivateSignedUrlPrepareRequest(BaseModel):
     browser_durable_authority: Any | None = None
     public_url: Any | None = None
     public_proxy_url: Any | None = None
+    provider_url: Any | None = None
     download_url: Any | None = None
     signed_reference_token: Any | None = None
     signed_url: Any | None = None
+    provider_private_signed_url_token: Any | None = None
+    raw_provider_private_signed_url_token: Any | None = None
 
 
 class Layer3ProviderPrivateSignedUrlRevokeRequest(BaseModel):
@@ -1303,6 +1306,7 @@ class Layer3ProviderPrivateSignedUrlRevokeRequest(BaseModel):
     browser_durable_authority: Any | None = None
     public_url: Any | None = None
     public_proxy_url: Any | None = None
+    provider_url: Any | None = None
     download_url: Any | None = None
     signed_reference_token: Any | None = None
     signed_url: Any | None = None
@@ -2458,6 +2462,7 @@ PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_REQUEST_FIELDS = (
     "browser_durable_authority",
     "public_url",
     "public_proxy_url",
+    "provider_url",
     "download_url",
     "signed_reference_token",
     "signed_url",

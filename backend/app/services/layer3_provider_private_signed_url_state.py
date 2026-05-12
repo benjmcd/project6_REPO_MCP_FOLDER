@@ -700,6 +700,7 @@ def revoke_provider_private_signed_url_receipt(
     revoked_by: str,
     revocation_reason: str,
     now_epoch: int,
+    authority_basis: dict[str, Any] | None = None,
     request_id: str | None = None,
 ) -> ProviderPrivateSignedUrlDurableState:
     if not idempotency_key.strip():
@@ -794,6 +795,29 @@ def revoke_provider_private_signed_url_receipt(
             db.refresh(receipt)
             db.refresh(audit)
             return _state_from_rows(receipt, audit)
+        if authority_basis is not None:
+            normalized_authority = _validate_authority_basis(authority_basis=authority_basis)
+            authority_hash = _authority_hash(normalized_authority)
+            if receipt.authority_hash != authority_hash:
+                audit = L3ProviderPrivateSignedUrlAuditEvent(
+                    provider_private_signed_url_audit_event_id=uuid_str(),
+                    provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
+                    event_type="revoke",
+                    event_status="rejected",
+                    request_id=request_id,
+                    authority_hash=authority_hash,
+                    reason_code="authority_hash_mismatch",
+                    event_payload_json={"recorded_authority_hash": receipt.authority_hash},
+                    created_at=now,
+                )
+                db.add(audit)
+                db.commit()
+                raise ProviderPrivateSignedUrlStateError(
+                    "provider_private_signed_url_state_authority_mismatch",
+                    "Current artifact authority no longer matches the provider-private signed URL durable receipt.",
+                    blocked_fields=("session_id", "source_artifact_hash", "source_artifact_size_bytes"),
+                    next_allowed_actions=("prepare_new_provider_private_signed_url",),
+                )
         if receipt.provider_private_signed_url_state == PROVIDER_PRIVATE_SIGNED_URL_STATE_REVOKED:
             audit = L3ProviderPrivateSignedUrlAuditEvent(
                 provider_private_signed_url_audit_event_id=uuid_str(),

@@ -471,6 +471,53 @@ def test_revoke_rejects_conflicting_idempotency_retry(session_factory) -> None:
         db.close()
 
 
+def test_revoke_blocks_stale_session_and_artifact_authority(session_factory) -> None:
+    db = session_factory()
+    try:
+        state = record_prepared_provider_private_signed_url_receipt(
+            db,
+            request_id="prepare-revoke-stale-1",
+            client_request_id="client-request-provider-private-revoke-stale",
+            authority_basis=_authority_basis(),
+            recipient_scope=RECIPIENT_SCOPE,
+            requested_ttl_seconds=300,
+            now_epoch=NOW_EPOCH,
+            provider_private_signed_url_token=RAW_TOKEN,
+        )
+    finally:
+        db.close()
+
+    stale_authority = _authority_basis()
+    stale_authority["source_artifact_hash"] = "b" * 64
+    db = session_factory()
+    try:
+        with pytest.raises(ProviderPrivateSignedUrlStateError) as stale:
+            revoke_provider_private_signed_url_receipt(
+                db,
+                provider_private_signed_url_receipt_id=state.provider_private_signed_url_receipt_id,
+                idempotency_key="revoke-stale-idempotency",
+                revoked_by="pytest",
+                revocation_reason="operator requested revoke after stale authority",
+                now_epoch=NOW_EPOCH + 5,
+                authority_basis=stale_authority,
+                request_id="revoke-stale-1",
+            )
+        assert stale.value.error_code == "provider_private_signed_url_state_authority_mismatch"
+        assert "source_artifact_hash" in stale.value.blocked_fields
+    finally:
+        db.close()
+
+    db = session_factory()
+    try:
+        receipt = db.query(L3ProviderPrivateSignedUrlReceipt).one()
+        rejected = db.query(L3ProviderPrivateSignedUrlAuditEvent).filter_by(reason_code="authority_hash_mismatch").one()
+        assert receipt.provider_private_signed_url_state != PROVIDER_PRIVATE_SIGNED_URL_STATE_REVOKED
+        assert rejected.event_type == "revoke"
+        assert rejected.event_status == "rejected"
+    finally:
+        db.close()
+
+
 def _authority_basis(
     *,
     session_id: str = "session-provider-private",
