@@ -209,6 +209,7 @@ from app.services.layer3_source_boundary import (
     source_class_from_source_candidate_id as _source_class_from_source_candidate_id,
     unsupported_requested as _unsupported_requested,
 )
+from app.services.layer3_raw_mixed_contract import RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM
 from app.services.layer3_preflight_request_contract import (
     manual_constraints_from_payload as _manual_constraints,
     preflight_manual_constraint_blocked_fields,
@@ -367,7 +368,6 @@ DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
-RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM = "local_operator_staged_server_owned_manifest"
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.package_review_preview.v1"
 QUAL_APS_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.qual_aps_package_review_preview.v1"
 PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.package_construction_commit.v1"
