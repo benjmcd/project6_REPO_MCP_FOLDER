@@ -92,3 +92,9 @@ This proof slice adds mobile responsive acceptance for `layer3_mockup_workbench_
 
 The proof remains static/theme-only: it adds no backend route, API, model, migration, service, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, or browser-owned durable authority.
 
+## Frame-to-rendered-projection proof addendum
+
+This proof slice adds an explicit `rendered_projection_contract` to `next_milestone_plans/layer3-mockups/frames/manifest.json`. Each of the eight repo-local frames now names a `rendered_projection` with a projection id, CSS selector, rendered surface label, screenshot attachment, and `static_theme_region_projection` acceptance mode.
+
+Playwright now refuses to count a frame as rendered proof unless the declared selector is visible under `#mockup-theme-shell` while `layer3_mockup_workbench_theme` is active. It also attaches `layer3-mockup-frame-map.json` so the frame-to-selector coverage is reproducible. This remains a static visual proof contract only; it does not admit backend API/model/migration/service behavior, source runtime widening, connector/destination dispatch, package mutation runtime, broad qualitative/hybrid/RAG runtime, full durable mockup activation, or frontend-only durable authority.
+
