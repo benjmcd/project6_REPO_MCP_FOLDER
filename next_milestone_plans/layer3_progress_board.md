@@ -1122,3 +1122,10 @@ Refresh this board against:
 ## Mockup Theme Freeze
 
 `268_MOCKUP_THEME_FREEZE.md` selects the dedicated `layer3_mockup_workbench_theme` product/UX target: a pixel-perfect functional rendition of the Layer 3 mockup/user-flow corpus under `/review/layer3`. The freeze corrects prior target-state-only wording without making runtime live; implementation remains blocked until a separate entry-freeze maps server-authoritative workbench state to exact mockup frames, classifies contextual text boxes, defines visual-diff/headed/headless proof, and preserves no-go boundaries for source expansion, RAG/vector, external connector/destination, package mutation, full mockup activation, and auth/security behavior.
+## Mockup Theme Entry Freeze
+
+- Status: implementation-entry selected as planning/control only; no runtime behavior changed in this pass.
+- Selected first slice: `mockup_theme_shell_and_fixture_projection` for `layer3_mockup_workbench_theme` on `/review/layer3`.
+- Visual target: selected first-slice frames from `userflow`, `clear-screenshots`, and `focus_on_these`, with deterministic `semiconductor_infrastructure_auto_supply_chain` fixture projection where current runtime cannot produce the visualized state.
+- Required next proof: headed Chrome, headless Chrome, visual diff or screenshot comparison, responsive stacked layout, keyboard navigation, contrast, and non-color-only status labeling.
+- Forbidden without refreeze: backend API/model/migration/service behavior, new source runtime, connector/destination writes, rendered package mutation controls, broad qualitative/hybrid/RAG runtime, auth/security runtime, full mockup durable workflow activation, and browser-owned durable authority.
