@@ -1029,6 +1029,10 @@ Post 807 closeout: `251_POST_807_CLOSEOUT.md` records PR `#807` as merged into c
 
 Goal stack implementation audit: `252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md` records the current-main bounded implementation state for source breadth, source runtime, source rendered controls, connector/destination reentry, package mutation reentry, qualitative/hybrid/RAG reentry, and full mockup activation. The audit separates live bounded implementations from blocked expansions: current-class source runtime, raw-mixed current-class rendered controls, internal connector dispatch record-only behavior, backend package lifecycle authority, and single APS-document qualitative execution are live; new source-family runtime, external connector/destination writes, rendered package mutation controls, broad qualitative/hybrid/RAG/vector behavior, and full mockup activation remain blocked until a later one-mode freeze proves the missing authority and validation plan.
 
+## Source Rendered Control Decision
+
+Source rendered-control decision: `253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md` records the current-main rendered source-control posture after the goal-stack audit. Existing `/review/layer3` raw-mixed current-class controls are live and bounded to server-backed `dataset_version` and `aps_content_document` authority; no new source-family selector, local upload, local-directory ingestion, arbitrary local path picker, web connector retrieval, RAG/vector retrieval, source adapter registry, package mutation, connector/destination dispatch, full mockup activation, or browser-owned source authority is admitted.
+
 ## Refresh Inputs
 
 Refresh this board against:
