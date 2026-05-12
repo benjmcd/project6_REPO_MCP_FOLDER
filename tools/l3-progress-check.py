@@ -16388,7 +16388,11 @@ def _check_mockup_theme_shell_implementation(errors: list[str]) -> None:
         'data-theme-target="layer3_mockup_workbench_theme"',
         'data-first-slice="mockup_theme_shell_and_fixture_projection"',
         'id="mockup-fixture-scenario"',
+        'id="mockup-execution-lanes"',
+        'data-visual-source="focus_on_these/sublayer3C.png"',
         "semiconductor_infrastructure_auto_supply_chain",
+        "Quantitative deterministic environment",
+        "Qualitative analysis environment",
         "browser storage presentation only",
         "Sublayer 3C",
     ):
@@ -16398,6 +16402,9 @@ def _check_mockup_theme_shell_implementation(errors: list[str]) -> None:
     for term in (
         'html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-shell',
         ".mockup-theme-flow",
+        ".mockup-execution-lanes",
+        ".mockup-process-note",
+        ".mockup-output-card",
         ".mockup-disabled-control",
         "@media (max-width: 760px)",
     ):
@@ -16420,6 +16427,8 @@ def _check_mockup_theme_shell_implementation(errors: list[str]) -> None:
         "layer3_mockup_workbench_theme",
         "mockup_theme_shell_and_fixture_projection",
         "function renderMockupThemeShell",
+        'id="mockup-execution-lanes"',
+        ".mockup-execution-lanes",
         'html[data-theme-variant="layer3_mockup_workbench_theme"]',
     ):
         if term not in page_test_text:
@@ -16429,6 +16438,9 @@ def _check_mockup_theme_shell_implementation(errors: list[str]) -> None:
         "layer3_mockup_workbench_theme",
         "Layer 3 mockup workbench theme exposes fixture projection without backend widening",
         "#mockup-theme-shell button",
+        "#mockup-execution-lanes button",
+        ".mockup-process-note",
+        ".mockup-output-card",
         "source/mixed-corpus/materialize",
     ):
         if term not in e2e_text:
@@ -16443,6 +16455,8 @@ def _check_mockup_theme_shell_implementation(errors: list[str]) -> None:
         "selected_theme_target: layer3_mockup_workbench_theme",
         "selected_first_slice: mockup_theme_shell_and_fixture_projection",
         "fixture_scenario: semiconductor_infrastructure_auto_supply_chain",
+        "focus_on_these/sublayer3C.png",
+        "quantitative and qualitative execution lanes",
         "frontend_only_durable_authority",
     ):
         if term not in proof_doc_text:
