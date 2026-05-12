@@ -291,6 +291,15 @@ PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT = (
 PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF = (
     PLANNING_DOCS / "247_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF.md"
 )
+POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE = (
+    PLANNING_DOCS / "248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md"
+)
+SOURCE_BREADTH_REENTRY_CONTRACT = (
+    PLANNING_DOCS / "249_SOURCE_BREADTH_REENTRY_CONTRACT.md"
+)
+SOURCE_BREADTH_AUTHORITY_PACKET = (
+    PLANNING_DOCS / "250_SOURCE_BREADTH_AUTHORITY_PACKET.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14560,6 +14569,173 @@ def _check_provider_private_signed_url_rendered_ui_proof(errors: list[str]) -> N
     if proof.get("negative_invariants") != expected_negative:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_proof negative_invariants must match bounded scope")
 
+def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> None:
+    required_terms = {
+        POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE: (
+            "Status: current-main planning/control freeze for `post_provider_private_roadmap_selection_freeze`.",
+            "selected_next_lane: source_breadth_reentry_authority_packet",
+            "provider_private_use_route_status: closed_not_implemented",
+            "implementation_entry_allowed_next: false",
+            "source_breadth_reentry_contract",
+        ),
+        SOURCE_BREADTH_REENTRY_CONTRACT: (
+            "Status: planning/control contract for `source_breadth_reentry_contract`.",
+            "entry_decision: authority_packet_required_before_runtime",
+            "source_family_selected: false",
+            "named_source_use_case",
+            "implementation_entry_allowed_next: false",
+        ),
+        SOURCE_BREADTH_AUTHORITY_PACKET: (
+            "Status: current-main planning/control authority packet for `source_breadth_reentry_authority_packet`.",
+            "entry_decision: no_runtime_now",
+            "selected_source_family: none_selected_runtime_blocked",
+            "implementation_entry_allowed_next: false",
+            "no_runtime_reason: named_source_use_case_and_source_family_not_selected",
+        ),
+        PHASE1A_README: (
+            "248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md",
+            "249_SOURCE_BREADTH_REENTRY_CONTRACT.md",
+            "250_SOURCE_BREADTH_AUTHORITY_PACKET.md",
+            "source_breadth_reentry_authority_packet",
+        ),
+        BOARD: (
+            "Post Provider Private Roadmap Selection Freeze",
+            "Source Breadth Reentry Contract",
+            "Source Breadth Authority Packet",
+            "source_breadth_reentry_authority_packet",
+        ),
+        MANIFEST: (
+            "post_provider_private_roadmap_selection_freeze",
+            "source_breadth_reentry_contract",
+            "source_breadth_reentry_authority_packet",
+            "source_breadth_reentry_authority_packet",
+        ),
+        PROOF_MANIFEST: (
+            "post_provider_private_roadmap_selection_freeze_proof",
+            "source_breadth_reentry_contract_proof",
+            "source_breadth_reentry_authority_packet_proof",
+            "source_breadth_reentry_authority_packet",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing post-provider-private roadmap term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for post-provider-private roadmap freeze")
+    else:
+        expected_current = {
+            "latest_post_provider_private_roadmap_selection_freeze_branch": "codex/l3-post-provider-roadmap-freeze",
+            "latest_post_provider_private_roadmap_selection_freeze_live_behavior_change": False,
+            "latest_source_breadth_reentry_contract_branch": "codex/l3-post-provider-roadmap-freeze",
+            "latest_source_breadth_reentry_contract_live_behavior_change": False,
+            "latest_source_breadth_reentry_authority_packet_branch": "codex/l3-post-provider-roadmap-freeze",
+            "latest_source_breadth_reentry_authority_packet_live_behavior_change": False,
+        }
+        for key, expected in expected_current.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        roadmap_summary = current_status.get("post_provider_private_roadmap_selection_freeze")
+        if (
+            not isinstance(roadmap_summary, str)
+            or "implementation_entry_allowed_next is false" not in roadmap_summary
+            or "provider-private use remains closed_not_implemented" not in roadmap_summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.post_provider_private_roadmap_selection_freeze must record no-runtime selection posture")
+        source_summary = current_status.get("source_breadth_reentry_contract")
+        if (
+            not isinstance(source_summary, str)
+            or "name one source use case" not in source_summary
+            or "admits no source runtime" not in source_summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.source_breadth_reentry_contract must record source reentry gate posture")
+        packet_summary = current_status.get("source_breadth_reentry_authority_packet")
+        if (
+            not isinstance(packet_summary, str)
+            or "entry_decision no_runtime_now" not in packet_summary
+            or "No implementation-entry freeze is allowed" not in packet_summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.source_breadth_reentry_authority_packet must record no-runtime authority-packet posture")
+
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if isinstance(scope_status, dict):
+        for key in (
+            "post_provider_private_roadmap_selection_freeze",
+            "source_breadth_reentry_contract",
+        ):
+            if scope_status.get(key) != "completed_planning_control_only":
+                errors.append(f"{_rel(MANIFEST)} scope_status.{key} must be completed_planning_control_only")
+        if scope_status.get("source_breadth_reentry_authority_packet") != "completed_planning_control_no_runtime":
+            errors.append(f"{_rel(MANIFEST)} scope_status.source_breadth_reentry_authority_packet must be completed_planning_control_no_runtime")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    roadmap_proof = proof_data.get("post_provider_private_roadmap_selection_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(roadmap_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing post_provider_private_roadmap_selection_freeze_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_planning_control_only",
+            "implementation_branch": "codex/l3-post-provider-roadmap-freeze",
+            "live_behavior_change": False,
+            "selected_planning_mode": "post_provider_private_roadmap_selection_freeze",
+            "entry_decision": "next_lane_selected_planning_control_only",
+            "provider_private_use_route_status": "closed_not_implemented",
+            "selected_next_lane": "source_breadth_reentry_authority_packet",
+            "runtime_status": "not_implemented",
+            "implementation_entry_allowed_next": False,
+        }
+        for key, expected in expected_scalars.items():
+            if roadmap_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} post_provider_private_roadmap_selection_freeze_proof.{key} must be {expected!r}")
+
+    source_proof = proof_data.get("source_breadth_reentry_contract_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(source_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_breadth_reentry_contract_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_planning_control_only",
+            "implementation_branch": "codex/l3-post-provider-roadmap-freeze",
+            "live_behavior_change": False,
+            "selected_planning_mode": "source_breadth_reentry_contract",
+            "entry_decision": "authority_packet_required_before_runtime",
+            "selected_next_lane": "source_breadth_reentry_authority_packet",
+            "runtime_status": "not_implemented",
+            "source_family_selected": False,
+            "implementation_entry_allowed_next": False,
+        }
+        for key, expected in expected_scalars.items():
+            if source_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_reentry_contract_proof.{key} must be {expected!r}")
+        required_packet = source_proof.get("required_authority_packet")
+        if not isinstance(required_packet, list) or "named_source_use_case" not in required_packet or "provenance_contract" not in required_packet:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_reentry_contract_proof required_authority_packet must include source use case and provenance")
+
+    packet_proof = proof_data.get("source_breadth_reentry_authority_packet_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(packet_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_breadth_reentry_authority_packet_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_planning_control_no_runtime",
+            "implementation_branch": "codex/l3-post-provider-roadmap-freeze",
+            "live_behavior_change": False,
+            "selected_planning_mode": "source_breadth_reentry_authority_packet",
+            "entry_decision": "no_runtime_now",
+            "runtime_status": "not_implemented",
+            "source_family_selected": False,
+            "selected_source_family": "none_selected_runtime_blocked",
+            "implementation_entry_allowed_next": False,
+            "no_runtime_reason": "named_source_use_case_and_source_family_not_selected",
+        }
+        for key, expected in expected_scalars.items():
+            if packet_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_reentry_authority_packet_proof.{key} must be {expected!r}")
+        if packet_proof.get("current_supported_sources") != ["dataset_version", "aps_content_document"]:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_reentry_authority_packet_proof must preserve current supported sources")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -19217,6 +19393,9 @@ def main() -> int:
         PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE,
         PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT,
         PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF,
+        POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE,
+        SOURCE_BREADTH_REENTRY_CONTRACT,
+        SOURCE_BREADTH_AUTHORITY_PACKET,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -19438,6 +19617,7 @@ def main() -> int:
     _check_provider_private_signed_url_use_model_closeout(errors)
     _check_provider_private_signed_url_rendered_ui_freeze(errors)
     _check_provider_private_signed_url_rendered_ui_proof(errors)
+    _check_post_provider_private_roadmap_selection_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
