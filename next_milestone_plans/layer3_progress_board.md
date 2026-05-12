@@ -1098,3 +1098,7 @@ Refresh this board against:
 ## Connector Destination Named Target Packet
 
 `262_CONNECTOR_DESTINATION_NAMED_TARGET_PACKET.md` closes the connector/destination named-target packet as no-runtime. Current authority proves only `internal_dispatch_record_only`; external connector invocation, destination writes, connector-run creation, generic downstream dispatch, rendered connector/destination controls, provider/public URL side effects, retry/cancel lifecycle, and credential-bearing target behavior remain blocked.
+
+## Package Mutation Named Action Packet
+
+`263_PACKAGE_MUTATION_NAMED_ACTION_PACKET.md` closes the package mutation named-action packet as no-runtime. Current authority proves bounded backend/API package lifecycle behavior, but rendered package mutation controls, package payload rewrite/generation, source package row mutation, downstream invalidation, re-delivery, and browser-owned package authority remain blocked.

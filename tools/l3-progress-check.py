@@ -334,6 +334,9 @@ SOURCE_BREADTH_NAMED_USE_CASE_PACKET = (
 CONNECTOR_DESTINATION_NAMED_TARGET_PACKET = (
     PLANNING_DOCS / "262_CONNECTOR_DESTINATION_NAMED_TARGET_PACKET.md"
 )
+PACKAGE_MUTATION_NAMED_ACTION_PACKET = (
+    PLANNING_DOCS / "263_PACKAGE_MUTATION_NAMED_ACTION_PACKET.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -15569,6 +15572,109 @@ def _check_connector_destination_named_target_packet(errors: list[str]) -> None:
             if packet_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_named_target_packet_proof.{key} must be {expected!r}")
 
+
+def _check_package_mutation_named_action_packet(errors: list[str]) -> None:
+    packet_text = _read_required_text(PACKAGE_MUTATION_NAMED_ACTION_PACKET, errors)
+    required_terms = [
+        "Status: current-main package mutation named-action packet for `package_mutation_named_action_packet`.",
+        "entry_decision: no_runtime_now_named_rendered_package_action_absent",
+        "upstream_reentry_doc: 255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md",
+        "current_package_lifecycle_runtime: backend_api_bounded_lifecycle",
+        "named_operator_package_revision_use_case: null",
+        "selected_rendered_package_lifecycle_mode: null",
+        "package_payload_source_selected: false",
+        "downstream_invalidation_policy_selected: false",
+        "re_delivery_policy_selected: false",
+        "receipt_audit_contract_selected: false",
+        "headed_headless_theme_proof_plan_selected: false",
+        "implementation_entry_allowed_next: false",
+        "next_required_boundary: named_rendered_package_lifecycle_action_before_runtime",
+        "rendered_package_mutation_runtime_status: blocked",
+        "This packet admits no runtime behavior",
+    ]
+    for term in required_terms:
+        if term not in packet_text:
+            errors.append(f"{_rel(PACKAGE_MUTATION_NAMED_ACTION_PACKET)} missing package mutation named action packet term: {term}")
+
+    required_surfaces = {
+        PHASE1A_README: (
+            "263_PACKAGE_MUTATION_NAMED_ACTION_PACKET.md",
+            "no rendered operator package-revision use case",
+        ),
+        BOARD: (
+            "Package Mutation Named Action Packet",
+            "rendered package mutation controls",
+        ),
+        MANIFEST: (
+            "package_mutation_named_action_packet",
+            "backend/API package lifecycle authority is live",
+        ),
+        PROOF_MANIFEST: (
+            "package_mutation_named_action_packet_proof",
+            "named_rendered_package_lifecycle_action_before_runtime",
+        ),
+    }
+    for path, terms in required_surfaces.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing package mutation named action packet term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for package mutation named action packet")
+    else:
+        expected_current = {
+            "latest_package_mutation_named_action_packet_branch": "codex/l3-package-action-packet",
+            "latest_package_mutation_named_action_packet_live_behavior_change": False,
+        }
+        for key, expected in expected_current.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        summary = current_status.get("package_mutation_named_action_packet")
+        if (
+            not isinstance(summary, str)
+            or "backend/API package lifecycle authority is live" not in summary
+            or "Rendered package mutation runtime remains blocked" not in summary
+            or "admits no runtime behavior" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.package_mutation_named_action_packet must record no-runtime rendered package action posture")
+
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict):
+        errors.append(f"{_rel(MANIFEST)} scope_status missing for package mutation named action packet")
+    elif scope_status.get("package_mutation_named_action_packet") != "completed_no_runtime_named_rendered_package_action_absent":
+        errors.append(f"{_rel(MANIFEST)} scope_status.package_mutation_named_action_packet must be completed_no_runtime_named_rendered_package_action_absent")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    packet_proof = proof_data.get("package_mutation_named_action_packet_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(packet_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing package_mutation_named_action_packet_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_no_runtime_named_rendered_package_action_absent",
+            "implementation_branch": "codex/l3-package-action-packet",
+            "live_behavior_change": False,
+            "selected_planning_mode": "package_mutation_named_action_packet",
+            "entry_decision": "no_runtime_now_named_rendered_package_action_absent",
+            "upstream_reentry_doc": "255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md",
+            "current_package_lifecycle_runtime": "backend_api_bounded_lifecycle",
+            "named_operator_package_revision_use_case": None,
+            "selected_rendered_package_lifecycle_mode": None,
+            "package_payload_source_selected": False,
+            "downstream_invalidation_policy_selected": False,
+            "re_delivery_policy_selected": False,
+            "receipt_audit_contract_selected": False,
+            "headed_headless_theme_proof_plan_selected": False,
+            "implementation_entry_allowed_next": False,
+            "next_required_boundary": "named_rendered_package_lifecycle_action_before_runtime",
+            "rendered_package_mutation_runtime_status": "blocked",
+        }
+        for key, expected in expected_scalars.items():
+            if packet_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_named_action_packet_proof.{key} must be {expected!r}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -20241,6 +20347,7 @@ def main() -> int:
         POST_REENTRY_NAMED_USE_CASE_ADJUDICATION,
         SOURCE_BREADTH_NAMED_USE_CASE_PACKET,
         CONNECTOR_DESTINATION_NAMED_TARGET_PACKET,
+        PACKAGE_MUTATION_NAMED_ACTION_PACKET,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -20471,6 +20578,7 @@ def main() -> int:
     _check_post_reentry_named_use_case_adjudication(errors)
     _check_source_breadth_named_use_case_packet(errors)
     _check_connector_destination_named_target_packet(errors)
+    _check_package_mutation_named_action_packet(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
