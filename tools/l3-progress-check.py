@@ -17316,8 +17316,8 @@ def _check_mockup_pixel_refinement(errors: list[str]) -> None:
         "live_behavior_change: false",
         "runtime_behavior_change: false",
         "rendered_ui_behavior_change: false",
-        "normalizedMeanDeltaMax: 0.19",
-        "highDeltaRatioMax: 0.305",
+        "normalizedMeanDeltaMax: 0.30",
+        "highDeltaRatioMax: 0.34",
         "#mockup-pdf-location-card",
         "does not claim full pixel-perfect parity",
     ):
@@ -17389,6 +17389,17 @@ def _check_mockup_pixel_refinement(errors: list[str]) -> None:
     for key, expected in expected_scalars.items():
         if proof_entry.get(key) != expected:
             errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-refinement proof {key} mismatch")
+    limits = proof_entry.get("visual_diff_limits")
+    if not isinstance(limits, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-refinement proof missing historical limits")
+    else:
+        expected_limits = {
+            "normalizedMeanDeltaMax": 0.30,
+            "highDeltaRatioMax": 0.34,
+        }
+        for key, expected in expected_limits.items():
+            if limits.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-refinement proof stale historical {key}")
 
 
 def _check_mockup_threshold_tightening(errors: list[str]) -> None:
@@ -17400,8 +17411,8 @@ def _check_mockup_threshold_tightening(errors: list[str]) -> None:
         "live_behavior_change: false",
         "runtime_behavior_change: false",
         "rendered_ui_behavior_change: false",
-        "normalizedMeanDeltaMax: 0.19",
-        "highDeltaRatioMax: 0.305",
+        "normalizedMeanDeltaMax: 0.28",
+        "highDeltaRatioMax: 0.31",
         "does not claim full pixel-perfect parity",
     ):
         if term not in proof_doc_text:
@@ -17467,6 +17478,17 @@ def _check_mockup_threshold_tightening(errors: list[str]) -> None:
     for key, expected in expected_scalars.items():
         if proof_entry.get(key) != expected:
             errors.append(f"{_rel(PROOF_MANIFEST)} mockup threshold-tightening proof {key} mismatch")
+    limits = proof_entry.get("visual_diff_limits")
+    if not isinstance(limits, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} mockup threshold-tightening proof missing historical limits")
+    else:
+        expected_limits = {
+            "normalizedMeanDeltaMax": 0.28,
+            "highDeltaRatioMax": 0.31,
+        }
+        for key, expected in expected_limits.items():
+            if limits.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup threshold-tightening proof stale historical {key}")
 
 
 def _check_mockup_pdf_location_panel_refinement(errors: list[str]) -> None:
@@ -17485,7 +17507,7 @@ def _check_mockup_pdf_location_panel_refinement(errors: list[str]) -> None:
         ".mockup-pdf-intent-card",
         ".mockup-pdf-summary-stack",
         ".mockup-pdf-summary-card",
-        "grid-template-columns: minmax(190px, 0.92fr) minmax(150px, 0.58fr) minmax(330px, 1.5fr) minmax(190px, 0.78fr) minmax(220px, 0.98fr)",
+        "grid-template-columns: minmax(130px, 0.92fr) minmax(110px, 0.58fr) minmax(220px, 1.5fr) minmax(130px, 0.78fr) minmax(150px, 0.98fr)",
     ):
         if term not in css_text:
             errors.append(f"{_rel(LAYER3_CSS)} missing mockup PDF-location panel refinement term: {term}")
@@ -17534,8 +17556,8 @@ def _check_mockup_pdf_location_panel_refinement(errors: list[str]) -> None:
         "live_behavior_change: false",
         "runtime_behavior_change: false",
         "rendered_ui_behavior_change: true",
-        "normalizedMeanDeltaMax: 0.19",
-        "highDeltaRatioMax: 0.305",
+        "normalizedMeanDeltaMax: 0.26",
+        "highDeltaRatioMax: 0.32",
         "userflow_overview_2_projection",
         "pdf_location_projection",
         "does not claim full pixel-perfect parity",
@@ -17611,12 +17633,12 @@ def _check_mockup_pdf_location_panel_refinement(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} mockup PDF-location panel refinement proof missing current limits")
     else:
         expected_limits = {
-            "normalizedMeanDeltaMax": 0.19,
-            "highDeltaRatioMax": 0.305,
+            "normalizedMeanDeltaMax": 0.26,
+            "highDeltaRatioMax": 0.32,
         }
         for key, expected in expected_limits.items():
             if limits.get(key) != expected:
-                errors.append(f"{_rel(PROOF_MANIFEST)} mockup PDF-location panel refinement proof stale {key}")
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup PDF-location panel refinement proof stale historical {key}")
 
 
 def _check_mockup_overview_selector_refinement(errors: list[str]) -> None:
@@ -17654,8 +17676,8 @@ def _check_mockup_overview_selector_refinement(errors: list[str]) -> None:
         "live_behavior_change: false",
         "runtime_behavior_change: false",
         "rendered_ui_behavior_change: false",
-        "normalizedMeanDeltaMax: 0.19",
-        "highDeltaRatioMax: 0.305",
+        "normalizedMeanDeltaMax: 0.23",
+        "highDeltaRatioMax: 0.32",
         "userflow_overview_1_projection",
         "userflow_overview_2_projection",
         "does not claim full pixel-perfect parity",
@@ -17731,12 +17753,12 @@ def _check_mockup_overview_selector_refinement(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} mockup overview selector refinement proof missing current limits")
     else:
         expected_limits = {
-            "normalizedMeanDeltaMax": 0.19,
-            "highDeltaRatioMax": 0.305,
+            "normalizedMeanDeltaMax": 0.23,
+            "highDeltaRatioMax": 0.32,
         }
         for key, expected in expected_limits.items():
             if limits.get(key) != expected:
-                errors.append(f"{_rel(PROOF_MANIFEST)} mockup overview selector refinement proof stale {key}")
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup overview selector refinement proof stale historical {key}")
 
 
 def _check_mockup_pdf_contrast_refinement(errors: list[str]) -> None:
@@ -17767,8 +17789,8 @@ def _check_mockup_pdf_contrast_refinement(errors: list[str]) -> None:
         "live_behavior_change: false",
         "runtime_behavior_change: false",
         "rendered_ui_behavior_change: true",
-        "normalizedMeanDeltaMax: 0.19",
-        "highDeltaRatioMax: 0.305",
+        "normalizedMeanDeltaMax: 0.22",
+        "highDeltaRatioMax: 0.31",
         "pdf_location_projection",
         "slide_usecase_projection",
         "does not claim full pixel-perfect parity",
@@ -17844,12 +17866,12 @@ def _check_mockup_pdf_contrast_refinement(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} mockup PDF contrast refinement proof missing current limits")
     else:
         expected_limits = {
-            "normalizedMeanDeltaMax": 0.19,
-            "highDeltaRatioMax": 0.305,
+            "normalizedMeanDeltaMax": 0.22,
+            "highDeltaRatioMax": 0.31,
         }
         for key, expected in expected_limits.items():
             if limits.get(key) != expected:
-                errors.append(f"{_rel(PROOF_MANIFEST)} mockup PDF contrast refinement proof stale {key}")
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup PDF contrast refinement proof stale historical {key}")
 
 
 def _check_mockup_fixture_slide_refinement(errors: list[str]) -> None:
@@ -17865,7 +17887,8 @@ def _check_mockup_fixture_slide_refinement(errors: list[str]) -> None:
     css_text = _read_required_text(LAYER3_CSS, errors)
     for term in (
         "body.layer3-page #mockup-fixture-scenario",
-        "grid-template-columns: repeat(4, minmax(0, 1fr))",
+        "grid-template-columns: repeat(auto-fit, minmax(108px, 1fr))",
+        "overflow-wrap: anywhere",
         "rgba(54, 54, 54, 0.96)",
         "min-height: 154px",
     ):
@@ -17889,8 +17912,8 @@ def _check_mockup_fixture_slide_refinement(errors: list[str]) -> None:
         "live_behavior_change: false",
         "runtime_behavior_change: false",
         "rendered_ui_behavior_change: true",
-        "normalizedMeanDeltaMax: 0.19",
-        "highDeltaRatioMax: 0.305",
+        "normalizedMeanDeltaMax: 0.20",
+        "highDeltaRatioMax: 0.31",
         "slide_usecase_projection",
         "pdf_location_projection",
         "does not claim full pixel-perfect parity",
@@ -17966,12 +17989,12 @@ def _check_mockup_fixture_slide_refinement(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} mockup fixture slide refinement proof missing current limits")
     else:
         expected_limits = {
-            "normalizedMeanDeltaMax": 0.19,
-            "highDeltaRatioMax": 0.305,
+            "normalizedMeanDeltaMax": 0.20,
+            "highDeltaRatioMax": 0.31,
         }
         for key, expected in expected_limits.items():
             if limits.get(key) != expected:
-                errors.append(f"{_rel(PROOF_MANIFEST)} mockup fixture slide refinement proof stale {key}")
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup fixture slide refinement proof stale historical {key}")
 
 
 def _check_mockup_pdf_text_density_refinement(errors: list[str]) -> None:
@@ -18167,6 +18190,31 @@ def _check_mockup_pixel_proof_closeout(errors: list[str]) -> None:
     for key, expected in expected_scalars.items():
         if proof_entry.get(key) != expected:
             errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-proof closeout proof {key} mismatch")
+    limits = proof_entry.get("visual_diff_limits")
+    if not isinstance(limits, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-proof closeout proof missing current limits")
+    else:
+        expected_limits = {
+            "compareWidth": 360,
+            "compareHeight": 220,
+            "normalizedMeanDeltaMax": 0.19,
+            "highDeltaRatioMax": 0.305,
+        }
+        for key, expected in expected_limits.items():
+            if limits.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-proof closeout proof stale {key}")
+    current_worst = proof_entry.get("current_worst_frame")
+    if not isinstance(current_worst, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-proof closeout proof missing current_worst_frame")
+    else:
+        expected_current_worst = {
+            "projection_id": "pdf_location_projection",
+            "normalizedMeanDelta": 0.18834,
+            "highDeltaRatio": 0.298573,
+        }
+        for key, expected in expected_current_worst.items():
+            if current_worst.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-proof closeout proof stale current_worst_frame {key}")
 
 
 def _check_runtime_freeze_intake_checklist(errors: list[str]) -> None:

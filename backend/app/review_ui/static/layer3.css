@@ -4066,13 +4066,14 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page #mockup-fixture-scenario .mockup-fixture-controls {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
     gap: 10px;
-    padding: 0 34px 8px;
+    padding: 0 clamp(8px, 3vw, 34px) 8px;
 }
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page #mockup-fixture-scenario .mockup-disabled-control {
     justify-content: center;
+    min-width: 0;
     min-height: 28px;
     padding: 5px 8px;
     background: rgba(76, 76, 76, 0.9);
@@ -4080,6 +4081,8 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page #mocku
     font-size: 0.54rem;
     line-height: 1.05;
     text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-flow-card {
@@ -4472,7 +4475,7 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-pdf-location-card {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: minmax(190px, 0.92fr) minmax(150px, 0.58fr) minmax(330px, 1.5fr) minmax(190px, 0.78fr) minmax(220px, 0.98fr);
+    grid-template-columns: minmax(130px, 0.92fr) minmax(110px, 0.58fr) minmax(220px, 1.5fr) minmax(130px, 0.78fr) minmax(150px, 0.98fr);
     align-items: stretch;
     gap: 14px;
     min-height: 342px;
@@ -4610,8 +4613,8 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     gap: 5px;
     min-width: 0;
     padding: 9px;
-    border-left: 3px solid rgba(248, 248, 248, 0.82);
-    background: rgba(218, 218, 218, 0.12);
+    border-left: 3px solid rgba(0, 0, 0, 0.56);
+    background: rgba(248, 248, 248, 0.38);
 }
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-pdf-location-item strong,
@@ -4622,15 +4625,19 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
 }
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-pdf-location-item strong {
-    color: #f8f8f8;
+    color: #1c1c1c;
     font-size: 0.72rem;
 }
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-pdf-location-item span {
-    color: rgba(248, 248, 248, 0.7);
+    color: rgba(29, 29, 29, 0.72);
     font-size: 0.62rem;
     font-weight: 900;
     text-transform: uppercase;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-pdf-location-item p {
+    color: rgba(28, 28, 28, 0.78);
 }
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-pdf-summary-stack {

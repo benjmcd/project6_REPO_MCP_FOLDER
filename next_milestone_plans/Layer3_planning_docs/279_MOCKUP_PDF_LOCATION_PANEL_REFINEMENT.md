@@ -25,10 +25,10 @@ Measured changes:
 - Current worst mean frame: `userflow_overview_2_projection` at `normalizedMeanDelta: 0.253353`, `highDeltaRatio: 0.300960`.
 - Current worst high-delta frame: `pdf_location_projection` at `normalizedMeanDelta: 0.221211`, `highDeltaRatio: 0.312841`.
 
-The enforced visual-diff limits are now:
+The historical enforced visual-diff limits for this pass were:
 
-- `normalizedMeanDeltaMax: 0.19`
-- `highDeltaRatioMax: 0.305`
+- `normalizedMeanDeltaMax: 0.26`
+- `highDeltaRatioMax: 0.32`
 - `compareWidth: 360`
 - `compareHeight: 220`
 

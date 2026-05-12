@@ -14,10 +14,10 @@ rendered_ui_behavior_change: false
 
 This pass tightens the visual-diff harness envelope after the PDF-location selector precision pass. The measured post-refinement worst frame is `pdf_location_projection` at `normalizedMeanDelta: 0.272669` and `highDeltaRatio: 0.299356`.
 
-The enforced limits are now:
+The historical enforced visual-diff limits for this pass were:
 
-- `normalizedMeanDeltaMax: 0.19`
-- `highDeltaRatioMax: 0.305`
+- `normalizedMeanDeltaMax: 0.28`
+- `highDeltaRatioMax: 0.31`
 - `compareWidth: 360`
 - `compareHeight: 220`
 

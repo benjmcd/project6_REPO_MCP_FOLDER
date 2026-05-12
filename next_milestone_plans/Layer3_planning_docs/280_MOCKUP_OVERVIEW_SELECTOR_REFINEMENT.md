@@ -24,10 +24,10 @@ Measured changes:
 - `userflow_overview_2_projection` after: `#mockup-theme-shell`, `normalizedMeanDelta: 0.129707`, `highDeltaRatio: 0.118220`.
 - Current measured worst frame: `pdf_location_projection` at `normalizedMeanDelta: 0.221211`, `highDeltaRatio: 0.312841`.
 
-The enforced visual-diff limits are now:
+The historical enforced visual-diff limits for this pass were:
 
-- `normalizedMeanDeltaMax: 0.19`
-- `highDeltaRatioMax: 0.305`
+- `normalizedMeanDeltaMax: 0.23`
+- `highDeltaRatioMax: 0.32`
 - `compareWidth: 360`
 - `compareHeight: 220`
 
