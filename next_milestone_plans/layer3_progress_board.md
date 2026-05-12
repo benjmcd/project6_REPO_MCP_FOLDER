@@ -1110,3 +1110,7 @@ Refresh this board against:
 ## Full Mockup Named Journey Packet
 
 `265_FULL_MOCKUP_NAMED_JOURNEY_PACKET.md` closes the full mockup named-journey packet as no-runtime. Mockups remain target-state design/specification inputs; full mockup activation, frontend-only durable state, browser-local persistence as authority, new rendered mockup controls, route/API behavior changes, and browser-owned workflow authority remain blocked.
+
+## Auth Security Named Mode Packet
+
+`266_AUTH_SECURITY_NAMED_MODE_PACKET.md` closes the auth/security named-mode packet as no-runtime. Local/proxy deployment guardrails remain live, but route-level identity, authorization, tenant/session ownership, operator permissions, audit security events, provider/connector secret policy, rendered identity controls, and auth/security runtime behavior remain blocked.

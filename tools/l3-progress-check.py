@@ -343,6 +343,9 @@ QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET = (
 FULL_MOCKUP_NAMED_JOURNEY_PACKET = (
     PLANNING_DOCS / "265_FULL_MOCKUP_NAMED_JOURNEY_PACKET.md"
 )
+AUTH_SECURITY_NAMED_MODE_PACKET = (
+    PLANNING_DOCS / "266_AUTH_SECURITY_NAMED_MODE_PACKET.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -15893,6 +15896,113 @@ def _check_full_mockup_named_journey_packet(errors: list[str]) -> None:
             if packet_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} full_mockup_named_journey_packet_proof.{key} must be {expected!r}")
 
+
+def _check_auth_security_named_mode_packet(errors: list[str]) -> None:
+    packet_text = _read_required_text(AUTH_SECURITY_NAMED_MODE_PACKET, errors)
+    required_terms = [
+        "Status: current-main auth/security named-mode packet for `auth_security_named_mode_packet`.",
+        "entry_decision: no_runtime_now_named_auth_security_mode_absent",
+        "upstream_closeout_doc: 219_AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+        "live_deployment_profile: local_default_with_nonlocal_proxy_guardrails",
+        "named_security_or_operator_access_use_case: null",
+        "selected_auth_security_mode: null",
+        "identity_authority_model_selected: false",
+        "tenant_session_ownership_model_selected: false",
+        "operator_role_permission_matrix_selected: false",
+        "route_level_auth_dependency_contract_selected: false",
+        "audit_log_security_event_contract_selected: false",
+        "provider_connector_secret_policy_selected: false",
+        "rendered_identity_control_plan_selected: false",
+        "implementation_entry_allowed_next: false",
+        "next_required_boundary: named_auth_security_mode_before_runtime",
+        "auth_security_runtime_status: blocked",
+        "This packet admits no runtime behavior",
+    ]
+    for term in required_terms:
+        if term not in packet_text:
+            errors.append(f"{_rel(AUTH_SECURITY_NAMED_MODE_PACKET)} missing auth/security named mode packet term: {term}")
+
+    required_surfaces = {
+        PHASE1A_README: (
+            "266_AUTH_SECURITY_NAMED_MODE_PACKET.md",
+            "no security/operator-access use case",
+        ),
+        BOARD: (
+            "Auth Security Named Mode Packet",
+            "route-level identity",
+        ),
+        MANIFEST: (
+            "auth_security_named_mode_packet",
+            "local/proxy deployment guardrails remain live",
+        ),
+        PROOF_MANIFEST: (
+            "auth_security_named_mode_packet_proof",
+            "named_auth_security_mode_before_runtime",
+        ),
+    }
+    for path, terms in required_surfaces.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing auth/security named mode packet term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for auth/security named mode packet")
+    else:
+        expected_current = {
+            "latest_auth_security_named_mode_packet_branch": "codex/l3-auth-mode-packet",
+            "latest_auth_security_named_mode_packet_live_behavior_change": False,
+        }
+        for key, expected in expected_current.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        summary = current_status.get("auth_security_named_mode_packet")
+        if (
+            not isinstance(summary, str)
+            or "local/proxy deployment guardrails remain live" not in summary
+            or "Auth/security runtime remains blocked" not in summary
+            or "admits no runtime behavior" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.auth_security_named_mode_packet must record no-runtime auth/security mode posture")
+
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict):
+        errors.append(f"{_rel(MANIFEST)} scope_status missing for auth/security named mode packet")
+    elif scope_status.get("auth_security_named_mode_packet") != "completed_no_runtime_named_auth_security_mode_absent":
+        errors.append(f"{_rel(MANIFEST)} scope_status.auth_security_named_mode_packet must be completed_no_runtime_named_auth_security_mode_absent")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    packet_proof = proof_data.get("auth_security_named_mode_packet_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(packet_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing auth_security_named_mode_packet_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_no_runtime_named_auth_security_mode_absent",
+            "implementation_branch": "codex/l3-auth-mode-packet",
+            "live_behavior_change": False,
+            "selected_planning_mode": "auth_security_named_mode_packet",
+            "entry_decision": "no_runtime_now_named_auth_security_mode_absent",
+            "upstream_closeout_doc": "219_AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "live_deployment_profile": "local_default_with_nonlocal_proxy_guardrails",
+            "named_security_or_operator_access_use_case": None,
+            "selected_auth_security_mode": None,
+            "identity_authority_model_selected": False,
+            "tenant_session_ownership_model_selected": False,
+            "operator_role_permission_matrix_selected": False,
+            "route_level_auth_dependency_contract_selected": False,
+            "audit_log_security_event_contract_selected": False,
+            "provider_connector_secret_policy_selected": False,
+            "rendered_identity_control_plan_selected": False,
+            "implementation_entry_allowed_next": False,
+            "next_required_boundary": "named_auth_security_mode_before_runtime",
+            "auth_security_runtime_status": "blocked",
+        }
+        for key, expected in expected_scalars.items():
+            if packet_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} auth_security_named_mode_packet_proof.{key} must be {expected!r}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -20568,6 +20678,7 @@ def main() -> int:
         PACKAGE_MUTATION_NAMED_ACTION_PACKET,
         QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET,
         FULL_MOCKUP_NAMED_JOURNEY_PACKET,
+        AUTH_SECURITY_NAMED_MODE_PACKET,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -20801,6 +20912,7 @@ def main() -> int:
     _check_package_mutation_named_action_packet(errors)
     _check_qual_hybrid_rag_named_analysis_packet(errors)
     _check_full_mockup_named_journey_packet(errors)
+    _check_auth_security_named_mode_packet(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
