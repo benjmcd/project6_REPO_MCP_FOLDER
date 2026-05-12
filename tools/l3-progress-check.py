@@ -300,6 +300,7 @@ SOURCE_BREADTH_REENTRY_CONTRACT = (
 SOURCE_BREADTH_AUTHORITY_PACKET = (
     PLANNING_DOCS / "250_SOURCE_BREADTH_AUTHORITY_PACKET.md"
 )
+POST_807_CLOSEOUT = PLANNING_DOCS / "251_POST_807_CLOSEOUT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14592,28 +14593,39 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "implementation_entry_allowed_next: false",
             "no_runtime_reason: named_source_use_case_and_source_family_not_selected",
         ),
+        POST_807_CLOSEOUT: (
+            "Status: current-main planning/control closeout for `post_807_closeout`.",
+            "merged_pr: 807",
+            "merge_commit: 9ffc5c64154b5175f56cb0e1b15b9ffc1492f233",
+            "source_breadth_entry_decision: no_runtime_now",
+            "implementation_entry_allowed_next: false",
+        ),
         PHASE1A_README: (
             "248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md",
             "249_SOURCE_BREADTH_REENTRY_CONTRACT.md",
             "250_SOURCE_BREADTH_AUTHORITY_PACKET.md",
+            "251_POST_807_CLOSEOUT.md",
             "source_breadth_reentry_authority_packet",
         ),
         BOARD: (
             "Post Provider Private Roadmap Selection Freeze",
             "Source Breadth Reentry Contract",
             "Source Breadth Authority Packet",
+            "Post 807 Closeout",
             "source_breadth_reentry_authority_packet",
         ),
         MANIFEST: (
             "post_provider_private_roadmap_selection_freeze",
             "source_breadth_reentry_contract",
             "source_breadth_reentry_authority_packet",
+            "post_807_closeout",
             "source_breadth_reentry_authority_packet",
         ),
         PROOF_MANIFEST: (
             "post_provider_private_roadmap_selection_freeze_proof",
             "source_breadth_reentry_contract_proof",
             "source_breadth_reentry_authority_packet_proof",
+            "post_807_closeout_proof",
             "source_breadth_reentry_authority_packet",
         ),
     }
@@ -14635,6 +14647,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "latest_source_breadth_reentry_contract_live_behavior_change": False,
             "latest_source_breadth_reentry_authority_packet_branch": "codex/l3-post-provider-roadmap-freeze",
             "latest_source_breadth_reentry_authority_packet_live_behavior_change": False,
+            "latest_post_807_closeout_branch": "codex/l3-post807-closeout",
+            "latest_post_807_closeout_live_behavior_change": False,
         }
         for key, expected in expected_current.items():
             if current_status.get(key) != expected:
@@ -14671,6 +14685,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
                 errors.append(f"{_rel(MANIFEST)} scope_status.{key} must be completed_planning_control_only")
         if scope_status.get("source_breadth_reentry_authority_packet") != "completed_planning_control_no_runtime":
             errors.append(f"{_rel(MANIFEST)} scope_status.source_breadth_reentry_authority_packet must be completed_planning_control_no_runtime")
+        if scope_status.get("post_807_closeout") != "completed_planning_control_closeout":
+            errors.append(f"{_rel(MANIFEST)} scope_status.post_807_closeout must be completed_planning_control_closeout")
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     roadmap_proof = proof_data.get("post_provider_private_roadmap_selection_freeze_proof") if isinstance(proof_data, dict) else None
@@ -14735,6 +14751,26 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
                 errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_reentry_authority_packet_proof.{key} must be {expected!r}")
         if packet_proof.get("current_supported_sources") != ["dataset_version", "aps_content_document"]:
             errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_reentry_authority_packet_proof must preserve current supported sources")
+
+    closeout_proof = proof_data.get("post_807_closeout_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(closeout_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing post_807_closeout_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_planning_control_closeout",
+            "implementation_branch": "codex/l3-post807-closeout",
+            "live_behavior_change": False,
+            "selected_planning_mode": "post_807_closeout",
+            "entry_decision": "merged_planning_control_closeout",
+            "merged_pr": 807,
+            "merge_commit": "9ffc5c64154b5175f56cb0e1b15b9ffc1492f233",
+            "runtime_status": "not_implemented",
+            "source_breadth_entry_decision": "no_runtime_now",
+            "implementation_entry_allowed_next": False,
+        }
+        for key, expected in expected_scalars.items():
+            if closeout_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} post_807_closeout_proof.{key} must be {expected!r}")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -19396,6 +19432,7 @@ def main() -> int:
         POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE,
         SOURCE_BREADTH_REENTRY_CONTRACT,
         SOURCE_BREADTH_AUTHORITY_PACKET,
+        POST_807_CLOSEOUT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
