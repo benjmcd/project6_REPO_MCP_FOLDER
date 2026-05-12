@@ -78,7 +78,7 @@
       "size_bytes": 223517,
       "rendered_projection": {
         "projection_id": "pdf_location_projection",
-        "selector": "#mockup-userflow-board",
+        "selector": "#mockup-pdf-location-card",
         "rendered_surface": "user-flow/PDF-location board",
         "screenshot_attachment": "layer3-mockup-userflow-board.png",
         "acceptance_mode": "static_theme_region_projection"

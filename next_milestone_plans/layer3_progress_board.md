@@ -1172,3 +1172,9 @@ Refresh this board against:
 - `276_MOCKUP_VISUAL_DIFF_HARNESS.md` implements `repo_local_mockup_frame_visual_diff_acceptance` as a deterministic Playwright/browser-canvas comparison harness.
 - The harness compares all eight repo-local frame entries against their rendered selectors, attaches `layer3-mockup-visual-diff-metrics.json`, and enforces the calibrated `MOCKUP_VISUAL_DIFF_LIMITS` without adding image-diff dependencies.
 - This is a proof-harness implementation only; it does not claim pixel-perfect parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
+
+## Mockup Pixel Refinement
+
+- `277_MOCKUP_PIXEL_REFINEMENT.md` implements `pdf_location_frame_selector_precision_and_threshold_tightening` as the first bounded visual-diff refinement after the harness.
+- The PDF-location frame now maps to `#mockup-pdf-location-card` instead of the whole `#mockup-userflow-board`, while user-flow frames remain mapped to `#mockup-userflow-board`.
+- The visual-diff harness limits tighten to `normalizedMeanDeltaMax: 0.30` and `highDeltaRatioMax: 0.34`; this improves proof strictness but still does not claim full pixel-perfect parity or admit runtime widening.

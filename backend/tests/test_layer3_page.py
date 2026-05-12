@@ -30,6 +30,7 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="mockup-fixture-scenario"' in response.text
     assert 'id="mockup-execution-lanes"' in response.text
     assert 'id="mockup-userflow-board"' in response.text
+    assert 'id="mockup-pdf-location-card"' in response.text
     assert 'id="mockup-pdf-location-projection"' in response.text
     assert 'data-projection-state="unavailable"' in response.text
     assert 'id="mockup-sublayers-ab-board"' in response.text
