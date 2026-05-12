@@ -152,6 +152,7 @@ const DEFERRED_RAW_MIXED_PAYLOAD_FIELDS = [
 ];
 
 const EXPECTED_PACKAGE_REVIEW_KINDS = ['canonical_internal', 'user_facing', 'review_facing'];
+const LIVE_LAYER3_THEMES = ['system', 'light', 'dark', 'workbench'];
 
 function expectNoDeferredRawMixedPayloadFields(payload) {
   for (const field of DEFERRED_RAW_MIXED_PAYLOAD_FIELDS) {
@@ -178,6 +179,30 @@ function expectNoRequestsToLayer3Paths(requests, pathFragments) {
   for (const fragment of pathFragments) {
     expect(requests.filter((request) => request.path.includes(fragment))).toEqual([]);
   }
+}
+
+async function expectLiveThemeParityCheckpoint(page, checkpointLabel, visibleSurfaceSelector) {
+  expect(checkpointLabel).toBeTruthy();
+  expect(visibleSurfaceSelector).toBeTruthy();
+  const entryTheme = await page.locator('#theme-selector').inputValue();
+  for (const theme of LIVE_LAYER3_THEMES) {
+    await page.locator('#theme-selector').selectOption(theme);
+    await expect(page.locator('#theme-selector')).toHaveValue(theme);
+    await expect(page.locator('html')).toHaveAttribute('data-theme-preference', theme);
+    await expect(page.locator(visibleSurfaceSelector)).toBeVisible();
+    await expect(page.locator('#source-fieldset')).toHaveCount(1);
+    await expect(page.locator('#material-ledger-body')).toHaveCount(1);
+    await expect(page.locator('#gate-b-band')).toHaveCount(1);
+    await expect(page.locator('#gate-c-panel')).toHaveCount(1);
+    await expect(page.locator('#external-export-download-band')).toHaveCount(1);
+    await expect(page.locator('#external-export-download-signed-reference-panel')).toHaveCount(1);
+    await expect(page.locator('#provider-private-signed-url-panel')).toHaveCount(0);
+    await expect(page.locator('#connector-destination-panel')).toHaveCount(0);
+    await expect(page.locator('#package-mutation-panel')).toHaveCount(0);
+  }
+  await page.locator('#theme-selector').selectOption(entryTheme);
+  await expect(page.locator('#theme-selector')).toHaveValue(entryTheme);
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', entryTheme);
 }
 
 async function openRawMixedSeededWorkbench(page, request) {
@@ -3195,6 +3220,7 @@ test('Layer 3 workbench drives raw mixed rendered external export download deliv
 test('Layer 3 workbench drives raw mixed rendered external export download signed reference', async ({ page, request }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  await expectLiveThemeParityCheckpoint(page, 'materialized-source-selection', '#source-fieldset');
   const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
   const gateB = await submitRenderedGateB(page, material);
   await previewRenderedGateC(page, gateB.session_id);
@@ -3293,6 +3319,11 @@ test('Layer 3 workbench drives raw mixed rendered external export download signe
   expect(signed.signedReference.signed_reference_state).toBe('external_export_download_signed_reference_ready');
   expect(signed.useHeaders['x-layer3-signed-reference-state']).toBe(
     'external_export_download_signed_reference_delivered',
+  );
+  await expectLiveThemeParityCheckpoint(
+    page,
+    'signed-reference-delivered',
+    '#external-export-download-signed-reference-panel',
   );
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/prepare'))).toHaveLength(1);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/signed-reference/generate'))).toHaveLength(1);
