@@ -640,7 +640,10 @@
     "latest_qual_aps_external_export_download_freeze_summary": "Docs 149 and 150 now govern live qual_aps_external_export_download_prepare_deliver through POST /api/v1/layer3/handoff/export/download/prepare and POST /api/v1/layer3/handoff/export/download/deliver. The runtime requires live qualitative APS dispatch authority, APS handoff package authority, and server-owned APS bundle artifact hash/size authority, selects schemas layer3.qual_aps_external_export_download_prepare.v1 and layer3.qual_aps_external_export_download_delivery.v1, reports external_export_download_ready after dispatch, records one readiness JSON object, streams the existing APS bundle with zero DB/file writes on delivery, and admits no connector/destination dispatch, provider/public URLs, signed URLs, rendered controls/theme behavior, source expansion, RAG/vector, hidden LLM, full mockup, auth/security, model/migration, broad qualitative/hybrid behavior, package mutation/reconstruction, or package supersession.",
     "latest_qual_aps_rendered_ui_freeze_branch": "codex/l3-qual-aps-ui-runtime",
     "latest_qual_aps_rendered_ui_freeze_live_behavior_change": true,
-    "latest_qual_aps_rendered_ui_freeze_summary": "Docs 151 and 152 now govern the live qual_aps_rendered_downstream_existing_controls_only rendered /review/layer3 runtime over already-live qualitative APS backend/API package/downstream steps. API/test setup reaches approved standalone aps_content_document qualitative result review, then existing rendered controls drive package preview, package construction commit, package review submit, handoff/export prepare, APS handoff dispatch, and external export/download prepare. They require server-authoritative response/session state, setup separated from rendered UI execution, stable selectors, headed and headless Chromium theme proof, and no frontend-only durable authority. Qualitative delivery remains disabled when delivery_ui is null or absent. They keep backend changes, source expansion, RAG/vector, provider/public URLs, signed URLs, connector/destination dispatch, package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security, model/migration, broad qualitative/hybrid behavior, and new rendered controls blocked."
+    "latest_qual_aps_rendered_ui_freeze_summary": "Docs 151 and 152 now govern the live qual_aps_rendered_downstream_existing_controls_only rendered /review/layer3 runtime over already-live qualitative APS backend/API package/downstream steps. API/test setup reaches approved standalone aps_content_document qualitative result review, then existing rendered controls drive package preview, package construction commit, package review submit, handoff/export prepare, APS handoff dispatch, and external export/download prepare. They require server-authoritative response/session state, setup separated from rendered UI execution, stable selectors, headed and headless Chromium theme proof, and no frontend-only durable authority. Qualitative delivery remains disabled when delivery_ui is null or absent. They keep backend changes, source expansion, RAG/vector, provider/public URLs, signed URLs, connector/destination dispatch, package mutation/reconstruction, hidden LLM planning, full mockup activation, auth/security, model/migration, broad qualitative/hybrid behavior, and new rendered controls blocked.",
+    "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
+    "latest_live_theme_parity_proof_live_behavior_change": false,
+    "latest_live_theme_parity_proof_summary": "Current main now includes the test-only live-theme parity proof (`live_theme_parity_proof`) over /review/layer3: the canonical raw-mixed rendered external export/download signed-reference path now switches through `system`, `light`, `dark`, and `workbench` at materialized-source-selection and signed-reference-delivered checkpoints, restores entry theme state after each checkpoint, and validates the same target in headless and headed Chromium. Claude remains excluded as prototype-only. This pass admits no runtime behavior, production UI behavior, backend/API/model/migration/service change, rendered provider-private signed URL controls, provider network writes, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10633,12 +10636,16 @@
     "latest_provider_private_signed_url_revoke_api_summary": "Provider-private signed URL revoke is now live as a backend/API-only route over durable receipt state. Use remains deferred by the redacted-token boundary. No rendered UI, raw token exposure/persistence, provider network/object-store write, public/proxy URL, connector/destination dispatch, package/source mutation, same-origin delivery/signed-reference change, auth/security change, or frontend-only durable authority is admitted.",
     "latest_provider_private_signed_url_use_authority_freeze_branch": "codex/l3-provider-private-use-authority-freeze",
     "latest_provider_private_signed_url_use_authority_freeze_live_behavior_change": false,
-    "latest_provider_private_signed_url_use_authority_freeze_summary": "Provider-private signed URL use remains blocked because no token/delivery model is selected. Docs 240/241 require a later model choice before implementation and admit no runtime behavior."
+    "latest_provider_private_signed_url_use_authority_freeze_summary": "Provider-private signed URL use remains blocked because no token/delivery model is selected. Docs 240/241 require a later model choice before implementation and admit no runtime behavior.",
+    "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
+    "latest_live_theme_parity_proof_live_behavior_change": false,
+    "live_theme_parity_proof_summary": "Current main now includes the test-only live-theme parity proof (`live_theme_parity_proof`) over /review/layer3: the canonical raw-mixed rendered external export/download signed-reference path now switches through `system`, `light`, `dark`, and `workbench` at materialized-source-selection and signed-reference-delivered checkpoints, restores entry theme state after each checkpoint, and validates the same target in headless and headed Chromium. Claude remains excluded as prototype-only. This pass admits no runtime behavior, production UI behavior, backend/API/model/migration/service change, rendered provider-private signed URL controls, provider network writes, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority."
   },
   "scope_status": {
     "provider_private_signed_url_use_revoke_freeze": "completed_corrective_revoke_only_planning_control",
     "provider_private_signed_url_revoke_api": "completed_backend_api_only",
-    "provider_private_signed_url_use_authority_freeze": "completed_planning_control_only"
+    "provider_private_signed_url_use_authority_freeze": "completed_planning_control_only",
+    "live_theme_parity_proof": "completed_test_only"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -10741,6 +10748,74 @@
       "choose_or_reject_one_provider_private_signed_url_use_model",
       "write_use_route_implementation_entry_freeze_if_model_selected",
       "keep_use_route_blocked_and_move_to_theme_parity_or_other_admitted_work_if_no_model_selected"
+    ]
+  },
+  "live_theme_parity_proof": {
+    "status": "completed_test_only",
+    "implementation_branch": "codex/l3-theme-parity-proof",
+    "live_behavior_change": false,
+    "live_route": "/review/layer3",
+    "claude_status": "excluded_prototype_only",
+    "canonical_test": "Layer 3 workbench drives raw mixed rendered external export download signed reference",
+    "theme_set": [
+      "system",
+      "light",
+      "dark",
+      "workbench"
+    ],
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/236_THEME_E2E_MATRIX.md",
+      "next_milestone_plans/Layer3_planning_docs/237_THEME_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/238_LAYER3_THEME_TO_FULL_PIPELINE_SYNTHESIS.md",
+      "next_milestone_plans/Layer3_planning_docs/242_LIVE_THEME_PARITY_PROOF.md"
+    ],
+    "implemented_files": [
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "checkpoints": [
+      {
+        "label": "materialized-source-selection",
+        "visible_surface": "#source-fieldset"
+      },
+      {
+        "label": "signed-reference-delivered",
+        "visible_surface": "#external-export-download-signed-reference-panel"
+      }
+    ],
+    "validation_commands": [
+      "npx playwright test e2e/layer3-workbench.spec.js --grep \"external export download signed reference\" --project=chromium",
+      "npx playwright test e2e/layer3-workbench.spec.js --grep \"external export download signed reference\" --project=chromium --headed"
+    ],
+    "positive_guards": [
+      "live_theme_selector_cycles_system_light_dark_workbench",
+      "html_data_theme_preference_matches_selected_theme",
+      "checkpoint_active_surface_remains_visible",
+      "stable_workbench_surfaces_remain_present",
+      "entry_theme_restored_after_each_checkpoint",
+      "canonical_request_shape_assertions_continue_to_run"
+    ],
+    "forbidden_runtime_changes": [
+      "claude_live_theme_admission",
+      "backend_api_route_or_dto_change",
+      "production_ui_behavior_change",
+      "rendered_provider_private_signed_url_controls",
+      "provider_private_signed_url_use_route",
+      "provider_network_or_object_store_write",
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_or_reconstruction",
+      "source_expansion",
+      "broad_qualitative_hybrid_rag_vector_runtime",
+      "hidden_llm_planning",
+      "full_mockup_activation",
+      "auth_security_behavior_change",
+      "frontend_only_durable_authority"
+    ],
+    "future_work": [
+      "expand parameterized theme/page matrix only for admitted live pages",
+      "write separate Claude admission freeze before live Claude parity proof",
+      "write separate runtime freeze before any provider-private rendered control or use route"
     ]
   }
 }
