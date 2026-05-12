@@ -658,7 +658,10 @@
     "post_provider_private_roadmap_selection_freeze_summary": "Current main now includes the planning/control post_provider_private_roadmap_selection_freeze: docs 248/249 select source_breadth_reentry_authority_packet as the next planning lane after provider-private rendered UI completion. Runtime remains not_implemented; implementation_entry_allowed_next is false; provider-private use remains closed_not_implemented; source-breadth implementation must wait for a named source use case, selected source family, storage/security model, provenance contract, downstream semantics, rendered-control plan if any, and auth/security/leakage posture. This pass admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI controls, Playwright configuration change, CI workflow change, or frontend-only durable authority.",
     "latest_source_breadth_reentry_contract_branch": "codex/l3-post-provider-roadmap-freeze",
     "latest_source_breadth_reentry_contract_live_behavior_change": false,
-    "source_breadth_reentry_contract_summary": "Current main now includes the planning/control source_breadth_reentry_contract: the next pass must build an evidence packet before source breadth can become implementation-admissible. The packet must name one source use case, select one source family or no-runtime outcome, prove current dataset_version and aps_content_document behavior is insufficient, and define source-of-truth ownership, adapter/input mode, storage/security, provenance, downstream semantics, rendered-control obligations if any, and auth/security/leakage posture. This contract admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, route/API/DTO/model/migration/service behavior, executable test behavior, rendered controls, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, hidden LLM planning, or frontend-only durable authority."
+    "source_breadth_reentry_contract_summary": "Current main now includes the planning/control source_breadth_reentry_contract: the next pass must build an evidence packet before source breadth can become implementation-admissible. The packet must name one source use case, select one source family or no-runtime outcome, prove current dataset_version and aps_content_document behavior is insufficient, and define source-of-truth ownership, adapter/input mode, storage/security, provenance, downstream semantics, rendered-control obligations if any, and auth/security/leakage posture. This contract admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, route/API/DTO/model/migration/service behavior, executable test behavior, rendered controls, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, hidden LLM planning, or frontend-only durable authority.",
+    "latest_source_breadth_reentry_authority_packet_branch": "codex/l3-post-provider-roadmap-freeze",
+    "latest_source_breadth_reentry_authority_packet_live_behavior_change": false,
+    "source_breadth_reentry_authority_packet_summary": "Current main now includes the planning/control source_breadth_reentry_authority_packet: doc 250 records entry_decision no_runtime_now after inspecting current source-boundary, raw-mixed seed, raw-mixed materialization, and focused tests. Current repo authority supports dataset_version and aps_content_document only, plus current-class raw-mixed seed/materialization from server-owned hash-checked manifests. No implementation-entry freeze is allowed because no named source use case, selected source family, adapter/input mode, new-source storage/security model, network retrieval policy, rendered source-control plan, or auth/security posture is selected. This pass admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, route/API/DTO/model/migration/service behavior, executable test behavior, rendered source controls, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, hidden LLM planning, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10671,7 +10674,8 @@
     "provider_private_signed_url_rendered_ui_freeze": "completed_planning_control_only",
     "provider_private_signed_url_rendered_ui": "completed_rendered_ui",
     "post_provider_private_roadmap_selection_freeze": "completed_planning_control_only",
-    "source_breadth_reentry_contract": "completed_planning_control_only"
+    "source_breadth_reentry_contract": "completed_planning_control_only",
+    "source_breadth_reentry_authority_packet": "completed_planning_control_no_runtime"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -11099,6 +11103,61 @@
       "web_connector_retrieval_absent",
       "rag_vector_retrieval_absent",
       "route_api_dto_model_migration_service_unchanged",
+      "connector_destination_dispatch_absent",
+      "package_mutation_reconstruction_absent",
+      "full_mockup_activation_absent",
+      "auth_security_behavior_unchanged"
+    ]
+  },
+  "source_breadth_reentry_authority_packet_proof": {
+    "status": "completed_planning_control_no_runtime",
+    "implementation_branch": "codex/l3-post-provider-roadmap-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "source_breadth_reentry_authority_packet",
+    "entry_decision": "no_runtime_now",
+    "runtime_status": "not_implemented",
+    "source_family_selected": false,
+    "selected_source_family": "none_selected_runtime_blocked",
+    "adapter_input_mode_selected": false,
+    "operator_storage_security_model_selected": false,
+    "provenance_contract_selected": "current_classes_only",
+    "rendered_source_control_selected": false,
+    "implementation_entry_allowed_next": false,
+    "no_runtime_reason": "named_source_use_case_and_source_family_not_selected",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/249_SOURCE_BREADTH_REENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/250_SOURCE_BREADTH_AUTHORITY_PACKET.md"
+    ],
+    "repo_evidence": [
+      "backend/app/services/layer3_source_boundary.py",
+      "backend/app/services/layer3_raw_mixed_bridge.py",
+      "backend/app/services/layer3_raw_mixed_materialization.py",
+      "backend/tests/test_layer3_source_boundary.py",
+      "backend/tests/test_layer3_raw_mixed_bridge.py",
+      "backend/tests/test_layer3_raw_mixed_materialization.py"
+    ],
+    "current_supported_sources": [
+      "dataset_version",
+      "aps_content_document"
+    ],
+    "blocked_source_families": [
+      "rag_vector_index",
+      "arbitrary_local_directory",
+      "broad_file_upload",
+      "web_connector",
+      "unbounded_runtime_db"
+    ],
+    "negative_invariants": [
+      "source_runtime_not_implemented",
+      "new_source_family_absent",
+      "source_adapter_registry_absent",
+      "local_upload_absent",
+      "local_directory_ingestion_absent",
+      "web_connector_retrieval_absent",
+      "rag_vector_retrieval_absent",
+      "route_api_dto_model_migration_service_unchanged",
+      "rendered_source_controls_absent",
       "connector_destination_dispatch_absent",
       "package_mutation_reconstruction_absent",
       "full_mockup_activation_absent",
