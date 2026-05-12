@@ -17240,6 +17240,19 @@ def _check_mockup_visual_diff_harness(errors: list[str]) -> None:
     for key, expected in expected_scalars.items():
         if proof_entry.get(key) != expected:
             errors.append(f"{_rel(PROOF_MANIFEST)} mockup visual-diff harness proof {key} mismatch")
+    limits = proof_entry.get("visual_diff_limits")
+    if not isinstance(limits, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} mockup visual-diff harness proof missing current limits")
+    else:
+        expected_limits = {
+            "normalizedMeanDeltaMax": 0.30,
+            "highDeltaRatioMax": 0.34,
+        }
+        for key, expected in expected_limits.items():
+            if limits.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup visual-diff harness proof stale {key}")
+    if proof_entry.get("next_allowed_action") == "tighten_mockup_visual_diff_thresholds_through_pixel_refinement":
+        errors.append(f"{_rel(PROOF_MANIFEST)} mockup visual-diff harness proof still lists completed next action")
 
 
 def _check_mockup_pixel_refinement(errors: list[str]) -> None:
