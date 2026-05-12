@@ -30,6 +30,8 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="mockup-fixture-scenario"' in response.text
     assert 'id="mockup-execution-lanes"' in response.text
     assert 'id="mockup-userflow-board"' in response.text
+    assert 'id="mockup-pdf-location-projection"' in response.text
+    assert 'data-projection-state="unavailable"' in response.text
     assert 'id="mockup-sublayers-ab-board"' in response.text
     assert 'data-visual-source="userflow/layer3_user-flow-overview1.png"' in response.text
     assert 'data-usecase-source="clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png"' in response.text
@@ -163,6 +165,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".mockup-ab-ledger" in css.text
     assert ".mockup-ab-group" in css.text
     assert ".mockup-pdf-location-card" in css.text
+    assert ".mockup-pdf-location-projection" in css.text
+    assert '.mockup-pdf-location-projection[data-projection-state="available"]' in css.text
+    assert ".mockup-pdf-location-item" in css.text
     assert ".mockup-userflow-stage" in css.text
     assert ".mockup-canvas-title" in css.text
     assert ".mockup-process-note" in css.text
@@ -200,6 +205,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "const LAYER3_MOCKUP_WORKBENCH_THEME = 'layer3_mockup_workbench_theme';" in js.text
     assert "const LAYER3_MOCKUP_THEME_FIRST_SLICE = 'mockup_theme_shell_and_fixture_projection';" in js.text
     assert "function renderMockupThemeShell" in js.text
+    assert "function renderMockupPdfLocationProjection" in js.text
+    assert "State.sessionSummary?.pdf_location_projection" in js.text
+    assert "Read-only server projection pending" in js.text
     assert "dataset.themeVariant = LAYER3_MOCKUP_WORKBENCH_THEME" in js.text
     assert "userflow/layer3_user-flow-overview1.png" in js.text
     assert "focus_on_these/sublayer3C.png" in js.text

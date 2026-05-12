@@ -10734,7 +10734,11 @@
     "provider_private_signed_url_use_model_closeout_summary": "Current main now includes the planning/control provider_private_signed_url_use_model_closeout: the selected current-lane use model is no_use_api_external_provider_consumption, so the provider-private signed URL use route is intentionally closed and not implemented. Prepare/status/revoke remain the only admitted provider-private backend/API surfaces. This closeout admits no runtime behavior, rendered provider-private controls, raw token exposure, raw token durable persistence, provider network/object-store writes, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority.",
     "latest_provider_private_signed_url_rendered_ui_freeze_branch": "codex/l3-provider-rendered-ui-freeze",
     "latest_provider_private_signed_url_rendered_ui_freeze_live_behavior_change": false,
-    "provider_private_signed_url_rendered_ui_freeze_summary": "Current main now includes the planning/control provider_private_signed_url_rendered_ui_freeze: implementation_entry_allowed_next is true only for /review/layer3 rendered prepare/status/revoke controls over existing backend APIs. The use route remains closed_not_implemented. The future slice must show redacted provider-private state only and prove rendered prepare/status/revoke controls, request allowlists, forbidden control absence, and headed/headless live-theme behavior across system/light/dark/workbench. This freeze admits no backend/API/model/migration/service change, raw token exposure, raw token durable persistence, provider network or object-store writes, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority."
+    "provider_private_signed_url_rendered_ui_freeze_summary": "Current main now includes the planning/control provider_private_signed_url_rendered_ui_freeze: implementation_entry_allowed_next is true only for /review/layer3 rendered prepare/status/revoke controls over existing backend APIs. The use route remains closed_not_implemented. The future slice must show redacted provider-private state only and prove rendered prepare/status/revoke controls, request allowlists, forbidden control absence, and headed/headless live-theme behavior across system/light/dark/workbench. This freeze admits no backend/API/model/migration/service change, raw token exposure, raw token durable persistence, provider network or object-store writes, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority.",
+    "latest_pdf_location_theme_branch": "codex/l3-pdf-location-theme-projection",
+    "latest_pdf_location_theme_live_behavior_change": true,
+    "latest_pdf_location_theme_summary": "PDF-location theme projection: renders the existing pdf_location_projection session-summary state inside layer3_mockup_workbench_theme through #mockup-pdf-location-projection. The panel reads only State.sessionSummary.pdf_location_projection, issues no new backend requests, fails closed as read-only pending when server authority is unavailable, and does not add route/API behavior, models, migrations, raw PDF streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, browser-owned PDF authority, or full durable mockup activation.",
+    "pdf_location_theme_projection": "completed_rendered_pdf_location_projection_from_session_summary"
   },
   "scope_status": {
     "provider_private_signed_url_use_revoke_freeze": "completed_corrective_revoke_only_planning_control",
@@ -10754,7 +10758,8 @@
     "package_mutation_reentry_decision": "completed_package_mutation_reentry_decision_no_rendered_runtime",
     "qual_hybrid_rag_reentry_decision": "completed_qual_hybrid_rag_reentry_decision_no_broad_runtime",
     "full_mockup_activation_reentry_decision": "completed_full_mockup_activation_reentry_decision_no_activation_runtime",
-    "goal_stack_reentry_closeout_and_implementation_gate": "completed_goal_stack_reentry_closeout_next_requires_single_named_mode"
+    "goal_stack_reentry_closeout_and_implementation_gate": "completed_goal_stack_reentry_closeout_next_requires_single_named_mode",
+    "pdf_location_theme_projection": "completed_rendered_pdf_location_projection_from_session_summary"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -12089,15 +12094,15 @@
     "fixture_scenario": "semiconductor_infrastructure_auto_supply_chain",
     "server_state_mapping_preserved": true,
     "browser_storage_policy": "presentation_cache_only_no_durable_authority",
-      "implemented_surfaces": [
-        "backend/app/review_ui/static/layer3.html",
-        "backend/app/review_ui/static/layer3.css",
-        "backend/app/review_ui/static/layer3.js",
-        "backend/tests/test_layer3_page.py",
-        "e2e/layer3-workbench.spec.js",
-        "next_milestone_plans/layer3-mockups/frames/manifest.json",
-        "next_milestone_plans/layer3-mockups/frames/pdf-location.png"
-      ],
+    "implemented_surfaces": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/layer3-mockups/frames/manifest.json",
+      "next_milestone_plans/layer3-mockups/frames/pdf-location.png"
+    ],
     "implemented_ui_terms": [
       "Mockup Workbench theme selector option",
       "data-theme-variant layer3_mockup_workbench_theme",
@@ -12277,6 +12282,38 @@
       "sections[].citations[].highlight_spans",
       "no raw PDF blob streaming",
       "no browser-owned authoritative PDF location"
+    ]
+  },
+  "pdf_location_theme_projection_proof": {
+    "status": "completed_rendered_pdf_location_projection_from_session_summary",
+    "implementation_branch": "codex/l3-pdf-location-theme-projection",
+    "live_behavior_change": true,
+    "selected_runtime_mode": "rendered_pdf_location_projection_from_session_summary",
+    "entry_proof": "273_PDF_LOCATION_PROJECTION.md",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/274_PDF_LOCATION_THEME.md",
+    "server_state_source": "State.sessionSummary.pdf_location_projection",
+    "selected_theme_target": "layer3_mockup_workbench_theme",
+    "route_api_behavior_change": false,
+    "model_migration_behavior_change": false,
+    "rendered_ui_behavior_change": true,
+    "no_new_backend_requests": true,
+    "rendered_surface": "#mockup-pdf-location-projection",
+    "proof_files": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/Layer3_planning_docs/274_PDF_LOCATION_THEME.md"
+    ],
+    "blocked_runtime": [
+      "raw_pdf_blob_streaming",
+      "browser_owned_authoritative_pdf_location",
+      "source_expansion",
+      "package_mutation",
+      "connector_destination_dispatch",
+      "auth_security_widening",
+      "full_durable_mockup_activation"
     ]
   }
 }

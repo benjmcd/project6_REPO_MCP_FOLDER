@@ -4859,6 +4859,10 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('#mockup-userflow-board')).toContainText('User Natural Language Query Input');
   await expect(page.locator('#mockup-userflow-board')).toContainText('PDF evidence location');
   await expect(page.locator('#mockup-userflow-board')).toContainText('Layer manually chooses the specific, relevant');
+  await expect(page.locator('#mockup-pdf-location-projection')).toBeVisible();
+  await expect(page.locator('#mockup-pdf-location-projection')).toHaveAttribute('data-projection-state', 'unavailable');
+  await expect(page.locator('#mockup-pdf-location-projection')).toContainText('Server PDF-location projection');
+  await expect(page.locator('#mockup-pdf-location-projection')).toContainText('Read-only server projection pending');
   await expect(page.locator('.mockup-userflow-node')).toHaveCount(5);
   await expect(page.locator('#mockup-execution-lanes')).toBeVisible();
   await expect(page.locator('#mockup-execution-lanes')).toHaveAttribute('data-visual-source', 'focus_on_these/sublayer3C.png');
@@ -4961,6 +4965,8 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     promptCount: board.querySelectorAll('.mockup-userflow-prompt').length,
     specCount: board.querySelectorAll('.mockup-userflow-spec').length,
     evidenceSheets: board.querySelectorAll('.mockup-evidence-sheet').length,
+    serverProjectionState: board.querySelector('#mockup-pdf-location-projection')?.getAttribute('data-projection-state'),
+    serverProjectionCards: board.querySelectorAll('.mockup-pdf-location-item').length,
     stageCount: board.querySelectorAll('.mockup-userflow-node').length,
     stageColumns: window.getComputedStyle(board.querySelector('.mockup-userflow-stage')).gridTemplateColumns.split(' ').filter(Boolean).length,
   }));
@@ -4971,6 +4977,8 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     promptCount: 1,
     specCount: 1,
     evidenceSheets: 2,
+    serverProjectionState: 'unavailable',
+    serverProjectionCards: 0,
     stageCount: 5,
     stageColumns: 5,
   });

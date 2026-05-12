@@ -1154,3 +1154,9 @@ Refresh this board against:
 - `273_PDF_LOCATION_PROJECTION.md` implements `read_only_pdf_location_projection_from_existing_authority` as `layer3.pdf_location_projection.v1` session-summary state.
 - The implementation adds `pdf_location_projection` to `/api/v1/layer3/session/{session_id}` through `backend/app/services/layer3_pdf_location.py`, without a new endpoint, model, migration, PDF byte stream, source adapter, connector dispatch, package mutation, auth/security change, or browser-owned authority.
 - Targeted tests prove successful projection from existing APS document/chunk/page authority, fail-closed missing document/page authority, and no exposure of raw PDF/blob/diagnostics refs.
+
+## PDF Location Theme Projection
+
+- `274_PDF_LOCATION_THEME.md` implements `rendered_pdf_location_projection_from_session_summary` in the dedicated `layer3_mockup_workbench_theme`.
+- The rendered panel is `#mockup-pdf-location-projection` and reads only `State.sessionSummary.pdf_location_projection`; it issues no new backend requests and falls back to `Read-only server projection pending` when session-summary authority is unavailable.
+- This is a rendered UI behavior change only; it does not add a route/API change, model, migration, raw PDF blob streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, browser-owned authoritative PDF location, or full durable mockup activation.
