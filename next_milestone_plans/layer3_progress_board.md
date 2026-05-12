@@ -1033,6 +1033,10 @@ Goal stack implementation audit: `252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md`
 
 Source rendered-control decision: `253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md` records the current-main rendered source-control posture after the goal-stack audit. Existing `/review/layer3` raw-mixed current-class controls are live and bounded to server-backed `dataset_version` and `aps_content_document` authority; no new source-family selector, local upload, local-directory ingestion, arbitrary local path picker, web connector retrieval, RAG/vector retrieval, source adapter registry, package mutation, connector/destination dispatch, full mockup activation, or browser-owned source authority is admitted.
 
+## Connector Destination Reentry Decision
+
+Connector/destination reentry decision: `254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md` records the current-main connector/destination posture after the source rendered-control decision. Existing `/api/v1/layer3/handoff/connector/record` internal dispatch record-only behavior is live and bounded to server-authority receipts over already prepared artifacts; external connector invocation, destination writes, connector-run creation, generic downstream dispatch, rendered connector/destination controls, provider/public URL side effects, package mutation, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned connector/destination authority remain blocked until a later one-mode freeze proves the missing authority and validation plan.
+
 ## Refresh Inputs
 
 Refresh this board against:
