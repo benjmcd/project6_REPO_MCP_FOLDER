@@ -652,7 +652,13 @@
     "latest_provider_private_signed_url_rendered_ui_freeze_summary": "Current main now includes the planning/control provider_private_signed_url_rendered_ui_freeze: implementation_entry_allowed_next is true only for /review/layer3 rendered prepare/status/revoke controls over existing backend APIs. The use route remains closed_not_implemented. The future slice must show redacted provider-private state only and prove rendered prepare/status/revoke controls, request allowlists, forbidden control absence, and headed/headless live-theme behavior across system/light/dark/workbench. This freeze admits no backend/API/model/migration/service change, raw token exposure, raw token durable persistence, provider network or object-store writes, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority.",
     "latest_provider_private_signed_url_rendered_ui_branch": "codex/l3-provider-rendered-ui",
     "latest_provider_private_signed_url_rendered_ui_live_behavior_change": true,
-    "provider_private_signed_url_rendered_ui_summary": "Current main now includes the bounded provider_private_signed_url_rendered_ui implementation: /review/layer3 now renders provider-private signed URL prepare/status/revoke controls over existing backend APIs, derives prepare authority from existing external export/download state, stores only the returned receipt id in browser state, shows only redacted provider-private state, keeps the provider-private use route/control absent, and proves request allowlists, status-after-prepare, status-after-revoke, forbidden-control absence, and headed/headless live-theme behavior across system/light/dark/workbench. This pass admits no backend/API/model/migration/service change, raw token exposure, raw token durable persistence, provider network/object-store writes, provider/public URL runtime beyond the redacted provider-private marker, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority."
+    "provider_private_signed_url_rendered_ui_summary": "Current main now includes the bounded provider_private_signed_url_rendered_ui implementation: /review/layer3 now renders provider-private signed URL prepare/status/revoke controls over existing backend APIs, derives prepare authority from existing external export/download state, stores only the returned receipt id in browser state, shows only redacted provider-private state, keeps the provider-private use route/control absent, and proves request allowlists, status-after-prepare, status-after-revoke, forbidden-control absence, and headed/headless live-theme behavior across system/light/dark/workbench. This pass admits no backend/API/model/migration/service change, raw token exposure, raw token durable persistence, provider network/object-store writes, provider/public URL runtime beyond the redacted provider-private marker, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority.",
+    "latest_post_provider_private_roadmap_selection_freeze_branch": "codex/l3-post-provider-roadmap-freeze",
+    "latest_post_provider_private_roadmap_selection_freeze_live_behavior_change": false,
+    "post_provider_private_roadmap_selection_freeze_summary": "Current main now includes the planning/control post_provider_private_roadmap_selection_freeze: docs 248/249 select source_breadth_reentry_authority_packet as the next planning lane after provider-private rendered UI completion. Runtime remains not_implemented; implementation_entry_allowed_next is false; provider-private use remains closed_not_implemented; source-breadth implementation must wait for a named source use case, selected source family, storage/security model, provenance contract, downstream semantics, rendered-control plan if any, and auth/security/leakage posture. This pass admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI controls, Playwright configuration change, CI workflow change, or frontend-only durable authority.",
+    "latest_source_breadth_reentry_contract_branch": "codex/l3-post-provider-roadmap-freeze",
+    "latest_source_breadth_reentry_contract_live_behavior_change": false,
+    "source_breadth_reentry_contract_summary": "Current main now includes the planning/control source_breadth_reentry_contract: the next pass must build an evidence packet before source breadth can become implementation-admissible. The packet must name one source use case, select one source family or no-runtime outcome, prove current dataset_version and aps_content_document behavior is insufficient, and define source-of-truth ownership, adapter/input mode, storage/security, provenance, downstream semantics, rendered-control obligations if any, and auth/security/leakage posture. This contract admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, route/API/DTO/model/migration/service behavior, executable test behavior, rendered controls, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, hidden LLM planning, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10663,7 +10669,9 @@
     "live_theme_parity_proof": "completed_test_only",
     "provider_private_signed_url_use_model_closeout": "completed_planning_control_only",
     "provider_private_signed_url_rendered_ui_freeze": "completed_planning_control_only",
-    "provider_private_signed_url_rendered_ui": "completed_rendered_ui"
+    "provider_private_signed_url_rendered_ui": "completed_rendered_ui",
+    "post_provider_private_roadmap_selection_freeze": "completed_planning_control_only",
+    "source_breadth_reentry_contract": "completed_planning_control_only"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -11011,6 +11019,90 @@
       "same_origin_delivery_unchanged",
       "same_origin_signed_reference_unchanged",
       "backend_api_model_migration_service_unchanged"
+    ]
+  },
+  "post_provider_private_roadmap_selection_freeze_proof": {
+    "status": "completed_planning_control_only",
+    "implementation_branch": "codex/l3-post-provider-roadmap-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "post_provider_private_roadmap_selection_freeze",
+    "entry_decision": "next_lane_selected_planning_control_only",
+    "provider_private_rendered_ui_status": "completed_rendered_ui",
+    "provider_private_use_route_status": "closed_not_implemented",
+    "selected_next_lane": "source_breadth_reentry_authority_packet",
+    "selected_next_runtime_family": "source_breadth",
+    "runtime_status": "not_implemented",
+    "implementation_entry_allowed_next": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/247_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF.md",
+      "next_milestone_plans/Layer3_planning_docs/248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/249_SOURCE_BREADTH_REENTRY_CONTRACT.md"
+    ],
+    "ordered_future_passes": [
+      "source_breadth_reentry_authority_packet",
+      "source_breadth_implementation_entry_freeze_if_authority_is_proven",
+      "connector_destination_authority_reentry_after_source_semantics_if_needed",
+      "package_mutation_rendered_reentry_after_package_use_case_selection",
+      "qual_hybrid_rag_reentry_after_source_and_model_provider_authority",
+      "full_mockup_activation_after_server_authoritative_surfaces",
+      "auth_security_runtime_after_deployment_identity_owner_selection",
+      "integrated_release_hardening_after_selected_lanes_are_live"
+    ],
+    "negative_invariants": [
+      "provider_private_use_route_absent",
+      "source_runtime_not_implemented",
+      "connector_destination_dispatch_absent",
+      "package_mutation_reconstruction_absent",
+      "broad_qual_hybrid_rag_absent",
+      "full_mockup_activation_absent",
+      "auth_security_behavior_unchanged",
+      "route_api_dto_model_migration_service_unchanged",
+      "rendered_ui_controls_unchanged",
+      "frontend_only_durable_authority_absent"
+    ]
+  },
+  "source_breadth_reentry_contract_proof": {
+    "status": "completed_planning_control_only",
+    "implementation_branch": "codex/l3-post-provider-roadmap-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "source_breadth_reentry_contract",
+    "entry_decision": "authority_packet_required_before_runtime",
+    "selected_next_lane": "source_breadth_reentry_authority_packet",
+    "runtime_status": "not_implemented",
+    "source_family_selected": false,
+    "adapter_input_mode_selected": false,
+    "operator_storage_security_model_selected": false,
+    "provenance_contract_selected": false,
+    "rendered_source_control_selected": false,
+    "implementation_entry_allowed_next": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/249_SOURCE_BREADTH_REENTRY_CONTRACT.md"
+    ],
+    "required_authority_packet": [
+      "named_source_use_case",
+      "selected_source_family",
+      "adapter_input_mode",
+      "source_of_truth",
+      "storage_security_model",
+      "network_retrieval_policy",
+      "provenance_contract",
+      "downstream_semantics",
+      "rendered_control_plan",
+      "auth_security_posture"
+    ],
+    "negative_invariants": [
+      "source_runtime_not_implemented",
+      "source_adapter_registry_absent",
+      "local_upload_absent",
+      "local_directory_ingestion_absent",
+      "web_connector_retrieval_absent",
+      "rag_vector_retrieval_absent",
+      "route_api_dto_model_migration_service_unchanged",
+      "connector_destination_dispatch_absent",
+      "package_mutation_reconstruction_absent",
+      "full_mockup_activation_absent",
+      "auth_security_behavior_unchanged"
     ]
   }
 }
