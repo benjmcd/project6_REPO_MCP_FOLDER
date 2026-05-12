@@ -21029,6 +21029,8 @@ def _check_pr798_review_debt_closeout(errors: list[str]) -> None:
             "SPEC_CHIPS remains empty",
         ),
         PROOF_MANIFEST: (
+            "scope_metadata_semantics",
+            "nested latest_* fields are the authority",
             "latest_pr798_review_debt_closeout_pr",
             "231755fef6d913bde4568c809e43b6fdd421465c",
             "pr798_review_debt_closeout_proof",
