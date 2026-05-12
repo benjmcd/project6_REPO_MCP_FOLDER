@@ -304,6 +304,9 @@ POST_807_CLOSEOUT = PLANNING_DOCS / "251_POST_807_CLOSEOUT.md"
 GOAL_STACK_IMPLEMENTATION_AUDIT = (
     PLANNING_DOCS / "252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md"
 )
+SOURCE_RENDERED_CONTROL_DECISION = (
+    PLANNING_DOCS / "253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14613,12 +14616,24 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "full_mockup_status: target_state_only_activation_blocked",
             "implementation_entry_allowed_next: false",
         ),
+        SOURCE_RENDERED_CONTROL_DECISION: (
+            "Status: current-main rendered-control decision freeze for `source_rendered_control_decision`.",
+            "entry_decision: current_raw_mixed_controls_live_no_new_source_controls",
+            "current_rendered_source_controls: raw_mixed_current_classes_only",
+            "new_source_family_rendered_controls: blocked",
+            "browser_source_authority: blocked",
+            "local_upload_control: blocked",
+            "web_connector_control: blocked",
+            "rag_vector_control: blocked",
+            "implementation_entry_allowed_next: false",
+        ),
         PHASE1A_README: (
             "248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md",
             "249_SOURCE_BREADTH_REENTRY_CONTRACT.md",
             "250_SOURCE_BREADTH_AUTHORITY_PACKET.md",
             "251_POST_807_CLOSEOUT.md",
             "252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md",
+            "253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md",
             "source_breadth_reentry_authority_packet",
         ),
         BOARD: (
@@ -14627,6 +14642,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "Source Breadth Authority Packet",
             "Post 807 Closeout",
             "Goal Stack Implementation Audit",
+            "Source Rendered Control Decision",
             "source_breadth_reentry_authority_packet",
         ),
         MANIFEST: (
@@ -14635,6 +14651,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "source_breadth_reentry_authority_packet",
             "post_807_closeout",
             "goal_stack_implementation_audit",
+            "source_rendered_control_decision",
             "source_breadth_reentry_authority_packet",
         ),
         PROOF_MANIFEST: (
@@ -14643,6 +14660,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "source_breadth_reentry_authority_packet_proof",
             "post_807_closeout_proof",
             "goal_stack_implementation_audit_proof",
+            "source_rendered_control_decision_proof",
             "source_breadth_reentry_authority_packet",
         ),
     }
@@ -14668,6 +14686,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "latest_post_807_closeout_live_behavior_change": False,
             "latest_goal_stack_implementation_audit_branch": "codex/l3-source-runtime-tranche",
             "latest_goal_stack_implementation_audit_live_behavior_change": False,
+            "latest_source_rendered_control_decision_branch": "codex/l3-source-rendered-control-freeze",
+            "latest_source_rendered_control_decision_live_behavior_change": False,
         }
         for key, expected in expected_current.items():
             if current_status.get(key) != expected:
@@ -14708,6 +14728,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             errors.append(f"{_rel(MANIFEST)} scope_status.post_807_closeout must be completed_planning_control_closeout")
         if scope_status.get("goal_stack_implementation_audit") != "completed_bounded_implementation_audit":
             errors.append(f"{_rel(MANIFEST)} scope_status.goal_stack_implementation_audit must be completed_bounded_implementation_audit")
+        if scope_status.get("source_rendered_control_decision") != "completed_rendered_control_decision_no_new_runtime":
+            errors.append(f"{_rel(MANIFEST)} scope_status.source_rendered_control_decision must be completed_rendered_control_decision_no_new_runtime")
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     roadmap_proof = proof_data.get("post_provider_private_roadmap_selection_freeze_proof") if isinstance(proof_data, dict) else None
@@ -14815,6 +14837,29 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
         for key, expected in expected_scalars.items():
             if goal_stack_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} goal_stack_implementation_audit_proof.{key} must be {expected!r}")
+
+    source_control_proof = proof_data.get("source_rendered_control_decision_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(source_control_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_rendered_control_decision_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_rendered_control_decision_no_new_runtime",
+            "implementation_branch": "codex/l3-source-rendered-control-freeze",
+            "live_behavior_change": False,
+            "selected_planning_mode": "source_rendered_control_decision",
+            "entry_decision": "current_raw_mixed_controls_live_no_new_source_controls",
+            "current_rendered_source_controls": "raw_mixed_current_classes_only",
+            "new_source_family_rendered_controls": "blocked",
+            "browser_source_authority": "blocked",
+            "local_upload_control": "blocked",
+            "local_directory_control": "blocked",
+            "web_connector_control": "blocked",
+            "rag_vector_control": "blocked",
+            "implementation_entry_allowed_next": False,
+        }
+        for key, expected in expected_scalars.items():
+            if source_control_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_rendered_control_decision_proof.{key} must be {expected!r}")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -19478,6 +19523,7 @@ def main() -> int:
         SOURCE_BREADTH_AUTHORITY_PACKET,
         POST_807_CLOSEOUT,
         GOAL_STACK_IMPLEMENTATION_AUDIT,
+        SOURCE_RENDERED_CONTROL_DECISION,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
