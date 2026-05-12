@@ -358,6 +358,7 @@ MOCKUP_THEME_SHELL_PROOF = (
 )
 MOCKUP_RUNTIME_GATE = PLANNING_DOCS / "271_MOCKUP_RUNTIME_GATE.md"
 PDF_LOCATION_FREEZE = PLANNING_DOCS / "272_PDF_LOCATION_FREEZE.md"
+PDF_LOCATION_PROJECTION_PROOF = PLANNING_DOCS / "273_PDF_LOCATION_PROJECTION.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -414,6 +415,7 @@ PLAN_FLOW_READINESS_SERVICE = (
 SUBLAYER_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_sublayer_state.py"
 EXECUTION_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_state.py"
 EXECUTION_OUTPUT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_output.py"
+PDF_LOCATION_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_pdf_location.py"
 EXECUTION_REVIEW_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_review.py"
 EXECUTION_SELECTION_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_selection.py"
 EXECUTION_START_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_execution_start.py"
@@ -620,6 +622,7 @@ LAYER3_PLAN_FLOW_READINESS_TEST = (
 LAYER3_SUBLAYER_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_sublayer_state.py"
 LAYER3_EXECUTION_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_state.py"
 LAYER3_EXECUTION_OUTPUT_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_output.py"
+LAYER3_PDF_LOCATION_TEST = ROOT / "backend" / "tests" / "test_layer3_pdf_location.py"
 LAYER3_EXECUTION_REVIEW_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_review.py"
 LAYER3_EXECUTION_SELECTION_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_selection.py"
 LAYER3_EXECUTION_START_TEST = ROOT / "backend" / "tests" / "test_layer3_execution_start.py"
@@ -16791,6 +16794,133 @@ def _check_pdf_location_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} PDF-location freeze proof missing term: {term}")
 
 
+def _check_pdf_location_projection(errors: list[str]) -> None:
+    service_text = _read_required_text(PDF_LOCATION_SERVICE, errors)
+    for term in (
+        "PDF_LOCATION_PROJECTION_SCHEMA_ID = \"layer3.pdf_location_projection.v1\"",
+        "PDF_LOCATION_AUTHORITY_CONTRACT = \"aps_content_document_chunk_page_refs_and_citation_highlight_spans\"",
+        "PDF_LOCATION_USE_CASE = \"pdf_location_from_aps_content_document_citation\"",
+        "def pdf_location_projection_for_session(db: Session, *, session_id: str) -> dict[str, Any]:",
+        "def pdf_location_projection_for_pass_run(db: Session, *, pass_run: L3PassRun) -> dict[str, Any]:",
+        "ApsContentDocument.content_id == content_id",
+        "ApsContentChunk.page_start",
+        "ApsContentChunk.page_end",
+        "visual_page_refs_json",
+        "sections[].citations[].highlight_spans",
+        "raw_pdf_blob_streaming",
+        "browser_owned_authoritative_pdf_location",
+        "no_side_effects",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PDF_LOCATION_SERVICE)} missing PDF-location projection term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_pdf_location import (",
+        "pdf_location_projection_for_session as _pdf_location_projection_for_session",
+        "\"pdf_location_projection\": _pdf_location_projection_for_session(db, session_id=session_id)",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing PDF-location session-summary wiring term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    if "pdf_location_projection: dict[str, Any]" not in api_text:
+        errors.append(f"{_rel(LAYER3_API)} missing PDF-location response field")
+
+    test_text = _read_required_text(LAYER3_PDF_LOCATION_TEST, errors)
+    for term in (
+        "test_pdf_location_projection_uses_existing_document_chunk_page_authority",
+        "test_pdf_location_projection_fails_closed_without_document_authority",
+        "test_pdf_location_projection_fails_closed_without_page_authority",
+        "secret.pdf\" not in serialized",
+        "raw_pdf_blob_streaming",
+        "pdf_location_document_authority_missing",
+        "pdf_location_page_authority_missing",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_PDF_LOCATION_TEST)} missing PDF-location proof term: {term}")
+
+    proof_doc_text = _read_required_text(PDF_LOCATION_PROJECTION_PROOF, errors)
+    for term in (
+        "Status: current-branch backend/API session-summary implementation proof for PDF-location projection.",
+        "selected_runtime_mode: read_only_pdf_location_projection_from_existing_authority",
+        "live_behavior_change: true",
+        "route_api_behavior_change: true",
+        "model_migration_behavior_change: false",
+        "pdf_location_from_aps_content_document_citation",
+        "layer3.pdf_location_projection.v1",
+        "backend/app/services/layer3_pdf_location.py",
+        "backend/tests/test_layer3_pdf_location.py",
+        "no raw PDF blob streaming",
+        "no browser-owned authoritative PDF location",
+    ):
+        if term not in proof_doc_text:
+            errors.append(f"{_rel(PDF_LOCATION_PROJECTION_PROOF)} missing PDF-location projection proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## PDF Location Projection Implementation",
+            "273_PDF_LOCATION_PROJECTION.md",
+            "read_only_pdf_location_projection_from_existing_authority",
+            "layer3.pdf_location_projection.v1",
+        ),
+        PHASE1A_README: (
+            "273_PDF_LOCATION_PROJECTION.md",
+            "read_only_pdf_location_projection_from_existing_authority",
+            "pdf_location_projection",
+            "backend/app/services/layer3_pdf_location.py",
+        ),
+        MANIFEST: (
+            "pdf_location_projection_implementation",
+            "latest_pdf_location_projection_branch",
+            "read_only_pdf_location_projection_from_existing_authority",
+            "layer3.pdf_location_projection.v1",
+        ),
+        PROOF_MANIFEST: (
+            "pdf_location_projection_proof",
+            "read_only_pdf_location_projection_from_existing_authority",
+            "backend/app/services/layer3_pdf_location.py",
+            "backend/tests/test_layer3_pdf_location.py",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing PDF-location projection term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_pdf_location_projection_branch", "codex/l3-pdf-location-projection"),
+        ("latest_pdf_location_projection_live_behavior_change", True),
+    ):
+        if key not in manifest and not (
+            isinstance(current_status, dict) and current_status.get(key) == expected
+        ):
+            errors.append(f"{_rel(MANIFEST)} missing or mismatched PDF-location projection key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("pdf_location_projection_implementation") != "completed_read_only_pdf_location_projection":
+        errors.append(f"{_rel(MANIFEST)} missing completed PDF-location projection scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("pdf_location_projection_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing pdf_location_projection_proof")
+        return
+    expected_scalars = {
+        "status": "completed_read_only_pdf_location_projection",
+        "implementation_branch": "codex/l3-pdf-location-projection",
+        "live_behavior_change": True,
+        "selected_runtime_mode": "read_only_pdf_location_projection_from_existing_authority",
+        "route_api_behavior_change": True,
+        "model_migration_behavior_change": False,
+        "schema_id": "layer3.pdf_location_projection.v1",
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} PDF-location projection proof {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -21497,6 +21627,7 @@ def main() -> int:
         AUTH_SECURITY_NAMED_MODE_PACKET,
         MOCKUP_RUNTIME_GATE,
         PDF_LOCATION_FREEZE,
+        PDF_LOCATION_PROJECTION_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -21544,6 +21675,7 @@ def main() -> int:
         SUBLAYER_STATE_SERVICE,
         EXECUTION_STATE_SERVICE,
         EXECUTION_OUTPUT_SERVICE,
+        PDF_LOCATION_SERVICE,
         EXECUTION_REVIEW_SERVICE,
         EXECUTION_SELECTION_SERVICE,
         EXECUTION_START_SERVICE,
@@ -21592,6 +21724,7 @@ def main() -> int:
         LAYER3_SUBLAYER_STATE_TEST,
         LAYER3_EXECUTION_STATE_TEST,
         LAYER3_EXECUTION_OUTPUT_TEST,
+        LAYER3_PDF_LOCATION_TEST,
         LAYER3_EXECUTION_REVIEW_TEST,
         LAYER3_EXECUTION_SELECTION_TEST,
         LAYER3_EXECUTION_START_TEST,
@@ -21737,6 +21870,7 @@ def main() -> int:
     _check_mockup_theme_shell_implementation(errors)
     _check_mockup_runtime_gate(errors)
     _check_pdf_location_freeze(errors)
+    _check_pdf_location_projection(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
