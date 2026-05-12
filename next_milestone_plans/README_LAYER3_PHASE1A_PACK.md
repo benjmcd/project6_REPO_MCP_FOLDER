@@ -1634,3 +1634,9 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/274_PDF_LOCATION_THEME.md` records `rendered_pdf_location_projection_from_session_summary` as the mockup-theme rendering pass over the already-implemented session-summary state.
 - The implementation adds `#mockup-pdf-location-projection` inside the `layer3_mockup_workbench_theme` user-flow/PDF-location board and binds it only to `State.sessionSummary.pdf_location_projection`.
 - The pass is rendered UI behavior only; it issues no new backend requests and does not add route/API behavior, models, migrations, raw PDF streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, browser-owned authoritative PDF location, or full durable mockup activation.
+
+## Mockup Visual Diff Freeze
+
+- `Layer3_planning_docs/275_MOCKUP_VISUAL_DIFF_FREEZE.md` records `repo_local_mockup_frame_visual_diff_acceptance` as the next proof mode for pixel-faithful mockup-theme work.
+- The next allowed action is `implement_repo_local_mockup_visual_diff_harness`, with repo-local frame authority from `next_milestone_plans/layer3-mockups/frames/manifest.json`, headed/headless Chromium proof, and fail-closed handling for missing frames, selectors, screenshots, or over-tolerance deltas.
+- This is planning/control only; it does not claim current visual parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
