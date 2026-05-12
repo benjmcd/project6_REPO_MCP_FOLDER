@@ -310,6 +310,9 @@ SOURCE_RENDERED_CONTROL_DECISION = (
 CONNECTOR_DESTINATION_REENTRY_DECISION = (
     PLANNING_DOCS / "254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md"
 )
+PACKAGE_MUTATION_REENTRY_DECISION = (
+    PLANNING_DOCS / "255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14648,6 +14651,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md",
             "253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md",
             "254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md",
+            "255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md",
             "source_breadth_reentry_authority_packet",
         ),
         BOARD: (
@@ -14658,6 +14662,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "Goal Stack Implementation Audit",
             "Source Rendered Control Decision",
             "Connector Destination Reentry Decision",
+            "Package Mutation Reentry Decision",
             "source_breadth_reentry_authority_packet",
         ),
         MANIFEST: (
@@ -14668,6 +14673,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "goal_stack_implementation_audit",
             "source_rendered_control_decision",
             "connector_destination_reentry_decision",
+            "package_mutation_reentry_decision",
             "source_breadth_reentry_authority_packet",
         ),
         PROOF_MANIFEST: (
@@ -14678,6 +14684,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "goal_stack_implementation_audit_proof",
             "source_rendered_control_decision_proof",
             "connector_destination_reentry_decision_proof",
+            "package_mutation_reentry_decision_proof",
             "source_breadth_reentry_authority_packet",
         ),
     }
@@ -14707,6 +14714,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "latest_source_rendered_control_decision_live_behavior_change": False,
             "latest_connector_destination_reentry_decision_branch": "codex/l3-connector-destination-reentry-freeze",
             "latest_connector_destination_reentry_decision_live_behavior_change": False,
+            "latest_package_mutation_reentry_decision_branch": "codex/l3-package-mutation-reentry-freeze",
+            "latest_package_mutation_reentry_decision_live_behavior_change": False,
         }
         for key, expected in expected_current.items():
             if current_status.get(key) != expected:
@@ -14751,6 +14760,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             errors.append(f"{_rel(MANIFEST)} scope_status.source_rendered_control_decision must be completed_rendered_control_decision_no_new_runtime")
         if scope_status.get("connector_destination_reentry_decision") != "completed_connector_destination_reentry_decision_no_external_runtime":
             errors.append(f"{_rel(MANIFEST)} scope_status.connector_destination_reentry_decision must be completed_connector_destination_reentry_decision_no_external_runtime")
+        if scope_status.get("package_mutation_reentry_decision") != "completed_package_mutation_reentry_decision_no_rendered_runtime":
+            errors.append(f"{_rel(MANIFEST)} scope_status.package_mutation_reentry_decision must be completed_package_mutation_reentry_decision_no_rendered_runtime")
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     roadmap_proof = proof_data.get("post_provider_private_roadmap_selection_freeze_proof") if isinstance(proof_data, dict) else None
@@ -14904,6 +14915,58 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
         for key, expected in expected_scalars.items():
             if connector_reentry_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_reentry_decision_proof.{key} must be {expected!r}")
+
+    package_reentry_proof = proof_data.get("package_mutation_reentry_decision_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(package_reentry_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing package_mutation_reentry_decision_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_package_mutation_reentry_decision_no_rendered_runtime",
+            "implementation_branch": "codex/l3-package-mutation-reentry-freeze",
+            "live_behavior_change": False,
+            "selected_planning_mode": "package_mutation_reentry_decision",
+            "entry_decision": "backend_lifecycle_live_rendered_mutation_blocked",
+            "current_package_lifecycle_runtime": "backend_api_bounded_lifecycle",
+            "package_supersession_preview_only": "live",
+            "replacement_package_set_authority": "live",
+            "package_supersession_commit_entry": "live",
+            "replacement_package_artifact_manifest_only": "live",
+            "replacement_package_namespace_rows": "live",
+            "rendered_package_mutation_controls": "blocked",
+            "broad_package_mutation_reconstruction": "blocked",
+            "source_package_row_mutation": "blocked",
+            "source_package_payload_rewrite": "blocked",
+            "replacement_package_payload_generation": "blocked",
+            "downstream_invalidation_re_delivery_runtime": "blocked",
+            "implementation_entry_allowed_next": False,
+        }
+        for key, expected in expected_scalars.items():
+            if package_reentry_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_reentry_decision_proof.{key} must be {expected!r}")
+
+
+def _check_package_mutation_reentry_decision(errors: list[str]) -> None:
+    decision_text = _read_required_text(PACKAGE_MUTATION_REENTRY_DECISION, errors)
+    required_terms = [
+        "Status: current-main reentry decision freeze for `package_mutation_reentry_decision`.",
+        "entry_decision: backend_lifecycle_live_rendered_mutation_blocked",
+        "current_package_lifecycle_runtime: backend_api_bounded_lifecycle",
+        "package_supersession_preview_only: live",
+        "replacement_package_set_authority: live",
+        "package_supersession_commit_entry: live",
+        "replacement_package_artifact_manifest_only: live",
+        "replacement_package_namespace_rows: live",
+        "rendered_package_mutation_controls: blocked",
+        "broad_package_mutation_reconstruction: blocked",
+        "source_package_row_mutation: blocked",
+        "source_package_payload_rewrite: blocked",
+        "replacement_package_payload_generation: blocked",
+        "downstream_invalidation_re_delivery_runtime: blocked",
+        "implementation_entry_allowed_next: false",
+    ]
+    for term in required_terms:
+        if term not in decision_text:
+            errors.append(f"{_rel(PACKAGE_MUTATION_REENTRY_DECISION)} missing package mutation reentry decision term: {term}")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -19569,6 +19632,7 @@ def main() -> int:
         GOAL_STACK_IMPLEMENTATION_AUDIT,
         SOURCE_RENDERED_CONTROL_DECISION,
         CONNECTOR_DESTINATION_REENTRY_DECISION,
+        PACKAGE_MUTATION_REENTRY_DECISION,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -19791,6 +19855,7 @@ def main() -> int:
     _check_provider_private_signed_url_rendered_ui_freeze(errors)
     _check_provider_private_signed_url_rendered_ui_proof(errors)
     _check_post_provider_private_roadmap_selection_freeze(errors)
+    _check_package_mutation_reentry_decision(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

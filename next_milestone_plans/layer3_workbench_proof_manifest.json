@@ -673,7 +673,10 @@
     "source_rendered_control_decision_summary": "Current main now includes the source_rendered_control_decision freeze: existing /review/layer3 raw-mixed current-class controls are live and bounded to server-backed dataset_version and aps_content_document authority, while new source-family selectors, local upload, local-directory ingestion, arbitrary local path picking, web connector retrieval, RAG/vector retrieval, source adapter registry controls, package mutation coupling, connector/destination dispatch, full mockup activation, and browser-owned source authority remain blocked.",
     "latest_connector_destination_reentry_decision_branch": "codex/l3-connector-destination-reentry-freeze",
     "latest_connector_destination_reentry_decision_live_behavior_change": false,
-    "connector_destination_reentry_decision_summary": "Current main now includes the connector_destination_reentry_decision freeze: existing /api/v1/layer3/handoff/connector/record internal dispatch record-only behavior is live and bounded to server-authority receipts over already prepared artifacts, while external connector invocation, destination writes, connector-run creation, generic downstream dispatch, rendered connector/destination controls, provider/public URL side effects, package mutation, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned connector/destination authority remain blocked."
+    "connector_destination_reentry_decision_summary": "Current main now includes the connector_destination_reentry_decision freeze: existing /api/v1/layer3/handoff/connector/record internal dispatch record-only behavior is live and bounded to server-authority receipts over already prepared artifacts, while external connector invocation, destination writes, connector-run creation, generic downstream dispatch, rendered connector/destination controls, provider/public URL side effects, package mutation, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned connector/destination authority remain blocked.",
+    "latest_package_mutation_reentry_decision_branch": "codex/l3-package-mutation-reentry-freeze",
+    "latest_package_mutation_reentry_decision_live_behavior_change": false,
+    "package_mutation_reentry_decision_summary": "Current main now includes the package_mutation_reentry_decision freeze: bounded backend/API package lifecycle runtimes remain live for package supersession preview, replacement package-set authority, supersession commit lineage, replacement artifact manifest, and replacement namespace rows, while rendered package mutation controls, broad package mutation/reconstruction, source package row mutation, source package payload rewrite, replacement package payload generation, downstream invalidation/re-delivery runtime, provider/public URL behavior, connector/destination dispatch side effects, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned package authority remain blocked."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10691,7 +10694,8 @@
     "post_807_closeout": "completed_planning_control_closeout",
     "goal_stack_implementation_audit": "completed_bounded_implementation_audit",
     "source_rendered_control_decision": "completed_rendered_control_decision_no_new_runtime",
-    "connector_destination_reentry_decision": "completed_connector_destination_reentry_decision_no_external_runtime"
+    "connector_destination_reentry_decision": "completed_connector_destination_reentry_decision_no_external_runtime",
+    "package_mutation_reentry_decision": "completed_package_mutation_reentry_decision_no_rendered_runtime"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -11342,6 +11346,59 @@
       "provider_public_url_runtime",
       "package_mutation_side_effects",
       "source_expansion_side_effects"
+    ]
+  },
+  "package_mutation_reentry_decision_proof": {
+    "status": "completed_package_mutation_reentry_decision_no_rendered_runtime",
+    "implementation_branch": "codex/l3-package-mutation-reentry-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "package_mutation_reentry_decision",
+    "entry_decision": "backend_lifecycle_live_rendered_mutation_blocked",
+    "current_package_lifecycle_runtime": "backend_api_bounded_lifecycle",
+    "package_supersession_preview_only": "live",
+    "replacement_package_set_authority": "live",
+    "package_supersession_commit_entry": "live",
+    "replacement_package_artifact_manifest_only": "live",
+    "replacement_package_namespace_rows": "live",
+    "rendered_package_mutation_controls": "blocked",
+    "broad_package_mutation_reconstruction": "blocked",
+    "source_package_row_mutation": "blocked",
+    "source_package_payload_rewrite": "blocked",
+    "replacement_package_payload_generation": "blocked",
+    "downstream_invalidation_re_delivery_runtime": "blocked",
+    "implementation_entry_allowed_next": false,
+    "governing_docs": [
+      "122_PACKAGE_MUTATION_FREEZE.md",
+      "126_PACKAGE_COMMIT_FREEZE.md",
+      "127_PACKAGE_REPLACEMENT_SET_FREEZE.md",
+      "128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md",
+      "129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md",
+      "130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md",
+      "131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE.md",
+      "191_PACKAGE_MUTATION_RENDERED_ENTRY_FREEZE.md",
+      "192_PACKAGE_MUTATION_RENDERED_ENTRY_CONTRACT.md",
+      "216_PACKAGE_MUTATION_RENDERED_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md"
+    ],
+    "live_bounded_runtime": [
+      "package_supersession_preview_only",
+      "replacement_package_set_authority",
+      "package_supersession_commit_entry",
+      "replacement_package_artifact_manifest_only",
+      "replacement_package_namespace_rows"
+    ],
+    "blocked_runtime": [
+      "rendered_package_mutation_controls",
+      "broad_package_mutation_reconstruction",
+      "source_package_row_mutation",
+      "source_package_payload_rewrite",
+      "replacement_package_payload_generation",
+      "downstream_invalidation_re_delivery_runtime",
+      "provider_public_url_runtime",
+      "connector_destination_dispatch_side_effects",
+      "source_expansion",
+      "qualitative_hybrid_rag_expansion",
+      "full_mockup_activation"
     ]
   }
 }
