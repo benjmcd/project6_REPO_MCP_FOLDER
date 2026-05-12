@@ -1032,6 +1032,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
     else:
         required_terms = [
             "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection",
+            "rendered PDF-location session-summary projection",
+            "State.sessionSummary.pdf_location_projection",
             "pixel-faithful mockup-theme continuation",
             "mockup frame mapping",
             "user-flow/PDF-location",
