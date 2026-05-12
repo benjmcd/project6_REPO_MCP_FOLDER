@@ -322,6 +322,9 @@ FULL_MOCKUP_ACTIVATION_REENTRY_DECISION = (
 GOAL_STACK_REENTRY_CLOSEOUT = (
     PLANNING_DOCS / "258_GOAL_STACK_REENTRY_CLOSEOUT_AND_IMPLEMENTATION_GATE.md"
 )
+POST_REENTRY_RUNTIME_SELECTION_SYNC = (
+    PLANNING_DOCS / "259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -15151,6 +15154,108 @@ def _check_goal_stack_reentry_closeout(errors: list[str]) -> None:
         if term not in closeout_text:
             errors.append(f"{_rel(GOAL_STACK_REENTRY_CLOSEOUT)} missing goal stack closeout term: {term}")
 
+
+def _check_post_reentry_runtime_selection_sync(errors: list[str]) -> None:
+    sync_text = _read_required_text(POST_REENTRY_RUNTIME_SELECTION_SYNC, errors)
+    required_terms = [
+        "Status: current-main selection sync for `post_reentry_runtime_selection_sync`.",
+        "entry_decision: no_runtime_selected_after_reentry_closeout",
+        "upstream_closeout_doc: 258_GOAL_STACK_REENTRY_CLOSEOUT_AND_IMPLEMENTATION_GATE.md",
+        "selected_runtime_family: null",
+        "selected_runtime_mode: null",
+        "named_use_case_selected: false",
+        "source_breadth_runtime: blocked_until_named_source_use_case",
+        "external_connector_destination_runtime: blocked_until_named_connector_or_destination_use_case",
+        "package_mutation_rendered_runtime: blocked_until_named_rendered_package_lifecycle_use_case",
+        "broad_qual_hybrid_rag_runtime: blocked_until_named_analysis_use_case",
+        "browser_full_mockup_runtime: blocked_until_named_mockup_or_rendered_control_use_case",
+        "auth_security_runtime: blocked_until_named_security_operator_access_use_case",
+        "implementation_entry_allowed_next: false",
+        "next_required_boundary: exact_named_runtime_use_case_selection_or_stop_at_planning",
+    ]
+    for term in required_terms:
+        if term not in sync_text:
+            errors.append(f"{_rel(POST_REENTRY_RUNTIME_SELECTION_SYNC)} missing post-reentry runtime selection sync term: {term}")
+
+    required_surfaces = {
+        PHASE1A_README: (
+            "259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md",
+            "post-reentry selection state",
+        ),
+        BOARD: (
+            "Post Reentry Runtime Selection Sync",
+            "one exact named runtime-use-case freeze",
+        ),
+        MANIFEST: (
+            "post_reentry_runtime_selection_sync",
+            "no runtime family, runtime mode, or named use case is selected",
+        ),
+        PROOF_MANIFEST: (
+            "post_reentry_runtime_selection_sync_proof",
+            "blocked_until_named_source_use_case",
+        ),
+    }
+    for path, terms in required_surfaces.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing post-reentry runtime selection sync term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for post-reentry runtime selection sync")
+    else:
+        expected_current = {
+            "latest_post_reentry_runtime_selection_sync_branch": "codex/l3-post-reentry-runtime-selection-sync",
+            "latest_post_reentry_runtime_selection_sync_live_behavior_change": False,
+        }
+        for key, expected in expected_current.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        summary = current_status.get("post_reentry_runtime_selection_sync")
+        if (
+            not isinstance(summary, str)
+            or "no runtime family, runtime mode, or named use case is selected" not in summary
+            or "one exact named runtime-use-case freeze" not in summary
+            or "admits no runtime behavior" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.post_reentry_runtime_selection_sync must record no-runtime post-reentry selection posture")
+
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict):
+        errors.append(f"{_rel(MANIFEST)} scope_status missing for post-reentry runtime selection sync")
+    elif scope_status.get("post_reentry_runtime_selection_sync") != "completed_post_reentry_selection_sync_no_runtime_selected":
+        errors.append(f"{_rel(MANIFEST)} scope_status.post_reentry_runtime_selection_sync must be completed_post_reentry_selection_sync_no_runtime_selected")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    sync_proof = proof_data.get("post_reentry_runtime_selection_sync_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(sync_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing post_reentry_runtime_selection_sync_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_post_reentry_selection_sync_no_runtime_selected",
+            "implementation_branch": "codex/l3-post-reentry-runtime-selection-sync",
+            "live_behavior_change": False,
+            "selected_planning_mode": "post_reentry_runtime_selection_sync",
+            "entry_decision": "no_runtime_selected_after_reentry_closeout",
+            "upstream_closeout_doc": "258_GOAL_STACK_REENTRY_CLOSEOUT_AND_IMPLEMENTATION_GATE.md",
+            "selected_runtime_family": None,
+            "selected_runtime_mode": None,
+            "named_use_case_selected": False,
+            "source_breadth_runtime": "blocked_until_named_source_use_case",
+            "external_connector_destination_runtime": "blocked_until_named_connector_or_destination_use_case",
+            "package_mutation_rendered_runtime": "blocked_until_named_rendered_package_lifecycle_use_case",
+            "broad_qual_hybrid_rag_runtime": "blocked_until_named_analysis_use_case",
+            "browser_full_mockup_runtime": "blocked_until_named_mockup_or_rendered_control_use_case",
+            "auth_security_runtime": "blocked_until_named_security_operator_access_use_case",
+            "implementation_entry_allowed_next": False,
+            "next_required_boundary": "exact_named_runtime_use_case_selection_or_stop_at_planning",
+        }
+        for key, expected in expected_scalars.items():
+            if sync_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} post_reentry_runtime_selection_sync_proof.{key} must be {expected!r}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -19819,6 +19924,7 @@ def main() -> int:
         QUAL_HYBRID_RAG_REENTRY_DECISION,
         FULL_MOCKUP_ACTIVATION_REENTRY_DECISION,
         GOAL_STACK_REENTRY_CLOSEOUT,
+        POST_REENTRY_RUNTIME_SELECTION_SYNC,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -20045,6 +20151,7 @@ def main() -> int:
     _check_qual_hybrid_rag_reentry_decision(errors)
     _check_full_mockup_activation_reentry_decision(errors)
     _check_goal_stack_reentry_closeout(errors)
+    _check_post_reentry_runtime_selection_sync(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
