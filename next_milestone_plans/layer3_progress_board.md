@@ -1066,3 +1066,7 @@ Refresh this board against:
 - `tools/nrc_aps_retrieval_cutover_gate.py`
 - `project6.ps1`
 - GitHub PR state for every PR explicitly named by the active progress packet: `layer3_progress_manifest.json`, this board, `layer3_progress_refresh_spec.md`, `progress-ui-spec.md`, `progress-prompt.md`, `README_LAYER3_PHASE1A_PACK.md`, and the referenced `Layer3_planning_docs` files. Treat this as an intentionally scoped derived set, not a frozen exhaustive enumeration; verify merged/open state, merge commit SHA, PR URL, and pending docs-closeout status from GitHub before using a PR as current-main authority.
+
+## Package Mutation Reentry Decision
+
+`255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md` records the current-main package posture after connector/destination reentry: bounded backend/API package lifecycle runtimes are live for preview, replacement set authority, supersession commit lineage, replacement artifact manifest, and replacement namespace rows; rendered package mutation controls, broad package mutation/reconstruction, source package row mutation, source package payload rewrite, replacement package payload generation, downstream invalidation/re-delivery runtime, provider/public URL behavior, connector/destination dispatch side effects, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned package authority remain blocked.
