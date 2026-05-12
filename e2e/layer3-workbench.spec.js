@@ -196,7 +196,8 @@ async function expectLiveThemeParityCheckpoint(page, checkpointLabel, visibleSur
     await expect(page.locator('#gate-c-panel')).toHaveCount(1);
     await expect(page.locator('#external-export-download-band')).toHaveCount(1);
     await expect(page.locator('#external-export-download-signed-reference-panel')).toHaveCount(1);
-    await expect(page.locator('#provider-private-signed-url-panel')).toHaveCount(0);
+    await expect(page.locator('#provider-private-signed-url-panel')).toHaveCount(1);
+    await expect(page.locator('#provider-private-signed-url-use')).toHaveCount(0);
     await expect(page.locator('#connector-destination-panel')).toHaveCount(0);
     await expect(page.locator('#package-mutation-panel')).toHaveCount(0);
   }
@@ -2030,6 +2031,167 @@ async function submitRenderedExternalExportDownloadSignedReference(
   return { signedReference, useHeaders, payload: signedPayload };
 }
 
+async function submitRenderedProviderPrivateSignedUrl(
+  page,
+  sessionId,
+  approval,
+  planPreview,
+  execution,
+  review,
+  commit,
+  packageSubmit,
+  handoffPrepare,
+  apsDispatch,
+  downloadPrepare,
+) {
+  await page.locator('#theme-selector').selectOption('workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
+  await page.locator('[data-operation-target="external-export-download-band"]').click();
+  await expect(page.locator('#external-export-download-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#provider-private-signed-url-panel')).toContainText('provider_private_signed_url_ui_ready');
+  await expect(page.locator('#provider-private-signed-url-prepare')).toBeEnabled();
+  await expect(page.locator('#provider-private-signed-url-status')).toBeDisabled();
+  await expect(page.locator('#provider-private-signed-url-revoke')).toBeDisabled();
+  await expect(page.locator('#provider-private-signed-url-use')).toHaveCount(0);
+
+  const prepareRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare')
+    && apiRequest.method() === 'POST'
+  ));
+  const prepareResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare')
+  ));
+  await page.locator('#provider-private-signed-url-prepare').click();
+  const preparePayload = (await prepareRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(preparePayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'decision_notes',
+    'delivery_mode',
+    'download_mode',
+    'export_download_descriptor_ref',
+    'export_download_target',
+    'external_export_download_record_ref',
+    'external_export_download_state',
+    'operator_decision',
+    'pass_run_id',
+    'recipient_scope',
+    'reconciliation_record_id',
+    'requested_ttl_seconds',
+    'session_id',
+    'source_artifact_hash',
+    'source_artifact_size_bytes',
+  ]);
+  expect(preparePayload.session_id).toBe(sessionId);
+  expect(preparePayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(preparePayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(preparePayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(preparePayload.external_export_download_record_ref).toBe(downloadPrepare.external_export_download_record_ref);
+  expect(preparePayload.export_download_descriptor_ref).toBe(downloadPrepare.export_download_descriptor_ref);
+  expect(preparePayload.external_export_download_state).toBe('external_export_download_prepared');
+  expect(preparePayload.export_download_target).toBe('aps_evidence_bundle_download_reference');
+  expect(preparePayload.download_mode).toBe('reference_only_prepare');
+  expect(preparePayload.delivery_mode).toBe('provider_private_signed_url');
+  expect(preparePayload.operator_decision).toBe('prepare_provider_private_signed_url');
+  expect(preparePayload.source_artifact_hash).toBe(downloadPrepare.source_artifact_hash);
+  expect(preparePayload.source_artifact_size_bytes).toBe(downloadPrepare.source_artifact_size_bytes);
+  expect(preparePayload.recipient_scope).toBe('external_downstream_recipient_private_artifact_delivery');
+  expect(preparePayload.requested_ttl_seconds).toBe(300);
+  expect(preparePayload).not.toHaveProperty('provider_private_signed_url_token');
+  expect(preparePayload).not.toHaveProperty('raw_provider_private_signed_url_token');
+  expect(preparePayload).not.toHaveProperty('provider_url');
+  expect(preparePayload).not.toHaveProperty('public_url');
+  expect(preparePayload).not.toHaveProperty('connector_dispatch');
+  expect(preparePayload).not.toHaveProperty('package_mutation');
+  expect(preparePayload).not.toHaveProperty('source_expansion');
+
+  const prepare = await expectJson(await prepareResponsePromise);
+  expect(prepare.schema_id).toBe('layer3.provider_private_signed_url.prepare.v1');
+  expect(prepare.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
+  expect(prepare.provider_signed_url_receipt_id).toBeTruthy();
+  expect(prepare.delivery_mode).toBe('provider_private_signed_url');
+  expect(prepare.provider_url_redacted).toBe('provider-private-signed-url:redacted');
+  expect(prepare.provider_url_revocation_supported).toBe(true);
+  expect(prepare.provider_url_revoked).toBe(false);
+  expect(prepare.source_artifact_hash).toBe(downloadPrepare.source_artifact_hash);
+  expect(prepare.source_artifact_size_bytes).toBe(downloadPrepare.source_artifact_size_bytes);
+  expect(prepare).not.toHaveProperty('provider_private_signed_url_token');
+  expect(prepare.audit_receipt || {}).not.toHaveProperty('provider_private_signed_url_token');
+  expect(JSON.stringify(prepare)).not.toContain('raw_provider_private_signed_url_token');
+  await expect(page.locator('#provider-private-signed-url-panel')).toContainText(prepare.provider_signed_url_receipt_id);
+  await expect(page.locator('#provider-private-signed-url-panel')).toContainText('provider-private-signed-url:redacted');
+  await expect(page.locator('#provider-private-signed-url-prepare')).toBeDisabled();
+  await expect(page.locator('#provider-private-signed-url-status')).toBeEnabled();
+  await expect(page.locator('#provider-private-signed-url-revoke')).toBeEnabled();
+
+  const statusResponsePromise = page.waitForResponse((response) => (
+    response.url().includes(`/api/v1/layer3/handoff/export/download/provider-private-signed-url/status/${prepare.provider_signed_url_receipt_id}`)
+  ));
+  await page.locator('#provider-private-signed-url-status').click();
+  const status = await expectJson(await statusResponsePromise);
+  expect(status.schema_id).toBe('layer3.provider_private_signed_url.status.v1');
+  expect(status.provider_signed_url_receipt_id).toBe(prepare.provider_signed_url_receipt_id);
+  expect(status.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
+  expect(status.provider_url_redacted).toBe('provider-private-signed-url:redacted');
+  expect(status).not.toHaveProperty('provider_private_signed_url_token');
+  expect(status.audit_receipt || {}).not.toHaveProperty('provider_private_signed_url_token');
+  expect(JSON.stringify(status)).not.toContain('raw_provider_private_signed_url_token');
+
+  const revokeRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke')
+    && apiRequest.method() === 'POST'
+  ));
+  const revokeResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke')
+  ));
+  await page.locator('#provider-private-signed-url-revoke').click();
+  const revokePayload = (await revokeRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(revokePayload, [
+    'client_request_id',
+    'decision_notes',
+    'idempotency_key',
+    'operator_decision',
+    'provider_signed_url_receipt_id',
+    'revocation_reason',
+    'revoked_by',
+  ]);
+  expect(revokePayload.provider_signed_url_receipt_id).toBe(prepare.provider_signed_url_receipt_id);
+  expect(revokePayload.operator_decision).toBe('revoke_provider_private_signed_url');
+  expect(revokePayload.idempotency_key).toBe(`provider-private-revoke:${prepare.provider_signed_url_receipt_id}`);
+  expect(revokePayload.revoked_by).toBe('layer3-rendered-workbench');
+  expect(revokePayload).not.toHaveProperty('provider_private_signed_url_token');
+  expect(revokePayload).not.toHaveProperty('raw_provider_private_signed_url_token');
+  expect(revokePayload).not.toHaveProperty('provider_url');
+  expect(revokePayload).not.toHaveProperty('public_url');
+  expect(revokePayload).not.toHaveProperty('connector_dispatch');
+  expect(revokePayload).not.toHaveProperty('package_mutation');
+  expect(revokePayload).not.toHaveProperty('source_expansion');
+
+  const revoke = await expectJson(await revokeResponsePromise);
+  expect(revoke.schema_id).toBe('layer3.provider_private_signed_url.revoke.v1');
+  expect(revoke.provider_signed_url_receipt_id).toBe(prepare.provider_signed_url_receipt_id);
+  expect(revoke.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
+  expect(revoke.provider_url_redacted).toBe('provider-private-signed-url:redacted');
+  expect(revoke.provider_url_revoked).toBe(true);
+  expect(revoke.revocation_recorded).toBe(true);
+  expect(revoke).not.toHaveProperty('provider_private_signed_url_token');
+  expect(revoke.audit_receipt || {}).not.toHaveProperty('provider_private_signed_url_token');
+  expect(JSON.stringify(revoke)).not.toContain('raw_provider_private_signed_url_token');
+  await expect(page.locator('#provider-private-signed-url-panel')).toContainText('provider_private_signed_url_revoked');
+  await expect(page.locator('#provider-private-signed-url-revoke')).toBeDisabled();
+
+  const revokedStatusResponsePromise = page.waitForResponse((response) => (
+    response.url().includes(`/api/v1/layer3/handoff/export/download/provider-private-signed-url/status/${prepare.provider_signed_url_receipt_id}`)
+  ));
+  await page.locator('#provider-private-signed-url-status').click();
+  const revokedStatus = await expectJson(await revokedStatusResponsePromise);
+  expect(revokedStatus.provider_signed_url_receipt_id).toBe(prepare.provider_signed_url_receipt_id);
+  expect(revokedStatus.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
+  expect(revokedStatus.provider_url_redacted).toBe('provider-private-signed-url:redacted');
+  await expectNoDeferredRawMixedControls(page);
+  return { prepare, status, revoke, revokedStatus, preparePayload, revokePayload };
+}
+
 function qualitativeApsPackageSubmitUiFixture() {
   const sessionId = 'session-qual-aps-submit-ui';
   const analysisPlanId = 'plan-qual-aps-submit-ui';
@@ -3330,6 +3492,126 @@ test('Layer 3 workbench drives raw mixed rendered external export download signe
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/signed-reference/use'))).toHaveLength(1);
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
     '/handoff/export/download/deliver',
+    '/package/mutation',
+    '/package/replacement',
+    '/package/supersession',
+    '/handoff/connector',
+  ]);
+});
+
+test('Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  await expectLiveThemeParityCheckpoint(page, 'materialized-source-selection', '#source-fieldset');
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  const status = await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+  const review = await submitRenderedResultReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    status,
+    {
+      operatorDecision: 'approved',
+      reviewNotes: 'Raw mixed rendered result review approved for provider-private signed URL proof.',
+      packageReviewEnabled: true,
+    },
+  );
+  const preview = await inspectRenderedPackagePreview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+  );
+  const commit = await commitRenderedPackageConstruction(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    preview,
+  );
+  const packageSubmit = await submitRenderedPackageReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+  );
+  const handoffPrepare = await submitRenderedHandoffExportPrepare(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+    packageSubmit,
+  );
+  const apsDispatch = await submitRenderedApsHandoffDispatch(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+    packageSubmit,
+    handoffPrepare,
+  );
+  const downloadPrepare = await submitRenderedExternalExportDownloadPrepare(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+    packageSubmit,
+    handoffPrepare,
+    apsDispatch,
+  );
+  const providerPrivate = await submitRenderedProviderPrivateSignedUrl(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+    packageSubmit,
+    handoffPrepare,
+    apsDispatch,
+    downloadPrepare,
+  );
+
+  expect(providerPrivate.prepare.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
+  expect(providerPrivate.status.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
+  expect(providerPrivate.revoke.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
+  expect(providerPrivate.revokedStatus.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
+  await expectLiveThemeParityCheckpoint(
+    page,
+    'provider-private-signed-url-revoked',
+    '#provider-private-signed-url-panel',
+  );
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-private-signed-url/prepare'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-private-signed-url/status'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-private-signed-url/revoke'))).toHaveLength(1);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/handoff/export/download/provider-private-signed-url/use',
     '/package/mutation',
     '/package/replacement',
     '/package/supersession',
