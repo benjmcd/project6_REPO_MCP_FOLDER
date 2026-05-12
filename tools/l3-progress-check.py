@@ -316,6 +316,9 @@ PACKAGE_MUTATION_REENTRY_DECISION = (
 QUAL_HYBRID_RAG_REENTRY_DECISION = (
     PLANNING_DOCS / "256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md"
 )
+FULL_MOCKUP_ACTIVATION_REENTRY_DECISION = (
+    PLANNING_DOCS / "257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14656,6 +14659,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md",
             "255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md",
             "256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md",
+            "257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md",
             "source_breadth_reentry_authority_packet",
         ),
         BOARD: (
@@ -14668,6 +14672,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "Connector Destination Reentry Decision",
             "Package Mutation Reentry Decision",
             "Qual Hybrid RAG Reentry Decision",
+            "Full Mockup Activation Reentry Decision",
             "source_breadth_reentry_authority_packet",
         ),
         MANIFEST: (
@@ -14680,6 +14685,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "connector_destination_reentry_decision",
             "package_mutation_reentry_decision",
             "qual_hybrid_rag_reentry_decision",
+            "full_mockup_activation_reentry_decision",
             "source_breadth_reentry_authority_packet",
         ),
         PROOF_MANIFEST: (
@@ -14692,6 +14698,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "connector_destination_reentry_decision_proof",
             "package_mutation_reentry_decision_proof",
             "qual_hybrid_rag_reentry_decision_proof",
+            "full_mockup_activation_reentry_decision_proof",
             "source_breadth_reentry_authority_packet",
         ),
     }
@@ -14725,6 +14732,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "latest_package_mutation_reentry_decision_live_behavior_change": False,
             "latest_qual_hybrid_rag_reentry_decision_branch": "codex/l3-qual-hybrid-rag-reentry-freeze",
             "latest_qual_hybrid_rag_reentry_decision_live_behavior_change": False,
+            "latest_full_mockup_activation_reentry_decision_branch": "codex/l3-full-mockup-reentry-freeze",
+            "latest_full_mockup_activation_reentry_decision_live_behavior_change": False,
         }
         for key, expected in expected_current.items():
             if current_status.get(key) != expected:
@@ -14773,6 +14782,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             errors.append(f"{_rel(MANIFEST)} scope_status.package_mutation_reentry_decision must be completed_package_mutation_reentry_decision_no_rendered_runtime")
         if scope_status.get("qual_hybrid_rag_reentry_decision") != "completed_qual_hybrid_rag_reentry_decision_no_broad_runtime":
             errors.append(f"{_rel(MANIFEST)} scope_status.qual_hybrid_rag_reentry_decision must be completed_qual_hybrid_rag_reentry_decision_no_broad_runtime")
+        if scope_status.get("full_mockup_activation_reentry_decision") != "completed_full_mockup_activation_reentry_decision_no_activation_runtime":
+            errors.append(f"{_rel(MANIFEST)} scope_status.full_mockup_activation_reentry_decision must be completed_full_mockup_activation_reentry_decision_no_activation_runtime")
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     roadmap_proof = proof_data.get("post_provider_private_roadmap_selection_freeze_proof") if isinstance(proof_data, dict) else None
@@ -14984,6 +14995,34 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             if qual_reentry_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_reentry_decision_proof.{key} must be {expected!r}")
 
+    mockup_reentry_proof = proof_data.get("full_mockup_activation_reentry_decision_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(mockup_reentry_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing full_mockup_activation_reentry_decision_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_full_mockup_activation_reentry_decision_no_activation_runtime",
+            "implementation_branch": "codex/l3-full-mockup-reentry-freeze",
+            "live_behavior_change": False,
+            "selected_planning_mode": "full_mockup_activation_reentry_decision",
+            "entry_decision": "mockups_target_state_only_activation_blocked",
+            "current_mockup_truth_state": "mockups_target_state_only",
+            "current_rendered_workbench_status": "existing_server_authoritative_controls_only",
+            "current_browser_proof_status": "bounded_headed_headless_proofs_for_admitted_paths",
+            "full_mockup_activation": "blocked",
+            "frontend_only_durable_state": "blocked",
+            "browser_local_persistence_as_authority": "blocked",
+            "new_rendered_mockup_controls": "blocked",
+            "route_api_behavior_change": "blocked",
+            "server_authority_contract_for_mockups": "missing",
+            "mockup_to_live_state_mapping": "missing",
+            "operator_journey_scope": "missing",
+            "theme_accessibility_headed_headless_plan": "missing",
+            "implementation_entry_allowed_next": False,
+        }
+        for key, expected in expected_scalars.items():
+            if mockup_reentry_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} full_mockup_activation_reentry_decision_proof.{key} must be {expected!r}")
+
 
 def _check_package_mutation_reentry_decision(errors: list[str]) -> None:
     decision_text = _read_required_text(PACKAGE_MUTATION_REENTRY_DECISION, errors)
@@ -15032,6 +15071,30 @@ def _check_qual_hybrid_rag_reentry_decision(errors: list[str]) -> None:
     for term in required_terms:
         if term not in decision_text:
             errors.append(f"{_rel(QUAL_HYBRID_RAG_REENTRY_DECISION)} missing qual hybrid RAG reentry decision term: {term}")
+
+
+def _check_full_mockup_activation_reentry_decision(errors: list[str]) -> None:
+    decision_text = _read_required_text(FULL_MOCKUP_ACTIVATION_REENTRY_DECISION, errors)
+    required_terms = [
+        "Status: current-main reentry decision freeze for `full_mockup_activation_reentry_decision`.",
+        "entry_decision: mockups_target_state_only_activation_blocked",
+        "current_mockup_truth_state: mockups_target_state_only",
+        "current_rendered_workbench_status: existing_server_authoritative_controls_only",
+        "current_browser_proof_status: bounded_headed_headless_proofs_for_admitted_paths",
+        "full_mockup_activation: blocked",
+        "frontend_only_durable_state: blocked",
+        "browser_local_persistence_as_authority: blocked",
+        "new_rendered_mockup_controls: blocked",
+        "route_api_behavior_change: blocked",
+        "server_authority_contract_for_mockups: missing",
+        "mockup_to_live_state_mapping: missing",
+        "operator_journey_scope: missing",
+        "theme_accessibility_headed_headless_plan: missing",
+        "implementation_entry_allowed_next: false",
+    ]
+    for term in required_terms:
+        if term not in decision_text:
+            errors.append(f"{_rel(FULL_MOCKUP_ACTIVATION_REENTRY_DECISION)} missing full mockup reentry decision term: {term}")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -19699,6 +19762,7 @@ def main() -> int:
         CONNECTOR_DESTINATION_REENTRY_DECISION,
         PACKAGE_MUTATION_REENTRY_DECISION,
         QUAL_HYBRID_RAG_REENTRY_DECISION,
+        FULL_MOCKUP_ACTIVATION_REENTRY_DECISION,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -19923,6 +19987,7 @@ def main() -> int:
     _check_post_provider_private_roadmap_selection_freeze(errors)
     _check_package_mutation_reentry_decision(errors)
     _check_qual_hybrid_rag_reentry_decision(errors)
+    _check_full_mockup_activation_reentry_decision(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
