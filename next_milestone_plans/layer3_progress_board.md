@@ -1118,3 +1118,7 @@ Refresh this board against:
 ## Post Reentry Named Packet Closeout
 
 `267_POST_REENTRY_NAMED_PACKET_CLOSEOUT.md` closes the post-reentry named packet stack as no runtime selected. Docs `259` through `266` have now checked runtime selection, source breadth, connector/destination, package mutation, qualitative/hybrid/RAG, full mockup activation, and auth/security; each remains blocked because no user/product-named product/operator use case is selected. Implementation remains blocked until one exact use case names the family, mode, server authority, contracts, stale-authority/idempotency rules, negative tests, leakage controls, and headed/headless/theme proof where rendered behavior is admitted.
+
+## Mockup Theme Freeze
+
+`268_MOCKUP_THEME_FREEZE.md` selects the dedicated `layer3_mockup_workbench_theme` product/UX target: a pixel-perfect functional rendition of the Layer 3 mockup/user-flow corpus under `/review/layer3`. The freeze corrects prior target-state-only wording without making runtime live; implementation remains blocked until a separate entry-freeze maps server-authoritative workbench state to exact mockup frames, classifies contextual text boxes, defines visual-diff/headed/headless proof, and preserves no-go boundaries for source expansion, RAG/vector, external connector/destination, package mutation, full mockup activation, and auth/security behavior.
