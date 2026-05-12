@@ -12,6 +12,11 @@
     "purpose": "Record current-main proof/progress metadata after PR #609 merged no-behavior-change APS source-family extraction and attach the external multi-audit synthesis/adjudication reference for next-slice ordering.",
     "live_behavior_change": false,
     "live_behavior_change_summary": "This docs/proof sync records PR #609 current-main authority for no-behavior-change APS source-family extraction through `backend/app/services/layer3_aps_source_family.py` and `backend/tests/test_layer3_aps_source_family.py`, while retaining PR #607 package-state helper proof and prior proof boundaries. It changes no route, DTO, model, migration, runtime behavior, connector/destination dispatch, provider/public URL support, source/schema/runtime widening, broad qualitative/hybrid/RAG behavior, frontend-only durable state, hidden LLM planning, full mockup activation, authentication/security hardening, package payload rewrite, or broad package mutation/reconstruction.",
+    "latest_pr798_review_debt_closeout_branch": "codex/l3-review-debt-source-claude",
+    "latest_pr798_review_debt_closeout_pr": "#798",
+    "latest_pr798_review_debt_closeout_merge_commit": "231755fef6d913bde4568c809e43b6fdd421465c",
+    "latest_pr798_review_debt_closeout_live_behavior_change": true,
+    "latest_pr798_review_debt_closeout_summary": "PR #798 closes review debt by sharing one admitted DatasetSourceProvenance predicate between APS/raw-mixed candidate listing and material preview, requiring local_operator_staged_server_owned_manifest before raw_mixed_materialized server-owned row admission, and removing the stale Claude prototype manual source node while SPEC_CHIPS stays empty. Focused tests cover raw-mixed material-preview traceability, unrecognized source-system rejection, and stale manual-node absence. It admits no new source class, source adapter registry, local upload/local-directory/web connector/RAG-vector behavior, package/handoff/export expansion, provider/public URL, connector/destination dispatch, full mockup activation, or auth/security behavior change.",
     "latest_gate_b_material_basis_branch": "codex/l3-gate-b-material-basis-extract",
     "latest_gate_b_material_basis_pr": "#632",
     "latest_gate_b_material_basis_commit": "56f2ea7b",
@@ -10510,6 +10515,45 @@
       "no_full_mockup_activation",
       "no_auth_security_behavior_change",
       "no_frontend_only_durable_authority"
+    ]
+  },
+  "pr798_review_debt_closeout_proof": {
+    "scope": "Bounded review-debt closeout for raw-mixed DatasetSourceProvenance admission and static Claude prototype source-node accuracy.",
+    "implementation_branch": "codex/l3-review-debt-source-claude",
+    "merged_pr": "#798",
+    "merge_commit": "231755fef6d913bde4568c809e43b6fdd421465c",
+    "live_behavior_change": true,
+    "raw_mixed_server_owned_source_system": "local_operator_staged_server_owned_manifest",
+    "admission_predicate_status": "shared_between_candidate_listing_and_material_preview",
+    "claude_manual_spec_status": "manual_spec_empty_and_stale_manual_source_node_removed",
+    "implemented_files": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/review_ui/static/claude.html"
+    ],
+    "validation_tests": [
+      "python -m pytest .\\backend\\tests\\test_layer3_workbench.py .\\backend\\tests\\test_layer3_page.py -q",
+      "python .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "proof_files": [
+      "backend/tests/test_layer3_workbench.py",
+      "backend/tests/test_layer3_page.py"
+    ],
+    "positive_guards": [
+      "raw_mixed_materialized rows with the server-owned source-system sentinel stay traceable through material preview",
+      "Claude SPEC_CHIPS remains empty without advertising a manual source node"
+    ],
+    "negative_guards": [
+      "unrecognized raw-mixed server-owned source systems are rejected from dataset-version candidates",
+      "no new source class",
+      "no source adapter registry",
+      "no local upload or local-directory ingestion",
+      "no web connector or RAG/vector behavior",
+      "no package, handoff, or export expansion",
+      "no provider/public URL behavior",
+      "no connector/destination dispatch",
+      "no full mockup activation",
+      "no auth/security behavior change"
     ]
   }
 }
