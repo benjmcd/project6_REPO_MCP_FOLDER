@@ -6,6 +6,8 @@ The filename is retained for milestone continuity, but this document corrects th
 
 This pass is docs/proof/checker-only. It does not add routes, DTOs, services, models, migrations, executable backend tests, rendered UI controls, Playwright behavior, provider credentials, provider network calls, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, full mockup activation, auth/security behavior, same-origin delivery changes, same-origin signed-reference changes, provider/public URL runtime, or public proxy URL runtime.
 
+Implementation note: `239_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_API.md` records the backend/API-only revoke runtime that implements this corrected revoke-only boundary while keeping `use` deferred.
+
 ## Decision
 
 ```yaml
