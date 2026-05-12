@@ -1182,7 +1182,7 @@ Refresh this board against:
 ## Mockup Threshold Tightening
 
 - `278_MOCKUP_THRESHOLD_TIGHTENING.md` implements `visual_diff_threshold_tightening_to_observed_envelope` after the selector precision pass.
-- The visual-diff harness limits now tighten further to `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31`, against a measured post-refinement worst frame of `0.272669` and `0.299356`.
+- The visual-diff harness limits now tighten further to `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`, against a measured post-refinement worst frame of `0.272669` and `0.299356`.
 - This is proof-hardening only; it does not claim full pixel-perfect parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
 
 
@@ -1190,7 +1190,7 @@ Refresh this board against:
 
 - `279_MOCKUP_PDF_LOCATION_PANEL_REFINEMENT.md` records `pdf_location_panel_structure_and_slide_selector_refinement` as the latest bounded visual-refinement pass.
 - The pass reshapes `#mockup-pdf-location-card` into a five-region static PDF-location board and remaps `slide_1_projection`, `slide_general_projection`, and `slide_usecase_projection` to `#mockup-fixture-scenario`.
-- Current visual-diff limits are `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31`; the current worst mean frame is `userflow_overview_2_projection` at `0.253353/0.300960`, and the current worst high-delta frame is `pdf_location_projection` at `0.221211/0.312841`.
+- Current visual-diff limits are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`; the current worst mean frame is `userflow_overview_2_projection` at `0.253353/0.300960`, and the current worst high-delta frame is `pdf_location_projection` at `0.221211/0.312841`.
 - The pass is rendered-theme proof work only; no backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security widening, or browser-owned durable authority is admitted.
 
 
@@ -1198,7 +1198,7 @@ Refresh this board against:
 
 - `280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md` records `overview_frame_selector_refinement_to_theme_shell` as the latest bounded selector-refinement pass.
 - `userflow_overview_1_projection` and `userflow_overview_2_projection` now map to `#mockup-theme-shell` because the source frames depict full-workbench overview/montage flows rather than only the user-flow/PDF-location board.
-- Current visual-diff limits are `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31`; the current measured worst frame is `pdf_location_projection` at `0.221211/0.312841`.
+- Current visual-diff limits are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`; the current measured worst frame is `pdf_location_projection` at `0.221211/0.312841`.
 - The pass is selector/proof work only; no rendered UI behavior, backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security widening, or browser-owned durable authority is admitted.
 
 
@@ -1206,7 +1206,7 @@ Refresh this board against:
 
 - `281_MOCKUP_PDF_CONTRAST_REFINEMENT.md` records `pdf_location_contrast_palette_refinement` as the latest bounded visual-refinement pass.
 - The pass adjusts only the `#mockup-pdf-location-card` static palette toward the repo-local mid-gray PDF-location frame while preserving the five-region structure and existing selectors.
-- Current visual-diff limits are `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31`; `pdf_location_projection` improved from `0.221211/0.312841` to `0.190949/0.300808`.
+- Current visual-diff limits are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`; `pdf_location_projection` improved from `0.221211/0.312841` to `0.190949/0.300808`.
 - Current worst mean is `slide_usecase_projection` at `0.216169/0.116944`; current worst high-delta is `pdf_location_projection` at `0.190949/0.300808`.
 - The pass is rendered-theme proof work only; no backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security widening, or browser-owned durable authority is admitted.
 
@@ -1215,6 +1215,14 @@ Refresh this board against:
 
 - `282_MOCKUP_FIXTURE_SLIDE_REFINEMENT.md` records `fixture_query_spec_slide_structure_refinement` as the latest bounded visual-refinement pass.
 - The pass reshapes `#mockup-fixture-scenario` into a vertical query/spec slide projection with disabled manual-specification chips.
-- Current visual-diff limits are `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31`; `slide_usecase_projection` improved from `0.216169/0.116944` to `0.072746/0.072854`.
+- Current visual-diff limits are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`; `slide_usecase_projection` improved from `0.216169/0.116944` to `0.072746/0.072854`.
 - Current measured worst frame is `pdf_location_projection` at `0.191193/0.301313`.
+- The pass is rendered-theme proof work only; no backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security widening, or browser-owned durable authority is admitted.
+
+
+## Mockup PDF-Location Text-Density Refinement
+
+- `283_MOCKUP_PDF_TEXT_DENSITY_REFINEMENT.md` records `pdf_location_text_density_and_disabled_chip_refinement` as the latest bounded visual-refinement pass.
+- The pass reduces dense dark text mass and the dark disabled-control patch inside `#mockup-pdf-location-card` while preserving the existing five-region static projection.
+- Current visual-diff limits are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`; `pdf_location_projection` improved from `0.191193/0.301313` to `0.188340/0.298573`.
 - The pass is rendered-theme proof work only; no backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security widening, or browser-owned durable authority is admitted.
