@@ -371,6 +371,9 @@ MOCKUP_THRESHOLD_TIGHTENING_PROOF = (
 MOCKUP_PDF_LOCATION_PANEL_REFINEMENT_PROOF = (
     PLANNING_DOCS / "279_MOCKUP_PDF_LOCATION_PANEL_REFINEMENT.md"
 )
+MOCKUP_OVERVIEW_SELECTOR_REFINEMENT_PROOF = (
+    PLANNING_DOCS / "280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -17175,7 +17178,7 @@ def _check_mockup_visual_diff_harness(errors: list[str]) -> None:
         "rendered_ui_behavior_change: false",
         "layer3-mockup-visual-diff-metrics.json",
         "MOCKUP_VISUAL_DIFF_LIMITS",
-        "normalizedMeanDeltaMax: 0.26",
+        "normalizedMeanDeltaMax: 0.23",
         "highDeltaRatioMax: 0.32",
         "does not claim pixel-perfect parity",
     ):
@@ -17251,7 +17254,7 @@ def _check_mockup_visual_diff_harness(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} mockup visual-diff harness proof missing current limits")
     else:
         expected_limits = {
-            "normalizedMeanDeltaMax": 0.26,
+            "normalizedMeanDeltaMax": 0.23,
             "highDeltaRatioMax": 0.32,
         }
         for key, expected in expected_limits.items():
@@ -17272,7 +17275,7 @@ def _check_mockup_pixel_refinement(errors: list[str]) -> None:
 
     e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
     for term in (
-        "normalizedMeanDeltaMax: 0.26",
+        "normalizedMeanDeltaMax: 0.23",
         "highDeltaRatioMax: 0.32",
         "#mockup-pdf-location-card",
     ):
@@ -17298,7 +17301,7 @@ def _check_mockup_pixel_refinement(errors: list[str]) -> None:
         "live_behavior_change: false",
         "runtime_behavior_change: false",
         "rendered_ui_behavior_change: false",
-        "normalizedMeanDeltaMax: 0.26",
+        "normalizedMeanDeltaMax: 0.23",
         "highDeltaRatioMax: 0.32",
         "#mockup-pdf-location-card",
         "does not claim full pixel-perfect parity",
@@ -17316,7 +17319,7 @@ def _check_mockup_pixel_refinement(errors: list[str]) -> None:
         PHASE1A_README: (
             "277_MOCKUP_PIXEL_REFINEMENT.md",
             "pdf_location_frame_selector_precision_and_threshold_tightening",
-            "normalizedMeanDeltaMax: 0.26",
+            "normalizedMeanDeltaMax: 0.23",
         ),
         MANIFEST: (
             "mockup_pixel_refinement",
@@ -17382,7 +17385,7 @@ def _check_mockup_threshold_tightening(errors: list[str]) -> None:
         "live_behavior_change: false",
         "runtime_behavior_change: false",
         "rendered_ui_behavior_change: false",
-        "normalizedMeanDeltaMax: 0.26",
+        "normalizedMeanDeltaMax: 0.23",
         "highDeltaRatioMax: 0.32",
         "does not claim full pixel-perfect parity",
     ):
@@ -17394,7 +17397,7 @@ def _check_mockup_threshold_tightening(errors: list[str]) -> None:
             "## Mockup Threshold Tightening",
             "278_MOCKUP_THRESHOLD_TIGHTENING.md",
             "visual_diff_threshold_tightening_to_observed_envelope",
-            "normalizedMeanDeltaMax: 0.26",
+            "normalizedMeanDeltaMax: 0.23",
         ),
         PHASE1A_README: (
             "278_MOCKUP_THRESHOLD_TIGHTENING.md",
@@ -17482,7 +17485,7 @@ def _check_mockup_pdf_location_panel_refinement(errors: list[str]) -> None:
 
     e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
     for term in (
-        "normalizedMeanDeltaMax: 0.26",
+        "normalizedMeanDeltaMax: 0.23",
         "highDeltaRatioMax: 0.32",
         "#mockup-fixture-scenario",
         "layer3-mockup-fixture-scenario.png",
@@ -17516,7 +17519,7 @@ def _check_mockup_pdf_location_panel_refinement(errors: list[str]) -> None:
         "live_behavior_change: false",
         "runtime_behavior_change: false",
         "rendered_ui_behavior_change: true",
-        "normalizedMeanDeltaMax: 0.26",
+        "normalizedMeanDeltaMax: 0.23",
         "highDeltaRatioMax: 0.32",
         "userflow_overview_2_projection",
         "pdf_location_projection",
@@ -17535,7 +17538,7 @@ def _check_mockup_pdf_location_panel_refinement(errors: list[str]) -> None:
         PHASE1A_README: (
             "279_MOCKUP_PDF_LOCATION_PANEL_REFINEMENT.md",
             "pdf_location_panel_structure_and_slide_selector_refinement",
-            "normalizedMeanDeltaMax: 0.26",
+            "normalizedMeanDeltaMax: 0.23",
         ),
         MANIFEST: (
             "mockup_pdf_location_panel_refinement",
@@ -17593,12 +17596,132 @@ def _check_mockup_pdf_location_panel_refinement(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} mockup PDF-location panel refinement proof missing current limits")
     else:
         expected_limits = {
-            "normalizedMeanDeltaMax": 0.26,
+            "normalizedMeanDeltaMax": 0.23,
             "highDeltaRatioMax": 0.32,
         }
         for key, expected in expected_limits.items():
             if limits.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} mockup PDF-location panel refinement proof stale {key}")
+
+
+def _check_mockup_overview_selector_refinement(errors: list[str]) -> None:
+    e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
+    for term in (
+        "normalizedMeanDeltaMax: 0.23",
+        "highDeltaRatioMax: 0.32",
+        "#mockup-theme-shell",
+        "#mockup-fixture-scenario",
+        "#mockup-pdf-location-card",
+    ):
+        if term not in e2e_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing mockup overview selector refinement term: {term}")
+
+    frame_manifest_text = _read_required_text(
+        ROOT / "next_milestone_plans" / "layer3-mockups" / "frames" / "manifest.json",
+        errors,
+    )
+    for term in (
+        '"projection_id": "userflow_overview_1_projection"',
+        '"projection_id": "userflow_overview_2_projection"',
+        '"selector": "#mockup-theme-shell"',
+        '"screenshot_attachment": "layer3-mockup-theme-shell.png"',
+        '"projection_id": "slide_usecase_projection"',
+        '"selector": "#mockup-fixture-scenario"',
+    ):
+        if term not in frame_manifest_text:
+            errors.append(f"layer3 mockup frame manifest missing overview selector refinement term: {term}")
+
+    proof_doc_text = _read_required_text(MOCKUP_OVERVIEW_SELECTOR_REFINEMENT_PROOF, errors)
+    for term in (
+        "Status: current-branch overview-frame selector refinement proof for the mockup visual-diff harness.",
+        "selected_refinement_mode: overview_frame_selector_refinement_to_theme_shell",
+        "implementation_branch: codex/l3-mockup-overview-selector-refinement",
+        "live_behavior_change: false",
+        "runtime_behavior_change: false",
+        "rendered_ui_behavior_change: false",
+        "normalizedMeanDeltaMax: 0.23",
+        "highDeltaRatioMax: 0.32",
+        "userflow_overview_1_projection",
+        "userflow_overview_2_projection",
+        "does not claim full pixel-perfect parity",
+    ):
+        if term not in proof_doc_text:
+            errors.append(f"{_rel(MOCKUP_OVERVIEW_SELECTOR_REFINEMENT_PROOF)} missing mockup overview selector refinement proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Overview Selector Refinement",
+            "280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md",
+            "overview_frame_selector_refinement_to_theme_shell",
+            "#mockup-theme-shell",
+        ),
+        PHASE1A_README: (
+            "280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md",
+            "overview_frame_selector_refinement_to_theme_shell",
+            "normalizedMeanDeltaMax: 0.23",
+        ),
+        MANIFEST: (
+            "mockup_overview_selector_refinement",
+            "latest_mockup_overview_selector_refinement_branch",
+            "overview_frame_selector_refinement_to_theme_shell",
+            "#mockup-theme-shell",
+        ),
+        PROOF_MANIFEST: (
+            "mockup_overview_selector_refinement_proof",
+            "overview_frame_selector_refinement_to_theme_shell",
+            "280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup overview selector refinement term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_mockup_overview_selector_refinement_branch", "codex/l3-mockup-overview-selector-refinement"),
+        ("latest_mockup_overview_selector_refinement_live_behavior_change", False),
+    ):
+        if key in manifest:
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mismatched mockup overview selector refinement key: {key}")
+        elif not (isinstance(current_status, dict) and current_status.get(key) == expected):
+            errors.append(f"{_rel(MANIFEST)} missing mockup overview selector refinement key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("mockup_overview_selector_refinement") != "completed_overview_frame_selector_refinement_to_theme_shell":
+        errors.append(f"{_rel(MANIFEST)} missing completed mockup overview selector refinement scope status")
+    next_required = manifest.get("next_required_decision")
+    if not isinstance(next_required, str) or "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics" not in next_required:
+        errors.append(f"{_rel(MANIFEST)} next_required_decision missing post-overview-selector next action")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("mockup_overview_selector_refinement_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_overview_selector_refinement_proof")
+        return
+    expected_scalars = {
+        "status": "completed_overview_frame_selector_refinement_to_theme_shell",
+        "implementation_branch": "codex/l3-mockup-overview-selector-refinement",
+        "live_behavior_change": False,
+        "selected_refinement_mode": "overview_frame_selector_refinement_to_theme_shell",
+        "runtime_behavior_change": False,
+        "rendered_ui_behavior_change": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup overview selector refinement proof {key} mismatch")
+    limits = proof_entry.get("visual_diff_limits")
+    if not isinstance(limits, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} mockup overview selector refinement proof missing current limits")
+    else:
+        expected_limits = {
+            "normalizedMeanDeltaMax": 0.23,
+            "highDeltaRatioMax": 0.32,
+        }
+        for key, expected in expected_limits.items():
+            if limits.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup overview selector refinement proof stale {key}")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -22314,6 +22437,7 @@ def main() -> int:
         MOCKUP_PIXEL_REFINEMENT_PROOF,
         MOCKUP_THRESHOLD_TIGHTENING_PROOF,
         MOCKUP_PDF_LOCATION_PANEL_REFINEMENT_PROOF,
+        MOCKUP_OVERVIEW_SELECTOR_REFINEMENT_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -22563,6 +22687,7 @@ def main() -> int:
     _check_mockup_pixel_refinement(errors)
     _check_mockup_threshold_tightening(errors)
     _check_mockup_pdf_location_panel_refinement(errors)
+    _check_mockup_overview_selector_refinement(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
