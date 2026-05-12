@@ -9,7 +9,8 @@
             const sharedStorageKey = 'nrc_aps_review_theme';
             const layer3StorageKey = 'layer3_workbench_theme';
             const isSharedThemePreference = (value) => value === 'system' || value === 'light' || value === 'dark';
-            const isLayer3ThemePreference = (value) => value === 'workbench';
+            const layer3MockupTheme = 'layer3_mockup_workbench_theme';
+            const isLayer3ThemePreference = (value) => value === 'workbench' || value === layer3MockupTheme;
             let preference = 'system';
             try {
                 let sharedPreference = localStorage.getItem(sharedStorageKey);
@@ -41,11 +42,18 @@
             }
             const prefersDark = typeof window.matchMedia === 'function'
                 && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const resolvedTheme = preference === 'dark' || preference === 'light' || preference === 'workbench'
-                ? preference
-                : (prefersDark ? 'dark' : 'light');
+            const resolvedTheme = preference === layer3MockupTheme
+                ? 'workbench'
+                : (preference === 'dark' || preference === 'light' || preference === 'workbench'
+                    ? preference
+                    : (prefersDark ? 'dark' : 'light'));
             document.documentElement.dataset.theme = resolvedTheme;
             document.documentElement.dataset.themePreference = preference;
+            if (preference === layer3MockupTheme) {
+                document.documentElement.dataset.themeVariant = layer3MockupTheme;
+            } else {
+                delete document.documentElement.dataset.themeVariant;
+            }
         }());
     </script>
     <link rel="stylesheet" href="/review/layer3/static/review.css">
@@ -64,6 +72,7 @@
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
                 <option value="workbench">Workbench</option>
+                <option value="layer3_mockup_workbench_theme">Mockup Workbench</option>
                 <option value="claude">Claude</option>
             </select>
         </div>
@@ -84,6 +93,73 @@
 
         <section class="layer3-workspace" aria-label="Layer 3 first slice">
             <section class="authority-rail" id="authority-rail" aria-label="Authority rail"></section>
+
+            <section id="mockup-theme-shell" class="mockup-theme-shell" data-theme-target="layer3_mockup_workbench_theme" data-first-slice="mockup_theme_shell_and_fixture_projection" aria-labelledby="mockup-theme-heading" aria-hidden="true">
+                <div class="mockup-theme-hero">
+                    <p class="mockup-theme-kicker">Dedicated Layer 3 workbench theme</p>
+                    <h2 id="mockup-theme-heading">Mockup shell and fixture projection</h2>
+                    <p>The visual shell maps the selected mockup journey onto existing server-authoritative Layer 3 state. Unsupported future behavior is shown as unavailable, not as live runtime.</p>
+                    <div class="mockup-theme-chip-row" aria-label="Mockup theme authority chips">
+                        <span class="mockup-theme-chip">layer3_mockup_workbench_theme</span>
+                        <span class="mockup-theme-chip">mockup_theme_shell_and_fixture_projection</span>
+                        <span class="mockup-theme-chip">server state mapping required</span>
+                        <span class="mockup-theme-chip">browser storage presentation only</span>
+                    </div>
+                </div>
+                <div class="mockup-theme-fixture" id="mockup-fixture-scenario" data-fixture-scenario="semiconductor_infrastructure_auto_supply_chain">
+                    <div class="mockup-fixture-query">
+                        <span class="mockup-frame-label">User natural language query</span>
+                        <p>Locate semiconductor infrastructure and auto supply-chain exposure in APS PDF material, then route source evidence through Gate B, Gate C, and Sublayer 3C output review.</p>
+                    </div>
+                    <div class="mockup-fixture-spec">
+                        <span class="mockup-frame-label">Manual specification</span>
+                        <p>Use existing DatasetVersion and ApsContentDocument authority only. Treat local upload, directory ingestion, connector retrieval, RAG/vector retrieval, package mutation, and auth changes as unavailable.</p>
+                    </div>
+                    <div class="mockup-fixture-controls" aria-label="Unavailable future controls">
+                        <span class="mockup-disabled-control" aria-disabled="true">New source family unavailable</span>
+                        <span class="mockup-disabled-control" aria-disabled="true">External destination unavailable</span>
+                        <span class="mockup-disabled-control" aria-disabled="true">Package mutation unavailable</span>
+                        <span class="mockup-disabled-control" aria-disabled="true">Broad RAG unavailable</span>
+                    </div>
+                </div>
+                <div class="mockup-theme-flow" aria-label="Mockup first-slice flow projection">
+                    <article class="mockup-flow-card mockup-pre3a">
+                        <span class="mockup-frame-label">Pre-3A</span>
+                        <h3>Source intent and fixture intake</h3>
+                        <p>Operator intent is projected into existing source-class controls and explicit fixture chips.</p>
+                    </article>
+                    <article class="mockup-flow-card mockup-gateb">
+                        <span class="mockup-frame-label">Gate B</span>
+                        <h3>Material ledger decision</h3>
+                        <p>Candidate material stays bound to server-owned DatasetVersion and ApsContentDocument identifiers.</p>
+                    </article>
+                    <article class="mockup-flow-card mockup-gatec">
+                        <span class="mockup-frame-label">Gate C</span>
+                        <h3>Typing and modality routing</h3>
+                        <p>Typing cards feed the 3B modality banks and the structural 3C lanes already present in the workbench.</p>
+                    </article>
+                    <article class="mockup-flow-card mockup-3a">
+                        <span class="mockup-frame-label">Sublayer 3A</span>
+                        <h3>Evidence object field</h3>
+                        <p>Fixture and live material cards remain visually separated from unsupported source expansion.</p>
+                    </article>
+                    <article class="mockup-flow-card mockup-3b">
+                        <span class="mockup-frame-label">Sublayer 3B</span>
+                        <h3>Analysis grouping</h3>
+                        <p>Quantitative, qualitative, hybrid, and unsupported buckets preserve current admission rules.</p>
+                    </article>
+                    <article class="mockup-flow-card mockup-3c">
+                        <span class="mockup-frame-label">Sublayer 3C</span>
+                        <h3>Output and provenance field</h3>
+                        <p>Output cards are fixture projection or existing selected-pass state, never browser-owned durable authority.</p>
+                    </article>
+                </div>
+                <details class="mockup-theme-context">
+                    <summary>Selected acceptance frames and contextual text policy</summary>
+                    <ul id="mockup-frame-list" class="mockup-frame-list"></ul>
+                    <p>Contextual mockup text boxes default to collapsible help or demo annotation unless backed by admitted server state.</p>
+                </details>
+            </section>
 
             <section id="sublayer-map-band" class="sublayer-map-band canvas-stage-band" aria-labelledby="sublayer-map-heading" tabindex="-1">
                 <div class="sublayer-map-heading">

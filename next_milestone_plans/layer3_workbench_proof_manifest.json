@@ -718,7 +718,10 @@
     "latest_mockup_theme_freeze_summary": "The dedicated layer3_mockup_workbench_theme is selected as the pixel-perfect functional mockup workbench target for /review/layer3, with implementation still blocked behind a separate entry-freeze.",
     "latest_mockup_theme_entry_freeze_branch": "codex/l3-mockup-theme-entry-freeze",
     "latest_mockup_theme_entry_freeze_live_behavior_change": false,
-    "latest_mockup_theme_entry_freeze_summary": "Current main now includes the mockup_theme_entry_freeze: mockup_theme_shell_and_fixture_projection is selected as the next bounded implementation slice for layer3_mockup_workbench_theme on /review/layer3. The allowed future code surfaces are the static Layer 3 review UI, focused rendered-page/e2e tests, planning/proof manifests, and the progress checker. Backend API/model/migration/service changes, source expansion, connector/destination runtime, package mutation, broad qualitative/hybrid/RAG behavior, auth/security behavior, full mockup durable workflow activation, and browser-owned durable authority remain blocked unless separately refrozen."
+    "latest_mockup_theme_entry_freeze_summary": "Current main now includes the mockup_theme_entry_freeze: mockup_theme_shell_and_fixture_projection is selected as the next bounded implementation slice for layer3_mockup_workbench_theme on /review/layer3. The allowed future code surfaces are the static Layer 3 review UI, focused rendered-page/e2e tests, planning/proof manifests, and the progress checker. Backend API/model/migration/service changes, source expansion, connector/destination runtime, package mutation, broad qualitative/hybrid/RAG behavior, auth/security behavior, full mockup durable workflow activation, and browser-owned durable authority remain blocked unless separately refrozen.",
+    "latest_mockup_theme_shell_implementation_branch": "codex/l3-mockup-theme-shell",
+    "latest_mockup_theme_shell_implementation_live_behavior_change": true,
+    "latest_mockup_theme_shell_implementation_summary": "Current main now includes the mockup_theme_shell_implementation: the dedicated layer3_mockup_workbench_theme is live as a rendered UI theme variant for /review/layer3, with mockup_theme_shell_and_fixture_projection, semiconductor_infrastructure_auto_supply_chain fixture projection, first-slice Pre-3A/Gate B/Gate C/Sublayer 3A/3B/3C cards, unavailable non-interactive future-behavior markers, and no backend API/model/migration/service behavior change."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -12034,6 +12037,52 @@
       "model_or_migration_change_without_refreeze",
       "service_behavior_change_without_refreeze",
       "source_expansion_runtime",
+      "external_connector_destination_runtime",
+      "rendered_package_mutation_runtime",
+      "broad_qualitative_hybrid_rag_runtime",
+      "auth_security_behavior_change",
+      "full_mockup_durable_workflow_activation",
+      "frontend_only_durable_authority"
+    ]
+  },
+  "mockup_theme_shell_implementation_proof": {
+    "status": "completed_mockup_theme_shell_fixture_projection_rendered_ui",
+    "implementation_branch": "codex/l3-mockup-theme-shell",
+    "live_behavior_change": true,
+    "route_api_behavior_change": false,
+    "model_migration_service_behavior_change": false,
+    "selected_runtime_mode": "rendered_mockup_theme_shell_fixture_projection",
+    "entry_freeze": "269_MOCKUP_THEME_ENTRY_FREEZE.md",
+    "implementation_proof_doc": "270_MOCKUP_THEME_SHELL_PROOF.md",
+    "selected_theme_target": "layer3_mockup_workbench_theme",
+    "selected_first_slice": "mockup_theme_shell_and_fixture_projection",
+    "target_route_family": "/review/layer3",
+    "fixture_scenario": "semiconductor_infrastructure_auto_supply_chain",
+    "server_state_mapping_preserved": true,
+    "browser_storage_policy": "presentation_cache_only_no_durable_authority",
+    "implemented_surfaces": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "implemented_ui_terms": [
+      "Mockup Workbench theme selector option",
+      "data-theme-variant layer3_mockup_workbench_theme",
+      "mockup-theme-shell",
+      "mockup-fixture-scenario",
+      "Pre-3A Gate B Gate C Sublayer 3A Sublayer 3B Sublayer 3C cards",
+      "non-interactive unavailable markers"
+    ],
+    "blocked_runtime": [
+      "backend_api_behavior_change",
+      "backend_model_or_migration_change",
+      "backend_service_behavior_change",
+      "new_source_family_runtime",
+      "local_upload_or_local_directory_ingestion",
+      "web_connector_retrieval",
+      "rag_vector_retrieval",
       "external_connector_destination_runtime",
       "rendered_package_mutation_runtime",
       "broad_qualitative_hybrid_rag_runtime",

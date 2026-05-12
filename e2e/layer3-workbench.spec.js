@@ -4789,3 +4789,31 @@ test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-
   await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|structural');
   await expect(page.locator('.state-3c')).toContainText('Structural only');
 });
+
+test('Layer 3 mockup workbench theme exposes fixture projection without backend widening', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
+
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'layer3_mockup_workbench_theme');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'layer3_mockup_workbench_theme');
+  await expect(page.locator('#mockup-theme-shell')).toBeVisible();
+  await expect(page.locator('#mockup-theme-shell')).toHaveAttribute('data-theme-target', 'layer3_mockup_workbench_theme');
+  await expect(page.locator('#mockup-theme-shell')).toHaveAttribute('data-first-slice', 'mockup_theme_shell_and_fixture_projection');
+  await expect(page.locator('#mockup-fixture-scenario')).toHaveAttribute('data-fixture-scenario', 'semiconductor_infrastructure_auto_supply_chain');
+  await expect(page.locator('#mockup-theme-shell')).toContainText('server state mapping required');
+  await expect(page.locator('#mockup-theme-shell')).toContainText('browser storage presentation only');
+  await expect(page.locator('#mockup-theme-shell')).toContainText('New source family unavailable');
+  await expect(page.locator('#mockup-frame-list li')).toHaveCount(7);
+  await expect(page.locator('#mockup-frame-list')).toContainText('userflow/layer3_user-flow-overview1.png');
+  await expect(page.locator('#mockup-frame-list')).toContainText('focus_on_these/sublayer3C.png');
+  await expect(page.locator('#mockup-theme-shell button')).toHaveCount(0);
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'source/mixed-corpus/materialize',
+    'package/mutation',
+    'handoff/connector',
+    'provider-private-signed-url/prepare',
+    'execution/start',
+  ]);
+});

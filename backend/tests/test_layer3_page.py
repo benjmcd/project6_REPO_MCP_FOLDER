@@ -22,7 +22,14 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert "<title>Layer 3 Workbench</title>" in response.text
     assert '<body class="layer3-page">' in response.text
     assert '<option value="workbench">Workbench</option>' in response.text
+    assert '<option value="layer3_mockup_workbench_theme">Mockup Workbench</option>' in response.text
     assert "layer3_workbench_theme" in response.text
+    assert 'id="mockup-theme-shell"' in response.text
+    assert 'data-theme-target="layer3_mockup_workbench_theme"' in response.text
+    assert 'data-first-slice="mockup_theme_shell_and_fixture_projection"' in response.text
+    assert 'id="mockup-fixture-scenario"' in response.text
+    assert "semiconductor_infrastructure_auto_supply_chain" in response.text
+    assert "browser storage presentation only" in response.text
     assert "localStorage.removeItem(sharedStorageKey)" in response.text
     assert 'id="authority-rail"' in response.text
     assert 'id="sublayer-map-band"' in response.text
@@ -132,6 +139,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".authority-rail" in css.text
     assert "body.layer3-page" in css.text
     assert "overflow: visible" in css.text
+    assert 'html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-shell' in css.text
+    assert ".mockup-theme-flow" in css.text
+    assert ".mockup-disabled-control" in css.text
     assert ".step-chip.current" in css.text
     assert ".step-chip:focus-visible" in css.text
     assert ".workband:focus" in css.text
@@ -160,6 +170,12 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".layer3-header .header-right select" in css.text
     assert "const API_ROOT = '/api/v1/layer3';" in js.text
     assert "const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';" in js.text
+    assert "const LAYER3_MOCKUP_WORKBENCH_THEME = 'layer3_mockup_workbench_theme';" in js.text
+    assert "const LAYER3_MOCKUP_THEME_FIRST_SLICE = 'mockup_theme_shell_and_fixture_projection';" in js.text
+    assert "function renderMockupThemeShell" in js.text
+    assert "dataset.themeVariant = LAYER3_MOCKUP_WORKBENCH_THEME" in js.text
+    assert "userflow/layer3_user-flow-overview1.png" in js.text
+    assert "focus_on_these/sublayer3C.png" in js.text
     assert "const LAYER3_SESSION_RECOVERY_STORAGE_KEY = 'layer3_workbench_session_recovery_v1';" in js.text
     assert "const LAYER3_GATE_B_DRAFT_STORAGE_KEY = 'layer3_workbench_gate_b_draft_v1';" in js.text
     assert "LAYER3_SESSION_RECOVERY_SCHEMA_ID = 'layer3.browser_session_recovery.v1'" in js.text
@@ -171,6 +187,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "draft.state_action_contract_signature !== currentContract" in js.text
     assert "isSharedThemePreference" in js.text
     assert "value === 'workbench'" in js.text
+    assert "value === 'workbench' || value === LAYER3_MOCKUP_WORKBENCH_THEME" in js.text
     assert "localStorage.removeItem(LAYER3_THEME_STORAGE_KEY)" in js.text
     assert "localStorage.removeItem(THEME_STORAGE_KEY)" in js.text
     assert "localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY" in js.text
