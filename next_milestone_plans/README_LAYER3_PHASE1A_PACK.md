@@ -1656,7 +1656,7 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 ## Mockup Threshold Tightening
 
 - `Layer3_planning_docs/278_MOCKUP_THRESHOLD_TIGHTENING.md` records `visual_diff_threshold_tightening_to_observed_envelope`.
-- The pass tightens `MOCKUP_VISUAL_DIFF_LIMITS` to `normalizedMeanDeltaMax: 0.26` and `highDeltaRatioMax: 0.32` after the selector precision pass measured `pdf_location_projection` at `0.272669` and `0.299356`.
+- The pass tightens `MOCKUP_VISUAL_DIFF_LIMITS` to `normalizedMeanDeltaMax: 0.23` and `highDeltaRatioMax: 0.32` after the selector precision pass measured `pdf_location_projection` at `0.272669` and `0.299356`.
 - This is proof-hardening only; it does not claim full pixel-perfect parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
 
 
@@ -1664,5 +1664,13 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 
 - `Layer3_planning_docs/279_MOCKUP_PDF_LOCATION_PANEL_REFINEMENT.md` records `pdf_location_panel_structure_and_slide_selector_refinement`.
 - The rendered theme now uses a five-region `#mockup-pdf-location-card` static projection and maps query/spec slide frames to `#mockup-fixture-scenario` for tighter selector specificity.
-- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.26` and `highDeltaRatioMax: 0.32` at `360 x 220`; this is not a full pixel-perfect claim.
+- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.23` and `highDeltaRatioMax: 0.32` at `360 x 220`; this is not a full pixel-perfect claim.
+- Runtime/backend/source/connector/package/RAG/auth/full-activation scope remains blocked until separately refrozen as a named server-authoritative implementation slice.
+
+
+## Mockup Overview Selector Refinement
+
+- `Layer3_planning_docs/280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md` records `overview_frame_selector_refinement_to_theme_shell`.
+- Overview montage frames now use `#mockup-theme-shell`; query/spec slide frames remain on `#mockup-fixture-scenario`; PDF-location remains on `#mockup-pdf-location-card`.
+- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.23` and `highDeltaRatioMax: 0.32` at `360 x 220`; this is not a full pixel-perfect claim.
 - Runtime/backend/source/connector/package/RAG/auth/full-activation scope remains blocked until separately refrozen as a named server-authoritative implementation slice.
