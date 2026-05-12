@@ -1646,3 +1646,9 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/276_MOCKUP_VISUAL_DIFF_HARNESS.md` records the implemented `repo_local_mockup_frame_visual_diff_acceptance` harness for `layer3_mockup_workbench_theme`.
 - The Playwright test uses `MOCKUP_VISUAL_DIFF_LIMITS`, browser canvas image comparison, all eight repo-local frame manifest entries, and the `layer3-mockup-visual-diff-metrics.json` attachment.
 - This is a deterministic proof-harness pass, not a pixel-perfect parity claim; it adds no backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
+
+## Mockup Pixel Refinement
+
+- `Layer3_planning_docs/277_MOCKUP_PIXEL_REFINEMENT.md` records `pdf_location_frame_selector_precision_and_threshold_tightening`.
+- The pass adds the stable `#mockup-pdf-location-card` selector, maps `pdf_location_projection` to that selector in the repo-local frame manifest, and tightens `MOCKUP_VISUAL_DIFF_LIMITS` to `normalizedMeanDeltaMax: 0.30` and `highDeltaRatioMax: 0.34`.
+- This improves visual-proof strictness without claiming completed pixel-perfect parity and without changing backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.

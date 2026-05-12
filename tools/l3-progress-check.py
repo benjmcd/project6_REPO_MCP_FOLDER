@@ -364,6 +364,7 @@ MOCKUP_VISUAL_DIFF_FREEZE = PLANNING_DOCS / "275_MOCKUP_VISUAL_DIFF_FREEZE.md"
 MOCKUP_VISUAL_DIFF_HARNESS_PROOF = (
     PLANNING_DOCS / "276_MOCKUP_VISUAL_DIFF_HARNESS.md"
 )
+MOCKUP_PIXEL_REFINEMENT_PROOF = PLANNING_DOCS / "277_MOCKUP_PIXEL_REFINEMENT.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -16932,6 +16933,7 @@ def _check_pdf_location_theme_projection(errors: list[str]) -> None:
     html_text = _read_required_text(LAYER3_HTML, errors)
     for term in (
         'id="mockup-pdf-location-projection"',
+        'id="mockup-pdf-location-card"',
         'data-projection-state="unavailable"',
         "Server PDF-location projection",
         "Read-only server projection pending",
@@ -17150,6 +17152,7 @@ def _check_mockup_visual_diff_harness(errors: list[str]) -> None:
         "layer3-mockup-visual-diff-metrics.json",
         "normalizedMeanDelta",
         "highDeltaRatio",
+        "#mockup-pdf-location-card",
         "expectNoRequestsToLayer3Paths(apiRequests",
     ):
         if term not in e2e_text:
@@ -17166,6 +17169,8 @@ def _check_mockup_visual_diff_harness(errors: list[str]) -> None:
         "rendered_ui_behavior_change: false",
         "layer3-mockup-visual-diff-metrics.json",
         "MOCKUP_VISUAL_DIFF_LIMITS",
+        "normalizedMeanDeltaMax: 0.30",
+        "highDeltaRatioMax: 0.34",
         "does not claim pixel-perfect parity",
     ):
         if term not in proof_doc_text:
@@ -17215,9 +17220,7 @@ def _check_mockup_visual_diff_harness(errors: list[str]) -> None:
     if not isinstance(scope_status, dict) or scope_status.get("mockup_visual_diff_harness") != "completed_repo_local_mockup_visual_diff_harness":
         errors.append(f"{_rel(MANIFEST)} missing completed mockup visual-diff harness scope status")
     next_required = manifest.get("next_required_decision")
-    if not isinstance(next_required, str) or "tighten_mockup_visual_diff_thresholds_through_pixel_refinement" not in next_required:
-        errors.append(f"{_rel(MANIFEST)} next_required_decision missing post-harness pixel-refinement next action")
-    elif "implement_repo_local_mockup_visual_diff_harness" in next_required:
+    if isinstance(next_required, str) and "implement_repo_local_mockup_visual_diff_harness" in next_required:
         errors.append(f"{_rel(MANIFEST)} next_required_decision still lists completed visual-diff harness implementation")
 
     proof = _load_json(PROOF_MANIFEST, errors)
@@ -17237,6 +17240,118 @@ def _check_mockup_visual_diff_harness(errors: list[str]) -> None:
     for key, expected in expected_scalars.items():
         if proof_entry.get(key) != expected:
             errors.append(f"{_rel(PROOF_MANIFEST)} mockup visual-diff harness proof {key} mismatch")
+
+
+def _check_mockup_pixel_refinement(errors: list[str]) -> None:
+    html_text = _read_required_text(LAYER3_HTML, errors)
+    if 'id="mockup-pdf-location-card"' not in html_text:
+        errors.append(f"{_rel(LAYER3_HTML)} missing PDF-location card stable selector")
+
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    if 'id="mockup-pdf-location-card"' not in page_test_text:
+        errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing PDF-location card selector assertion")
+
+    e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
+    for term in (
+        "normalizedMeanDeltaMax: 0.30",
+        "highDeltaRatioMax: 0.34",
+        "#mockup-pdf-location-card",
+    ):
+        if term not in e2e_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing mockup pixel-refinement term: {term}")
+
+    frame_manifest_text = _read_required_text(
+        ROOT / "next_milestone_plans" / "layer3-mockups" / "frames" / "manifest.json",
+        errors,
+    )
+    for term in (
+        '"projection_id": "pdf_location_projection"',
+        '"selector": "#mockup-pdf-location-card"',
+    ):
+        if term not in frame_manifest_text:
+            errors.append(f"layer3 mockup frame manifest missing pixel-refinement term: {term}")
+
+    proof_doc_text = _read_required_text(MOCKUP_PIXEL_REFINEMENT_PROOF, errors)
+    for term in (
+        "Status: current-branch bounded pixel-refinement proof for the mockup visual-diff harness.",
+        "selected_refinement_mode: pdf_location_frame_selector_precision_and_threshold_tightening",
+        "implementation_branch: codex/l3-mockup-pixel-refinement",
+        "live_behavior_change: false",
+        "runtime_behavior_change: false",
+        "rendered_ui_behavior_change: false",
+        "normalizedMeanDeltaMax: 0.30",
+        "highDeltaRatioMax: 0.34",
+        "#mockup-pdf-location-card",
+        "does not claim full pixel-perfect parity",
+    ):
+        if term not in proof_doc_text:
+            errors.append(f"{_rel(MOCKUP_PIXEL_REFINEMENT_PROOF)} missing mockup pixel-refinement proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Pixel Refinement",
+            "277_MOCKUP_PIXEL_REFINEMENT.md",
+            "pdf_location_frame_selector_precision_and_threshold_tightening",
+            "#mockup-pdf-location-card",
+        ),
+        PHASE1A_README: (
+            "277_MOCKUP_PIXEL_REFINEMENT.md",
+            "pdf_location_frame_selector_precision_and_threshold_tightening",
+            "normalizedMeanDeltaMax: 0.30",
+        ),
+        MANIFEST: (
+            "mockup_pixel_refinement",
+            "latest_mockup_pixel_refinement_branch",
+            "pdf_location_frame_selector_precision_and_threshold_tightening",
+            "#mockup-pdf-location-card",
+        ),
+        PROOF_MANIFEST: (
+            "mockup_pixel_refinement_proof",
+            "pdf_location_frame_selector_precision_and_threshold_tightening",
+            "277_MOCKUP_PIXEL_REFINEMENT.md",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup pixel-refinement term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_mockup_pixel_refinement_branch", "codex/l3-mockup-pixel-refinement"),
+        ("latest_mockup_pixel_refinement_live_behavior_change", False),
+    ):
+        if key in manifest:
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mismatched mockup pixel-refinement key: {key}")
+        elif not (isinstance(current_status, dict) and current_status.get(key) == expected):
+            errors.append(f"{_rel(MANIFEST)} missing mockup pixel-refinement key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("mockup_pixel_refinement") != "completed_pdf_location_selector_precision_threshold_tightening":
+        errors.append(f"{_rel(MANIFEST)} missing completed mockup pixel-refinement scope status")
+    next_required = manifest.get("next_required_decision")
+    if not isinstance(next_required, str) or "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics" not in next_required:
+        errors.append(f"{_rel(MANIFEST)} next_required_decision missing post-refinement next action")
+    elif "tighten_mockup_visual_diff_thresholds_through_pixel_refinement" in next_required:
+        errors.append(f"{_rel(MANIFEST)} next_required_decision still lists completed pixel-refinement action")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("mockup_pixel_refinement_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_pixel_refinement_proof")
+        return
+    expected_scalars = {
+        "status": "completed_pdf_location_selector_precision_threshold_tightening",
+        "implementation_branch": "codex/l3-mockup-pixel-refinement",
+        "live_behavior_change": False,
+        "selected_refinement_mode": "pdf_location_frame_selector_precision_and_threshold_tightening",
+        "runtime_behavior_change": False,
+        "rendered_ui_behavior_change": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-refinement proof {key} mismatch")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -21949,6 +22064,7 @@ def main() -> int:
         PDF_LOCATION_THEME_PROOF,
         MOCKUP_VISUAL_DIFF_FREEZE,
         MOCKUP_VISUAL_DIFF_HARNESS_PROOF,
+        MOCKUP_PIXEL_REFINEMENT_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -22195,6 +22311,7 @@ def main() -> int:
     _check_pdf_location_theme_projection(errors)
     _check_mockup_visual_diff_freeze(errors)
     _check_mockup_visual_diff_harness(errors)
+    _check_mockup_pixel_refinement(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

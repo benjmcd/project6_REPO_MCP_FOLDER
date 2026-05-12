@@ -17,8 +17,8 @@ const MOCKUP_FRAME_MANIFEST_PATH = path.resolve('next_milestone_plans/layer3-moc
 const MOCKUP_VISUAL_DIFF_LIMITS = {
   compareWidth: 360,
   compareHeight: 220,
-  normalizedMeanDeltaMax: 0.35,
-  highDeltaRatioMax: 0.40,
+  normalizedMeanDeltaMax: 0.30,
+  highDeltaRatioMax: 0.34,
 };
 
 function pngDimensions(buffer) {
@@ -4962,6 +4962,7 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   ]);
   expect(new Set(frameProjectionCoverage.map((entry) => entry.selector))).toEqual(new Set([
     '#mockup-userflow-board',
+    '#mockup-pdf-location-card',
     '#mockup-sublayers-ab-board',
     '#mockup-execution-lanes',
   ]));
@@ -5142,6 +5143,7 @@ test('Layer 3 mockup workbench visual diff harness compares repo-local frames', 
   expect(comparisons).toHaveLength(8);
   expect(new Set(comparisons.map((comparison) => comparison.selector))).toEqual(new Set([
     '#mockup-userflow-board',
+    '#mockup-pdf-location-card',
     '#mockup-sublayers-ab-board',
     '#mockup-execution-lanes',
   ]));
