@@ -307,6 +307,9 @@ GOAL_STACK_IMPLEMENTATION_AUDIT = (
 SOURCE_RENDERED_CONTROL_DECISION = (
     PLANNING_DOCS / "253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md"
 )
+CONNECTOR_DESTINATION_REENTRY_DECISION = (
+    PLANNING_DOCS / "254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14627,6 +14630,16 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "rag_vector_control: blocked",
             "implementation_entry_allowed_next: false",
         ),
+        CONNECTOR_DESTINATION_REENTRY_DECISION: (
+            "Status: current-main reentry decision freeze for `connector_destination_reentry_decision`.",
+            "entry_decision: internal_record_only_live_external_dispatch_blocked",
+            "current_connector_destination_runtime: internal_dispatch_record_only",
+            "external_connector_invocation: blocked",
+            "destination_write: blocked",
+            "connector_run_creation: blocked",
+            "generic_downstream_dispatch: blocked",
+            "implementation_entry_allowed_next: false",
+        ),
         PHASE1A_README: (
             "248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md",
             "249_SOURCE_BREADTH_REENTRY_CONTRACT.md",
@@ -14634,6 +14647,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "251_POST_807_CLOSEOUT.md",
             "252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md",
             "253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md",
+            "254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md",
             "source_breadth_reentry_authority_packet",
         ),
         BOARD: (
@@ -14643,6 +14657,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "Post 807 Closeout",
             "Goal Stack Implementation Audit",
             "Source Rendered Control Decision",
+            "Connector Destination Reentry Decision",
             "source_breadth_reentry_authority_packet",
         ),
         MANIFEST: (
@@ -14652,6 +14667,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "post_807_closeout",
             "goal_stack_implementation_audit",
             "source_rendered_control_decision",
+            "connector_destination_reentry_decision",
             "source_breadth_reentry_authority_packet",
         ),
         PROOF_MANIFEST: (
@@ -14661,6 +14677,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "post_807_closeout_proof",
             "goal_stack_implementation_audit_proof",
             "source_rendered_control_decision_proof",
+            "connector_destination_reentry_decision_proof",
             "source_breadth_reentry_authority_packet",
         ),
     }
@@ -14688,6 +14705,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "latest_goal_stack_implementation_audit_live_behavior_change": False,
             "latest_source_rendered_control_decision_branch": "codex/l3-source-rendered-control-freeze",
             "latest_source_rendered_control_decision_live_behavior_change": False,
+            "latest_connector_destination_reentry_decision_branch": "codex/l3-connector-destination-reentry-freeze",
+            "latest_connector_destination_reentry_decision_live_behavior_change": False,
         }
         for key, expected in expected_current.items():
             if current_status.get(key) != expected:
@@ -14730,6 +14749,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             errors.append(f"{_rel(MANIFEST)} scope_status.goal_stack_implementation_audit must be completed_bounded_implementation_audit")
         if scope_status.get("source_rendered_control_decision") != "completed_rendered_control_decision_no_new_runtime":
             errors.append(f"{_rel(MANIFEST)} scope_status.source_rendered_control_decision must be completed_rendered_control_decision_no_new_runtime")
+        if scope_status.get("connector_destination_reentry_decision") != "completed_connector_destination_reentry_decision_no_external_runtime":
+            errors.append(f"{_rel(MANIFEST)} scope_status.connector_destination_reentry_decision must be completed_connector_destination_reentry_decision_no_external_runtime")
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     roadmap_proof = proof_data.get("post_provider_private_roadmap_selection_freeze_proof") if isinstance(proof_data, dict) else None
@@ -14860,6 +14881,29 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
         for key, expected in expected_scalars.items():
             if source_control_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source_rendered_control_decision_proof.{key} must be {expected!r}")
+
+    connector_reentry_proof = proof_data.get("connector_destination_reentry_decision_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(connector_reentry_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing connector_destination_reentry_decision_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_connector_destination_reentry_decision_no_external_runtime",
+            "implementation_branch": "codex/l3-connector-destination-reentry-freeze",
+            "live_behavior_change": False,
+            "selected_planning_mode": "connector_destination_reentry_decision",
+            "entry_decision": "internal_record_only_live_external_dispatch_blocked",
+            "current_connector_destination_runtime": "internal_dispatch_record_only",
+            "external_connector_invocation": "blocked",
+            "destination_write": "blocked",
+            "connector_run_creation": "blocked",
+            "generic_downstream_dispatch": "blocked",
+            "rendered_connector_destination_controls": "blocked",
+            "provider_public_url_runtime": "blocked",
+            "implementation_entry_allowed_next": False,
+        }
+        for key, expected in expected_scalars.items():
+            if connector_reentry_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_reentry_decision_proof.{key} must be {expected!r}")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -19524,6 +19568,7 @@ def main() -> int:
         POST_807_CLOSEOUT,
         GOAL_STACK_IMPLEMENTATION_AUDIT,
         SOURCE_RENDERED_CONTROL_DECISION,
+        CONNECTOR_DESTINATION_REENTRY_DECISION,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
