@@ -667,7 +667,10 @@
     "post_807_closeout_summary": "Current main now includes the planning/control post_807_closeout: PR #807 merged docs 248 through 250 plus README, board, progress manifest, proof manifest, and checker wiring into main at 9ffc5c64154b5175f56cb0e1b15b9ffc1492f233. The closeout records source_breadth_reentry_authority_packet as current-main planning authority with entry_decision no_runtime_now and implementation_entry_allowed_next false. This pass admits no source runtime, connector/destination dispatch, package mutation/reconstruction, broad qualitative/hybrid/RAG runtime, full mockup activation, auth/security behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered controls, CI or Playwright configuration change, hidden LLM planning, or frontend-only durable authority.",
     "latest_goal_stack_implementation_audit_branch": "codex/l3-source-runtime-tranche",
     "latest_goal_stack_implementation_audit_live_behavior_change": false,
-    "goal_stack_implementation_audit_summary": "Current main now includes the goal_stack_implementation_audit freeze: current-class source runtime, raw-mixed current-class rendered controls, internal connector dispatch record-only behavior, backend package lifecycle authority, and single APS-document qualitative execution are live bounded implementations; new source-family runtime, external connector/destination writes, rendered package mutation controls, broad qualitative/hybrid/RAG/vector behavior, and full mockup activation remain blocked until a later one-mode freeze proves authority and validation."
+    "goal_stack_implementation_audit_summary": "Current main now includes the goal_stack_implementation_audit freeze: current-class source runtime, raw-mixed current-class rendered controls, internal connector dispatch record-only behavior, backend package lifecycle authority, and single APS-document qualitative execution are live bounded implementations; new source-family runtime, external connector/destination writes, rendered package mutation controls, broad qualitative/hybrid/RAG/vector behavior, and full mockup activation remain blocked until a later one-mode freeze proves authority and validation.",
+    "latest_source_rendered_control_decision_branch": "codex/l3-source-rendered-control-freeze",
+    "latest_source_rendered_control_decision_live_behavior_change": false,
+    "source_rendered_control_decision_summary": "Current main now includes the source_rendered_control_decision freeze: existing /review/layer3 raw-mixed current-class controls are live and bounded to server-backed dataset_version and aps_content_document authority, while new source-family selectors, local upload, local-directory ingestion, arbitrary local path picking, web connector retrieval, RAG/vector retrieval, source adapter registry controls, package mutation coupling, connector/destination dispatch, full mockup activation, and browser-owned source authority remain blocked."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10683,7 +10686,8 @@
     "source_breadth_reentry_contract": "completed_planning_control_only",
     "source_breadth_reentry_authority_packet": "completed_planning_control_no_runtime",
     "post_807_closeout": "completed_planning_control_closeout",
-    "goal_stack_implementation_audit": "completed_bounded_implementation_audit"
+    "goal_stack_implementation_audit": "completed_bounded_implementation_audit",
+    "source_rendered_control_decision": "completed_rendered_control_decision_no_new_runtime"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -11252,6 +11256,46 @@
       "full_mockup_activation",
       "frontend_only_durable_authority",
       "auth_security_behavior_change"
+    ]
+  },
+  "source_rendered_control_decision_proof": {
+    "status": "completed_rendered_control_decision_no_new_runtime",
+    "implementation_branch": "codex/l3-source-rendered-control-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "source_rendered_control_decision",
+    "entry_decision": "current_raw_mixed_controls_live_no_new_source_controls",
+    "current_rendered_source_controls": "raw_mixed_current_classes_only",
+    "new_source_family_rendered_controls": "blocked",
+    "browser_source_authority": "blocked",
+    "local_upload_control": "blocked",
+    "local_directory_control": "blocked",
+    "web_connector_control": "blocked",
+    "rag_vector_control": "blocked",
+    "implementation_entry_allowed_next": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md"
+    ],
+    "validation_evidence": [
+      "inherits PR #809 focused test and CI evidence for current bounded implementation state",
+      "this freeze adds no rendered behavior and therefore requires no new browser proof",
+      "python .\\tools\\l3-progress-check.py must pass after wiring"
+    ],
+    "live_bounded_controls": [
+      "source_preview_admitted_classes",
+      "raw_mixed_current_class_seed_materialization_setup",
+      "server_owned_manifest_hash_authority",
+      "materialized_source_id_selection_for_current_classes"
+    ],
+    "blocked_controls": [
+      "new_source_family_selector",
+      "local_upload_source_control",
+      "local_directory_ingestion_control",
+      "arbitrary_local_path_picker",
+      "web_connector_retrieval_control",
+      "rag_vector_retrieval_control",
+      "source_adapter_registry_control",
+      "browser_owned_source_authority"
     ]
   }
 }
