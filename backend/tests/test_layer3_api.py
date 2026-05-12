@@ -3818,6 +3818,7 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
         "provider_credentials",
         "provider_secret",
         "provider_object_key",
+        "provider_url",
         "public_url",
         "public_proxy_url",
         "download_url",
@@ -3850,6 +3851,7 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
     for forbidden in (
         "provider_private_signed_url_token",
         "raw_provider_private_signed_url_token",
+        "provider_url",
         "provider_credentials",
         "public_url",
         "connector_dispatch",
@@ -4027,6 +4029,7 @@ def test_layer3_api_provider_private_signed_url_revoke_success_idempotency_and_f
         commit_body=commit_body,
         readiness_body=readiness_body,
     )
+    monkeypatch.setattr(layer3_provider_private_signed_url.time, "time", lambda: 1_800_000_123)
     prepare = client.post(
         "/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
         json=prepare_payload,
@@ -4070,6 +4073,16 @@ def test_layer3_api_provider_private_signed_url_revoke_success_idempotency_and_f
     assert revoke_body["authority_rail"]["public_url_enabled"] is False
     assert readiness_body["source_artifact_ref"] not in json.dumps(revoke_body, sort_keys=True)
     assert revoke_payload["revocation_reason"] not in revoke.text
+    db = client.layer3_session_factory()
+    try:
+        response_audit = db.get(
+            L3ProviderPrivateSignedUrlAuditEvent,
+            revoke_body["audit_receipt"]["provider_private_signed_url_audit_event_id"],
+        )
+        assert response_audit.event_type == "revoke"
+        assert response_audit.reason_code == "revoked_by_operator"
+    finally:
+        db.close()
 
     status = client.get(
         "/api/v1/layer3/handoff/export/download/provider-private-signed-url/status/"
@@ -4113,6 +4126,13 @@ def test_layer3_api_provider_private_signed_url_revoke_success_idempotency_and_f
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "provider_private_signed_url_revoke_scope_not_admitted"
     assert "raw-token-not-admitted" not in forbidden.text
+    forbidden_provider_url = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+        json={**revoke_payload, "provider_url": "https://provider.invalid/private/raw-url"},
+    )
+    assert forbidden_provider_url.status_code == 400
+    assert forbidden_provider_url.json()["error_code"] == "provider_private_signed_url_revoke_scope_not_admitted"
+    assert "provider.invalid" not in forbidden_provider_url.text
 
     db = client.layer3_session_factory()
     try:
@@ -4160,6 +4180,11 @@ def test_layer3_api_provider_private_signed_url_fail_closed_stale_authority_forb
             "provider_private_signed_url_scope_not_admitted",
         ),
         (
+            {**base_payload, "provider_private_signed_url_token": "raw-token-not-admitted"},
+            400,
+            "provider_private_signed_url_scope_not_admitted",
+        ),
+        (
             {**base_payload, "source_artifact_hash": "0" * 64},
             409,
             "provider_private_signed_url_source_artifact_hash_mismatch",
@@ -4177,6 +4202,31 @@ def test_layer3_api_provider_private_signed_url_fail_closed_stale_authority_forb
         )
         assert response.status_code == expected_status, response.text
         assert response.json()["error_code"] == expected_error
+        assert "raw-token-not-admitted" not in response.text
+
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+        json={**base_payload, "client_request_id": "api-provider-private-signed-url-stale-revoke-prepare"},
+    )
+    assert prepare.status_code == 200, prepare.text
+    artifact_path = Path(readiness_body["source_artifact_ref"])
+    original_artifact_bytes = artifact_path.read_bytes()
+    artifact_path.write_text("stale provider-private revoke artifact", encoding="utf-8")
+    stale_revoke = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+        json={
+            "client_request_id": "api-provider-private-signed-url-stale-revoke",
+            "provider_signed_url_receipt_id": prepare.json()["provider_signed_url_receipt_id"],
+            "idempotency_key": "api-provider-private-signed-url-stale-revoke-idem",
+            "revoked_by": "layer3-api-test",
+            "revocation_reason": "operator requested downstream access stop",
+            "operator_decision": "revoke_provider_private_signed_url",
+        },
+    )
+    assert stale_revoke.status_code == 409
+    assert stale_revoke.json()["error_code"] == "provider_private_signed_url_source_artifact_hash_mismatch"
+    assert "stale provider-private revoke artifact" not in stale_revoke.text
+    artifact_path.write_bytes(original_artifact_bytes)
 
     missing_status = client.get(
         "/api/v1/layer3/handoff/export/download/provider-private-signed-url/status/missing-provider-receipt"

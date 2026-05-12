@@ -111,6 +111,7 @@ PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_FIELDS = frozenset(
         "browser_durable_authority",
         "public_url",
         "public_proxy_url",
+        "provider_url",
         "download_url",
         "signed_reference_token",
         "signed_url",
@@ -421,9 +422,103 @@ def _latest_audit_event(db: Session, receipt_id: str) -> L3ProviderPrivateSigned
     return (
         db.query(L3ProviderPrivateSignedUrlAuditEvent)
         .filter(L3ProviderPrivateSignedUrlAuditEvent.provider_private_signed_url_receipt_id == receipt_id)
-        .order_by(L3ProviderPrivateSignedUrlAuditEvent.created_at.desc())
+        .order_by(
+            L3ProviderPrivateSignedUrlAuditEvent.created_at.desc(),
+            L3ProviderPrivateSignedUrlAuditEvent.provider_private_signed_url_audit_event_id.desc(),
+        )
         .first()
     )
+
+
+def _audit_event_by_id(db: Session, audit_event_id: str) -> L3ProviderPrivateSignedUrlAuditEvent | None:
+    return (
+        db.query(L3ProviderPrivateSignedUrlAuditEvent)
+        .filter(L3ProviderPrivateSignedUrlAuditEvent.provider_private_signed_url_audit_event_id == audit_event_id)
+        .one_or_none()
+    )
+
+
+def _revoke_authority_basis(db: Session, *, receipt_id: str) -> dict[str, Any] | None:
+    receipt = (
+        db.query(L3ProviderPrivateSignedUrlReceipt)
+        .filter(L3ProviderPrivateSignedUrlReceipt.provider_private_signed_url_receipt_id == receipt_id)
+        .one_or_none()
+    )
+    if receipt is None:
+        return None
+    authority = (
+        db.query(L3ProviderPrivateSignedUrlObjectAuthority)
+        .filter(
+            L3ProviderPrivateSignedUrlObjectAuthority.provider_private_signed_url_object_authority_id
+            == receipt.provider_private_signed_url_object_authority_id
+        )
+        .one_or_none()
+    )
+    if authority is None:
+        raise Layer3WorkbenchError(
+            "provider_private_signed_url_revoke_authority_missing",
+            "Provider-private signed URL revoke requires durable object authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["provider_signed_url_receipt_id"],
+            next_allowed_actions=["prepare_provider_private_signed_url"],
+        )
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == authority.reconciliation_record_id,
+            L3ReconciliationRecord.session_id == authority.session_id,
+        )
+        .one_or_none()
+    )
+    if reconciliation is None:
+        raise Layer3WorkbenchError(
+            "provider_private_signed_url_revoke_authority_not_found",
+            "Provider-private signed URL revoke could not reload recorded external export/download authority.",
+            status="not_found",
+            http_status=404,
+            blocked_fields=["provider_signed_url_receipt_id"],
+            next_allowed_actions=["refresh_external_export_download_authority"],
+        )
+    readiness_state = external_export_download_prepare_from_reconciliation(reconciliation)
+    if readiness_state is None:
+        raise Layer3WorkbenchError(
+            "provider_private_signed_url_revoke_authority_missing",
+            "Provider-private signed URL revoke requires recorded external_export_download_prepared authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["provider_signed_url_receipt_id"],
+            next_allowed_actions=["refresh_external_export_download_authority"],
+        )
+    mismatches = []
+    expected = {
+        "external_export_download_record_ref": authority.external_export_download_record_ref,
+        "export_download_descriptor_ref": authority.export_download_descriptor_ref,
+        "source_artifact_hash": authority.source_artifact_hash,
+        "source_artifact_size_bytes": str(authority.source_artifact_size_bytes),
+    }
+    for field, expected_value in expected.items():
+        if str(readiness_state.get(field) or "").strip() != str(expected_value):
+            mismatches.append(field)
+    if mismatches:
+        raise Layer3WorkbenchError(
+            "provider_private_signed_url_revoke_authority_mismatch",
+            "Provider-private signed URL revoke authority no longer matches recorded prepare authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=mismatches,
+            next_allowed_actions=["prepare_new_provider_private_signed_url"],
+        )
+    _validate_server_owned_artifact(readiness_state)
+    return {
+        "session_id": authority.session_id,
+        "reconciliation_record_id": authority.reconciliation_record_id,
+        "source_artifact_ref": str(readiness_state.get("source_artifact_ref") or "").strip(),
+        "source_artifact_hash": authority.source_artifact_hash,
+        "source_artifact_size_bytes": authority.source_artifact_size_bytes,
+        "external_export_download_record_ref": authority.external_export_download_record_ref,
+        "export_download_descriptor_ref": authority.export_download_descriptor_ref,
+    }
 
 
 def _status_from_receipt(receipt: L3ProviderPrivateSignedUrlReceipt, *, now_epoch: int) -> str:
@@ -625,7 +720,7 @@ def provider_private_signed_url_prepare(
         )
         .one()
     )
-    audit = _latest_audit_event(db, receipt.provider_private_signed_url_receipt_id)
+    audit = _audit_event_by_id(db, durable_state.provider_private_signed_url_audit_event_id)
     return _receipt_response(
         schema_id=PROVIDER_PRIVATE_SIGNED_URL_PREPARE_SCHEMA_ID,
         request_id=request_id,
@@ -670,6 +765,7 @@ def provider_private_signed_url_revoke(
     request_id = _text(payload, "client_request_id")
     receipt_id = _text(payload, "provider_signed_url_receipt_id")
     idempotency_key = _text(payload, "idempotency_key")
+    authority_basis = _revoke_authority_basis(db, receipt_id=receipt_id)
     try:
         durable_state = revoke_provider_private_signed_url_receipt(
             db,
@@ -677,6 +773,7 @@ def provider_private_signed_url_revoke(
             idempotency_key=idempotency_key,
             revoked_by=_text(payload, "revoked_by"),
             revocation_reason=_text(payload, "revocation_reason"),
+            authority_basis=authority_basis,
             now_epoch=effective_now,
             request_id=request_id,
         )
@@ -699,7 +796,7 @@ def provider_private_signed_url_revoke(
         )
         .one()
     )
-    audit = _latest_audit_event(db, receipt.provider_private_signed_url_receipt_id)
+    audit = _audit_event_by_id(db, durable_state.provider_private_signed_url_audit_event_id)
     return _receipt_response(
         schema_id=PROVIDER_PRIVATE_SIGNED_URL_REVOKE_SCHEMA_ID,
         request_id=request_id,
