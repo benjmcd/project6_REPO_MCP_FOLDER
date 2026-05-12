@@ -670,7 +670,10 @@
     "goal_stack_implementation_audit_summary": "Current main now includes the goal_stack_implementation_audit freeze: current-class source runtime, raw-mixed current-class rendered controls, internal connector dispatch record-only behavior, backend package lifecycle authority, and single APS-document qualitative execution are live bounded implementations; new source-family runtime, external connector/destination writes, rendered package mutation controls, broad qualitative/hybrid/RAG/vector behavior, and full mockup activation remain blocked until a later one-mode freeze proves authority and validation.",
     "latest_source_rendered_control_decision_branch": "codex/l3-source-rendered-control-freeze",
     "latest_source_rendered_control_decision_live_behavior_change": false,
-    "source_rendered_control_decision_summary": "Current main now includes the source_rendered_control_decision freeze: existing /review/layer3 raw-mixed current-class controls are live and bounded to server-backed dataset_version and aps_content_document authority, while new source-family selectors, local upload, local-directory ingestion, arbitrary local path picking, web connector retrieval, RAG/vector retrieval, source adapter registry controls, package mutation coupling, connector/destination dispatch, full mockup activation, and browser-owned source authority remain blocked."
+    "source_rendered_control_decision_summary": "Current main now includes the source_rendered_control_decision freeze: existing /review/layer3 raw-mixed current-class controls are live and bounded to server-backed dataset_version and aps_content_document authority, while new source-family selectors, local upload, local-directory ingestion, arbitrary local path picking, web connector retrieval, RAG/vector retrieval, source adapter registry controls, package mutation coupling, connector/destination dispatch, full mockup activation, and browser-owned source authority remain blocked.",
+    "latest_connector_destination_reentry_decision_branch": "codex/l3-connector-destination-reentry-freeze",
+    "latest_connector_destination_reentry_decision_live_behavior_change": false,
+    "connector_destination_reentry_decision_summary": "Current main now includes the connector_destination_reentry_decision freeze: existing /api/v1/layer3/handoff/connector/record internal dispatch record-only behavior is live and bounded to server-authority receipts over already prepared artifacts, while external connector invocation, destination writes, connector-run creation, generic downstream dispatch, rendered connector/destination controls, provider/public URL side effects, package mutation, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned connector/destination authority remain blocked."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10687,7 +10690,8 @@
     "source_breadth_reentry_authority_packet": "completed_planning_control_no_runtime",
     "post_807_closeout": "completed_planning_control_closeout",
     "goal_stack_implementation_audit": "completed_bounded_implementation_audit",
-    "source_rendered_control_decision": "completed_rendered_control_decision_no_new_runtime"
+    "source_rendered_control_decision": "completed_rendered_control_decision_no_new_runtime",
+    "connector_destination_reentry_decision": "completed_connector_destination_reentry_decision_no_external_runtime"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -11296,6 +11300,48 @@
       "rag_vector_retrieval_control",
       "source_adapter_registry_control",
       "browser_owned_source_authority"
+    ]
+  },
+  "connector_destination_reentry_decision_proof": {
+    "status": "completed_connector_destination_reentry_decision_no_external_runtime",
+    "implementation_branch": "codex/l3-connector-destination-reentry-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "connector_destination_reentry_decision",
+    "entry_decision": "internal_record_only_live_external_dispatch_blocked",
+    "current_connector_destination_runtime": "internal_dispatch_record_only",
+    "external_connector_invocation": "blocked",
+    "destination_write": "blocked",
+    "connector_run_creation": "blocked",
+    "generic_downstream_dispatch": "blocked",
+    "rendered_connector_destination_controls": "blocked",
+    "provider_public_url_runtime": "blocked",
+    "implementation_entry_allowed_next": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/189_CONNECTOR_DESTINATION_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/190_CONNECTOR_DESTINATION_ENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md"
+    ],
+    "validation_evidence": [
+      "inherits PR #809 goal-stack implementation audit evidence for internal dispatch record-only runtime",
+      "inherits PR #810 source rendered-control decision evidence for source/rendered non-admission",
+      "this freeze adds no external connector/destination behavior and therefore requires no external adapter proof",
+      "python .\\tools\\l3-progress-check.py must pass after wiring"
+    ],
+    "live_bounded_runtime": [
+      "internal_dispatch_record_only",
+      "connector_dispatch_recorded_state",
+      "server_authority_receipt_over_prepared_artifacts"
+    ],
+    "blocked_runtime": [
+      "external_connector_invocation",
+      "destination_write",
+      "connector_run_creation",
+      "generic_downstream_dispatch",
+      "rendered_connector_destination_controls",
+      "provider_public_url_runtime",
+      "package_mutation_side_effects",
+      "source_expansion_side_effects"
     ]
   }
 }
