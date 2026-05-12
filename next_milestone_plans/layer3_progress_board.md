@@ -1226,3 +1226,11 @@ Refresh this board against:
 - The pass reduces dense dark text mass and the dark disabled-control patch inside `#mockup-pdf-location-card` while preserving the existing five-region static projection.
 - Current visual-diff limits are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`; `pdf_location_projection` improved from `0.191193/0.301313` to `0.188340/0.298573`.
 - The pass is rendered-theme proof work only; no backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security widening, or browser-owned durable authority is admitted.
+
+
+## Mockup Pixel Proof Closeout
+
+- `284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md` records `mockup_pixel_proof_closeout` after the bounded visual-diff and pixel-refinement sequence.
+- Current visual-diff limits are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`; current measured worst frame is `pdf_location_projection` at `0.188340/0.298573`.
+- The closeout admits no runtime/backend/rendered-UI behavior. The next non-visual implementation boundary is `exact_named_server_authoritative_runtime_use_case_freeze`.
+- Further visual-only work is allowed only if a new explicit mockup frame target or threshold gap is named.

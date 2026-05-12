@@ -383,6 +383,9 @@ MOCKUP_FIXTURE_SLIDE_REFINEMENT_PROOF = (
 MOCKUP_PDF_TEXT_DENSITY_REFINEMENT_PROOF = (
     PLANNING_DOCS / "283_MOCKUP_PDF_TEXT_DENSITY_REFINEMENT.md"
 )
+MOCKUP_PIXEL_PROOF_CLOSEOUT = (
+    PLANNING_DOCS / "284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -18081,6 +18084,88 @@ def _check_mockup_pdf_text_density_refinement(errors: list[str]) -> None:
                 errors.append(f"{_rel(PROOF_MANIFEST)} mockup PDF text-density refinement proof stale {key}")
 
 
+def _check_mockup_pixel_proof_closeout(errors: list[str]) -> None:
+    proof_doc_text = _read_required_text(MOCKUP_PIXEL_PROOF_CLOSEOUT, errors)
+    for term in (
+        "Status: current-branch mockup pixel-proof closeout after bounded visual refinements.",
+        "selected_planning_mode: mockup_pixel_proof_closeout",
+        "implementation_branch: codex/l3-mockup-pixel-proof-closeout",
+        "live_behavior_change: false",
+        "runtime_behavior_change: false",
+        "rendered_ui_behavior_change: false",
+        "normalizedMeanDeltaMax: 0.19",
+        "highDeltaRatioMax: 0.305",
+        "pdf_location_projection",
+        "exact_named_server_authoritative_runtime_use_case_freeze",
+    ):
+        if term not in proof_doc_text:
+            errors.append(f"{_rel(MOCKUP_PIXEL_PROOF_CLOSEOUT)} missing mockup pixel-proof closeout term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Pixel Proof Closeout",
+            "284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md",
+            "mockup_pixel_proof_closeout",
+            "exact_named_server_authoritative_runtime_use_case_freeze",
+        ),
+        PHASE1A_README: (
+            "284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md",
+            "mockup_pixel_proof_closeout",
+            "normalizedMeanDeltaMax: 0.19",
+        ),
+        MANIFEST: (
+            "mockup_pixel_proof_closeout",
+            "latest_mockup_pixel_proof_closeout_branch",
+            "exact_named_server_authoritative_runtime_use_case_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "mockup_pixel_proof_closeout_proof",
+            "mockup_pixel_proof_closeout",
+            "284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup pixel-proof closeout term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_mockup_pixel_proof_closeout_branch", "codex/l3-mockup-pixel-proof-closeout"),
+        ("latest_mockup_pixel_proof_closeout_live_behavior_change", False),
+    ):
+        if key in manifest:
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mismatched mockup pixel-proof closeout key: {key}")
+        elif not (isinstance(current_status, dict) and current_status.get(key) == expected):
+            errors.append(f"{_rel(MANIFEST)} missing mockup pixel-proof closeout key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("mockup_pixel_proof_closeout") != "completed_mockup_pixel_proof_closeout":
+        errors.append(f"{_rel(MANIFEST)} missing completed mockup pixel-proof closeout scope status")
+    next_required = manifest.get("next_required_decision")
+    if not isinstance(next_required, str) or "exact_named_server_authoritative_runtime_use_case_freeze" not in next_required:
+        errors.append(f"{_rel(MANIFEST)} next_required_decision missing runtime freeze boundary after mockup pixel closeout")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("mockup_pixel_proof_closeout_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_pixel_proof_closeout_proof")
+        return
+    expected_scalars = {
+        "status": "completed_mockup_pixel_proof_closeout",
+        "implementation_branch": "codex/l3-mockup-pixel-proof-closeout",
+        "live_behavior_change": False,
+        "selected_planning_mode": "mockup_pixel_proof_closeout",
+        "runtime_behavior_change": False,
+        "rendered_ui_behavior_change": False,
+        "next_required_boundary": "exact_named_server_authoritative_runtime_use_case_freeze",
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-proof closeout proof {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -22798,6 +22883,7 @@ def main() -> int:
         MOCKUP_PDF_CONTRAST_REFINEMENT_PROOF,
         MOCKUP_FIXTURE_SLIDE_REFINEMENT_PROOF,
         MOCKUP_PDF_TEXT_DENSITY_REFINEMENT_PROOF,
+        MOCKUP_PIXEL_PROOF_CLOSEOUT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -23051,6 +23137,7 @@ def main() -> int:
     _check_mockup_pdf_contrast_refinement(errors)
     _check_mockup_fixture_slide_refinement(errors)
     _check_mockup_pdf_text_density_refinement(errors)
+    _check_mockup_pixel_proof_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

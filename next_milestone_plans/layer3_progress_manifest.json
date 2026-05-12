@@ -4986,7 +4986,7 @@
       "unlocks": []
     }
   ],
-  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, and frame-to-rendered-projection contract proof. The next product/implementation decision is pixel-faithful mockup-theme continuation only if it stays within UI/theme/fixture projection for remaining mockup frame mapping, visual parity, accessibility/responsive behavior, headed/headless theme coverage, 390 px responsive no-horizontal-overflow proof hardening, visual-diff hardening, and pixel-refinement; otherwise choose exactly one named server-authoritative runtime/use-case freeze before source breadth, connector/destination, rendered package mutation, broad qualitative/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work proceeds. The latest bounded pixel-refinement pass refined PDF-location text density and set current visual-diff limits to normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305; the next allowed UI-proof action is continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics, or otherwise choose exactly one named server-authoritative runtime/use-case freeze before broader runtime work.",
+  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, and bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305. The mockup pixel-proof closeout freezes the current pixel-faithful mockup-theme continuation state without claiming full durable mockup activation. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if a new explicit mockup frame target or threshold gap is named. Otherwise, the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze: choose exactly one named server-authoritative runtime/use-case freeze before source breadth, connector/destination, rendered package mutation, broad qualitative/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work proceeds.",
   "deferred_scope": [
     "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the landed bounded export-package handoff and exact-run gate-hardening lane",
     "package-derived context implementation beyond the landed bounded handoff slice",
@@ -6836,7 +6836,53 @@
         "full_durable_mockup_activation",
         "auth_security_widening"
       ]
-    }
+    },
+    "latest_mockup_pixel_proof_closeout_branch": "codex/l3-mockup-pixel-proof-closeout",
+    "latest_mockup_pixel_proof_closeout_live_behavior_change": false,
+    "latest_mockup_pixel_proof_closeout_summary": "Mockup pixel proof closeout: freezes the current bounded repo-local visual-diff proof state after selector, panel, palette, fixture-slide, and PDF text-density refinements. Current limits are normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305; current worst frame is pdf_location_projection at 0.188340/0.298573. No runtime, backend, rendered UI, source, connector, package, RAG, auth, or durable mockup behavior is admitted. The next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze.",
+    "mockup_pixel_proof_closeout": {
+      "status": "completed_mockup_pixel_proof_closeout",
+      "implementation_branch": "codex/l3-mockup-pixel-proof-closeout",
+      "live_behavior_change": false,
+      "selected_planning_mode": "mockup_pixel_proof_closeout",
+      "entry_proof": "283_MOCKUP_PDF_TEXT_DENSITY_REFINEMENT.md",
+      "planning_doc": "next_milestone_plans/Layer3_planning_docs/284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md",
+      "runtime_behavior_change": false,
+      "rendered_ui_behavior_change": false,
+      "visual_diff_limits": {
+        "compareWidth": 360,
+        "compareHeight": 220,
+        "normalizedMeanDeltaMax": 0.19,
+        "highDeltaRatioMax": 0.305
+      },
+      "current_worst_frame": {
+        "projection_id": "pdf_location_projection",
+        "normalizedMeanDelta": 0.18834,
+        "highDeltaRatio": 0.298573
+      },
+      "closed_visual_refinement_docs": [
+        "276_MOCKUP_VISUAL_DIFF_HARNESS.md",
+        "277_MOCKUP_PIXEL_REFINEMENT.md",
+        "278_MOCKUP_THRESHOLD_TIGHTENING.md",
+        "279_MOCKUP_PDF_LOCATION_PANEL_REFINEMENT.md",
+        "280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md",
+        "281_MOCKUP_PDF_CONTRAST_REFINEMENT.md",
+        "282_MOCKUP_FIXTURE_SLIDE_REFINEMENT.md",
+        "283_MOCKUP_PDF_TEXT_DENSITY_REFINEMENT.md"
+      ],
+      "next_required_boundary": "exact_named_server_authoritative_runtime_use_case_freeze",
+      "further_visual_work_allowed_only_if": "new_explicit_mockup_frame_target_or_threshold_gap_is_named",
+      "blocked_runtime": [
+        "backend_api_model_migration_service_change",
+        "source_runtime_expansion",
+        "connector_destination_dispatch",
+        "package_mutation",
+        "broad_qualitative_hybrid_rag_runtime",
+        "full_durable_mockup_activation",
+        "auth_security_widening"
+      ]
+    },
+    "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, and bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305. The mockup pixel-proof closeout freezes the current pixel-faithful mockup-theme continuation state without claiming full durable mockup activation. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if a new explicit mockup frame target or threshold gap is named. Otherwise, the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze: choose exactly one named server-authoritative runtime/use-case freeze before source breadth, connector/destination, rendered package mutation, broad qualitative/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work proceeds."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -6881,7 +6927,8 @@
     "mockup_overview_selector_refinement": "completed_overview_frame_selector_refinement_to_theme_shell",
     "mockup_pdf_contrast_refinement": "completed_pdf_location_contrast_palette_refinement",
     "mockup_fixture_slide_refinement": "completed_fixture_query_spec_slide_structure_refinement",
-    "mockup_pdf_text_density_refinement": "completed_pdf_location_text_density_and_disabled_chip_refinement"
+    "mockup_pdf_text_density_refinement": "completed_pdf_location_text_density_and_disabled_chip_refinement",
+    "mockup_pixel_proof_closeout": "completed_mockup_pixel_proof_closeout"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -7601,6 +7648,51 @@
       }
     },
     "next_allowed_action": "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics",
+    "blocked_runtime": [
+      "backend_api_model_migration_service_change",
+      "source_runtime_expansion",
+      "connector_destination_dispatch",
+      "package_mutation",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_durable_mockup_activation",
+      "auth_security_widening"
+    ]
+  },
+  "latest_mockup_pixel_proof_closeout_branch": "codex/l3-mockup-pixel-proof-closeout",
+  "latest_mockup_pixel_proof_closeout_live_behavior_change": false,
+  "latest_mockup_pixel_proof_closeout_summary": "Mockup pixel proof closeout: freezes the current bounded repo-local visual-diff proof state after selector, panel, palette, fixture-slide, and PDF text-density refinements. Current limits are normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305; current worst frame is pdf_location_projection at 0.188340/0.298573. No runtime, backend, rendered UI, source, connector, package, RAG, auth, or durable mockup behavior is admitted. The next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze.",
+  "mockup_pixel_proof_closeout": {
+    "status": "completed_mockup_pixel_proof_closeout",
+    "implementation_branch": "codex/l3-mockup-pixel-proof-closeout",
+    "live_behavior_change": false,
+    "selected_planning_mode": "mockup_pixel_proof_closeout",
+    "entry_proof": "283_MOCKUP_PDF_TEXT_DENSITY_REFINEMENT.md",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "visual_diff_limits": {
+      "compareWidth": 360,
+      "compareHeight": 220,
+      "normalizedMeanDeltaMax": 0.19,
+      "highDeltaRatioMax": 0.305
+    },
+    "current_worst_frame": {
+      "projection_id": "pdf_location_projection",
+      "normalizedMeanDelta": 0.18834,
+      "highDeltaRatio": 0.298573
+    },
+    "closed_visual_refinement_docs": [
+      "276_MOCKUP_VISUAL_DIFF_HARNESS.md",
+      "277_MOCKUP_PIXEL_REFINEMENT.md",
+      "278_MOCKUP_THRESHOLD_TIGHTENING.md",
+      "279_MOCKUP_PDF_LOCATION_PANEL_REFINEMENT.md",
+      "280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md",
+      "281_MOCKUP_PDF_CONTRAST_REFINEMENT.md",
+      "282_MOCKUP_FIXTURE_SLIDE_REFINEMENT.md",
+      "283_MOCKUP_PDF_TEXT_DENSITY_REFINEMENT.md"
+    ],
+    "next_required_boundary": "exact_named_server_authoritative_runtime_use_case_freeze",
+    "further_visual_work_allowed_only_if": "new_explicit_mockup_frame_target_or_threshold_gap_is_named",
     "blocked_runtime": [
       "backend_api_model_migration_service_change",
       "source_runtime_expansion",
