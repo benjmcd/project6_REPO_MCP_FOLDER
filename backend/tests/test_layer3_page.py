@@ -30,15 +30,19 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="mockup-fixture-scenario"' in response.text
     assert 'id="mockup-execution-lanes"' in response.text
     assert 'id="mockup-userflow-board"' in response.text
+    assert 'id="mockup-sublayers-ab-board"' in response.text
     assert 'data-visual-source="userflow/layer3_user-flow-overview1.png"' in response.text
     assert 'data-usecase-source="clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png"' in response.text
     assert 'data-pdf-location-source="example-use-case-location-in-pdf.png"' in response.text
+    assert 'data-visual-source="focus_on_these/sublayer3A_and_sublayer3B.png"' in response.text
     assert 'data-visual-source="focus_on_these/sublayer3C.png"' in response.text
     assert "semiconductor_infrastructure_auto_supply_chain" in response.text
     assert "Analysis Execution Environments" in response.text
     assert "User Natural Language Query Input" in response.text
     assert "Layer manually chooses the specific, relevant, logic/context/thematic data" in response.text
     assert "PDF evidence location" in response.text
+    assert "Gate B / Session Entry / Material Ledger" in response.text
+    assert "Hybrid/Mixed Data" in response.text
     assert "Quantitative (and/or/AKA 'Deterministic') Environment/Container/Plane" in response.text
     assert "Qualitative Data Analysis Environment/Container/Plane" in response.text
     assert "browser storage presentation only" in response.text
@@ -155,6 +159,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".mockup-theme-flow" in css.text
     assert ".mockup-execution-lanes" in css.text
     assert ".mockup-userflow-board" in css.text
+    assert ".mockup-sublayers-ab-board" in css.text
+    assert ".mockup-ab-ledger" in css.text
+    assert ".mockup-ab-group" in css.text
     assert ".mockup-pdf-location-card" in css.text
     assert ".mockup-userflow-stage" in css.text
     assert ".mockup-canvas-title" in css.text
