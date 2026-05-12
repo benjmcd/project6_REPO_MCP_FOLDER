@@ -715,7 +715,10 @@
     "latest_post_reentry_named_packet_closeout_summary": "Docs 259 through 266 are closed as a no-runtime named-packet stack; next implementation requires a user/product-named use case before runtime.",
     "latest_mockup_theme_freeze_branch": "codex/l3-mockup-theme-freeze",
     "latest_mockup_theme_freeze_live_behavior_change": false,
-    "latest_mockup_theme_freeze_summary": "The dedicated layer3_mockup_workbench_theme is selected as the pixel-perfect functional mockup workbench target for /review/layer3, with implementation still blocked behind a separate entry-freeze."
+    "latest_mockup_theme_freeze_summary": "The dedicated layer3_mockup_workbench_theme is selected as the pixel-perfect functional mockup workbench target for /review/layer3, with implementation still blocked behind a separate entry-freeze.",
+    "latest_mockup_theme_entry_freeze_branch": "codex/l3-mockup-theme-entry-freeze",
+    "latest_mockup_theme_entry_freeze_live_behavior_change": false,
+    "latest_mockup_theme_entry_freeze_summary": "Current main now includes the mockup_theme_entry_freeze: mockup_theme_shell_and_fixture_projection is selected as the next bounded implementation slice for layer3_mockup_workbench_theme on /review/layer3. The allowed future code surfaces are the static Layer 3 review UI, focused rendered-page/e2e tests, planning/proof manifests, and the progress checker. Backend API/model/migration/service changes, source expansion, connector/destination runtime, package mutation, broad qualitative/hybrid/RAG behavior, auth/security behavior, full mockup durable workflow activation, and browser-owned durable authority remain blocked unless separately refrozen."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -11964,6 +11967,78 @@
       "broad_qualitative_hybrid_rag_runtime",
       "full_mockup_activation_without_server_mapping",
       "auth_security_runtime",
+      "frontend_only_durable_authority"
+    ]
+  },
+  "mockup_theme_entry_freeze_proof": {
+    "status": "completed_mockup_theme_implementation_entry_selected_planning_only",
+    "implementation_branch": "codex/l3-mockup-theme-entry-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "mockup_theme_implementation_entry_freeze",
+    "entry_decision": "implementation_entry_selected_planning_only_no_code",
+    "upstream_theme_freeze_doc": "268_MOCKUP_THEME_FREEZE.md",
+    "selected_product_operator_use_case": "pixel_perfect_functional_layer3_mockup_workbench_theme",
+    "selected_theme_target": "layer3_mockup_workbench_theme",
+    "target_route_family": "/review/layer3",
+    "selected_first_slice": "mockup_theme_shell_and_fixture_projection",
+    "implementation_type": "rendered_theme_only_after_this_freeze",
+    "allowed_future_code_surfaces": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/Layer3_planning_docs",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "forbidden_future_code_surfaces_unless_refrozen": [
+      "backend/app/api",
+      "backend/app/models",
+      "backend/alembic",
+      "backend/app/services",
+      "backend/tests/test_layer3_api.py",
+      ".github/workflows"
+    ],
+    "exact_mockup_frames_first_slice": [
+      "userflow/layer3_user-flow-overview1.png",
+      "userflow/layer3_user-flow-overview2.png",
+      "clear-screenshots/userflow_slide1.png",
+      "clear-screenshots/userflow_slide1_general-example.png",
+      "clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png",
+      "focus_on_these/sublayer3A_and_sublayer3B.png",
+      "focus_on_these/sublayer3C.png"
+    ],
+    "deterministic_fixture_scenario": "semiconductor_infrastructure_auto_supply_chain",
+    "contextual_text_box_policy": "collapsible_help_or_demo_annotation_not_required_always_visible",
+    "server_state_mapping_required": true,
+    "mockup_visual_diff_required": true,
+    "headed_headless_required": true,
+    "theme_accessibility_required": true,
+    "browser_storage_policy": "presentation_cache_only_no_durable_authority",
+    "implementation_entry_allowed_next": true,
+    "next_allowed_action": "implement_mockup_theme_shell_and_fixture_projection",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/268_MOCKUP_THEME_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/269_MOCKUP_THEME_ENTRY_FREEZE.md"
+    ],
+    "validation_evidence": [
+      "python .\\tools\\l3-progress-check.py must pass after wiring",
+      "JSON manifests must parse after wiring",
+      "pass is docs/control-only and touches no runtime source files"
+    ],
+    "blocked_runtime": [
+      "backend_api_behavior_change_without_refreeze",
+      "model_or_migration_change_without_refreeze",
+      "service_behavior_change_without_refreeze",
+      "source_expansion_runtime",
+      "external_connector_destination_runtime",
+      "rendered_package_mutation_runtime",
+      "broad_qualitative_hybrid_rag_runtime",
+      "auth_security_behavior_change",
+      "full_mockup_durable_workflow_activation",
       "frontend_only_durable_authority"
     ]
   }

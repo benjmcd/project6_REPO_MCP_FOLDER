@@ -350,6 +350,9 @@ POST_REENTRY_NAMED_PACKET_CLOSEOUT = (
     PLANNING_DOCS / "267_POST_REENTRY_NAMED_PACKET_CLOSEOUT.md"
 )
 MOCKUP_THEME_FREEZE = PLANNING_DOCS / "268_MOCKUP_THEME_FREEZE.md"
+MOCKUP_THEME_ENTRY_FREEZE = (
+    PLANNING_DOCS / "269_MOCKUP_THEME_ENTRY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -16208,6 +16211,155 @@ def _check_mockup_theme_freeze(errors: list[str]) -> None:
         if corpus_path not in proof_entry.get("visual_acceptance_corpus", []):
             errors.append(f"{_rel(PROOF_MANIFEST)} mockup_theme_freeze_proof missing corpus path {corpus_path}")
 
+
+def _check_mockup_theme_entry_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(MOCKUP_THEME_ENTRY_FREEZE, errors)
+    for term in (
+        "Status: current-main implementation-entry planning/control freeze",
+        "This freeze admits no runtime behavior",
+        "entry_decision: implementation_entry_selected_planning_only_no_code",
+        "selected_first_slice: mockup_theme_shell_and_fixture_projection",
+        "selected_theme_target: layer3_mockup_workbench_theme",
+        "target_route_family: /review/layer3",
+        "backend/app/review_ui/static/layer3.html",
+        "backend/app/review_ui/static/layer3.css",
+        "backend/app/review_ui/static/layer3.js",
+        "backend/tests/test_layer3_page.py",
+        "e2e/layer3-workbench.spec.js",
+        "backend/app/api",
+        "backend/app/models",
+        "backend/alembic",
+        "backend/app/services",
+        "backend/tests/test_layer3_api.py",
+        ".github/workflows",
+        "userflow/layer3_user-flow-overview1.png",
+        "userflow/layer3_user-flow-overview2.png",
+        "clear-screenshots/userflow_slide1.png",
+        "clear-screenshots/userflow_slide1_general-example.png",
+        "clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png",
+        "focus_on_these/sublayer3A_and_sublayer3B.png",
+        "focus_on_these/sublayer3C.png",
+        "deterministic_fixture_scenario: semiconductor_infrastructure_auto_supply_chain",
+        "contextual_text_box_policy: collapsible_help_or_demo_annotation_not_required_always_visible",
+        "server_state_mapping_required: true",
+        "mockup_visual_diff_required: true",
+        "headed_headless_required: true",
+        "theme_accessibility_required: true",
+        "browser_storage_policy: presentation_cache_only_no_durable_authority",
+        "implementation_entry_allowed_next: true",
+        "next_allowed_action: implement_mockup_theme_shell_and_fixture_projection",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(MOCKUP_THEME_ENTRY_FREEZE)} missing mockup theme entry freeze term: {term}")
+
+    readme_text = _read_required_text(PHASE1A_README, errors)
+    for term in (
+        "269_MOCKUP_THEME_ENTRY_FREEZE.md",
+        "mockup_theme_shell_and_fixture_projection",
+        "layer3_mockup_workbench_theme",
+        "browser-owned durable authority remain blocked",
+    ):
+        if term not in readme_text:
+            errors.append(f"{_rel(PHASE1A_README)} missing mockup theme entry freeze term: {term}")
+
+    board_text = _read_required_text(BOARD, errors)
+    for term in (
+        "## Mockup Theme Entry Freeze",
+        "implementation-entry selected as planning/control only",
+        "mockup_theme_shell_and_fixture_projection",
+        "semiconductor_infrastructure_auto_supply_chain",
+        "headed Chrome, headless Chrome",
+        "browser-owned durable authority",
+    ):
+        if term not in board_text:
+            errors.append(f"{_rel(BOARD)} missing mockup theme entry freeze term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key in (
+        "latest_mockup_theme_entry_freeze_branch",
+        "latest_mockup_theme_entry_freeze_live_behavior_change",
+        "mockup_theme_entry_freeze",
+    ):
+        if key not in manifest and not (isinstance(current_status, dict) and key in current_status):
+            errors.append(f"{_rel(MANIFEST)} missing mockup theme entry freeze key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("mockup_theme_entry_freeze") != "completed_mockup_theme_implementation_entry_selected_planning_only":
+        errors.append(f"{_rel(MANIFEST)} missing completed mockup theme entry freeze scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    scope = proof.get("scope") if isinstance(proof, dict) else None
+    proof_entry = proof.get("mockup_theme_entry_freeze_proof") if isinstance(proof, dict) else None
+    if not isinstance(scope, dict) or scope.get("latest_mockup_theme_entry_freeze_live_behavior_change") is not False:
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup theme entry freeze no-runtime scope proof")
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_theme_entry_freeze_proof")
+        return
+    expected_scalars = {
+        "status": "completed_mockup_theme_implementation_entry_selected_planning_only",
+        "implementation_branch": "codex/l3-mockup-theme-entry-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "mockup_theme_implementation_entry_freeze",
+        "entry_decision": "implementation_entry_selected_planning_only_no_code",
+        "selected_theme_target": "layer3_mockup_workbench_theme",
+        "target_route_family": "/review/layer3",
+        "selected_first_slice": "mockup_theme_shell_and_fixture_projection",
+        "deterministic_fixture_scenario": "semiconductor_infrastructure_auto_supply_chain",
+        "contextual_text_box_policy": "collapsible_help_or_demo_annotation_not_required_always_visible",
+        "server_state_mapping_required": True,
+        "mockup_visual_diff_required": True,
+        "headed_headless_required": True,
+        "theme_accessibility_required": True,
+        "browser_storage_policy": "presentation_cache_only_no_durable_authority",
+        "implementation_entry_allowed_next": True,
+        "next_allowed_action": "implement_mockup_theme_shell_and_fixture_projection",
+    }
+    for key, value in expected_scalars.items():
+        if proof_entry.get(key) != value:
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup theme entry freeze proof {key} mismatch")
+    for key, required_values in {
+        "allowed_future_code_surfaces": (
+            "backend/app/review_ui/static/layer3.html",
+            "backend/app/review_ui/static/layer3.css",
+            "backend/app/review_ui/static/layer3.js",
+            "backend/tests/test_layer3_page.py",
+            "e2e/layer3-workbench.spec.js",
+        ),
+        "forbidden_future_code_surfaces_unless_refrozen": (
+            "backend/app/api",
+            "backend/app/models",
+            "backend/alembic",
+            "backend/app/services",
+            "backend/tests/test_layer3_api.py",
+            ".github/workflows",
+        ),
+        "exact_mockup_frames_first_slice": (
+            "userflow/layer3_user-flow-overview1.png",
+            "userflow/layer3_user-flow-overview2.png",
+            "clear-screenshots/userflow_slide1.png",
+            "clear-screenshots/userflow_slide1_general-example.png",
+            "clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png",
+            "focus_on_these/sublayer3A_and_sublayer3B.png",
+            "focus_on_these/sublayer3C.png",
+        ),
+        "blocked_runtime": (
+            "source_expansion_runtime",
+            "external_connector_destination_runtime",
+            "rendered_package_mutation_runtime",
+            "broad_qualitative_hybrid_rag_runtime",
+            "auth_security_behavior_change",
+            "full_mockup_durable_workflow_activation",
+            "frontend_only_durable_authority",
+        ),
+    }.items():
+        values = proof_entry.get(key)
+        if not isinstance(values, list):
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup theme entry freeze proof {key} is not a list")
+            continue
+        for required in required_values:
+            if required not in values:
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup theme entry freeze proof {key} missing {required}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -21120,6 +21272,7 @@ def main() -> int:
     _check_auth_security_named_mode_packet(errors)
     _check_post_reentry_named_packet_closeout(errors)
     _check_mockup_theme_freeze(errors)
+    _check_mockup_theme_entry_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
