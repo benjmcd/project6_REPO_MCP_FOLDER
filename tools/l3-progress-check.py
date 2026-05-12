@@ -386,6 +386,9 @@ MOCKUP_PDF_TEXT_DENSITY_REFINEMENT_PROOF = (
 MOCKUP_PIXEL_PROOF_CLOSEOUT = (
     PLANNING_DOCS / "284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md"
 )
+RUNTIME_FREEZE_INTAKE_CHECKLIST = (
+    PLANNING_DOCS / "285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -18166,6 +18169,92 @@ def _check_mockup_pixel_proof_closeout(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-proof closeout proof {key} mismatch")
 
 
+def _check_runtime_freeze_intake_checklist(errors: list[str]) -> None:
+    intake_text = _read_required_text(RUNTIME_FREEZE_INTAKE_CHECKLIST, errors)
+    for term in (
+        "Status: current-branch runtime-freeze intake checklist after mockup pixel-proof closeout.",
+        "selected_planning_mode: runtime_freeze_intake_checklist",
+        "implementation_branch: codex/l3-runtime-freeze-intake",
+        "live_behavior_change: false",
+        "runtime_behavior_change: false",
+        "rendered_ui_behavior_change: false",
+        "source_breadth_runtime",
+        "external_connector_destination_runtime",
+        "rendered_package_mutation_runtime",
+        "broad_qual_hybrid_rag_runtime",
+        "full_mockup_durable_activation",
+        "auth_security_runtime",
+        "exact_named_server_authoritative_runtime_use_case_freeze",
+        "no_runtime_implementation_without_named_use_case",
+    ):
+        if term not in intake_text:
+            errors.append(f"{_rel(RUNTIME_FREEZE_INTAKE_CHECKLIST)} missing runtime-freeze intake term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Runtime Freeze Intake Checklist",
+            "285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md",
+            "runtime_freeze_intake_checklist",
+            "no_runtime_implementation_without_named_use_case",
+        ),
+        PHASE1A_README: (
+            "285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md",
+            "runtime_freeze_intake_checklist",
+            "exact_named_server_authoritative_runtime_use_case_freeze",
+        ),
+        MANIFEST: (
+            "runtime_freeze_intake_checklist",
+            "latest_runtime_freeze_intake_branch",
+            "no_runtime_implementation_without_named_use_case",
+        ),
+        PROOF_MANIFEST: (
+            "runtime_freeze_intake_checklist_proof",
+            "runtime_freeze_intake_checklist",
+            "285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing runtime-freeze intake term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_runtime_freeze_intake_branch", "codex/l3-runtime-freeze-intake"),
+        ("latest_runtime_freeze_intake_live_behavior_change", False),
+    ):
+        if key in manifest:
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mismatched runtime-freeze intake key: {key}")
+        elif not (isinstance(current_status, dict) and current_status.get(key) == expected):
+            errors.append(f"{_rel(MANIFEST)} missing runtime-freeze intake key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("runtime_freeze_intake_checklist") != "completed_runtime_freeze_intake_checklist":
+        errors.append(f"{_rel(MANIFEST)} missing completed runtime-freeze intake scope status")
+    next_required = manifest.get("next_required_decision")
+    if not isinstance(next_required, str) or "no_runtime_implementation_without_named_use_case" not in next_required:
+        errors.append(f"{_rel(MANIFEST)} next_required_decision missing no-runtime-without-named-use-case boundary")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("runtime_freeze_intake_checklist_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing runtime_freeze_intake_checklist_proof")
+        return
+    expected_scalars = {
+        "status": "completed_runtime_freeze_intake_checklist",
+        "implementation_branch": "codex/l3-runtime-freeze-intake",
+        "live_behavior_change": False,
+        "selected_planning_mode": "runtime_freeze_intake_checklist",
+        "runtime_behavior_change": False,
+        "rendered_ui_behavior_change": False,
+        "next_required_boundary": "exact_named_server_authoritative_runtime_use_case_freeze",
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} runtime-freeze intake proof {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -22884,6 +22973,7 @@ def main() -> int:
         MOCKUP_FIXTURE_SLIDE_REFINEMENT_PROOF,
         MOCKUP_PDF_TEXT_DENSITY_REFINEMENT_PROOF,
         MOCKUP_PIXEL_PROOF_CLOSEOUT,
+        RUNTIME_FREEZE_INTAKE_CHECKLIST,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -23138,6 +23228,7 @@ def main() -> int:
     _check_mockup_fixture_slide_refinement(errors)
     _check_mockup_pdf_text_density_refinement(errors)
     _check_mockup_pixel_proof_closeout(errors)
+    _check_runtime_freeze_intake_checklist(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

@@ -1705,3 +1705,10 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md` freezes the current bounded mockup visual proof state for `mockup_pixel_proof_closeout`.
 - Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` at `360 x 220`; this is not a full durable mockup activation claim.
 - The next non-visual implementation boundary is `exact_named_server_authoritative_runtime_use_case_freeze`; runtime/backend/source/connector/package/RAG/auth/full-activation work remains blocked until exactly one named server-authoritative slice is selected.
+
+
+## Runtime Freeze Intake Checklist
+
+- `Layer3_planning_docs/285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md` records `runtime_freeze_intake_checklist`.
+- It admits no runtime behavior; it makes the next required boundary explicit: `exact_named_server_authoritative_runtime_use_case_freeze`.
+- Boundary is `no_runtime_implementation_without_named_use_case` for source, connector/destination, package mutation, broad qual/hybrid/RAG, full mockup activation, auth/security, and backend API/model/migration/service work.

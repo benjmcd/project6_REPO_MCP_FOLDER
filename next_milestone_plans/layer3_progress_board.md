@@ -1234,3 +1234,11 @@ Refresh this board against:
 - Current visual-diff limits are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`; current measured worst frame is `pdf_location_projection` at `0.188340/0.298573`.
 - The closeout admits no runtime/backend/rendered-UI behavior. The next non-visual implementation boundary is `exact_named_server_authoritative_runtime_use_case_freeze`.
 - Further visual-only work is allowed only if a new explicit mockup frame target or threshold gap is named.
+
+
+## Runtime Freeze Intake Checklist
+
+- `285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md` records `runtime_freeze_intake_checklist` after the mockup pixel-proof closeout.
+- Boundary is `no_runtime_implementation_without_named_use_case`.
+- The next non-visual implementation must start with `exact_named_server_authoritative_runtime_use_case_freeze` for exactly one runtime family.
+- Eligible families remain `source_breadth_runtime`, `external_connector_destination_runtime`, `rendered_package_mutation_runtime`, `broad_qual_hybrid_rag_runtime`, `full_mockup_durable_activation`, and `auth_security_runtime`.
