@@ -166,7 +166,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".mockup-ab-ledger" in css.text
     assert ".mockup-ab-group" in css.text
     assert ".mockup-pdf-location-card" in css.text
+    assert ".mockup-pdf-intent-card" in css.text
     assert ".mockup-pdf-location-projection" in css.text
+    assert ".mockup-pdf-summary-card" in css.text
     assert '.mockup-pdf-location-projection[data-projection-state="available"]' in css.text
     assert ".mockup-pdf-location-item" in css.text
     assert ".mockup-userflow-stage" in css.text
