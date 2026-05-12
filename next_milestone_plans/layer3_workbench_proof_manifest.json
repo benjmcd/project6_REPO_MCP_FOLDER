@@ -694,7 +694,10 @@
     "latest_post_reentry_named_use_case_adjudication_summary": "Current main now includes the post_reentry_named_use_case_adjudication: source breadth is selected only as the next planning packet, not runtime implementation. The next required artifact is source_breadth_named_use_case_packet_or_explicit_no_runtime_closeout; runtime remains blocked until that packet names one concrete source use case, proves current supported sources are insufficient, and resolves source family, adapter/input mode, source-of-truth, storage/security, provenance, downstream semantics, rendered-control obligations, and auth/security posture. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
     "latest_source_breadth_named_use_case_packet_branch": "codex/l3-source-use-case-packet",
     "latest_source_breadth_named_use_case_packet_live_behavior_change": false,
-    "latest_source_breadth_named_use_case_packet_summary": "Current main now includes the source_breadth_named_use_case_packet as a no-runtime closeout: no concrete source use case is present in current authority. Current source truth remains bounded to dataset_version and aps_content_document plus server-owned raw-mixed materialization for existing classes. Source runtime remains blocked until a user/product source need names one source family, adapter/input mode, source-of-truth, storage/security model, provenance contract, downstream semantics, rendered-control plan, and auth/security posture. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
+    "latest_source_breadth_named_use_case_packet_summary": "Current main now includes the source_breadth_named_use_case_packet as a no-runtime closeout: no concrete source use case is present in current authority. Current source truth remains bounded to dataset_version and aps_content_document plus server-owned raw-mixed materialization for existing classes. Source runtime remains blocked until a user/product source need names one source family, adapter/input mode, source-of-truth, storage/security model, provenance contract, downstream semantics, rendered-control plan, and auth/security posture. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
+    "latest_connector_destination_named_target_packet_branch": "codex/l3-connector-target-packet",
+    "latest_connector_destination_named_target_packet_live_behavior_change": false,
+    "latest_connector_destination_named_target_packet_summary": "Current main now includes the connector_destination_named_target_packet as a no-runtime closeout: current authority proves only internal_dispatch_record_only, not external connector invocation or destination writes. External connector/destination runtime remains blocked until a downstream use case names one connector or destination target, selected mode, credential/access model, lifecycle semantics, receipt/audit contract, fake-target tests, leak controls, rendered-control obligations, and auth/security posture. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -11672,6 +11675,44 @@
       "rag_vector_retrieval",
       "unbounded_runtime_db_source_reads",
       "rendered_source_controls"
+    ]
+  },
+  "connector_destination_named_target_packet_proof": {
+    "status": "completed_no_runtime_named_connector_or_destination_absent",
+    "implementation_branch": "codex/l3-connector-target-packet",
+    "live_behavior_change": false,
+    "selected_planning_mode": "connector_destination_named_target_packet",
+    "entry_decision": "no_runtime_now_named_connector_or_destination_absent",
+    "upstream_reentry_doc": "254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md",
+    "current_connector_destination_runtime": "internal_dispatch_record_only",
+    "named_downstream_use_case": null,
+    "selected_connector_or_destination_family": null,
+    "selected_dispatch_mode": null,
+    "credential_access_model_selected": false,
+    "lifecycle_contract_selected": false,
+    "receipt_audit_contract_selected": false,
+    "fake_connector_destination_test_architecture_selected": false,
+    "implementation_entry_allowed_next": false,
+    "next_required_boundary": "named_connector_or_destination_target_before_runtime",
+    "external_connector_destination_runtime_status": "blocked",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/262_CONNECTOR_DESTINATION_NAMED_TARGET_PACKET.md"
+    ],
+    "validation_evidence": [
+      "python .\\tools\\l3-progress-check.py must pass after wiring",
+      "JSON manifests must parse after wiring",
+      "pass is docs/control-only and touches no runtime source files"
+    ],
+    "blocked_runtime": [
+      "external_connector_invocation",
+      "destination_write",
+      "connector_run_creation",
+      "generic_downstream_dispatch",
+      "rendered_connector_destination_controls",
+      "provider_public_url_runtime",
+      "retry_cancel_queue_lifecycle",
+      "credential_bearing_target_behavior"
     ]
   }
 }
