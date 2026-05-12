@@ -313,6 +313,9 @@ CONNECTOR_DESTINATION_REENTRY_DECISION = (
 PACKAGE_MUTATION_REENTRY_DECISION = (
     PLANNING_DOCS / "255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md"
 )
+QUAL_HYBRID_RAG_REENTRY_DECISION = (
+    PLANNING_DOCS / "256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14652,6 +14655,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md",
             "254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md",
             "255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md",
+            "256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md",
             "source_breadth_reentry_authority_packet",
         ),
         BOARD: (
@@ -14663,6 +14667,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "Source Rendered Control Decision",
             "Connector Destination Reentry Decision",
             "Package Mutation Reentry Decision",
+            "Qual Hybrid RAG Reentry Decision",
             "source_breadth_reentry_authority_packet",
         ),
         MANIFEST: (
@@ -14674,6 +14679,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "source_rendered_control_decision",
             "connector_destination_reentry_decision",
             "package_mutation_reentry_decision",
+            "qual_hybrid_rag_reentry_decision",
             "source_breadth_reentry_authority_packet",
         ),
         PROOF_MANIFEST: (
@@ -14685,6 +14691,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "source_rendered_control_decision_proof",
             "connector_destination_reentry_decision_proof",
             "package_mutation_reentry_decision_proof",
+            "qual_hybrid_rag_reentry_decision_proof",
             "source_breadth_reentry_authority_packet",
         ),
     }
@@ -14716,6 +14723,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "latest_connector_destination_reentry_decision_live_behavior_change": False,
             "latest_package_mutation_reentry_decision_branch": "codex/l3-package-mutation-reentry-freeze",
             "latest_package_mutation_reentry_decision_live_behavior_change": False,
+            "latest_qual_hybrid_rag_reentry_decision_branch": "codex/l3-qual-hybrid-rag-reentry-freeze",
+            "latest_qual_hybrid_rag_reentry_decision_live_behavior_change": False,
         }
         for key, expected in expected_current.items():
             if current_status.get(key) != expected:
@@ -14762,6 +14771,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             errors.append(f"{_rel(MANIFEST)} scope_status.connector_destination_reentry_decision must be completed_connector_destination_reentry_decision_no_external_runtime")
         if scope_status.get("package_mutation_reentry_decision") != "completed_package_mutation_reentry_decision_no_rendered_runtime":
             errors.append(f"{_rel(MANIFEST)} scope_status.package_mutation_reentry_decision must be completed_package_mutation_reentry_decision_no_rendered_runtime")
+        if scope_status.get("qual_hybrid_rag_reentry_decision") != "completed_qual_hybrid_rag_reentry_decision_no_broad_runtime":
+            errors.append(f"{_rel(MANIFEST)} scope_status.qual_hybrid_rag_reentry_decision must be completed_qual_hybrid_rag_reentry_decision_no_broad_runtime")
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     roadmap_proof = proof_data.get("post_provider_private_roadmap_selection_freeze_proof") if isinstance(proof_data, dict) else None
@@ -14944,6 +14955,35 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             if package_reentry_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_reentry_decision_proof.{key} must be {expected!r}")
 
+    qual_reentry_proof = proof_data.get("qual_hybrid_rag_reentry_decision_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(qual_reentry_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing qual_hybrid_rag_reentry_decision_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_qual_hybrid_rag_reentry_decision_no_broad_runtime",
+            "implementation_branch": "codex/l3-qual-hybrid-rag-reentry-freeze",
+            "live_behavior_change": False,
+            "selected_planning_mode": "qual_hybrid_rag_reentry_decision",
+            "entry_decision": "single_aps_doc_qualitative_live_broad_hybrid_rag_blocked",
+            "current_qualitative_runtime": "single_aps_doc_qualitative_pass_only",
+            "current_qual_aps_downstream_runtime": "bounded_qual_aps_backend_api_downstream_chain",
+            "current_rendered_qual_aps_controls": "qual_aps_rendered_downstream_existing_controls_only",
+            "broad_qualitative_execution": "blocked",
+            "qualitative_associated_cohort_execution": "blocked",
+            "comparative_qualitative_execution": "blocked",
+            "cross_document_synthesis": "blocked",
+            "hybrid_execution": "blocked",
+            "rag_vector_retrieval": "blocked",
+            "vector_index_creation": "blocked",
+            "embedding_generation": "blocked",
+            "prompt_model_provider_runtime": "blocked",
+            "rendered_qual_hybrid_rag_controls": "blocked",
+            "implementation_entry_allowed_next": False,
+        }
+        for key, expected in expected_scalars.items():
+            if qual_reentry_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_reentry_decision_proof.{key} must be {expected!r}")
+
 
 def _check_package_mutation_reentry_decision(errors: list[str]) -> None:
     decision_text = _read_required_text(PACKAGE_MUTATION_REENTRY_DECISION, errors)
@@ -14967,6 +15007,31 @@ def _check_package_mutation_reentry_decision(errors: list[str]) -> None:
     for term in required_terms:
         if term not in decision_text:
             errors.append(f"{_rel(PACKAGE_MUTATION_REENTRY_DECISION)} missing package mutation reentry decision term: {term}")
+
+
+def _check_qual_hybrid_rag_reentry_decision(errors: list[str]) -> None:
+    decision_text = _read_required_text(QUAL_HYBRID_RAG_REENTRY_DECISION, errors)
+    required_terms = [
+        "Status: current-main reentry decision freeze for `qual_hybrid_rag_reentry_decision`.",
+        "entry_decision: single_aps_doc_qualitative_live_broad_hybrid_rag_blocked",
+        "current_qualitative_runtime: single_aps_doc_qualitative_pass_only",
+        "current_qual_aps_downstream_runtime: bounded_qual_aps_backend_api_downstream_chain",
+        "current_rendered_qual_aps_controls: qual_aps_rendered_downstream_existing_controls_only",
+        "broad_qualitative_execution: blocked",
+        "qualitative_associated_cohort_execution: blocked",
+        "comparative_qualitative_execution: blocked",
+        "cross_document_synthesis: blocked",
+        "hybrid_execution: blocked",
+        "rag_vector_retrieval: blocked",
+        "vector_index_creation: blocked",
+        "embedding_generation: blocked",
+        "prompt_model_provider_runtime: blocked",
+        "rendered_qual_hybrid_rag_controls: blocked",
+        "implementation_entry_allowed_next: false",
+    ]
+    for term in required_terms:
+        if term not in decision_text:
+            errors.append(f"{_rel(QUAL_HYBRID_RAG_REENTRY_DECISION)} missing qual hybrid RAG reentry decision term: {term}")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -19633,6 +19698,7 @@ def main() -> int:
         SOURCE_RENDERED_CONTROL_DECISION,
         CONNECTOR_DESTINATION_REENTRY_DECISION,
         PACKAGE_MUTATION_REENTRY_DECISION,
+        QUAL_HYBRID_RAG_REENTRY_DECISION,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -19856,6 +19922,7 @@ def main() -> int:
     _check_provider_private_signed_url_rendered_ui_proof(errors)
     _check_post_provider_private_roadmap_selection_freeze(errors)
     _check_package_mutation_reentry_decision(errors)
+    _check_qual_hybrid_rag_reentry_decision(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
