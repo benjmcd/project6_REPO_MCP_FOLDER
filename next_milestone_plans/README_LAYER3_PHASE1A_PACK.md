@@ -1656,7 +1656,7 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 ## Mockup Threshold Tightening
 
 - `Layer3_planning_docs/278_MOCKUP_THRESHOLD_TIGHTENING.md` records `visual_diff_threshold_tightening_to_observed_envelope`.
-- The pass tightens `MOCKUP_VISUAL_DIFF_LIMITS` to `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31` after the selector precision pass measured `pdf_location_projection` at `0.272669` and `0.299356`.
+- The pass tightens `MOCKUP_VISUAL_DIFF_LIMITS` to `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` after the selector precision pass measured `pdf_location_projection` at `0.272669` and `0.299356`.
 - This is proof-hardening only; it does not claim full pixel-perfect parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
 
 
@@ -1664,7 +1664,7 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 
 - `Layer3_planning_docs/279_MOCKUP_PDF_LOCATION_PANEL_REFINEMENT.md` records `pdf_location_panel_structure_and_slide_selector_refinement`.
 - The rendered theme now uses a five-region `#mockup-pdf-location-card` static projection and maps query/spec slide frames to `#mockup-fixture-scenario` for tighter selector specificity.
-- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31` at `360 x 220`; this is not a full pixel-perfect claim.
+- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` at `360 x 220`; this is not a full pixel-perfect claim.
 - Runtime/backend/source/connector/package/RAG/auth/full-activation scope remains blocked until separately refrozen as a named server-authoritative implementation slice.
 
 
@@ -1672,7 +1672,7 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 
 - `Layer3_planning_docs/280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md` records `overview_frame_selector_refinement_to_theme_shell`.
 - Overview montage frames now use `#mockup-theme-shell`; query/spec slide frames remain on `#mockup-fixture-scenario`; PDF-location remains on `#mockup-pdf-location-card`.
-- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31` at `360 x 220`; this is not a full pixel-perfect claim.
+- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` at `360 x 220`; this is not a full pixel-perfect claim.
 - Runtime/backend/source/connector/package/RAG/auth/full-activation scope remains blocked until separately refrozen as a named server-authoritative implementation slice.
 
 
@@ -1680,7 +1680,7 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 
 - `Layer3_planning_docs/281_MOCKUP_PDF_CONTRAST_REFINEMENT.md` records `pdf_location_contrast_palette_refinement`.
 - The PDF-location board keeps the same rendered selectors and server-state boundaries while moving card/background contrast closer to the repo-local mockup frame.
-- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31` at `360 x 220`; this is not a full pixel-perfect claim.
+- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` at `360 x 220`; this is not a full pixel-perfect claim.
 - Runtime/backend/source/connector/package/RAG/auth/full-activation scope remains blocked until separately refrozen as a named server-authoritative implementation slice.
 
 
@@ -1688,5 +1688,13 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 
 - `Layer3_planning_docs/282_MOCKUP_FIXTURE_SLIDE_REFINEMENT.md` records `fixture_query_spec_slide_structure_refinement`.
 - The query/spec fixture uses a vertical board and disabled chip grid to better match the repo-local slide frames while preserving unavailable-control semantics.
-- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31` at `360 x 220`; this is not a full pixel-perfect claim.
+- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` at `360 x 220`; this is not a full pixel-perfect claim.
+- Runtime/backend/source/connector/package/RAG/auth/full-activation scope remains blocked until separately refrozen as a named server-authoritative implementation slice.
+
+
+## Mockup PDF-Location Text-Density Refinement
+
+- `Layer3_planning_docs/283_MOCKUP_PDF_TEXT_DENSITY_REFINEMENT.md` records `pdf_location_text_density_and_disabled_chip_refinement`.
+- The PDF-location board keeps the same rendered selectors and server-state boundaries while reducing dense text mass and replacing the dark read-only placeholder patch with a gray disabled chip.
+- Current `MOCKUP_VISUAL_DIFF_LIMITS` are `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` at `360 x 220`; this is not a full pixel-perfect claim.
 - Runtime/backend/source/connector/package/RAG/auth/full-activation scope remains blocked until separately refrozen as a named server-authoritative implementation slice.

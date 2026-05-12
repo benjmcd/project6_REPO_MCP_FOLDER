@@ -26,6 +26,6 @@ The harness lives in `e2e/layer3-workbench.spec.js` and uses `MOCKUP_VISUAL_DIFF
 
 ## Scope and claim boundary
 
-The current thresholds are calibration thresholds for a working deterministic harness: `normalizedMeanDeltaMax: 0.20` and `highDeltaRatioMax: 0.31` at a `360 x 220` comparison size after the bounded PDF-location selector refinement in `277_MOCKUP_PIXEL_REFINEMENT.md` and threshold tightening in `278_MOCKUP_THRESHOLD_TIGHTENING.md`. They are intentionally not a pixel-perfect threshold. A later pixel-refinement pass may tighten `MOCKUP_VISUAL_DIFF_LIMITS` only after the rendered theme is deliberately adjusted toward the repo-local frames.
+The current thresholds are calibration thresholds for a working deterministic harness: `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305` at a `360 x 220` comparison size after the bounded PDF-location selector refinement in `277_MOCKUP_PIXEL_REFINEMENT.md` and threshold tightening in `278_MOCKUP_THRESHOLD_TIGHTENING.md`. They are intentionally not a pixel-perfect threshold. A later pixel-refinement pass may tighten `MOCKUP_VISUAL_DIFF_LIMITS` only after the rendered theme is deliberately adjusted toward the repo-local frames.
 
 This pass does not add backend API/model/migration/service behavior change, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security widening, or browser-owned durable authority.
