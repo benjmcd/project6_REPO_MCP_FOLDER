@@ -1078,3 +1078,7 @@ Refresh this board against:
 ## Full Mockup Activation Reentry Decision
 
 `257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md` records the current-main mockup/browser posture after qualitative/hybrid/RAG reentry: mockups remain target-state design/specification inputs and existing rendered controls remain live only where server-authoritative paths are already proven; full mockup activation, frontend-only durable workflow state, browser-local persistence as authority, new rendered mockup controls, route/API changes, source expansion, package mutation, provider/public URL behavior, connector/destination dispatch, broad qualitative/hybrid/RAG behavior, hidden LLM planning, auth/security behavior, and browser-owned workflow authority remain blocked.
+
+## Goal Stack Reentry Closeout And Implementation Gate
+
+`258_GOAL_STACK_REENTRY_CLOSEOUT_AND_IMPLEMENTATION_GATE.md` closes the goal-stack reentry sequence as a planning/control and bounded-runtime audit stack. The completed reentry freezes do not admit broad runtime activation; the next implementation must first select exactly one named runtime mode and prove server authority, request/response contracts, stale-authority/idempotency behavior, negative invariants, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted.
