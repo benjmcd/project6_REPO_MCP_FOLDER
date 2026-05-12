@@ -1616,3 +1616,9 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/271_MOCKUP_RUNTIME_GATE.md` records `post_mockup_runtime_gate` after the static rendered theme proof only.
 - The gate states that no runtime is selected after mockup visual proof; backend API/model/migration/service changes, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security runtime, and frontend-only durable authority remain blocked.
 - The next code-bearing runtime slice requires `exact_named_server_authoritative_runtime_use_case_freeze`; without that named server authority, the Layer 3 mockup workbench remains bounded to static rendered projection and planning/control synchronization.
+
+## PDF Location Use Case Freeze
+
+- `Layer3_planning_docs/272_PDF_LOCATION_FREEZE.md` records `pdf_location_use_case_freeze` as the first named runtime-use-case freeze after the mockup runtime gate.
+- The selected use case is `pdf_location_from_aps_content_document_citation`, a read-only projection from existing `ApsContentDocument`, `ApsContentChunk.page_start`/`ApsContentChunk.page_end`, `visual_page_refs_json`, `nrc_aps_evidence_citation_pack`, `sections[].citations[].highlight_spans`, and `source_bundle.run_id` authority.
+- The freeze does not implement runtime behavior; it only permits a later `implement_read_only_pdf_location_projection_from_existing_authority` pass and keeps raw PDF blob streaming, new source families, local upload/directory/path input, RAG/vector retrieval, connector/destination dispatch, package mutation, auth/security widening, full durable mockup activation, and browser-owned authoritative PDF location blocked.

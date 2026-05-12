@@ -357,6 +357,7 @@ MOCKUP_THEME_SHELL_PROOF = (
     PLANNING_DOCS / "270_MOCKUP_THEME_SHELL_PROOF.md"
 )
 MOCKUP_RUNTIME_GATE = PLANNING_DOCS / "271_MOCKUP_RUNTIME_GATE.md"
+PDF_LOCATION_FREEZE = PLANNING_DOCS / "272_PDF_LOCATION_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -16674,6 +16675,122 @@ def _check_mockup_runtime_gate(errors: list[str]) -> None:
                 errors.append(f"{_rel(PROOF_MANIFEST)} mockup runtime gate proof blocked {key} mismatch")
 
 
+def _check_pdf_location_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(PDF_LOCATION_FREEZE, errors)
+    for term in (
+        "Status: current-branch named runtime-use-case freeze for mockup PDF-location projection.",
+        "selected_planning_mode: pdf_location_use_case_freeze",
+        "entry_decision: named_server_authoritative_runtime_use_case_selected_planning_only",
+        "named_runtime_use_case: pdf_location_from_aps_content_document_citation",
+        "selected_activation_mode: single_mockup_screen_read_only_projection",
+        "selected_source_family: aps_content_document",
+        "server_authority_contract: aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+        "runtime_implementation_allowed_next: true",
+        "next_allowed_action: implement_read_only_pdf_location_projection_from_existing_authority",
+        "ApsContentDocument",
+        "ApsContentChunk.page_start",
+        "ApsContentChunk.page_end",
+        "visual_page_refs_json",
+        "nrc_aps_evidence_citation_pack",
+        "sections[].citations[].highlight_spans",
+        "source_bundle.run_id",
+        "This freeze does not implement runtime behavior.",
+        "no raw PDF blob streaming",
+        "no browser-owned authoritative PDF location",
+        "no new source family runtime",
+        "no local upload",
+        "no local-directory ingestion",
+        "no arbitrary local path input",
+        "no RAG/vector retrieval",
+        "no connector/destination dispatch",
+        "no package mutation",
+        "no auth/security behavior change",
+        "no full durable mockup activation",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(PDF_LOCATION_FREEZE)} missing PDF-location freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## PDF Location Use Case Freeze",
+            "272_PDF_LOCATION_FREEZE.md",
+            "pdf_location_from_aps_content_document_citation",
+            "single_mockup_screen_read_only_projection",
+        ),
+        PHASE1A_README: (
+            "272_PDF_LOCATION_FREEZE.md",
+            "pdf_location_use_case_freeze",
+            "ApsContentDocument",
+            "sections[].citations[].highlight_spans",
+        ),
+        MANIFEST: (
+            "pdf_location_use_case_freeze",
+            "latest_pdf_location_freeze_branch",
+            "pdf_location_from_aps_content_document_citation",
+            "implement_read_only_pdf_location_projection_from_existing_authority",
+        ),
+        PROOF_MANIFEST: (
+            "pdf_location_freeze_proof",
+            "pdf_location_use_case_freeze",
+            "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+            "no raw PDF blob streaming",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing PDF-location freeze term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_pdf_location_freeze_branch", "codex/l3-pdf-location-use-case-freeze"),
+        ("latest_pdf_location_freeze_live_behavior_change", False),
+    ):
+        if key not in manifest and not (
+            isinstance(current_status, dict) and current_status.get(key) == expected
+        ):
+            errors.append(f"{_rel(MANIFEST)} missing or mismatched PDF-location freeze key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("pdf_location_use_case_freeze") != "completed_named_pdf_location_runtime_use_case_selected_planning_only":
+        errors.append(f"{_rel(MANIFEST)} missing completed PDF-location freeze scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("pdf_location_freeze_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing pdf_location_freeze_proof")
+        return
+    expected_scalars = {
+        "status": "completed_named_pdf_location_runtime_use_case_selected_planning_only",
+        "implementation_branch": "codex/l3-pdf-location-use-case-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "pdf_location_use_case_freeze",
+        "entry_decision": "named_server_authoritative_runtime_use_case_selected_planning_only",
+        "named_runtime_use_case": "pdf_location_from_aps_content_document_citation",
+        "selected_activation_mode": "single_mockup_screen_read_only_projection",
+        "selected_source_family": "aps_content_document",
+        "server_authority_contract": "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+        "runtime_implementation_allowed_next": True,
+        "next_allowed_action": "implement_read_only_pdf_location_projection_from_existing_authority",
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} PDF-location freeze proof {key} mismatch")
+    for term in (
+        "ApsContentDocument",
+        "ApsContentChunk.page_start",
+        "ApsContentChunk.page_end",
+        "visual_page_refs_json",
+        "nrc_aps_evidence_citation_pack",
+        "sections[].citations[].highlight_spans",
+        "source_bundle.run_id",
+        "no raw PDF blob streaming",
+        "no browser-owned authoritative PDF location",
+    ):
+        if term not in str(proof_entry):
+            errors.append(f"{_rel(PROOF_MANIFEST)} PDF-location freeze proof missing term: {term}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -21379,6 +21496,7 @@ def main() -> int:
         FULL_MOCKUP_NAMED_JOURNEY_PACKET,
         AUTH_SECURITY_NAMED_MODE_PACKET,
         MOCKUP_RUNTIME_GATE,
+        PDF_LOCATION_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -21618,6 +21736,7 @@ def main() -> int:
     _check_mockup_theme_entry_freeze(errors)
     _check_mockup_theme_shell_implementation(errors)
     _check_mockup_runtime_gate(errors)
+    _check_pdf_location_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
