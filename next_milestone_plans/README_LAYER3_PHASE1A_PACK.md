@@ -1628,3 +1628,9 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/273_PDF_LOCATION_PROJECTION.md` records `read_only_pdf_location_projection_from_existing_authority` as the first code-bearing PDF-location slice.
 - The implementation adds `backend/app/services/layer3_pdf_location.py`, `backend/tests/test_layer3_pdf_location.py`, and the `pdf_location_projection` session-summary field for `/api/v1/layer3/session/{session_id}`.
 - The projection uses existing APS document/chunk/page/citation authority only; it does not add a new endpoint, model, migration, PDF streaming path, source adapter, package mutation, connector/destination dispatch, auth/security behavior, full durable mockup activation, or browser-owned authoritative PDF location.
+
+## PDF Location Theme Projection
+
+- `Layer3_planning_docs/274_PDF_LOCATION_THEME.md` records `rendered_pdf_location_projection_from_session_summary` as the mockup-theme rendering pass over the already-implemented session-summary state.
+- The implementation adds `#mockup-pdf-location-projection` inside the `layer3_mockup_workbench_theme` user-flow/PDF-location board and binds it only to `State.sessionSummary.pdf_location_projection`.
+- The pass is rendered UI behavior only; it issues no new backend requests and does not add route/API behavior, models, migrations, raw PDF streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, browser-owned authoritative PDF location, or full durable mockup activation.

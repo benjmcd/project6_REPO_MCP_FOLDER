@@ -6506,7 +6506,11 @@
     "pdf_location_use_case_freeze": "PDF-location use-case freeze: selects pdf_location_from_aps_content_document_citation as planning/control only. The next code-bearing slice may only implement a read-only projection from existing ApsContentDocument, chunk page refs, visual_page_refs_json, and citation/highlight authority; raw PDF blob streaming, browser-owned authoritative PDF location, source expansion, package mutation, connector/destination dispatch, auth/security widening, RAG/vector retrieval, and full durable mockup activation remain blocked.",
     "latest_pdf_location_projection_branch": "codex/l3-pdf-location-projection",
     "latest_pdf_location_projection_live_behavior_change": true,
-    "pdf_location_projection_implementation": "PDF-location projection implementation: adds read-only pdf_location_projection session-summary state from existing ApsContentDocument, ApsContentChunk page refs, visual_page_refs_json, and optional citation highlight authority. No new endpoint, model, migration, PDF byte stream, source adapter, connector dispatch, package mutation, auth/security change, or browser-owned authority is introduced."
+    "pdf_location_projection_implementation": "PDF-location projection implementation: adds read-only pdf_location_projection session-summary state from existing ApsContentDocument, ApsContentChunk page refs, visual_page_refs_json, and optional citation highlight authority. No new endpoint, model, migration, PDF byte stream, source adapter, connector dispatch, package mutation, auth/security change, or browser-owned authority is introduced.",
+    "latest_pdf_location_theme_branch": "codex/l3-pdf-location-theme-projection",
+    "latest_pdf_location_theme_live_behavior_change": true,
+    "latest_pdf_location_theme_summary": "PDF-location theme projection: renders the existing pdf_location_projection session-summary state inside layer3_mockup_workbench_theme through #mockup-pdf-location-projection. The panel reads only State.sessionSummary.pdf_location_projection, issues no new backend requests, fails closed as read-only pending when server authority is unavailable, and does not add route/API behavior, models, migrations, raw PDF streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, browser-owned PDF authority, or full durable mockup activation.",
+    "pdf_location_theme_projection": "PDF-location theme projection: renders the existing pdf_location_projection session-summary state inside layer3_mockup_workbench_theme through #mockup-pdf-location-projection. The panel reads only State.sessionSummary.pdf_location_projection, issues no new backend requests, fails closed as read-only pending when server authority is unavailable, and does not add route/API behavior, models, migrations, raw PDF streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, browser-owned PDF authority, or full durable mockup activation."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -6541,7 +6545,8 @@
     "mockup_theme_shell_implementation": "completed_mockup_theme_shell_fixture_projection_rendered_ui",
     "mockup_runtime_gate": "completed_no_runtime_selected_after_mockup_visual_proof",
     "pdf_location_use_case_freeze": "completed_named_pdf_location_runtime_use_case_selected_planning_only",
-    "pdf_location_projection_implementation": "completed_read_only_pdf_location_projection"
+    "pdf_location_projection_implementation": "completed_read_only_pdf_location_projection",
+    "pdf_location_theme_projection": "completed_rendered_pdf_location_projection_from_session_summary"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -6784,6 +6789,33 @@
       "python -m py_compile .\\backend\\app\\services\\layer3_pdf_location.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\api\\layer3.py .\\tools\\l3-progress-check.py",
       "python -m pytest .\\backend\\tests\\test_layer3_pdf_location.py -q",
       "python .\\tools\\l3-progress-check.py"
+    ]
+  },
+  "latest_pdf_location_theme_branch": "codex/l3-pdf-location-theme-projection",
+  "latest_pdf_location_theme_live_behavior_change": true,
+  "latest_pdf_location_theme_summary": "PDF-location theme projection: renders the existing pdf_location_projection session-summary state inside layer3_mockup_workbench_theme through #mockup-pdf-location-projection. The panel reads only State.sessionSummary.pdf_location_projection, issues no new backend requests, fails closed as read-only pending when server authority is unavailable, and does not add route/API behavior, models, migrations, raw PDF streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, browser-owned PDF authority, or full durable mockup activation.",
+  "pdf_location_theme_projection": {
+    "status": "completed_rendered_pdf_location_projection_from_session_summary",
+    "implementation_branch": "codex/l3-pdf-location-theme-projection",
+    "live_behavior_change": true,
+    "selected_runtime_mode": "rendered_pdf_location_projection_from_session_summary",
+    "entry_proof": "273_PDF_LOCATION_PROJECTION.md",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/274_PDF_LOCATION_THEME.md",
+    "server_state_source": "State.sessionSummary.pdf_location_projection",
+    "selected_theme_target": "layer3_mockup_workbench_theme",
+    "route_api_behavior_change": false,
+    "model_migration_behavior_change": false,
+    "rendered_ui_behavior_change": true,
+    "no_new_backend_requests": true,
+    "rendered_surface": "#mockup-pdf-location-projection",
+    "blocked_runtime": [
+      "raw_pdf_blob_streaming",
+      "browser_owned_authoritative_pdf_location",
+      "source_expansion",
+      "package_mutation",
+      "connector_destination_dispatch",
+      "auth_security_widening",
+      "full_durable_mockup_activation"
     ]
   }
 }
