@@ -1652,3 +1652,9 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/277_MOCKUP_PIXEL_REFINEMENT.md` records `pdf_location_frame_selector_precision_and_threshold_tightening`.
 - The pass adds the stable `#mockup-pdf-location-card` selector, maps `pdf_location_projection` to that selector in the repo-local frame manifest, and tightens `MOCKUP_VISUAL_DIFF_LIMITS` to `normalizedMeanDeltaMax: 0.30` and `highDeltaRatioMax: 0.34`.
 - This improves visual-proof strictness without claiming completed pixel-perfect parity and without changing backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
+
+## Mockup Threshold Tightening
+
+- `Layer3_planning_docs/278_MOCKUP_THRESHOLD_TIGHTENING.md` records `visual_diff_threshold_tightening_to_observed_envelope`.
+- The pass tightens `MOCKUP_VISUAL_DIFF_LIMITS` to `normalizedMeanDeltaMax: 0.28` and `highDeltaRatioMax: 0.31` after the selector precision pass measured `pdf_location_projection` at `0.272669` and `0.299356`.
+- This is proof-hardening only; it does not claim full pixel-perfect parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.

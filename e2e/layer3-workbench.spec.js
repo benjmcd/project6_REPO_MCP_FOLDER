@@ -17,8 +17,8 @@ const MOCKUP_FRAME_MANIFEST_PATH = path.resolve('next_milestone_plans/layer3-moc
 const MOCKUP_VISUAL_DIFF_LIMITS = {
   compareWidth: 360,
   compareHeight: 220,
-  normalizedMeanDeltaMax: 0.30,
-  highDeltaRatioMax: 0.34,
+  normalizedMeanDeltaMax: 0.28,
+  highDeltaRatioMax: 0.31,
 };
 
 function pngDimensions(buffer) {
