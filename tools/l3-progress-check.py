@@ -21043,17 +21043,43 @@ def _check_pr798_review_debt_closeout(errors: list[str]) -> None:
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
-        'RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM = "local_operator_staged_server_owned_manifest"',
+        "from app.services.layer3_raw_mixed_contract import RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM",
         "def _admitted_dataset_version_provenance_filter():",
-        ".filter(_admitted_dataset_version_provenance_filter())",
+        'DatasetSourceProvenance.source_mode != "raw_mixed_materialized"',
+        "def _is_admitted_dataset_version_provenance(row: DatasetSourceProvenance) -> bool:",
+        'row.source_mode == "raw_mixed_materialized"',
+        'row.source_system == RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM',
+        'row.artifact_locator_type == "server_owned_ref"',
+        'row.fetch_policy_mode == "server_owned_manifest"',
+        '"dataset_version_provenance_not_admitted"',
     ):
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing PR #798 workbench guard term: {term}")
+    if workbench_text.count("_is_admitted_dataset_version_provenance(row)") < 2:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} must apply the PR #798 provenance guard in both candidate listing and material preview")
+
+    raw_mixed_contract = ROOT / "backend" / "app" / "services" / "layer3_raw_mixed_contract.py"
+    raw_mixed_materialization = ROOT / "backend" / "app" / "services" / "layer3_raw_mixed_materialization.py"
+    raw_mixed_contract_text = _read_required_text(raw_mixed_contract, errors)
+    raw_mixed_materialization_text = _read_required_text(raw_mixed_materialization, errors)
+    if 'RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM = "local_operator_staged_server_owned_manifest"' not in raw_mixed_contract_text:
+        errors.append(f"{_rel(raw_mixed_contract)} missing shared raw-mixed server-owned source-system constant")
+    for term in (
+        "from app.services.layer3_raw_mixed_contract import RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM",
+        'str(provenance.get("source_system") or RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM)',
+        '"artifact_locator_type": provenance.get("artifact_locator_type") or "server_owned_ref"',
+        '"fetch_policy_mode": provenance.get("fetch_policy_mode") or "server_owned_manifest"',
+    ):
+        if term not in raw_mixed_materialization_text:
+            errors.append(f"{_rel(raw_mixed_materialization)} missing raw-mixed materialization admission term: {term}")
 
     workbench_test_text = _read_required_text(LAYER3_WORKBENCH_TEST, errors)
     for term in (
         "test_dataset_version_candidates_include_server_owned_raw_mixed_materialization",
         "test_dataset_version_candidates_reject_unrecognized_server_owned_raw_mixed_source_system",
+        "test_raw_mixed_aps_shortcut_is_not_admitted_without_server_owned_sentinel",
+        "test_newest_rejected_raw_mixed_provenance_blocks_stale_accepted_fallback",
+        "dataset_version_provenance_not_admitted",
         "traceable_aps_dataset_version",
         "unrecognized_server_owned_manifest",
     ):

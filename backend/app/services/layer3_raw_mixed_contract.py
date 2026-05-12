@@ -1,0 +1,4 @@
+from __future__ import annotations
+
+
+RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM = "local_operator_staged_server_owned_manifest"
