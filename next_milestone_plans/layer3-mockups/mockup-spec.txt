@@ -65,6 +65,8 @@ This spec covers:
 
 This spec does not claim that every workflow element is implemented today. It explicitly separates mockup intent from repo-live state.
 
+Later docs `268_MOCKUP_THEME_FREEZE.md`, `269_MOCKUP_THEME_ENTRY_FREEZE.md`, and `270_MOCKUP_THEME_SHELL_PROOF.md` supersede the earlier weaker visual-fidelity posture for the dedicated `layer3_mockup_workbench_theme`: that theme now targets pixel-perfect functional rendition for its selected first-slice frames while this broader spec remains design/spec context.
+
 3A. Authority And Claim Classification
 
 Every future use of this document should preserve the following claim classes.
@@ -198,7 +200,7 @@ Status:
 
 - This section captures what the mockups visually communicate about how the Layer 3 frontend should look and feel in use.
 - It is mockup-observed design intent, not a live implementation claim.
-- It does not require pixel-perfect reproduction of the diagrams.
+- By itself this broader spec does not require pixel-perfect reproduction of every diagram; the later dedicated mockup-theme freeze does require pixel-perfect treatment for the selected first-slice frames and must govern that theme-specific work.
 - It does not choose a final frontend framework, component library, responsive breakpoint system, CSS implementation, or browser route.
 - It should be used to guide future UI planning so the mockups are not reduced to only backend workflow/state-machine semantics.
 

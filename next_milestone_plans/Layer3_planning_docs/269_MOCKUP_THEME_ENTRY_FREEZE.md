@@ -43,6 +43,7 @@ exact_mockup_frames_first_slice:
   - clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png
   - focus_on_these/sublayer3A_and_sublayer3B.png
   - focus_on_these/sublayer3C.png
+repo_visual_acceptance_manifest: next_milestone_plans/layer3-mockups/frames/manifest.json
 deterministic_fixture_scenario: semiconductor_infrastructure_auto_supply_chain
 contextual_text_box_policy: collapsible_help_or_demo_annotation_not_required_always_visible
 server_state_mapping_required: true
@@ -98,6 +99,8 @@ The full corpus remains design context, but the first implementation slice is ac
 - `focus_on_these/sublayer3C.png`
 
 This selection is intentionally smaller than the full mockup corpus because the next pass needs a stable visual target, not an open-ended design reconstruction. Additional frames can be admitted later only by a follow-up freeze or proof update.
+
+The selected frames are mirrored into repo-local acceptance artifacts under `next_milestone_plans/layer3-mockups/frames/` and enumerated in `next_milestone_plans/layer3-mockups/frames/manifest.json`. The repo-local files are the shared review/proof inputs; the original Downloads paths remain provenance for the source mockup corpus.
 
 ## Contextual text-box policy
 
