@@ -500,6 +500,7 @@ PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_TEST = (
 )
 PROVIDER_PRIVATE_SIGNED_URL_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
+LAYER3_WORKBENCH_TEST = ROOT / "backend" / "tests" / "test_layer3_workbench.py"
 LAYER3_BOUNDED_E2E_TEST = ROOT / "backend" / "tests" / "test_layer3_bounded_e2e.py"
 LAYER3_PAGE_TEST = ROOT / "backend" / "tests" / "test_layer3_page.py"
 LAYER3_RESPONSE_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_response_contract.py"
@@ -555,6 +556,7 @@ LAYER3_STATIC = ROOT / "backend" / "app" / "review_ui" / "static"
 LAYER3_HTML = LAYER3_STATIC / "layer3.html"
 LAYER3_CSS = LAYER3_STATIC / "layer3.css"
 LAYER3_JS = LAYER3_STATIC / "layer3.js"
+LAYER3_CLAUDE = LAYER3_STATIC / "claude.html"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 LAYER3_FLOW_E2E = ROOT / "e2e" / "layer3-flow.spec.js"
 LAYER3_HANDOFF_E2E = ROOT / "e2e" / "layer3-handoff.spec.js"
@@ -18070,6 +18072,64 @@ def _check_bounded_e2e_current_main_sync(errors: list[str]) -> None:
             errors.append(f"{_rel(QUAL_APS_SERVICE)} missing mixed APS companion guard term: {term}")
 
 
+def _check_pr798_review_debt_closeout(errors: list[str]) -> None:
+    for path, terms in {
+        BOARD: (
+            "PR `#798` review-debt closeout",
+            "231755fef6d913bde4568c809e43b6fdd421465c",
+            "one DatasetSourceProvenance admission predicate",
+            "local_operator_staged_server_owned_manifest",
+            "stale Claude prototype manual source node",
+        ),
+        MANIFEST: (
+            "Current main now includes PR #798 as a bounded review-debt closeout",
+            "one admitted DatasetSourceProvenance predicate",
+            "local_operator_staged_server_owned_manifest",
+            "SPEC_CHIPS remains empty",
+        ),
+        PROOF_MANIFEST: (
+            "latest_pr798_review_debt_closeout_pr",
+            "231755fef6d913bde4568c809e43b6fdd421465c",
+            "pr798_review_debt_closeout_proof",
+            "shared_between_candidate_listing_and_material_preview",
+            "manual_spec_empty_and_stale_manual_source_node_removed",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing PR #798 closeout term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        'RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM = "local_operator_staged_server_owned_manifest"',
+        "def _admitted_dataset_version_provenance_filter():",
+        ".filter(_admitted_dataset_version_provenance_filter())",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing PR #798 workbench guard term: {term}")
+
+    workbench_test_text = _read_required_text(LAYER3_WORKBENCH_TEST, errors)
+    for term in (
+        "test_dataset_version_candidates_include_server_owned_raw_mixed_materialization",
+        "test_dataset_version_candidates_reject_unrecognized_server_owned_raw_mixed_source_system",
+        "traceable_aps_dataset_version",
+        "unrecognized_server_owned_manifest",
+    ):
+        if term not in workbench_test_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_TEST)} missing PR #798 test term: {term}")
+
+    claude_text = _read_required_text(LAYER3_CLAUDE, errors)
+    if "const SPEC_CHIPS = [];" not in claude_text:
+        errors.append(f"{_rel(LAYER3_CLAUDE)} missing empty SPEC_CHIPS guard")
+    if "Manual source classes<br>and intent chips" in claude_text:
+        errors.append(f"{_rel(LAYER3_CLAUDE)} still contains stale manual source node")
+
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    if '"Manual source classes<br>and intent chips" not in claude.text' not in page_test_text:
+        errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing stale Claude manual-node absence assertion")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -18205,6 +18265,7 @@ def main() -> int:
         LAYER3_HTML,
         LAYER3_CSS,
         LAYER3_JS,
+        LAYER3_CLAUDE,
         SOURCE_BOUNDARY_TEST,
         PREFLIGHT_REQUEST_CONTRACT_TEST,
         APS_SOURCE_FAMILY_TEST,
@@ -18395,6 +18456,7 @@ def main() -> int:
     _check_aps_source_family_extraction(errors)
     _check_external_export_contract_extraction(errors)
     _check_bounded_e2e_current_main_sync(errors)
+    _check_pr798_review_debt_closeout(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
