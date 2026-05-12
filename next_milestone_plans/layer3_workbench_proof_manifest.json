@@ -10742,7 +10742,11 @@
     "latest_mockup_visual_diff_freeze_branch": "codex/l3-mockup-visual-diff-freeze",
     "latest_mockup_visual_diff_freeze_live_behavior_change": false,
     "latest_mockup_visual_diff_freeze_summary": "Mockup visual-diff freeze: selects repo_local_mockup_frame_visual_diff_acceptance as a planning/control proof mode for pixel-faithful mockup-theme work. The next allowed action is implement_repo_local_mockup_visual_diff_harness using next_milestone_plans/layer3-mockups/frames/manifest.json as frame authority with headed/headless Chromium, deterministic tolerance policy, and fail-closed missing-frame/selector/screenshot handling. It does not claim current visual parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.",
-    "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze"
+    "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze",
+    "latest_mockup_visual_diff_harness_branch": "codex/l3-mockup-visual-diff-harness",
+    "latest_mockup_visual_diff_harness_live_behavior_change": false,
+    "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.35 and highDeltaRatioMax 0.40.",
+    "mockup_visual_diff_harness": "completed_repo_local_mockup_visual_diff_harness"
   },
   "scope_status": {
     "provider_private_signed_url_use_revoke_freeze": "completed_corrective_revoke_only_planning_control",
@@ -10764,7 +10768,8 @@
     "full_mockup_activation_reentry_decision": "completed_full_mockup_activation_reentry_decision_no_activation_runtime",
     "goal_stack_reentry_closeout_and_implementation_gate": "completed_goal_stack_reentry_closeout_next_requires_single_named_mode",
     "pdf_location_theme_projection": "completed_rendered_pdf_location_projection_from_session_summary",
-    "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze"
+    "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze",
+    "mockup_visual_diff_harness": "completed_repo_local_mockup_visual_diff_harness"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -12359,5 +12364,45 @@
       "next_milestone_plans/layer3_workbench_proof_manifest.json",
       "tools/l3-progress-check.py"
     ]
+  },
+  "mockup_visual_diff_harness_proof": {
+    "status": "completed_repo_local_mockup_visual_diff_harness",
+    "implementation_branch": "codex/l3-mockup-visual-diff-harness",
+    "live_behavior_change": false,
+    "selected_proof_mode": "repo_local_mockup_frame_visual_diff_acceptance",
+    "entry_freeze": "275_MOCKUP_VISUAL_DIFF_FREEZE.md",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/276_MOCKUP_VISUAL_DIFF_HARNESS.md",
+    "frame_manifest_authority": "next_milestone_plans/layer3-mockups/frames/manifest.json",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "metrics_attachment": "layer3-mockup-visual-diff-metrics.json",
+    "comparison_engine": "Playwright screenshot plus browser canvas scaled RGB delta",
+    "threshold_contract": "calibrated MOCKUP_VISUAL_DIFF_LIMITS, not pixel-perfect parity",
+    "proof_test": "Layer 3 mockup workbench visual diff harness compares repo-local frames",
+    "blocked_runtime": [
+      "backend_api_model_migration_service_change",
+      "source_runtime_expansion",
+      "connector_destination_dispatch",
+      "package_mutation",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_durable_mockup_activation",
+      "auth_security_widening"
+    ],
+    "proof_files": [
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/Layer3_planning_docs/276_MOCKUP_VISUAL_DIFF_HARNESS.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "visual_diff_limits": {
+      "compareWidth": 360,
+      "compareHeight": 220,
+      "normalizedMeanDeltaMax": 0.35,
+      "highDeltaRatioMax": 0.4
+    },
+    "next_allowed_action": "tighten_mockup_visual_diff_thresholds_through_pixel_refinement"
   }
 }
