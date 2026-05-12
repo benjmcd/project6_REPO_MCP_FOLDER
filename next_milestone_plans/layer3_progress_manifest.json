@@ -6518,12 +6518,16 @@
     "mockup_visual_diff_freeze": "Mockup visual-diff freeze: selects repo_local_mockup_frame_visual_diff_acceptance as a planning/control proof mode for pixel-faithful mockup-theme work. The next allowed action is implement_repo_local_mockup_visual_diff_harness using next_milestone_plans/layer3-mockups/frames/manifest.json as frame authority with headed/headless Chromium, deterministic tolerance policy, and fail-closed missing-frame/selector/screenshot handling. It does not claim current visual parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.",
     "latest_mockup_visual_diff_harness_branch": "codex/l3-mockup-visual-diff-harness",
     "latest_mockup_visual_diff_harness_live_behavior_change": false,
-    "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.30 and highDeltaRatioMax 0.34.",
-    "mockup_visual_diff_harness": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.30 and highDeltaRatioMax 0.34.",
+    "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31.",
+    "mockup_visual_diff_harness": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31.",
     "latest_mockup_pixel_refinement_branch": "codex/l3-mockup-pixel-refinement",
     "latest_mockup_pixel_refinement_live_behavior_change": false,
-    "latest_mockup_pixel_refinement_summary": "Mockup pixel refinement: maps pdf_location_projection to the stable #mockup-pdf-location-card selector instead of the full #mockup-userflow-board and tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.30 and highDeltaRatioMax 0.34. Measured pdf_location_projection improved from 0.289284/0.315669 to 0.272669/0.299356. This is proof/selector precision only and does not claim full pixel-perfect parity or change runtime/backend scope.",
-    "mockup_pixel_refinement": "Mockup pixel refinement: maps pdf_location_projection to the stable #mockup-pdf-location-card selector instead of the full #mockup-userflow-board and tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.30 and highDeltaRatioMax 0.34. Measured pdf_location_projection improved from 0.289284/0.315669 to 0.272669/0.299356. This is proof/selector precision only and does not claim full pixel-perfect parity or change runtime/backend scope."
+    "latest_mockup_pixel_refinement_summary": "Mockup pixel refinement: maps pdf_location_projection to the stable #mockup-pdf-location-card selector instead of the full #mockup-userflow-board and tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31. Measured pdf_location_projection improved from 0.289284/0.315669 to 0.272669/0.299356. This is proof/selector precision only and does not claim full pixel-perfect parity or change runtime/backend scope.",
+    "mockup_pixel_refinement": "Mockup pixel refinement: maps pdf_location_projection to the stable #mockup-pdf-location-card selector instead of the full #mockup-userflow-board and tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31. Measured pdf_location_projection improved from 0.289284/0.315669 to 0.272669/0.299356. This is proof/selector precision only and does not claim full pixel-perfect parity or change runtime/backend scope.",
+    "latest_mockup_threshold_tightening_branch": "codex/l3-mockup-pixel-threshold-tighten",
+    "latest_mockup_threshold_tightening_live_behavior_change": false,
+    "latest_mockup_threshold_tightening_summary": "Mockup threshold tightening: tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31 after the PDF-location selector precision pass measured the worst frame at 0.272669/0.299356. This is visual proof-hardening only and does not claim full pixel-perfect parity or change runtime/backend scope.",
+    "mockup_threshold_tightening": "Mockup threshold tightening: tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31 after the PDF-location selector precision pass measured the worst frame at 0.272669/0.299356. This is visual proof-hardening only and does not claim full pixel-perfect parity or change runtime/backend scope."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -6562,7 +6566,8 @@
     "pdf_location_theme_projection": "completed_rendered_pdf_location_projection_from_session_summary",
     "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze",
     "mockup_visual_diff_harness": "completed_repo_local_mockup_visual_diff_harness",
-    "mockup_pixel_refinement": "completed_pdf_location_selector_precision_threshold_tightening"
+    "mockup_pixel_refinement": "completed_pdf_location_selector_precision_threshold_tightening",
+    "mockup_threshold_tightening": "completed_visual_diff_threshold_tightening_to_observed_envelope"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -6873,7 +6878,7 @@
   ],
   "latest_mockup_visual_diff_harness_branch": "codex/l3-mockup-visual-diff-harness",
   "latest_mockup_visual_diff_harness_live_behavior_change": false,
-  "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.30 and highDeltaRatioMax 0.34.",
+  "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31.",
   "mockup_visual_diff_harness": {
     "status": "completed_repo_local_mockup_visual_diff_harness",
     "implementation_branch": "codex/l3-mockup-visual-diff-harness",
@@ -6900,14 +6905,14 @@
     "visual_diff_limits": {
       "compareWidth": 360,
       "compareHeight": 220,
-      "normalizedMeanDeltaMax": 0.3,
-      "highDeltaRatioMax": 0.34
+      "normalizedMeanDeltaMax": 0.28,
+      "highDeltaRatioMax": 0.31
     },
     "next_allowed_action": "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics"
   },
   "latest_mockup_pixel_refinement_branch": "codex/l3-mockup-pixel-refinement",
   "latest_mockup_pixel_refinement_live_behavior_change": false,
-  "latest_mockup_pixel_refinement_summary": "Mockup pixel refinement: maps pdf_location_projection to the stable #mockup-pdf-location-card selector instead of the full #mockup-userflow-board and tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.30 and highDeltaRatioMax 0.34. Measured pdf_location_projection improved from 0.289284/0.315669 to 0.272669/0.299356. This is proof/selector precision only and does not claim full pixel-perfect parity or change runtime/backend scope.",
+  "latest_mockup_pixel_refinement_summary": "Mockup pixel refinement: maps pdf_location_projection to the stable #mockup-pdf-location-card selector instead of the full #mockup-userflow-board and tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31. Measured pdf_location_projection improved from 0.289284/0.315669 to 0.272669/0.299356. This is proof/selector precision only and does not claim full pixel-perfect parity or change runtime/backend scope.",
   "mockup_pixel_refinement": {
     "status": "completed_pdf_location_selector_precision_threshold_tightening",
     "implementation_branch": "codex/l3-mockup-pixel-refinement",
@@ -6925,8 +6930,8 @@
     "visual_diff_limits": {
       "compareWidth": 360,
       "compareHeight": 220,
-      "normalizedMeanDeltaMax": 0.3,
-      "highDeltaRatioMax": 0.34
+      "normalizedMeanDeltaMax": 0.28,
+      "highDeltaRatioMax": 0.31
     },
     "measured_delta": {
       "before": {
@@ -6937,6 +6942,40 @@
         "normalizedMeanDelta": 0.272669,
         "highDeltaRatio": 0.299356
       }
+    },
+    "next_allowed_action": "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics",
+    "blocked_runtime": [
+      "backend_api_model_migration_service_change",
+      "source_runtime_expansion",
+      "connector_destination_dispatch",
+      "package_mutation",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_durable_mockup_activation",
+      "auth_security_widening"
+    ]
+  },
+  "latest_mockup_threshold_tightening_branch": "codex/l3-mockup-pixel-threshold-tighten",
+  "latest_mockup_threshold_tightening_live_behavior_change": false,
+  "latest_mockup_threshold_tightening_summary": "Mockup threshold tightening: tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31 after the PDF-location selector precision pass measured the worst frame at 0.272669/0.299356. This is visual proof-hardening only and does not claim full pixel-perfect parity or change runtime/backend scope.",
+  "mockup_threshold_tightening": {
+    "status": "completed_visual_diff_threshold_tightening_to_observed_envelope",
+    "implementation_branch": "codex/l3-mockup-pixel-threshold-tighten",
+    "live_behavior_change": false,
+    "selected_refinement_mode": "visual_diff_threshold_tightening_to_observed_envelope",
+    "entry_proof": "277_MOCKUP_PIXEL_REFINEMENT.md",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/278_MOCKUP_THRESHOLD_TIGHTENING.md",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "visual_diff_limits": {
+      "compareWidth": 360,
+      "compareHeight": 220,
+      "normalizedMeanDeltaMax": 0.28,
+      "highDeltaRatioMax": 0.31
+    },
+    "measured_worst_frame": {
+      "projection_id": "pdf_location_projection",
+      "normalizedMeanDelta": 0.272669,
+      "highDeltaRatio": 0.299356
     },
     "next_allowed_action": "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics",
     "blocked_runtime": [
