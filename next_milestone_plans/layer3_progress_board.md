@@ -1025,6 +1025,10 @@ Source breadth authority packet: `250_SOURCE_BREADTH_AUTHORITY_PACKET.md` record
 
 Post 807 closeout: `251_POST_807_CLOSEOUT.md` records PR `#807` as merged into current `main` at `9ffc5c64154b5175f56cb0e1b15b9ffc1492f233`. The closeout preserves the PR #807 outcome as planning/control only: post-provider-private roadmap selection is current-main authority, source breadth remains the selected next planning lane, source-breadth runtime remains blocked with `entry_decision: no_runtime_now`, and no source runtime, connector/destination dispatch, package mutation/reconstruction, broad qualitative/hybrid/RAG, full mockup activation, auth/security behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered controls, or frontend-only durable authority is admitted.
 
+## Goal Stack Implementation Audit
+
+Goal stack implementation audit: `252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md` records the current-main bounded implementation state for source breadth, source runtime, source rendered controls, connector/destination reentry, package mutation reentry, qualitative/hybrid/RAG reentry, and full mockup activation. The audit separates live bounded implementations from blocked expansions: current-class source runtime, raw-mixed current-class rendered controls, internal connector dispatch record-only behavior, backend package lifecycle authority, and single APS-document qualitative execution are live; new source-family runtime, external connector/destination writes, rendered package mutation controls, broad qualitative/hybrid/RAG/vector behavior, and full mockup activation remain blocked until a later one-mode freeze proves the missing authority and validation plan.
+
 ## Refresh Inputs
 
 Refresh this board against:
