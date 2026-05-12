@@ -275,6 +275,7 @@ PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_FREEZE = (
 PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_CONTRACT = (
     PLANNING_DOCS / "241_PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_CONTRACT.md"
 )
+LIVE_THEME_PARITY_PROOF = PLANNING_DOCS / "242_LIVE_THEME_PARITY_PROOF.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -13949,6 +13950,163 @@ def _check_provider_private_signed_url_use_authority_freeze(errors: list[str]) -
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_authority_freeze_proof recommended_next_actions must match blocked-use sequence")
 
+def _check_live_theme_parity_proof(errors: list[str]) -> None:
+    required_terms = {
+        LIVE_THEME_PARITY_PROOF: (
+            "Status: test-only proof for `live_theme_parity_proof`.",
+            "theme_set:",
+            "system",
+            "light",
+            "dark",
+            "workbench",
+            "claude_status: excluded_prototype_only",
+            "expectLiveThemeParityCheckpoint",
+            "materialized-source-selection",
+            "signed-reference-delivered",
+            "Both targeted runs passed for the same canonical rendered signed-reference path.",
+        ),
+        PHASE1A_README: (
+            "242_LIVE_THEME_PARITY_PROOF.md",
+            "current test-only live-theme parity proof",
+            "excludes Claude as prototype-only",
+            "restores entry theme state after each parity checkpoint",
+        ),
+        BOARD: (
+            "Layer 3 Live Theme Parity Proof",
+            "242_LIVE_THEME_PARITY_PROOF.md",
+            "live_theme_parity_proof",
+            "headless and headed Chromium",
+            "excludes Claude as prototype-only",
+        ),
+        MANIFEST: (
+            "latest_live_theme_parity_proof_branch",
+            "live_theme_parity_proof",
+            "canonical raw-mixed rendered external export/download signed-reference path",
+            "system`, `light`, `dark`, and `workbench",
+        ),
+        PROOF_MANIFEST: (
+            "live_theme_parity_proof",
+            "completed_test_only",
+            "codex/l3-theme-parity-proof",
+            "excluded_prototype_only",
+            "materialized-source-selection",
+            "signed-reference-delivered",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "LIVE_LAYER3_THEMES",
+            "expectLiveThemeParityCheckpoint",
+            "const entryTheme = await page.locator('#theme-selector').inputValue();",
+            "await page.locator('#theme-selector').selectOption(entryTheme);",
+            "materialized-source-selection",
+            "signed-reference-delivered",
+            "#external-export-download-signed-reference-panel",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing live theme parity proof term: {term}")
+
+    workbench_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
+    theme_match = re.search(r"const\s+LIVE_LAYER3_THEMES\s*=\s*(\[[^\]]+\]);", workbench_text)
+    if not theme_match:
+        errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing LIVE_LAYER3_THEMES constant")
+    else:
+        try:
+            themes = ast.literal_eval(theme_match.group(1))
+        except (SyntaxError, ValueError) as exc:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} LIVE_LAYER3_THEMES is not parseable: {exc}")
+        else:
+            if themes != ["system", "light", "dark", "workbench"]:
+                errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} LIVE_LAYER3_THEMES must be exactly system/light/dark/workbench")
+
+    if "LIVE_LAYER3_THEMES = ['system', 'light', 'dark', 'workbench'];" not in workbench_text:
+        errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} LIVE_LAYER3_THEMES must not include Claude or extra live themes")
+    if "'materialized-source-selection', '#source-fieldset'" not in workbench_text:
+        errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing materialized source-selection theme checkpoint")
+    if "'signed-reference-delivered'" not in workbench_text or "'#external-export-download-signed-reference-panel'" not in workbench_text:
+        errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing signed-reference delivered theme checkpoint")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status", {}) if isinstance(manifest_data, dict) else {}
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for live theme parity proof")
+    else:
+        if current_status.get("latest_live_theme_parity_proof_branch") != "codex/l3-theme-parity-proof":
+            errors.append(f"{_rel(MANIFEST)} current_status live theme parity branch is stale")
+        if current_status.get("latest_live_theme_parity_proof_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status live theme parity live behavior flag must be false")
+        summary = current_status.get("live_theme_parity_proof")
+        if (
+            not isinstance(summary, str)
+            or "test-only live-theme parity proof" not in summary
+            or "Claude remains excluded as prototype-only" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.live_theme_parity_proof must record test-only theme parity posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("live_theme_parity_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing live_theme_parity_proof object")
+        return
+
+    expected_scalars = {
+        "status": "completed_test_only",
+        "implementation_branch": "codex/l3-theme-parity-proof",
+        "live_behavior_change": False,
+        "live_route": "/review/layer3",
+        "claude_status": "excluded_prototype_only",
+        "canonical_test": "Layer 3 workbench drives raw mixed rendered external export download signed reference",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} live_theme_parity_proof.{key} must be {expected!r}")
+
+    if proof.get("theme_set") != ["system", "light", "dark", "workbench"]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} live_theme_parity_proof theme_set must match live themes")
+
+    expected_checkpoints = [
+        {
+            "label": "materialized-source-selection",
+            "visible_surface": "#source-fieldset",
+        },
+        {
+            "label": "signed-reference-delivered",
+            "visible_surface": "#external-export-download-signed-reference-panel",
+        },
+    ]
+    if proof.get("checkpoints") != expected_checkpoints:
+        errors.append(f"{_rel(PROOF_MANIFEST)} live_theme_parity_proof checkpoints must match the implemented proof")
+
+    expected_validation = [
+        'npx playwright test e2e/layer3-workbench.spec.js --grep "external export download signed reference" --project=chromium',
+        'npx playwright test e2e/layer3-workbench.spec.js --grep "external export download signed reference" --project=chromium --headed',
+    ]
+    if proof.get("validation_commands") != expected_validation:
+        errors.append(f"{_rel(PROOF_MANIFEST)} live_theme_parity_proof validation commands must include headless and headed Chromium")
+
+    expected_forbidden = [
+        "claude_live_theme_admission",
+        "backend_api_route_or_dto_change",
+        "production_ui_behavior_change",
+        "rendered_provider_private_signed_url_controls",
+        "provider_private_signed_url_use_route",
+        "provider_network_or_object_store_write",
+        "provider_public_url_runtime",
+        "public_proxy_url_runtime",
+        "connector_destination_dispatch",
+        "package_mutation_or_reconstruction",
+        "source_expansion",
+        "broad_qualitative_hybrid_rag_vector_runtime",
+        "hidden_llm_planning",
+        "full_mockup_activation",
+        "auth_security_behavior_change",
+        "frontend_only_durable_authority",
+    ]
+    if proof.get("forbidden_runtime_changes") != expected_forbidden:
+        errors.append(f"{_rel(PROOF_MANIFEST)} live_theme_parity_proof forbidden_runtime_changes must match the frozen list")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -18600,6 +18758,7 @@ def main() -> int:
         RENDERED_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_PROOF,
         POST_745_DOWNSTREAM_EXPANSION_FREEZE,
         POST_745_DOWNSTREAM_EXPANSION_CONTRACT,
+        LIVE_THEME_PARITY_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -18817,6 +18976,7 @@ def main() -> int:
     _check_provider_private_signed_url_route_entry_contract(errors)
     _check_provider_private_signed_url_revoke_only_freeze(errors)
     _check_provider_private_signed_url_use_authority_freeze(errors)
+    _check_live_theme_parity_proof(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
