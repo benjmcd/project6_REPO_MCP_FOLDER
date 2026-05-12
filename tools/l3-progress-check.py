@@ -356,6 +356,7 @@ MOCKUP_THEME_ENTRY_FREEZE = (
 MOCKUP_THEME_SHELL_PROOF = (
     PLANNING_DOCS / "270_MOCKUP_THEME_SHELL_PROOF.md"
 )
+MOCKUP_RUNTIME_GATE = PLANNING_DOCS / "271_MOCKUP_RUNTIME_GATE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -16564,6 +16565,115 @@ def _check_mockup_theme_shell_implementation(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} mockup theme shell implementation proof {key} mismatch")
 
 
+def _check_mockup_runtime_gate(errors: list[str]) -> None:
+    doc_text = _read_required_text(MOCKUP_RUNTIME_GATE, errors)
+    for term in (
+        "Status: current-branch planning/control gate after mockup frame-map proof.",
+        "selected_planning_mode: post_mockup_runtime_gate",
+        "entry_decision: no_runtime_selected_after_mockup_visual_proof",
+        "mockup_visual_proof_status: static_theme_frame_projection_proven",
+        "runtime_implementation_allowed_next: false",
+        "next_required_boundary: exact_named_server_authoritative_runtime_use_case_freeze",
+        "source_breadth_runtime: blocked_until_named_source_use_case",
+        "external_connector_destination_runtime: blocked_until_named_connector_or_destination_target",
+        "rendered_package_mutation_runtime: blocked_until_named_package_lifecycle_action",
+        "broad_qual_hybrid_rag_runtime: blocked_until_named_analysis_mode",
+        "full_mockup_durable_activation: blocked_until_one_mockup_control_maps_to_server_authority",
+        "auth_security_runtime: blocked_until_named_operator_access_security_mode",
+        "backend API/model/migration/service",
+        "source runtime",
+        "connector/destination dispatch",
+        "package mutation",
+        "broad qualitative/hybrid/RAG",
+        "full durable mockup activation",
+        "auth/security",
+        "frontend-only durable authority",
+        "This gate authorizes static rendered theme proof only.",
+        "It does not authorize backend/runtime expansion.",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(MOCKUP_RUNTIME_GATE)} missing mockup runtime gate term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Runtime Gate",
+            "271_MOCKUP_RUNTIME_GATE.md",
+            "no runtime selected after mockup visual proof",
+            "exact_named_server_authoritative_runtime_use_case_freeze",
+        ),
+        PHASE1A_README: (
+            "271_MOCKUP_RUNTIME_GATE.md",
+            "post_mockup_runtime_gate",
+            "static rendered theme proof only",
+            "backend API/model/migration/service",
+        ),
+        MANIFEST: (
+            "mockup_runtime_gate",
+            "latest_mockup_runtime_gate_branch",
+            "no_runtime_selected_after_mockup_visual_proof",
+            "exact_named_server_authoritative_runtime_use_case_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "mockup_runtime_gate_proof",
+            "post_mockup_runtime_gate",
+            "static_theme_frame_projection_proven",
+            "blocked_until_named_source_use_case",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup runtime gate term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_mockup_runtime_gate_branch", "codex/l3-post-mockup-runtime-gate"),
+        ("latest_mockup_runtime_gate_live_behavior_change", False),
+    ):
+        if key not in manifest and not (
+            isinstance(current_status, dict) and current_status.get(key) == expected
+        ):
+            errors.append(f"{_rel(MANIFEST)} missing or mismatched mockup runtime gate key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("mockup_runtime_gate") != "completed_no_runtime_selected_after_mockup_visual_proof":
+        errors.append(f"{_rel(MANIFEST)} missing completed mockup runtime gate scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("mockup_runtime_gate_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_runtime_gate_proof")
+        return
+    expected_scalars = {
+        "status": "completed_no_runtime_selected_after_mockup_visual_proof",
+        "implementation_branch": "codex/l3-post-mockup-runtime-gate",
+        "live_behavior_change": False,
+        "selected_planning_mode": "post_mockup_runtime_gate",
+        "entry_decision": "no_runtime_selected_after_mockup_visual_proof",
+        "mockup_visual_proof_status": "static_theme_frame_projection_proven",
+        "runtime_implementation_allowed_next": False,
+        "next_required_boundary": "exact_named_server_authoritative_runtime_use_case_freeze",
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup runtime gate proof {key} mismatch")
+    blocked_runtime = proof_entry.get("blocked_runtime_families")
+    expected_blocked = {
+        "source_breadth_runtime": "blocked_until_named_source_use_case",
+        "external_connector_destination_runtime": "blocked_until_named_connector_or_destination_target",
+        "rendered_package_mutation_runtime": "blocked_until_named_package_lifecycle_action",
+        "broad_qual_hybrid_rag_runtime": "blocked_until_named_analysis_mode",
+        "full_mockup_durable_activation": "blocked_until_one_mockup_control_maps_to_server_authority",
+        "auth_security_runtime": "blocked_until_named_operator_access_security_mode",
+    }
+    if not isinstance(blocked_runtime, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} mockup runtime gate proof missing blocked_runtime_families")
+    else:
+        for key, expected in expected_blocked.items():
+            if blocked_runtime.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup runtime gate proof blocked {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -21268,6 +21378,7 @@ def main() -> int:
         QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET,
         FULL_MOCKUP_NAMED_JOURNEY_PACKET,
         AUTH_SECURITY_NAMED_MODE_PACKET,
+        MOCKUP_RUNTIME_GATE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -21506,6 +21617,7 @@ def main() -> int:
     _check_mockup_theme_freeze(errors)
     _check_mockup_theme_entry_freeze(errors)
     _check_mockup_theme_shell_implementation(errors)
+    _check_mockup_runtime_gate(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

@@ -1610,3 +1610,9 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/270_MOCKUP_THEME_SHELL_PROOF.md` records the first rendered implementation pass for `layer3_mockup_workbench_theme`.
 - The pass implements `mockup_theme_shell_and_fixture_projection` as a static UI/theme variant over `/review/layer3`, with semiconductor fixture projection and Pre-3A/Gate B/Gate C/Sublayer 3A/3B/3C flow cards.
 - It changes no backend API/model/migration/service behavior and does not admit source expansion, connector/destination runtime, package mutation, broad qualitative/hybrid/RAG runtime, auth/security behavior, full mockup durable workflow activation, or browser-owned workflow authority.
+
+## Mockup Runtime Gate
+
+- `Layer3_planning_docs/271_MOCKUP_RUNTIME_GATE.md` records `post_mockup_runtime_gate` after the static rendered theme proof only.
+- The gate states that no runtime is selected after mockup visual proof; backend API/model/migration/service changes, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security runtime, and frontend-only durable authority remain blocked.
+- The next code-bearing runtime slice requires `exact_named_server_authoritative_runtime_use_case_freeze`; without that named server authority, the Layer 3 mockup workbench remains bounded to static rendered projection and planning/control synchronization.

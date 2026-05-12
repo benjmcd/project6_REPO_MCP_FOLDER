@@ -1136,3 +1136,9 @@ Refresh this board against:
 - Implemented first slice: `mockup_theme_shell_and_fixture_projection` with the `semiconductor_infrastructure_auto_supply_chain` fixture projection.
 - UI scope: theme selector option, exact theme preference, `data-theme-variant` mapping, static fixture shell, Pre-3A/Gate B/Gate C/Sublayer 3A/3B/3C cards, unavailable future-behavior markers, and acceptance-frame disclosure.
 - Still blocked: source expansion, external connector/destination runtime, package mutation, broad qualitative/hybrid/RAG runtime, auth/security runtime, full mockup durable workflow activation, and frontend-only durable authority.
+
+## Mockup Runtime Gate
+
+- `271_MOCKUP_RUNTIME_GATE.md` records no runtime selected after mockup visual proof.
+- The gate keeps the static theme/frame proof separate from backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security runtime, and frontend-only durable authority.
+- Next runtime work requires `exact_named_server_authoritative_runtime_use_case_freeze`; without that named server authority, the correct posture remains planning/control only.
