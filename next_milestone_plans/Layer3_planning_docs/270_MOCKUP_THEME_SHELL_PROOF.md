@@ -54,6 +54,7 @@ The implementation adds:
 - Repo-local first-slice acceptance frame copies with SHA-256 metadata in `next_milestone_plans/layer3-mockups/frames/manifest.json`.
 - A static `focus_on_these/sublayer3C.png` fixture projection with separate quantitative and qualitative execution lanes, Gate B ingress object stacks, unavailable/deferred objects, process notes, and generated-output cards.
 - E2E assertions that the Sublayer 3C fixture projection is visible, non-interactive, and still creates no backend requests for blocked source, package, connector, or mockup runtime paths.
+- E2E visual-acceptance proof that parses `next_milestone_plans/layer3-mockups/frames/manifest.json`, performs repo-local frame hash verification plus size checks for all seven frames, checks the selected `sublayer-c.png` dimensions, emits a layer3-mockup-theme-shell.png screenshot attachment, and verifies the rendered Sublayer 3C lane geometry against the selected frame mapping.
 
 ## Authority and non-fragility notes
 
@@ -68,5 +69,6 @@ The pass is valid only if:
 - `python .\tools\l3-progress-check.py` passes.
 - `python -m pytest .\backend\tests\test_layer3_page.py` passes.
 - JSON manifests parse.
-- The targeted Playwright mockup theme test passes in headless Chromium.
+- The targeted Playwright mockup theme test passes in headless Chromium and headed Chromium.
+- The targeted Playwright mockup theme test emits a screenshot attachment for the dedicated mockup shell and validates the repo-local frame manifest before relying on rendered UI assertions.
 - CI remains green before merge.
