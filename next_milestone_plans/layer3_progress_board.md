@@ -1090,3 +1090,7 @@ Refresh this board against:
 ## Post Reentry Named Use Case Adjudication
 
 `260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md` ranks the post-reentry candidate runtime families and selects `source_breadth_named_use_case_packet` as the next planning lane. Runtime remains blocked: the next packet must either name one concrete source use case with authority, storage/security, provenance, downstream semantics, rendered-control obligations, and auth/security posture, or close source breadth again as no-runtime.
+
+## Source Breadth Named Use Case Packet
+
+`261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md` closes the selected source-breadth named-use-case packet as no-runtime. Current authority supports only `dataset_version` and `aps_content_document`; no concrete new source use case is present, so local upload, local-directory ingestion, broad file upload, web connector retrieval, RAG/vector retrieval, unbounded runtime DB reads, rendered source controls, and source adapter registry behavior remain blocked.
