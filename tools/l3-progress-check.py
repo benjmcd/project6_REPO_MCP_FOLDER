@@ -18215,6 +18215,23 @@ def _check_mockup_pixel_proof_closeout(errors: list[str]) -> None:
         for key, expected in expected_current_worst.items():
             if current_worst.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} mockup pixel-proof closeout proof stale current_worst_frame {key}")
+    current_status = proof.get("current_status") if isinstance(proof, dict) else None
+    for proof_key in (
+        "mockup_pixel_refinement_proof",
+        "mockup_threshold_tightening_proof",
+        "mockup_pdf_location_panel_refinement_proof",
+        "mockup_overview_selector_refinement_proof",
+        "mockup_pdf_contrast_refinement_proof",
+        "mockup_fixture_slide_refinement_proof",
+        "mockup_pdf_text_density_refinement_proof",
+        "mockup_pixel_proof_closeout_proof",
+    ):
+        root_entry = proof.get(proof_key) if isinstance(proof, dict) else None
+        status_entry = current_status.get(proof_key) if isinstance(current_status, dict) else None
+        if not isinstance(root_entry, dict) or not isinstance(status_entry, dict):
+            continue
+        if status_entry.get("visual_diff_limits") != root_entry.get("visual_diff_limits"):
+            errors.append(f"{_rel(PROOF_MANIFEST)} current_status {proof_key} visual_diff_limits drift from root proof")
 
 
 def _check_runtime_freeze_intake_checklist(errors: list[str]) -> None:
