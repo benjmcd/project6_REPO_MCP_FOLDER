@@ -28,7 +28,11 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'data-theme-target="layer3_mockup_workbench_theme"' in response.text
     assert 'data-first-slice="mockup_theme_shell_and_fixture_projection"' in response.text
     assert 'id="mockup-fixture-scenario"' in response.text
+    assert 'id="mockup-execution-lanes"' in response.text
+    assert 'data-visual-source="focus_on_these/sublayer3C.png"' in response.text
     assert "semiconductor_infrastructure_auto_supply_chain" in response.text
+    assert "Quantitative deterministic environment" in response.text
+    assert "Qualitative analysis environment" in response.text
     assert "browser storage presentation only" in response.text
     assert "localStorage.removeItem(sharedStorageKey)" in response.text
     assert 'id="authority-rail"' in response.text
@@ -141,6 +145,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "overflow: visible" in css.text
     assert 'html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-shell' in css.text
     assert ".mockup-theme-flow" in css.text
+    assert ".mockup-execution-lanes" in css.text
+    assert ".mockup-process-note" in css.text
+    assert ".mockup-output-card" in css.text
     assert ".mockup-disabled-control" in css.text
     assert ".step-chip.current" in css.text
     assert ".step-chip:focus-visible" in css.text
