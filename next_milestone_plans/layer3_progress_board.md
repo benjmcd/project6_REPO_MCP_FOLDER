@@ -1106,3 +1106,7 @@ Refresh this board against:
 ## Qual Hybrid RAG Named Analysis Packet
 
 `264_QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET.md` closes the qualitative/hybrid/RAG named-analysis packet as no-runtime. Current authority proves only the single APS-document qualitative pass and bounded qualitative APS downstream chain; broad qualitative execution, cross-document synthesis, hybrid execution, RAG/vector retrieval, vector indexes, embeddings, prompt/model/provider runtime, output taxonomy expansion, and rendered qualitative/RAG controls remain blocked.
+
+## Full Mockup Named Journey Packet
+
+`265_FULL_MOCKUP_NAMED_JOURNEY_PACKET.md` closes the full mockup named-journey packet as no-runtime. Mockups remain target-state design/specification inputs; full mockup activation, frontend-only durable state, browser-local persistence as authority, new rendered mockup controls, route/API behavior changes, and browser-owned workflow authority remain blocked.
