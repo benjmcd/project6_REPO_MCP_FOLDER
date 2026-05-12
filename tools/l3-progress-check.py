@@ -17122,10 +17122,6 @@ def _check_mockup_visual_diff_freeze(errors: list[str]) -> None:
     if not isinstance(scope_status, dict) or scope_status.get("mockup_visual_diff_freeze") != "completed_planning_control_visual_diff_acceptance_freeze":
         errors.append(f"{_rel(MANIFEST)} missing completed mockup visual-diff freeze scope status")
 
-    next_required = manifest.get("next_required_decision")
-    if not isinstance(next_required, str) or "implement_repo_local_mockup_visual_diff_harness" not in next_required:
-        errors.append(f"{_rel(MANIFEST)} next_required_decision missing visual-diff harness next action")
-
     proof = _load_json(PROOF_MANIFEST, errors)
     proof_entry = proof.get("mockup_visual_diff_freeze_proof") if isinstance(proof, dict) else None
     if not isinstance(proof_entry, dict):
@@ -17210,13 +17206,19 @@ def _check_mockup_visual_diff_harness(errors: list[str]) -> None:
         ("latest_mockup_visual_diff_harness_branch", "codex/l3-mockup-visual-diff-harness"),
         ("latest_mockup_visual_diff_harness_live_behavior_change", False),
     ):
-        if key not in manifest and not (
-            isinstance(current_status, dict) and current_status.get(key) == expected
-        ):
-            errors.append(f"{_rel(MANIFEST)} missing or mismatched mockup visual-diff harness key: {key}")
+        if key in manifest:
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mismatched mockup visual-diff harness key: {key}")
+        elif not (isinstance(current_status, dict) and current_status.get(key) == expected):
+            errors.append(f"{_rel(MANIFEST)} missing mockup visual-diff harness key: {key}")
     scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
     if not isinstance(scope_status, dict) or scope_status.get("mockup_visual_diff_harness") != "completed_repo_local_mockup_visual_diff_harness":
         errors.append(f"{_rel(MANIFEST)} missing completed mockup visual-diff harness scope status")
+    next_required = manifest.get("next_required_decision")
+    if not isinstance(next_required, str) or "tighten_mockup_visual_diff_thresholds_through_pixel_refinement" not in next_required:
+        errors.append(f"{_rel(MANIFEST)} next_required_decision missing post-harness pixel-refinement next action")
+    elif "implement_repo_local_mockup_visual_diff_harness" in next_required:
+        errors.append(f"{_rel(MANIFEST)} next_required_decision still lists completed visual-diff harness implementation")
 
     proof = _load_json(PROOF_MANIFEST, errors)
     proof_entry = proof.get("mockup_visual_diff_harness_proof") if isinstance(proof, dict) else None

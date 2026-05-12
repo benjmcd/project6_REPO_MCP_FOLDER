@@ -10745,7 +10745,7 @@
     "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze",
     "latest_mockup_visual_diff_harness_branch": "codex/l3-mockup-visual-diff-harness",
     "latest_mockup_visual_diff_harness_live_behavior_change": false,
-    "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.",
+    "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.35 and highDeltaRatioMax 0.40.",
     "mockup_visual_diff_harness": "completed_repo_local_mockup_visual_diff_harness"
   },
   "scope_status": {
@@ -12396,6 +12396,13 @@
       "next_milestone_plans/layer3_progress_manifest.json",
       "next_milestone_plans/layer3_workbench_proof_manifest.json",
       "tools/l3-progress-check.py"
-    ]
+    ],
+    "visual_diff_limits": {
+      "compareWidth": 360,
+      "compareHeight": 220,
+      "normalizedMeanDeltaMax": 0.35,
+      "highDeltaRatioMax": 0.4
+    },
+    "next_allowed_action": "tighten_mockup_visual_diff_thresholds_through_pixel_refinement"
   }
 }
