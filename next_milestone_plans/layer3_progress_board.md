@@ -1129,3 +1129,10 @@ Refresh this board against:
 - Visual target: selected first-slice frames from `userflow`, `clear-screenshots`, and `focus_on_these`, with deterministic `semiconductor_infrastructure_auto_supply_chain` fixture projection where current runtime cannot produce the visualized state.
 - Required next proof: headed Chrome, headless Chrome, visual diff or screenshot comparison, responsive stacked layout, keyboard navigation, contrast, and non-color-only status labeling.
 - Forbidden without refreeze: backend API/model/migration/service behavior, new source runtime, connector/destination writes, rendered package mutation controls, broad qualitative/hybrid/RAG runtime, auth/security runtime, full mockup durable workflow activation, and browser-owned durable authority.
+
+## Mockup Theme Shell Implementation
+
+- Status: rendered UI implementation for `layer3_mockup_workbench_theme`; no backend API/model/migration/service behavior change.
+- Implemented first slice: `mockup_theme_shell_and_fixture_projection` with the `semiconductor_infrastructure_auto_supply_chain` fixture projection.
+- UI scope: theme selector option, exact theme preference, `data-theme-variant` mapping, static fixture shell, Pre-3A/Gate B/Gate C/Sublayer 3A/3B/3C cards, unavailable future-behavior markers, and acceptance-frame disclosure.
+- Still blocked: source expansion, external connector/destination runtime, package mutation, broad qualitative/hybrid/RAG runtime, auth/security runtime, full mockup durable workflow activation, and frontend-only durable authority.

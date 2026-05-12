@@ -353,6 +353,9 @@ MOCKUP_THEME_FREEZE = PLANNING_DOCS / "268_MOCKUP_THEME_FREEZE.md"
 MOCKUP_THEME_ENTRY_FREEZE = (
     PLANNING_DOCS / "269_MOCKUP_THEME_ENTRY_FREEZE.md"
 )
+MOCKUP_THEME_SHELL_PROOF = (
+    PLANNING_DOCS / "270_MOCKUP_THEME_SHELL_PROOF.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -16360,6 +16363,133 @@ def _check_mockup_theme_entry_freeze(errors: list[str]) -> None:
             if required not in values:
                 errors.append(f"{_rel(PROOF_MANIFEST)} mockup theme entry freeze proof {key} missing {required}")
 
+def _check_mockup_theme_shell_implementation(errors: list[str]) -> None:
+    html_text = _read_required_text(
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.html",
+        errors,
+    )
+    css_text = _read_required_text(
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.css",
+        errors,
+    )
+    js_text = _read_required_text(
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js",
+        errors,
+    )
+    page_test_text = _read_required_text(
+        ROOT / "backend" / "tests" / "test_layer3_page.py",
+        errors,
+    )
+    e2e_text = _read_required_text(
+        ROOT / "e2e" / "layer3-workbench.spec.js",
+        errors,
+    )
+    proof_doc_text = _read_required_text(MOCKUP_THEME_SHELL_PROOF, errors)
+
+    for term in (
+        '<option value="layer3_mockup_workbench_theme">Mockup Workbench</option>',
+        'id="mockup-theme-shell"',
+        'data-theme-target="layer3_mockup_workbench_theme"',
+        'data-first-slice="mockup_theme_shell_and_fixture_projection"',
+        'id="mockup-fixture-scenario"',
+        "semiconductor_infrastructure_auto_supply_chain",
+        "browser storage presentation only",
+        "Sublayer 3C",
+    ):
+        if term not in html_text:
+            errors.append(f"backend/app/review_ui/static/layer3.html missing mockup theme shell term: {term}")
+
+    for term in (
+        'html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-shell',
+        ".mockup-theme-flow",
+        ".mockup-disabled-control",
+        "@media (max-width: 760px)",
+    ):
+        if term not in css_text:
+            errors.append(f"backend/app/review_ui/static/layer3.css missing mockup theme shell term: {term}")
+
+    for term in (
+        "const LAYER3_MOCKUP_WORKBENCH_THEME = 'layer3_mockup_workbench_theme';",
+        "const LAYER3_MOCKUP_THEME_FIRST_SLICE = 'mockup_theme_shell_and_fixture_projection';",
+        "function renderMockupThemeShell",
+        "dataset.themeVariant = LAYER3_MOCKUP_WORKBENCH_THEME",
+        "value === 'workbench' || value === LAYER3_MOCKUP_WORKBENCH_THEME",
+        "userflow/layer3_user-flow-overview1.png",
+        "focus_on_these/sublayer3C.png",
+    ):
+        if term not in js_text:
+            errors.append(f"backend/app/review_ui/static/layer3.js missing mockup theme shell term: {term}")
+
+    for term in (
+        "layer3_mockup_workbench_theme",
+        "mockup_theme_shell_and_fixture_projection",
+        "function renderMockupThemeShell",
+        'html[data-theme-variant="layer3_mockup_workbench_theme"]',
+    ):
+        if term not in page_test_text:
+            errors.append(f"backend/tests/test_layer3_page.py missing mockup theme shell assertion term: {term}")
+
+    for term in (
+        "layer3_mockup_workbench_theme",
+        "Layer 3 mockup workbench theme exposes fixture projection without backend widening",
+        "#mockup-theme-shell button",
+        "source/mixed-corpus/materialize",
+    ):
+        if term not in e2e_text:
+            errors.append(f"e2e/layer3-workbench.spec.js missing mockup theme shell proof term: {term}")
+
+    for term in (
+        "Status: current-branch rendered UI implementation proof",
+        "selected_runtime_mode: rendered_mockup_theme_shell_fixture_projection",
+        "live_behavior_change: true",
+        "route_api_behavior_change: false",
+        "model_migration_service_behavior_change: false",
+        "selected_theme_target: layer3_mockup_workbench_theme",
+        "selected_first_slice: mockup_theme_shell_and_fixture_projection",
+        "fixture_scenario: semiconductor_infrastructure_auto_supply_chain",
+        "frontend_only_durable_authority",
+    ):
+        if term not in proof_doc_text:
+            errors.append(f"{_rel(MOCKUP_THEME_SHELL_PROOF)} missing mockup theme shell proof term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key in (
+        "latest_mockup_theme_shell_implementation_branch",
+        "latest_mockup_theme_shell_implementation_live_behavior_change",
+        "mockup_theme_shell_implementation",
+    ):
+        if key not in manifest and not (isinstance(current_status, dict) and key in current_status):
+            errors.append(f"{_rel(MANIFEST)} missing mockup theme shell implementation key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("mockup_theme_shell_implementation") != "completed_mockup_theme_shell_fixture_projection_rendered_ui":
+        errors.append(f"{_rel(MANIFEST)} missing completed mockup theme shell implementation scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    scope = proof.get("scope") if isinstance(proof, dict) else None
+    proof_entry = proof.get("mockup_theme_shell_implementation_proof") if isinstance(proof, dict) else None
+    if not isinstance(scope, dict) or scope.get("latest_mockup_theme_shell_implementation_live_behavior_change") is not True:
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup theme shell implementation live scope proof")
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_theme_shell_implementation_proof")
+        return
+    expected_scalars = {
+        "status": "completed_mockup_theme_shell_fixture_projection_rendered_ui",
+        "implementation_branch": "codex/l3-mockup-theme-shell",
+        "live_behavior_change": True,
+        "route_api_behavior_change": False,
+        "model_migration_service_behavior_change": False,
+        "selected_runtime_mode": "rendered_mockup_theme_shell_fixture_projection",
+        "selected_theme_target": "layer3_mockup_workbench_theme",
+        "selected_first_slice": "mockup_theme_shell_and_fixture_projection",
+        "fixture_scenario": "semiconductor_infrastructure_auto_supply_chain",
+        "browser_storage_policy": "presentation_cache_only_no_durable_authority",
+    }
+    for key, value in expected_scalars.items():
+        if proof_entry.get(key) != value:
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup theme shell implementation proof {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -21273,6 +21403,7 @@ def main() -> int:
     _check_post_reentry_named_packet_closeout(errors)
     _check_mockup_theme_freeze(errors)
     _check_mockup_theme_entry_freeze(errors)
+    _check_mockup_theme_shell_implementation(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

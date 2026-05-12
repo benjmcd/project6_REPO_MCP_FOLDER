@@ -3922,3 +3922,167 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         margin-right: 10px;
     }
 }
+
+.mockup-theme-shell {
+    display: none;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-shell {
+    display: grid;
+    gap: 14px;
+    margin: 8px 10px 0;
+    padding: 14px;
+    border: 1px solid rgba(125, 211, 252, 0.55);
+    background:
+        linear-gradient(135deg, rgba(125, 211, 252, 0.11), transparent 38%),
+        linear-gradient(90deg, rgba(204, 255, 153, 0.07), transparent 52%),
+        rgba(3, 3, 3, 0.72);
+    box-shadow:
+        inset 0 0 0 1px rgba(248, 248, 248, 0.08),
+        0 20px 48px rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-hero,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-fixture,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-context {
+    border: 1px dotted rgba(248, 248, 248, 0.34);
+    background: rgba(9, 9, 9, 0.62);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-hero {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-kicker,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-frame-label {
+    color: #7dd3fc;
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-hero h2,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-flow-card h3 {
+    margin: 0;
+    text-transform: uppercase;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-hero p,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-flow-card p,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-fixture-query p,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-fixture-spec p,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-context p {
+    margin: 0;
+    color: rgba(248, 248, 248, 0.72);
+    line-height: 1.35;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-chip-row,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-fixture-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-chip,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-disabled-control {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 3px 8px;
+    border: 1px solid rgba(248, 248, 248, 0.22);
+    background: rgba(20, 20, 20, 0.72);
+    color: rgba(248, 248, 248, 0.82);
+    font-size: 0.66rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-disabled-control {
+    color: rgba(248, 248, 248, 0.58);
+    border-style: dashed;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-fixture,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-flow {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-fixture-query,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-fixture-spec,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-flow-card {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid rgba(248, 248, 248, 0.18);
+    background: rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-fixture-query,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-fixture-spec {
+    min-height: 118px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-fixture-controls {
+    align-content: start;
+    padding: 12px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-flow-card {
+    border-left: 3px solid #7dd3fc;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-gateb,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-3a {
+    border-left-color: #ccff99;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-gatec,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-3b {
+    border-left-color: #b266ff;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-3c {
+    border-left-color: #ffb366;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-context {
+    padding: 11px 12px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-context summary {
+    cursor: pointer;
+    color: #f8f8f8;
+    font-weight: 900;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-frame-list {
+    display: grid;
+    gap: 5px;
+    margin: 10px 0;
+    padding-left: 18px;
+    color: rgba(248, 248, 248, 0.72);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.7rem;
+}
+
+@media (max-width: 1280px) {
+    html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-fixture,
+    html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-flow {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-shell,
+    html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-fixture,
+    html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-flow {
+        grid-template-columns: 1fr;
+    }
+}
