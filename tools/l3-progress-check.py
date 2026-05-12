@@ -301,6 +301,9 @@ SOURCE_BREADTH_AUTHORITY_PACKET = (
     PLANNING_DOCS / "250_SOURCE_BREADTH_AUTHORITY_PACKET.md"
 )
 POST_807_CLOSEOUT = PLANNING_DOCS / "251_POST_807_CLOSEOUT.md"
+GOAL_STACK_IMPLEMENTATION_AUDIT = (
+    PLANNING_DOCS / "252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14600,11 +14603,22 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "source_breadth_entry_decision: no_runtime_now",
             "implementation_entry_allowed_next: false",
         ),
+        GOAL_STACK_IMPLEMENTATION_AUDIT: (
+            "Status: current-main implementation/audit freeze for `goal_stack_implementation_audit`.",
+            "entry_decision: current_main_bounded_implementation_audited",
+            "source_runtime_tranche_status: raw_mixed_current_classes_live",
+            "connector_destination_status: internal_dispatch_record_live_external_dispatch_blocked",
+            "package_mutation_status: backend_package_lifecycle_live_rendered_mutation_blocked",
+            "qual_hybrid_rag_status: single_aps_doc_qualitative_live_broad_hybrid_rag_blocked",
+            "full_mockup_status: target_state_only_activation_blocked",
+            "implementation_entry_allowed_next: false",
+        ),
         PHASE1A_README: (
             "248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md",
             "249_SOURCE_BREADTH_REENTRY_CONTRACT.md",
             "250_SOURCE_BREADTH_AUTHORITY_PACKET.md",
             "251_POST_807_CLOSEOUT.md",
+            "252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md",
             "source_breadth_reentry_authority_packet",
         ),
         BOARD: (
@@ -14612,6 +14626,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "Source Breadth Reentry Contract",
             "Source Breadth Authority Packet",
             "Post 807 Closeout",
+            "Goal Stack Implementation Audit",
             "source_breadth_reentry_authority_packet",
         ),
         MANIFEST: (
@@ -14619,6 +14634,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "source_breadth_reentry_contract",
             "source_breadth_reentry_authority_packet",
             "post_807_closeout",
+            "goal_stack_implementation_audit",
             "source_breadth_reentry_authority_packet",
         ),
         PROOF_MANIFEST: (
@@ -14626,6 +14642,7 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "source_breadth_reentry_contract_proof",
             "source_breadth_reentry_authority_packet_proof",
             "post_807_closeout_proof",
+            "goal_stack_implementation_audit_proof",
             "source_breadth_reentry_authority_packet",
         ),
     }
@@ -14649,6 +14666,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             "latest_source_breadth_reentry_authority_packet_live_behavior_change": False,
             "latest_post_807_closeout_branch": "codex/l3-post807-closeout",
             "latest_post_807_closeout_live_behavior_change": False,
+            "latest_goal_stack_implementation_audit_branch": "codex/l3-source-runtime-tranche",
+            "latest_goal_stack_implementation_audit_live_behavior_change": False,
         }
         for key, expected in expected_current.items():
             if current_status.get(key) != expected:
@@ -14687,6 +14706,8 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
             errors.append(f"{_rel(MANIFEST)} scope_status.source_breadth_reentry_authority_packet must be completed_planning_control_no_runtime")
         if scope_status.get("post_807_closeout") != "completed_planning_control_closeout":
             errors.append(f"{_rel(MANIFEST)} scope_status.post_807_closeout must be completed_planning_control_closeout")
+        if scope_status.get("goal_stack_implementation_audit") != "completed_bounded_implementation_audit":
+            errors.append(f"{_rel(MANIFEST)} scope_status.goal_stack_implementation_audit must be completed_bounded_implementation_audit")
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     roadmap_proof = proof_data.get("post_provider_private_roadmap_selection_freeze_proof") if isinstance(proof_data, dict) else None
@@ -14771,6 +14792,29 @@ def _check_post_provider_private_roadmap_selection_freeze(errors: list[str]) -> 
         for key, expected in expected_scalars.items():
             if closeout_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} post_807_closeout_proof.{key} must be {expected!r}")
+
+    goal_stack_proof = proof_data.get("goal_stack_implementation_audit_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(goal_stack_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing goal_stack_implementation_audit_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_bounded_implementation_audit",
+            "implementation_branch": "codex/l3-source-runtime-tranche",
+            "live_behavior_change": False,
+            "selected_planning_mode": "goal_stack_implementation_audit",
+            "entry_decision": "current_main_bounded_implementation_audited",
+            "source_breadth_status": "current_class_runtime_live_new_source_runtime_blocked",
+            "source_runtime_tranche_status": "raw_mixed_current_classes_live",
+            "source_rendered_control_status": "current_raw_mixed_controls_live_new_source_controls_blocked",
+            "connector_destination_status": "internal_dispatch_record_live_external_dispatch_blocked",
+            "package_mutation_status": "backend_package_lifecycle_live_rendered_mutation_blocked",
+            "qual_hybrid_rag_status": "single_aps_doc_qualitative_live_broad_hybrid_rag_blocked",
+            "full_mockup_status": "target_state_only_activation_blocked",
+            "implementation_entry_allowed_next": False,
+        }
+        for key, expected in expected_scalars.items():
+            if goal_stack_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} goal_stack_implementation_audit_proof.{key} must be {expected!r}")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -19433,6 +19477,7 @@ def main() -> int:
         SOURCE_BREADTH_REENTRY_CONTRACT,
         SOURCE_BREADTH_AUTHORITY_PACKET,
         POST_807_CLOSEOUT,
+        GOAL_STACK_IMPLEMENTATION_AUDIT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
