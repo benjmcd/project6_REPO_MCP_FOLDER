@@ -1094,3 +1094,7 @@ Refresh this board against:
 ## Source Breadth Named Use Case Packet
 
 `261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md` closes the selected source-breadth named-use-case packet as no-runtime. Current authority supports only `dataset_version` and `aps_content_document`; no concrete new source use case is present, so local upload, local-directory ingestion, broad file upload, web connector retrieval, RAG/vector retrieval, unbounded runtime DB reads, rendered source controls, and source adapter registry behavior remain blocked.
+
+## Connector Destination Named Target Packet
+
+`262_CONNECTOR_DESTINATION_NAMED_TARGET_PACKET.md` closes the connector/destination named-target packet as no-runtime. Current authority proves only `internal_dispatch_record_only`; external connector invocation, destination writes, connector-run creation, generic downstream dispatch, rendered connector/destination controls, provider/public URL side effects, retry/cancel lifecycle, and credential-bearing target behavior remain blocked.
