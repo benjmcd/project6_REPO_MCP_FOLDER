@@ -331,6 +331,9 @@ POST_REENTRY_NAMED_USE_CASE_ADJUDICATION = (
 SOURCE_BREADTH_NAMED_USE_CASE_PACKET = (
     PLANNING_DOCS / "261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md"
 )
+CONNECTOR_DESTINATION_NAMED_TARGET_PACKET = (
+    PLANNING_DOCS / "262_CONNECTOR_DESTINATION_NAMED_TARGET_PACKET.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -15463,6 +15466,109 @@ def _check_source_breadth_named_use_case_packet(errors: list[str]) -> None:
         if packet_proof.get("current_supported_sources") != ["dataset_version", "aps_content_document"]:
             errors.append(f"{_rel(PROOF_MANIFEST)} source_breadth_named_use_case_packet_proof.current_supported_sources must remain dataset_version and aps_content_document")
 
+
+def _check_connector_destination_named_target_packet(errors: list[str]) -> None:
+    packet_text = _read_required_text(CONNECTOR_DESTINATION_NAMED_TARGET_PACKET, errors)
+    required_terms = [
+        "Status: current-main connector/destination named-target packet for `connector_destination_named_target_packet`.",
+        "entry_decision: no_runtime_now_named_connector_or_destination_absent",
+        "upstream_reentry_doc: 254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md",
+        "current_connector_destination_runtime: internal_dispatch_record_only",
+        "named_downstream_use_case: null",
+        "selected_connector_or_destination_family: null",
+        "selected_dispatch_mode: null",
+        "credential_access_model_selected: false",
+        "lifecycle_contract_selected: false",
+        "receipt_audit_contract_selected: false",
+        "fake_connector_destination_test_architecture_selected: false",
+        "implementation_entry_allowed_next: false",
+        "next_required_boundary: named_connector_or_destination_target_before_runtime",
+        "external_connector_destination_runtime_status: blocked",
+        "This packet admits no runtime behavior",
+    ]
+    for term in required_terms:
+        if term not in packet_text:
+            errors.append(f"{_rel(CONNECTOR_DESTINATION_NAMED_TARGET_PACKET)} missing connector/destination named target packet term: {term}")
+
+    required_surfaces = {
+        PHASE1A_README: (
+            "262_CONNECTOR_DESTINATION_NAMED_TARGET_PACKET.md",
+            "current authority proves only `internal_dispatch_record_only`",
+        ),
+        BOARD: (
+            "Connector Destination Named Target Packet",
+            "external connector invocation",
+        ),
+        MANIFEST: (
+            "connector_destination_named_target_packet",
+            "current authority proves only internal_dispatch_record_only",
+        ),
+        PROOF_MANIFEST: (
+            "connector_destination_named_target_packet_proof",
+            "named_connector_or_destination_target_before_runtime",
+        ),
+    }
+    for path, terms in required_surfaces.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing connector/destination named target packet term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for connector/destination named target packet")
+    else:
+        expected_current = {
+            "latest_connector_destination_named_target_packet_branch": "codex/l3-connector-target-packet",
+            "latest_connector_destination_named_target_packet_live_behavior_change": False,
+        }
+        for key, expected in expected_current.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        summary = current_status.get("connector_destination_named_target_packet")
+        if (
+            not isinstance(summary, str)
+            or "current authority proves only internal_dispatch_record_only" not in summary
+            or "External connector/destination runtime remains blocked" not in summary
+            or "admits no runtime behavior" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.connector_destination_named_target_packet must record no-runtime connector/destination target posture")
+
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict):
+        errors.append(f"{_rel(MANIFEST)} scope_status missing for connector/destination named target packet")
+    elif scope_status.get("connector_destination_named_target_packet") != "completed_no_runtime_named_connector_or_destination_absent":
+        errors.append(f"{_rel(MANIFEST)} scope_status.connector_destination_named_target_packet must be completed_no_runtime_named_connector_or_destination_absent")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    packet_proof = proof_data.get("connector_destination_named_target_packet_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(packet_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing connector_destination_named_target_packet_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_no_runtime_named_connector_or_destination_absent",
+            "implementation_branch": "codex/l3-connector-target-packet",
+            "live_behavior_change": False,
+            "selected_planning_mode": "connector_destination_named_target_packet",
+            "entry_decision": "no_runtime_now_named_connector_or_destination_absent",
+            "upstream_reentry_doc": "254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md",
+            "current_connector_destination_runtime": "internal_dispatch_record_only",
+            "named_downstream_use_case": None,
+            "selected_connector_or_destination_family": None,
+            "selected_dispatch_mode": None,
+            "credential_access_model_selected": False,
+            "lifecycle_contract_selected": False,
+            "receipt_audit_contract_selected": False,
+            "fake_connector_destination_test_architecture_selected": False,
+            "implementation_entry_allowed_next": False,
+            "next_required_boundary": "named_connector_or_destination_target_before_runtime",
+            "external_connector_destination_runtime_status": "blocked",
+        }
+        for key, expected in expected_scalars.items():
+            if packet_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} connector_destination_named_target_packet_proof.{key} must be {expected!r}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -20134,6 +20240,7 @@ def main() -> int:
         POST_REENTRY_RUNTIME_SELECTION_SYNC,
         POST_REENTRY_NAMED_USE_CASE_ADJUDICATION,
         SOURCE_BREADTH_NAMED_USE_CASE_PACKET,
+        CONNECTOR_DESTINATION_NAMED_TARGET_PACKET,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -20363,6 +20470,7 @@ def main() -> int:
     _check_post_reentry_runtime_selection_sync(errors)
     _check_post_reentry_named_use_case_adjudication(errors)
     _check_source_breadth_named_use_case_packet(errors)
+    _check_connector_destination_named_target_packet(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
