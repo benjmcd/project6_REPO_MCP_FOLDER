@@ -1255,6 +1255,61 @@ class Layer3ProviderPrivateSignedUrlPrepareRequest(BaseModel):
     signed_url: Any | None = None
 
 
+class Layer3ProviderPrivateSignedUrlRevokeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    provider_signed_url_receipt_id: str | None = None
+    idempotency_key: str | None = None
+    revoked_by: str | None = None
+    revocation_reason: str | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+    provider_credentials: Any | None = None
+    provider_secret: Any | None = None
+    provider_bucket: Any | None = None
+    provider_container: Any | None = None
+    provider_object_key: Any | None = None
+    provider_object_identity: Any | None = None
+    raw_provider_signature: Any | None = None
+    raw_provider_object_key: Any | None = None
+    raw_local_path: Any | None = None
+    local_path: Any | None = None
+    local_file_path: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    destination: Any | None = None
+    destination_selector: Any | None = None
+    connector_payload: Any | None = None
+    connector_secret: Any | None = None
+    connector_run_id: Any | None = None
+    connector_dispatch: Any | None = None
+    source_upload: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    web_connector: Any | None = None
+    package_mutation: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rebuild_package: Any | None = None
+    rewrite_output: Any | None = None
+    rag_vector_settings: Any | None = None
+    rag_vector_state: Any | None = None
+    prompt_model_settings: Any | None = None
+    prompt_or_model_payload: Any | None = None
+    auth_security_override: Any | None = None
+    auth_internal_state: Any | None = None
+    browser_durable_authority: Any | None = None
+    public_url: Any | None = None
+    public_proxy_url: Any | None = None
+    download_url: Any | None = None
+    signed_reference_token: Any | None = None
+    signed_url: Any | None = None
+    provider_private_signed_url_token: Any | None = None
+    raw_provider_private_signed_url_token: Any | None = None
+
+
 class Layer3ConnectorDispatchRecordRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -2173,6 +2228,27 @@ class Layer3ProviderPrivateSignedUrlStatusResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3ProviderPrivateSignedUrlRevokeResponse(Layer3BaseResponse):
+    provider_signed_url_receipt_id: str
+    provider_signed_url_state: str
+    delivery_mode: str
+    provider_url_redacted: str
+    provider_url_expires_at: str
+    provider_url_replay_policy: str
+    provider_url_revocation_supported: bool
+    provider_url_use_count: int
+    provider_url_max_use_count: int
+    provider_url_revoked: bool
+    source_artifact_hash: str
+    source_artifact_size_bytes: int
+    revocation_recorded: bool
+    revocation_idempotency_key: str
+    authority_rail: dict[str, Any]
+    audit_receipt: dict[str, Any]
+    next_allowed_actions: list[str]
+    next_state: str
+
+
 class Layer3WorkbenchErrorResponse(Layer3BaseResponse):
     error_code: str
     message: str
@@ -2385,6 +2461,8 @@ PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_REQUEST_FIELDS = (
     "download_url",
     "signed_reference_token",
     "signed_url",
+    "provider_private_signed_url_token",
+    "raw_provider_private_signed_url_token",
 )
 
 
@@ -2429,6 +2507,37 @@ PROVIDER_PRIVATE_SIGNED_URL_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "source_artifact_size_bytes": {"type": "integer"},
         "recipient_scope": {"type": "string"},
         "requested_ttl_seconds": {"type": "integer", "minimum": 1, "maximum": 900, "default": 300},
+        "decision_notes": {"type": "string"},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_REQUEST_FIELDS
+        },
+    },
+}
+
+
+PROVIDER_PRIVATE_SIGNED_URL_REVOKE_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Backend/API-only provider-private signed URL revoke over existing durable "
+        "receipt state; use and rendered UI remain deferred."
+    ),
+    "required": [
+        "client_request_id",
+        "provider_signed_url_receipt_id",
+        "idempotency_key",
+        "revoked_by",
+        "revocation_reason",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "provider_signed_url_receipt_id": {"type": "string"},
+        "idempotency_key": {"type": "string"},
+        "revoked_by": {"type": "string"},
+        "revocation_reason": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["revoke_provider_private_signed_url"]},
         "decision_notes": {"type": "string"},
         **{
             field: _forbidden_request_field_schema()
@@ -4616,6 +4725,24 @@ def get_provider_private_signed_url_status(
         lambda: layer3_provider_private_signed_url.provider_private_signed_url_status(
             db,
             provider_signed_url_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/handoff/export/download/provider-private-signed-url/revoke",
+    response_model=Layer3ProviderPrivateSignedUrlRevokeResponse,
+    openapi_extra={"requestBody": _json_request_body(PROVIDER_PRIVATE_SIGNED_URL_REVOKE_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_provider_private_signed_url_revoke(
+    payload: Layer3ProviderPrivateSignedUrlRevokeRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_provider_private_signed_url.provider_private_signed_url_revoke(
+            db,
+            payload.model_dump(exclude_unset=True),
         )
     )
 
