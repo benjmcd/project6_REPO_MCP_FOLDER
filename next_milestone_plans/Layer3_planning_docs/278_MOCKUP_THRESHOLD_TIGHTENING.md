@@ -16,8 +16,8 @@ This pass tightens the visual-diff harness envelope after the PDF-location selec
 
 The enforced limits are now:
 
-- `normalizedMeanDeltaMax: 0.20`
-- `highDeltaRatioMax: 0.31`
+- `normalizedMeanDeltaMax: 0.19`
+- `highDeltaRatioMax: 0.305`
 - `compareWidth: 360`
 - `compareHeight: 220`
 
