@@ -649,7 +649,10 @@
     "latest_provider_private_signed_url_use_model_closeout_summary": "Current main now includes the planning/control provider_private_signed_url_use_model_closeout: the selected current-lane use model is no_use_api_external_provider_consumption, so the provider-private signed URL use route is intentionally closed and not implemented. Prepare/status/revoke remain the only admitted provider-private backend/API surfaces. This closeout admits no runtime behavior, rendered provider-private controls, raw token exposure, raw token durable persistence, provider network/object-store writes, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority.",
     "latest_provider_private_signed_url_rendered_ui_freeze_branch": "codex/l3-provider-rendered-ui-freeze",
     "latest_provider_private_signed_url_rendered_ui_freeze_live_behavior_change": false,
-    "latest_provider_private_signed_url_rendered_ui_freeze_summary": "Current main now includes the planning/control provider_private_signed_url_rendered_ui_freeze: implementation_entry_allowed_next is true only for /review/layer3 rendered prepare/status/revoke controls over existing backend APIs. The use route remains closed_not_implemented. The future slice must show redacted provider-private state only and prove rendered prepare/status/revoke controls, request allowlists, forbidden control absence, and headed/headless live-theme behavior across system/light/dark/workbench. This freeze admits no backend/API/model/migration/service change, raw token exposure, raw token durable persistence, provider network or object-store writes, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority."
+    "latest_provider_private_signed_url_rendered_ui_freeze_summary": "Current main now includes the planning/control provider_private_signed_url_rendered_ui_freeze: implementation_entry_allowed_next is true only for /review/layer3 rendered prepare/status/revoke controls over existing backend APIs. The use route remains closed_not_implemented. The future slice must show redacted provider-private state only and prove rendered prepare/status/revoke controls, request allowlists, forbidden control absence, and headed/headless live-theme behavior across system/light/dark/workbench. This freeze admits no backend/API/model/migration/service change, raw token exposure, raw token durable persistence, provider network or object-store writes, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority.",
+    "latest_provider_private_signed_url_rendered_ui_branch": "codex/l3-provider-rendered-ui",
+    "latest_provider_private_signed_url_rendered_ui_live_behavior_change": true,
+    "provider_private_signed_url_rendered_ui_summary": "Current main now includes the bounded provider_private_signed_url_rendered_ui implementation: /review/layer3 now renders provider-private signed URL prepare/status/revoke controls over existing backend APIs, derives prepare authority from existing external export/download state, stores only the returned receipt id in browser state, shows only redacted provider-private state, keeps the provider-private use route/control absent, and proves request allowlists, status-after-prepare, status-after-revoke, forbidden-control absence, and headed/headless live-theme behavior across system/light/dark/workbench. This pass admits no backend/API/model/migration/service change, raw token exposure, raw token durable persistence, provider network/object-store writes, provider/public URL runtime beyond the redacted provider-private marker, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10659,7 +10662,8 @@
     "provider_private_signed_url_use_authority_freeze": "completed_planning_control_only",
     "live_theme_parity_proof": "completed_test_only",
     "provider_private_signed_url_use_model_closeout": "completed_planning_control_only",
-    "provider_private_signed_url_rendered_ui_freeze": "completed_planning_control_only"
+    "provider_private_signed_url_rendered_ui_freeze": "completed_planning_control_only",
+    "provider_private_signed_url_rendered_ui": "completed_rendered_ui"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -10947,6 +10951,66 @@
       "keep_provider_private_signed_url_use_route_absent",
       "run_headed_and_headless_chromium_live_theme_proof",
       "stop_for_backend_api_or_real_provider_delivery_freeze_if_needed"
+    ]
+  },
+  "provider_private_signed_url_rendered_ui_proof": {
+    "status": "completed_rendered_ui",
+    "implementation_branch": "codex/l3-provider-rendered-ui",
+    "live_behavior_change": true,
+    "live_route": "/review/layer3",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/245_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/246_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/247_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF.md"
+    ],
+    "implemented_controls": [
+      "#provider-private-signed-url-prepare",
+      "#provider-private-signed-url-status",
+      "#provider-private-signed-url-revoke",
+      "#provider-private-signed-url-panel"
+    ],
+    "allowed_routes": [
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+      "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke"
+    ],
+    "blocked_route": "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use",
+    "canonical_test": "Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke",
+    "checkpoints": [
+      {
+        "label": "materialized-source-selection",
+        "visible_surface": "#source-fieldset"
+      },
+      {
+        "label": "provider-private-signed-url-revoked",
+        "visible_surface": "#provider-private-signed-url-panel"
+      }
+    ],
+    "theme_set": [
+      "system",
+      "light",
+      "dark",
+      "workbench"
+    ],
+    "validation_commands": [
+      "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k provider_private_signed_url",
+      "python -m pytest .\\backend\\tests\\test_layer3_provider_private_signed_url_state.py -q",
+      "npx playwright test e2e/layer3-workbench.spec.js --grep \"provider-private signed URL prepare status revoke\" --project=chromium",
+      "npx playwright test e2e/layer3-workbench.spec.js --grep \"provider-private signed URL prepare status revoke\" --project=chromium --headed",
+      "git diff --check"
+    ],
+    "negative_invariants": [
+      "provider_private_use_control_absent",
+      "provider_private_use_route_absent",
+      "raw_provider_private_token_absent_from_requests_and_display",
+      "provider_public_url_absent_beyond_redacted_marker",
+      "connector_destination_dispatch_absent",
+      "package_mutation_reconstruction_absent",
+      "source_expansion_absent",
+      "same_origin_delivery_unchanged",
+      "same_origin_signed_reference_unchanged",
+      "backend_api_model_migration_service_unchanged"
     ]
   }
 }
