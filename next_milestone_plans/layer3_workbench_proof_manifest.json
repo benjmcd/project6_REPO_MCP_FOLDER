@@ -725,7 +725,10 @@
     "latest_mockup_theme_shell_implementation_summary": "Current main now includes the mockup_theme_shell_implementation: the dedicated layer3_mockup_workbench_theme is live as a rendered UI theme variant for /review/layer3, with mockup_theme_shell_and_fixture_projection, semiconductor_infrastructure_auto_supply_chain fixture projection, first-slice Pre-3A/Gate B/Gate C/Sublayer 3A/3B/3C cards, unavailable non-interactive future-behavior markers, and no backend API/model/migration/service behavior change.",
     "latest_mockup_runtime_gate_branch": "codex/l3-post-mockup-runtime-gate",
     "latest_mockup_runtime_gate_live_behavior_change": false,
-    "mockup_runtime_gate": "completed_no_runtime_selected_after_mockup_visual_proof"
+    "mockup_runtime_gate": "completed_no_runtime_selected_after_mockup_visual_proof",
+    "latest_pdf_location_freeze_branch": "codex/l3-pdf-location-use-case-freeze",
+    "latest_pdf_location_freeze_live_behavior_change": false,
+    "pdf_location_use_case_freeze": "completed_named_pdf_location_runtime_use_case_selected_planning_only"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -12171,6 +12174,58 @@
       "full durable mockup activation",
       "auth/security",
       "frontend-only durable authority"
+    ]
+  },
+  "pdf_location_freeze_proof": {
+    "status": "completed_named_pdf_location_runtime_use_case_selected_planning_only",
+    "implementation_branch": "codex/l3-pdf-location-use-case-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "pdf_location_use_case_freeze",
+    "entry_decision": "named_server_authoritative_runtime_use_case_selected_planning_only",
+    "named_runtime_use_case": "pdf_location_from_aps_content_document_citation",
+    "selected_activation_mode": "single_mockup_screen_read_only_projection",
+    "selected_source_family": "aps_content_document",
+    "server_authority_contract": "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+    "runtime_implementation_allowed_next": true,
+    "next_allowed_action": "implement_read_only_pdf_location_projection_from_existing_authority",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/271_MOCKUP_RUNTIME_GATE.md",
+      "next_milestone_plans/Layer3_planning_docs/272_PDF_LOCATION_FREEZE.md"
+    ],
+    "server_authority_terms": [
+      "ApsContentDocument",
+      "ApsContentChunk.page_start",
+      "ApsContentChunk.page_end",
+      "visual_page_refs_json",
+      "nrc_aps_evidence_citation_pack",
+      "sections[].citations[].highlight_spans",
+      "source_bundle.run_id"
+    ],
+    "blocked_surfaces": [
+      "no raw PDF blob streaming",
+      "no PDF byte download or provider/object-store URL exposure",
+      "no browser-owned authoritative PDF location",
+      "no browser correction of server page, chunk, or citation authority",
+      "no new source family runtime",
+      "no local upload",
+      "no local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval",
+      "no connector/destination dispatch",
+      "no package mutation",
+      "no auth/security behavior change",
+      "no full durable mockup activation",
+      "no frontend-only durable authority"
+    ],
+    "future_required_tests": [
+      "successful projection from existing aps_content_document chunk/page/citation authority",
+      "fail closed missing document identity",
+      "fail closed stale run id bundle id bundle checksum or citation id",
+      "fail closed missing page chunk or highlight authority",
+      "no raw path blob ref provider URL token prompt or connector secret leakage",
+      "no backend source package connector auth/security RAG/vector or full-mockup side effects",
+      "headed and headless rendered proof if surfaced in the mockup workbench theme"
     ]
   }
 }
