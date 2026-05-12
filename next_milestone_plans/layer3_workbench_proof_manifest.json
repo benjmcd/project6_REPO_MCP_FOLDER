@@ -661,7 +661,10 @@
     "source_breadth_reentry_contract_summary": "Current main now includes the planning/control source_breadth_reentry_contract: the next pass must build an evidence packet before source breadth can become implementation-admissible. The packet must name one source use case, select one source family or no-runtime outcome, prove current dataset_version and aps_content_document behavior is insufficient, and define source-of-truth ownership, adapter/input mode, storage/security, provenance, downstream semantics, rendered-control obligations if any, and auth/security/leakage posture. This contract admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, route/API/DTO/model/migration/service behavior, executable test behavior, rendered controls, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, hidden LLM planning, or frontend-only durable authority.",
     "latest_source_breadth_reentry_authority_packet_branch": "codex/l3-post-provider-roadmap-freeze",
     "latest_source_breadth_reentry_authority_packet_live_behavior_change": false,
-    "source_breadth_reentry_authority_packet_summary": "Current main now includes the planning/control source_breadth_reentry_authority_packet: doc 250 records entry_decision no_runtime_now after inspecting current source-boundary, raw-mixed seed, raw-mixed materialization, and focused tests. Current repo authority supports dataset_version and aps_content_document only, plus current-class raw-mixed seed/materialization from server-owned hash-checked manifests. No implementation-entry freeze is allowed because no named source use case, selected source family, adapter/input mode, new-source storage/security model, network retrieval policy, rendered source-control plan, or auth/security posture is selected. This pass admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, route/API/DTO/model/migration/service behavior, executable test behavior, rendered source controls, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, hidden LLM planning, or frontend-only durable authority."
+    "source_breadth_reentry_authority_packet_summary": "Current main now includes the planning/control source_breadth_reentry_authority_packet: doc 250 records entry_decision no_runtime_now after inspecting current source-boundary, raw-mixed seed, raw-mixed materialization, and focused tests. Current repo authority supports dataset_version and aps_content_document only, plus current-class raw-mixed seed/materialization from server-owned hash-checked manifests. No implementation-entry freeze is allowed because no named source use case, selected source family, adapter/input mode, new-source storage/security model, network retrieval policy, rendered source-control plan, or auth/security posture is selected. This pass admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, route/API/DTO/model/migration/service behavior, executable test behavior, rendered source controls, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, hidden LLM planning, or frontend-only durable authority.",
+    "latest_post_807_closeout_branch": "codex/l3-post807-closeout",
+    "latest_post_807_closeout_live_behavior_change": false,
+    "post_807_closeout_summary": "Current main now includes the planning/control post_807_closeout: PR #807 merged docs 248 through 250 plus README, board, progress manifest, proof manifest, and checker wiring into main at 9ffc5c64154b5175f56cb0e1b15b9ffc1492f233. The closeout records source_breadth_reentry_authority_packet as current-main planning authority with entry_decision no_runtime_now and implementation_entry_allowed_next false. This pass admits no source runtime, connector/destination dispatch, package mutation/reconstruction, broad qualitative/hybrid/RAG runtime, full mockup activation, auth/security behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered controls, CI or Playwright configuration change, hidden LLM planning, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10675,7 +10678,8 @@
     "provider_private_signed_url_rendered_ui": "completed_rendered_ui",
     "post_provider_private_roadmap_selection_freeze": "completed_planning_control_only",
     "source_breadth_reentry_contract": "completed_planning_control_only",
-    "source_breadth_reentry_authority_packet": "completed_planning_control_no_runtime"
+    "source_breadth_reentry_authority_packet": "completed_planning_control_no_runtime",
+    "post_807_closeout": "completed_planning_control_closeout"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -11162,6 +11166,41 @@
       "package_mutation_reconstruction_absent",
       "full_mockup_activation_absent",
       "auth_security_behavior_unchanged"
+    ]
+  },
+  "post_807_closeout_proof": {
+    "status": "completed_planning_control_closeout",
+    "implementation_branch": "codex/l3-post807-closeout",
+    "live_behavior_change": false,
+    "selected_planning_mode": "post_807_closeout",
+    "entry_decision": "merged_planning_control_closeout",
+    "merged_pr": 807,
+    "merge_commit": "9ffc5c64154b5175f56cb0e1b15b9ffc1492f233",
+    "base_branch": "main",
+    "runtime_status": "not_implemented",
+    "source_breadth_entry_decision": "no_runtime_now",
+    "implementation_entry_allowed_next": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/248_POST_PROVIDER_PRIVATE_ROADMAP_SELECTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/249_SOURCE_BREADTH_REENTRY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/250_SOURCE_BREADTH_AUTHORITY_PACKET.md",
+      "next_milestone_plans/Layer3_planning_docs/251_POST_807_CLOSEOUT.md"
+    ],
+    "validation_evidence": [
+      "GitHub Actions backend-layer3-api passed before merge",
+      "GitHub Actions test passed before merge",
+      "python .\\tools\\l3-progress-check.py passed on merged main"
+    ],
+    "negative_invariants": [
+      "source_runtime_not_implemented",
+      "connector_destination_dispatch_absent",
+      "package_mutation_reconstruction_absent",
+      "broad_qual_hybrid_rag_absent",
+      "full_mockup_activation_absent",
+      "auth_security_behavior_unchanged",
+      "route_api_dto_model_migration_service_unchanged",
+      "rendered_controls_unchanged",
+      "frontend_only_durable_authority_absent"
     ]
   }
 }
