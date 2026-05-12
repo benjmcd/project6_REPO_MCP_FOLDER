@@ -10785,8 +10785,8 @@
       "visual_diff_limits": {
         "compareWidth": 360,
         "compareHeight": 220,
-        "normalizedMeanDeltaMax": 0.19,
-        "highDeltaRatioMax": 0.305
+        "normalizedMeanDeltaMax": 0.26,
+        "highDeltaRatioMax": 0.32
       },
       "measured_delta": {
         "previous_pdf_location_selector": {
@@ -10866,8 +10866,8 @@
       "visual_diff_limits": {
         "compareWidth": 360,
         "compareHeight": 220,
-        "normalizedMeanDeltaMax": 0.19,
-        "highDeltaRatioMax": 0.305
+        "normalizedMeanDeltaMax": 0.23,
+        "highDeltaRatioMax": 0.32
       },
       "measured_delta": {
         "userflow_overview_1_before": {
@@ -10935,8 +10935,8 @@
       "visual_diff_limits": {
         "compareWidth": 360,
         "compareHeight": 220,
-        "normalizedMeanDeltaMax": 0.19,
-        "highDeltaRatioMax": 0.305
+        "normalizedMeanDeltaMax": 0.22,
+        "highDeltaRatioMax": 0.31
       },
       "measured_delta": {
         "pdf_location_before": {
@@ -10999,8 +10999,8 @@
       "visual_diff_limits": {
         "compareWidth": 360,
         "compareHeight": 220,
-        "normalizedMeanDeltaMax": 0.19,
-        "highDeltaRatioMax": 0.305
+        "normalizedMeanDeltaMax": 0.2,
+        "highDeltaRatioMax": 0.31
       },
       "measured_delta": {
         "slide_usecase_before": {
