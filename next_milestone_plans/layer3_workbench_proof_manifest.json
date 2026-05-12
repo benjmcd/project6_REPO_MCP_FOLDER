@@ -706,7 +706,10 @@
     "latest_qual_hybrid_rag_named_analysis_packet_summary": "Current main now includes the qual_hybrid_rag_named_analysis_packet as a no-runtime closeout: the single APS-document qualitative path remains live, but no broad analysis use case or selected qualitative/hybrid/RAG mode is present. Broad qualitative/hybrid/RAG runtime remains blocked until an analysis packet names source scope, retrieval corpus, vector storage, embedding/model/prompt/provider authority, output taxonomy, package compatibility, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
     "latest_full_mockup_named_journey_packet_branch": "codex/l3-mockup-journey-packet",
     "latest_full_mockup_named_journey_packet_live_behavior_change": false,
-    "latest_full_mockup_named_journey_packet_summary": "Current main now includes the full_mockup_named_journey_packet as a no-runtime closeout: mockups remain target-state design/specification inputs and no operator journey or activation mode is selected. Full mockup activation remains blocked until a packet names route/API contract, server authority, durable state owner, browser storage policy, mockup-to-live mapping, leak controls, and theme/accessibility/headed/headless proof. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
+    "latest_full_mockup_named_journey_packet_summary": "Current main now includes the full_mockup_named_journey_packet as a no-runtime closeout: mockups remain target-state design/specification inputs and no operator journey or activation mode is selected. Full mockup activation remains blocked until a packet names route/API contract, server authority, durable state owner, browser storage policy, mockup-to-live mapping, leak controls, and theme/accessibility/headed/headless proof. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
+    "latest_auth_security_named_mode_packet_branch": "codex/l3-auth-mode-packet",
+    "latest_auth_security_named_mode_packet_live_behavior_change": false,
+    "latest_auth_security_named_mode_packet_summary": "Current main now includes the auth_security_named_mode_packet as a no-runtime closeout: local/proxy deployment guardrails remain live, but no security/operator-access use case or selected auth/security mode is present. Auth/security runtime remains blocked until a packet names identity authority, tenant/session ownership, permission matrix, route dependency contract, secret policy, audit contract, rendered identity plan, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -11838,6 +11841,46 @@
       "new_rendered_mockup_controls",
       "browser_only_workflow_authority",
       "mockup_text_as_server_authority"
+    ]
+  },
+  "auth_security_named_mode_packet_proof": {
+    "status": "completed_no_runtime_named_auth_security_mode_absent",
+    "implementation_branch": "codex/l3-auth-mode-packet",
+    "live_behavior_change": false,
+    "selected_planning_mode": "auth_security_named_mode_packet",
+    "entry_decision": "no_runtime_now_named_auth_security_mode_absent",
+    "upstream_closeout_doc": "219_AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+    "live_deployment_profile": "local_default_with_nonlocal_proxy_guardrails",
+    "named_security_or_operator_access_use_case": null,
+    "selected_auth_security_mode": null,
+    "identity_authority_model_selected": false,
+    "tenant_session_ownership_model_selected": false,
+    "operator_role_permission_matrix_selected": false,
+    "route_level_auth_dependency_contract_selected": false,
+    "audit_log_security_event_contract_selected": false,
+    "provider_connector_secret_policy_selected": false,
+    "rendered_identity_control_plan_selected": false,
+    "implementation_entry_allowed_next": false,
+    "next_required_boundary": "named_auth_security_mode_before_runtime",
+    "auth_security_runtime_status": "blocked",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/219_AUTH_SECURITY_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/266_AUTH_SECURITY_NAMED_MODE_PACKET.md"
+    ],
+    "validation_evidence": [
+      "python .\\tools\\l3-progress-check.py must pass after wiring",
+      "JSON manifests must parse after wiring",
+      "pass is docs/control-only and touches no runtime source files"
+    ],
+    "blocked_runtime": [
+      "route_level_auth_dependency",
+      "authorization_runtime",
+      "tenant_session_ownership_runtime",
+      "operator_permission_runtime",
+      "security_audit_event_runtime",
+      "provider_secret_handling",
+      "connector_credential_handling",
+      "rendered_identity_controls"
     ]
   }
 }
