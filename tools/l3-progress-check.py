@@ -288,6 +288,9 @@ PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE = (
 PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT = (
     PLANNING_DOCS / "246_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF = (
+    PLANNING_DOCS / "247_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14394,6 +14397,169 @@ def _check_provider_private_signed_url_rendered_ui_freeze(errors: list[str]) -> 
     if proof.get("required_future_tests") != expected_required_tests:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_freeze_proof required_future_tests must match freeze")
 
+def _check_provider_private_signed_url_rendered_ui_proof(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF: (
+            "Status: implemented proof for `provider_private_signed_url_rendered_ui`.",
+            "rendered_prepare_status_revoke_controls_only",
+            "#provider-private-signed-url-prepare",
+            "#provider-private-signed-url-status",
+            "#provider-private-signed-url-revoke",
+            "#provider-private-signed-url-panel",
+            "provider-private-signed-url-revoked",
+            "provider-private `use` route-call absence",
+        ),
+        PHASE1A_README: (
+            "247_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF.md",
+            "bounded rendered provider-private signed URL prepare/status/revoke controls",
+            "raw provider-private token custody remain blocked",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Rendered UI Proof",
+            "247_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF.md",
+            "Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke",
+            "provider-private `use` route-call absence",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_rendered_ui_branch",
+            "provider_private_signed_url_rendered_ui",
+            "keeps the provider-private use route/control absent",
+            "status-after-revoke",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_rendered_ui_proof",
+            "completed_rendered_ui",
+            "codex/l3-provider-rendered-ui",
+            "provider-private-signed-url-revoked",
+            "provider_private_use_control_absent",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke",
+            "submitRenderedProviderPrivateSignedUrl",
+            "#provider-private-signed-url-panel",
+            "/handoff/export/download/provider-private-signed-url/prepare",
+            "/handoff/export/download/provider-private-signed-url/status",
+            "/handoff/export/download/provider-private-signed-url/revoke",
+            "/handoff/export/download/provider-private-signed-url/use",
+        ),
+        LAYER3_HTML: (
+            "provider-private-signed-url-form",
+            "provider-private-signed-url-prepare",
+            "provider-private-signed-url-status",
+            "provider-private-signed-url-revoke",
+            "provider-private-signed-url-panel",
+        ),
+        LAYER3_JS: (
+            "providerPrivateSignedUrlPreparePayload",
+            "providerPrivateSignedUrlRevokePayload",
+            "submitProviderPrivateSignedUrlPrepare",
+            "inspectProviderPrivateSignedUrlStatus",
+            "revokeProviderPrivateSignedUrl",
+            "closed_not_implemented",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL rendered UI proof term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL rendered UI proof")
+    else:
+        if current_status.get("latest_provider_private_signed_url_rendered_ui_branch") != "codex/l3-provider-rendered-ui":
+            errors.append(f"{_rel(MANIFEST)} current_status provider private signed URL rendered UI branch is stale")
+        if current_status.get("latest_provider_private_signed_url_rendered_ui_live_behavior_change") is not True:
+            errors.append(f"{_rel(MANIFEST)} current_status provider private signed URL rendered UI live behavior flag must be true")
+        summary = current_status.get("provider_private_signed_url_rendered_ui")
+        if (
+            not isinstance(summary, str)
+            or "renders provider-private signed URL prepare/status/revoke controls" not in summary
+            or "keeps the provider-private use route/control absent" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_rendered_ui must record rendered UI implementation posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_rendered_ui_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_rendered_ui_proof object")
+        return
+
+    expected_scalars = {
+        "status": "completed_rendered_ui",
+        "implementation_branch": "codex/l3-provider-rendered-ui",
+        "live_behavior_change": True,
+        "live_route": "/review/layer3",
+        "blocked_route": "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use",
+        "canonical_test": "Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke",
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_proof.{key} must be {expected!r}")
+
+    expected_docs = [
+        "next_milestone_plans/Layer3_planning_docs/245_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/246_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/247_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF.md",
+    ]
+    if proof.get("governing_docs") != expected_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_proof governing_docs must match docs 245/246/247")
+
+    expected_controls = [
+        "#provider-private-signed-url-prepare",
+        "#provider-private-signed-url-status",
+        "#provider-private-signed-url-revoke",
+        "#provider-private-signed-url-panel",
+    ]
+    if proof.get("implemented_controls") != expected_controls:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_proof implemented_controls must match rendered controls")
+
+    expected_routes = [
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+        "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+    ]
+    if proof.get("allowed_routes") != expected_routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_proof allowed_routes must match prepare/status/revoke")
+
+    expected_checkpoints = [
+        {"label": "materialized-source-selection", "visible_surface": "#source-fieldset"},
+        {"label": "provider-private-signed-url-revoked", "visible_surface": "#provider-private-signed-url-panel"},
+    ]
+    if proof.get("checkpoints") != expected_checkpoints:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_proof checkpoints must match implemented proof")
+
+    if proof.get("theme_set") != ["system", "light", "dark", "workbench"]:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_proof theme_set must match live themes")
+
+    expected_validation = [
+        'python .\\tools\\l3-progress-check.py',
+        'python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k provider_private_signed_url',
+        'python -m pytest .\\backend\\tests\\test_layer3_provider_private_signed_url_state.py -q',
+        'npx playwright test e2e/layer3-workbench.spec.js --grep "provider-private signed URL prepare status revoke" --project=chromium',
+        'npx playwright test e2e/layer3-workbench.spec.js --grep "provider-private signed URL prepare status revoke" --project=chromium --headed',
+        'git diff --check',
+    ]
+    if proof.get("validation_commands") != expected_validation:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_proof validation commands must match closeout proof")
+
+    expected_negative = [
+        "provider_private_use_control_absent",
+        "provider_private_use_route_absent",
+        "raw_provider_private_token_absent_from_requests_and_display",
+        "provider_public_url_absent_beyond_redacted_marker",
+        "connector_destination_dispatch_absent",
+        "package_mutation_reconstruction_absent",
+        "source_expansion_absent",
+        "same_origin_delivery_unchanged",
+        "same_origin_signed_reference_unchanged",
+        "backend_api_model_migration_service_unchanged",
+    ]
+    if proof.get("negative_invariants") != expected_negative:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_proof negative_invariants must match bounded scope")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -19050,6 +19216,7 @@ def main() -> int:
         PROVIDER_PRIVATE_SIGNED_URL_USE_MODEL_CONTRACT,
         PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE,
         PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT,
+        PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -19270,6 +19437,7 @@ def main() -> int:
     _check_live_theme_parity_proof(errors)
     _check_provider_private_signed_url_use_model_closeout(errors)
     _check_provider_private_signed_url_rendered_ui_freeze(errors)
+    _check_provider_private_signed_url_rendered_ui_proof(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
