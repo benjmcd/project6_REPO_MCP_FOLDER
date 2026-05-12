@@ -20,7 +20,7 @@ The refinement adds a stable `#mockup-pdf-location-card` selector and maps only 
 
 - Before selector precision, `pdf_location_projection` measured `normalizedMeanDelta: 0.289284` and `highDeltaRatio: 0.315669`.
 - After selector precision, `pdf_location_projection` measured `normalizedMeanDelta: 0.272669` and `highDeltaRatio: 0.299356`.
-- The harness limits were first tightened to `normalizedMeanDeltaMax: 0.30` and `highDeltaRatioMax: 0.34`, then tightened again in `278_MOCKUP_THRESHOLD_TIGHTENING.md` to `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`.
+- The historical selector-precision proof limits for this pass were `normalizedMeanDeltaMax: 0.30` and `highDeltaRatioMax: 0.34`; `278_MOCKUP_THRESHOLD_TIGHTENING.md` later tightened that historical envelope to `normalizedMeanDeltaMax: 0.28` and `highDeltaRatioMax: 0.31`, while later refinements ultimately closed the current global envelope at `normalizedMeanDeltaMax: 0.19` and `highDeltaRatioMax: 0.305`.
 
 ## Scope boundary
 
