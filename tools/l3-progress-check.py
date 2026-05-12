@@ -16437,6 +16437,12 @@ def _check_mockup_theme_shell_implementation(errors: list[str]) -> None:
     for term in (
         "layer3_mockup_workbench_theme",
         "Layer 3 mockup workbench theme exposes fixture projection without backend widening",
+        "loadMockupFrameManifest",
+        "createHash('sha256')",
+        "layer3-mockup-theme-shell.png",
+        "testInfo.attach",
+        "visualAcceptance",
+        "laneColumns: [5, 5]",
         "#mockup-theme-shell button",
         "#mockup-execution-lanes button",
         ".mockup-process-note",
@@ -16457,6 +16463,8 @@ def _check_mockup_theme_shell_implementation(errors: list[str]) -> None:
         "fixture_scenario: semiconductor_infrastructure_auto_supply_chain",
         "focus_on_these/sublayer3C.png",
         "quantitative and qualitative execution lanes",
+        "repo-local frame hash verification",
+        "layer3-mockup-theme-shell.png screenshot attachment",
         "frontend_only_durable_authority",
     ):
         if term not in proof_doc_text:
