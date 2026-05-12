@@ -86,3 +86,9 @@ This proof slice adds `#mockup-sublayers-ab-board` for `focus_on_these/sublayer3
 
 Playwright now verifies the Sublayer 3A/3B frame source, the 20-object ledger, the 7/7/6 typed grouping split, a three-column desktop board layout, the `layer3-mockup-sublayers-ab-board.png` screenshot attachment, and the existing no-backend-widening request guard.
 
+## Mockup theme responsive proof addendum
+
+This proof slice adds mobile responsive acceptance for `layer3_mockup_workbench_theme`. Playwright verifies the dedicated mockup theme at a 390 px viewport, keeps the shell, user-flow board, Sublayer 3A/3B board, and Sublayer 3C lanes visible, proves no horizontal viewport overflow, and confirms the user-flow board, Sublayer 3A/3B board, user-flow stage row, and both Sublayer 3C lane bodies collapse to one-column layouts.
+
+The proof remains static/theme-only: it adds no backend route, API, model, migration, service, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, or browser-owned durable authority.
+
