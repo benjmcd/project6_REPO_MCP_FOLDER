@@ -4950,6 +4950,31 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     canvasTitle: 'Sublayer 3C Analysis Execution Environments',
     laneColumns: [5, 5],
   });
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect(page.locator('#mockup-theme-shell')).toBeVisible();
+  await expect(page.locator('#mockup-userflow-board')).toBeVisible();
+  await expect(page.locator('#mockup-sublayers-ab-board')).toBeVisible();
+  await expect(page.locator('#mockup-execution-lanes')).toBeVisible();
+  const responsiveAcceptance = await page.locator('#mockup-theme-shell').evaluate((shell) => {
+    const columnCount = (element) => window.getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length;
+    return {
+      fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+      shellDisplay: window.getComputedStyle(shell).display,
+      userflowColumns: columnCount(shell.querySelector('#mockup-userflow-board')),
+      sublayersColumns: columnCount(shell.querySelector('#mockup-sublayers-ab-board')),
+      userflowStageColumns: columnCount(shell.querySelector('.mockup-userflow-stage')),
+      laneColumns: Array.from(shell.querySelectorAll('.mockup-lane-body')).map(columnCount),
+    };
+  });
+  expect(responsiveAcceptance).toEqual({
+    fitsViewport: true,
+    shellDisplay: 'grid',
+    userflowColumns: 1,
+    sublayersColumns: 1,
+    userflowStageColumns: 1,
+    laneColumns: [1, 1],
+  });
+
   expectNoRequestsToLayer3Paths(apiRequests, [
     'source/mixed-corpus/materialize',
     'package/mutation',
