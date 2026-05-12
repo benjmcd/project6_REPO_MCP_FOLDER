@@ -1082,3 +1082,7 @@ Refresh this board against:
 ## Goal Stack Reentry Closeout And Implementation Gate
 
 `258_GOAL_STACK_REENTRY_CLOSEOUT_AND_IMPLEMENTATION_GATE.md` closes the goal-stack reentry sequence as a planning/control and bounded-runtime audit stack. The completed reentry freezes do not admit broad runtime activation; the next implementation must first select exactly one named runtime mode and prove server authority, request/response contracts, stale-authority/idempotency behavior, negative invariants, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted.
+
+## Post Reentry Runtime Selection Sync
+
+`259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md` records the current-main post-reentry runtime selection posture: the goal-stack reentry closeout is complete, but no runtime family, runtime mode, or named use case is selected. Any next implementation must first create one exact named runtime-use-case freeze with server authority, contracts, stale-authority/idempotency rules, negative tests, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted.
