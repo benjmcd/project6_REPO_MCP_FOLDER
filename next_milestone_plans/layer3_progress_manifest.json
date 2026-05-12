@@ -203,7 +203,8 @@
       "Current main now includes the full_mockup_named_journey_packet as a no-runtime closeout because no mockup operator journey is present in current authority.",
       "Current main now includes the auth_security_named_mode_packet as a no-runtime closeout because no security or operator-access use case is present in current authority.",
       "Current main now includes the post_reentry_named_packet_closeout: docs 259 through 266 are closed as a no-runtime named-packet stack. No runtime family, runtime mode, or named product/operator use case is selected; source breadth, external connector/destination runtime, rendered package mutation, broad qualitative/hybrid/RAG, full mockup activation, and auth/security runtime remain blocked until a user/product-named use case selects one exact implementation-entry boundary.",
-      "Current main now includes the mockup_theme_freeze: the dedicated layer3_mockup_workbench_theme is selected as the pixel-perfect functional Layer 3 mockup workbench target for /review/layer3, using C:\\Users\\benny\\Downloads\\layer3mockups as the visual/user-flow acceptance corpus. This is planning/control only and requires a separate implementation-entry freeze before code."
+      "Current main now includes the mockup_theme_freeze: the dedicated layer3_mockup_workbench_theme is selected as the pixel-perfect functional Layer 3 mockup workbench target for /review/layer3, using C:\\Users\\benny\\Downloads\\layer3mockups as the visual/user-flow acceptance corpus. This is planning/control only and requires a separate implementation-entry freeze before code.",
+      "Current main now includes doc 269 as mockup_theme_entry_freeze: mockup_theme_shell_and_fixture_projection is implementation-entry-selected for the dedicated Layer 3 mockup workbench theme, while runtime activation and backend/source/package/connector/RAG/auth widening remain blocked."
     ],
     "state_notes": [
       "Current main after PR #227 includes the bounded selected-pass result-review endpoint: POST /api/v1/layer3/execution/result/review records one operator review decision against one terminal selected pass after result/status authority, writes only existing L3PassRun/L3Session JSON summaries, and still does not admit package review, handoff/export, rerun/recovery, new execution, source/schema/runtime widening, UI changes, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation.",
@@ -6440,7 +6441,10 @@
     "post_reentry_named_packet_closeout": "Current main now includes the post_reentry_named_packet_closeout: docs 259 through 266 close the post-reentry named-packet stack as no runtime selected. No runtime family, runtime mode, or named product/operator use case is present, so implementation_entry_allowed_next remains false until user/product authority names one exact use case and its server authority, contract, failure/idempotency, leakage, and rendered-proof obligations.",
     "latest_mockup_theme_freeze_branch": "codex/l3-mockup-theme-freeze",
     "latest_mockup_theme_freeze_live_behavior_change": false,
-    "mockup_theme_freeze": "Current main now includes the mockup_theme_freeze: layer3_mockup_workbench_theme is selected as the dedicated pixel-perfect functional mockup workbench theme target for /review/layer3. Implementation remains blocked until a separate entry-freeze defines exact mockup frames, server state mapping, contextual text classification, visual-diff/headed/headless proof, accessibility/responsive behavior, and no-go runtime boundaries."
+    "mockup_theme_freeze": "Current main now includes the mockup_theme_freeze: layer3_mockup_workbench_theme is selected as the dedicated pixel-perfect functional mockup workbench theme target for /review/layer3. Implementation remains blocked until a separate entry-freeze defines exact mockup frames, server state mapping, contextual text classification, visual-diff/headed/headless proof, accessibility/responsive behavior, and no-go runtime boundaries.",
+    "latest_mockup_theme_entry_freeze_branch": "codex/l3-mockup-theme-entry-freeze",
+    "latest_mockup_theme_entry_freeze_live_behavior_change": false,
+    "mockup_theme_entry_freeze": "Current main now includes the mockup_theme_entry_freeze: mockup_theme_shell_and_fixture_projection is selected as the next bounded implementation slice for layer3_mockup_workbench_theme on /review/layer3. The allowed future code surfaces are the static Layer 3 review UI, focused rendered-page/e2e tests, planning/proof manifests, and the progress checker. Backend API/model/migration/service changes, source expansion, connector/destination runtime, package mutation, broad qualitative/hybrid/RAG behavior, auth/security behavior, full mockup durable workflow activation, and browser-owned durable authority remain blocked unless separately refrozen."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -6470,7 +6474,8 @@
     "full_mockup_named_journey_packet": "completed_no_runtime_named_mockup_journey_absent",
     "auth_security_named_mode_packet": "completed_no_runtime_named_auth_security_mode_absent",
     "post_reentry_named_packet_closeout": "completed_named_packet_stack_closed_no_runtime_selected",
-    "mockup_theme_freeze": "completed_pixel_perfect_mockup_workbench_theme_selected_planning_only"
+    "mockup_theme_freeze": "completed_pixel_perfect_mockup_workbench_theme_selected_planning_only",
+    "mockup_theme_entry_freeze": "completed_mockup_theme_implementation_entry_selected_planning_only"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -6588,5 +6593,8 @@
   "post_reentry_named_packet_closeout": "Current main now includes the post_reentry_named_packet_closeout: docs 259 through 266 close the post-reentry named-packet stack as no runtime selected. No runtime family, runtime mode, or named product/operator use case is present, so implementation_entry_allowed_next remains false until user/product authority names one exact use case and its server authority, contract, failure/idempotency, leakage, and rendered-proof obligations.",
   "latest_mockup_theme_freeze_branch": "codex/l3-mockup-theme-freeze",
   "latest_mockup_theme_freeze_live_behavior_change": false,
-  "mockup_theme_freeze": "Current main now includes the mockup_theme_freeze: layer3_mockup_workbench_theme is selected as the dedicated pixel-perfect functional mockup workbench theme target for /review/layer3. Implementation remains blocked until a separate entry-freeze defines exact mockup frames, server state mapping, contextual text classification, visual-diff/headed/headless proof, accessibility/responsive behavior, and no-go runtime boundaries."
+  "mockup_theme_freeze": "Current main now includes the mockup_theme_freeze: layer3_mockup_workbench_theme is selected as the dedicated pixel-perfect functional mockup workbench theme target for /review/layer3. Implementation remains blocked until a separate entry-freeze defines exact mockup frames, server state mapping, contextual text classification, visual-diff/headed/headless proof, accessibility/responsive behavior, and no-go runtime boundaries.",
+  "latest_mockup_theme_entry_freeze_branch": "codex/l3-mockup-theme-entry-freeze",
+  "latest_mockup_theme_entry_freeze_live_behavior_change": false,
+  "mockup_theme_entry_freeze": "Current main now includes the mockup_theme_entry_freeze: mockup_theme_shell_and_fixture_projection is selected as the next bounded implementation slice for layer3_mockup_workbench_theme on /review/layer3. The allowed future code surfaces are the static Layer 3 review UI, focused rendered-page/e2e tests, planning/proof manifests, and the progress checker. Backend API/model/migration/service changes, source expansion, connector/destination runtime, package mutation, broad qualitative/hybrid/RAG behavior, auth/security behavior, full mockup durable workflow activation, and browser-owned durable authority remain blocked unless separately refrozen."
 }
