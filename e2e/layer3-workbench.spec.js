@@ -17,8 +17,8 @@ const MOCKUP_FRAME_MANIFEST_PATH = path.resolve('next_milestone_plans/layer3-moc
 const MOCKUP_VISUAL_DIFF_LIMITS = {
   compareWidth: 360,
   compareHeight: 220,
-  normalizedMeanDeltaMax: 0.28,
-  highDeltaRatioMax: 0.31,
+  normalizedMeanDeltaMax: 0.26,
+  highDeltaRatioMax: 0.32,
 };
 
 function pngDimensions(buffer) {
@@ -4962,6 +4962,7 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   ]);
   expect(new Set(frameProjectionCoverage.map((entry) => entry.selector))).toEqual(new Set([
     '#mockup-userflow-board',
+    '#mockup-fixture-scenario',
     '#mockup-pdf-location-card',
     '#mockup-sublayers-ab-board',
     '#mockup-execution-lanes',
@@ -4995,6 +4996,12 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     body: userflowScreenshot,
     contentType: 'image/png',
   });
+  const fixtureScenarioScreenshot = await page.locator('#mockup-fixture-scenario').screenshot();
+  expect(fixtureScenarioScreenshot.length).toBeGreaterThan(7000);
+  await testInfo.attach('layer3-mockup-fixture-scenario.png', {
+    body: fixtureScenarioScreenshot,
+    contentType: 'image/png',
+  });
 
   const sublayersAbAcceptance = await page.locator('#mockup-sublayers-ab-board').evaluate((board) => ({
     visualSource: board.getAttribute('data-visual-source'),
@@ -5021,7 +5028,9 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     pdfLocationSource: board.getAttribute('data-pdf-location-source'),
     promptCount: board.querySelectorAll('.mockup-userflow-prompt').length,
     specCount: board.querySelectorAll('.mockup-userflow-spec').length,
+    pdfIntentCards: board.querySelectorAll('.mockup-pdf-intent-card').length,
     evidenceSheets: board.querySelectorAll('.mockup-evidence-sheet').length,
+    summaryCards: board.querySelectorAll('.mockup-pdf-summary-card').length,
     serverProjectionState: board.querySelector('#mockup-pdf-location-projection')?.getAttribute('data-projection-state'),
     serverProjectionCards: board.querySelectorAll('.mockup-pdf-location-item').length,
     stageCount: board.querySelectorAll('.mockup-userflow-node').length,
@@ -5033,7 +5042,9 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     pdfLocationSource: 'example-use-case-location-in-pdf.png',
     promptCount: 1,
     specCount: 1,
-    evidenceSheets: 2,
+    pdfIntentCards: 1,
+    evidenceSheets: 4,
+    summaryCards: 3,
     serverProjectionState: 'unavailable',
     serverProjectionCards: 0,
     stageCount: 5,
@@ -5143,6 +5154,7 @@ test('Layer 3 mockup workbench visual diff harness compares repo-local frames', 
   expect(comparisons).toHaveLength(8);
   expect(new Set(comparisons.map((comparison) => comparison.selector))).toEqual(new Set([
     '#mockup-userflow-board',
+    '#mockup-fixture-scenario',
     '#mockup-pdf-location-card',
     '#mockup-sublayers-ab-board',
     '#mockup-execution-lanes',

@@ -39,9 +39,9 @@
       "size_bytes": 66554,
       "rendered_projection": {
         "projection_id": "slide_1_projection",
-        "selector": "#mockup-userflow-board",
-        "rendered_surface": "user-flow/PDF-location board",
-        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "selector": "#mockup-fixture-scenario",
+        "rendered_surface": "query/spec fixture scenario",
+        "screenshot_attachment": "layer3-mockup-fixture-scenario.png",
         "acceptance_mode": "static_theme_region_projection"
       }
     },
@@ -52,9 +52,9 @@
       "size_bytes": 70023,
       "rendered_projection": {
         "projection_id": "slide_general_projection",
-        "selector": "#mockup-userflow-board",
-        "rendered_surface": "user-flow/PDF-location board",
-        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "selector": "#mockup-fixture-scenario",
+        "rendered_surface": "query/spec fixture scenario",
+        "screenshot_attachment": "layer3-mockup-fixture-scenario.png",
         "acceptance_mode": "static_theme_region_projection"
       }
     },
@@ -65,9 +65,9 @@
       "size_bytes": 180828,
       "rendered_projection": {
         "projection_id": "slide_usecase_projection",
-        "selector": "#mockup-userflow-board",
-        "rendered_surface": "user-flow/PDF-location board",
-        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "selector": "#mockup-fixture-scenario",
+        "rendered_surface": "query/spec fixture scenario",
+        "screenshot_attachment": "layer3-mockup-fixture-scenario.png",
         "acceptance_mode": "static_theme_region_projection"
       }
     },
