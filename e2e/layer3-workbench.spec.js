@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import {
   expectJson,
   requestId,
@@ -9,6 +12,29 @@ import {
   prepareExecutedLayer3Session,
   attachSessionToWorkbench,
 } from './layer3-helpers.js';
+
+const MOCKUP_FRAME_MANIFEST_PATH = path.resolve('next_milestone_plans/layer3-mockups/frames/manifest.json');
+
+function pngDimensions(buffer) {
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
+function loadMockupFrameManifest() {
+  const manifest = JSON.parse(readFileSync(MOCKUP_FRAME_MANIFEST_PATH, 'utf8').replace(/^\uFEFF/, ''));
+  expect(manifest.schema_id).toBe('layer3.mockup_visual_acceptance_frames.v1');
+  expect(manifest.selected_theme_target).toBe('layer3_mockup_workbench_theme');
+  expect(manifest.selected_first_slice).toBe('mockup_theme_shell_and_fixture_projection');
+  expect(manifest.frames).toHaveLength(7);
+  return manifest.frames.map((frame) => {
+    const buffer = readFileSync(path.resolve(frame.repo_path));
+    expect(createHash('sha256').update(buffer).digest('hex')).toBe(frame.sha256);
+    expect(buffer.length).toBe(frame.size_bytes);
+    return { ...frame, dimensions: pngDimensions(buffer) };
+  });
+}
 
 async function seedRawMixedBridgeSetup(request) {
   const setup = await expectJson(await request.post('/__test/layer3/seed-raw-mixed'));
@@ -4790,8 +4816,14 @@ test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-
   await expect(page.locator('.state-3c')).toContainText('Structural only');
 });
 
-test('Layer 3 mockup workbench theme exposes fixture projection without backend widening', async ({ page }) => {
+test('Layer 3 mockup workbench theme exposes fixture projection without backend widening', async ({ page }, testInfo) => {
+  const frames = loadMockupFrameManifest();
+  const sublayerCFrame = frames.find((frame) => frame.repo_path.endsWith('sublayer-c.png'));
+  expect(sublayerCFrame).toBeTruthy();
+  expect(sublayerCFrame.dimensions).toEqual({ width: 1022, height: 903 });
+
   const apiRequests = trackLayer3ApiRequests(page);
+  await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
 
@@ -4816,6 +4848,32 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('#mockup-frame-list')).toContainText('focus_on_these/sublayer3C.png');
   await expect(page.locator('#mockup-theme-shell button')).toHaveCount(0);
   await expect(page.locator('#mockup-execution-lanes button')).toHaveCount(0);
+  const mockupShellScreenshot = await page.locator('#mockup-theme-shell').screenshot();
+  expect(mockupShellScreenshot.length).toBeGreaterThan(10000);
+  await testInfo.attach('layer3-mockup-theme-shell.png', {
+    body: mockupShellScreenshot,
+    contentType: 'image/png',
+  });
+
+  const visualAcceptance = await page.locator('#mockup-execution-lanes').evaluate((lanes) => {
+    const laneBodies = Array.from(lanes.querySelectorAll('.mockup-lane-body'));
+    return {
+      visualSource: lanes.getAttribute('data-visual-source'),
+      laneCount: lanes.querySelectorAll('.mockup-exec-lane').length,
+      processNotes: lanes.querySelectorAll('.mockup-process-note').length,
+      outputCards: lanes.querySelectorAll('.mockup-output-card').length,
+      arrowCount: lanes.querySelectorAll('.mockup-flow-arrow').length,
+      laneColumns: laneBodies.map((body) => window.getComputedStyle(body).gridTemplateColumns.split(' ').filter(Boolean).length),
+    };
+  });
+  expect(visualAcceptance).toEqual({
+    visualSource: 'focus_on_these/sublayer3C.png',
+    laneCount: 2,
+    processNotes: 2,
+    outputCards: 12,
+    arrowCount: 4,
+    laneColumns: [5, 5],
+  });
   expectNoRequestsToLayer3Paths(apiRequests, [
     'source/mixed-corpus/materialize',
     'package/mutation',
