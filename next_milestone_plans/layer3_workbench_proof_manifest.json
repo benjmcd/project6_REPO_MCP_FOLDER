@@ -679,7 +679,10 @@
     "package_mutation_reentry_decision_summary": "Current main now includes the package_mutation_reentry_decision freeze: bounded backend/API package lifecycle runtimes remain live for package supersession preview, replacement package-set authority, supersession commit lineage, replacement artifact manifest, and replacement namespace rows, while rendered package mutation controls, broad package mutation/reconstruction, source package row mutation, source package payload rewrite, replacement package payload generation, downstream invalidation/re-delivery runtime, provider/public URL behavior, connector/destination dispatch side effects, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned package authority remain blocked.",
     "latest_qual_hybrid_rag_reentry_decision_branch": "codex/l3-qual-hybrid-rag-reentry-freeze",
     "latest_qual_hybrid_rag_reentry_decision_live_behavior_change": false,
-    "qual_hybrid_rag_reentry_decision_summary": "Current main now includes the qual_hybrid_rag_reentry_decision freeze: the single APS-document qualitative pass and bounded qualitative APS downstream chain remain live, while broad qualitative execution, qualitative associated-cohort execution, comparative/cross-document synthesis, hybrid execution, RAG/vector retrieval, vector indexes, embeddings, prompt/model/provider runtime, rendered qualitative/RAG controls, source expansion, package mutation side effects, provider/public URL behavior, connector/destination dispatch, full mockup activation, and browser-owned execution authority remain blocked."
+    "qual_hybrid_rag_reentry_decision_summary": "Current main now includes the qual_hybrid_rag_reentry_decision freeze: the single APS-document qualitative pass and bounded qualitative APS downstream chain remain live, while broad qualitative execution, qualitative associated-cohort execution, comparative/cross-document synthesis, hybrid execution, RAG/vector retrieval, vector indexes, embeddings, prompt/model/provider runtime, rendered qualitative/RAG controls, source expansion, package mutation side effects, provider/public URL behavior, connector/destination dispatch, full mockup activation, and browser-owned execution authority remain blocked.",
+    "latest_full_mockup_activation_reentry_decision_branch": "codex/l3-full-mockup-reentry-freeze",
+    "latest_full_mockup_activation_reentry_decision_live_behavior_change": false,
+    "full_mockup_activation_reentry_decision_summary": "Current main now includes the full_mockup_activation_reentry_decision freeze: mockups remain target-state design/specification inputs and existing rendered controls remain live only where server-authoritative paths are already proven, while full mockup activation, frontend-only durable workflow state, browser-local persistence as authority, new rendered mockup controls, route/API changes, source expansion, package mutation, provider/public URL behavior, connector/destination dispatch, broad qualitative/hybrid/RAG behavior, hidden LLM planning, auth/security behavior, and browser-owned workflow authority remain blocked."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10699,7 +10702,8 @@
     "source_rendered_control_decision": "completed_rendered_control_decision_no_new_runtime",
     "connector_destination_reentry_decision": "completed_connector_destination_reentry_decision_no_external_runtime",
     "package_mutation_reentry_decision": "completed_package_mutation_reentry_decision_no_rendered_runtime",
-    "qual_hybrid_rag_reentry_decision": "completed_qual_hybrid_rag_reentry_decision_no_broad_runtime"
+    "qual_hybrid_rag_reentry_decision": "completed_qual_hybrid_rag_reentry_decision_no_broad_runtime",
+    "full_mockup_activation_reentry_decision": "completed_full_mockup_activation_reentry_decision_no_activation_runtime"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -11459,6 +11463,52 @@
       "provider_public_url_runtime",
       "connector_destination_dispatch",
       "full_mockup_activation"
+    ]
+  },
+  "full_mockup_activation_reentry_decision_proof": {
+    "status": "completed_full_mockup_activation_reentry_decision_no_activation_runtime",
+    "implementation_branch": "codex/l3-full-mockup-reentry-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "full_mockup_activation_reentry_decision",
+    "entry_decision": "mockups_target_state_only_activation_blocked",
+    "current_mockup_truth_state": "mockups_target_state_only",
+    "current_rendered_workbench_status": "existing_server_authoritative_controls_only",
+    "current_browser_proof_status": "bounded_headed_headless_proofs_for_admitted_paths",
+    "full_mockup_activation": "blocked",
+    "frontend_only_durable_state": "blocked",
+    "browser_local_persistence_as_authority": "blocked",
+    "new_rendered_mockup_controls": "blocked",
+    "route_api_behavior_change": "blocked",
+    "server_authority_contract_for_mockups": "missing",
+    "mockup_to_live_state_mapping": "missing",
+    "operator_journey_scope": "missing",
+    "theme_accessibility_headed_headless_plan": "missing",
+    "implementation_entry_allowed_next": false,
+    "governing_docs": [
+      "125_MOCKUP_TRUTH_STATE_FREEZE.md",
+      "197_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_FREEZE.md",
+      "198_BROWSER_FULL_MOCKUP_ACTIVATION_ENTRY_CONTRACT.md",
+      "218_BROWSER_FULL_MOCKUP_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md"
+    ],
+    "live_bounded_runtime": [
+      "mockups_target_state_only",
+      "existing_server_authoritative_rendered_controls_only",
+      "bounded_headed_headless_proofs_for_admitted_paths"
+    ],
+    "blocked_runtime": [
+      "full_mockup_activation",
+      "frontend_only_durable_state",
+      "browser_local_persistence_as_authority",
+      "new_rendered_mockup_controls",
+      "route_api_behavior_change",
+      "source_expansion",
+      "package_mutation_reconstruction",
+      "provider_public_url_runtime",
+      "connector_destination_dispatch",
+      "broad_qualitative_hybrid_rag_runtime",
+      "hidden_llm_planning",
+      "auth_security_behavior_change"
     ]
   }
 }
