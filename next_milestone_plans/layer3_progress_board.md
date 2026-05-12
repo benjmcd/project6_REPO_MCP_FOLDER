@@ -1086,3 +1086,7 @@ Refresh this board against:
 ## Post Reentry Runtime Selection Sync
 
 `259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md` records the current-main post-reentry runtime selection posture: the goal-stack reentry closeout is complete, but no runtime family, runtime mode, or named use case is selected. Any next implementation must first create one exact named runtime-use-case freeze with server authority, contracts, stale-authority/idempotency rules, negative tests, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted.
+
+## Post Reentry Named Use Case Adjudication
+
+`260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md` ranks the post-reentry candidate runtime families and selects `source_breadth_named_use_case_packet` as the next planning lane. Runtime remains blocked: the next packet must either name one concrete source use case with authority, storage/security, provenance, downstream semantics, rendered-control obligations, and auth/security posture, or close source breadth again as no-runtime.

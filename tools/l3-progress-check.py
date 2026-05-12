@@ -325,6 +325,9 @@ GOAL_STACK_REENTRY_CLOSEOUT = (
 POST_REENTRY_RUNTIME_SELECTION_SYNC = (
     PLANNING_DOCS / "259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md"
 )
+POST_REENTRY_NAMED_USE_CASE_ADJUDICATION = (
+    PLANNING_DOCS / "260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -15256,6 +15259,106 @@ def _check_post_reentry_runtime_selection_sync(errors: list[str]) -> None:
             if sync_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} post_reentry_runtime_selection_sync_proof.{key} must be {expected!r}")
 
+
+def _check_post_reentry_named_use_case_adjudication(errors: list[str]) -> None:
+    adjudication_text = _read_required_text(POST_REENTRY_NAMED_USE_CASE_ADJUDICATION, errors)
+    required_terms = [
+        "Status: current-main adjudication freeze for `post_reentry_named_use_case_adjudication`.",
+        "entry_decision: source_breadth_named_use_case_packet_selected_as_next_planning_step",
+        "upstream_selection_sync_doc: 259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md",
+        "selected_runtime_family: null",
+        "selected_runtime_mode: null",
+        "named_use_case_selected: false",
+        "selected_next_planning_lane: source_breadth_named_use_case_packet",
+        "runtime_implementation_allowed_next: false",
+        "next_required_artifact: source_breadth_named_use_case_packet_or_explicit_no_runtime_closeout",
+        "implementation_entry_allowed_next: false",
+        "source_breadth_runtime:",
+        "rank: 1",
+        "runtime_status: blocked_until_named_source_use_case_packet",
+        "This adjudication admits no runtime behavior",
+    ]
+    for term in required_terms:
+        if term not in adjudication_text:
+            errors.append(f"{_rel(POST_REENTRY_NAMED_USE_CASE_ADJUDICATION)} missing post-reentry named use case adjudication term: {term}")
+
+    required_surfaces = {
+        PHASE1A_README: (
+            "260_POST_REENTRY_NAMED_USE_CASE_ADJUDICATION.md",
+            "source_breadth_named_use_case_packet",
+        ),
+        BOARD: (
+            "Post Reentry Named Use Case Adjudication",
+            "source_breadth_named_use_case_packet",
+        ),
+        MANIFEST: (
+            "post_reentry_named_use_case_adjudication",
+            "source_breadth_named_use_case_packet_or_explicit_no_runtime_closeout",
+        ),
+        PROOF_MANIFEST: (
+            "post_reentry_named_use_case_adjudication_proof",
+            "source_breadth_runtime_planning_packet_only",
+        ),
+    }
+    for path, terms in required_surfaces.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing post-reentry named use case adjudication term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for post-reentry named use case adjudication")
+    else:
+        expected_current = {
+            "latest_post_reentry_named_use_case_adjudication_branch": "codex/l3-post-reentry-use-case-adjudication",
+            "latest_post_reentry_named_use_case_adjudication_live_behavior_change": False,
+        }
+        for key, expected in expected_current.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        summary = current_status.get("post_reentry_named_use_case_adjudication")
+        if (
+            not isinstance(summary, str)
+            or "source breadth is selected only as the next planning packet" not in summary
+            or "source_breadth_named_use_case_packet_or_explicit_no_runtime_closeout" not in summary
+            or "admits no runtime behavior" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.post_reentry_named_use_case_adjudication must record planning-only source-breadth packet selection posture")
+
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict):
+        errors.append(f"{_rel(MANIFEST)} scope_status missing for post-reentry named use case adjudication")
+    elif scope_status.get("post_reentry_named_use_case_adjudication") != "completed_source_breadth_packet_selected_no_runtime":
+        errors.append(f"{_rel(MANIFEST)} scope_status.post_reentry_named_use_case_adjudication must be completed_source_breadth_packet_selected_no_runtime")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    adjudication_proof = proof_data.get("post_reentry_named_use_case_adjudication_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(adjudication_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing post_reentry_named_use_case_adjudication_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_source_breadth_packet_selected_no_runtime",
+            "implementation_branch": "codex/l3-post-reentry-use-case-adjudication",
+            "live_behavior_change": False,
+            "selected_planning_mode": "post_reentry_named_use_case_adjudication",
+            "entry_decision": "source_breadth_named_use_case_packet_selected_as_next_planning_step",
+            "upstream_selection_sync_doc": "259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md",
+            "selected_runtime_family": None,
+            "selected_runtime_mode": None,
+            "named_use_case_selected": False,
+            "selected_next_planning_lane": "source_breadth_named_use_case_packet",
+            "runtime_implementation_allowed_next": False,
+            "next_required_artifact": "source_breadth_named_use_case_packet_or_explicit_no_runtime_closeout",
+            "implementation_entry_allowed_next": False,
+            "candidate_rank_1": "source_breadth_runtime_planning_packet_only",
+            "auth_security_escalation_rule": "escalate_first_only_if_selected_source_use_case_requires_new_identity_permission_or_secret_policy",
+        }
+        for key, expected in expected_scalars.items():
+            if adjudication_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} post_reentry_named_use_case_adjudication_proof.{key} must be {expected!r}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -19925,6 +20028,7 @@ def main() -> int:
         FULL_MOCKUP_ACTIVATION_REENTRY_DECISION,
         GOAL_STACK_REENTRY_CLOSEOUT,
         POST_REENTRY_RUNTIME_SELECTION_SYNC,
+        POST_REENTRY_NAMED_USE_CASE_ADJUDICATION,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -20152,6 +20256,7 @@ def main() -> int:
     _check_full_mockup_activation_reentry_decision(errors)
     _check_goal_stack_reentry_closeout(errors)
     _check_post_reentry_runtime_selection_sync(errors)
+    _check_post_reentry_named_use_case_adjudication(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
