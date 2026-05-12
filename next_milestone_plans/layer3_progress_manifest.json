@@ -6515,7 +6515,11 @@
     "latest_mockup_visual_diff_freeze_branch": "codex/l3-mockup-visual-diff-freeze",
     "latest_mockup_visual_diff_freeze_live_behavior_change": false,
     "latest_mockup_visual_diff_freeze_summary": "Mockup visual-diff freeze: selects repo_local_mockup_frame_visual_diff_acceptance as a planning/control proof mode for pixel-faithful mockup-theme work. The next allowed action is implement_repo_local_mockup_visual_diff_harness using next_milestone_plans/layer3-mockups/frames/manifest.json as frame authority with headed/headless Chromium, deterministic tolerance policy, and fail-closed missing-frame/selector/screenshot handling. It does not claim current visual parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.",
-    "mockup_visual_diff_freeze": "Mockup visual-diff freeze: selects repo_local_mockup_frame_visual_diff_acceptance as a planning/control proof mode for pixel-faithful mockup-theme work. The next allowed action is implement_repo_local_mockup_visual_diff_harness using next_milestone_plans/layer3-mockups/frames/manifest.json as frame authority with headed/headless Chromium, deterministic tolerance policy, and fail-closed missing-frame/selector/screenshot handling. It does not claim current visual parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior."
+    "mockup_visual_diff_freeze": "Mockup visual-diff freeze: selects repo_local_mockup_frame_visual_diff_acceptance as a planning/control proof mode for pixel-faithful mockup-theme work. The next allowed action is implement_repo_local_mockup_visual_diff_harness using next_milestone_plans/layer3-mockups/frames/manifest.json as frame authority with headed/headless Chromium, deterministic tolerance policy, and fail-closed missing-frame/selector/screenshot handling. It does not claim current visual parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.",
+    "latest_mockup_visual_diff_harness_branch": "codex/l3-mockup-visual-diff-harness",
+    "latest_mockup_visual_diff_harness_live_behavior_change": false,
+    "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.",
+    "mockup_visual_diff_harness": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -6552,7 +6556,8 @@
     "pdf_location_use_case_freeze": "completed_named_pdf_location_runtime_use_case_selected_planning_only",
     "pdf_location_projection_implementation": "completed_read_only_pdf_location_projection",
     "pdf_location_theme_projection": "completed_rendered_pdf_location_projection_from_session_summary",
-    "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze"
+    "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze",
+    "mockup_visual_diff_harness": "completed_repo_local_mockup_visual_diff_harness"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -6860,5 +6865,32 @@
   },
   "next_allowed_actions": [
     "implement_repo_local_mockup_visual_diff_harness for the pixel-faithful mockup-theme proof path only; no runtime widening"
-  ]
+  ],
+  "latest_mockup_visual_diff_harness_branch": "codex/l3-mockup-visual-diff-harness",
+  "latest_mockup_visual_diff_harness_live_behavior_change": false,
+  "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.",
+  "mockup_visual_diff_harness": {
+    "status": "completed_repo_local_mockup_visual_diff_harness",
+    "implementation_branch": "codex/l3-mockup-visual-diff-harness",
+    "live_behavior_change": false,
+    "selected_proof_mode": "repo_local_mockup_frame_visual_diff_acceptance",
+    "entry_freeze": "275_MOCKUP_VISUAL_DIFF_FREEZE.md",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/276_MOCKUP_VISUAL_DIFF_HARNESS.md",
+    "frame_manifest_authority": "next_milestone_plans/layer3-mockups/frames/manifest.json",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "metrics_attachment": "layer3-mockup-visual-diff-metrics.json",
+    "comparison_engine": "Playwright screenshot plus browser canvas scaled RGB delta",
+    "threshold_contract": "calibrated MOCKUP_VISUAL_DIFF_LIMITS, not pixel-perfect parity",
+    "proof_test": "Layer 3 mockup workbench visual diff harness compares repo-local frames",
+    "blocked_runtime": [
+      "backend_api_model_migration_service_change",
+      "source_runtime_expansion",
+      "connector_destination_dispatch",
+      "package_mutation",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_durable_mockup_activation",
+      "auth_security_widening"
+    ]
+  }
 }
