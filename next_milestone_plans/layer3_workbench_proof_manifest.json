@@ -17,6 +17,9 @@
     "latest_pr798_review_debt_closeout_merge_commit": "231755fef6d913bde4568c809e43b6fdd421465c",
     "latest_pr798_review_debt_closeout_live_behavior_change": true,
     "latest_pr798_review_debt_closeout_summary": "PR #798 closes review debt by sharing one admitted DatasetSourceProvenance predicate between APS/raw-mixed candidate listing and material preview, requiring local_operator_staged_server_owned_manifest before raw_mixed_materialized server-owned row admission, and removing the stale Claude prototype manual source node while SPEC_CHIPS stays empty. Focused tests cover raw-mixed material-preview traceability, unrecognized source-system rejection, and stale manual-node absence. It admits no new source class, source adapter registry, local upload/local-directory/web connector/RAG-vector behavior, package/handoff/export expansion, provider/public URL, connector/destination dispatch, full mockup activation, or auth/security behavior change.",
+    "latest_provider_private_signed_url_use_revoke_freeze_branch": "codex/l3-provider-private-use-revoke-freeze",
+    "latest_provider_private_signed_url_use_revoke_freeze_live_behavior_change": false,
+    "latest_provider_private_signed_url_use_revoke_freeze_summary": "Docs 234 and 235 freeze provider-private signed URL use/revoke as the next backend/API-only second slice after prepare/status. The future implementation may add only use/revoke routes over existing durable provider-private receipt state and existing external export/download authority. This docs/proof pass admits no runtime, rendered controls, real provider network/object-store behavior, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, same-origin delivery changes, same-origin signed-reference changes, Playwright behavior, or frontend-only durable authority.",
     "latest_gate_b_material_basis_branch": "codex/l3-gate-b-material-basis-extract",
     "latest_gate_b_material_basis_pr": "#632",
     "latest_gate_b_material_basis_commit": "56f2ea7b",
@@ -10555,5 +10558,78 @@
       "no full mockup activation",
       "no auth/security behavior change"
     ]
+  },
+  "provider_private_signed_url_use_revoke_freeze_proof": {
+    "status": "completed_corrective_revoke_only_planning_control",
+    "implementation_branch": "codex/l3-provider-private-use-revoke-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "provider_private_signed_url_revoke_only_freeze",
+    "entry_decision": "revoke_route_frozen_runtime_blocked",
+    "selected_runtime_family": "provider_public_url_runtime",
+    "selected_runtime_mode": "provider_private_signed_url",
+    "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+    "upstream_runtime_status": "prepare_status_backend_api_only_implemented",
+    "second_runtime_slice": "revoke_backend_api_only",
+    "provider_private_signed_url_use_route": "deferred_blocked_by_redacted_token_boundary",
+    "provider_private_signed_url_revoke_route": "frozen_not_implemented",
+    "runtime_implementation_allowed_next": true,
+    "rendered_ui_change": false,
+    "provider_network_or_object_store_write": false,
+    "same_origin_delivery_semantics_changed": false,
+    "same_origin_signed_reference_semantics_changed": false,
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/234_PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/235_PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_CONTRACT.md"
+    ],
+    "allowed_routes": [
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke"
+    ],
+    "blocked_routes": [
+      "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use"
+    ],
+    "authority_finding": "Prepare/status responses redact provider-private URL/token material and durable state stores token hash/prefix metadata rather than raw usable token material, so revoke is admissible over receipt state while use requires a separate token/delivery authority freeze.",
+    "required_future_tests": [
+      "openapi_revoke_schema_and_prepare_status_stability",
+      "use_route_absent_until_token_delivery_freeze",
+      "revoke_success_over_prepared_receipt",
+      "revoke_idempotent_retry",
+      "revoke_idempotency_conflict",
+      "missing_receipt_fail_closed",
+      "forbidden_provider_destination_public_url_raw_token_fields_fail_closed",
+      "status_after_revoke_reflects_durable_revoked_state",
+      "same_origin_routes_do_not_gain_provider_private_fields",
+      "no_rendered_ui_provider_network_connector_destination_package_source_rag_hidden_llm_auth_or_frontend_only_authority"
+    ],
+    "forbidden_runtime_changes": [
+      "provider_private_signed_url_use_route",
+      "rendered_provider_private_signed_url_controls",
+      "raw_provider_private_token_exposure",
+      "raw_provider_private_token_durable_persistence",
+      "provider_object_store_network_writes",
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_or_reconstruction",
+      "source_expansion",
+      "same_origin_delivery_semantics_change",
+      "same_origin_signed_reference_semantics_change",
+      "auth_security_behavior_change",
+      "frontend_only_durable_authority"
+    ],
+    "recommended_next_actions": [
+      "implement_provider_private_signed_url_revoke_backend_api_only",
+      "stop_for_token_delivery_use_authority_freeze_if_use_route_is_requested",
+      "stop_for_rendered_provider_private_signed_url_ui_freeze_if_controls_are_requested",
+      "stop_for_provider_public_url_or_public_proxy_freeze_if_public_exposure_is_requested",
+      "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested"
+    ]
+  },
+  "current_status": {
+    "latest_provider_private_signed_url_use_revoke_freeze_branch": "codex/l3-provider-private-use-revoke-freeze",
+    "latest_provider_private_signed_url_use_revoke_freeze_live_behavior_change": false,
+    "latest_provider_private_signed_url_use_revoke_freeze_summary": "Docs 234 and 235 now freeze provider-private signed URL revoke as the next backend/API-only second slice after prepare/status. The use route remains deferred by the redacted-token boundary until a separate token/delivery authority freeze exists. This docs/proof pass admits no runtime, rendered controls, real provider network/object-store behavior, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, same-origin delivery changes, same-origin signed-reference changes, Playwright behavior, or frontend-only durable authority."
+  },
+  "scope_status": {
+    "provider_private_signed_url_use_revoke_freeze": "completed_corrective_revoke_only_planning_control"
   }
 }
