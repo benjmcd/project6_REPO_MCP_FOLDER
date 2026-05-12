@@ -269,6 +269,12 @@ PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_CONTRACT = (
 PROVIDER_PRIVATE_SIGNED_URL_REVOKE_API = (
     PLANNING_DOCS / "239_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_API.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_FREEZE = (
+    PLANNING_DOCS / "240_PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_FREEZE.md"
+)
+PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_CONTRACT = (
+    PLANNING_DOCS / "241_PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -13821,6 +13827,128 @@ def _check_provider_private_signed_url_revoke_only_freeze(errors: list[str]) -> 
     if implementation_proof.get("covered_tests") != expected_covered_tests:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_revoke_api_proof covered_tests must match revoke API proof")
 
+def _check_provider_private_signed_url_use_authority_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_FREEZE: (
+            "Status: current-main planning/control freeze for `provider_private_signed_url_use_authority_freeze`.",
+            "entry_decision: use_authority_not_selected_runtime_blocked",
+            "use_route_status: blocked_no_token_delivery_model",
+            "runtime_implementation_allowed_next: false",
+            "candidate_models:",
+            "client_held_token",
+            "server_owned_proxy_use",
+            "encrypted_server_retained_token",
+            "no_use_api_external_provider_consumption",
+            "choose_or_reject_one_provider_private_signed_url_use_model",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_CONTRACT: (
+            "Status: planning/control contract for the blocked provider-private signed URL use route.",
+            "admission_result: blocked_no_token_delivery_model",
+            "runtime_implementation_allowed_next: false",
+            "provider_private_signed_url_token",
+            "raw_provider_private_signed_url_token",
+            "A use route without a selected model is under-specified.",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Use Authority Freeze",
+            "No token/delivery model is selected",
+            "client-held token",
+            "server-owned proxy use",
+            "encrypted server-retained token",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_use_authority_freeze_branch",
+            "provider_private_signed_url_use_authority_freeze",
+            "No token/delivery model is selected",
+            "before any use route implementation",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_use_authority_freeze_proof",
+            "use_authority_not_selected_runtime_blocked",
+            "blocked_no_token_delivery_model",
+            "client_held_token",
+            "server_owned_proxy_use",
+            "encrypted_server_retained_token",
+            "no_use_api_external_provider_consumption",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL use-authority freeze term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    if "/handoff/export/download/provider-private-signed-url/use" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use while no token/delivery model is selected")
+    if "/handoff/export/download/provider-private-signed-url/revoke" not in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must keep provider-private signed URL revoke live before use-authority work")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL use-authority freeze")
+    else:
+        if current_status.get("latest_provider_private_signed_url_use_authority_freeze_branch") != "codex/l3-provider-private-use-authority-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status provider private signed URL use-authority branch is stale")
+        if current_status.get("latest_provider_private_signed_url_use_authority_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status provider private signed URL use-authority live behavior flag must be false")
+        summary = current_status.get("provider_private_signed_url_use_authority_freeze")
+        if (
+            not isinstance(summary, str)
+            or "provider_private_signed_url_use_authority_freeze" not in summary
+            or "No token/delivery model is selected" not in summary
+            or "before any use route implementation" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_use_authority_freeze must record blocked use-authority posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_use_authority_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_use_authority_freeze_proof object")
+        return
+
+    expected_scalars = {
+        "status": "completed_planning_control_only",
+        "implementation_branch": "codex/l3-provider-private-use-authority-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_use_authority_freeze",
+        "entry_decision": "use_authority_not_selected_runtime_blocked",
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "prepare_status_runtime": "prepare_status_backend_api_only_implemented",
+        "revoke_runtime": "revoke_backend_api_only_implemented",
+        "use_route_status": "blocked_no_token_delivery_model",
+        "runtime_implementation_allowed_next": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_authority_freeze_proof.{key} must be {expected!r}")
+
+    expected_docs = [
+        "next_milestone_plans/Layer3_planning_docs/240_PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/241_PROVIDER_PRIVATE_SIGNED_URL_USE_AUTHORITY_CONTRACT.md",
+    ]
+    if proof.get("governing_docs") != expected_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_authority_freeze_proof governing_docs must match docs 240/241")
+
+    expected_models = [
+        "client_held_token",
+        "server_owned_proxy_use",
+        "encrypted_server_retained_token",
+        "no_use_api_external_provider_consumption",
+    ]
+    if proof.get("candidate_models") != expected_models:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_authority_freeze_proof candidate_models must match the frozen list")
+
+    expected_next = [
+        "choose_or_reject_one_provider_private_signed_url_use_model",
+        "write_use_route_implementation_entry_freeze_if_model_selected",
+        "keep_use_route_blocked_and_move_to_theme_parity_or_other_admitted_work_if_no_model_selected",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_authority_freeze_proof recommended_next_actions must match blocked-use sequence")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -18688,6 +18816,7 @@ def main() -> int:
     _check_provider_private_signed_url_durable_state_substrate(errors)
     _check_provider_private_signed_url_route_entry_contract(errors)
     _check_provider_private_signed_url_revoke_only_freeze(errors)
+    _check_provider_private_signed_url_use_authority_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
