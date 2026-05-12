@@ -685,7 +685,10 @@
     "full_mockup_activation_reentry_decision_summary": "Current main now includes the full_mockup_activation_reentry_decision freeze: mockups remain target-state design/specification inputs and existing rendered controls remain live only where server-authoritative paths are already proven, while full mockup activation, frontend-only durable workflow state, browser-local persistence as authority, new rendered mockup controls, route/API changes, source expansion, package mutation, provider/public URL behavior, connector/destination dispatch, broad qualitative/hybrid/RAG behavior, hidden LLM planning, auth/security behavior, and browser-owned workflow authority remain blocked.",
     "latest_goal_stack_reentry_closeout_branch": "codex/l3-goal-stack-reentry-closeout",
     "latest_goal_stack_reentry_closeout_live_behavior_change": false,
-    "goal_stack_reentry_closeout_summary": "Current main now includes the goal_stack_reentry_closeout_and_implementation_gate: the source, connector/destination, package mutation, qualitative/hybrid/RAG, and full mockup reentry sequence is closed as a planning/control and bounded-runtime audit stack, while broad runtime activation remains blocked and any next implementation must first select exactly one named runtime mode with server authority, request/response contracts, stale-authority/idempotency behavior, negative tests, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted."
+    "goal_stack_reentry_closeout_summary": "Current main now includes the goal_stack_reentry_closeout_and_implementation_gate: the source, connector/destination, package mutation, qualitative/hybrid/RAG, and full mockup reentry sequence is closed as a planning/control and bounded-runtime audit stack, while broad runtime activation remains blocked and any next implementation must first select exactly one named runtime mode with server authority, request/response contracts, stale-authority/idempotency behavior, negative tests, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted.",
+    "latest_post_reentry_runtime_selection_sync_branch": "codex/l3-post-reentry-runtime-selection-sync",
+    "latest_post_reentry_runtime_selection_sync_live_behavior_change": false,
+    "latest_post_reentry_runtime_selection_sync_summary": "Current main now includes the post_reentry_runtime_selection_sync: after the goal-stack reentry closeout, no runtime family, runtime mode, or named use case is selected. Source breadth, external connector/destination runtime, rendered package mutation, broad qualitative/hybrid/RAG, full mockup activation, and auth/security runtime remain blocked until one exact named runtime-use-case freeze selects server authority, request/response contracts, stale-authority/idempotency behavior, negative tests, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -11552,6 +11555,42 @@
       "full_mockup_activation",
       "frontend_only_durable_workflow_authority",
       "auth_security_behavior_change"
+    ]
+  },
+  "post_reentry_runtime_selection_sync_proof": {
+    "status": "completed_post_reentry_selection_sync_no_runtime_selected",
+    "implementation_branch": "codex/l3-post-reentry-runtime-selection-sync",
+    "live_behavior_change": false,
+    "selected_planning_mode": "post_reentry_runtime_selection_sync",
+    "entry_decision": "no_runtime_selected_after_reentry_closeout",
+    "upstream_closeout_doc": "258_GOAL_STACK_REENTRY_CLOSEOUT_AND_IMPLEMENTATION_GATE.md",
+    "selected_runtime_family": null,
+    "selected_runtime_mode": null,
+    "named_use_case_selected": false,
+    "source_breadth_runtime": "blocked_until_named_source_use_case",
+    "external_connector_destination_runtime": "blocked_until_named_connector_or_destination_use_case",
+    "package_mutation_rendered_runtime": "blocked_until_named_rendered_package_lifecycle_use_case",
+    "broad_qual_hybrid_rag_runtime": "blocked_until_named_analysis_use_case",
+    "browser_full_mockup_runtime": "blocked_until_named_mockup_or_rendered_control_use_case",
+    "auth_security_runtime": "blocked_until_named_security_operator_access_use_case",
+    "implementation_entry_allowed_next": false,
+    "next_required_boundary": "exact_named_runtime_use_case_selection_or_stop_at_planning",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/258_GOAL_STACK_REENTRY_CLOSEOUT_AND_IMPLEMENTATION_GATE.md",
+      "next_milestone_plans/Layer3_planning_docs/259_POST_REENTRY_RUNTIME_SELECTION_SYNC.md"
+    ],
+    "validation_evidence": [
+      "python .\\tools\\l3-progress-check.py must pass after wiring",
+      "JSON manifests must parse after wiring",
+      "pass is docs/control-only and touches no runtime source files"
+    ],
+    "blocked_runtime": [
+      "source_breadth_runtime_without_named_source_use_case",
+      "external_connector_destination_runtime_without_named_target",
+      "rendered_package_mutation_without_named_lifecycle_action",
+      "broad_qualitative_hybrid_rag_runtime_without_named_analysis_mode",
+      "browser_full_mockup_activation_without_server_authority_mapping",
+      "auth_security_runtime_without_named_operator_security_mode"
     ]
   }
 }
