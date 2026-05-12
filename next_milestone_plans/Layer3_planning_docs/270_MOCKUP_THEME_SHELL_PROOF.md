@@ -22,6 +22,7 @@ implemented_surfaces:
   - backend/app/review_ui/static/layer3.js
   - backend/tests/test_layer3_page.py
   - e2e/layer3-workbench.spec.js
+  - next_milestone_plans/layer3-mockups/frames/manifest.json
 blocked_runtime:
   - backend_api_behavior_change
   - backend_model_or_migration_change
@@ -50,6 +51,7 @@ The implementation adds:
 - First-slice flow cards for Pre-3A, Gate B, Gate C, Sublayer 3A, Sublayer 3B, and Sublayer 3C.
 - Explicit unavailable markers for future behavior instead of live controls.
 - A collapsible acceptance-frame list populated from JS fixture metadata.
+- Repo-local first-slice acceptance frame copies with SHA-256 metadata in `next_milestone_plans/layer3-mockups/frames/manifest.json`.
 
 ## Authority and non-fragility notes
 

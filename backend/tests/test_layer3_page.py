@@ -178,8 +178,16 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "focus_on_these/sublayer3C.png" in js.text
     assert "const LAYER3_SESSION_RECOVERY_STORAGE_KEY = 'layer3_workbench_session_recovery_v1';" in js.text
     assert "const LAYER3_GATE_B_DRAFT_STORAGE_KEY = 'layer3_workbench_gate_b_draft_v1';" in js.text
+    assert "const LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY = 'layer3_provider_private_receipt_v1';" in js.text
     assert "LAYER3_SESSION_RECOVERY_SCHEMA_ID = 'layer3.browser_session_recovery.v1'" in js.text
     assert "LAYER3_GATE_B_DRAFT_SCHEMA_ID = 'layer3.gate_b_draft_snapshot.v1'" in js.text
+    assert "LAYER3_PROVIDER_PRIVATE_RECEIPT_SCHEMA_ID = 'layer3.provider_private_receipt_recovery.v1'" in js.text
+    assert "browser_receipt_handle_only_server_revalidated_on_status_or_revoke" in js.text
+    assert "PROVIDER_PRIVATE_SIGNED_URL_REPLACEABLE_STATES" in js.text
+    assert "provider_private_signed_url_expired" in js.text
+    assert "function providerPrivateSignedUrlBlocksPrepare" in js.text
+    assert "function providerPrivateSignedUrlPrepareRequestId" in js.text
+    assert "client_request_id: providerPrivateSignedUrlPrepareRequestId()" in js.text
     assert "function stateActionContractSignature" in js.text
     assert "state_action_contract_signature: stateActionContractSignature(State.sessionSummary)" in js.text
     assert "state_action_contract_signature: stateActionContractSignature()" in js.text
