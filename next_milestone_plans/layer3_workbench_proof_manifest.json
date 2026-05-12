@@ -19,7 +19,7 @@
     "latest_pr798_review_debt_closeout_summary": "PR #798 closes review debt by sharing one admitted DatasetSourceProvenance predicate between APS/raw-mixed candidate listing and material preview, requiring local_operator_staged_server_owned_manifest before raw_mixed_materialized server-owned row admission, and removing the stale Claude prototype manual source node while SPEC_CHIPS stays empty. Focused tests cover raw-mixed material-preview traceability, unrecognized source-system rejection, and stale manual-node absence. It admits no new source class, source adapter registry, local upload/local-directory/web connector/RAG-vector behavior, package/handoff/export expansion, provider/public URL, connector/destination dispatch, full mockup activation, or auth/security behavior change.",
     "latest_provider_private_signed_url_use_revoke_freeze_branch": "codex/l3-provider-private-use-revoke-freeze",
     "latest_provider_private_signed_url_use_revoke_freeze_live_behavior_change": false,
-    "latest_provider_private_signed_url_use_revoke_freeze_summary": "Docs 234 and 235 freeze provider-private signed URL use/revoke as the next backend/API-only second slice after prepare/status. The future implementation may add only use/revoke routes over existing durable provider-private receipt state and existing external export/download authority. This docs/proof pass admits no runtime, rendered controls, real provider network/object-store behavior, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, same-origin delivery changes, same-origin signed-reference changes, Playwright behavior, or frontend-only durable authority.",
+    "latest_provider_private_signed_url_use_revoke_freeze_summary": "Docs 234 and 235 now preserve the provider-private signed URL revoke-only correction: use remains blocked by the redacted-token boundary, and the admitted second backend/API slice is revoke only over existing durable provider-private receipt state and existing external export/download authority. This docs/proof pass admits no runtime, rendered controls, real provider network/object-store behavior, provider/public URL runtime, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, same-origin delivery changes, same-origin signed-reference changes, Playwright behavior, or frontend-only durable authority.",
     "latest_gate_b_material_basis_branch": "codex/l3-gate-b-material-basis-extract",
     "latest_gate_b_material_basis_pr": "#632",
     "latest_gate_b_material_basis_commit": "56f2ea7b",
@@ -727,7 +727,8 @@
     "GitHub PR state for merged/open status",
     "current main repo truth for live implementation surfaces",
     "Layer3 planning docs for readiness/proof freeze scope",
-    "mockup spec for target-state product intent only"
+    "repo-local mockup frame manifest for dedicated theme visual acceptance",
+    "source mockup corpus paths for provenance and target-state product intent"
   ],
   "governing_docs": [
     "next_milestone_plans/Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md",
@@ -11122,7 +11123,7 @@
     ],
     "negative_invariants": [
       "provider_private_use_route_absent",
-      "source_runtime_not_implemented",
+      "new_source_family_runtime_not_implemented",
       "connector_destination_dispatch_absent",
       "package_mutation_reconstruction_absent",
       "broad_qual_hybrid_rag_absent",
@@ -11164,7 +11165,7 @@
       "auth_security_posture"
     ],
     "negative_invariants": [
-      "source_runtime_not_implemented",
+      "new_source_family_runtime_not_implemented",
       "source_adapter_registry_absent",
       "local_upload_absent",
       "local_directory_ingestion_absent",
@@ -11217,7 +11218,7 @@
       "unbounded_runtime_db"
     ],
     "negative_invariants": [
-      "source_runtime_not_implemented",
+      "new_source_family_runtime_not_implemented",
       "new_source_family_absent",
       "source_adapter_registry_absent",
       "local_upload_absent",
@@ -11256,7 +11257,7 @@
       "python .\\tools\\l3-progress-check.py passed on merged main"
     ],
     "negative_invariants": [
-      "source_runtime_not_implemented",
+      "new_source_family_runtime_not_implemented",
       "connector_destination_dispatch_absent",
       "package_mutation_reconstruction_absent",
       "broad_qual_hybrid_rag_absent",
