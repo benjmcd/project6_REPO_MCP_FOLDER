@@ -1102,3 +1102,7 @@ Refresh this board against:
 ## Package Mutation Named Action Packet
 
 `263_PACKAGE_MUTATION_NAMED_ACTION_PACKET.md` closes the package mutation named-action packet as no-runtime. Current authority proves bounded backend/API package lifecycle behavior, but rendered package mutation controls, package payload rewrite/generation, source package row mutation, downstream invalidation, re-delivery, and browser-owned package authority remain blocked.
+
+## Qual Hybrid RAG Named Analysis Packet
+
+`264_QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET.md` closes the qualitative/hybrid/RAG named-analysis packet as no-runtime. Current authority proves only the single APS-document qualitative pass and bounded qualitative APS downstream chain; broad qualitative execution, cross-document synthesis, hybrid execution, RAG/vector retrieval, vector indexes, embeddings, prompt/model/provider runtime, output taxonomy expansion, and rendered qualitative/RAG controls remain blocked.
