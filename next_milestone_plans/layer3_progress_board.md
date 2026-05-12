@@ -1021,6 +1021,10 @@ Source breadth reentry contract: `249_SOURCE_BREADTH_REENTRY_CONTRACT.md` define
 
 Source breadth authority packet: `250_SOURCE_BREADTH_AUTHORITY_PACKET.md` records the current-main source-breadth reentry gate outcome as `entry_decision: no_runtime_now`. Current repo authority proves `dataset_version` and `aps_content_document` remain the only supported source classes, with current-class raw-mixed seed/materialization through server-owned, hash-checked manifests. It does not prove readiness for a new source family because no named source use case, selected source family, adapter/input mode, new-source storage/security model, network retrieval policy, rendered source-control plan, or auth/security posture is selected. This packet admits no source runtime, source adapter registry, local upload, local-directory ingestion, web connector retrieval, RAG/vector retrieval, route/API/DTO/model/migration/service behavior, executable test behavior, rendered source controls, connector/destination dispatch, package mutation/reconstruction, full mockup activation, auth/security behavior, hidden LLM planning, or frontend-only durable authority.
 
+## Post 807 Closeout
+
+Post 807 closeout: `251_POST_807_CLOSEOUT.md` records PR `#807` as merged into current `main` at `9ffc5c64154b5175f56cb0e1b15b9ffc1492f233`. The closeout preserves the PR #807 outcome as planning/control only: post-provider-private roadmap selection is current-main authority, source breadth remains the selected next planning lane, source-breadth runtime remains blocked with `entry_decision: no_runtime_now`, and no source runtime, connector/destination dispatch, package mutation/reconstruction, broad qualitative/hybrid/RAG, full mockup activation, auth/security behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered controls, or frontend-only durable authority is admitted.
+
 ## Refresh Inputs
 
 Refresh this board against:
