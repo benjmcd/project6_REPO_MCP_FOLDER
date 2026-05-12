@@ -260,6 +260,12 @@ PROVIDER_PRIVATE_SIGNED_URL_ROUTE_API_CONTRACT = (
 PROVIDER_PRIVATE_SIGNED_URL_PREPARE_STATUS_API = (
     PLANNING_DOCS / "233_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_STATUS_API.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_FREEZE = (
+    PLANNING_DOCS / "234_PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_FREEZE.md"
+)
+PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_CONTRACT = (
+    PLANNING_DOCS / "235_PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -13546,8 +13552,190 @@ def _check_provider_private_signed_url_route_entry_contract(errors: list[str]) -
             "backend/app/services/layer3_provider_private_signed_url.py",
             "backend/tests/test_layer3_api.py",
         ]
-        if implementation_proof.get("implemented_files") != expected_files:
-            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_prepare_status_api_proof implemented_files must match prepare/status slice")
+    if implementation_proof.get("implemented_files") != expected_files:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_prepare_status_api_proof implemented_files must match prepare/status slice")
+
+def _check_provider_private_signed_url_revoke_only_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_FREEZE: (
+            "Status: current-main planning/control correction for `provider_private_signed_url_use_revoke_route_freeze`.",
+            "selected_planning_mode: provider_private_signed_url_revoke_only_freeze",
+            "entry_decision: revoke_route_frozen_runtime_blocked",
+            "second_runtime_slice_candidate: revoke_backend_api_only",
+            "provider_private_signed_url_use_route: deferred_blocked_by_redacted_token_boundary",
+            "provider_private_signed_url_revoke_route: frozen_not_implemented",
+            "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+            "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use",
+            "implement_provider_private_signed_url_revoke_backend_api_only",
+            "stop_for_token_delivery_use_authority_freeze",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_CONTRACT: (
+            "Status: current-main planning/control API contract correction for `provider_private_signed_url_use_revoke_api_contract`.",
+            "selected_planning_mode: provider_private_signed_url_revoke_only_api_contract",
+            "entry_decision: revoke_api_contract_frozen_runtime_blocked",
+            "second_runtime_slice: revoke_backend_api_only",
+            "provider_private_signed_url_use_route: deferred_blocked_by_redacted_token_boundary",
+            "state_dependency: revoke_provider_private_signed_url_receipt",
+            "blocked_reason: redacted_token_boundary_requires_separate_delivery_authority_freeze",
+            "blocked_owner_functions_until_later_freeze",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Revoke-Only Freeze",
+            "current-main corrective planning/control boundary",
+            "backend/API revoke only",
+            "use route remains deferred",
+            "raw usable token material",
+        ),
+        MANIFEST: (
+            "provider_private_signed_url_revoke_only_freeze",
+            "backend/API revoke only",
+            "use route remains deferred by the redacted-token boundary",
+            "raw usable token material",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_use_revoke_freeze_proof",
+            "completed_corrective_revoke_only_planning_control",
+            "provider_private_signed_url_revoke_only_freeze",
+            "revoke_backend_api_only",
+            "deferred_blocked_by_redacted_token_boundary",
+            "implement_provider_private_signed_url_revoke_backend_api_only",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_STATE_SERVICE: (
+            "def record_used_provider_private_signed_url_receipt",
+            "def revoke_provider_private_signed_url_receipt",
+            "provider_private_signed_url_token_hash",
+            "provider_private_signed_url_token_prefix",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_SERVICE: (
+            "def provider_private_signed_url_prepare",
+            "def provider_private_signed_url_status",
+            "PROVIDER_PRIVATE_SIGNED_URL_REDACTED_MARKER",
+            "provider_url_secret_redacted",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_API_TEST: (
+            "test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema",
+            "\"/api/v1/layer3/handoff/export/download/provider-private-signed-url/use\" not in spec[\"paths\"]",
+            "\"/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke\" not in spec[\"paths\"]",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL revoke-only freeze term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    _check_provider_private_signed_url_no_deferred_routes(
+        api_text,
+        errors,
+        context="revoke-only planning/control correction",
+    )
+
+    service_text = _read_required_text(PROVIDER_PRIVATE_SIGNED_URL_SERVICE, errors)
+    if "def provider_private_signed_url_use" in service_text:
+        errors.append(f"{_rel(PROVIDER_PRIVATE_SIGNED_URL_SERVICE)} must not expose provider-private signed URL use before token/delivery freeze")
+    if "def provider_private_signed_url_revoke" in service_text:
+        errors.append(f"{_rel(PROVIDER_PRIVATE_SIGNED_URL_SERVICE)} must not expose provider-private signed URL revoke in docs/proof-only correction pass")
+
+    current_status = _load_json(MANIFEST, errors).get("current_status", {})
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL revoke-only freeze")
+    else:
+        if current_status.get("latest_provider_private_signed_url_use_revoke_freeze_branch") != "codex/l3-provider-private-use-revoke-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status provider private signed URL revoke-only freeze branch is stale")
+        if current_status.get("latest_provider_private_signed_url_use_revoke_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status provider private signed URL revoke-only freeze live behavior flag must be false")
+        summary = current_status.get("provider_private_signed_url_use_revoke_freeze")
+        if (
+            not isinstance(summary, str)
+            or "provider_private_signed_url_revoke_only_freeze" not in summary
+            or "backend/API revoke only" not in summary
+            or "use route remains deferred by the redacted-token boundary" not in summary
+            or "raw usable token material" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_use_revoke_freeze must record corrected revoke-only posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_use_revoke_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_use_revoke_freeze_proof object")
+        return
+
+    expected_scalars = {
+        "status": "completed_corrective_revoke_only_planning_control",
+        "implementation_branch": "codex/l3-provider-private-use-revoke-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_revoke_only_freeze",
+        "entry_decision": "revoke_route_frozen_runtime_blocked",
+        "selected_runtime_family": "provider_public_url_runtime",
+        "selected_runtime_mode": "provider_private_signed_url",
+        "named_use_case_selected": "external_downstream_recipient_private_artifact_delivery",
+        "upstream_runtime_status": "prepare_status_backend_api_only_implemented",
+        "second_runtime_slice": "revoke_backend_api_only",
+        "provider_private_signed_url_use_route": "deferred_blocked_by_redacted_token_boundary",
+        "provider_private_signed_url_revoke_route": "frozen_not_implemented",
+        "runtime_implementation_allowed_next": True,
+        "rendered_ui_change": False,
+        "provider_network_or_object_store_write": False,
+        "same_origin_delivery_semantics_changed": False,
+        "same_origin_signed_reference_semantics_changed": False,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_revoke_freeze_proof.{key} must be {expected!r}")
+
+    expected_docs = [
+        "next_milestone_plans/Layer3_planning_docs/234_PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/235_PROVIDER_PRIVATE_SIGNED_URL_USE_REVOKE_CONTRACT.md",
+    ]
+    if proof.get("governing_docs") != expected_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_revoke_freeze_proof governing_docs must match docs 234/235")
+
+    expected_allowed_routes = [
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+    ]
+    if proof.get("allowed_routes") != expected_allowed_routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_revoke_freeze_proof allowed_routes must be revoke-only")
+
+    expected_blocked_routes = [
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use",
+    ]
+    if proof.get("blocked_routes") != expected_blocked_routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_revoke_freeze_proof blocked_routes must block use")
+
+    authority_finding = proof.get("authority_finding")
+    if (
+        not isinstance(authority_finding, str)
+        or "redact provider-private URL/token material" not in authority_finding
+        or "token hash/prefix metadata" not in authority_finding
+        or "separate token/delivery authority freeze" not in authority_finding
+    ):
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_revoke_freeze_proof authority_finding must record redacted-token boundary")
+
+    expected_tests = [
+        "openapi_revoke_schema_and_prepare_status_stability",
+        "use_route_absent_until_token_delivery_freeze",
+        "revoke_success_over_prepared_receipt",
+        "revoke_idempotent_retry",
+        "revoke_idempotency_conflict",
+        "missing_receipt_fail_closed",
+        "forbidden_provider_destination_public_url_raw_token_fields_fail_closed",
+        "status_after_revoke_reflects_durable_revoked_state",
+        "same_origin_routes_do_not_gain_provider_private_fields",
+        "no_rendered_ui_provider_network_connector_destination_package_source_rag_hidden_llm_auth_or_frontend_only_authority",
+    ]
+    if proof.get("required_future_tests") != expected_tests:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_revoke_freeze_proof required_future_tests must match revoke-only contract")
+
+    expected_next = [
+        "implement_provider_private_signed_url_revoke_backend_api_only",
+        "stop_for_token_delivery_use_authority_freeze_if_use_route_is_requested",
+        "stop_for_rendered_provider_private_signed_url_ui_freeze_if_controls_are_requested",
+        "stop_for_provider_public_url_or_public_proxy_freeze_if_public_exposure_is_requested",
+        "stop_for_connector_destination_runtime_family_if_connector_or_destination_delivery_is_requested",
+    ]
+    if proof.get("recommended_next_actions") != expected_next:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_revoke_freeze_proof recommended_next_actions must match revoke-only sequence")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -18415,6 +18603,7 @@ def main() -> int:
     _check_provider_private_signed_url_storage_receipt_durable_state_contract(errors)
     _check_provider_private_signed_url_durable_state_substrate(errors)
     _check_provider_private_signed_url_route_entry_contract(errors)
+    _check_provider_private_signed_url_revoke_only_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
