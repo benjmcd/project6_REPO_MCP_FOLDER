@@ -14,6 +14,12 @@ import {
 } from './layer3-helpers.js';
 
 const MOCKUP_FRAME_MANIFEST_PATH = path.resolve('next_milestone_plans/layer3-mockups/frames/manifest.json');
+const MOCKUP_VISUAL_DIFF_LIMITS = {
+  compareWidth: 360,
+  compareHeight: 220,
+  normalizedMeanDeltaMax: 0.35,
+  highDeltaRatioMax: 0.40,
+};
 
 function pngDimensions(buffer) {
   return {
@@ -38,6 +44,56 @@ function loadMockupFrameManifest() {
     expect(frame.rendered_projection?.screenshot_attachment).toBeTruthy();
     return { ...frame, dimensions: pngDimensions(buffer) };
   });
+}
+
+function frameDataUrl(frame) {
+  const buffer = readFileSync(path.resolve(frame.repo_path));
+  return `data:image/png;base64,${buffer.toString('base64')}`;
+}
+
+async function compareMockupFrameImages(page, referenceDataUrl, actualDataUrl) {
+  return page.evaluate(async ({ referenceDataUrl, actualDataUrl, limits }) => {
+    const loadImage = (src) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error(`Unable to decode visual-diff image: ${src.slice(0, 32)}`));
+      image.src = src;
+    });
+    const [reference, actual] = await Promise.all([
+      loadImage(referenceDataUrl),
+      loadImage(actualDataUrl),
+    ]);
+    const canvas = document.createElement('canvas');
+    canvas.width = limits.compareWidth;
+    canvas.height = limits.compareHeight;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.drawImage(reference, 0, 0, limits.compareWidth, limits.compareHeight);
+    const referencePixels = context.getImageData(0, 0, limits.compareWidth, limits.compareHeight).data;
+    context.clearRect(0, 0, limits.compareWidth, limits.compareHeight);
+    context.drawImage(actual, 0, 0, limits.compareWidth, limits.compareHeight);
+    const actualPixels = context.getImageData(0, 0, limits.compareWidth, limits.compareHeight).data;
+    let totalDelta = 0;
+    let highDeltaPixels = 0;
+    const pixelCount = limits.compareWidth * limits.compareHeight;
+    for (let index = 0; index < referencePixels.length; index += 4) {
+      const redDelta = Math.abs(referencePixels[index] - actualPixels[index]);
+      const greenDelta = Math.abs(referencePixels[index + 1] - actualPixels[index + 1]);
+      const blueDelta = Math.abs(referencePixels[index + 2] - actualPixels[index + 2]);
+      const normalizedPixelDelta = (redDelta + greenDelta + blueDelta) / (255 * 3);
+      totalDelta += normalizedPixelDelta;
+      if (normalizedPixelDelta > 0.32) highDeltaPixels += 1;
+    }
+    return {
+      referenceWidth: reference.naturalWidth,
+      referenceHeight: reference.naturalHeight,
+      actualWidth: actual.naturalWidth,
+      actualHeight: actual.naturalHeight,
+      compareWidth: limits.compareWidth,
+      compareHeight: limits.compareHeight,
+      normalizedMeanDelta: Number((totalDelta / pixelCount).toFixed(6)),
+      highDeltaRatio: Number((highDeltaPixels / pixelCount).toFixed(6)),
+    };
+  }, { referenceDataUrl, actualDataUrl, limits: MOCKUP_VISUAL_DIFF_LIMITS });
 }
 
 async function seedRawMixedBridgeSetup(request) {
@@ -5029,6 +5085,66 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     laneColumns: [1, 1],
   });
 
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'source/mixed-corpus/materialize',
+    'package/mutation',
+    'handoff/connector',
+    'provider-private-signed-url/prepare',
+    'execution/start',
+  ]);
+});
+
+test('Layer 3 mockup workbench visual diff harness compares repo-local frames', async ({ page }, testInfo) => {
+  const frames = loadMockupFrameManifest();
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
+  await page.evaluate(() => document.fonts?.ready);
+
+  const comparisons = [];
+  for (const frame of frames) {
+    const projection = frame.rendered_projection;
+    const renderedSurface = page.locator(projection.selector).first();
+    await expect(renderedSurface).toBeVisible();
+    const screenshot = await renderedSurface.screenshot();
+    expect(screenshot.length).toBeGreaterThan(7000);
+    const metrics = await compareMockupFrameImages(
+      page,
+      frameDataUrl(frame),
+      `data:image/png;base64,${screenshot.toString('base64')}`,
+    );
+    expect(metrics.referenceWidth).toBe(frame.dimensions.width);
+    expect(metrics.referenceHeight).toBe(frame.dimensions.height);
+    expect(metrics.actualWidth).toBeGreaterThan(100);
+    expect(metrics.actualHeight).toBeGreaterThan(80);
+    expect(metrics.normalizedMeanDelta, projection.projection_id).toBeLessThanOrEqual(
+      MOCKUP_VISUAL_DIFF_LIMITS.normalizedMeanDeltaMax,
+    );
+    expect(metrics.highDeltaRatio, projection.projection_id).toBeLessThanOrEqual(
+      MOCKUP_VISUAL_DIFF_LIMITS.highDeltaRatioMax,
+    );
+    comparisons.push({
+      projectionId: projection.projection_id,
+      selector: projection.selector,
+      repoPath: frame.repo_path,
+      renderedSurface: projection.rendered_surface,
+      acceptanceMode: projection.acceptance_mode,
+      limits: MOCKUP_VISUAL_DIFF_LIMITS,
+      metrics,
+    });
+  }
+
+  await testInfo.attach('layer3-mockup-visual-diff-metrics.json', {
+    body: JSON.stringify(comparisons, null, 2),
+    contentType: 'application/json',
+  });
+  expect(comparisons).toHaveLength(8);
+  expect(new Set(comparisons.map((comparison) => comparison.selector))).toEqual(new Set([
+    '#mockup-userflow-board',
+    '#mockup-sublayers-ab-board',
+    '#mockup-execution-lanes',
+  ]));
   expectNoRequestsToLayer3Paths(apiRequests, [
     'source/mixed-corpus/materialize',
     'package/mutation',

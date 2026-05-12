@@ -1640,3 +1640,9 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/275_MOCKUP_VISUAL_DIFF_FREEZE.md` records `repo_local_mockup_frame_visual_diff_acceptance` as the next proof mode for pixel-faithful mockup-theme work.
 - The next allowed action is `implement_repo_local_mockup_visual_diff_harness`, with repo-local frame authority from `next_milestone_plans/layer3-mockups/frames/manifest.json`, headed/headless Chromium proof, and fail-closed handling for missing frames, selectors, screenshots, or over-tolerance deltas.
 - This is planning/control only; it does not claim current visual parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
+
+## Mockup Visual Diff Harness
+
+- `Layer3_planning_docs/276_MOCKUP_VISUAL_DIFF_HARNESS.md` records the implemented `repo_local_mockup_frame_visual_diff_acceptance` harness for `layer3_mockup_workbench_theme`.
+- The Playwright test uses `MOCKUP_VISUAL_DIFF_LIMITS`, browser canvas image comparison, all eight repo-local frame manifest entries, and the `layer3-mockup-visual-diff-metrics.json` attachment.
+- This is a deterministic proof-harness pass, not a pixel-perfect parity claim; it adds no backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
