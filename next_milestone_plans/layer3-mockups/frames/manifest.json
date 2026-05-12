@@ -10,49 +10,122 @@
       "source_path": "C:\\Users\\benny\\Downloads\\layer3mockups\\userflow\\layer3_user-flow-overview1.png",
       "repo_path": "next_milestone_plans/layer3-mockups/frames/flow-1.png",
       "sha256": "6abae5de84bfe09fd1b28d887e423d0614fae70c4c56712ba3dde232141717ed",
-      "size_bytes": 156705
+      "size_bytes": 156705,
+      "rendered_projection": {
+        "projection_id": "userflow_overview_1_projection",
+        "selector": "#mockup-userflow-board",
+        "rendered_surface": "user-flow/PDF-location board",
+        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "acceptance_mode": "static_theme_region_projection"
+      }
     },
     {
       "source_path": "C:\\Users\\benny\\Downloads\\layer3mockups\\userflow\\layer3_user-flow-overview2.png",
       "repo_path": "next_milestone_plans/layer3-mockups/frames/flow-2.png",
       "sha256": "415f938a709cf8c58d43b6b407482a2fbf6c9598b3c1cd31211080ee48df5aab",
-      "size_bytes": 130334
+      "size_bytes": 130334,
+      "rendered_projection": {
+        "projection_id": "userflow_overview_2_projection",
+        "selector": "#mockup-userflow-board",
+        "rendered_surface": "user-flow/PDF-location board",
+        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "acceptance_mode": "static_theme_region_projection"
+      }
     },
     {
       "source_path": "C:\\Users\\benny\\Downloads\\layer3mockups\\clear-screenshots\\userflow_slide1.png",
       "repo_path": "next_milestone_plans/layer3-mockups/frames/slide-1.png",
       "sha256": "21a41dd15cc18d9332112c421970ea1f76d230176ef6e5411c5d7dbe777e22a0",
-      "size_bytes": 66554
+      "size_bytes": 66554,
+      "rendered_projection": {
+        "projection_id": "slide_1_projection",
+        "selector": "#mockup-userflow-board",
+        "rendered_surface": "user-flow/PDF-location board",
+        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "acceptance_mode": "static_theme_region_projection"
+      }
     },
     {
       "source_path": "C:\\Users\\benny\\Downloads\\layer3mockups\\clear-screenshots\\userflow_slide1_general-example.png",
       "repo_path": "next_milestone_plans/layer3-mockups/frames/slide-general.png",
       "sha256": "1882dfd8a50a53d42c4607ba4270ee6a2710a5e6f7fb3197a7b94e4ba5066091",
-      "size_bytes": 70023
+      "size_bytes": 70023,
+      "rendered_projection": {
+        "projection_id": "slide_general_projection",
+        "selector": "#mockup-userflow-board",
+        "rendered_surface": "user-flow/PDF-location board",
+        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "acceptance_mode": "static_theme_region_projection"
+      }
     },
     {
       "source_path": "C:\\Users\\benny\\Downloads\\layer3mockups\\clear-screenshots\\userflow_slide1_specific_usecase-example_zoomed-in.png",
       "repo_path": "next_milestone_plans/layer3-mockups/frames/slide-usecase.png",
       "sha256": "b5217053334a8b6bbc421d05f700bfdd8a718eeb630e1641aa35e34b7daf6349",
-      "size_bytes": 180828
+      "size_bytes": 180828,
+      "rendered_projection": {
+        "projection_id": "slide_usecase_projection",
+        "selector": "#mockup-userflow-board",
+        "rendered_surface": "user-flow/PDF-location board",
+        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "acceptance_mode": "static_theme_region_projection"
+      }
     },
     {
       "source_path": "C:\\Users\\benny\\Downloads\\layer3mockups\\example-use-case-location-in-pdf.png",
       "repo_path": "next_milestone_plans/layer3-mockups/frames/pdf-location.png",
       "sha256": "e3c212dcb37be85b49d6ba0a79a25bf04644723b66e856e2b015273bd0d1a2f8",
-      "size_bytes": 223517
+      "size_bytes": 223517,
+      "rendered_projection": {
+        "projection_id": "pdf_location_projection",
+        "selector": "#mockup-userflow-board",
+        "rendered_surface": "user-flow/PDF-location board",
+        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "acceptance_mode": "static_theme_region_projection"
+      }
     },
     {
       "source_path": "C:\\Users\\benny\\Downloads\\layer3mockups\\focus_on_these\\sublayer3A_and_sublayer3B.png",
       "repo_path": "next_milestone_plans/layer3-mockups/frames/sublayers-ab.png",
       "sha256": "a3360e1e5fa637b5709bb5ee112217c08f759a144c902bb958fe4edd8599db43",
-      "size_bytes": 87241
+      "size_bytes": 87241,
+      "rendered_projection": {
+        "projection_id": "sublayers_ab_projection",
+        "selector": "#mockup-sublayers-ab-board",
+        "rendered_surface": "Sublayer 3A/3B ledger and grouping board",
+        "screenshot_attachment": "layer3-mockup-sublayers-ab-board.png",
+        "acceptance_mode": "static_theme_region_projection"
+      }
     },
     {
       "source_path": "C:\\Users\\benny\\Downloads\\layer3mockups\\focus_on_these\\sublayer3C.png",
       "repo_path": "next_milestone_plans/layer3-mockups/frames/sublayer-c.png",
       "sha256": "634822a5eb02c50557f5fce2562766b54d80207d2da16f0e6f884b9e2c24752a",
-      "size_bytes": 120357
+      "size_bytes": 120357,
+      "rendered_projection": {
+        "projection_id": "sublayer_c_projection",
+        "selector": "#mockup-execution-lanes",
+        "rendered_surface": "Sublayer 3C execution lane board",
+        "screenshot_attachment": "layer3-mockup-theme-shell.png",
+        "acceptance_mode": "static_theme_region_projection"
+      }
     }
-  ]
+  ],
+  "rendered_projection_contract": {
+    "schema_id": "layer3.mockup_rendered_projection_contract.v1",
+    "theme_target": "layer3_mockup_workbench_theme",
+    "route": "/review/layer3",
+    "authority_note": "Each repo-local mockup frame must map to a visible static theme projection selector before the frame can count as rendered visual proof; selectors remain UI/theme proof only and do not admit durable mockup runtime behavior.",
+    "forbidden_runtime_changes": [
+      "backend_api_behavior_change",
+      "backend_model_or_migration_change",
+      "backend_service_behavior_change",
+      "source_runtime_widening",
+      "connector_destination_dispatch",
+      "package_mutation_runtime",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_mockup_durable_workflow_activation",
+      "frontend_only_durable_authority"
+    ]
+  }
 }

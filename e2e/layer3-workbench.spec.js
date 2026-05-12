@@ -32,6 +32,10 @@ function loadMockupFrameManifest() {
     const buffer = readFileSync(path.resolve(frame.repo_path));
     expect(createHash('sha256').update(buffer).digest('hex')).toBe(frame.sha256);
     expect(buffer.length).toBe(frame.size_bytes);
+    expect(frame.rendered_projection?.acceptance_mode).toBe('static_theme_region_projection');
+    expect(frame.rendered_projection?.selector).toMatch(/^#/);
+    expect(frame.rendered_projection?.projection_id).toBeTruthy();
+    expect(frame.rendered_projection?.screenshot_attachment).toBeTruthy();
     return { ...frame, dimensions: pngDimensions(buffer) };
   });
 }
@@ -4868,6 +4872,48 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('#mockup-frame-list')).toContainText('focus_on_these/sublayer3C.png');
   await expect(page.locator('#mockup-frame-list')).toContainText('focus_on_these/sublayer3A_and_sublayer3B.png');
   await expect(page.locator('#mockup-frame-list')).toContainText('example-use-case-location-in-pdf.png');
+
+  const frameProjectionCoverage = await page.locator('#mockup-theme-shell').evaluate((shell, frameSummaries) => frameSummaries.map((frame) => {
+    const projection = frame.rendered_projection;
+    const element = projection ? shell.querySelector(projection.selector) : null;
+    const rect = element?.getBoundingClientRect();
+    return {
+      repoPath: frame.repo_path,
+      projectionId: projection?.projection_id || null,
+      selector: projection?.selector || null,
+      screenshotAttachment: projection?.screenshot_attachment || null,
+      visible: Boolean(rect && rect.width > 0 && rect.height > 0),
+      width: rect ? Math.round(rect.width) : 0,
+      height: rect ? Math.round(rect.height) : 0,
+    };
+  }), frames.map((frame) => ({
+    repo_path: frame.repo_path,
+    rendered_projection: frame.rendered_projection,
+  })));
+  expect(frameProjectionCoverage.map((entry) => entry.projectionId)).toEqual([
+    'userflow_overview_1_projection',
+    'userflow_overview_2_projection',
+    'slide_1_projection',
+    'slide_general_projection',
+    'slide_usecase_projection',
+    'pdf_location_projection',
+    'sublayers_ab_projection',
+    'sublayer_c_projection',
+  ]);
+  expect(new Set(frameProjectionCoverage.map((entry) => entry.selector))).toEqual(new Set([
+    '#mockup-userflow-board',
+    '#mockup-sublayers-ab-board',
+    '#mockup-execution-lanes',
+  ]));
+  for (const coverage of frameProjectionCoverage) {
+    expect(coverage.visible).toBe(true);
+    expect(coverage.width).toBeGreaterThan(100);
+    expect(coverage.height).toBeGreaterThan(80);
+  }
+  await testInfo.attach('layer3-mockup-frame-map.json', {
+    body: JSON.stringify(frameProjectionCoverage, null, 2),
+    contentType: 'application/json',
+  });
   await expect(page.locator('#mockup-theme-shell button')).toHaveCount(0);
   await expect(page.locator('#mockup-execution-lanes button')).toHaveCount(0);
   const mockupShellScreenshot = await page.locator('#mockup-theme-shell').screenshot();
