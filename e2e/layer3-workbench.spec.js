@@ -17,7 +17,7 @@ const MOCKUP_FRAME_MANIFEST_PATH = path.resolve('next_milestone_plans/layer3-moc
 const MOCKUP_VISUAL_DIFF_LIMITS = {
   compareWidth: 360,
   compareHeight: 220,
-  normalizedMeanDeltaMax: 0.26,
+  normalizedMeanDeltaMax: 0.23,
   highDeltaRatioMax: 0.32,
 };
 
@@ -4935,7 +4935,9 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
 
   const frameProjectionCoverage = await page.locator('#mockup-theme-shell').evaluate((shell, frameSummaries) => frameSummaries.map((frame) => {
     const projection = frame.rendered_projection;
-    const element = projection ? shell.querySelector(projection.selector) : null;
+    const element = projection
+      ? (projection.selector === '#mockup-theme-shell' ? shell : shell.querySelector(projection.selector))
+      : null;
     const rect = element?.getBoundingClientRect();
     return {
       repoPath: frame.repo_path,
@@ -4961,7 +4963,7 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     'sublayer_c_projection',
   ]);
   expect(new Set(frameProjectionCoverage.map((entry) => entry.selector))).toEqual(new Set([
-    '#mockup-userflow-board',
+    '#mockup-theme-shell',
     '#mockup-fixture-scenario',
     '#mockup-pdf-location-card',
     '#mockup-sublayers-ab-board',
@@ -5153,7 +5155,7 @@ test('Layer 3 mockup workbench visual diff harness compares repo-local frames', 
   });
   expect(comparisons).toHaveLength(8);
   expect(new Set(comparisons.map((comparison) => comparison.selector))).toEqual(new Set([
-    '#mockup-userflow-board',
+    '#mockup-theme-shell',
     '#mockup-fixture-scenario',
     '#mockup-pdf-location-card',
     '#mockup-sublayers-ab-board',

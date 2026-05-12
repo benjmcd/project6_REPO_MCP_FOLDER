@@ -13,9 +13,9 @@
       "size_bytes": 156705,
       "rendered_projection": {
         "projection_id": "userflow_overview_1_projection",
-        "selector": "#mockup-userflow-board",
-        "rendered_surface": "user-flow/PDF-location board",
-        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "selector": "#mockup-theme-shell",
+        "rendered_surface": "full mockup workbench theme shell",
+        "screenshot_attachment": "layer3-mockup-theme-shell.png",
         "acceptance_mode": "static_theme_region_projection"
       }
     },
@@ -26,9 +26,9 @@
       "size_bytes": 130334,
       "rendered_projection": {
         "projection_id": "userflow_overview_2_projection",
-        "selector": "#mockup-userflow-board",
-        "rendered_surface": "user-flow/PDF-location board",
-        "screenshot_attachment": "layer3-mockup-userflow-board.png",
+        "selector": "#mockup-theme-shell",
+        "rendered_surface": "full mockup workbench theme shell",
+        "screenshot_attachment": "layer3-mockup-theme-shell.png",
         "acceptance_mode": "static_theme_region_projection"
       }
     },

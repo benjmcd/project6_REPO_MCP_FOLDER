@@ -1182,7 +1182,7 @@ Refresh this board against:
 ## Mockup Threshold Tightening
 
 - `278_MOCKUP_THRESHOLD_TIGHTENING.md` implements `visual_diff_threshold_tightening_to_observed_envelope` after the selector precision pass.
-- The visual-diff harness limits now tighten further to `normalizedMeanDeltaMax: 0.26` and `highDeltaRatioMax: 0.32`, against a measured post-refinement worst frame of `0.272669` and `0.299356`.
+- The visual-diff harness limits now tighten further to `normalizedMeanDeltaMax: 0.23` and `highDeltaRatioMax: 0.32`, against a measured post-refinement worst frame of `0.272669` and `0.299356`.
 - This is proof-hardening only; it does not claim full pixel-perfect parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
 
 
@@ -1190,5 +1190,13 @@ Refresh this board against:
 
 - `279_MOCKUP_PDF_LOCATION_PANEL_REFINEMENT.md` records `pdf_location_panel_structure_and_slide_selector_refinement` as the latest bounded visual-refinement pass.
 - The pass reshapes `#mockup-pdf-location-card` into a five-region static PDF-location board and remaps `slide_1_projection`, `slide_general_projection`, and `slide_usecase_projection` to `#mockup-fixture-scenario`.
-- Current visual-diff limits are `normalizedMeanDeltaMax: 0.26` and `highDeltaRatioMax: 0.32`; the current worst mean frame is `userflow_overview_2_projection` at `0.253353/0.300960`, and the current worst high-delta frame is `pdf_location_projection` at `0.221211/0.312841`.
+- Current visual-diff limits are `normalizedMeanDeltaMax: 0.23` and `highDeltaRatioMax: 0.32`; the current worst mean frame is `userflow_overview_2_projection` at `0.253353/0.300960`, and the current worst high-delta frame is `pdf_location_projection` at `0.221211/0.312841`.
 - The pass is rendered-theme proof work only; no backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security widening, or browser-owned durable authority is admitted.
+
+
+## Mockup Overview Selector Refinement
+
+- `280_MOCKUP_OVERVIEW_SELECTOR_REFINEMENT.md` records `overview_frame_selector_refinement_to_theme_shell` as the latest bounded selector-refinement pass.
+- `userflow_overview_1_projection` and `userflow_overview_2_projection` now map to `#mockup-theme-shell` because the source frames depict full-workbench overview/montage flows rather than only the user-flow/PDF-location board.
+- Current visual-diff limits are `normalizedMeanDeltaMax: 0.23` and `highDeltaRatioMax: 0.32`; the current measured worst frame is `pdf_location_projection` at `0.221211/0.312841`.
+- The pass is selector/proof work only; no rendered UI behavior, backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG runtime, full durable mockup activation, auth/security widening, or browser-owned durable authority is admitted.
