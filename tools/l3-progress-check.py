@@ -13639,8 +13639,8 @@ def _check_provider_private_signed_url_route_entry_contract(errors: list[str]) -
             "backend/app/services/layer3_provider_private_signed_url.py",
             "backend/tests/test_layer3_api.py",
         ]
-    if implementation_proof.get("implemented_files") != expected_files:
-        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_prepare_status_api_proof implemented_files must match prepare/status slice")
+        if implementation_proof.get("implemented_files") != expected_files:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_prepare_status_api_proof implemented_files must match prepare/status slice")
 
 def _check_provider_private_signed_url_revoke_only_freeze(errors: list[str]) -> None:
     required_terms = {
