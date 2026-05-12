@@ -340,6 +340,9 @@ PACKAGE_MUTATION_NAMED_ACTION_PACKET = (
 QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET = (
     PLANNING_DOCS / "264_QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET.md"
 )
+FULL_MOCKUP_NAMED_JOURNEY_PACKET = (
+    PLANNING_DOCS / "265_FULL_MOCKUP_NAMED_JOURNEY_PACKET.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -15783,6 +15786,113 @@ def _check_qual_hybrid_rag_named_analysis_packet(errors: list[str]) -> None:
             if packet_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_named_analysis_packet_proof.{key} must be {expected!r}")
 
+
+def _check_full_mockup_named_journey_packet(errors: list[str]) -> None:
+    packet_text = _read_required_text(FULL_MOCKUP_NAMED_JOURNEY_PACKET, errors)
+    required_terms = [
+        "Status: current-main full mockup named-journey packet for `full_mockup_named_journey_packet`.",
+        "entry_decision: no_runtime_now_named_mockup_journey_absent",
+        "upstream_reentry_doc: 257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md",
+        "current_mockup_truth_state: mockups_target_state_only",
+        "named_operator_journey: null",
+        "selected_activation_mode: null",
+        "mockup_source_owner_selected: false",
+        "route_api_contract_selected: false",
+        "server_authority_contract_selected: false",
+        "durable_state_owner_selected: false",
+        "browser_storage_policy_selected: false",
+        "mockup_to_live_state_mapping_selected: false",
+        "theme_accessibility_headed_headless_plan_selected: false",
+        "implementation_entry_allowed_next: false",
+        "next_required_boundary: named_mockup_or_rendered_control_journey_before_activation",
+        "full_mockup_activation_status: blocked",
+        "This packet admits no runtime behavior",
+    ]
+    for term in required_terms:
+        if term not in packet_text:
+            errors.append(f"{_rel(FULL_MOCKUP_NAMED_JOURNEY_PACKET)} missing full mockup named journey packet term: {term}")
+
+    required_surfaces = {
+        PHASE1A_README: (
+            "265_FULL_MOCKUP_NAMED_JOURNEY_PACKET.md",
+            "no operator journey",
+        ),
+        BOARD: (
+            "Full Mockup Named Journey Packet",
+            "Mockups remain target-state",
+        ),
+        MANIFEST: (
+            "full_mockup_named_journey_packet",
+            "mockups remain target-state design/specification inputs",
+        ),
+        PROOF_MANIFEST: (
+            "full_mockup_named_journey_packet_proof",
+            "named_mockup_or_rendered_control_journey_before_activation",
+        ),
+    }
+    for path, terms in required_surfaces.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing full mockup named journey packet term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for full mockup named journey packet")
+    else:
+        expected_current = {
+            "latest_full_mockup_named_journey_packet_branch": "codex/l3-mockup-journey-packet",
+            "latest_full_mockup_named_journey_packet_live_behavior_change": False,
+        }
+        for key, expected in expected_current.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        summary = current_status.get("full_mockup_named_journey_packet")
+        if (
+            not isinstance(summary, str)
+            or "mockups remain target-state design/specification inputs" not in summary
+            or "Full mockup activation remains blocked" not in summary
+            or "admits no runtime behavior" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.full_mockup_named_journey_packet must record no-runtime mockup journey posture")
+
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict):
+        errors.append(f"{_rel(MANIFEST)} scope_status missing for full mockup named journey packet")
+    elif scope_status.get("full_mockup_named_journey_packet") != "completed_no_runtime_named_mockup_journey_absent":
+        errors.append(f"{_rel(MANIFEST)} scope_status.full_mockup_named_journey_packet must be completed_no_runtime_named_mockup_journey_absent")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    packet_proof = proof_data.get("full_mockup_named_journey_packet_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(packet_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing full_mockup_named_journey_packet_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_no_runtime_named_mockup_journey_absent",
+            "implementation_branch": "codex/l3-mockup-journey-packet",
+            "live_behavior_change": False,
+            "selected_planning_mode": "full_mockup_named_journey_packet",
+            "entry_decision": "no_runtime_now_named_mockup_journey_absent",
+            "upstream_reentry_doc": "257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md",
+            "current_mockup_truth_state": "mockups_target_state_only",
+            "named_operator_journey": None,
+            "selected_activation_mode": None,
+            "mockup_source_owner_selected": False,
+            "route_api_contract_selected": False,
+            "server_authority_contract_selected": False,
+            "durable_state_owner_selected": False,
+            "browser_storage_policy_selected": False,
+            "mockup_to_live_state_mapping_selected": False,
+            "theme_accessibility_headed_headless_plan_selected": False,
+            "implementation_entry_allowed_next": False,
+            "next_required_boundary": "named_mockup_or_rendered_control_journey_before_activation",
+            "full_mockup_activation_status": "blocked",
+        }
+        for key, expected in expected_scalars.items():
+            if packet_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} full_mockup_named_journey_packet_proof.{key} must be {expected!r}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -20457,6 +20567,7 @@ def main() -> int:
         CONNECTOR_DESTINATION_NAMED_TARGET_PACKET,
         PACKAGE_MUTATION_NAMED_ACTION_PACKET,
         QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET,
+        FULL_MOCKUP_NAMED_JOURNEY_PACKET,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -20689,6 +20800,7 @@ def main() -> int:
     _check_connector_destination_named_target_packet(errors)
     _check_package_mutation_named_action_packet(errors)
     _check_qual_hybrid_rag_named_analysis_packet(errors)
+    _check_full_mockup_named_journey_packet(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

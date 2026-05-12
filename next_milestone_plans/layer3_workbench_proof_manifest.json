@@ -703,7 +703,10 @@
     "latest_package_mutation_named_action_packet_summary": "Current main now includes the package_mutation_named_action_packet as a no-runtime closeout: backend/API package lifecycle authority is live, but no rendered operator package-revision use case or selected rendered package lifecycle mode is present. Rendered package mutation runtime remains blocked until a package action names package authority, payload source, immutable package rule, downstream invalidation, re-delivery, stale-authority/idempotency, receipt/audit, leak controls, and headed/headless/theme proof. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
     "latest_qual_hybrid_rag_named_analysis_packet_branch": "codex/l3-qual-analysis-packet",
     "latest_qual_hybrid_rag_named_analysis_packet_live_behavior_change": false,
-    "latest_qual_hybrid_rag_named_analysis_packet_summary": "Current main now includes the qual_hybrid_rag_named_analysis_packet as a no-runtime closeout: the single APS-document qualitative path remains live, but no broad analysis use case or selected qualitative/hybrid/RAG mode is present. Broad qualitative/hybrid/RAG runtime remains blocked until an analysis packet names source scope, retrieval corpus, vector storage, embedding/model/prompt/provider authority, output taxonomy, package compatibility, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
+    "latest_qual_hybrid_rag_named_analysis_packet_summary": "Current main now includes the qual_hybrid_rag_named_analysis_packet as a no-runtime closeout: the single APS-document qualitative path remains live, but no broad analysis use case or selected qualitative/hybrid/RAG mode is present. Broad qualitative/hybrid/RAG runtime remains blocked until an analysis packet names source scope, retrieval corpus, vector storage, embedding/model/prompt/provider authority, output taxonomy, package compatibility, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
+    "latest_full_mockup_named_journey_packet_branch": "codex/l3-mockup-journey-packet",
+    "latest_full_mockup_named_journey_packet_live_behavior_change": false,
+    "latest_full_mockup_named_journey_packet_summary": "Current main now includes the full_mockup_named_journey_packet as a no-runtime closeout: mockups remain target-state design/specification inputs and no operator journey or activation mode is selected. Full mockup activation remains blocked until a packet names route/API contract, server authority, durable state owner, browser storage policy, mockup-to-live mapping, leak controls, and theme/accessibility/headed/headless proof. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -11797,6 +11800,44 @@
       "vector_index_creation",
       "embedding_generation",
       "prompt_model_provider_runtime"
+    ]
+  },
+  "full_mockup_named_journey_packet_proof": {
+    "status": "completed_no_runtime_named_mockup_journey_absent",
+    "implementation_branch": "codex/l3-mockup-journey-packet",
+    "live_behavior_change": false,
+    "selected_planning_mode": "full_mockup_named_journey_packet",
+    "entry_decision": "no_runtime_now_named_mockup_journey_absent",
+    "upstream_reentry_doc": "257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md",
+    "current_mockup_truth_state": "mockups_target_state_only",
+    "named_operator_journey": null,
+    "selected_activation_mode": null,
+    "mockup_source_owner_selected": false,
+    "route_api_contract_selected": false,
+    "server_authority_contract_selected": false,
+    "durable_state_owner_selected": false,
+    "browser_storage_policy_selected": false,
+    "mockup_to_live_state_mapping_selected": false,
+    "theme_accessibility_headed_headless_plan_selected": false,
+    "implementation_entry_allowed_next": false,
+    "next_required_boundary": "named_mockup_or_rendered_control_journey_before_activation",
+    "full_mockup_activation_status": "blocked",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/265_FULL_MOCKUP_NAMED_JOURNEY_PACKET.md"
+    ],
+    "validation_evidence": [
+      "python .\\tools\\l3-progress-check.py must pass after wiring",
+      "JSON manifests must parse after wiring",
+      "pass is docs/control-only and touches no runtime source files"
+    ],
+    "blocked_runtime": [
+      "full_mockup_activation",
+      "frontend_only_durable_state",
+      "browser_local_persistence_as_authority",
+      "new_rendered_mockup_controls",
+      "browser_only_workflow_authority",
+      "mockup_text_as_server_authority"
     ]
   }
 }
