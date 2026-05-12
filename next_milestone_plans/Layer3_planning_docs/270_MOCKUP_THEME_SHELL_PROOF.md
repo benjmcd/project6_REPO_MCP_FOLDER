@@ -52,6 +52,8 @@ The implementation adds:
 - Explicit unavailable markers for future behavior instead of live controls.
 - A collapsible acceptance-frame list populated from JS fixture metadata.
 - Repo-local first-slice acceptance frame copies with SHA-256 metadata in `next_milestone_plans/layer3-mockups/frames/manifest.json`.
+- A static `focus_on_these/sublayer3C.png` fixture projection with separate quantitative and qualitative execution lanes, Gate B ingress object stacks, unavailable/deferred objects, process notes, and generated-output cards.
+- E2E assertions that the Sublayer 3C fixture projection is visible, non-interactive, and still creates no backend requests for blocked source, package, connector, or mockup runtime paths.
 
 ## Authority and non-fragility notes
 
