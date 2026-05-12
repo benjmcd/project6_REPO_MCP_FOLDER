@@ -359,6 +359,7 @@ MOCKUP_THEME_SHELL_PROOF = (
 MOCKUP_RUNTIME_GATE = PLANNING_DOCS / "271_MOCKUP_RUNTIME_GATE.md"
 PDF_LOCATION_FREEZE = PLANNING_DOCS / "272_PDF_LOCATION_FREEZE.md"
 PDF_LOCATION_PROJECTION_PROOF = PLANNING_DOCS / "273_PDF_LOCATION_PROJECTION.md"
+PDF_LOCATION_THEME_PROOF = PLANNING_DOCS / "274_PDF_LOCATION_THEME.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -16921,6 +16922,140 @@ def _check_pdf_location_projection(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} PDF-location projection proof {key} mismatch")
 
 
+def _check_pdf_location_theme_projection(errors: list[str]) -> None:
+    html_text = _read_required_text(LAYER3_HTML, errors)
+    for term in (
+        'id="mockup-pdf-location-projection"',
+        'data-projection-state="unavailable"',
+        "Server PDF-location projection",
+        "Read-only server projection pending",
+    ):
+        if term not in html_text:
+            errors.append(f"{_rel(LAYER3_HTML)} missing PDF-location theme projection term: {term}")
+
+    js_text = _read_required_text(LAYER3_JS, errors)
+    for term in (
+        "mockupPdfLocationProjection",
+        "function renderMockupPdfLocationProjection",
+        "State.sessionSummary?.pdf_location_projection",
+        "location_items",
+        "panel.dataset.projectionState",
+        "Read-only server projection pending",
+    ):
+        if term not in js_text:
+            errors.append(f"{_rel(LAYER3_JS)} missing PDF-location theme projection term: {term}")
+
+    css_text = _read_required_text(LAYER3_CSS, errors)
+    for term in (
+        ".mockup-pdf-location-projection",
+        '.mockup-pdf-location-projection[data-projection-state="available"]',
+        ".mockup-pdf-location-items",
+        ".mockup-pdf-location-item",
+    ):
+        if term not in css_text:
+            errors.append(f"{_rel(LAYER3_CSS)} missing PDF-location theme projection term: {term}")
+
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    for term in (
+        'id="mockup-pdf-location-projection"',
+        "function renderMockupPdfLocationProjection",
+        "State.sessionSummary?.pdf_location_projection",
+    ):
+        if term not in page_test_text:
+            errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing PDF-location theme projection test term: {term}")
+
+    e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
+    for term in (
+        "#mockup-pdf-location-projection",
+        "serverProjectionState",
+        "serverProjectionCards",
+        "Read-only server projection pending",
+    ):
+        if term not in e2e_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing PDF-location theme projection e2e term: {term}")
+
+    proof_doc_text = _read_required_text(PDF_LOCATION_THEME_PROOF, errors)
+    for term in (
+        "Status: current-branch rendered mockup-theme implementation proof for PDF-location projection.",
+        "selected_runtime_mode: rendered_pdf_location_projection_from_session_summary",
+        "entry_proof: 273_PDF_LOCATION_PROJECTION.md",
+        "implementation_branch: codex/l3-pdf-location-theme-projection",
+        "live_behavior_change: true",
+        "route_api_behavior_change: false",
+        "model_migration_behavior_change: false",
+        "rendered_ui_behavior_change: true",
+        "State.sessionSummary.pdf_location_projection",
+        "no_new_backend_requests: true",
+        "no raw PDF blob streaming",
+        "no browser-owned authoritative PDF location",
+    ):
+        if term not in proof_doc_text:
+            errors.append(f"{_rel(PDF_LOCATION_THEME_PROOF)} missing PDF-location theme projection proof term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## PDF Location Theme Projection",
+            "274_PDF_LOCATION_THEME.md",
+            "rendered_pdf_location_projection_from_session_summary",
+            "State.sessionSummary.pdf_location_projection",
+        ),
+        PHASE1A_README: (
+            "274_PDF_LOCATION_THEME.md",
+            "rendered_pdf_location_projection_from_session_summary",
+            "mockup-pdf-location-projection",
+            "State.sessionSummary.pdf_location_projection",
+        ),
+        MANIFEST: (
+            "pdf_location_theme_projection",
+            "latest_pdf_location_theme_branch",
+            "rendered_pdf_location_projection_from_session_summary",
+        ),
+        PROOF_MANIFEST: (
+            "pdf_location_theme_projection_proof",
+            "rendered_pdf_location_projection_from_session_summary",
+            "backend/app/review_ui/static/layer3.js",
+            "e2e/layer3-workbench.spec.js",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing PDF-location theme projection term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_pdf_location_theme_branch", "codex/l3-pdf-location-theme-projection"),
+        ("latest_pdf_location_theme_live_behavior_change", True),
+    ):
+        if key not in manifest and not (
+            isinstance(current_status, dict) and current_status.get(key) == expected
+        ):
+            errors.append(f"{_rel(MANIFEST)} missing or mismatched PDF-location theme projection key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("pdf_location_theme_projection") != "completed_rendered_pdf_location_projection_from_session_summary":
+        errors.append(f"{_rel(MANIFEST)} missing completed PDF-location theme projection scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("pdf_location_theme_projection_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing pdf_location_theme_projection_proof")
+        return
+    expected_scalars = {
+        "status": "completed_rendered_pdf_location_projection_from_session_summary",
+        "implementation_branch": "codex/l3-pdf-location-theme-projection",
+        "live_behavior_change": True,
+        "selected_runtime_mode": "rendered_pdf_location_projection_from_session_summary",
+        "route_api_behavior_change": False,
+        "model_migration_behavior_change": False,
+        "rendered_ui_behavior_change": True,
+        "server_state_source": "State.sessionSummary.pdf_location_projection",
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} PDF-location theme projection proof {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -21628,6 +21763,7 @@ def main() -> int:
         MOCKUP_RUNTIME_GATE,
         PDF_LOCATION_FREEZE,
         PDF_LOCATION_PROJECTION_PROOF,
+        PDF_LOCATION_THEME_PROOF,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -21871,6 +22007,7 @@ def main() -> int:
     _check_mockup_runtime_gate(errors)
     _check_pdf_location_freeze(errors)
     _check_pdf_location_projection(errors)
+    _check_pdf_location_theme_projection(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

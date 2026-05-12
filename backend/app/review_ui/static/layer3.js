@@ -192,6 +192,7 @@ const elements = {
     mockupThemeShell: document.getElementById('mockup-theme-shell'),
     mockupThemeFrameList: document.getElementById('mockup-frame-list'),
     mockupFixtureScenario: document.getElementById('mockup-fixture-scenario'),
+    mockupPdfLocationProjection: document.getElementById('mockup-pdf-location-projection'),
 };
 
 const systemThemeQuery = typeof window.matchMedia === 'function'
@@ -340,6 +341,38 @@ function renderMockupThemeShell() {
             elements.mockupThemeFrameList.appendChild(item);
         });
     }
+    renderMockupPdfLocationProjection();
+}
+
+function renderMockupPdfLocationProjection() {
+    const panel = elements.mockupPdfLocationProjection;
+    if (!panel) return;
+
+    const projection = State.sessionSummary?.pdf_location_projection || null;
+    const locationItems = Array.isArray(projection?.location_items) ? projection.location_items : [];
+    const available = projection?.available === true;
+    const blockedReason = projection?.blocked_reason || projection?.reason || 'session summary not loaded';
+    const status = available
+        ? `${locationItems.length} server-authoritative PDF location item${locationItems.length === 1 ? '' : 's'} available.`
+        : `Server PDF-location projection unavailable: ${blockedReason}.`;
+    const body = locationItems.length
+        ? locationItems.map((item) => `
+            <article class="mockup-pdf-location-item">
+                <strong>${escapeHtml(item.page_label || item.page || 'Located page')}</strong>
+                <span>${escapeHtml(item.chunk_id || item.content_id || 'chunk unavailable')}</span>
+                <p>${escapeHtml(item.bounded_text_preview || item.preview || 'No bounded preview supplied.')}</p>
+            </article>
+        `).join('')
+        : '<span class="mockup-disabled-control" aria-disabled="true">Read-only server projection pending</span>';
+
+    panel.dataset.projectionState = available ? 'available' : 'unavailable';
+    panel.innerHTML = `
+        <span class="mockup-frame-label">Server PDF-location projection</span>
+        <p class="mockup-pdf-location-status">${escapeHtml(status)}</p>
+        <div class="mockup-pdf-location-items" aria-label="Server-authoritative PDF location items">
+            ${body}
+        </div>
+    `;
 }
 
 async function parseResponse(res) {
@@ -4846,6 +4879,7 @@ function setGateControls() {
 }
 
 function renderAll() {
+    renderMockupThemeShell();
     renderAuthority();
     renderRawMixedMaterializationPanel();
     renderDatasetVersionCandidates();
