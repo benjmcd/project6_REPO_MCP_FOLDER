@@ -26,7 +26,7 @@ Measured changes:
 
 The enforced visual-diff limits are now:
 
-- `normalizedMeanDeltaMax: 0.22`
+- `normalizedMeanDeltaMax: 0.20`
 - `highDeltaRatioMax: 0.31`
 - `compareWidth: 360`
 - `compareHeight: 220`
