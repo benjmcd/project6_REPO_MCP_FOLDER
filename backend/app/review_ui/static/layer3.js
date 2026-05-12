@@ -17,8 +17,14 @@ const LAYER3_MOCKUP_THEME_FIXTURE = Object.freeze({
 });
 const LAYER3_SESSION_RECOVERY_STORAGE_KEY = 'layer3_workbench_session_recovery_v1';
 const LAYER3_GATE_B_DRAFT_STORAGE_KEY = 'layer3_workbench_gate_b_draft_v1';
+const LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY = 'layer3_provider_private_receipt_v1';
 const LAYER3_SESSION_RECOVERY_SCHEMA_ID = 'layer3.browser_session_recovery.v1';
 const LAYER3_GATE_B_DRAFT_SCHEMA_ID = 'layer3.gate_b_draft_snapshot.v1';
+const LAYER3_PROVIDER_PRIVATE_RECEIPT_SCHEMA_ID = 'layer3.provider_private_receipt_recovery.v1';
+const PROVIDER_PRIVATE_SIGNED_URL_REPLACEABLE_STATES = new Set([
+    'provider_private_signed_url_expired',
+    'provider_private_signed_url_revoked',
+]);
 const GATE_B_DRAFT_TTL_MS = 12 * 60 * 60 * 1000;
 const QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE = '140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE';
 const QUAL_APS_PASS_SCOPE = 'single_aps_doc_qualitative_pass';
@@ -87,6 +93,8 @@ const State = {
     providerPrivateSignedUrlPrepare: null,
     providerPrivateSignedUrlStatus: null,
     providerPrivateSignedUrlRevoke: null,
+    providerPrivateSignedUrlReceiptRecovery: null,
+    providerPrivateSignedUrlPrepareClientRequestId: null,
     providerPrivateSignedUrlError: null,
     providerPrivateSignedUrlPending: false,
     gateBDecisions: {},
@@ -1056,6 +1064,45 @@ function gateBRequestId() {
     return State.gateBClientRequestId;
 }
 
+function providerPrivateReceiptSnapshot(provider) {
+    if (!provider?.provider_signed_url_receipt_id) return null;
+    return {
+        schema_id: LAYER3_PROVIDER_PRIVATE_RECEIPT_SCHEMA_ID,
+        schema_version: 1,
+        recovery_authority: 'browser_receipt_handle_only_server_revalidated_on_status_or_revoke',
+        provider_signed_url_receipt_id: provider.provider_signed_url_receipt_id,
+        provider_signed_url_state: provider.provider_signed_url_state || null,
+        source_artifact_hash: provider.source_artifact_hash || null,
+        source_artifact_size_bytes: provider.source_artifact_size_bytes ?? null,
+        updated_at: new Date().toISOString(),
+    };
+}
+
+function persistProviderPrivateReceiptSnapshot(provider) {
+    const snapshot = providerPrivateReceiptSnapshot(provider);
+    if (!snapshot) return;
+    State.providerPrivateSignedUrlReceiptRecovery = snapshot;
+    storageSet(sessionStorage, LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY, snapshot);
+}
+
+function restoreProviderPrivateReceiptSnapshot() {
+    const snapshot = storageGet(sessionStorage, LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY);
+    if (!snapshot || snapshot.schema_id !== LAYER3_PROVIDER_PRIVATE_RECEIPT_SCHEMA_ID || !snapshot.provider_signed_url_receipt_id) {
+        storageRemove(sessionStorage, LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY);
+        return false;
+    }
+    State.providerPrivateSignedUrlReceiptRecovery = snapshot;
+    addEvent('Provider-private signed URL receipt handle restored for server revalidation.');
+    return true;
+}
+
+function providerPrivateSignedUrlPrepareRequestId() {
+    if (!State.providerPrivateSignedUrlPrepareClientRequestId) {
+        State.providerPrivateSignedUrlPrepareClientRequestId = requestId();
+    }
+    return State.providerPrivateSignedUrlPrepareClientRequestId;
+}
+
 function clearExternalExportDownloadPrepareState() {
     State.externalExportDownloadPrepare = null;
     State.externalExportDownloadPrepareError = null;
@@ -1083,8 +1130,11 @@ function clearProviderPrivateSignedUrlState() {
     State.providerPrivateSignedUrlPrepare = null;
     State.providerPrivateSignedUrlStatus = null;
     State.providerPrivateSignedUrlRevoke = null;
+    State.providerPrivateSignedUrlReceiptRecovery = null;
+    State.providerPrivateSignedUrlPrepareClientRequestId = null;
     State.providerPrivateSignedUrlError = null;
     State.providerPrivateSignedUrlPending = false;
+    storageRemove(sessionStorage, LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY);
 }
 
 function clearResultReviewState({ keepSummary = false } = {}) {
@@ -1739,6 +1789,7 @@ function providerPrivateSignedUrlReceiptId() {
     return State.providerPrivateSignedUrlRevoke?.provider_signed_url_receipt_id
         || State.providerPrivateSignedUrlStatus?.provider_signed_url_receipt_id
         || State.providerPrivateSignedUrlPrepare?.provider_signed_url_receipt_id
+        || State.providerPrivateSignedUrlReceiptRecovery?.provider_signed_url_receipt_id
         || null;
 }
 
@@ -1746,14 +1797,21 @@ function providerPrivateSignedUrlLatestState() {
     return State.providerPrivateSignedUrlRevoke?.provider_signed_url_state
         || State.providerPrivateSignedUrlStatus?.provider_signed_url_state
         || State.providerPrivateSignedUrlPrepare?.provider_signed_url_state
+        || State.providerPrivateSignedUrlReceiptRecovery?.provider_signed_url_state
         || null;
+}
+
+function providerPrivateSignedUrlBlocksPrepare() {
+    const receiptId = providerPrivateSignedUrlReceiptId();
+    if (!receiptId) return false;
+    return !PROVIDER_PRIVATE_SIGNED_URL_REPLACEABLE_STATES.has(providerPrivateSignedUrlLatestState());
 }
 
 function canPrepareProviderPrivateSignedUrl() {
     return Boolean(
         recordedExternalExportDownloadPrepare()
         && externalExportDownloadDeliveryUiAdmitted()
-        && !providerPrivateSignedUrlReceiptId()
+        && !providerPrivateSignedUrlBlocksPrepare()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && !State.externalExportDownloadSignedReferencePending
@@ -4624,7 +4682,10 @@ function providerPrivateSignedUrlPanelState() {
     }
     const stateName = providerPrivateSignedUrlLatestState();
     if (stateName === 'provider_private_signed_url_revoked') {
-        return { label: stateName, pill: 'ready', message: 'Provider-private signed URL receipt has been revoked.' };
+        return { label: stateName, pill: 'ready', message: 'Provider-private signed URL receipt has been revoked; a replacement can be prepared.' };
+    }
+    if (stateName === 'provider_private_signed_url_expired') {
+        return { label: stateName, pill: 'ready', message: 'Provider-private signed URL receipt has expired; a replacement can be prepared.' };
     }
     if (stateName === 'provider_private_signed_url_prepared') {
         return { label: stateName, pill: 'ready', message: 'Provider-private signed URL receipt is prepared; use remains closed for this lane.' };
@@ -5128,7 +5189,7 @@ function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthor
     const external = externalExportDownloadPrepareState() || {};
     const externalPayload = externalExportDownloadDeliveryPayload(authority);
     return {
-        client_request_id: requestId(),
+        client_request_id: providerPrivateSignedUrlPrepareRequestId(),
         session_id: externalPayload.session_id,
         analysis_plan_id: externalPayload.analysis_plan_id,
         pass_run_id: externalPayload.pass_run_id,
@@ -6009,6 +6070,8 @@ async function submitProviderPrivateSignedUrlPrepare(event) {
             '/handoff/export/download/provider-private-signed-url/prepare',
             providerPrivateSignedUrlPreparePayload(),
         );
+        persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlPrepare);
+        State.providerPrivateSignedUrlPrepareClientRequestId = null;
         addEvent('Provider-private signed URL receipt prepared with redacted state.');
         renderAll();
     } catch (error) {
@@ -6033,6 +6096,7 @@ async function inspectProviderPrivateSignedUrlStatus() {
         State.providerPrivateSignedUrlStatus = await getJson(
             `/handoff/export/download/provider-private-signed-url/status/${encodeURIComponent(receiptId)}`,
         );
+        persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlStatus);
         addEvent('Provider-private signed URL status inspected with redacted state.');
         renderAll();
     } catch (error) {
@@ -6057,6 +6121,7 @@ async function revokeProviderPrivateSignedUrl() {
             '/handoff/export/download/provider-private-signed-url/revoke',
             providerPrivateSignedUrlRevokePayload(),
         );
+        persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlRevoke);
         addEvent('Provider-private signed URL receipt revoked.');
         renderAll();
     } catch (error) {
@@ -6105,6 +6170,7 @@ async function init() {
         if (!sessionRecovered) {
             restoreGateBDraftSnapshot();
         }
+        restoreProviderPrivateReceiptSnapshot();
         renderUnavailable(State.bootstrap.unavailable_gate_labels);
         renderAuthority(State.bootstrap.authority_rail);
         renderContext();

@@ -51,6 +51,8 @@ The future mockup-theme implementation must treat the following paths as the vis
 
 The corpus is design/product authority for layout, flow, visual hierarchy, and user-facing semantics. It is not server authority for data, state, persistence, execution, source admission, retrieval, package mutation, dispatch, delivery, or security.
 
+The first-slice visual acceptance frames must also be available as repo-local reproducible artifacts before shared review or CI-style proof. The current repo-local frame authority is `next_milestone_plans/layer3-mockups/frames/manifest.json`; the original `C:\Users\benny\Downloads\layer3mockups` paths remain provenance for the source corpus, not the only review authority.
+
 ## Selected UX target
 
 The selected user-facing target is a dedicated `/review/layer3` workbench theme, `layer3_mockup_workbench_theme`, that visually and interactively follows the mockup flow:
