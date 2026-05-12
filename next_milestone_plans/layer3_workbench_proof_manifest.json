@@ -12086,7 +12086,8 @@
         "backend/app/review_ui/static/layer3.js",
         "backend/tests/test_layer3_page.py",
         "e2e/layer3-workbench.spec.js",
-        "next_milestone_plans/layer3-mockups/frames/manifest.json"
+        "next_milestone_plans/layer3-mockups/frames/manifest.json",
+        "next_milestone_plans/layer3-mockups/frames/pdf-location.png"
       ],
     "implemented_ui_terms": [
       "Mockup Workbench theme selector option",
@@ -12098,8 +12099,12 @@
       "focus_on_these/sublayer3C.png quantitative and qualitative execution lane projection",
       "Sublayer 3C Analysis Execution Environments canvas title",
       "bracketed Gate B ingress stacks",
+      "mockup-userflow-board",
+      "example-use-case-location-in-pdf.png PDF-location projection",
+      "five user-flow stages",
       "repo-local frame hash verification",
       "layer3-mockup-theme-shell.png screenshot attachment",
+      "layer3-mockup-userflow-board.png screenshot attachment",
       "non-interactive unavailable markers"
     ],
     "blocked_runtime": [

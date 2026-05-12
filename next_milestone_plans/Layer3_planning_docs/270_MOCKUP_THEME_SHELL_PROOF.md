@@ -73,3 +73,10 @@ The pass is valid only if:
 - The targeted Playwright mockup theme test passes in headless Chromium and headed Chromium.
 - The targeted Playwright mockup theme test emits a screenshot attachment for the dedicated mockup shell and validates the repo-local frame manifest before relying on rendered UI assertions.
 - CI remains green before merge.
+
+## User-flow and PDF-location projection proof addendum
+
+This proof slice carries a bounded static projection for the mockup user-flow and PDF-location frames inside `layer3_mockup_workbench_theme`. The section is `#mockup-userflow-board` and maps the user natural-language query, manual/custom specification, located PDF evidence cards, Pre-3A, Sublayer 3A, Sublayer 3B, Sublayer 3C, and traceable output-review sequence into the dedicated theme without adding rendered buttons, new backend calls, or durable browser-owned workflow authority.
+
+The added repo-local frame is `next_milestone_plans/layer3-mockups/frames/pdf-location.png`, copied from `C:\Users\benny\Downloads\layer3mockups\example-use-case-location-in-pdf.png`; the Downloads path remains provenance only. Playwright now verifies eight repo-local visual acceptance frames, the `#mockup-userflow-board` data-source attributes, five user-flow stages, two PDF evidence sheets, headed/headless screenshot attachment, and the existing no-backend-widening API-request guard.
+
