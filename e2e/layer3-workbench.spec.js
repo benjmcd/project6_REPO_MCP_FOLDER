@@ -4839,8 +4839,9 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('#mockup-theme-shell')).toContainText('New source family unavailable');
   await expect(page.locator('#mockup-execution-lanes')).toBeVisible();
   await expect(page.locator('#mockup-execution-lanes')).toHaveAttribute('data-visual-source', 'focus_on_these/sublayer3C.png');
-  await expect(page.locator('#mockup-execution-lanes')).toContainText('Quantitative deterministic environment');
-  await expect(page.locator('#mockup-execution-lanes')).toContainText('Qualitative analysis environment');
+  await expect(page.locator('#mockup-execution-lanes')).toContainText('Analysis Execution Environments');
+  await expect(page.locator('#mockup-execution-lanes')).toContainText("Quantitative (and/or/AKA 'Deterministic') Environment/Container/Plane");
+  await expect(page.locator('#mockup-execution-lanes')).toContainText('Qualitative Data Analysis Environment/Container/Plane');
   await expect(page.locator('.mockup-process-note')).toHaveCount(2);
   await expect(page.locator('.mockup-output-card')).toHaveCount(12);
   await expect(page.locator('#mockup-frame-list li')).toHaveCount(7);
@@ -4863,6 +4864,7 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
       processNotes: lanes.querySelectorAll('.mockup-process-note').length,
       outputCards: lanes.querySelectorAll('.mockup-output-card').length,
       arrowCount: lanes.querySelectorAll('.mockup-flow-arrow').length,
+      canvasTitle: lanes.querySelector('.mockup-canvas-title')?.textContent.replace(/\s+/g, ' ').trim(),
       laneColumns: laneBodies.map((body) => window.getComputedStyle(body).gridTemplateColumns.split(' ').filter(Boolean).length),
     };
   });
@@ -4872,6 +4874,7 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     processNotes: 2,
     outputCards: 12,
     arrowCount: 4,
+    canvasTitle: 'Sublayer 3C Analysis Execution Environments',
     laneColumns: [5, 5],
   });
   expectNoRequestsToLayer3Paths(apiRequests, [

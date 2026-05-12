@@ -4074,10 +4074,34 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     background: rgba(38, 38, 38, 0.68);
 }
 
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-canvas-title {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    padding: 2px 0 6px;
+    color: #f8f8f8;
+    text-align: center;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-canvas-title h3,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-canvas-title p {
+    margin: 0;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-canvas-title h3 {
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-canvas-title p {
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-exec-lane h3 {
     margin: 0;
     color: #f8f8f8;
-    font-size: 1rem;
+    font-size: 1.16rem;
     letter-spacing: 0.01em;
 }
 
@@ -4096,6 +4120,23 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     padding: 12px;
     background: rgba(12, 12, 12, 0.54);
     border: 1px solid rgba(248, 248, 248, 0.12);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-ingress-stack {
+    position: relative;
+    margin-right: 14px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-ingress-stack::after {
+    content: "";
+    position: absolute;
+    top: 12px;
+    right: -12px;
+    bottom: 12px;
+    width: 11px;
+    border-top: 3px solid rgba(248, 248, 248, 0.9);
+    border-right: 3px solid rgba(248, 248, 248, 0.9);
+    border-bottom: 3px solid rgba(248, 248, 248, 0.9);
 }
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-grid {
