@@ -1070,3 +1070,7 @@ Refresh this board against:
 ## Package Mutation Reentry Decision
 
 `255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md` records the current-main package posture after connector/destination reentry: bounded backend/API package lifecycle runtimes are live for preview, replacement set authority, supersession commit lineage, replacement artifact manifest, and replacement namespace rows; rendered package mutation controls, broad package mutation/reconstruction, source package row mutation, source package payload rewrite, replacement package payload generation, downstream invalidation/re-delivery runtime, provider/public URL behavior, connector/destination dispatch side effects, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned package authority remain blocked.
+
+## Qual Hybrid RAG Reentry Decision
+
+`256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md` records the current-main qualitative/hybrid/RAG posture after package mutation reentry: the single APS-document qualitative pass and bounded qualitative APS downstream chain are live; broad qualitative execution, cohort/comparative/cross-document analysis, hybrid execution, RAG/vector retrieval, vector indexes, embeddings, prompt/model/provider runtime, rendered qualitative/RAG controls, source expansion, package mutation side effects, provider/public URL behavior, connector/destination dispatch, full mockup activation, and browser-owned execution authority remain blocked.

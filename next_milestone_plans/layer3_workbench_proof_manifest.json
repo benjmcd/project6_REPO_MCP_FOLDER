@@ -676,7 +676,10 @@
     "connector_destination_reentry_decision_summary": "Current main now includes the connector_destination_reentry_decision freeze: existing /api/v1/layer3/handoff/connector/record internal dispatch record-only behavior is live and bounded to server-authority receipts over already prepared artifacts, while external connector invocation, destination writes, connector-run creation, generic downstream dispatch, rendered connector/destination controls, provider/public URL side effects, package mutation, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned connector/destination authority remain blocked.",
     "latest_package_mutation_reentry_decision_branch": "codex/l3-package-mutation-reentry-freeze",
     "latest_package_mutation_reentry_decision_live_behavior_change": false,
-    "package_mutation_reentry_decision_summary": "Current main now includes the package_mutation_reentry_decision freeze: bounded backend/API package lifecycle runtimes remain live for package supersession preview, replacement package-set authority, supersession commit lineage, replacement artifact manifest, and replacement namespace rows, while rendered package mutation controls, broad package mutation/reconstruction, source package row mutation, source package payload rewrite, replacement package payload generation, downstream invalidation/re-delivery runtime, provider/public URL behavior, connector/destination dispatch side effects, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned package authority remain blocked."
+    "package_mutation_reentry_decision_summary": "Current main now includes the package_mutation_reentry_decision freeze: bounded backend/API package lifecycle runtimes remain live for package supersession preview, replacement package-set authority, supersession commit lineage, replacement artifact manifest, and replacement namespace rows, while rendered package mutation controls, broad package mutation/reconstruction, source package row mutation, source package payload rewrite, replacement package payload generation, downstream invalidation/re-delivery runtime, provider/public URL behavior, connector/destination dispatch side effects, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned package authority remain blocked.",
+    "latest_qual_hybrid_rag_reentry_decision_branch": "codex/l3-qual-hybrid-rag-reentry-freeze",
+    "latest_qual_hybrid_rag_reentry_decision_live_behavior_change": false,
+    "qual_hybrid_rag_reentry_decision_summary": "Current main now includes the qual_hybrid_rag_reentry_decision freeze: the single APS-document qualitative pass and bounded qualitative APS downstream chain remain live, while broad qualitative execution, qualitative associated-cohort execution, comparative/cross-document synthesis, hybrid execution, RAG/vector retrieval, vector indexes, embeddings, prompt/model/provider runtime, rendered qualitative/RAG controls, source expansion, package mutation side effects, provider/public URL behavior, connector/destination dispatch, full mockup activation, and browser-owned execution authority remain blocked."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10695,7 +10698,8 @@
     "goal_stack_implementation_audit": "completed_bounded_implementation_audit",
     "source_rendered_control_decision": "completed_rendered_control_decision_no_new_runtime",
     "connector_destination_reentry_decision": "completed_connector_destination_reentry_decision_no_external_runtime",
-    "package_mutation_reentry_decision": "completed_package_mutation_reentry_decision_no_rendered_runtime"
+    "package_mutation_reentry_decision": "completed_package_mutation_reentry_decision_no_rendered_runtime",
+    "qual_hybrid_rag_reentry_decision": "completed_qual_hybrid_rag_reentry_decision_no_broad_runtime"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -11398,6 +11402,62 @@
       "connector_destination_dispatch_side_effects",
       "source_expansion",
       "qualitative_hybrid_rag_expansion",
+      "full_mockup_activation"
+    ]
+  },
+  "qual_hybrid_rag_reentry_decision_proof": {
+    "status": "completed_qual_hybrid_rag_reentry_decision_no_broad_runtime",
+    "implementation_branch": "codex/l3-qual-hybrid-rag-reentry-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "qual_hybrid_rag_reentry_decision",
+    "entry_decision": "single_aps_doc_qualitative_live_broad_hybrid_rag_blocked",
+    "current_qualitative_runtime": "single_aps_doc_qualitative_pass_only",
+    "current_qual_aps_downstream_runtime": "bounded_qual_aps_backend_api_downstream_chain",
+    "current_rendered_qual_aps_controls": "qual_aps_rendered_downstream_existing_controls_only",
+    "broad_qualitative_execution": "blocked",
+    "qualitative_associated_cohort_execution": "blocked",
+    "comparative_qualitative_execution": "blocked",
+    "cross_document_synthesis": "blocked",
+    "hybrid_execution": "blocked",
+    "rag_vector_retrieval": "blocked",
+    "vector_index_creation": "blocked",
+    "embedding_generation": "blocked",
+    "prompt_model_provider_runtime": "blocked",
+    "rendered_qual_hybrid_rag_controls": "blocked",
+    "implementation_entry_allowed_next": false,
+    "governing_docs": [
+      "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md",
+      "124_QUAL_HYBRID_RAG_FREEZE.md",
+      "195_QUAL_HYBRID_RAG_VECTOR_ENTRY_FREEZE.md",
+      "196_QUAL_HYBRID_RAG_VECTOR_ENTRY_CONTRACT.md",
+      "217_QUAL_HYBRID_RAG_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+      "256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md"
+    ],
+    "live_bounded_runtime": [
+      "single_aps_doc_qualitative_pass",
+      "qual_aps_package_review_preview_only",
+      "qual_aps_package_construction_commit_entry",
+      "qual_aps_package_review_submit_entry",
+      "qual_aps_handoff_export_prepare_entry",
+      "qual_aps_aps_handoff_dispatch_entry",
+      "qual_aps_external_export_download_prepare_deliver",
+      "qual_aps_rendered_downstream_existing_controls_only"
+    ],
+    "blocked_runtime": [
+      "broad_qualitative_execution",
+      "qualitative_associated_cohort_execution",
+      "comparative_qualitative_execution",
+      "cross_document_synthesis",
+      "hybrid_execution",
+      "rag_vector_retrieval",
+      "vector_index_creation",
+      "embedding_generation",
+      "prompt_model_provider_runtime",
+      "rendered_qual_hybrid_rag_controls",
+      "source_expansion",
+      "package_mutation_side_effects",
+      "provider_public_url_runtime",
+      "connector_destination_dispatch",
       "full_mockup_activation"
     ]
   }
