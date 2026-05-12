@@ -700,7 +700,10 @@
     "latest_connector_destination_named_target_packet_summary": "Current main now includes the connector_destination_named_target_packet as a no-runtime closeout: current authority proves only internal_dispatch_record_only, not external connector invocation or destination writes. External connector/destination runtime remains blocked until a downstream use case names one connector or destination target, selected mode, credential/access model, lifecycle semantics, receipt/audit contract, fake-target tests, leak controls, rendered-control obligations, and auth/security posture. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
     "latest_package_mutation_named_action_packet_branch": "codex/l3-package-action-packet",
     "latest_package_mutation_named_action_packet_live_behavior_change": false,
-    "latest_package_mutation_named_action_packet_summary": "Current main now includes the package_mutation_named_action_packet as a no-runtime closeout: backend/API package lifecycle authority is live, but no rendered operator package-revision use case or selected rendered package lifecycle mode is present. Rendered package mutation runtime remains blocked until a package action names package authority, payload source, immutable package rule, downstream invalidation, re-delivery, stale-authority/idempotency, receipt/audit, leak controls, and headed/headless/theme proof. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
+    "latest_package_mutation_named_action_packet_summary": "Current main now includes the package_mutation_named_action_packet as a no-runtime closeout: backend/API package lifecycle authority is live, but no rendered operator package-revision use case or selected rendered package lifecycle mode is present. Rendered package mutation runtime remains blocked until a package action names package authority, payload source, immutable package rule, downstream invalidation, re-delivery, stale-authority/idempotency, receipt/audit, leak controls, and headed/headless/theme proof. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
+    "latest_qual_hybrid_rag_named_analysis_packet_branch": "codex/l3-qual-analysis-packet",
+    "latest_qual_hybrid_rag_named_analysis_packet_live_behavior_change": false,
+    "latest_qual_hybrid_rag_named_analysis_packet_summary": "Current main now includes the qual_hybrid_rag_named_analysis_packet as a no-runtime closeout: the single APS-document qualitative path remains live, but no broad analysis use case or selected qualitative/hybrid/RAG mode is present. Broad qualitative/hybrid/RAG runtime remains blocked until an analysis packet names source scope, retrieval corpus, vector storage, embedding/model/prompt/provider authority, output taxonomy, package compatibility, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -11754,6 +11757,46 @@
       "downstream_invalidation_runtime",
       "re_delivery_runtime",
       "frontend_only_package_authority"
+    ]
+  },
+  "qual_hybrid_rag_named_analysis_packet_proof": {
+    "status": "completed_no_runtime_named_analysis_mode_absent",
+    "implementation_branch": "codex/l3-qual-analysis-packet",
+    "live_behavior_change": false,
+    "selected_planning_mode": "qual_hybrid_rag_named_analysis_packet",
+    "entry_decision": "no_runtime_now_named_analysis_mode_absent",
+    "upstream_reentry_doc": "256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md",
+    "current_qualitative_runtime": "single_aps_doc_qualitative_pass_only",
+    "named_analysis_use_case": null,
+    "selected_qual_hybrid_rag_mode": null,
+    "source_scope_selected": false,
+    "retrieval_corpus_selected": false,
+    "vector_storage_model_selected": false,
+    "embedding_model_authority_selected": false,
+    "prompt_model_provider_authority_selected": false,
+    "output_taxonomy_selected": false,
+    "implementation_entry_allowed_next": false,
+    "next_required_boundary": "named_qual_hybrid_rag_analysis_mode_before_runtime",
+    "broad_qual_hybrid_rag_runtime_status": "blocked",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/264_QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET.md"
+    ],
+    "validation_evidence": [
+      "python .\\tools\\l3-progress-check.py must pass after wiring",
+      "JSON manifests must parse after wiring",
+      "pass is docs/control-only and touches no runtime source files"
+    ],
+    "blocked_runtime": [
+      "broad_qualitative_execution",
+      "qualitative_associated_cohort_execution",
+      "comparative_qualitative_execution",
+      "cross_document_synthesis",
+      "hybrid_execution",
+      "rag_vector_retrieval",
+      "vector_index_creation",
+      "embedding_generation",
+      "prompt_model_provider_runtime"
     ]
   }
 }
