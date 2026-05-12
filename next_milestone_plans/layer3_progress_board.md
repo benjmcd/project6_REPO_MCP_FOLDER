@@ -1148,3 +1148,9 @@ Refresh this board against:
 - `272_PDF_LOCATION_FREEZE.md` selects `pdf_location_from_aps_content_document_citation` as the first named server-authoritative runtime use case after the mockup runtime gate.
 - The selected activation mode is `single_mockup_screen_read_only_projection` over existing `ApsContentDocument`, chunk page refs, `visual_page_refs_json`, and `sections[].citations[].highlight_spans` authority.
 - This freeze is planning/control only; next code may implement only `implement_read_only_pdf_location_projection_from_existing_authority`, with no raw PDF blob streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, or full durable mockup activation.
+
+## PDF Location Projection Implementation
+
+- `273_PDF_LOCATION_PROJECTION.md` implements `read_only_pdf_location_projection_from_existing_authority` as `layer3.pdf_location_projection.v1` session-summary state.
+- The implementation adds `pdf_location_projection` to `/api/v1/layer3/session/{session_id}` through `backend/app/services/layer3_pdf_location.py`, without a new endpoint, model, migration, PDF byte stream, source adapter, connector dispatch, package mutation, auth/security change, or browser-owned authority.
+- Targeted tests prove successful projection from existing APS document/chunk/page authority, fail-closed missing document/page authority, and no exposure of raw PDF/blob/diagnostics refs.
