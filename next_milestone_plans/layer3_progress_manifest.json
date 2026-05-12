@@ -4986,7 +4986,7 @@
       "unlocks": []
     }
   ],
-  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, and bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305. The mockup pixel-proof closeout freezes the current pixel-faithful mockup-theme continuation state without claiming full durable mockup activation. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if a new explicit mockup frame target or threshold gap is named. Otherwise, the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze: choose exactly one named server-authoritative runtime/use-case freeze before source breadth, connector/destination, rendered package mutation, broad qualitative/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work proceeds.",
+  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, and runtime-freeze intake checklist coverage. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and exactly one named server-authoritative runtime/use-case freeze must be selected before source_breadth_runtime, external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, or backend API/model/migration/service work proceeds.",
   "deferred_scope": [
     "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the landed bounded export-package handoff and exact-run gate-hardening lane",
     "package-derived context implementation beyond the landed bounded handoff slice",
@@ -6882,7 +6882,41 @@
         "auth_security_widening"
       ]
     },
-    "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, and bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305. The mockup pixel-proof closeout freezes the current pixel-faithful mockup-theme continuation state without claiming full durable mockup activation. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if a new explicit mockup frame target or threshold gap is named. Otherwise, the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze: choose exactly one named server-authoritative runtime/use-case freeze before source breadth, connector/destination, rendered package mutation, broad qualitative/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work proceeds."
+    "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, and runtime-freeze intake checklist coverage. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and exactly one named server-authoritative runtime/use-case freeze must be selected before source_breadth_runtime, external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, or backend API/model/migration/service work proceeds.",
+    "latest_runtime_freeze_intake_branch": "codex/l3-runtime-freeze-intake",
+    "latest_runtime_freeze_intake_live_behavior_change": false,
+    "latest_runtime_freeze_intake_summary": "Runtime freeze intake checklist: converts the post-mockup pixel-proof boundary into a concrete intake gate for the next non-visual Layer 3 implementation. It admits no runtime and requires exact_named_server_authoritative_runtime_use_case_freeze before source breadth, connector/destination, rendered package mutation, broad qual/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work. Boundary: no_runtime_implementation_without_named_use_case.",
+    "runtime_freeze_intake_checklist": {
+      "status": "completed_runtime_freeze_intake_checklist",
+      "implementation_branch": "codex/l3-runtime-freeze-intake",
+      "live_behavior_change": false,
+      "selected_planning_mode": "runtime_freeze_intake_checklist",
+      "entry_proof": "284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md",
+      "planning_doc": "next_milestone_plans/Layer3_planning_docs/285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md",
+      "runtime_behavior_change": false,
+      "rendered_ui_behavior_change": false,
+      "next_required_boundary": "exact_named_server_authoritative_runtime_use_case_freeze",
+      "hard_stop": "no_runtime_implementation_without_named_use_case",
+      "eligible_runtime_families": [
+        "source_breadth_runtime",
+        "external_connector_destination_runtime",
+        "rendered_package_mutation_runtime",
+        "broad_qual_hybrid_rag_runtime",
+        "full_mockup_durable_activation",
+        "auth_security_runtime"
+      ],
+      "minimum_freeze_fields": [
+        "one_runtime_family_and_mode",
+        "one_named_operator_product_use_case",
+        "canonical_server_authority_object_or_row_family",
+        "request_response_contract_and_forbidden_fields",
+        "stale_authority_and_idempotency_behavior",
+        "negative_tests_for_blocked_adjacent_modes",
+        "leakage_security_controls",
+        "headed_headless_theme_proof_if_rendered_ui_changes",
+        "explicit_no_go_list_for_unselected_families"
+      ]
+    }
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -6928,7 +6962,8 @@
     "mockup_pdf_contrast_refinement": "completed_pdf_location_contrast_palette_refinement",
     "mockup_fixture_slide_refinement": "completed_fixture_query_spec_slide_structure_refinement",
     "mockup_pdf_text_density_refinement": "completed_pdf_location_text_density_and_disabled_chip_refinement",
-    "mockup_pixel_proof_closeout": "completed_mockup_pixel_proof_closeout"
+    "mockup_pixel_proof_closeout": "completed_mockup_pixel_proof_closeout",
+    "runtime_freeze_intake_checklist": "completed_runtime_freeze_intake_checklist"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -7701,6 +7736,40 @@
       "broad_qualitative_hybrid_rag_runtime",
       "full_durable_mockup_activation",
       "auth_security_widening"
+    ]
+  },
+  "latest_runtime_freeze_intake_branch": "codex/l3-runtime-freeze-intake",
+  "latest_runtime_freeze_intake_live_behavior_change": false,
+  "latest_runtime_freeze_intake_summary": "Runtime freeze intake checklist: converts the post-mockup pixel-proof boundary into a concrete intake gate for the next non-visual Layer 3 implementation. It admits no runtime and requires exact_named_server_authoritative_runtime_use_case_freeze before source breadth, connector/destination, rendered package mutation, broad qual/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work. Boundary: no_runtime_implementation_without_named_use_case.",
+  "runtime_freeze_intake_checklist": {
+    "status": "completed_runtime_freeze_intake_checklist",
+    "implementation_branch": "codex/l3-runtime-freeze-intake",
+    "live_behavior_change": false,
+    "selected_planning_mode": "runtime_freeze_intake_checklist",
+    "entry_proof": "284_MOCKUP_PIXEL_PROOF_CLOSEOUT.md",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_required_boundary": "exact_named_server_authoritative_runtime_use_case_freeze",
+    "hard_stop": "no_runtime_implementation_without_named_use_case",
+    "eligible_runtime_families": [
+      "source_breadth_runtime",
+      "external_connector_destination_runtime",
+      "rendered_package_mutation_runtime",
+      "broad_qual_hybrid_rag_runtime",
+      "full_mockup_durable_activation",
+      "auth_security_runtime"
+    ],
+    "minimum_freeze_fields": [
+      "one_runtime_family_and_mode",
+      "one_named_operator_product_use_case",
+      "canonical_server_authority_object_or_row_family",
+      "request_response_contract_and_forbidden_fields",
+      "stale_authority_and_idempotency_behavior",
+      "negative_tests_for_blocked_adjacent_modes",
+      "leakage_security_controls",
+      "headed_headless_theme_proof_if_rendered_ui_changes",
+      "explicit_no_go_list_for_unselected_families"
     ]
   }
 }
