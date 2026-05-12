@@ -39,6 +39,7 @@ from app.models.models import (
     L3ProviderPrivateSignedUrlAuditEvent,
     L3ProviderPrivateSignedUrlObjectAuthority,
     L3ProviderPrivateSignedUrlReceipt,
+    L3ProviderPrivateSignedUrlRevocation,
     L3ReconciliationRecord,
     L3ReplacementOutputPackage,
     L3ReplacementPackageArtifactManifest,
@@ -3785,10 +3786,11 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
         "/api/v1/layer3/handoff/export/download/provider-private-signed-url/status/"
         "{provider_signed_url_receipt_id}"
     )
+    revoke_path = "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke"
     assert prepare_path in spec["paths"]
     assert status_path in spec["paths"]
+    assert revoke_path in spec["paths"]
     assert "/api/v1/layer3/handoff/export/download/provider-private-signed-url/use" not in spec["paths"]
-    assert "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke" not in spec["paths"]
 
     prepare_schema = spec["paths"][prepare_path]["post"]["requestBody"]["content"]["application/json"]["schema"]
     assert prepare_schema["additionalProperties"] is False
@@ -3821,6 +3823,7 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
         "download_url",
         "signed_reference_token",
         "connector_dispatch",
+        "provider_private_signed_url_token",
         "local_directory",
         "rag_vector_settings",
         "browser_durable_authority",
@@ -3832,6 +3835,29 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
     )
     assert _openapi_response_schema(spec, status_path, "get")["title"] == (
         "Layer3ProviderPrivateSignedUrlStatusResponse"
+    )
+    revoke_schema = spec["paths"][revoke_path]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert revoke_schema["additionalProperties"] is False
+    assert set(revoke_schema["required"]) == {
+        "client_request_id",
+        "provider_signed_url_receipt_id",
+        "idempotency_key",
+        "revoked_by",
+        "revocation_reason",
+        "operator_decision",
+    }
+    assert revoke_schema["properties"]["operator_decision"]["enum"] == ["revoke_provider_private_signed_url"]
+    for forbidden in (
+        "provider_private_signed_url_token",
+        "raw_provider_private_signed_url_token",
+        "provider_credentials",
+        "public_url",
+        "connector_dispatch",
+        "destination_id",
+    ):
+        assert revoke_schema["properties"][forbidden]["not"] == {}
+    assert _openapi_response_schema(spec, revoke_path, "post")["title"] == (
+        "Layer3ProviderPrivateSignedUrlRevokeResponse"
     )
     same_origin_prepare_schema = spec["paths"]["/api/v1/layer3/handoff/export/download/prepare"]["post"][
         "requestBody"
@@ -3969,6 +3995,131 @@ def test_layer3_api_provider_private_signed_url_prepare_success_status_idempoten
     finally:
         db.close()
     assert files_under_tmp() == files_before
+
+
+def test_layer3_api_provider_private_signed_url_revoke_success_idempotency_and_fail_closed(
+    client: TestClient,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-provider-private-signed-url-revoke",
+    )
+    prepare_payload = _provider_private_signed_url_prepare_payload(
+        request_id="api-provider-private-signed-url-revoke-prepare",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        readiness_body=readiness_body,
+    )
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+        json=prepare_payload,
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    receipt_id = prepare_body["provider_signed_url_receipt_id"]
+
+    db = client.layer3_session_factory()
+    try:
+        revocations_before = db.query(L3ProviderPrivateSignedUrlRevocation).count()
+        audits_before = db.query(L3ProviderPrivateSignedUrlAuditEvent).count()
+    finally:
+        db.close()
+
+    revoke_payload = {
+        "client_request_id": "api-provider-private-signed-url-revoke-success",
+        "provider_signed_url_receipt_id": receipt_id,
+        "idempotency_key": "api-provider-private-signed-url-revoke-idem",
+        "revoked_by": "layer3-api-test",
+        "revocation_reason": "operator requested downstream access stop",
+        "operator_decision": "revoke_provider_private_signed_url",
+    }
+    revoke = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+        json=revoke_payload,
+    )
+    assert revoke.status_code == 200, revoke.text
+    revoke_body = revoke.json()
+    assert revoke_body["schema_id"] == "layer3.provider_private_signed_url.revoke.v1"
+    assert revoke_body["status"] == "revoked"
+    assert revoke_body["provider_signed_url_receipt_id"] == receipt_id
+    assert revoke_body["provider_signed_url_state"] == "provider_private_signed_url_revoked"
+    assert revoke_body["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert revoke_body["provider_url_revoked"] is True
+    assert revoke_body["provider_url_use_count"] == 0
+    assert revoke_body["provider_url_max_use_count"] == 1
+    assert revoke_body["revocation_recorded"] is True
+    assert revoke_body["revocation_idempotency_key"] == revoke_payload["idempotency_key"]
+    assert revoke_body["authority_rail"]["provider_network_enabled"] is False
+    assert revoke_body["authority_rail"]["public_url_enabled"] is False
+    assert readiness_body["source_artifact_ref"] not in json.dumps(revoke_body, sort_keys=True)
+    assert revoke_payload["revocation_reason"] not in revoke.text
+
+    status = client.get(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/status/"
+        f"{receipt_id}"
+    )
+    assert status.status_code == 200, status.text
+    assert status.json()["provider_signed_url_state"] == "provider_private_signed_url_revoked"
+    assert status.json()["provider_url_revoked"] is True
+
+    retry = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+        json={**revoke_payload, "client_request_id": "api-provider-private-signed-url-revoke-retry"},
+    )
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["provider_signed_url_state"] == "provider_private_signed_url_revoked"
+
+    conflict = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+        json={
+            **revoke_payload,
+            "client_request_id": "api-provider-private-signed-url-revoke-conflict",
+            "revocation_reason": "different reason",
+        },
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["error_code"] == (
+        "provider_private_signed_url_state_revocation_idempotency_conflict"
+    )
+
+    missing = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+        json={**revoke_payload, "provider_signed_url_receipt_id": "missing-provider-receipt"},
+    )
+    assert missing.status_code == 404
+    assert missing.json()["error_code"] == "provider_private_signed_url_state_not_recorded"
+
+    forbidden = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+        json={**revoke_payload, "provider_private_signed_url_token": "raw-token-not-admitted"},
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "provider_private_signed_url_revoke_scope_not_admitted"
+    assert "raw-token-not-admitted" not in forbidden.text
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3ProviderPrivateSignedUrlRevocation).count() == revocations_before + 1
+        assert db.query(L3ProviderPrivateSignedUrlAuditEvent).count() == audits_before + 3
+    finally:
+        db.close()
 
 
 def test_layer3_api_provider_private_signed_url_fail_closed_stale_authority_forbidden_ttl_and_fake_provider_failure(

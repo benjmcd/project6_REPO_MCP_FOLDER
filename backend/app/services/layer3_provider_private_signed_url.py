@@ -30,8 +30,10 @@ from app.services.layer3_provider_private_signed_url_state import (
     PROVIDER_PRIVATE_SIGNED_URL_REPLAY_POLICY_SINGLE_USE,
     PROVIDER_PRIVATE_SIGNED_URL_STATE_EXPIRED,
     PROVIDER_PRIVATE_SIGNED_URL_STATE_PREPARED,
+    PROVIDER_PRIVATE_SIGNED_URL_STATE_REVOKED,
     ProviderPrivateSignedUrlStateError,
     record_prepared_provider_private_signed_url_receipt,
+    revoke_provider_private_signed_url_receipt,
 )
 from app.services.layer3_response_contract import base_response
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -39,9 +41,11 @@ from app.services.layer3_workbench_package_state import external_export_download
 
 
 PROVIDER_PRIVATE_SIGNED_URL_PREPARE_SCHEMA_ID = "layer3.provider_private_signed_url.prepare.v1"
+PROVIDER_PRIVATE_SIGNED_URL_REVOKE_SCHEMA_ID = "layer3.provider_private_signed_url.revoke.v1"
 PROVIDER_PRIVATE_SIGNED_URL_STATUS_SCHEMA_ID = "layer3.provider_private_signed_url.status.v1"
 PROVIDER_PRIVATE_SIGNED_URL_DELIVERY_MODE = "provider_private_signed_url"
 PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION = "prepare_provider_private_signed_url"
+PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION = "revoke_provider_private_signed_url"
 PROVIDER_PRIVATE_SIGNED_URL_DEFAULT_TTL_SECONDS = 300
 PROVIDER_PRIVATE_SIGNED_URL_FIXED_FAKE_PROVIDER_EPOCH = 0
 PROVIDER_PRIVATE_SIGNED_URL_REDACTED_MARKER = "provider-private-signed-url:redacted"
@@ -110,6 +114,19 @@ PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_FIELDS = frozenset(
         "download_url",
         "signed_reference_token",
         "signed_url",
+        "provider_private_signed_url_token",
+        "raw_provider_private_signed_url_token",
+    }
+)
+PROVIDER_PRIVATE_SIGNED_URL_REVOKE_ALLOWED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "provider_signed_url_receipt_id",
+        "idempotency_key",
+        "revoked_by",
+        "revocation_reason",
+        "operator_decision",
+        "decision_notes",
     }
 )
 
@@ -152,10 +169,29 @@ def _missing_fields(payload: Mapping[str, Any]) -> list[str]:
     ]
 
 
-def _blocked_fields(payload: Mapping[str, Any]) -> list[str]:
-    unknown = sorted(key for key in payload if key not in PROVIDER_PRIVATE_SIGNED_URL_ALLOWED_FIELDS)
+def _blocked_fields(
+    payload: Mapping[str, Any],
+    *,
+    allowed_fields: frozenset[str] = PROVIDER_PRIVATE_SIGNED_URL_ALLOWED_FIELDS,
+) -> list[str]:
+    unknown = sorted(key for key in payload if key not in allowed_fields)
     forbidden = sorted(key for key in PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_FIELDS if key in payload)
     return sorted(set(unknown) | set(forbidden))
+
+
+def _missing_revoke_fields(payload: Mapping[str, Any]) -> list[str]:
+    return [
+        field
+        for field in (
+            "client_request_id",
+            "provider_signed_url_receipt_id",
+            "idempotency_key",
+            "revoked_by",
+            "revocation_reason",
+            "operator_decision",
+        )
+        if payload.get(field) in (None, "")
+    ]
 
 
 def _ttl_seconds(payload: Mapping[str, Any]) -> int:
@@ -220,6 +256,16 @@ def _require_fixed_values(payload: Mapping[str, Any]) -> None:
                 status="invalid",
                 blocked_fields=[field],
             )
+
+
+def _require_revoke_fixed_values(payload: Mapping[str, Any]) -> None:
+    if _text(payload, "operator_decision") != PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION:
+        raise Layer3WorkbenchError(
+            "provider_private_signed_url_revoke_operator_decision_not_admitted",
+            f"operator_decision must be {PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION}.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
 
 
 def _load_readiness_authority(db: Session, payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -425,6 +471,7 @@ def _receipt_response(
     analysis_plan_id: str | None = None,
     pass_run_id: str | None = None,
     reconciliation_record_id: str | None = None,
+    revocation_idempotency_key: str | None = None,
 ) -> dict[str, Any]:
     expires_at_epoch = _datetime_epoch(receipt.provider_private_signed_url_expires_at)
     state = _status_from_receipt(receipt, now_epoch=now_epoch)
@@ -439,7 +486,7 @@ def _receipt_response(
         "provider_url_revocation_supported": True,
         "provider_url_use_count": receipt.provider_private_signed_url_use_count,
         "provider_url_max_use_count": receipt.provider_private_signed_url_max_use_count,
-        "provider_url_revoked": receipt.provider_private_signed_url_state == "provider_private_signed_url_revoked",
+        "provider_url_revoked": receipt.provider_private_signed_url_state == PROVIDER_PRIVATE_SIGNED_URL_STATE_REVOKED,
         "source_artifact_hash": authority.source_artifact_hash,
         "source_artifact_size_bytes": authority.source_artifact_size_bytes,
         "audit_receipt": _audit_receipt(receipt=receipt, authority=authority, audit=audit),
@@ -456,6 +503,27 @@ def _receipt_response(
                 "export_download_descriptor_ref": authority.export_download_descriptor_ref,
                 "status": "prepared",
                 "provider_url_expires_in_seconds": max(0, expires_at_epoch - now_epoch),
+                "authority_rail": {
+                    "provider_authority": PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_AUTHORITY,
+                    "artifact_authority": "existing_external_export_download_prepare_authority",
+                    "durable_state_authority": True,
+                    "provider_url_secret_redacted": True,
+                    "provider_network_enabled": False,
+                    "provider_object_write_enabled": False,
+                    "connector_dispatch_enabled": False,
+                    "destination_write_enabled": False,
+                    "public_url_enabled": False,
+                    "same_origin_delivery_changed": False,
+                },
+                "next_state": state,
+            }
+        )
+    if schema_id == PROVIDER_PRIVATE_SIGNED_URL_REVOKE_SCHEMA_ID:
+        body.update(
+            {
+                "status": "revoked",
+                "revocation_recorded": True,
+                "revocation_idempotency_key": revocation_idempotency_key,
                 "authority_rail": {
                     "provider_authority": PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_AUTHORITY,
                     "artifact_authority": "existing_external_export_download_prepare_authority",
@@ -570,6 +638,77 @@ def provider_private_signed_url_prepare(
         analysis_plan_id=_text(payload, "analysis_plan_id"),
         pass_run_id=_text(payload, "pass_run_id"),
         reconciliation_record_id=_text(payload, "reconciliation_record_id"),
+    )
+
+
+def provider_private_signed_url_revoke(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    blocked = _blocked_fields(payload, allowed_fields=PROVIDER_PRIVATE_SIGNED_URL_REVOKE_ALLOWED_FIELDS)
+    if blocked:
+        raise Layer3WorkbenchError(
+            "provider_private_signed_url_revoke_scope_not_admitted",
+            "Provider-private signed URL revoke includes non-admitted fields.",
+            status="invalid",
+            blocked_fields=blocked,
+            next_allowed_actions=["submit_bounded_provider_private_signed_url_revoke_request"],
+        )
+    missing = _missing_revoke_fields(payload)
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_provider_private_signed_url_revoke_fields",
+            f"Provider-private signed URL revoke request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_provider_private_signed_url_revoke_request"],
+        )
+    _require_revoke_fixed_values(payload)
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    request_id = _text(payload, "client_request_id")
+    receipt_id = _text(payload, "provider_signed_url_receipt_id")
+    idempotency_key = _text(payload, "idempotency_key")
+    try:
+        durable_state = revoke_provider_private_signed_url_receipt(
+            db,
+            provider_private_signed_url_receipt_id=receipt_id,
+            idempotency_key=idempotency_key,
+            revoked_by=_text(payload, "revoked_by"),
+            revocation_reason=_text(payload, "revocation_reason"),
+            now_epoch=effective_now,
+            request_id=request_id,
+        )
+    except ProviderPrivateSignedUrlStateError as exc:
+        raise _state_error(exc) from exc
+
+    receipt = (
+        db.query(L3ProviderPrivateSignedUrlReceipt)
+        .filter(
+            L3ProviderPrivateSignedUrlReceipt.provider_private_signed_url_receipt_id
+            == durable_state.provider_private_signed_url_receipt_id
+        )
+        .one()
+    )
+    authority = (
+        db.query(L3ProviderPrivateSignedUrlObjectAuthority)
+        .filter(
+            L3ProviderPrivateSignedUrlObjectAuthority.provider_private_signed_url_object_authority_id
+            == receipt.provider_private_signed_url_object_authority_id
+        )
+        .one()
+    )
+    audit = _latest_audit_event(db, receipt.provider_private_signed_url_receipt_id)
+    return _receipt_response(
+        schema_id=PROVIDER_PRIVATE_SIGNED_URL_REVOKE_SCHEMA_ID,
+        request_id=request_id,
+        status="revoked",
+        receipt=receipt,
+        authority=authority,
+        audit=audit,
+        now_epoch=effective_now,
+        revocation_idempotency_key=idempotency_key,
     )
 
 
