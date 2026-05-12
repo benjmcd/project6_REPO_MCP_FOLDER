@@ -50,6 +50,7 @@ from app.services.layer3_raw_mixed_materialization import (
     RAW_MIXED_CORPUS_MATERIALIZE_MANIFEST_SCHEMA_ID,
     RAW_MIXED_CORPUS_MATERIALIZE_MODE,
     RAW_MIXED_CORPUS_MATERIALIZE_RESPONSE_SCHEMA_ID,
+    RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM,
 )
 from test_layer3_api import client as client
 from test_layer3_raw_mixed_bridge import (
@@ -133,6 +134,11 @@ def test_layer3_raw_mixed_materialize_creates_admitted_sources_for_bounded_previ
     with client.layer3_session_factory() as db:
         stored_version = db.get(DatasetVersion, fixture.dataset_version_id)
         assert stored_version.storage_ref == fixture.dataset_storage_refs[0]
+        stored_provenance = db.get(DatasetSourceProvenance, "prov-raw-materialized-001")
+        assert stored_provenance.source_system == RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM
+        assert stored_provenance.source_mode == "raw_mixed_materialized"
+        assert stored_provenance.artifact_locator_type == "server_owned_ref"
+        assert stored_provenance.fetch_policy_mode == "server_owned_manifest"
 
     duplicate = client.post(
         "/api/v1/layer3/source/mixed-corpus/materialize",
@@ -566,7 +572,7 @@ def _dataset_version_manifest_entry(
         ],
         "source_provenance": {
             "dataset_source_provenance_id": "prov-raw-materialized-001" if index == 0 else f"prov-raw-materialized-{index + 1:03d}",
-            "source_system": "nrc_adams_aps",
+            "source_system": RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM,
             "source_mode": "raw_mixed_materialized",
             "source_artifact_key": f"aps://{aps_run_id}/{aps_target_id}/{dataset_version_id}",
             "source_reference_json": {

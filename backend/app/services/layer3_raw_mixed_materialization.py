@@ -26,6 +26,7 @@ from app.services.layer3_raw_mixed_bridge import (
     RAW_MIXED_CORPUS_FORBIDDEN_FIELDS,
     RAW_MIXED_CORPUS_SOURCE_CLASSES,
 )
+from app.services.layer3_raw_mixed_contract import RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM
 from app.services.layer3_response_contract import base_response
 from app.services.layer3_source_boundary import unsupported_requested
 from app.services.layer3_utils import stable_id
@@ -281,7 +282,7 @@ def _materialize_dataset_version(db: Session, entry: Mapping[str, Any], written:
     provenance_values = {
         "dataset_version_id": dataset_version_id,
         "connector_run_id": provenance.get("connector_run_id"),
-        "source_system": str(provenance.get("source_system") or "nrc_adams_aps"),
+        "source_system": str(provenance.get("source_system") or RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM),
         "source_mode": str(provenance.get("source_mode") or "raw_mixed_materialized"),
         "source_artifact_key": _entry_string(provenance, "source_artifact_key", "source_provenance.source_artifact_key"),
         "artifact_surface": provenance.get("artifact_surface") or "dataset_version",
