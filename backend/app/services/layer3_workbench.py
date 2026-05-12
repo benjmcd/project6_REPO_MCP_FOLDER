@@ -71,6 +71,9 @@ from app.services.layer3_execution_state import (
 )
 from app.services.layer3_execution_errors import analysis_execution_start_workbench_error
 from app.services.layer3_execution_output import output_metadata_summary as _output_metadata_summary
+from app.services.layer3_pdf_location import (
+    pdf_location_projection_for_session as _pdf_location_projection_for_session,
+)
 from app.services.layer3_execution_review import (
     EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE,
     EXECUTION_RESULT_REVIEW_SCHEMA_ID,
@@ -10102,6 +10105,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "handoff_export_prepare": handoff_export_prepare_state,
         "aps_handoff_dispatch": aps_handoff_dispatch_state,
         "external_export_download": external_export_download_state,
+        "pdf_location_projection": _pdf_location_projection_for_session(db, session_id=session_id),
         "sublayer_visualization": _session_sublayer_visualization_state(db, session_id=session_id),
         "state_action_contract": _workbench_state_action_contract(),
         "downstream_unavailable": list(downstream_unavailable),
