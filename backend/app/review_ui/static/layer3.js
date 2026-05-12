@@ -1,6 +1,20 @@
 const API_ROOT = '/api/v1/layer3';
 const THEME_STORAGE_KEY = 'nrc_aps_review_theme';
 const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';
+const LAYER3_MOCKUP_WORKBENCH_THEME = 'layer3_mockup_workbench_theme';
+const LAYER3_MOCKUP_THEME_FIRST_SLICE = 'mockup_theme_shell_and_fixture_projection';
+const LAYER3_MOCKUP_THEME_FIXTURE = Object.freeze({
+    scenario: 'semiconductor_infrastructure_auto_supply_chain',
+    frames: Object.freeze([
+        'userflow/layer3_user-flow-overview1.png',
+        'userflow/layer3_user-flow-overview2.png',
+        'clear-screenshots/userflow_slide1.png',
+        'clear-screenshots/userflow_slide1_general-example.png',
+        'clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png',
+        'focus_on_these/sublayer3A_and_sublayer3B.png',
+        'focus_on_these/sublayer3C.png',
+    ]),
+});
 const LAYER3_SESSION_RECOVERY_STORAGE_KEY = 'layer3_workbench_session_recovery_v1';
 const LAYER3_GATE_B_DRAFT_STORAGE_KEY = 'layer3_workbench_gate_b_draft_v1';
 const LAYER3_SESSION_RECOVERY_SCHEMA_ID = 'layer3.browser_session_recovery.v1';
@@ -166,6 +180,9 @@ const elements = {
     operationsDock: document.querySelector('.operations-dock'),
     operationsDockNav: document.getElementById('operations-dock-nav'),
     operationsDockSummary: document.getElementById('operations-dock-summary'),
+    mockupThemeShell: document.getElementById('mockup-theme-shell'),
+    mockupThemeFrameList: document.getElementById('mockup-frame-list'),
+    mockupFixtureScenario: document.getElementById('mockup-fixture-scenario'),
 };
 
 const systemThemeQuery = typeof window.matchMedia === 'function'
@@ -244,7 +261,7 @@ function isSharedThemePreference(value) {
 }
 
 function isLayer3ThemePreference(value) {
-    return value === 'workbench';
+    return value === 'workbench' || value === LAYER3_MOCKUP_WORKBENCH_THEME;
 }
 
 function isClaudePrototypePreference(value) {
@@ -256,6 +273,7 @@ function isValidThemePreference(value) {
 }
 
 function resolveTheme(preference) {
+    if (preference === LAYER3_MOCKUP_WORKBENCH_THEME) return 'workbench';
     if (preference === 'light' || preference === 'dark' || preference === 'workbench') return preference;
     return systemThemeQuery?.matches ? 'dark' : 'light';
 }
@@ -270,11 +288,16 @@ function applyThemePreference(preference, { persist = true } = {}) {
     }
     document.documentElement.dataset.themePreference = normalized;
     document.documentElement.dataset.theme = resolveTheme(normalized);
-    delete document.documentElement.dataset.themeVariant;
+    if (normalized === LAYER3_MOCKUP_WORKBENCH_THEME) {
+        document.documentElement.dataset.themeVariant = LAYER3_MOCKUP_WORKBENCH_THEME;
+    } else {
+        delete document.documentElement.dataset.themeVariant;
+    }
     State.themePreference = normalized;
     if (elements.themeSelector) {
         elements.themeSelector.value = normalized;
     }
+    renderMockupThemeShell();
     if (persist) {
         try {
             if (isSharedThemePreference(normalized)) {
@@ -289,6 +312,24 @@ function applyThemePreference(preference, { persist = true } = {}) {
         } catch (error) {
             addEvent('Theme preference kept in browser memory only.');
         }
+    }
+}
+
+function renderMockupThemeShell() {
+    if (!elements.mockupThemeShell) return;
+    const active = State.themePreference === LAYER3_MOCKUP_WORKBENCH_THEME;
+    elements.mockupThemeShell.dataset.active = active ? 'true' : 'false';
+    elements.mockupThemeShell.setAttribute('aria-hidden', active ? 'false' : 'true');
+    elements.mockupThemeShell.dataset.firstSlice = LAYER3_MOCKUP_THEME_FIRST_SLICE;
+    if (elements.mockupFixtureScenario) {
+        elements.mockupFixtureScenario.dataset.fixtureScenario = LAYER3_MOCKUP_THEME_FIXTURE.scenario;
+    }
+    if (elements.mockupThemeFrameList && elements.mockupThemeFrameList.childElementCount === 0) {
+        LAYER3_MOCKUP_THEME_FIXTURE.frames.forEach((frame) => {
+            const item = document.createElement('li');
+            item.textContent = frame;
+            elements.mockupThemeFrameList.appendChild(item);
+        });
     }
 }
 
