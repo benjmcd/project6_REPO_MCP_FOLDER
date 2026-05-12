@@ -349,6 +349,7 @@ AUTH_SECURITY_NAMED_MODE_PACKET = (
 POST_REENTRY_NAMED_PACKET_CLOSEOUT = (
     PLANNING_DOCS / "267_POST_REENTRY_NAMED_PACKET_CLOSEOUT.md"
 )
+MOCKUP_THEME_FREEZE = PLANNING_DOCS / "268_MOCKUP_THEME_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -16104,6 +16105,109 @@ def _check_post_reentry_named_packet_closeout(errors: list[str]) -> None:
         if doc_name not in proof_entry.get("closed_docs", []):
             errors.append(f"{_rel(PROOF_MANIFEST)} post_reentry_named_packet_closeout_proof missing closed doc {doc_name}")
 
+
+def _check_mockup_theme_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(MOCKUP_THEME_FREEZE, errors)
+    for term in (
+        "Status: current-main planning/control freeze for `pixel_perfect_mockup_workbench_theme_freeze`.",
+        "entry_decision: named_mockup_theme_goal_selected_planning_only",
+        "selected_product_operator_use_case: pixel_perfect_functional_layer3_mockup_workbench_theme",
+        "selected_theme_target: layer3_mockup_workbench_theme",
+        "target_route_family: /review/layer3",
+        "activation_mode: dedicated_theme_planning_only",
+        "pixel_perfect_requirement: selected",
+        "functional_requirement: selected_except_contextual_text_boxes",
+        "contextual_text_box_policy: classify_as_help_or_nonproduction_annotation_before_implementation",
+        "C:\\Users\\benny\\Downloads\\layer3mockups\\example-use-case-location-in-pdf.png",
+        "C:\\Users\\benny\\Downloads\\layer3mockups\\doc_spec_file_layer3_preplanning.txt",
+        "C:\\Users\\benny\\Downloads\\layer3mockups\\layer3_mockup_file.svg",
+        "C:\\Users\\benny\\Downloads\\layer3mockups\\big_layer3-overview_bigview1.png",
+        "C:\\Users\\benny\\Downloads\\layer3mockups\\focus_on_these",
+        "C:\\Users\\benny\\Downloads\\layer3mockups\\clear-screenshots",
+        "C:\\Users\\benny\\Downloads\\layer3mockups\\userflow",
+        "server_authority_requirement: required",
+        "browser_storage_policy: no_durable_authority",
+        "visual_diff_required: true",
+        "headed_headless_required: true",
+        "responsive_accessibility_required: true",
+        "implementation_entry_allowed_next: false",
+        "next_required_boundary: implementation_entry_freeze_for_dedicated_mockup_theme_before_code",
+        "This freeze admits no runtime behavior",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(MOCKUP_THEME_FREEZE)} missing mockup theme freeze term: {term}")
+
+    readme_text = _read_required_text(PHASE1A_README, errors)
+    for term in (
+        "268_MOCKUP_THEME_FREEZE.md",
+        "pixel-perfect functional Layer 3 mockup workbench theme",
+        "layer3_mockup_workbench_theme",
+    ):
+        if term not in readme_text:
+            errors.append(f"{_rel(PHASE1A_README)} missing mockup theme freeze term: {term}")
+
+    board_text = _read_required_text(BOARD, errors)
+    for term in (
+        "## Mockup Theme Freeze",
+        "layer3_mockup_workbench_theme",
+        "visual-diff/headed/headless proof",
+    ):
+        if term not in board_text:
+            errors.append(f"{_rel(BOARD)} missing mockup theme freeze term: {term}")
+
+    manifest = json.loads(_read_required_text(MANIFEST, errors))
+    current_status = manifest.get("current_status", {})
+    for key, expected in (
+        ("latest_mockup_theme_freeze_branch", "codex/l3-mockup-theme-freeze"),
+        ("latest_mockup_theme_freeze_live_behavior_change", False),
+    ):
+        if current_status.get(key) != expected:
+            errors.append(f"{_rel(MANIFEST)} current_status {key} expected {expected!r}")
+    if "mockup_theme_freeze" not in current_status:
+        errors.append(f"{_rel(MANIFEST)} missing current_status mockup_theme_freeze")
+    if manifest.get("scope_status", {}).get("mockup_theme_freeze") != "completed_pixel_perfect_mockup_workbench_theme_selected_planning_only":
+        errors.append(f"{_rel(MANIFEST)} missing completed mockup_theme_freeze scope status")
+    if "layer3_mockup_workbench_theme" not in manifest.get("mockup_theme_freeze", ""):
+        errors.append(f"{_rel(MANIFEST)} missing top-level mockup_theme_freeze summary")
+
+    proof = json.loads(_read_required_text(PROOF_MANIFEST, errors))
+    proof_entry = proof.get("mockup_theme_freeze_proof", {})
+    for key, expected in (
+        ("status", "completed_pixel_perfect_mockup_workbench_theme_selected_planning_only"),
+        ("implementation_branch", "codex/l3-mockup-theme-freeze"),
+        ("live_behavior_change", False),
+        ("selected_planning_mode", "pixel_perfect_mockup_workbench_theme_freeze"),
+        ("entry_decision", "named_mockup_theme_goal_selected_planning_only"),
+        ("selected_product_operator_use_case", "pixel_perfect_functional_layer3_mockup_workbench_theme"),
+        ("selected_theme_target", "layer3_mockup_workbench_theme"),
+        ("target_route_family", "/review/layer3"),
+        ("activation_mode", "dedicated_theme_planning_only"),
+        ("pixel_perfect_requirement", "selected"),
+        ("functional_requirement", "selected_except_contextual_text_boxes"),
+        ("contextual_text_box_policy", "classify_as_help_or_nonproduction_annotation_before_implementation"),
+        ("visual_acceptance_corpus_required", True),
+        ("server_authority_requirement", "required"),
+        ("browser_storage_policy", "no_durable_authority"),
+        ("visual_diff_required", True),
+        ("headed_headless_required", True),
+        ("responsive_accessibility_required", True),
+        ("implementation_entry_allowed_next", False),
+        ("next_required_boundary", "implementation_entry_freeze_for_dedicated_mockup_theme_before_code"),
+    ):
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup_theme_freeze_proof {key} expected {expected!r}")
+    for corpus_path in (
+        r"C:\Users\benny\Downloads\layer3mockups\example-use-case-location-in-pdf.png",
+        r"C:\Users\benny\Downloads\layer3mockups\doc_spec_file_layer3_preplanning.txt",
+        r"C:\Users\benny\Downloads\layer3mockups\layer3_mockup_file.svg",
+        r"C:\Users\benny\Downloads\layer3mockups\big_layer3-overview_bigview1.png",
+        r"C:\Users\benny\Downloads\layer3mockups\focus_on_these",
+        r"C:\Users\benny\Downloads\layer3mockups\clear-screenshots",
+        r"C:\Users\benny\Downloads\layer3mockups\userflow",
+    ):
+        if corpus_path not in proof_entry.get("visual_acceptance_corpus", []):
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup_theme_freeze_proof missing corpus path {corpus_path}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -21015,6 +21119,7 @@ def main() -> int:
     _check_full_mockup_named_journey_packet(errors)
     _check_auth_security_named_mode_packet(errors)
     _check_post_reentry_named_packet_closeout(errors)
+    _check_mockup_theme_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

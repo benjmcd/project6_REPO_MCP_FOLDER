@@ -712,7 +712,10 @@
     "latest_auth_security_named_mode_packet_summary": "Current main now includes the auth_security_named_mode_packet as a no-runtime closeout: local/proxy deployment guardrails remain live, but no security/operator-access use case or selected auth/security mode is present. Auth/security runtime remains blocked until a packet names identity authority, tenant/session ownership, permission matrix, route dependency contract, secret policy, audit contract, rendered identity plan, leak controls, and headed/headless/theme proof where rendered controls are admitted. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
     "latest_post_reentry_named_packet_closeout_branch": "codex/l3-post-reentry-packet-closeout",
     "latest_post_reentry_named_packet_closeout_live_behavior_change": false,
-    "latest_post_reentry_named_packet_closeout_summary": "Docs 259 through 266 are closed as a no-runtime named-packet stack; next implementation requires a user/product-named use case before runtime."
+    "latest_post_reentry_named_packet_closeout_summary": "Docs 259 through 266 are closed as a no-runtime named-packet stack; next implementation requires a user/product-named use case before runtime.",
+    "latest_mockup_theme_freeze_branch": "codex/l3-mockup-theme-freeze",
+    "latest_mockup_theme_freeze_live_behavior_change": false,
+    "latest_mockup_theme_freeze_summary": "The dedicated layer3_mockup_workbench_theme is selected as the pixel-perfect functional mockup workbench target for /review/layer3, with implementation still blocked behind a separate entry-freeze."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -11920,6 +11923,48 @@
       "broad_qualitative_hybrid_rag_without_named_analysis_mode",
       "full_mockup_activation_without_named_operator_journey",
       "auth_security_runtime_without_named_auth_security_mode"
+    ]
+  },
+  "mockup_theme_freeze_proof": {
+    "status": "completed_pixel_perfect_mockup_workbench_theme_selected_planning_only",
+    "implementation_branch": "codex/l3-mockup-theme-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "pixel_perfect_mockup_workbench_theme_freeze",
+    "entry_decision": "named_mockup_theme_goal_selected_planning_only",
+    "selected_product_operator_use_case": "pixel_perfect_functional_layer3_mockup_workbench_theme",
+    "selected_theme_target": "layer3_mockup_workbench_theme",
+    "target_route_family": "/review/layer3",
+    "activation_mode": "dedicated_theme_planning_only",
+    "pixel_perfect_requirement": "selected",
+    "functional_requirement": "selected_except_contextual_text_boxes",
+    "contextual_text_box_policy": "classify_as_help_or_nonproduction_annotation_before_implementation",
+    "visual_acceptance_corpus_required": true,
+    "server_authority_requirement": "required",
+    "browser_storage_policy": "no_durable_authority",
+    "visual_diff_required": true,
+    "headed_headless_required": true,
+    "responsive_accessibility_required": true,
+    "implementation_entry_allowed_next": false,
+    "next_required_boundary": "implementation_entry_freeze_for_dedicated_mockup_theme_before_code",
+    "visual_acceptance_corpus": [
+      "C:\\Users\\benny\\Downloads\\layer3mockups\\example-use-case-location-in-pdf.png",
+      "C:\\Users\\benny\\Downloads\\layer3mockups\\doc_spec_file_layer3_preplanning.txt",
+      "C:\\Users\\benny\\Downloads\\layer3mockups\\layer3_mockup_file.svg",
+      "C:\\Users\\benny\\Downloads\\layer3mockups\\big_layer3-overview_bigview1.png",
+      "C:\\Users\\benny\\Downloads\\layer3mockups\\focus_on_these",
+      "C:\\Users\\benny\\Downloads\\layer3mockups\\clear-screenshots",
+      "C:\\Users\\benny\\Downloads\\layer3mockups\\userflow"
+    ],
+    "blocked_runtime": [
+      "route_api_behavior_change_without_entry_freeze",
+      "source_expansion",
+      "rag_vector_retrieval",
+      "external_connector_destination_runtime",
+      "package_mutation_runtime",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_mockup_activation_without_server_mapping",
+      "auth_security_runtime",
+      "frontend_only_durable_authority"
     ]
   }
 }
