@@ -682,7 +682,10 @@
     "qual_hybrid_rag_reentry_decision_summary": "Current main now includes the qual_hybrid_rag_reentry_decision freeze: the single APS-document qualitative pass and bounded qualitative APS downstream chain remain live, while broad qualitative execution, qualitative associated-cohort execution, comparative/cross-document synthesis, hybrid execution, RAG/vector retrieval, vector indexes, embeddings, prompt/model/provider runtime, rendered qualitative/RAG controls, source expansion, package mutation side effects, provider/public URL behavior, connector/destination dispatch, full mockup activation, and browser-owned execution authority remain blocked.",
     "latest_full_mockup_activation_reentry_decision_branch": "codex/l3-full-mockup-reentry-freeze",
     "latest_full_mockup_activation_reentry_decision_live_behavior_change": false,
-    "full_mockup_activation_reentry_decision_summary": "Current main now includes the full_mockup_activation_reentry_decision freeze: mockups remain target-state design/specification inputs and existing rendered controls remain live only where server-authoritative paths are already proven, while full mockup activation, frontend-only durable workflow state, browser-local persistence as authority, new rendered mockup controls, route/API changes, source expansion, package mutation, provider/public URL behavior, connector/destination dispatch, broad qualitative/hybrid/RAG behavior, hidden LLM planning, auth/security behavior, and browser-owned workflow authority remain blocked."
+    "full_mockup_activation_reentry_decision_summary": "Current main now includes the full_mockup_activation_reentry_decision freeze: mockups remain target-state design/specification inputs and existing rendered controls remain live only where server-authoritative paths are already proven, while full mockup activation, frontend-only durable workflow state, browser-local persistence as authority, new rendered mockup controls, route/API changes, source expansion, package mutation, provider/public URL behavior, connector/destination dispatch, broad qualitative/hybrid/RAG behavior, hidden LLM planning, auth/security behavior, and browser-owned workflow authority remain blocked.",
+    "latest_goal_stack_reentry_closeout_branch": "codex/l3-goal-stack-reentry-closeout",
+    "latest_goal_stack_reentry_closeout_live_behavior_change": false,
+    "goal_stack_reentry_closeout_summary": "Current main now includes the goal_stack_reentry_closeout_and_implementation_gate: the source, connector/destination, package mutation, qualitative/hybrid/RAG, and full mockup reentry sequence is closed as a planning/control and bounded-runtime audit stack, while broad runtime activation remains blocked and any next implementation must first select exactly one named runtime mode with server authority, request/response contracts, stale-authority/idempotency behavior, negative tests, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -10703,7 +10706,8 @@
     "connector_destination_reentry_decision": "completed_connector_destination_reentry_decision_no_external_runtime",
     "package_mutation_reentry_decision": "completed_package_mutation_reentry_decision_no_rendered_runtime",
     "qual_hybrid_rag_reentry_decision": "completed_qual_hybrid_rag_reentry_decision_no_broad_runtime",
-    "full_mockup_activation_reentry_decision": "completed_full_mockup_activation_reentry_decision_no_activation_runtime"
+    "full_mockup_activation_reentry_decision": "completed_full_mockup_activation_reentry_decision_no_activation_runtime",
+    "goal_stack_reentry_closeout_and_implementation_gate": "completed_goal_stack_reentry_closeout_next_requires_single_named_mode"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -11508,6 +11512,45 @@
       "connector_destination_dispatch",
       "broad_qualitative_hybrid_rag_runtime",
       "hidden_llm_planning",
+      "auth_security_behavior_change"
+    ]
+  },
+  "goal_stack_reentry_closeout_and_implementation_gate_proof": {
+    "status": "completed_goal_stack_reentry_closeout_next_requires_single_named_mode",
+    "implementation_branch": "codex/l3-goal-stack-reentry-closeout",
+    "live_behavior_change": false,
+    "selected_planning_mode": "goal_stack_reentry_closeout_and_implementation_gate",
+    "entry_decision": "reentry_stack_closed_next_runtime_requires_single_named_mode",
+    "source_breadth_reentry_status": "completed_planning_control_no_new_source_runtime",
+    "source_runtime_tranche_status": "current_raw_mixed_current_classes_live_new_source_runtime_blocked",
+    "source_rendered_control_status": "completed_rendered_control_decision_no_new_runtime",
+    "connector_destination_reentry_status": "completed_no_external_runtime",
+    "package_mutation_reentry_status": "completed_no_rendered_or_broad_mutation_runtime",
+    "qual_hybrid_rag_reentry_status": "completed_no_broad_hybrid_rag_runtime",
+    "full_mockup_activation_reentry_status": "completed_no_activation_runtime",
+    "implementation_entry_allowed_next": false,
+    "next_required_boundary": "one_named_runtime_mode_freeze_before_code",
+    "closed_docs": [
+      "249_SOURCE_BREADTH_REENTRY_CONTRACT.md",
+      "250_SOURCE_BREADTH_AUTHORITY_PACKET.md",
+      "252_GOAL_STACK_IMPLEMENTATION_AUDIT_FREEZE.md",
+      "253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.md",
+      "254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md",
+      "255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md",
+      "256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md",
+      "257_FULL_MOCKUP_ACTIVATION_REENTRY_DECISION_FREEZE.md",
+      "258_GOAL_STACK_REENTRY_CLOSEOUT_AND_IMPLEMENTATION_GATE.md"
+    ],
+    "blocked_broad_runtime": [
+      "new_source_family_runtime",
+      "external_connector_invocation",
+      "destination_write",
+      "rendered_package_mutation_controls",
+      "broad_package_mutation_reconstruction",
+      "broad_qualitative_hybrid_rag_runtime",
+      "rag_vector_retrieval",
+      "full_mockup_activation",
+      "frontend_only_durable_workflow_authority",
       "auth_security_behavior_change"
     ]
   }
