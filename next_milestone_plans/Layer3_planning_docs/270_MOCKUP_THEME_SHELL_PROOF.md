@@ -80,3 +80,9 @@ This proof slice carries a bounded static projection for the mockup user-flow an
 
 The added repo-local frame is `next_milestone_plans/layer3-mockups/frames/pdf-location.png`, copied from `C:\Users\benny\Downloads\layer3mockups\example-use-case-location-in-pdf.png`; the Downloads path remains provenance only. Playwright now verifies eight repo-local visual acceptance frames, the `#mockup-userflow-board` data-source attributes, five user-flow stages, two PDF evidence sheets, headed/headless screenshot attachment, and the existing no-backend-widening API-request guard.
 
+## Sublayer 3A/3B projection proof addendum
+
+This proof slice adds `#mockup-sublayers-ab-board` for `focus_on_these/sublayer3A_and_sublayer3B.png`. The board renders a static Sublayer 3A Gate B material ledger with 20 ingress objects, a Sublayer 3B Gate C grouping field, seven quantitative objects, seven qualitative objects, and six hybrid/mixed objects. The projection is visual/theme-only and adds no rendered buttons, backend API calls, source expansion, execution runtime, or browser-owned durable authority.
+
+Playwright now verifies the Sublayer 3A/3B frame source, the 20-object ledger, the 7/7/6 typed grouping split, a three-column desktop board layout, the `layer3-mockup-sublayers-ab-board.png` screenshot attachment, and the existing no-backend-widening request guard.
+
