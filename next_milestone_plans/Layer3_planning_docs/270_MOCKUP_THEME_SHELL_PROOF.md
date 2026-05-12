@@ -55,6 +55,7 @@ The implementation adds:
 - A static `focus_on_these/sublayer3C.png` fixture projection with separate quantitative and qualitative execution lanes, Gate B ingress object stacks, unavailable/deferred objects, process notes, and generated-output cards.
 - E2E assertions that the Sublayer 3C fixture projection is visible, non-interactive, and still creates no backend requests for blocked source, package, connector, or mockup runtime paths.
 - E2E visual-acceptance proof that parses `next_milestone_plans/layer3-mockups/frames/manifest.json`, performs repo-local frame hash verification plus size checks for all seven frames, checks the selected `sublayer-c.png` dimensions, emits a layer3-mockup-theme-shell.png screenshot attachment, and verifies the rendered Sublayer 3C lane geometry against the selected frame mapping.
+- Frame-specific fidelity improvements for `focus_on_these/sublayer3C.png`: centered `Sublayer 3C` / `Analysis Execution Environments` canvas title, exact quantitative/qualitative lane labels, and bracketed Gate B ingress stacks before the process arrows.
 
 ## Authority and non-fragility notes
 
