@@ -1178,3 +1178,9 @@ Refresh this board against:
 - `277_MOCKUP_PIXEL_REFINEMENT.md` implements `pdf_location_frame_selector_precision_and_threshold_tightening` as the first bounded visual-diff refinement after the harness.
 - The PDF-location frame now maps to `#mockup-pdf-location-card` instead of the whole `#mockup-userflow-board`, while user-flow frames remain mapped to `#mockup-userflow-board`.
 - The visual-diff harness limits tighten to `normalizedMeanDeltaMax: 0.30` and `highDeltaRatioMax: 0.34`; this improves proof strictness but still does not claim full pixel-perfect parity or admit runtime widening.
+
+## Mockup Threshold Tightening
+
+- `278_MOCKUP_THRESHOLD_TIGHTENING.md` implements `visual_diff_threshold_tightening_to_observed_envelope` after the selector precision pass.
+- The visual-diff harness limits now tighten further to `normalizedMeanDeltaMax: 0.28` and `highDeltaRatioMax: 0.31`, against a measured post-refinement worst frame of `0.272669` and `0.299356`.
+- This is proof-hardening only; it does not claim full pixel-perfect parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.

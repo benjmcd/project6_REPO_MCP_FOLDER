@@ -10745,12 +10745,16 @@
     "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze",
     "latest_mockup_visual_diff_harness_branch": "codex/l3-mockup-visual-diff-harness",
     "latest_mockup_visual_diff_harness_live_behavior_change": false,
-    "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.30 and highDeltaRatioMax 0.34.",
+    "latest_mockup_visual_diff_harness_summary": "Mockup visual-diff harness: implements repo_local_mockup_frame_visual_diff_acceptance with Playwright and browser canvas comparison over all eight repo-local mockup frame manifest entries. The harness attaches layer3-mockup-visual-diff-metrics.json, enforces calibrated MOCKUP_VISUAL_DIFF_LIMITS, adds no image-diff dependency, and does not claim pixel-perfect parity or change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior. Current calibrated limits are normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31.",
     "mockup_visual_diff_harness": "completed_repo_local_mockup_visual_diff_harness",
     "latest_mockup_pixel_refinement_branch": "codex/l3-mockup-pixel-refinement",
     "latest_mockup_pixel_refinement_live_behavior_change": false,
-    "latest_mockup_pixel_refinement_summary": "Mockup pixel refinement: maps pdf_location_projection to the stable #mockup-pdf-location-card selector instead of the full #mockup-userflow-board and tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.30 and highDeltaRatioMax 0.34. Measured pdf_location_projection improved from 0.289284/0.315669 to 0.272669/0.299356. This is proof/selector precision only and does not claim full pixel-perfect parity or change runtime/backend scope.",
-    "mockup_pixel_refinement": "completed_pdf_location_selector_precision_threshold_tightening"
+    "latest_mockup_pixel_refinement_summary": "Mockup pixel refinement: maps pdf_location_projection to the stable #mockup-pdf-location-card selector instead of the full #mockup-userflow-board and tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31. Measured pdf_location_projection improved from 0.289284/0.315669 to 0.272669/0.299356. This is proof/selector precision only and does not claim full pixel-perfect parity or change runtime/backend scope.",
+    "mockup_pixel_refinement": "completed_pdf_location_selector_precision_threshold_tightening",
+    "latest_mockup_threshold_tightening_branch": "codex/l3-mockup-pixel-threshold-tighten",
+    "latest_mockup_threshold_tightening_live_behavior_change": false,
+    "latest_mockup_threshold_tightening_summary": "Mockup threshold tightening: tightens MOCKUP_VISUAL_DIFF_LIMITS to normalizedMeanDeltaMax 0.28 and highDeltaRatioMax 0.31 after the PDF-location selector precision pass measured the worst frame at 0.272669/0.299356. This is visual proof-hardening only and does not claim full pixel-perfect parity or change runtime/backend scope.",
+    "mockup_threshold_tightening": "completed_visual_diff_threshold_tightening_to_observed_envelope"
   },
   "scope_status": {
     "provider_private_signed_url_use_revoke_freeze": "completed_corrective_revoke_only_planning_control",
@@ -10774,7 +10778,8 @@
     "pdf_location_theme_projection": "completed_rendered_pdf_location_projection_from_session_summary",
     "mockup_visual_diff_freeze": "completed_planning_control_visual_diff_acceptance_freeze",
     "mockup_visual_diff_harness": "completed_repo_local_mockup_visual_diff_harness",
-    "mockup_pixel_refinement": "completed_pdf_location_selector_precision_threshold_tightening"
+    "mockup_pixel_refinement": "completed_pdf_location_selector_precision_threshold_tightening",
+    "mockup_threshold_tightening": "completed_visual_diff_threshold_tightening_to_observed_envelope"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -12405,8 +12410,8 @@
     "visual_diff_limits": {
       "compareWidth": 360,
       "compareHeight": 220,
-      "normalizedMeanDeltaMax": 0.3,
-      "highDeltaRatioMax": 0.34
+      "normalizedMeanDeltaMax": 0.28,
+      "highDeltaRatioMax": 0.31
     },
     "next_allowed_action": "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics"
   },
@@ -12427,8 +12432,8 @@
     "visual_diff_limits": {
       "compareWidth": 360,
       "compareHeight": 220,
-      "normalizedMeanDeltaMax": 0.3,
-      "highDeltaRatioMax": 0.34
+      "normalizedMeanDeltaMax": 0.28,
+      "highDeltaRatioMax": 0.31
     },
     "measured_delta": {
       "before": {
@@ -12456,6 +12461,44 @@
       "e2e/layer3-workbench.spec.js",
       "next_milestone_plans/layer3-mockups/frames/manifest.json",
       "next_milestone_plans/Layer3_planning_docs/277_MOCKUP_PIXEL_REFINEMENT.md",
+      "tools/l3-progress-check.py"
+    ]
+  },
+  "mockup_threshold_tightening_proof": {
+    "status": "completed_visual_diff_threshold_tightening_to_observed_envelope",
+    "implementation_branch": "codex/l3-mockup-pixel-threshold-tighten",
+    "live_behavior_change": false,
+    "selected_refinement_mode": "visual_diff_threshold_tightening_to_observed_envelope",
+    "entry_proof": "277_MOCKUP_PIXEL_REFINEMENT.md",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/278_MOCKUP_THRESHOLD_TIGHTENING.md",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "visual_diff_limits": {
+      "compareWidth": 360,
+      "compareHeight": 220,
+      "normalizedMeanDeltaMax": 0.28,
+      "highDeltaRatioMax": 0.31
+    },
+    "measured_worst_frame": {
+      "projection_id": "pdf_location_projection",
+      "normalizedMeanDelta": 0.272669,
+      "highDeltaRatio": 0.299356
+    },
+    "next_allowed_action": "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics",
+    "blocked_runtime": [
+      "backend_api_model_migration_service_change",
+      "source_runtime_expansion",
+      "connector_destination_dispatch",
+      "package_mutation",
+      "broad_qualitative_hybrid_rag_runtime",
+      "full_durable_mockup_activation",
+      "auth_security_widening"
+    ],
+    "proof_files": [
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/Layer3_planning_docs/278_MOCKUP_THRESHOLD_TIGHTENING.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
       "tools/l3-progress-check.py"
     ]
   }
