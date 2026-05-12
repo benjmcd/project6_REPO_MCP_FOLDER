@@ -11,6 +11,7 @@ const LAYER3_MOCKUP_THEME_FIXTURE = Object.freeze({
         'clear-screenshots/userflow_slide1.png',
         'clear-screenshots/userflow_slide1_general-example.png',
         'clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png',
+        'example-use-case-location-in-pdf.png',
         'focus_on_these/sublayer3A_and_sublayer3B.png',
         'focus_on_these/sublayer3C.png',
     ]),
