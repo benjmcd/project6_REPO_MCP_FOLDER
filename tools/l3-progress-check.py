@@ -360,6 +360,7 @@ MOCKUP_RUNTIME_GATE = PLANNING_DOCS / "271_MOCKUP_RUNTIME_GATE.md"
 PDF_LOCATION_FREEZE = PLANNING_DOCS / "272_PDF_LOCATION_FREEZE.md"
 PDF_LOCATION_PROJECTION_PROOF = PLANNING_DOCS / "273_PDF_LOCATION_PROJECTION.md"
 PDF_LOCATION_THEME_PROOF = PLANNING_DOCS / "274_PDF_LOCATION_THEME.md"
+MOCKUP_VISUAL_DIFF_FREEZE = PLANNING_DOCS / "275_MOCKUP_VISUAL_DIFF_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -17058,6 +17059,88 @@ def _check_pdf_location_theme_projection(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} PDF-location theme projection proof {key} mismatch")
 
 
+def _check_mockup_visual_diff_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(MOCKUP_VISUAL_DIFF_FREEZE, errors)
+    for term in (
+        "Status: planning/control freeze for pixel-faithful mockup visual parity proof.",
+        "selected_proof_mode: repo_local_mockup_frame_visual_diff_acceptance",
+        "implementation_branch: codex/l3-mockup-visual-diff-freeze",
+        "live_behavior_change: false",
+        "runtime_behavior_change: false",
+        "next_allowed_action: implement_repo_local_mockup_visual_diff_harness",
+        "next_milestone_plans/layer3-mockups/frames/manifest.json",
+        "headed and headless Chromium",
+        "no backend API/model/migration/service behavior change",
+        "no full durable mockup activation",
+    ):
+        if term not in freeze_text:
+            errors.append(f"{_rel(MOCKUP_VISUAL_DIFF_FREEZE)} missing mockup visual-diff freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Visual Diff Freeze",
+            "275_MOCKUP_VISUAL_DIFF_FREEZE.md",
+            "repo_local_mockup_frame_visual_diff_acceptance",
+            "implement_repo_local_mockup_visual_diff_harness",
+        ),
+        PHASE1A_README: (
+            "275_MOCKUP_VISUAL_DIFF_FREEZE.md",
+            "repo_local_mockup_frame_visual_diff_acceptance",
+            "implement_repo_local_mockup_visual_diff_harness",
+        ),
+        MANIFEST: (
+            "mockup_visual_diff_freeze",
+            "latest_mockup_visual_diff_freeze_branch",
+            "repo_local_mockup_frame_visual_diff_acceptance",
+            "implement_repo_local_mockup_visual_diff_harness",
+        ),
+        PROOF_MANIFEST: (
+            "mockup_visual_diff_freeze_proof",
+            "repo_local_mockup_frame_visual_diff_acceptance",
+            "275_MOCKUP_VISUAL_DIFF_FREEZE.md",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup visual-diff freeze term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_mockup_visual_diff_freeze_branch", "codex/l3-mockup-visual-diff-freeze"),
+        ("latest_mockup_visual_diff_freeze_live_behavior_change", False),
+    ):
+        if key not in manifest and not (
+            isinstance(current_status, dict) and current_status.get(key) == expected
+        ):
+            errors.append(f"{_rel(MANIFEST)} missing or mismatched mockup visual-diff freeze key: {key}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("mockup_visual_diff_freeze") != "completed_planning_control_visual_diff_acceptance_freeze":
+        errors.append(f"{_rel(MANIFEST)} missing completed mockup visual-diff freeze scope status")
+
+    next_required = manifest.get("next_required_decision")
+    if not isinstance(next_required, str) or "implement_repo_local_mockup_visual_diff_harness" not in next_required:
+        errors.append(f"{_rel(MANIFEST)} next_required_decision missing visual-diff harness next action")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("mockup_visual_diff_freeze_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_visual_diff_freeze_proof")
+        return
+    expected_scalars = {
+        "status": "completed_planning_control_visual_diff_acceptance_freeze",
+        "implementation_branch": "codex/l3-mockup-visual-diff-freeze",
+        "live_behavior_change": False,
+        "selected_proof_mode": "repo_local_mockup_frame_visual_diff_acceptance",
+        "runtime_behavior_change": False,
+        "next_allowed_action": "implement_repo_local_mockup_visual_diff_harness",
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup visual-diff freeze proof {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -21766,6 +21849,7 @@ def main() -> int:
         PDF_LOCATION_FREEZE,
         PDF_LOCATION_PROJECTION_PROOF,
         PDF_LOCATION_THEME_PROOF,
+        MOCKUP_VISUAL_DIFF_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -22010,6 +22094,7 @@ def main() -> int:
     _check_pdf_location_freeze(errors)
     _check_pdf_location_projection(errors)
     _check_pdf_location_theme_projection(errors)
+    _check_mockup_visual_diff_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

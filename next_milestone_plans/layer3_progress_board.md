@@ -1160,3 +1160,9 @@ Refresh this board against:
 - `274_PDF_LOCATION_THEME.md` implements `rendered_pdf_location_projection_from_session_summary` in the dedicated `layer3_mockup_workbench_theme`.
 - The rendered panel is `#mockup-pdf-location-projection` and reads only `State.sessionSummary.pdf_location_projection`; it issues no new backend requests and falls back to `Read-only server projection pending` when session-summary authority is unavailable.
 - This is a rendered UI behavior change only; it does not add a route/API change, model, migration, raw PDF blob streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, browser-owned authoritative PDF location, or full durable mockup activation.
+
+## Mockup Visual Diff Freeze
+
+- `275_MOCKUP_VISUAL_DIFF_FREEZE.md` selects `repo_local_mockup_frame_visual_diff_acceptance` as a planning/control proof mode for pixel-faithful mockup-theme work.
+- The next allowed action is `implement_repo_local_mockup_visual_diff_harness`, using `next_milestone_plans/layer3-mockups/frames/manifest.json` as frame authority and headed/headless Chromium coverage as proof requirements.
+- This freeze does not claim current visual parity and does not change backend API/model/migration/service behavior, source runtime, connector/destination dispatch, package mutation, qualitative/hybrid/RAG runtime, full durable mockup activation, or auth/security behavior.
