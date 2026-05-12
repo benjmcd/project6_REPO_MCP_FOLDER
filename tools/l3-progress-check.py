@@ -282,6 +282,12 @@ PROVIDER_PRIVATE_SIGNED_URL_USE_MODEL_CLOSEOUT = (
 PROVIDER_PRIVATE_SIGNED_URL_USE_MODEL_CONTRACT = (
     PLANNING_DOCS / "244_PROVIDER_PRIVATE_SIGNED_URL_USE_MODEL_CONTRACT.md"
 )
+PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE = (
+    PLANNING_DOCS / "245_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE.md"
+)
+PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT = (
+    PLANNING_DOCS / "246_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -14258,6 +14264,136 @@ def _check_provider_private_signed_url_use_model_closeout(errors: list[str]) -> 
     if proof.get("recommended_next_actions") != expected_next:
         errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_use_model_closeout_proof recommended_next_actions must match no-use API closeout sequence")
 
+def _check_provider_private_signed_url_rendered_ui_freeze(errors: list[str]) -> None:
+    required_terms = {
+        PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE: (
+            "Status: planning/control implementation-entry freeze for `provider_private_signed_url_rendered_ui_freeze`.",
+            "entry_decision: rendered_ui_entry_frozen_runtime_blocked",
+            "allowed_next_runtime_slice: rendered_prepare_status_revoke_controls_only",
+            "use_route_status: closed_not_implemented",
+            "implementation_entry_allowed_next: true",
+            "headed and headless Chromium",
+            "system`, `light`, `dark`, and `workbench",
+        ),
+        PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT: (
+            "Status: planning/control contract for `provider_private_signed_url_rendered_ui_entry`.",
+            "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+            "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+            "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+            "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/use",
+            "The UI must never send:",
+            "headed and headless Chromium",
+        ),
+        PHASE1A_README: (
+            "245_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE.md",
+            "246_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT.md",
+            "only allowed next implementation is `/review/layer3` prepare/status/revoke controls",
+            "`use` still closed",
+        ),
+        BOARD: (
+            "Provider Private Signed URL Rendered UI Freeze",
+            "245_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE.md",
+            "246_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT.md",
+            "rendered prepare/status/revoke controls",
+            "headed/headless live-theme behavior",
+        ),
+        MANIFEST: (
+            "latest_provider_private_signed_url_rendered_ui_freeze_branch",
+            "provider_private_signed_url_rendered_ui_freeze",
+            "rendered prepare/status/revoke controls",
+            "implementation_entry_allowed_next",
+        ),
+        PROOF_MANIFEST: (
+            "provider_private_signed_url_rendered_ui_freeze_proof",
+            "rendered_prepare_status_revoke_controls_only",
+            "codex/l3-provider-rendered-ui-freeze",
+            "closed_not_implemented",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing provider private signed URL rendered UI freeze term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for route in (
+        "/handoff/export/download/provider-private-signed-url/prepare",
+        "/handoff/export/download/provider-private-signed-url/status",
+        "/handoff/export/download/provider-private-signed-url/revoke",
+    ):
+        if route not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing provider-private rendered UI prerequisite route: {route}")
+    if "/handoff/export/download/provider-private-signed-url/use" in api_text:
+        errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use for rendered UI freeze")
+
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status", {}) if isinstance(manifest_data, dict) else {}
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for provider private signed URL rendered UI freeze")
+    else:
+        if current_status.get("latest_provider_private_signed_url_rendered_ui_freeze_branch") != "codex/l3-provider-rendered-ui-freeze":
+            errors.append(f"{_rel(MANIFEST)} current_status provider private signed URL rendered UI freeze branch is stale")
+        if current_status.get("latest_provider_private_signed_url_rendered_ui_freeze_live_behavior_change") is not False:
+            errors.append(f"{_rel(MANIFEST)} current_status provider private signed URL rendered UI freeze live behavior flag must be false")
+        summary = current_status.get("provider_private_signed_url_rendered_ui_freeze")
+        if (
+            not isinstance(summary, str)
+            or "rendered prepare/status/revoke controls" not in summary
+            or "implementation_entry_allowed_next" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.provider_private_signed_url_rendered_ui_freeze must record rendered UI entry posture")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    proof = proof_data.get("provider_private_signed_url_rendered_ui_freeze_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider_private_signed_url_rendered_ui_freeze_proof object")
+        return
+
+    expected_scalars = {
+        "status": "completed_planning_control_only",
+        "implementation_branch": "codex/l3-provider-rendered-ui-freeze",
+        "live_behavior_change": False,
+        "selected_planning_mode": "provider_private_signed_url_rendered_ui_freeze",
+        "entry_decision": "rendered_ui_entry_frozen_runtime_blocked",
+        "selected_use_model": "no_use_api_external_provider_consumption",
+        "allowed_next_runtime_slice": "rendered_prepare_status_revoke_controls_only",
+        "use_route_status": "closed_not_implemented",
+        "backend_api_change_allowed": False,
+        "model_or_migration_change_allowed": False,
+        "implementation_entry_allowed_next": True,
+    }
+    for key, expected in expected_scalars.items():
+        if proof.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_freeze_proof.{key} must be {expected!r}")
+
+    expected_docs = [
+        "next_milestone_plans/Layer3_planning_docs/245_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/246_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT.md",
+    ]
+    if proof.get("governing_docs") != expected_docs:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_freeze_proof governing_docs must match docs 245/246")
+
+    expected_allowed_routes = [
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+        "GET /api/v1/layer3/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}",
+        "POST /api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke",
+    ]
+    if proof.get("allowed_routes") != expected_allowed_routes:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_freeze_proof allowed_routes must match prepare/status/revoke")
+
+    expected_required_tests = [
+        "rendered_prepare_status_revoke_canonical_path",
+        "prepare_and_revoke_request_payload_allowlists",
+        "status_after_prepare_and_status_after_revoke",
+        "provider_private_use_control_absent_and_no_use_route_request",
+        "forbidden_connector_destination_package_source_controls_absent",
+        "headed_and_headless_chromium",
+        "system_light_dark_workbench_live_theme_parity",
+    ]
+    if proof.get("required_future_tests") != expected_required_tests:
+        errors.append(f"{_rel(PROOF_MANIFEST)} provider_private_signed_url_rendered_ui_freeze_proof required_future_tests must match freeze")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -18912,6 +19048,8 @@ def main() -> int:
         LIVE_THEME_PARITY_PROOF,
         PROVIDER_PRIVATE_SIGNED_URL_USE_MODEL_CLOSEOUT,
         PROVIDER_PRIVATE_SIGNED_URL_USE_MODEL_CONTRACT,
+        PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_FREEZE,
+        PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_CONTRACT,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -19131,6 +19269,7 @@ def main() -> int:
     _check_provider_private_signed_url_use_authority_freeze(errors)
     _check_live_theme_parity_proof(errors)
     _check_provider_private_signed_url_use_model_closeout(errors)
+    _check_provider_private_signed_url_rendered_ui_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
