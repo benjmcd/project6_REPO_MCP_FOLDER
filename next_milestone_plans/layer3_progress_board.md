@@ -1114,3 +1114,7 @@ Refresh this board against:
 ## Auth Security Named Mode Packet
 
 `266_AUTH_SECURITY_NAMED_MODE_PACKET.md` closes the auth/security named-mode packet as no-runtime. Local/proxy deployment guardrails remain live, but route-level identity, authorization, tenant/session ownership, operator permissions, audit security events, provider/connector secret policy, rendered identity controls, and auth/security runtime behavior remain blocked.
+
+## Post Reentry Named Packet Closeout
+
+`267_POST_REENTRY_NAMED_PACKET_CLOSEOUT.md` closes the post-reentry named packet stack as no runtime selected. Docs `259` through `266` have now checked runtime selection, source breadth, connector/destination, package mutation, qualitative/hybrid/RAG, full mockup activation, and auth/security; each remains blocked because no user/product-named product/operator use case is selected. Implementation remains blocked until one exact use case names the family, mode, server authority, contracts, stale-authority/idempotency rules, negative tests, leakage controls, and headed/headless/theme proof where rendered behavior is admitted.
