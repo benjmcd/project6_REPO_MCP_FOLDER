@@ -6497,7 +6497,10 @@
     "mockup_theme_entry_freeze": "Current main now includes the mockup_theme_entry_freeze: mockup_theme_shell_and_fixture_projection is selected as the next bounded implementation slice for layer3_mockup_workbench_theme on /review/layer3. The allowed future code surfaces are the static Layer 3 review UI, focused rendered-page/e2e tests, planning/proof manifests, and the progress checker. Backend API/model/migration/service changes, source expansion, connector/destination runtime, package mutation, broad qualitative/hybrid/RAG behavior, auth/security behavior, full mockup durable workflow activation, and browser-owned durable authority remain blocked unless separately refrozen.",
     "latest_mockup_theme_shell_implementation_branch": "codex/l3-mockup-theme-shell",
     "latest_mockup_theme_shell_implementation_live_behavior_change": true,
-    "mockup_theme_shell_implementation": "Current main now includes the mockup_theme_shell_implementation: the dedicated layer3_mockup_workbench_theme is live as a rendered UI theme variant for /review/layer3, with mockup_theme_shell_and_fixture_projection, semiconductor_infrastructure_auto_supply_chain fixture projection, first-slice Pre-3A/Gate B/Gate C/Sublayer 3A/3B/3C cards, landed user-flow/PDF-location, Sublayer 3A/3B, Sublayer 3C, headed/headless, 390 px responsive no-horizontal-overflow, and frame-to-rendered-projection contract proof, unavailable non-interactive future-behavior markers, and no backend API/model/migration/service behavior change."
+    "mockup_theme_shell_implementation": "Current main now includes the mockup_theme_shell_implementation: the dedicated layer3_mockup_workbench_theme is live as a rendered UI theme variant for /review/layer3, with mockup_theme_shell_and_fixture_projection, semiconductor_infrastructure_auto_supply_chain fixture projection, first-slice Pre-3A/Gate B/Gate C/Sublayer 3A/3B/3C cards, landed user-flow/PDF-location, Sublayer 3A/3B, Sublayer 3C, headed/headless, 390 px responsive no-horizontal-overflow, and frame-to-rendered-projection contract proof, unavailable non-interactive future-behavior markers, and no backend API/model/migration/service behavior change.",
+    "latest_mockup_runtime_gate_branch": "codex/l3-post-mockup-runtime-gate",
+    "latest_mockup_runtime_gate_live_behavior_change": false,
+    "mockup_runtime_gate": "Mockup runtime gate: no runtime selected after mockup visual proof. The static rendered theme proof remains separate from backend API/model/migration/service, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG, full durable mockup activation, auth/security, and frontend-only durable authority; next code requires exact_named_server_authoritative_runtime_use_case_freeze."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -6529,7 +6532,8 @@
     "post_reentry_named_packet_closeout": "completed_named_packet_stack_closed_no_runtime_selected",
     "mockup_theme_freeze": "completed_pixel_perfect_mockup_workbench_theme_selected_planning_only",
     "mockup_theme_entry_freeze": "completed_mockup_theme_implementation_entry_selected_planning_only",
-    "mockup_theme_shell_implementation": "completed_mockup_theme_shell_fixture_projection_rendered_ui"
+    "mockup_theme_shell_implementation": "completed_mockup_theme_shell_fixture_projection_rendered_ui",
+    "mockup_runtime_gate": "completed_no_runtime_selected_after_mockup_visual_proof"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -6653,5 +6657,37 @@
   "mockup_theme_entry_freeze": "Current main now includes the mockup_theme_entry_freeze: mockup_theme_shell_and_fixture_projection is selected as the next bounded implementation slice for layer3_mockup_workbench_theme on /review/layer3. The allowed future code surfaces are the static Layer 3 review UI, focused rendered-page/e2e tests, planning/proof manifests, and the progress checker. Backend API/model/migration/service changes, source expansion, connector/destination runtime, package mutation, broad qualitative/hybrid/RAG behavior, auth/security behavior, full mockup durable workflow activation, and browser-owned durable authority remain blocked unless separately refrozen.",
   "latest_mockup_theme_shell_implementation_branch": "codex/l3-mockup-theme-shell",
   "latest_mockup_theme_shell_implementation_live_behavior_change": true,
-  "mockup_theme_shell_implementation": "Current main now includes the mockup_theme_shell_implementation: the dedicated layer3_mockup_workbench_theme is live as a rendered UI theme variant for /review/layer3, with mockup_theme_shell_and_fixture_projection, semiconductor_infrastructure_auto_supply_chain fixture projection, first-slice Pre-3A/Gate B/Gate C/Sublayer 3A/3B/3C cards, landed user-flow/PDF-location, Sublayer 3A/3B, Sublayer 3C, headed/headless, 390 px responsive no-horizontal-overflow, and frame-to-rendered-projection contract proof, unavailable non-interactive future-behavior markers, and no backend API/model/migration/service behavior change."
+  "mockup_theme_shell_implementation": "Current main now includes the mockup_theme_shell_implementation: the dedicated layer3_mockup_workbench_theme is live as a rendered UI theme variant for /review/layer3, with mockup_theme_shell_and_fixture_projection, semiconductor_infrastructure_auto_supply_chain fixture projection, first-slice Pre-3A/Gate B/Gate C/Sublayer 3A/3B/3C cards, landed user-flow/PDF-location, Sublayer 3A/3B, Sublayer 3C, headed/headless, 390 px responsive no-horizontal-overflow, and frame-to-rendered-projection contract proof, unavailable non-interactive future-behavior markers, and no backend API/model/migration/service behavior change.",
+  "latest_mockup_runtime_gate_branch": "codex/l3-post-mockup-runtime-gate",
+  "latest_mockup_runtime_gate_live_behavior_change": false,
+  "latest_mockup_runtime_gate_summary": "Mockup runtime gate: no runtime selected after mockup visual proof. The static rendered theme proof remains separate from backend API/model/migration/service, source runtime, connector/destination dispatch, package mutation, broad qualitative/hybrid/RAG, full durable mockup activation, auth/security, and frontend-only durable authority; next code requires exact_named_server_authoritative_runtime_use_case_freeze.",
+  "mockup_runtime_gate": {
+    "status": "completed_no_runtime_selected_after_mockup_visual_proof",
+    "selected_planning_mode": "post_mockup_runtime_gate",
+    "entry_decision": "no_runtime_selected_after_mockup_visual_proof",
+    "implementation_branch": "codex/l3-post-mockup-runtime-gate",
+    "live_behavior_change": false,
+    "mockup_visual_proof_status": "static_theme_frame_projection_proven",
+    "runtime_implementation_allowed_next": false,
+    "next_required_boundary": "exact_named_server_authoritative_runtime_use_case_freeze",
+    "blocked_runtime_families": {
+      "source_breadth_runtime": "blocked_until_named_source_use_case",
+      "external_connector_destination_runtime": "blocked_until_named_connector_or_destination_target",
+      "rendered_package_mutation_runtime": "blocked_until_named_package_lifecycle_action",
+      "broad_qual_hybrid_rag_runtime": "blocked_until_named_analysis_mode",
+      "full_mockup_durable_activation": "blocked_until_one_mockup_control_maps_to_server_authority",
+      "auth_security_runtime": "blocked_until_named_operator_access_security_mode"
+    },
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/271_MOCKUP_RUNTIME_GATE.md",
+    "no_go_surfaces": [
+      "backend API/model/migration/service",
+      "source runtime",
+      "connector/destination dispatch",
+      "package mutation",
+      "broad qualitative/hybrid/RAG",
+      "full durable mockup activation",
+      "auth/security",
+      "frontend-only durable authority"
+    ]
+  }
 }
