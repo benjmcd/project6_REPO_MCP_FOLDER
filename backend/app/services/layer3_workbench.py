@@ -800,7 +800,13 @@ def _dataset_version_variables(db: Session, *, dataset_version_id: str) -> list[
 
 def _admitted_dataset_version_provenance_filter():
     return or_(
-        DatasetSourceProvenance.source_system == "nrc_adams_aps",
+        and_(
+            DatasetSourceProvenance.source_system == "nrc_adams_aps",
+            or_(
+                DatasetSourceProvenance.source_mode.is_(None),
+                DatasetSourceProvenance.source_mode != "raw_mixed_materialized",
+            ),
+        ),
         and_(
             DatasetSourceProvenance.source_system == RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM,
             DatasetSourceProvenance.source_mode == "raw_mixed_materialized",
@@ -810,17 +816,39 @@ def _admitted_dataset_version_provenance_filter():
     )
 
 
-def _aps_dataset_provenance_rows(db: Session, *, dataset_version_id: str) -> list[DatasetSourceProvenance]:
+def _is_admitted_dataset_version_provenance(row: DatasetSourceProvenance) -> bool:
+    if row.source_mode == "raw_mixed_materialized":
+        return (
+            row.source_system == RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM
+            and row.artifact_locator_type == "server_owned_ref"
+            and row.fetch_policy_mode == "server_owned_manifest"
+        )
+    return row.source_system == "nrc_adams_aps"
+
+
+def _dataset_version_provenance_rows(db: Session, *, dataset_version_id: str) -> list[DatasetSourceProvenance]:
     return (
         db.query(DatasetSourceProvenance)
         .filter(DatasetSourceProvenance.dataset_version_id == dataset_version_id)
-        .filter(_admitted_dataset_version_provenance_filter())
         .order_by(
             DatasetSourceProvenance.created_at.desc(),
             DatasetSourceProvenance.dataset_source_provenance_id.desc(),
         )
         .all()
     )
+
+
+def _aps_dataset_provenance_rows(db: Session, *, dataset_version_id: str) -> list[DatasetSourceProvenance]:
+    rows = _dataset_version_provenance_rows(db, dataset_version_id=dataset_version_id)
+    if rows and not _is_admitted_dataset_version_provenance(rows[0]):
+        raise Layer3WorkbenchError(
+            "dataset_version_provenance_not_admitted",
+            "DatasetVersion provenance is not admitted for Layer 3 material preview.",
+            status="blocked",
+            blocked_fields=["dataset_version_ids"],
+            next_allowed_actions=["revise_dataset_version_selection"],
+        )
+    return [row for row in rows if _is_admitted_dataset_version_provenance(row)]
 
 
 def _serialize_aps_dataset_provenance(row: DatasetSourceProvenance) -> dict[str, Any]:
@@ -1047,18 +1075,20 @@ def aps_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str,
     normalized_limit = max(1, min(int(limit or 50), 200))
     rows = (
         db.query(DatasetSourceProvenance)
-        .filter(_admitted_dataset_version_provenance_filter())
         .order_by(
             DatasetSourceProvenance.created_at.desc(),
             DatasetSourceProvenance.dataset_source_provenance_id.desc(),
         )
-        .limit(normalized_limit * 3)
+        .limit(normalized_limit * 6)
         .all()
     )
     candidates: list[dict[str, Any]] = []
     seen_dataset_version_ids: set[str] = set()
     for row in rows:
         if row.dataset_version_id in seen_dataset_version_ids:
+            continue
+        seen_dataset_version_ids.add(row.dataset_version_id)
+        if not _is_admitted_dataset_version_provenance(row):
             continue
         version = db.get(DatasetVersion, row.dataset_version_id)
         if version is None:
@@ -1095,7 +1125,6 @@ def aps_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str,
                 "aps_derived": True,
             }
         )
-        seen_dataset_version_ids.add(version.dataset_version_id)
         if len(candidates) >= normalized_limit:
             break
     return {
