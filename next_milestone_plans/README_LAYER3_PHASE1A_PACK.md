@@ -1622,3 +1622,9 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/272_PDF_LOCATION_FREEZE.md` records `pdf_location_use_case_freeze` as the first named runtime-use-case freeze after the mockup runtime gate.
 - The selected use case is `pdf_location_from_aps_content_document_citation`, a read-only projection from existing `ApsContentDocument`, `ApsContentChunk.page_start`/`ApsContentChunk.page_end`, `visual_page_refs_json`, `nrc_aps_evidence_citation_pack`, `sections[].citations[].highlight_spans`, and `source_bundle.run_id` authority.
 - The freeze does not implement runtime behavior; it only permits a later `implement_read_only_pdf_location_projection_from_existing_authority` pass and keeps raw PDF blob streaming, new source families, local upload/directory/path input, RAG/vector retrieval, connector/destination dispatch, package mutation, auth/security widening, full durable mockup activation, and browser-owned authoritative PDF location blocked.
+
+## PDF Location Projection Implementation
+
+- `Layer3_planning_docs/273_PDF_LOCATION_PROJECTION.md` records `read_only_pdf_location_projection_from_existing_authority` as the first code-bearing PDF-location slice.
+- The implementation adds `backend/app/services/layer3_pdf_location.py`, `backend/tests/test_layer3_pdf_location.py`, and the `pdf_location_projection` session-summary field for `/api/v1/layer3/session/{session_id}`.
+- The projection uses existing APS document/chunk/page/citation authority only; it does not add a new endpoint, model, migration, PDF streaming path, source adapter, package mutation, connector/destination dispatch, auth/security behavior, full durable mockup activation, or browser-owned authoritative PDF location.
