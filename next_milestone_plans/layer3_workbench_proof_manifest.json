@@ -697,7 +697,10 @@
     "latest_source_breadth_named_use_case_packet_summary": "Current main now includes the source_breadth_named_use_case_packet as a no-runtime closeout: no concrete source use case is present in current authority. Current source truth remains bounded to dataset_version and aps_content_document plus server-owned raw-mixed materialization for existing classes. Source runtime remains blocked until a user/product source need names one source family, adapter/input mode, source-of-truth, storage/security model, provenance contract, downstream semantics, rendered-control plan, and auth/security posture. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
     "latest_connector_destination_named_target_packet_branch": "codex/l3-connector-target-packet",
     "latest_connector_destination_named_target_packet_live_behavior_change": false,
-    "latest_connector_destination_named_target_packet_summary": "Current main now includes the connector_destination_named_target_packet as a no-runtime closeout: current authority proves only internal_dispatch_record_only, not external connector invocation or destination writes. External connector/destination runtime remains blocked until a downstream use case names one connector or destination target, selected mode, credential/access model, lifecycle semantics, receipt/audit contract, fake-target tests, leak controls, rendered-control obligations, and auth/security posture. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
+    "latest_connector_destination_named_target_packet_summary": "Current main now includes the connector_destination_named_target_packet as a no-runtime closeout: current authority proves only internal_dispatch_record_only, not external connector invocation or destination writes. External connector/destination runtime remains blocked until a downstream use case names one connector or destination target, selected mode, credential/access model, lifecycle semantics, receipt/audit contract, fake-target tests, leak controls, rendered-control obligations, and auth/security posture. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority.",
+    "latest_package_mutation_named_action_packet_branch": "codex/l3-package-action-packet",
+    "latest_package_mutation_named_action_packet_live_behavior_change": false,
+    "latest_package_mutation_named_action_packet_summary": "Current main now includes the package_mutation_named_action_packet as a no-runtime closeout: backend/API package lifecycle authority is live, but no rendered operator package-revision use case or selected rendered package lifecycle mode is present. Rendered package mutation runtime remains blocked until a package action names package authority, payload source, immutable package rule, downstream invalidation, re-delivery, stale-authority/idempotency, receipt/audit, leak controls, and headed/headless/theme proof. This pass admits no runtime behavior, route/API/DTO/model/migration/service behavior, executable test behavior, rendered UI behavior, CI workflow change, Playwright configuration change, or frontend-only durable authority."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -11713,6 +11716,44 @@
       "provider_public_url_runtime",
       "retry_cancel_queue_lifecycle",
       "credential_bearing_target_behavior"
+    ]
+  },
+  "package_mutation_named_action_packet_proof": {
+    "status": "completed_no_runtime_named_rendered_package_action_absent",
+    "implementation_branch": "codex/l3-package-action-packet",
+    "live_behavior_change": false,
+    "selected_planning_mode": "package_mutation_named_action_packet",
+    "entry_decision": "no_runtime_now_named_rendered_package_action_absent",
+    "upstream_reentry_doc": "255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md",
+    "current_package_lifecycle_runtime": "backend_api_bounded_lifecycle",
+    "named_operator_package_revision_use_case": null,
+    "selected_rendered_package_lifecycle_mode": null,
+    "package_payload_source_selected": false,
+    "downstream_invalidation_policy_selected": false,
+    "re_delivery_policy_selected": false,
+    "receipt_audit_contract_selected": false,
+    "headed_headless_theme_proof_plan_selected": false,
+    "implementation_entry_allowed_next": false,
+    "next_required_boundary": "named_rendered_package_lifecycle_action_before_runtime",
+    "rendered_package_mutation_runtime_status": "blocked",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/255_PACKAGE_MUTATION_REENTRY_DECISION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/263_PACKAGE_MUTATION_NAMED_ACTION_PACKET.md"
+    ],
+    "validation_evidence": [
+      "python .\\tools\\l3-progress-check.py must pass after wiring",
+      "JSON manifests must parse after wiring",
+      "pass is docs/control-only and touches no runtime source files"
+    ],
+    "blocked_runtime": [
+      "rendered_package_mutation_controls",
+      "package_payload_rewrite",
+      "package_payload_generation",
+      "source_l3_output_package_row_mutation",
+      "browser_supplied_package_diffs",
+      "downstream_invalidation_runtime",
+      "re_delivery_runtime",
+      "frontend_only_package_authority"
     ]
   }
 }
