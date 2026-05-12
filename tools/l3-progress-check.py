@@ -337,6 +337,9 @@ CONNECTOR_DESTINATION_NAMED_TARGET_PACKET = (
 PACKAGE_MUTATION_NAMED_ACTION_PACKET = (
     PLANNING_DOCS / "263_PACKAGE_MUTATION_NAMED_ACTION_PACKET.md"
 )
+QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET = (
+    PLANNING_DOCS / "264_QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -15675,6 +15678,111 @@ def _check_package_mutation_named_action_packet(errors: list[str]) -> None:
             if packet_proof.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} package_mutation_named_action_packet_proof.{key} must be {expected!r}")
 
+
+def _check_qual_hybrid_rag_named_analysis_packet(errors: list[str]) -> None:
+    packet_text = _read_required_text(QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET, errors)
+    required_terms = [
+        "Status: current-main qualitative/hybrid/RAG named-analysis packet for `qual_hybrid_rag_named_analysis_packet`.",
+        "entry_decision: no_runtime_now_named_analysis_mode_absent",
+        "upstream_reentry_doc: 256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md",
+        "current_qualitative_runtime: single_aps_doc_qualitative_pass_only",
+        "named_analysis_use_case: null",
+        "selected_qual_hybrid_rag_mode: null",
+        "source_scope_selected: false",
+        "retrieval_corpus_selected: false",
+        "vector_storage_model_selected: false",
+        "embedding_model_authority_selected: false",
+        "prompt_model_provider_authority_selected: false",
+        "output_taxonomy_selected: false",
+        "implementation_entry_allowed_next: false",
+        "next_required_boundary: named_qual_hybrid_rag_analysis_mode_before_runtime",
+        "broad_qual_hybrid_rag_runtime_status: blocked",
+        "This packet admits no runtime behavior",
+    ]
+    for term in required_terms:
+        if term not in packet_text:
+            errors.append(f"{_rel(QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET)} missing qual/hybrid/RAG named analysis packet term: {term}")
+
+    required_surfaces = {
+        PHASE1A_README: (
+            "264_QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET.md",
+            "no broad analysis use case",
+        ),
+        BOARD: (
+            "Qual Hybrid RAG Named Analysis Packet",
+            "broad qualitative execution",
+        ),
+        MANIFEST: (
+            "qual_hybrid_rag_named_analysis_packet",
+            "the single APS-document qualitative path remains live",
+        ),
+        PROOF_MANIFEST: (
+            "qual_hybrid_rag_named_analysis_packet_proof",
+            "named_qual_hybrid_rag_analysis_mode_before_runtime",
+        ),
+    }
+    for path, terms in required_surfaces.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(f"{_rel(path)} missing qual/hybrid/RAG named analysis packet term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(f"{_rel(MANIFEST)} current_status missing for qual/hybrid/RAG named analysis packet")
+    else:
+        expected_current = {
+            "latest_qual_hybrid_rag_named_analysis_packet_branch": "codex/l3-qual-analysis-packet",
+            "latest_qual_hybrid_rag_named_analysis_packet_live_behavior_change": False,
+        }
+        for key, expected in expected_current.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        summary = current_status.get("qual_hybrid_rag_named_analysis_packet")
+        if (
+            not isinstance(summary, str)
+            or "the single APS-document qualitative path remains live" not in summary
+            or "Broad qualitative/hybrid/RAG runtime remains blocked" not in summary
+            or "admits no runtime behavior" not in summary
+        ):
+            errors.append(f"{_rel(MANIFEST)} current_status.qual_hybrid_rag_named_analysis_packet must record no-runtime broad analysis posture")
+
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict):
+        errors.append(f"{_rel(MANIFEST)} scope_status missing for qual/hybrid/RAG named analysis packet")
+    elif scope_status.get("qual_hybrid_rag_named_analysis_packet") != "completed_no_runtime_named_analysis_mode_absent":
+        errors.append(f"{_rel(MANIFEST)} scope_status.qual_hybrid_rag_named_analysis_packet must be completed_no_runtime_named_analysis_mode_absent")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    packet_proof = proof_data.get("qual_hybrid_rag_named_analysis_packet_proof") if isinstance(proof_data, dict) else None
+    if not isinstance(packet_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing qual_hybrid_rag_named_analysis_packet_proof object")
+    else:
+        expected_scalars = {
+            "status": "completed_no_runtime_named_analysis_mode_absent",
+            "implementation_branch": "codex/l3-qual-analysis-packet",
+            "live_behavior_change": False,
+            "selected_planning_mode": "qual_hybrid_rag_named_analysis_packet",
+            "entry_decision": "no_runtime_now_named_analysis_mode_absent",
+            "upstream_reentry_doc": "256_QUAL_HYBRID_RAG_REENTRY_DECISION_FREEZE.md",
+            "current_qualitative_runtime": "single_aps_doc_qualitative_pass_only",
+            "named_analysis_use_case": None,
+            "selected_qual_hybrid_rag_mode": None,
+            "source_scope_selected": False,
+            "retrieval_corpus_selected": False,
+            "vector_storage_model_selected": False,
+            "embedding_model_authority_selected": False,
+            "prompt_model_provider_authority_selected": False,
+            "output_taxonomy_selected": False,
+            "implementation_entry_allowed_next": False,
+            "next_required_boundary": "named_qual_hybrid_rag_analysis_mode_before_runtime",
+            "broad_qual_hybrid_rag_runtime_status": "blocked",
+        }
+        for key, expected in expected_scalars.items():
+            if packet_proof.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} qual_hybrid_rag_named_analysis_packet_proof.{key} must be {expected!r}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -20348,6 +20456,7 @@ def main() -> int:
         SOURCE_BREADTH_NAMED_USE_CASE_PACKET,
         CONNECTOR_DESTINATION_NAMED_TARGET_PACKET,
         PACKAGE_MUTATION_NAMED_ACTION_PACKET,
+        QUAL_HYBRID_RAG_NAMED_ANALYSIS_PACKET,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -20579,6 +20688,7 @@ def main() -> int:
     _check_source_breadth_named_use_case_packet(errors)
     _check_connector_destination_named_target_packet(errors)
     _check_package_mutation_named_action_packet(errors)
+    _check_qual_hybrid_rag_named_analysis_packet(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
