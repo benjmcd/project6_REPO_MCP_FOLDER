@@ -7,6 +7,7 @@ from app.services.layer3_authority_rail import authority_rail
 from app.services.layer3_package_submit_response import (
     COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+    SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
 )
 from app.services.layer3_preview_contract import preview_identity
 from app.services.layer3_response_contract import base_response
@@ -20,6 +21,7 @@ from app.services.layer3_workbench_package_state import (
 HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.handoff_export_prepare.v1"
 COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.cohort_handoff_export_prepare.v1"
 QUAL_APS_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.qual_aps_handoff_export_prepare.v1"
+SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.source_intake_handoff_export_prepare.v1"
 
 
 def handoff_export_prepare_response(
@@ -89,6 +91,10 @@ def handoff_export_prepare_response(
     if prepare_state.get("package_construction_source_gate") == "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE":
         body["schema_id"] = QUAL_APS_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
         body["package_review_submit_schema_id"] = QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    if prepare_state.get("package_construction_source_gate") == "314_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY_FREEZE":
+        body["schema_id"] = SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
+        body["package_review_submit_schema_id"] = SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        body["authority_rail"]["persistence_mode"] = "durable_source_intake_handoff_export_prepare"
     for key in (
         "pass_type",
         "pass_scope",
@@ -98,6 +104,10 @@ def handoff_export_prepare_response(
         "source_shape",
         "source_dataset_version_ids",
         "package_review_submit_schema_id",
+        "source_intake_record_id",
+        "candidate_id",
+        "output_payload_ref",
+        "output_payload_hash",
     ):
         if key in prepare_state:
             body[key] = json_clone(prepare_state[key])
