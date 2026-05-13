@@ -4926,7 +4926,9 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('#mockup-execution-lanes')).toContainText("Quantitative (and/or/AKA 'Deterministic') Environment/Container/Plane");
   await expect(page.locator('#mockup-execution-lanes')).toContainText('Qualitative Data Analysis Environment/Container/Plane');
   await expect(page.locator('.mockup-process-note')).toHaveCount(2);
-  await expect(page.locator('.mockup-output-card')).toHaveCount(12);
+  await expect(page.locator('.mockup-output-card')).toHaveCount(20);
+  await expect(page.locator('#mockup-execution-lanes')).toContainText('Gate B Ingress Object #17 -> Generated insight #10');
+  await expect(page.locator('#mockup-execution-lanes')).toContainText('Gate B Ingress Object #20 -> Generated finding #10');
   await expect(page.locator('#mockup-frame-list li')).toHaveCount(8);
   await expect(page.locator('#mockup-frame-list')).toContainText('userflow/layer3_user-flow-overview1.png');
   await expect(page.locator('#mockup-frame-list')).toContainText('focus_on_these/sublayer3C.png');
@@ -5069,7 +5071,7 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
     visualSource: 'focus_on_these/sublayer3C.png',
     laneCount: 2,
     processNotes: 2,
-    outputCards: 12,
+    outputCards: 20,
     arrowCount: 4,
     canvasTitle: 'Sublayer 3C Analysis Execution Environments',
     laneColumns: [5, 5],
