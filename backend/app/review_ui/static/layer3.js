@@ -31,6 +31,9 @@ const QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE = '140_QUAL_APS_PACKAGE_CONSTRUC
 const QUAL_APS_PASS_SCOPE = 'single_aps_doc_qualitative_pass';
 const QUAL_APS_SOURCE_GATE = '119_L3_QUAL_APS_EXEC_ENTRY_FREEZE';
 const QUAL_APS_SOURCE_SHAPE = 'aps_content_document';
+const SOURCE_INTAKE_PASS_SCOPE = 'qualitative_single_item_operator_uploaded_source';
+const SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_intake_external_export_download_prepare.v1';
+const SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.source_intake_external_export_download_delivery.v1';
 const RAW_MIXED_MATERIALIZE_REQUEST_SCHEMA_ID = 'layer3.raw_mixed_corpus_materialize_request.v1';
 const RAW_MIXED_MATERIALIZE_MODE = 'raw_mixed_existing_source_materialization_entry';
 const RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES = new Set(['dataset_version', 'aps_content_document']);
@@ -1730,13 +1733,18 @@ function isAssociatedCohortExternalExportDownloadState(external = externalExport
 }
 
 function isQualitativeApsExternalExportDownloadState(external = externalExportDownloadPrepareState() || {}) {
+    if (isAssociatedCohortExternalExportDownloadState(external)) return false;
     const summary = State.sessionSummary?.external_export_download || {};
     return external.pass_scope === QUAL_APS_PASS_SCOPE
         || summary.pass_scope === QUAL_APS_PASS_SCOPE
         || external.source_gate === QUAL_APS_SOURCE_GATE
         || summary.source_gate === QUAL_APS_SOURCE_GATE
         || external.source_shape === QUAL_APS_SOURCE_SHAPE
-        || summary.source_shape === QUAL_APS_SOURCE_SHAPE;
+        || summary.source_shape === QUAL_APS_SOURCE_SHAPE
+        || (
+            (external.export_download_target || summary.export_download_target) === 'aps_evidence_bundle_download_reference'
+            && (external.aps_schema_id || summary.aps_schema_id) === 'aps.evidence_bundle.v2'
+        );
 }
 
 function associatedCohortDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
@@ -1746,35 +1754,88 @@ function associatedCohortDeliveryUiState(external = externalExportDownloadPrepar
     return null;
 }
 
-function externalExportDownloadDeliveryUiAdmitted(external = externalExportDownloadPrepareState() || {}) {
-    const deliveryUi = associatedCohortDeliveryUiState(external);
-    if (isQualitativeApsExternalExportDownloadState(external)) {
-        return Boolean(
-            deliveryUi
-            && deliveryUi.available === true
-            && deliveryUi.state === 'external_export_download_delivery_ui_ready'
-            && deliveryUi.operator_decision === 'deliver_external_export_download'
-            && deliveryUi.delivery_mode === 'same_origin_artifact_stream'
-            && deliveryUi.browser_managed_same_origin_attachment_enabled === true
-            && deliveryUi.public_url_enabled === false
-            && deliveryUi.signed_url_enabled === false
-            && deliveryUi.connector_dispatch_enabled === false
-            && deliveryUi.destination_selection_enabled === false
-            && deliveryUi.generic_downstream_dispatch_enabled === false
-            && deliveryUi.package_mutation_enabled === false
-            && deliveryUi.schema_runtime_source_widening_enabled === false
-        );
-    }
-    if (!isAssociatedCohortExternalExportDownloadState(external)) {
-        return true;
-    }
+function qualitativeApsDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
+    if (!isQualitativeApsExternalExportDownloadState(external)) return null;
+    const summary = State.sessionSummary?.external_export_download || {};
+    const deliveryUi = external?.delivery_ui || summary.delivery_ui || null;
+    if (deliveryUi) return deliveryUi;
+    const descriptor = external.external_export_download_descriptor || {};
+    const readinessState = externalExportDownloadStateName(external);
+    const available = Boolean(
+        external.schema_id === 'layer3.external_export_download_prepare.v1'
+        && readinessState === 'external_export_download_prepared'
+        && external.external_export_download_record_ref
+        && external.export_download_descriptor_ref
+        && (external.export_download_target || descriptor.export_download_target) === 'aps_evidence_bundle_download_reference'
+        && (external.download_mode || descriptor.download_mode) === 'reference_only_prepare'
+        && external.aps_bundle_ref
+        && external.source_artifact_hash
+    );
+    return {
+        available,
+        state: available
+            ? 'external_export_download_delivery_ui_ready'
+            : 'external_export_download_delivery_ui_unavailable',
+        operator_decision: 'deliver_external_export_download',
+        delivery_mode: 'same_origin_artifact_stream',
+        browser_managed_same_origin_attachment_enabled: available,
+        public_url_enabled: false,
+        signed_url_enabled: false,
+        connector_dispatch_enabled: false,
+        destination_selection_enabled: false,
+        generic_downstream_dispatch_enabled: false,
+        package_mutation_enabled: false,
+        schema_runtime_source_widening_enabled: false,
+        server_authority: 'layer3.external_export_download_prepare.v1',
+    };
+}
+
+function isSourceIntakeExternalExportDownloadState(external = externalExportDownloadPrepareState() || {}) {
+    const summary = State.sessionSummary?.external_export_download || {};
+    return external.schema_id === SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        || summary.schema_id === SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        || external.pass_scope === SOURCE_INTAKE_PASS_SCOPE
+        || summary.pass_scope === SOURCE_INTAKE_PASS_SCOPE
+        || Boolean(external.source_intake_record_id || summary.source_intake_record_id);
+}
+
+function sourceIntakeDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
+    if (!isSourceIntakeExternalExportDownloadState(external)) return null;
+    const readinessState = externalExportDownloadStateName(external);
+    const available = Boolean(
+        external.schema_id === SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        && readinessState === 'external_export_download_prepared'
+        && external.external_export_download_record_ref
+        && external.export_download_descriptor_ref
+        && external.source_intake_record_id
+        && external.candidate_id
+        && external.aps_bundle_ref
+        && external.source_artifact_hash
+    );
+    return {
+        available,
+        state: available
+            ? 'source_intake_external_export_download_delivery_ui_ready'
+            : 'source_intake_external_export_download_delivery_ui_blocked',
+        operator_decision: 'deliver_external_export_download',
+        delivery_mode: 'same_origin_artifact_stream',
+        browser_managed_same_origin_attachment_enabled: available,
+        public_url_enabled: false,
+        signed_url_enabled: false,
+        connector_dispatch_enabled: false,
+        destination_selection_enabled: false,
+        generic_downstream_dispatch_enabled: false,
+        package_mutation_enabled: false,
+        schema_runtime_source_widening_enabled: false,
+        server_authority: SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+    };
+}
+
+function deliveryUiStateAdmitted(deliveryUi, states) {
     return Boolean(
         deliveryUi
         && deliveryUi.available === true
-        && (
-            deliveryUi.state === 'associated_cohort_external_export_download_delivery_ui_ready'
-            || deliveryUi.state === 'external_export_download_delivery_ui_ready'
-        )
+        && states.includes(deliveryUi.state)
         && deliveryUi.operator_decision === 'deliver_external_export_download'
         && deliveryUi.delivery_mode === 'same_origin_artifact_stream'
         && deliveryUi.browser_managed_same_origin_attachment_enabled === true
@@ -1786,6 +1847,28 @@ function externalExportDownloadDeliveryUiAdmitted(external = externalExportDownl
         && deliveryUi.package_mutation_enabled === false
         && deliveryUi.schema_runtime_source_widening_enabled === false
     );
+}
+
+function externalExportDownloadDeliveryUiAdmitted(external = externalExportDownloadPrepareState() || {}) {
+    const sourceIntakeDeliveryUi = sourceIntakeDeliveryUiState(external);
+    if (sourceIntakeDeliveryUi) {
+        return deliveryUiStateAdmitted(sourceIntakeDeliveryUi, [
+            'source_intake_external_export_download_delivery_ui_ready',
+        ]);
+    }
+    if (isQualitativeApsExternalExportDownloadState(external)) {
+        return deliveryUiStateAdmitted(qualitativeApsDeliveryUiState(external), [
+            'external_export_download_delivery_ui_ready',
+        ]);
+    }
+    if (!isAssociatedCohortExternalExportDownloadState(external)) {
+        return false;
+    }
+    const deliveryUi = associatedCohortDeliveryUiState(external);
+    return deliveryUiStateAdmitted(deliveryUi, [
+        'associated_cohort_external_export_download_delivery_ui_ready',
+        'external_export_download_delivery_ui_ready',
+    ]);
 }
 
 function externalExportDownloadDeliveryStateName(state = State.externalExportDownloadDelivery) {
@@ -1802,9 +1885,11 @@ function recordedExternalExportDownloadDelivery() {
 }
 
 function canGenerateExternalExportDownloadSignedReference() {
+    const external = externalExportDownloadPrepareState() || {};
     return Boolean(
         recordedExternalExportDownloadPrepare()
-        && externalExportDownloadDeliveryUiAdmitted()
+        && !isSourceIntakeExternalExportDownloadState(external)
+        && externalExportDownloadDeliveryUiAdmitted(external)
         && !State.externalExportDownloadSignedReference?.signed_reference_token
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
@@ -1848,9 +1933,11 @@ function providerPrivateSignedUrlBlocksPrepare() {
 }
 
 function canPrepareProviderPrivateSignedUrl() {
+    const external = externalExportDownloadPrepareState() || {};
     return Boolean(
         recordedExternalExportDownloadPrepare()
-        && externalExportDownloadDeliveryUiAdmitted()
+        && !isSourceIntakeExternalExportDownloadState(external)
+        && externalExportDownloadDeliveryUiAdmitted(external)
         && !providerPrivateSignedUrlBlocksPrepare()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
@@ -4300,7 +4387,8 @@ function externalExportDownloadDeliveryPanelState() {
     const external = externalExportDownloadPrepareState() || {};
     const stateName = externalExportDownloadStateName(external);
     const associatedCohort = isAssociatedCohortExternalExportDownloadState(external);
-    const deliveryUi = associatedCohortDeliveryUiState(external);
+    const sourceIntake = isSourceIntakeExternalExportDownloadState(external);
+    const deliveryUi = sourceIntakeDeliveryUiState(external) || qualitativeApsDeliveryUiState(external) || associatedCohortDeliveryUiState(external);
     if (State.externalExportDownloadDeliveryPending) {
         return { label: 'external_export_download_delivery_ui_downloading', pill: 'preview', message: 'Submitting one same-origin attachment request for browser-managed download.' };
     }
@@ -4318,6 +4406,9 @@ function externalExportDownloadDeliveryPanelState() {
     if (stateName === 'external_export_download_prepared' && canSubmitExternalExportDownloadDelivery()) {
         return { label: 'external_export_download_delivery_ui_ready', pill: 'ok', message: 'Recorded readiness can be delivered as a same-origin attachment.' };
     }
+    if (stateName === 'external_export_download_prepared' && sourceIntake && deliveryUi?.available !== true) {
+        return { label: deliveryUi?.state || 'source_intake_external_export_download_delivery_ui_blocked', pill: 'blocked', message: 'Source-intake delivery requires complete server prepare authority before the rendered control can submit.' };
+    }
     if (stateName === 'external_export_download_prepared' && associatedCohort && deliveryUi?.available !== true) {
         return { label: deliveryUi?.state || 'associated_cohort_external_export_download_delivery_ui_unavailable', pill: 'blocked', message: 'Associated-cohort delivery requires explicit server UI authority before the rendered control can submit.' };
     }
@@ -4330,7 +4421,7 @@ function externalExportDownloadDeliveryPanelState() {
 function renderExternalExportDownloadDeliveryPanel() {
     const external = externalExportDownloadPrepareState() || {};
     const panelState = externalExportDownloadDeliveryPanelState();
-    const deliveryUi = associatedCohortDeliveryUiState(external) || {};
+    const deliveryUi = sourceIntakeDeliveryUiState(external) || qualitativeApsDeliveryUiState(external) || associatedCohortDeliveryUiState(external) || {};
     const downstream = [
         'public_url',
         'signed_url',
@@ -4359,6 +4450,8 @@ function renderExternalExportDownloadDeliveryPanel() {
                     ${fieldItem('server UI state', deliveryUi.state)}
                     ${fieldItem('server UI available', deliveryUi.available)}
                     ${fieldItem('server UI basis', deliveryUi.server_authority)}
+                    ${fieldItem('source-intake record', external.source_intake_record_id, { code: true })}
+                    ${fieldItem('source-intake candidate', external.candidate_id, { code: true })}
                 </ul>
             </section>
             <section class="result-review-card">

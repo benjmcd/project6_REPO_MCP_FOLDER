@@ -15348,5 +15348,38 @@
       "full_mockup_activation"
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required"
+  },
+  "source_intake_external_export_download_rendered_controls_boundary_proof": {
+    "proof_kind": "source_intake_external_export_download_rendered_controls_boundary",
+    "branch": "codex/l3-source-intake-rendered-delivery-controls",
+    "current_main_predecessor_commit": "f17d9e2e9a6e1dacfbb86552dd94b6b9af447634",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/327_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "rendered_shell": "backend/app/review_ui/static/layer3.html",
+    "targeted_test": "backend/tests/test_layer3_page.py",
+    "targeted_validation": "python -m pytest .\\backend\\tests\\test_layer3_page.py",
+    "targeted_validation_result": "3 passed",
+    "prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+    "delivery_schema_id": "layer3.source_intake_external_export_download_delivery.v1",
+    "delivery_ui_state": "source_intake_external_export_download_delivery_ui_ready",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": true,
+    "route_added": false,
+    "model_migration_changed": false,
+    "blocked_scope": [
+      "provider_url_controls",
+      "signed_reference_controls_for_source_intake",
+      "connector_destination_dispatch",
+      "package_mutation",
+      "source_expansion",
+      "rag_vector",
+      "route",
+      "model_migration",
+      "auth_security",
+      "broad_qualitative_execution",
+      "full_mockup_activation"
+    ],
+    "validation_status": "targeted_tests_and_progress_check_required"
   }
 }
