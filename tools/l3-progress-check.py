@@ -551,6 +551,15 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_AUTHORITY_CONTRACT = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE = (
     PLANNING_DOCS / "338_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE = (
+    PLANNING_DOCS / "339_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE.md"
+)
+PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
+PROVIDER_PUBLIC_URL_FAKE_PROVIDER_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_fake_provider.py"
+)
+PROVIDER_PUBLIC_URL_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_provider_public_url_state.py"
+PROVIDER_PUBLIC_URL_STATE_MIGRATION = ROOT / "backend" / "alembic" / "versions" / "0024_layer3_provider_public_url_state.py"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -28506,6 +28515,64 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public substrate-freeze term: {term}")
+
+    substrate_impl_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE, errors)
+    for term in (
+        "Status: branch-local substrate implementation; targeted validation passed.",
+        "source_intake_provider_public_url_durable_state_substrate",
+        "backend/app/services/layer3_provider_public_url_state.py",
+        "No provider-public URL route is added.",
+        "No raw public URL value is persisted",
+        "current-main proof/control sync",
+    ):
+        if term not in substrate_impl_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE)} missing provider-public substrate implementation term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Durable State Substrate",
+            "339_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE.md",
+            "branch_local_implemented_targeted_tests_passed",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_durable_state_substrate",
+            "latest_source_intake_provider_public_url_durable_state_substrate_branch",
+            "branch_local_implemented_targeted_tests_passed",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_durable_state_substrate_proof",
+            "backend/app/services/layer3_provider_public_url_state.py",
+            "targeted_tests_passed",
+        ),
+        PROVIDER_PUBLIC_URL_STATE_SERVICE: (
+            "PROVIDER_PUBLIC_URL_REDACTED_MARKER",
+            "record_prepared_provider_public_url_receipt",
+            "revoke_provider_public_url_receipt",
+            "raw_public_url_exposed",
+        ),
+        PROVIDER_PUBLIC_URL_FAKE_PROVIDER_SERVICE: (
+            "PROVIDER_PUBLIC_URL_FAKE_PROVIDER_SCHEMA_ID",
+            "ProviderPublicUrlFakeReceipt",
+            "provider_network_enabled",
+            "provider_object_write_enabled",
+        ),
+        PROVIDER_PUBLIC_URL_STATE_TEST: (
+            "test_prepare_persists_redacted_authority_and_idempotent_receipt_state",
+            "test_revoke_blocks_future_public_url_state_and_redacts_audit",
+            "test_fake_provider_response_never_exposes_raw_public_url",
+            "secret-public-token",
+        ),
+        PROVIDER_PUBLIC_URL_STATE_MIGRATION: (
+            "0024_layer3_provider_public_url_state",
+            "l3_provider_public_url_object_authority",
+            "l3_provider_public_url_receipt",
+            "l3_provider_public_url_audit_event",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public substrate implementation term: {term}")
 
 def main() -> int:
     errors: list[str] = []
