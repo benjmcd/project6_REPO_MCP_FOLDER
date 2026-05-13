@@ -43,6 +43,7 @@ from app.models.models import (
     L3ProviderPublicUrlAuditEvent,
     L3ProviderPublicUrlObjectAuthority,
     L3ProviderPublicUrlReceipt,
+    L3ProviderPublicUrlRevocation,
     L3ReconciliationRecord,
     L3ReplacementOutputPackage,
     L3ReplacementPackageArtifactManifest,
@@ -3597,6 +3598,24 @@ def _provider_public_url_prepare_payload(
     }
 
 
+def _provider_public_url_revoke_payload(
+    *,
+    request_id: str,
+    provider_public_body: dict,
+    idempotency_key: str = "api-provider-public-url-revoke-key",
+    revoked_by: str = "layer3-api-test",
+    revocation_reason: str = "operator removed provider-public URL access",
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "provider_public_url_receipt_id": provider_public_body["provider_public_url_receipt_id"],
+        "idempotency_key": idempotency_key,
+        "revoked_by": revoked_by,
+        "revocation_reason": revocation_reason,
+        "operator_decision": "revoke_provider_public_url",
+    }
+
+
 def _connector_dispatch_record_payload(
     *,
     request_id: str,
@@ -4026,9 +4045,10 @@ def test_layer3_api_provider_public_url_openapi_prepare_status_schema(client: Te
         "/api/v1/layer3/handoff/export/download/provider-public-url/status/"
         "{provider_public_url_receipt_id}"
     )
+    revoke_path = "/api/v1/layer3/handoff/export/download/provider-public-url/revoke"
     assert prepare_path in spec["paths"]
     assert status_path in spec["paths"]
-    assert "/api/v1/layer3/handoff/export/download/provider-public-url/revoke" not in spec["paths"]
+    assert revoke_path in spec["paths"]
     assert "/api/v1/layer3/handoff/export/download/provider-public-url/use" not in spec["paths"]
     assert "/api/v1/layer3/handoff/export/download/provider-public-url/deliver" not in spec["paths"]
 
@@ -4060,6 +4080,31 @@ def test_layer3_api_provider_public_url_openapi_prepare_status_schema(client: Te
     )
     assert _openapi_response_schema(spec, status_path, "get")["title"] == (
         "Layer3ProviderPublicUrlStatusResponse"
+    )
+    revoke_schema = spec["paths"][revoke_path]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert revoke_schema["additionalProperties"] is False
+    assert set(revoke_schema["required"]) == {
+        "client_request_id",
+        "provider_public_url_receipt_id",
+        "idempotency_key",
+        "revoked_by",
+        "revocation_reason",
+        "operator_decision",
+    }
+    assert revoke_schema["properties"]["operator_decision"]["enum"] == ["revoke_provider_public_url"]
+    for forbidden in (
+        "provider_public_url",
+        "public_url",
+        "raw_public_url",
+        "public_proxy_url",
+        "download_url",
+        "provider_credentials",
+        "connector_dispatch",
+        "auth_security_override",
+    ):
+        assert revoke_schema["properties"][forbidden]["not"] == {}
+    assert _openapi_response_schema(spec, revoke_path, "post")["title"] == (
+        "Layer3ProviderPublicUrlRevokeResponse"
     )
 
 
@@ -4201,6 +4246,150 @@ def test_layer3_api_provider_public_url_prepare_status_idempotent_and_fail_close
             "provider_public_receipts": counts_before["provider_public_receipts"] + 1,
         }
         assert db.query(L3ProviderPublicUrlAuditEvent).count() == counts_before["provider_public_audits"] + 2
+    finally:
+        db.close()
+
+
+def test_layer3_api_provider_public_url_revoke_success_idempotency_and_fail_closed(
+    client: TestClient,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-provider-public-url-revoke-private-basis",
+    )
+    private_payload = _provider_private_signed_url_prepare_payload(
+        request_id="api-provider-public-url-revoke-private-prepare",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        readiness_body=readiness_body,
+    )
+    private_prepare = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+        json=private_payload,
+    )
+    assert private_prepare.status_code == 200, private_prepare.text
+    public_prepare = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json=_provider_public_url_prepare_payload(
+            request_id="api-provider-public-url-revoke-public-prepare",
+            provider_private_body=private_prepare.json(),
+        ),
+    )
+    assert public_prepare.status_code == 200, public_prepare.text
+    public_body = public_prepare.json()
+    revoke_payload = _provider_public_url_revoke_payload(
+        request_id="api-provider-public-url-revoke",
+        provider_public_body=public_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        revocations_before = db.query(L3ProviderPublicUrlRevocation).count()
+        audits_before = db.query(L3ProviderPublicUrlAuditEvent).count()
+        counts_before = {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "provider_public_authorities": db.query(L3ProviderPublicUrlObjectAuthority).count(),
+            "provider_public_receipts": db.query(L3ProviderPublicUrlReceipt).count(),
+        }
+    finally:
+        db.close()
+
+    revoke = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/revoke",
+        json=revoke_payload,
+    )
+    assert revoke.status_code == 200, revoke.text
+    revoke_body = revoke.json()
+    assert revoke_body["schema_id"] == "layer3.provider_public_url.revoke.v1"
+    assert revoke_body["status"] == "revoked"
+    assert revoke_body["provider_public_url_receipt_id"] == public_body["provider_public_url_receipt_id"]
+    assert revoke_body["provider_public_url_state"] == "provider_public_url_revoked"
+    assert revoke_body["provider_public_url_redacted"] == "provider-public-url:redacted"
+    assert revoke_body["provider_public_url_revoked"] is True
+    assert revoke_body["raw_public_url_exposed"] is False
+    assert revoke_body["public_url_enabled"] is False
+    assert "provider-public.invalid" not in json.dumps(revoke_body, sort_keys=True)
+
+    status = client.get(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/status/"
+        f"{public_body['provider_public_url_receipt_id']}"
+    )
+    assert status.status_code == 200, status.text
+    assert status.json()["provider_public_url_state"] == "provider_public_url_revoked"
+    assert status.json()["provider_public_url_revoked"] is True
+
+    retry = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/revoke",
+        json={**revoke_payload, "client_request_id": "api-provider-public-url-revoke-retry"},
+    )
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["provider_public_url_state"] == "provider_public_url_revoked"
+    assert retry.json()["provider_public_url_receipt_id"] == public_body["provider_public_url_receipt_id"]
+
+    conflict = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/revoke",
+        json={
+            **revoke_payload,
+            "client_request_id": "api-provider-public-url-revoke-conflict",
+            "revocation_reason": "different provider-public revoke reason",
+        },
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["error_code"] == "provider_public_url_state_revocation_idempotency_conflict"
+    assert "different provider-public revoke reason" not in conflict.text
+
+    missing = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/revoke",
+        json={
+            **revoke_payload,
+            "client_request_id": "api-provider-public-url-revoke-missing",
+            "provider_public_url_receipt_id": "ppub_missing",
+            "idempotency_key": "api-provider-public-url-revoke-missing",
+        },
+    )
+    assert missing.status_code == 404
+    assert missing.json()["error_code"] == "provider_public_url_state_not_recorded"
+
+    forbidden = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/revoke",
+        json={**revoke_payload, "provider_public_url": "https://provider-public.invalid/raw-secret"},
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "provider_public_url_revoke_scope_not_admitted"
+    assert "provider-public.invalid" not in forbidden.text
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3ProviderPublicUrlRevocation).count() == revocations_before + 1
+        assert db.query(L3ProviderPublicUrlAuditEvent).count() == audits_before + 3
+        assert {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "provider_public_authorities": db.query(L3ProviderPublicUrlObjectAuthority).count(),
+            "provider_public_receipts": db.query(L3ProviderPublicUrlReceipt).count(),
+        } == counts_before
     finally:
         db.close()
 

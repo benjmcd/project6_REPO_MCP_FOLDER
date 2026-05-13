@@ -569,6 +569,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_CURRENT_MAIN_SYNC = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE = (
     PLANNING_DOCS / "344_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API = (
+    PLANNING_DOCS / "345_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -28785,6 +28788,61 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public revoke-route freeze term: {term}")
+
+    revoke_api_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API, errors)
+    for term in (
+        "Status: branch-local backend/API implementation; targeted validation passed.",
+        "source_intake_provider_public_url_revoke_backend_api",
+        "backend/app/services/layer3_provider_public_url.py",
+        "POST `/api/v1/layer3/handoff/export/download/provider-public-url/revoke`",
+        "No provider-public URL delivery/use route is added.",
+        "No rendered provider-public controls are added.",
+        "No raw public URL value is persisted or returned.",
+        "current-main proof/control sync",
+    ):
+        if term not in revoke_api_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API)} missing provider-public revoke implementation term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Revoke Backend API",
+            "345_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API.md",
+            "branch_local_implemented_targeted_tests_passed",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_revoke_backend_api",
+            "latest_source_intake_provider_public_url_revoke_backend_api_branch",
+            "branch_local_implemented_targeted_tests_passed",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_revoke_backend_api_proof",
+            "backend/app/services/layer3_provider_public_url.py",
+            "targeted_tests_passed",
+        ),
+        PROVIDER_PUBLIC_URL_API_SERVICE: (
+            "provider_public_url_revoke",
+            "PROVIDER_PUBLIC_URL_REVOKE_SCHEMA_ID",
+            "provider_public_url_revoke_scope_not_admitted",
+            "revoke_provider_public_url_receipt",
+            "raw_public_url_exposed",
+        ),
+        LAYER3_API: (
+            "/handoff/export/download/provider-public-url/revoke",
+            "Layer3ProviderPublicUrlRevokeRequest",
+            "Layer3ProviderPublicUrlRevokeResponse",
+            "PROVIDER_PUBLIC_URL_REVOKE_REQUEST_SCHEMA",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_provider_public_url_revoke_success_idempotency_and_fail_closed",
+            "provider_public_url_state_revocation_idempotency_conflict",
+            "provider_public_url_state_not_recorded",
+            "provider_public_url_revoke_scope_not_admitted",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public revoke implementation term: {term}")
 
 def main() -> int:
     errors: list[str] = []
