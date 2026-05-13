@@ -7261,7 +7261,10 @@
       "visual_page_refs_json",
       "nrc_aps_evidence_citation_pack",
       "citations[].highlight_spans",
-      "source_bundle.run_id"
+      "source_bundle.run_id",
+      "ApsContentDocument.content_contract_id",
+      "ApsContentChunk.content_contract_id",
+      "ApsContentChunk.chunking_contract_id"
     ],
     "blocked_surfaces": [
       "no raw PDF blob streaming",
@@ -7278,7 +7281,22 @@
       "no package mutation",
       "no auth/security behavior change",
       "no full durable mockup activation",
-      "no frontend-only durable authority"
+      "no frontend-only durable authority",
+      "no vector index creation",
+      "no broad qualitative/hybrid/RAG runtime"
+    ],
+    "future_required_tests": [
+      "successful projection from existing aps_content_document chunk/page/citation authority",
+      "fail closed missing document identity",
+      "fail closed stale run id bundle id bundle checksum or citation id",
+      "fail closed missing page chunk or highlight authority",
+      "no raw path blob ref provider URL token prompt or connector secret leakage",
+      "no backend source package connector auth/security RAG/vector or full-mockup side effects",
+      "headed and headless rendered proof if surfaced in the mockup workbench theme",
+      "fail closed content contract id mismatch",
+      "fail closed chunking contract id mismatch",
+      "fail closed non-PDF content document",
+      "fail closed missing visual page authority"
     ]
   },
   "latest_pdf_location_projection_branch": "codex/l3-pdf-location-projection",
