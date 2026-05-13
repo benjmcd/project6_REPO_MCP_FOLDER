@@ -1750,3 +1750,11 @@ Branch-local implementation: `342_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STAT
 Validation status is `branch_local_implemented_targeted_tests_passed`: targeted provider-public API tests, provider-public durable-state tests, progress check, and diff hygiene passed. Provider-public delivery/use, revoke, rendered controls, `public_url_enabled: True`, raw public URL persistence or response exposure, provider network/object-store writes, public proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
 
 The next required action is `source_intake_provider_public_url_prepare_status_backend_api_current_main_sync` after merge.
+
+## Source Intake Provider Public URL Prepare/Status Current-main Sync
+
+Current-main proof/control sync: PR `#932` merged `342_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_BACKEND_API.md` at `57a6c8f99f4b6f4e62b008214fd5c439c0db34b5`. Provider-public URL prepare/status backend API is now current-main behavior, limited to the owner service, prepare route, status route, DTO/schema guards, focused API tests, and progress/proof controls.
+
+The sync doc `343_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/reviewThreads were empty, merge state was `CLEAN`, and post-merge `python .\tools\l3-progress-check.py` passed. Provider-public delivery/use, revoke, rendered controls, `public_url_enabled: True`, raw public URL persistence or response exposure, provider network/object-store writes, public proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
+
+The next required decision is `source_intake_provider_public_url_next_route_or_rendered_control_freeze`.
