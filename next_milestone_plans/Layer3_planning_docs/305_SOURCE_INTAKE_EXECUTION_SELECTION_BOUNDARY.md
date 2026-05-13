@@ -2,9 +2,19 @@
 
 ## Status
 
-Status: branch-local implementation with targeted validation passed for `source_intake_execution_selection_boundary`.
+Status: current-main implementation with targeted validation passed for `source_intake_execution_selection_boundary`.
 
 Implementation branch: `codex/l3-source-intake-exec-selection`.
+
+Implementation commit: `cc4044b6a8ec555bcac381bf230440e00f83b6dc`.
+
+Merged PR: `#893`.
+
+Merge commit/current-main authority: `ca3640bfb315666fd6550f2c19048fa1a37a9b44`.
+
+Merged at: `2026-05-13T08:40:40Z`.
+
+GitHub checks: `backend-layer3-api` success and `test` success.
 
 Implementation predecessor: `304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md`.
 
