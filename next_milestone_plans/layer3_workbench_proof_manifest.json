@@ -13463,7 +13463,7 @@
       "tools/l3-progress-check.py"
     ]
   },
-  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, mockup frame mapping, headed/headless, headed/headless theme coverage, 390 px responsive no-horizontal-overflow proof, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof and visual parity envelope through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, runtime-freeze intake checklist coverage, and the current source-intake chain: PR #861 operator_single_upload_source_intake record creation, safe read-only inventory, operator_source_intake_material_preview_read_only bounded text preview, upload duplicate-field and duplicate-file guards, source-intake review-debt closeout, and operator_source_intake_rendered_controls on /review/layer3 over the existing upload, inventory, and bounded preview APIs. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named; the only allowed UI-proof continuation remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics if such a new visual target is named. Otherwise the boundary remains no_runtime_implementation_without_named_use_case and the next non-visual implementation boundary remains exact_named_server_authoritative_runtime_use_case_freeze. The source-intake record is now usable only for the exact admitted source-intake surfaces: record creation, inventory, bounded text preview, and rendered upload/inventory/preview controls. Any downstream use beyond those admitted surfaces still requires exactly one named server-authoritative runtime/use-case freeze. The recommended next source-intake boundary, if operator-uploaded source should feed the normal Layer 3 flow, is source_intake_gate_b_material_admission: it must freeze L3SourceIntakeRecord as canonical authority, request/response contracts, stale-authority and idempotency behavior, negative tests, leakage controls, and headed/headless/theme proof before package construction, execution start, connector/destination dispatch, RAG/vector indexing, web connector retrieval, broad file upload/local-directory authority, provider-private signed URL prepare, auth/security runtime, additional backend API/model/migration/service behavior, or frontend-only durable authority can proceed. The source_intake_gate_b_material_admission freeze is complete as planning/control only; next proof must implement_source_intake_gate_b_material_admission_runtime over L3SourceIntakeRecord without package construction, RAG/vector indexing, frontend-only durable authority, local path/local directory authority, web connector retrieval, connector/destination dispatch, provider-private signed URL prepare, execution start, auth/security behavior, generic source upload, or broad file upload.; source_intake_plan_approval_boundary_freeze is now complete as planning/control only. The next allowed implementation is implement_source_intake_plan_approval_boundary only, over server-owned Gate C and plan-preview state derived from L3SourceIntakeRecord; execution start, package construction/mutation, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, auth/security behavior, model/migration changes, new backend routes, rendered UI changes, and frontend-only durable authority remain blocked.",
+  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, mockup frame mapping, headed/headless, headed/headless theme coverage, 390 px responsive no-horizontal-overflow proof, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof and visual parity envelope through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, runtime-freeze intake checklist coverage, and the current source-intake chain: PR #861 operator_single_upload_source_intake record creation, safe read-only inventory, operator_source_intake_material_preview_read_only bounded text preview, upload duplicate-field and duplicate-file guards, source-intake review-debt closeout, and operator_source_intake_rendered_controls on /review/layer3 over the existing upload, inventory, and bounded preview APIs. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named; the only allowed UI-proof continuation remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics if such a new visual target is named. Otherwise the boundary remains no_runtime_implementation_without_named_use_case and the next non-visual implementation boundary remains exact_named_server_authoritative_runtime_use_case_freeze. The source-intake record is now usable only for the exact admitted source-intake surfaces: record creation, inventory, bounded text preview, and rendered upload/inventory/preview controls. Any downstream use beyond those admitted surfaces still requires exactly one named server-authoritative runtime/use-case freeze. The recommended next source-intake boundary, if operator-uploaded source should feed the normal Layer 3 flow, is source_intake_gate_b_material_admission: it must freeze L3SourceIntakeRecord as canonical authority, request/response contracts, stale-authority and idempotency behavior, negative tests, leakage controls, and headed/headless/theme proof before package construction, execution start, connector/destination dispatch, RAG/vector indexing, web connector retrieval, broad file upload/local-directory authority, provider-private signed URL prepare, auth/security runtime, additional backend API/model/migration/service behavior, or frontend-only durable authority can proceed. The source_intake_gate_b_material_admission freeze is complete as planning/control only; next proof must implement_source_intake_gate_b_material_admission_runtime over L3SourceIntakeRecord without package construction, RAG/vector indexing, frontend-only durable authority, local path/local directory authority, web connector retrieval, connector/destination dispatch, provider-private signed URL prepare, execution start, auth/security behavior, generic source upload, or broad file upload.; source_intake_plan_approval_boundary_freeze is now complete as planning/control only. The next allowed implementation is implement_source_intake_plan_approval_boundary only, over server-owned Gate C and plan-preview state derived from L3SourceIntakeRecord; execution start, package construction/mutation, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, auth/security behavior, model/migration changes, new backend routes, rendered UI changes, and frontend-only durable authority remain blocked.; source_intake_plan_approval_boundary is now branch-local implemented with targeted proof only. The next required decision is source_intake_execution_selection_boundary_freeze before a source-intake approved plan may create selected pass-run state or start execution; package construction/mutation, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, auth/security behavior, model/migration changes, new backend routes, rendered UI changes, and frontend-only durable authority remain blocked.",
   "latest_runtime_freeze_intake_branch": "codex/l3-runtime-freeze-intake",
   "latest_runtime_freeze_intake_live_behavior_change": false,
   "latest_runtime_freeze_intake_summary": "Runtime freeze intake checklist: converts the post-mockup pixel-proof boundary into a concrete intake gate for the next non-visual Layer 3 implementation. It admits no runtime and requires exact_named_server_authoritative_runtime_use_case_freeze before source breadth, connector/destination, rendered package mutation, broad qual/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work. Boundary: no_runtime_implementation_without_named_use_case.",
@@ -14371,5 +14371,62 @@
     "repo_confirmed_failure_boundary": "approve_pass_entry_plan currently fails closed for source-intake preview candidates with source-intake plan approval is not admitted by this preview-only boundary"
   },
   "latest_source_intake_plan_approval_boundary_freeze_branch": "codex/l3-source-intake-plan-approval-freeze",
-  "latest_source_intake_plan_approval_boundary_freeze_live_behavior_change": false
+  "latest_source_intake_plan_approval_boundary_freeze_live_behavior_change": false,
+  "source_intake_plan_approval_boundary_proof": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-plan-approval",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "source_intake_plan_approval_boundary",
+    "freeze_predecessor": "source_intake_plan_approval_boundary_freeze",
+    "canonical_source_of_truth": "server_owned_gate_c_and_plan_preview_state_from_L3SourceIntakeRecord",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/302_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/301_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_pass_entry.py",
+    "targeted_test": "backend/tests/test_layer3_pass_entry.py",
+    "targeted_validation": "pytest .\\backend\\tests\\test_layer3_pass_entry.py",
+    "targeted_validation_result": "24 passed",
+    "source_shape": "operator_uploaded_single_source",
+    "pass_scope": "qualitative_single_item_operator_uploaded_source",
+    "source_gate": "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE",
+    "engine_family": "source_intake_qualitative_preview",
+    "selected_method_name": "operator_uploaded_source_review_preview",
+    "live_behavior_change": true,
+    "runtime_behavior_change": true,
+    "rendered_ui_behavior_change": false,
+    "new_route_added": false,
+    "model_migration_changed": false,
+    "next_boundary": "source_intake_execution_selection_boundary_freeze",
+    "contract_guards": {
+      "approval_only_l3_analysis_plan_created": true,
+      "source_intake_preview_identity_preserved": true,
+      "preview_hash_mismatch_fails_closed": true,
+      "missing_operator_confirmation_fails_closed": true,
+      "no_pass_run_side_effect": true,
+      "no_analysis_run_artifact_package_side_effect": true,
+      "source_intake_selected_pass_execution_blocked": true
+    },
+    "blocked_scope": [
+      "execution_start",
+      "package_construction_or_mutation",
+      "handoff_export_prepare_or_dispatch",
+      "connector_destination_dispatch",
+      "provider_private_signed_url_prepare",
+      "web_connector_retrieval",
+      "rag_vector_indexing",
+      "generic_source_upload",
+      "broad_file_upload",
+      "local_path_or_local_directory_authority",
+      "model_or_migration_changes",
+      "new_backend_route",
+      "rendered_ui_changes",
+      "auth_security_behavior",
+      "non_text_binary_preview",
+      "frontend_only_durable_authority"
+    ],
+    "proof_kind": "source_intake_plan_approval_boundary",
+    "source_intake_selected_pass_execution_blocked": true,
+    "no_downstream_side_effect": true
+  },
+  "latest_source_intake_plan_approval_boundary_branch": "codex/l3-source-intake-plan-approval",
+  "latest_source_intake_plan_approval_boundary_live_behavior_change": true
 }

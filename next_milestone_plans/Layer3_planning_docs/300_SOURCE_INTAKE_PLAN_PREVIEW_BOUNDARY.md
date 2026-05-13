@@ -82,3 +82,6 @@ The following remain blocked after this implementation:
 Next required decision: `source_intake_plan_approval_boundary_freeze` before source-intake preview-only plan material is allowed to become an approved plan.
 
 The next allowed implementation must be selected by a separate freeze. This implementation only makes source-intake Gate C output visible to plan preview as preview-only plan material.
+## Supersession Note
+
+The approval-blocking guard described in this preview-boundary closeout is superseded by `302_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY.md` on branch `codex/l3-source-intake-plan-approval`. The preview-only admission semantics remain the predecessor contract; the later approval slice permits only approval-only `L3AnalysisPlan` persistence and still does not admit execution start or downstream state.

@@ -715,7 +715,7 @@ def test_gatec_pass_entry_preview_admits_source_intake_without_materializing_dow
         settings.storage_dir = original_storage_dir
 
 
-def test_gatec_pass_entry_source_intake_plan_approval_remains_blocked(tmp_path):
+def test_gatec_pass_entry_source_intake_plan_approval_persists_without_downstream(tmp_path):
     original_storage_dir = settings.storage_dir
     settings.storage_dir = str(tmp_path)
     try:
@@ -723,11 +723,70 @@ def test_gatec_pass_entry_source_intake_plan_approval_remains_blocked(tmp_path):
         session_id, phase1a_status, phase1a_completed_at = _build_source_intake_plan_preview_session(db, tmp_path)
 
         preview = preview_pass_entry(db, session_id=session_id)
-        with pytest.raises(Layer3PassEntryError, match="source-intake plan approval is not admitted"):
+        approval = approve_pass_entry_plan(
+            db,
+            session_id=session_id,
+            preview_hash=preview.preview_hash,
+            source_preview_id="source-intake-plan-preview",
+        )
+
+        stored_plan = db.query(L3AnalysisPlan).one()
+        session = db.get(L3Session, session_id)
+        approved_plan = stored_plan.plan_json
+        owner_planned_pass = approved_plan["planned_passes_json"][0]
+
+        assert approval.analysis_plan.analysis_plan_id == stored_plan.analysis_plan_id
+        assert approval.source_preview_hash == preview.preview_hash
+        assert approval.approved_sets[0]["readiness"] == "approved"
+        assert approval.planned_passes[0]["pass_scope"] == "qualitative_single_item_operator_uploaded_source"
+        assert stored_plan.status == "approved"
+        assert stored_plan.approved_by_operator is True
+        assert approved_plan["approval_only"] is True
+        assert approved_plan["execution_started"] is False
+        assert approved_plan["source_preview_id"] == "source-intake-plan-preview"
+        assert approved_plan["source_preview_hash"] == preview.preview_hash
+        assert approved_plan["owner_service_basis"]["mode"] == "operator_approved_plan_only"
+        assert approved_plan["source_gate"] == "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE"
+        assert owner_planned_pass["source_gate"] == "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE"
+        assert owner_planned_pass["source_intake_record_id"] == "src-intake-plan-001"
+        assert owner_planned_pass["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+        assert owner_planned_pass["pass_scope"] == "qualitative_single_item_operator_uploaded_source"
+        assert owner_planned_pass["engine_family"] == "source_intake_qualitative_preview"
+        assert session.summary_json["plan_approval"]["analysis_plan_id"] == stored_plan.analysis_plan_id
+        assert session.summary_json["plan_approval"]["source_preview_hash"] == preview.preview_hash
+        assert session.summary_json["plan_approval"]["approval_only"] is True
+        assert session.summary_json["plan_approval"]["execution_started"] is False
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_source_intake_plan_approval_fail_closed_contracts(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_source_intake_plan_preview_session(db, tmp_path)
+
+        preview = preview_pass_entry(db, session_id=session_id)
+        with pytest.raises(Layer3PassEntryError, match="operator confirmation is required"):
             approve_pass_entry_plan(
                 db,
                 session_id=session_id,
                 preview_hash=preview.preview_hash,
+                source_preview_id="source-intake-plan-preview",
+                approved_by_operator=False,
+            )
+        with pytest.raises(Layer3PassEntryError, match="preview hash mismatch"):
+            approve_pass_entry_plan(
+                db,
+                session_id=session_id,
+                preview_hash="not-the-current-preview-hash",
                 source_preview_id="source-intake-plan-preview",
             )
 
@@ -736,6 +795,64 @@ def test_gatec_pass_entry_source_intake_plan_approval_remains_blocked(tmp_path):
         assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
         assert db.query(L3AnalysisPlan).count() == 0
         assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_source_intake_approved_plan_execution_remains_blocked(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_source_intake_plan_preview_session(db, tmp_path)
+
+        preview = preview_pass_entry(db, session_id=session_id)
+        approve_pass_entry_plan(
+            db,
+            session_id=session_id,
+            preview_hash=preview.preview_hash,
+            source_preview_id="source-intake-plan-preview",
+        )
+        stored_plan = db.query(L3AnalysisPlan).one()
+        planned_pass = stored_plan.plan_json["planned_passes_json"][0]
+        pass_run = L3PassRun(
+            pass_run_id="pass-run-source-intake-selected",
+            session_id=session_id,
+            analysis_plan_id=stored_plan.analysis_plan_id,
+            analysis_set_id=planned_pass["analysis_set_id"],
+            pass_type="single_item",
+            engine_family="source_intake_qualitative_preview",
+            status="selected_not_started",
+            started_at=None,
+            completed_at=None,
+            input_payload_ref="source-intake-selected-pass-input-ref",
+            output_payload_ref=None,
+            summary_json={
+                "selected_method_name": "operator_uploaded_source_review_preview",
+                "analysis_run_id": None,
+            },
+            created_at=datetime.now(timezone.utc),
+        )
+        db.add(pass_run)
+        db.flush()
+
+        with pytest.raises(Layer3PassEntryError, match="unsupported engine family"):
+            execute_selected_pass_run(
+                db,
+                pass_run=pass_run,
+                planned_pass=planned_pass,
+                client_request_id="source-intake-selected-start",
+            )
+
+        stored_pass = db.get(L3PassRun, pass_run.pass_run_id)
+        session = db.get(L3Session, session_id)
+        assert stored_pass.status == "selected_not_started"
+        assert stored_pass.output_payload_ref is None
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
         assert db.query(AnalysisRun).count() == 0
         assert db.query(AnalysisArtifact).count() == 0
         assert db.query(L3OutputPackage).count() == 0
