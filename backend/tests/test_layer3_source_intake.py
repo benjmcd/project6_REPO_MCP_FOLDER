@@ -106,6 +106,21 @@ def test_layer3_source_intake_openapi_contract(client):
         "downstream_eligibility",
         "negative_invariants",
     }.issubset(required)
+    inventory_path = schema["paths"]["/api/v1/layer3/source/intake/inventory"]["get"]
+    assert (
+        inventory_path["responses"]["200"]["content"]["application/json"]["schema"]["$ref"]
+        == "#/components/schemas/Layer3SourceIntakeInventoryResponse"
+    )
+    inventory_schema = schema["components"]["schemas"]["Layer3SourceIntakeInventoryResponse"]
+    inventory_required = set(inventory_schema["required"])
+    assert {
+        "source_gate",
+        "source_intake_inventory_mode",
+        "inventory_count",
+        "records",
+        "downstream_eligibility",
+        "negative_invariants",
+    }.issubset(inventory_required)
 
 
 def test_layer3_source_intake_upload_records_server_owned_authority(client):
@@ -138,6 +153,58 @@ def test_layer3_source_intake_upload_records_server_owned_authority(client):
     assert replay_body["status"] == "already_recorded"
     assert replay_body["source_intake_record_id"] == body["source_intake_record_id"]
     assert replay_body["authority_basis_hash"] == body["authority_basis_hash"]
+
+
+def test_layer3_source_intake_inventory_lists_safe_metadata_only(client):
+    upload = _upload_source_intake(client)
+    upload_body = upload.json()
+
+    response = client.get("/api/v1/layer3/source/intake/inventory")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["schema_id"] == "layer3.source_intake_inventory.v1"
+    assert body["mode"] == "operator_source_intake_inventory_read_only"
+    assert body["status"] == "available"
+    assert body["source_gate"]["canonical_source_of_truth"] == "L3SourceIntakeRecord"
+    assert body["source_gate"]["no_file_bytes_returned"] is True
+    assert body["source_gate"]["absolute_path_exposed"] is False
+    assert body["source_gate"]["material_preview_enabled"] is False
+    assert body["downstream_eligibility"]["eligible_for_source_inventory"] is True
+    assert body["downstream_eligibility"]["eligible_for_material_preview"] is False
+    assert body["negative_invariants"]["web_connector_enabled"] is False
+    assert body["inventory_count"] == 1
+
+    record = body["records"][0]
+    assert record["source_intake_record_id"] == upload_body["source_intake_record_id"]
+    assert record["client_request_id"] == "source-intake-api-001"
+    assert record["storage_pointer"]["absolute_path_exposed"] is False
+    assert record["storage_pointer"]["storage_ref"] == upload_body["storage_pointer"]["storage_ref"]
+    assert ":" not in record["storage_pointer"]["storage_ref"]
+    assert "file_bytes" not in record
+    assert "absolute_path" not in record["storage_pointer"]
+    assert record["downstream_eligibility"]["eligible_for_rag_vector_index"] is False
+
+
+def test_layer3_source_intake_inventory_rejects_deferred_filters(client):
+    response = client.get(
+        "/api/v1/layer3/source/intake/inventory",
+        params={"source_family": "web_connector"},
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_intake_inventory_source_family_not_admitted"
+
+
+def test_layer3_source_intake_inventory_rejects_invalid_limit(client):
+    response = client.get("/api/v1/layer3/source/intake/inventory", params={"limit": "101"})
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_intake_inventory_limit_invalid"
 
 
 def test_layer3_source_intake_rejects_deferred_source_modes(client):

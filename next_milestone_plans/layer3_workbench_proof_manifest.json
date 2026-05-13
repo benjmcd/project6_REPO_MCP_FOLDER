@@ -13557,5 +13557,54 @@
       "operator_upload_material_preview_enabled": false
     },
     "material_preview_status": "operator-uploaded material preview remains blocked"
+  },
+  "source_intake_inventory_read_only_proof": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-hardening",
+    "live_behavior_change": true,
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "operator_source_intake_inventory_read_only",
+    "runtime_route": "GET /api/v1/layer3/source/intake/inventory",
+    "writer_route": "POST /api/v1/layer3/source/intake/upload",
+    "canonical_source_of_truth": "L3SourceIntakeRecord",
+    "source_intake_record_table": "l3_source_intake_record",
+    "owner_service": "backend/app/services/layer3_source_intake.py",
+    "api_surface": "backend/app/api/layer3.py",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/287_SOURCE_INTAKE_INVENTORY_FREEZE.md",
+    "targeted_tests": "python -m pytest .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py -q",
+    "proof_files": [
+      "backend/tests/test_layer3_source_intake.py",
+      "backend/tests/test_layer3_source_boundary.py",
+      "next_milestone_plans/Layer3_planning_docs/287_SOURCE_INTAKE_INVENTORY_FREEZE.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "downstream_eligibility": {
+      "source_intake_recorded": true,
+      "eligible_for_source_inventory": true,
+      "eligible_for_material_preview": false,
+      "material_preview_requires_later_freeze": true,
+      "eligible_for_rag_vector_index": false,
+      "eligible_for_web_connector": false,
+      "eligible_for_unbounded_runtime_db": false
+    },
+    "response_guards": {
+      "no_file_bytes_returned": true,
+      "absolute_path_exposed": false,
+      "material_preview_enabled": false
+    },
+    "negative_invariants": {
+      "generic_source_upload_preflight_enabled": false,
+      "broad_file_upload_enabled": false,
+      "local_directory_enabled": false,
+      "web_connector_enabled": false,
+      "rag_vector_index_enabled": false,
+      "runtime_db_write_enabled": false,
+      "operator_upload_material_preview_enabled": false,
+      "package_construction_enabled": false,
+      "rendered_source_controls_enabled": false
+    },
+    "material_preview_status": "operator-uploaded material preview remains blocked"
   }
 }

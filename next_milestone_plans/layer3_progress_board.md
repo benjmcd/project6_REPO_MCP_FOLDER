@@ -1250,3 +1250,11 @@ Refresh this board against:
 - The route records server-owned source identity, content and metadata hashes, provenance, freshness, relative storage pointer, and downstream eligibility for a single operator-uploaded source.
 - Source-preview classes remain `dataset_version` and `aps_content_document`; generic source upload/source expansion remains disabled.
 - operator-uploaded material preview remains blocked, and broad file upload, local directory/local path authority, web connector retrieval, RAG/vector indexing, unbounded runtime DB source reads/writes, rendered source controls, and package construction require a later named freeze.
+
+## Source Intake Inventory Read-only
+
+- `287_SOURCE_INTAKE_INVENTORY_FREEZE.md` selects the bounded read-only inventory follow-up for the existing `source_breadth_runtime` intake record.
+- Branch `codex/l3-source-intake-hardening` implements `operator_source_intake_inventory_read_only` through `GET /api/v1/layer3/source/intake/inventory`, backed only by `L3SourceIntakeRecord`.
+- The route lists safe source-intake metadata, relative storage references, hashes, provenance, freshness, and downstream eligibility for recorded `operator_uploaded_single_source` rows.
+- The route rejects non-recorded status, rejects any source family except `operator_uploaded_single_source`, exposes no file bytes or absolute paths, and performs no writes.
+- operator-uploaded material preview remains blocked, and RAG/vector indexing, web connector use, generic source upload, local path/local directory authority, package construction, rendered source controls, and unbounded runtime DB behavior still require a later named freeze.
