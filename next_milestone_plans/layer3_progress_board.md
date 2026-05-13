@@ -1392,8 +1392,12 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 
 ## Source Intake Gate C Typing Entry
 
-- Status: branch-local implementation/proof for `source_intake_gate_c_typing_entry`.
+- Status: current-main implementation/proof for `source_intake_gate_c_typing_entry`.
 - Branch: `codex/l3-source-intake-gate-c-typing`.
+- Implementation commit: `c77bc9902efff6d9b5e058882b0059c6a0fcc9f1`.
+- Merged PR: `#882`.
+- Merge commit/current-main authority: `7752ee9e51941f254b30767e4ff4f414977daefe`.
+- GitHub checks: `backend-layer3-api` success and `test` success.
 - Governing doc: `next_milestone_plans/Layer3_planning_docs/298_SOURCE_INTAKE_GATE_C_TYPING_ENTRY.md`.
 - Freeze predecessor: `next_milestone_plans/Layer3_planning_docs/297_SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE.md`.
 - Canonical source of truth: server-owned Gate B state derived from `L3SourceIntakeRecord`, finalized `L3Session`, and `L3MaterialSnapshot` rows for `operator_uploaded_single_source`.
