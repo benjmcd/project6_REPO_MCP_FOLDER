@@ -431,6 +431,9 @@ SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE = (
 SOURCE_INTAKE_GATE_C_TYPING_ENTRY = (
     PLANNING_DOCS / "298_SOURCE_INTAKE_GATE_C_TYPING_ENTRY.md"
 )
+SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE = (
+    PLANNING_DOCS / "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -20417,6 +20420,155 @@ def _check_source_intake_gate_c_typing_entry(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_gate_c_typing_entry_proof.{key} must be {expected!r}")
 
 
+def _check_source_intake_plan_preview_boundary_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE, errors)
+    for term in (
+        "source_intake_plan_preview_boundary",
+        "codex/l3-source-intake-plan-preview-freeze",
+        "source_intake_gate_c_typing_entry",
+        "operator_uploaded_single_source_previews_plan_after_gate_c_typing",
+        "server-owned Gate C state derived from `L3SourceIntakeRecord`",
+        "L3AnalysisSet",
+        "L3AnalysisUnit",
+        "L3MaterialSnapshot",
+        "POST /api/v1/layer3/plan/preview",
+        "preview-only",
+        "backend/app/services/layer3_pass_entry.py",
+        "_classify_sets",
+        "qualitative_aps_candidate_exclusion_reason",
+        "implement_source_intake_plan_preview_boundary",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE)} missing source-intake plan-preview freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Plan Preview Boundary Freeze",
+            "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md",
+            "source_intake_plan_preview_boundary",
+            "implement_source_intake_plan_preview_boundary",
+            "preview-only source-intake planned-pass material",
+        ),
+        MANIFEST: (
+            "latest_source_intake_plan_preview_boundary_freeze_branch",
+            "source_intake_plan_preview_boundary_freeze",
+            "source_intake_plan_preview_boundary",
+            "implement_source_intake_plan_preview_boundary",
+            "server_owned_gate_c_state_from_L3SourceIntakeRecord",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_plan_preview_boundary_freeze_proof",
+            "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md",
+            "source_intake_plan_preview_boundary",
+            "layer3_pass_entry _classify_sets",
+        ),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing source-intake plan-preview freeze term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    freeze = manifest.get("source_intake_plan_preview_boundary_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(freeze, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_plan_preview_boundary_freeze")
+    else:
+        expected_scalars = {
+            "status": "completed_source_intake_plan_preview_boundary_freeze",
+            "implementation_branch": "codex/l3-source-intake-plan-preview-freeze",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "source_intake_plan_preview_boundary",
+            "runtime_predecessor": "source_intake_gate_c_typing_entry",
+            "canonical_source_of_truth": "server_owned_gate_c_state_from_L3SourceIntakeRecord",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md",
+            "next_allowed_action": "implement_source_intake_plan_preview_boundary",
+            "implementation_entry_allowed_next": True,
+            "live_behavior_change": False,
+            "runtime_behavior_change": False,
+            "rendered_ui_behavior_change": False,
+        }
+        for key, expected in expected_scalars.items():
+            if freeze.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_plan_preview_boundary_freeze.{key} must be {expected!r}")
+        semantics = freeze.get("future_preview_semantics")
+        if not isinstance(semantics, dict):
+            errors.append(f"{_rel(MANIFEST)} source_intake_plan_preview_boundary_freeze missing future_preview_semantics")
+        else:
+            for key, expected in {
+                "source_shape": "operator_uploaded_single_source",
+                "set_type": "single_item",
+                "analysis_modality": "qualitative",
+                "unit_kind": "atomic",
+                "route_surface": "POST /api/v1/layer3/plan/preview",
+                "persistence_mode": "preview_only",
+            }.items():
+                if semantics.get(key) != expected:
+                    errors.append(f"{_rel(MANIFEST)} source_intake_plan_preview_boundary_freeze.future_preview_semantics.{key} must be {expected!r}")
+        for required in (
+            "operator_uploaded_single_source_gate_c_output_produces_preview_only_planned_pass",
+            "source_intake_specific_pass_scope_and_source_gate",
+            "plan_preview_source_summary_reports_operator_uploaded_single_source",
+            "preview_hash_deterministic_for_server_owned_source_intake_gate_c_basis",
+            "no_analysis_plan_pass_run_analysis_run_artifact_package_connector_provider_rag_local_auth_state_created",
+            "source_intake_plan_approval_remains_blocked_or_unadmitted",
+            "aps_qualitative_and_dataset_version_behaviors_unchanged",
+            "unsupported_adjacent_qualitative_source_shapes_remain_blocked",
+        ):
+            if required not in freeze.get("required_future_proofs", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_plan_preview_boundary_freeze required_future_proofs missing {required}")
+        for blocked in (
+            "source_intake_plan_approval",
+            "execution_start",
+            "package_construction_or_mutation",
+            "connector_destination_dispatch",
+            "provider_private_signed_url_prepare",
+            "web_connector_retrieval",
+            "rag_vector_indexing",
+            "generic_source_upload",
+            "broad_file_upload",
+            "local_path_or_local_directory_authority",
+            "model_migration_change",
+            "new_backend_route",
+            "rendered_ui_change",
+            "auth_security_behavior",
+            "frontend_only_durable_authority",
+        ):
+            if blocked not in freeze.get("blocked_scope", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_plan_preview_boundary_freeze blocked_scope missing {blocked}")
+    if isinstance(manifest, dict):
+        for key, expected in (
+            ("latest_source_intake_plan_preview_boundary_freeze_branch", "codex/l3-source-intake-plan-preview-freeze"),
+            ("latest_source_intake_plan_preview_boundary_freeze_live_behavior_change", False),
+        ):
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} {key} must be {expected!r}")
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_plan_preview_boundary_freeze") != "completed_source_intake_plan_preview_boundary_freeze":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake plan-preview freeze scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_plan_preview_boundary_freeze_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_plan_preview_boundary_freeze_proof")
+        return
+    for key, expected in {
+        "status": "completed_source_intake_plan_preview_boundary_freeze",
+        "implementation_branch": "codex/l3-source-intake-plan-preview-freeze",
+        "selected_runtime_family": "source_breadth_runtime",
+        "selected_runtime_mode": "source_intake_plan_preview_boundary",
+        "runtime_predecessor": "source_intake_gate_c_typing_entry",
+        "canonical_source_of_truth": "server_owned_gate_c_state_from_L3SourceIntakeRecord",
+        "next_allowed_action": "implement_source_intake_plan_preview_boundary",
+        "implementation_entry_allowed_next": True,
+        "live_behavior_change": False,
+        "runtime_behavior_change": False,
+        "rendered_ui_behavior_change": False,
+        "proof_kind": "source_intake_plan_preview_boundary_freeze",
+    }.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_plan_preview_boundary_freeze_proof.{key} must be {expected!r}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -25143,6 +25295,7 @@ def main() -> int:
         SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS,
         SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE,
         SOURCE_INTAKE_GATE_C_TYPING_ENTRY,
+        SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -25411,6 +25564,7 @@ def main() -> int:
     _check_source_intake_gate_b_rendered_admission_controls(errors)
     _check_source_intake_gate_c_typing_entry_freeze(errors)
     _check_source_intake_gate_c_typing_entry(errors)
+    _check_source_intake_plan_preview_boundary_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
