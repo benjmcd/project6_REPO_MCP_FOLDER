@@ -341,9 +341,18 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "durable_token_state" in js.text
     assert "function externalExportDownloadDeliveryUiAdmitted" in js.text
     assert "function isQualitativeApsExternalExportDownloadState" in js.text
+    assert "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_intake_external_export_download_prepare.v1'" in js.text
+    assert "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.source_intake_external_export_download_delivery.v1'" in js.text
+    assert "function isSourceIntakeExternalExportDownloadState" in js.text
+    assert "function sourceIntakeDeliveryUiState" in js.text
+    assert "source_intake_external_export_download_delivery_ui_ready" in js.text
+    assert "!isSourceIntakeExternalExportDownloadState(external)" in js.text
+    assert "if (!isAssociatedCohortExternalExportDownloadState(external))" in js.text
+    assert "return false;" in js.text
     assert "if (isQualitativeApsExternalExportDownloadState(external))" in js.text
-    assert "deliveryUi.state === 'external_export_download_delivery_ui_ready'" in js.text
-    assert "deliveryUi.state === 'associated_cohort_external_export_download_delivery_ui_ready'" in js.text
+    assert "function deliveryUiStateAdmitted" in js.text
+    assert "deliveryUiStateAdmitted(deliveryUi" in js.text
+    assert "'associated_cohort_external_export_download_delivery_ui_ready'" in js.text
     assert "external_export_download_delivery_ui_unavailable" in js.text
     assert "external_export_download_signed_reference_ui_blocked" in js.text
     assert "if (!isAssociatedCohortExternalExportDownloadState(external))" in js.text

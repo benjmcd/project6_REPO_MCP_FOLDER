@@ -515,6 +515,9 @@ SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY = (
 SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE = (
     PLANNING_DOCS / "326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md"
 )
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY = (
+    PLANNING_DOCS / "327_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -5012,7 +5015,7 @@ def _check_qualitative_aps_rendered_ui_freeze(errors: list[str]) -> None:
             "function isQualitativeApsExternalExportDownloadState",
             "external_export_download_delivery_ui_unavailable",
             "external_export_download_signed_reference_ui_blocked",
-            "deliveryUi.state === 'external_export_download_delivery_ui_ready'",
+            "deliveryUiStateAdmitted(deliveryUi",
             "if (!isAssociatedCohortExternalExportDownloadState(external))",
             "payload.construction_basis_hash = constructionBasisHash",
             "apsHandoffDispatchState()?.available === true",
@@ -23210,6 +23213,135 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
         if forbidden in ui_text:
             errors.append(f"backend/app/review_ui/static/claude.html unexpectedly contains source-intake delivery rendered control term: {forbidden}")
 
+
+def _check_source_intake_external_export_download_rendered_controls_boundary(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY, errors)
+    for term in (
+        "source_intake_external_export_download_rendered_controls_boundary",
+        "codex/l3-source-intake-rendered-delivery-controls",
+        "f17d9e2e9a6e1dacfbb86552dd94b6b9af447634",
+        "326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
+        "backend/app/review_ui/static/layer3.js",
+        "backend/app/review_ui/static/layer3.html",
+        "layer3.source_intake_external_export_download_prepare.v1",
+        "layer3.source_intake_external_export_download_delivery.v1",
+        "isSourceIntakeExternalExportDownloadState",
+        "sourceIntakeDeliveryUiState",
+        "source_intake_external_export_download_delivery_ui_ready",
+        "!isSourceIntakeExternalExportDownloadState(external)",
+        "unknown non-associated/non-qualitative external-export families no longer get implicit delivery UI admission",
+        "python -m pytest .\\backend\\tests\\test_layer3_page.py",
+        "3 passed",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY)} missing source-intake rendered controls implementation term: {term}")
+    for path, terms in {
+        BOARD: (
+            "## Source Intake External Export Download Rendered Controls Boundary",
+            "327_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY.md",
+            "source_intake_external_export_download_delivery_ui_ready",
+            "signed-reference, provider URL, connector/destination",
+        ),
+        MANIFEST: (
+            "source_intake_external_export_download_rendered_controls_boundary",
+            "latest_source_intake_external_export_download_rendered_controls_boundary_branch",
+            "layer3.source_intake_external_export_download_prepare.v1",
+            "unknown_external_export_family_auto_admitted",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_external_export_download_rendered_controls_boundary_proof",
+            "327_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY.md",
+            "source_intake_external_export_download_delivery_ui_ready",
+            "targeted_tests_and_progress_check_required",
+        ),
+        ROOT / "backend/app/review_ui/static/layer3.js": (
+            "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_intake_external_export_download_prepare.v1'",
+            "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.source_intake_external_export_download_delivery.v1'",
+            "function isSourceIntakeExternalExportDownloadState",
+            "function sourceIntakeDeliveryUiState",
+            "source_intake_external_export_download_delivery_ui_ready",
+            "!isSourceIntakeExternalExportDownloadState(external)",
+            "if (!isAssociatedCohortExternalExportDownloadState(external))",
+            "return false;",
+            "submitAttachmentForm('/handoff/export/download/deliver'",
+        ),
+        ROOT / "backend/tests/test_layer3_page.py": (
+            "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_intake_external_export_download_prepare.v1'",
+            "function isSourceIntakeExternalExportDownloadState",
+            "source_intake_external_export_download_delivery_ui_ready",
+            "!isSourceIntakeExternalExportDownloadState(external)",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-intake rendered controls implementation term: {term}")
+    manifest = _load_json(MANIFEST, errors)
+    entry = manifest.get("source_intake_external_export_download_rendered_controls_boundary") if isinstance(manifest, dict) else None
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_external_export_download_rendered_controls_boundary")
+    else:
+        for key, expected in {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-rendered-delivery-controls",
+            "current_main_predecessor_commit": "f17d9e2e9a6e1dacfbb86552dd94b6b9af447634",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "source_intake_external_export_download_rendered_controls_boundary",
+            "freeze_predecessor": "source_intake_external_export_download_rendered_controls_boundary_freeze",
+            "canonical_source_of_truth": "server_owned_source_intake_external_export_download_prepare_state_and_layer3_rendered_projection",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/327_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY.md",
+            "freeze_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
+            "owner_ui": "backend/app/review_ui/static/layer3.js",
+            "rendered_shell": "backend/app/review_ui/static/layer3.html",
+            "targeted_validation_result": "3 passed",
+            "prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+            "delivery_schema_id": "layer3.source_intake_external_export_download_delivery.v1",
+            "delivery_ui_state": "source_intake_external_export_download_delivery_ui_ready",
+            "rendered_ui_changed": True,
+            "runtime_behavior_change": False,
+            "route_added": False,
+            "model_migration_changed": False,
+            "signed_reference_controls_enabled": False,
+            "provider_url_controls_enabled": False,
+            "connector_destination_controls_enabled": False,
+            "unknown_external_export_family_auto_admitted": False,
+            "next_boundary": "current_main_proof_control_sync_then_next_deferred_lane_freeze",
+        }.items():
+            if entry.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_rendered_controls_boundary.{key} must be {expected!r}")
+        guards = entry.get("contract_guards")
+        if not isinstance(guards, dict) or guards.get("source_intake_family_explicitly_recognized") is not True or guards.get("unknown_external_export_family_no_longer_implicitly_admitted") is not True:
+            errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_rendered_controls_boundary contract_guards invalid")
+    if isinstance(manifest, dict):
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_external_export_download_rendered_controls_boundary") != "branch_local_implemented_targeted_tests_passed":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake rendered controls implementation scope status")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_external_export_download_rendered_controls_boundary_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_external_export_download_rendered_controls_boundary_proof")
+    else:
+        for key, expected in {
+            "proof_kind": "source_intake_external_export_download_rendered_controls_boundary",
+            "branch": "codex/l3-source-intake-rendered-delivery-controls",
+            "current_main_predecessor_commit": "f17d9e2e9a6e1dacfbb86552dd94b6b9af447634",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/327_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY.md",
+            "freeze_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
+            "owner_ui": "backend/app/review_ui/static/layer3.js",
+            "rendered_shell": "backend/app/review_ui/static/layer3.html",
+            "targeted_validation_result": "3 passed",
+            "prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+            "delivery_schema_id": "layer3.source_intake_external_export_download_delivery.v1",
+            "delivery_ui_state": "source_intake_external_export_download_delivery_ui_ready",
+            "runtime_behavior_change": False,
+            "rendered_ui_behavior_change": True,
+            "route_added": False,
+            "model_migration_changed": False,
+            "validation_status": "targeted_tests_and_progress_check_required",
+        }.items():
+            if proof_entry.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_external_export_download_rendered_controls_boundary_proof.{key} must be {expected!r}")
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -28239,6 +28371,7 @@ def main() -> int:
     _check_source_intake_external_export_download_delivery_boundary_freeze(errors)
     _check_source_intake_external_export_download_delivery_boundary(errors)
     _check_source_intake_external_export_download_rendered_controls_boundary_freeze(errors)
+    _check_source_intake_external_export_download_rendered_controls_boundary(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
