@@ -16,6 +16,8 @@ from app.models.models import (
     L3ProviderPrivateSignedUrlReceipt,
     L3ReconciliationRecord,
     L3Session,
+    L3SignedReferenceReceipt,
+    L3SignedReferenceToken,
 )
 from app.services.layer3_provider_private_signed_url_fake_provider import (
     PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_AUTHORITY,
@@ -49,6 +51,8 @@ PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION = "revoke_provider_private_
 PROVIDER_PRIVATE_SIGNED_URL_DEFAULT_TTL_SECONDS = 300
 PROVIDER_PRIVATE_SIGNED_URL_FIXED_FAKE_PROVIDER_EPOCH = 0
 PROVIDER_PRIVATE_SIGNED_URL_REDACTED_MARKER = "provider-private-signed-url:redacted"
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.source_intake_external_export_download_prepare.v1"
+SIGNED_REFERENCE_TOKEN_USED_STATE = "used"
 
 PROVIDER_PRIVATE_SIGNED_URL_ALLOWED_FIELDS = frozenset(
     {
@@ -68,6 +72,7 @@ PROVIDER_PRIVATE_SIGNED_URL_ALLOWED_FIELDS = frozenset(
         "source_artifact_size_bytes",
         "recipient_scope",
         "requested_ttl_seconds",
+        "signed_reference_receipt_id",
         "decision_notes",
     }
 )
@@ -362,6 +367,95 @@ def _load_readiness_authority(db: Session, payload: Mapping[str, Any]) -> dict[s
             next_allowed_actions=["refresh_external_export_download_authority"],
         )
     return readiness_state
+
+
+def _is_source_intake_readiness(readiness_state: Mapping[str, Any]) -> bool:
+    return readiness_state.get("schema_id") == SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+
+
+def _require_source_intake_signed_reference_authority(
+    db: Session,
+    *,
+    payload: Mapping[str, Any],
+    readiness_state: Mapping[str, Any],
+) -> None:
+    if not _is_source_intake_readiness(readiness_state):
+        return
+    receipt_id = _text(payload, "signed_reference_receipt_id")
+    if not receipt_id:
+        raise Layer3WorkbenchError(
+            "source_intake_provider_private_signed_url_signed_reference_required",
+            "Source-intake provider-private signed URL prepare requires a durable used same-origin signed-reference receipt.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["signed_reference_receipt_id"],
+            next_allowed_actions=["use_source_intake_external_export_download_signed_reference"],
+        )
+    receipt = (
+        db.query(L3SignedReferenceReceipt)
+        .filter(L3SignedReferenceReceipt.signed_reference_receipt_id == receipt_id)
+        .one_or_none()
+    )
+    if receipt is None:
+        raise Layer3WorkbenchError(
+            "source_intake_provider_private_signed_url_signed_reference_not_found",
+            "Source-intake provider-private signed URL prepare could not find the supplied signed-reference receipt.",
+            status="not_found",
+            http_status=404,
+            blocked_fields=["signed_reference_receipt_id"],
+            next_allowed_actions=["use_source_intake_external_export_download_signed_reference"],
+        )
+    token = (
+        db.query(L3SignedReferenceToken)
+        .filter(L3SignedReferenceToken.signed_reference_token_id == receipt.signed_reference_token_id)
+        .one_or_none()
+    )
+    if token is None:
+        raise Layer3WorkbenchError(
+            "source_intake_provider_private_signed_url_signed_reference_token_missing",
+            "Source-intake provider-private signed URL prepare requires durable signed-reference token authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["signed_reference_receipt_id"],
+            next_allowed_actions=["regenerate_source_intake_external_export_download_signed_reference"],
+        )
+    mismatches: list[str] = []
+    if token.session_id != _text(payload, "session_id"):
+        mismatches.append("session_id")
+    if token.reconciliation_record_id != _text(payload, "reconciliation_record_id"):
+        mismatches.append("reconciliation_record_id")
+    if token.state != SIGNED_REFERENCE_TOKEN_USED_STATE or token.use_count < 1:
+        mismatches.append("signed_reference_receipt_id")
+    authority = token.authority_snapshot_json or {}
+    expected = {
+        "schema_id": SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+        "source_artifact_hash": _text(payload, "source_artifact_hash").lower(),
+        "external_export_download_record_ref": _text(payload, "external_export_download_record_ref"),
+        "export_download_descriptor_ref": _text(payload, "export_download_descriptor_ref"),
+    }
+    for field, expected_value in expected.items():
+        if str(authority.get(field) or "").strip() != expected_value:
+            mismatches.append(field)
+    try:
+        signed_size = int(authority.get("source_artifact_size_bytes"))
+        payload_size = int(payload.get("source_artifact_size_bytes"))
+    except (TypeError, ValueError):
+        mismatches.append("source_artifact_size_bytes")
+    else:
+        if signed_size != payload_size:
+            mismatches.append("source_artifact_size_bytes")
+    for field in ("source_intake_record_id", "candidate_id", "output_payload_hash"):
+        if not authority.get(field) or str(authority.get(field)) != str(readiness_state.get(field)):
+            mismatches.append(field)
+    if mismatches:
+        raise Layer3WorkbenchError(
+            "source_intake_provider_private_signed_url_signed_reference_mismatch",
+            "Source-intake provider-private signed URL prepare requires matching used signed-reference authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(set(mismatches)),
+            next_allowed_actions=["regenerate_source_intake_external_export_download_signed_reference"],
+        )
 
 
 def _validate_server_owned_artifact(readiness_state: Mapping[str, Any]) -> None:
@@ -666,6 +760,7 @@ def provider_private_signed_url_prepare(
     ttl_seconds = _ttl_seconds(payload)
     effective_now = int(time.time() if now_epoch is None else now_epoch)
     readiness_state = _load_readiness_authority(db, payload)
+    _require_source_intake_signed_reference_authority(db, payload=payload, readiness_state=readiness_state)
     _validate_server_owned_artifact(readiness_state)
     authority_basis = _authority_basis(payload, readiness_state)
 

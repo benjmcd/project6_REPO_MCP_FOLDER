@@ -533,6 +533,9 @@ SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CURRENT_MAIN_SYNC = (
 SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE = (
     PLANNING_DOCS / "332_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE.md"
 )
+SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY = (
+    PLANNING_DOCS / "333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -28160,6 +28163,134 @@ def _check_source_intake_external_export_download_post_922_sync(errors: list[str
     if not isinstance(proof.get("source_intake_provider_private_signed_url_boundary_freeze_proof") if isinstance(proof, dict) else None, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source-intake provider-private freeze proof")
 
+
+def _check_source_intake_provider_private_signed_url_boundary(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY, errors)
+    for term in (
+        "Status: branch-local implementation",
+        "source_intake_provider_private_signed_url_boundary",
+        "codex/l3-source-intake-provider-private-url",
+        "332_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE.md",
+        "layer3.source_intake_external_export_download_prepare.v1",
+        "layer3.provider_private_signed_url.prepare.v1",
+        "signed_reference_receipt_id",
+        "L3SignedReferenceReceipt",
+        "L3SignedReferenceToken",
+        "Frontend-only durable authority remains blocked",
+        "branch_local_implemented_targeted_tests_passed",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY)} missing provider-private boundary term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Private Signed URL Boundary",
+            "333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY.md",
+            "source_intake_provider_private_signed_url_boundary",
+            "signed_reference_receipt_id",
+            "branch_local_implemented_targeted_tests_passed",
+        ),
+        MANIFEST: (
+            "source_intake_provider_private_signed_url_boundary",
+            "latest_source_intake_provider_private_signed_url_boundary_branch",
+            "codex/l3-source-intake-provider-private-url",
+            "signed_reference_receipt_required",
+            "frontend_only_durable_authority",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_private_signed_url_boundary_proof",
+            "333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY.md",
+            "layer3.provider_private_signed_url.prepare.v1",
+            "signed_reference_receipt_required",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing provider-private source-intake sync term: {term}")
+
+    service_text = _read_required_text(PROVIDER_PRIVATE_SIGNED_URL_SERVICE, errors)
+    for term in (
+        "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID",
+        "SIGNED_REFERENCE_TOKEN_USED_STATE",
+        "signed_reference_receipt_id",
+        "def _require_source_intake_signed_reference_authority",
+        "L3SignedReferenceReceipt",
+        "L3SignedReferenceToken",
+        "source_intake_provider_private_signed_url_signed_reference_required",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PROVIDER_PRIVATE_SIGNED_URL_SERVICE)} missing source-intake provider-private authority term: {term}")
+
+    js_text = _read_required_text(LAYER3_JS, errors)
+    for term in (
+        "State.externalExportDownloadSignedReferenceUse",
+        "signedReferenceReceiptId",
+        "signed_reference_receipt_id",
+        "x-layer3-signed-reference-receipt-id",
+    ):
+        if term not in js_text:
+            errors.append(f"{_rel(LAYER3_JS)} missing source-intake provider-private UI term: {term}")
+
+    workbench_test_text = _read_required_text(LAYER3_WORKBENCH_TEST, errors)
+    for term in (
+        "source-intake-provider-private-signed-url-prepare",
+        "layer3.provider_private_signed_url.prepare.v1",
+        "L3ProviderPrivateSignedUrlReceipt",
+        "X-Layer3-Signed-Reference-Receipt-Id",
+    ):
+        if term not in workbench_test_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_TEST)} missing source-intake provider-private test term: {term}")
+
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    for term in (
+        "State.externalExportDownloadSignedReferenceUse",
+        "signedReferenceReceiptId",
+        "signed_reference_receipt_id",
+    ):
+        if term not in page_test_text:
+            errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing source-intake provider-private page test term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    if '"signed_reference_receipt_id"' not in api_text:
+        errors.append(f"{_rel(LAYER3_API)} missing signed_reference_receipt_id prepare schema field")
+
+    manifest = _load_json(MANIFEST, errors)
+    entry = manifest.get("source_intake_provider_private_signed_url_boundary") if isinstance(manifest, dict) else None
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_provider_private_signed_url_boundary")
+    else:
+        expected = {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-provider-private-url",
+            "selected_runtime_mode": "source_intake_provider_private_signed_url_boundary",
+            "source_prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+            "provider_prepare_schema_id": "layer3.provider_private_signed_url.prepare.v1",
+            "signed_reference_receipt_required": True,
+            "signed_reference_token_state_required": "used",
+            "route_added": False,
+            "model_migration_changed": False,
+        }
+        for key, expected_value in expected.items():
+            if entry.get(key) != expected_value:
+                errors.append(f"{_rel(MANIFEST)} source-intake provider-private {key} mismatch")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_provider_private_signed_url_boundary_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_provider_private_signed_url_boundary_proof")
+    else:
+        for key, expected_value in {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "branch": "codex/l3-source-intake-provider-private-url",
+            "provider_prepare_schema_id": "layer3.provider_private_signed_url.prepare.v1",
+            "signed_reference_receipt_required": True,
+            "route_added": False,
+            "model_migration_changed": False,
+        }.items():
+            if proof_entry.get(key) != expected_value:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source-intake provider-private proof {key} mismatch")
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -28584,6 +28715,7 @@ def main() -> int:
     _check_source_intake_external_export_download_post_920_sync(errors)
     _check_source_intake_external_export_download_signed_reference_boundary(errors)
     _check_source_intake_external_export_download_post_922_sync(errors)
+    _check_source_intake_provider_private_signed_url_boundary(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

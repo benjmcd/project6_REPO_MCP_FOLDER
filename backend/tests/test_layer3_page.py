@@ -357,7 +357,17 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert provider_signed_url_start != -1
     signed_reference_gate = js.text[signed_reference_start:provider_signed_url_start]
     assert "!isSourceIntakeExternalExportDownloadState(external)" not in signed_reference_gate
-    assert "!isSourceIntakeExternalExportDownloadState(external)" in js.text[provider_signed_url_start:]
+    provider_signed_url_gate_end = js.text.find("function canInspectProviderPrivateSignedUrl")
+    assert provider_signed_url_gate_end != -1
+    provider_signed_url_gate = js.text[provider_signed_url_start:provider_signed_url_gate_end]
+    assert "&& !isSourceIntakeExternalExportDownloadState(external)" not in provider_signed_url_gate
+    assert (
+        "&& (!isSourceIntakeExternalExportDownloadState(external) || State.externalExportDownloadSignedReferenceUse)"
+        in provider_signed_url_gate
+    )
+    assert "State.externalExportDownloadSignedReferenceUse" in provider_signed_url_gate
+    assert "signedReferenceReceiptId: res.headers.get('x-layer3-signed-reference-receipt-id')" in js.text
+    assert "signed_reference_receipt_id: State.externalExportDownloadSignedReferenceUse?.signedReferenceReceiptId" in js.text
     assert "if (!isAssociatedCohortExternalExportDownloadState(external))" in js.text
     assert "return false;" in js.text
     assert "if (isQualitativeApsExternalExportDownloadState(external))" in js.text

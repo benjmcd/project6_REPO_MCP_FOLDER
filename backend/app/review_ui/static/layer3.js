@@ -1935,8 +1935,8 @@ function canPrepareProviderPrivateSignedUrl() {
     const external = externalExportDownloadPrepareState() || {};
     return Boolean(
         recordedExternalExportDownloadPrepare()
-        && !isSourceIntakeExternalExportDownloadState(external)
         && externalExportDownloadDeliveryUiAdmitted(external)
+        && (!isSourceIntakeExternalExportDownloadState(external) || State.externalExportDownloadSignedReferenceUse)
         && !providerPrivateSignedUrlBlocksPrepare()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
@@ -5340,6 +5340,8 @@ function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthor
         source_artifact_size_bytes: external.source_artifact_size_bytes,
         recipient_scope: 'external_downstream_recipient_private_artifact_delivery',
         requested_ttl_seconds: 300,
+        signed_reference_receipt_id: State.externalExportDownloadSignedReferenceUse?.signedReferenceReceiptId
+            || State.externalExportDownloadSignedReference?.signed_reference_receipt_id,
         decision_notes: 'Rendered workbench prepare/status/revoke lane; provider-private use remains closed.',
     };
 }
@@ -5376,6 +5378,7 @@ async function useExternalExportDownloadSignedReferenceToken(token) {
         schemaId: res.headers.get('x-layer3-schema-id') || 'layer3.external_export_download_signed_reference_use.v1',
         sourceArtifactHash: res.headers.get('x-layer3-source-artifact-hash'),
         expiresAt: res.headers.get('x-layer3-signed-reference-expires-at'),
+        signedReferenceReceiptId: res.headers.get('x-layer3-signed-reference-receipt-id'),
         contentType: res.headers.get('content-type'),
     };
 }

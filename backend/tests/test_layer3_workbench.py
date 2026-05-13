@@ -36,6 +36,10 @@ from app.models.models import (
     L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,
+    L3ProviderPrivateSignedUrlAuditEvent,
+    L3ProviderPrivateSignedUrlObjectAuthority,
+    L3ProviderPrivateSignedUrlReceipt,
+    L3ProviderPrivateSignedUrlRevocation,
     L3ReconciliationRecord,
     L3SelectionManifest,
     L3Session,
@@ -43,7 +47,7 @@ from app.models.models import (
     L3TypingRecord,
     VariableDefinition,
 )
-from app.services import layer3_workbench
+from app.services import layer3_provider_private_signed_url, layer3_workbench
 from app.services.layer3_workbench import Layer3WorkbenchError
 from app.services.layer3_state_action_contract import STATE_ACTION_CONTRACT_SCHEMA_ID
 
@@ -960,6 +964,65 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
         source_intake_signed_reference_use.authority["candidate_id"]
         == "mat-source_intake_record-src-intake-plan-001"
     )
+    source_intake_provider_private_payload = {
+        "client_request_id": "source-intake-provider-private-signed-url-prepare",
+        "session_id": session.session_id,
+        "analysis_plan_id": plan.analysis_plan_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "reconciliation_record_id": package_construction["reconciliation_record_id"],
+        "external_export_download_record_ref": external_export["external_export_download_record_ref"],
+        "export_download_descriptor_ref": external_export["export_download_descriptor_ref"],
+        "external_export_download_state": external_export["external_export_download_state"],
+        "export_download_target": "aps_evidence_bundle_download_reference",
+        "download_mode": "reference_only_prepare",
+        "delivery_mode": "provider_private_signed_url",
+        "operator_decision": "prepare_provider_private_signed_url",
+        "source_artifact_hash": external_export["source_artifact_hash"],
+        "source_artifact_size_bytes": Path(external_export["aps_bundle_ref"]).stat().st_size,
+        "recipient_scope": "external_downstream_recipient_private_artifact_delivery",
+        "requested_ttl_seconds": 300,
+        "signed_reference_receipt_id": source_intake_signed_reference_use.headers[
+            "X-Layer3-Signed-Reference-Receipt-Id"
+        ],
+    }
+    source_intake_provider_private = layer3_provider_private_signed_url.provider_private_signed_url_prepare(
+        db_session,
+        source_intake_provider_private_payload,
+        now_epoch=1_800_000_002,
+    )
+    assert source_intake_provider_private["schema_id"] == "layer3.provider_private_signed_url.prepare.v1"
+    assert source_intake_provider_private["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+    assert source_intake_provider_private["delivery_mode"] == "provider_private_signed_url"
+    assert source_intake_provider_private["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert source_intake_provider_private["authority_rail"]["provider_network_enabled"] is False
+    assert source_intake_provider_private["authority_rail"]["provider_object_write_enabled"] is False
+    assert source_intake_provider_private["authority_rail"]["public_url_enabled"] is False
+    assert source_intake_provider_private["source_artifact_hash"] == external_export["source_artifact_hash"]
+    source_intake_provider_status = layer3_provider_private_signed_url.provider_private_signed_url_status(
+        db_session,
+        source_intake_provider_private["provider_signed_url_receipt_id"],
+        now_epoch=1_800_000_003,
+    )
+    assert source_intake_provider_status["schema_id"] == "layer3.provider_private_signed_url.status.v1"
+    assert source_intake_provider_status["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+    source_intake_provider_revoke = layer3_provider_private_signed_url.provider_private_signed_url_revoke(
+        db_session,
+        {
+            "client_request_id": "source-intake-provider-private-signed-url-revoke",
+            "provider_signed_url_receipt_id": source_intake_provider_private["provider_signed_url_receipt_id"],
+            "idempotency_key": "source-intake-provider-private-signed-url-revoke",
+            "revoked_by": "layer3-workbench-test",
+            "revocation_reason": "operator requested stop",
+            "operator_decision": "revoke_provider_private_signed_url",
+        },
+        now_epoch=1_800_000_004,
+    )
+    assert source_intake_provider_revoke["schema_id"] == "layer3.provider_private_signed_url.revoke.v1"
+    assert source_intake_provider_revoke["provider_signed_url_state"] == "provider_private_signed_url_revoked"
+    assert db_session.query(L3ProviderPrivateSignedUrlObjectAuthority).count() == 1
+    assert db_session.query(L3ProviderPrivateSignedUrlReceipt).count() == 1
+    assert db_session.query(L3ProviderPrivateSignedUrlAuditEvent).count() == 2
+    assert db_session.query(L3ProviderPrivateSignedUrlRevocation).count() == 1
 
     assert db_session.query(AnalysisRun).count() == 0
     assert db_session.query(L3OutputPackage).count() == 4

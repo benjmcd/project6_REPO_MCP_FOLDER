@@ -15518,5 +15518,47 @@
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required",
     "next_boundary": "source_intake_provider_private_signed_url_boundary"
+  },
+  "source_intake_provider_private_signed_url_boundary_proof": {
+    "proof_kind": "source_intake_provider_private_signed_url_boundary",
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "branch": "codex/l3-source-intake-provider-private-url",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/332_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_provider_private_signed_url.py",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "targeted_test": "backend/tests/test_layer3_workbench.py",
+    "page_test": "backend/tests/test_layer3_page.py",
+    "source_prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+    "provider_prepare_schema_id": "layer3.provider_private_signed_url.prepare.v1",
+    "provider_status_schema_id": "layer3.provider_private_signed_url.status.v1",
+    "provider_revoke_schema_id": "layer3.provider_private_signed_url.revoke.v1",
+    "signed_reference_receipt_required": true,
+    "signed_reference_token_state_required": "used",
+    "server_authority": "source_intake_signed_reference_receipt_and_token_authority_snapshot",
+    "runtime_behavior_change": true,
+    "rendered_ui_behavior_change": true,
+    "route_added": false,
+    "model_migration_changed": false,
+    "validation_status": "targeted_tests_and_progress_check_passed",
+    "blocked_scope": [
+      "provider_public_url_behavior",
+      "connector_destination_dispatch",
+      "package_mutation_or_reconstruction",
+      "source_expansion",
+      "local_directory_authority",
+      "web_connector_retrieval",
+      "rag_vector_behavior",
+      "broad_qualitative_behavior",
+      "full_mockup_activation",
+      "route_model_migration_changes",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "targeted_validation_result": {
+      "pytest_workbench_page_api": "171 passed, 4 warnings",
+      "playwright_chromium": "34 passed",
+      "progress_check": "PASS"
+    }
   }
 }
