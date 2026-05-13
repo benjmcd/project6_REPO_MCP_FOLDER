@@ -746,6 +746,164 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert aps_handoff_replay["status"] == "already_dispatched"
     assert aps_handoff_replay["aps_handoff_record_ref"] == aps_handoff["aps_handoff_record_ref"]
 
+    with pytest.raises(Layer3WorkbenchError) as external_export_dispatch_ref_mismatch:
+        layer3_workbench.external_export_download_prepare(
+            db_session,
+            {
+                "client_request_id": "source-intake-external-export-dispatch-mismatch",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+                "result_review_record_ref": result_review["review_record_ref"],
+                "package_review_preview_hash": package_preview["package_review_preview_hash"],
+                "reconciliation_record_id": package_construction["reconciliation_record_id"],
+                "package_review_submit_record_ref": package_review_submit["submit_record_ref"],
+                "package_review_state": package_review_submit["package_review_state"],
+                "prepare_record_ref": handoff_export["prepare_record_ref"],
+                "handoff_export_state": handoff_export["handoff_export_state"],
+                "handoff_export_envelope_ref": handoff_export["handoff_export_envelope"]["envelope_ref"],
+                "handoff_target": "internal_export_envelope",
+                "export_mode": "prepare_only",
+                "aps_handoff_record_ref": "source-intake-aps-dispatch-ref-mismatch",
+                "aps_handoff_state": aps_handoff["aps_handoff_state"],
+                "aps_handoff_target": "aps_evidence_bundle",
+                "dispatch_mode": "server_side_aps_handoff",
+                "aps_output_package_id": aps_handoff["aps_output_package_id"],
+                "aps_output_package_kind": aps_handoff["aps_output_package_kind"],
+                "aps_bundle_ref": aps_handoff["aps_bundle_ref"],
+                "aps_bundle_id": aps_handoff["aps_bundle_id"],
+                "aps_schema_id": aps_handoff["aps_schema_id"],
+                "export_download_target": "aps_evidence_bundle_download_reference",
+                "download_mode": "reference_only_prepare",
+                "operator_decision": "prepare_external_export_download",
+                "output_package_ids": package_construction["output_package_ids"],
+                "package_kinds": package_construction["package_kinds"],
+                "payload_refs": package_construction["payload_refs"],
+                "payload_hashes": package_construction["payload_hashes"],
+            },
+            validate_source_artifact=False,
+        )
+    assert (
+        external_export_dispatch_ref_mismatch.value.error_code
+        == "source_intake_external_export_download_prepare_not_admitted"
+    )
+
+    external_export = layer3_workbench.external_export_download_prepare(
+        db_session,
+        {
+            "client_request_id": "source-intake-external-export-download",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "result_review_record_ref": result_review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            "reconciliation_record_id": package_construction["reconciliation_record_id"],
+            "package_review_submit_record_ref": package_review_submit["submit_record_ref"],
+            "package_review_state": package_review_submit["package_review_state"],
+            "prepare_record_ref": handoff_export["prepare_record_ref"],
+            "handoff_export_state": handoff_export["handoff_export_state"],
+            "handoff_export_envelope_ref": handoff_export["handoff_export_envelope"]["envelope_ref"],
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "aps_handoff_record_ref": aps_handoff["aps_handoff_record_ref"],
+            "aps_handoff_state": aps_handoff["aps_handoff_state"],
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "aps_output_package_id": aps_handoff["aps_output_package_id"],
+            "aps_output_package_kind": aps_handoff["aps_output_package_kind"],
+            "aps_bundle_ref": aps_handoff["aps_bundle_ref"],
+            "aps_bundle_id": aps_handoff["aps_bundle_id"],
+            "aps_schema_id": aps_handoff["aps_schema_id"],
+            "export_download_target": "aps_evidence_bundle_download_reference",
+            "download_mode": "reference_only_prepare",
+            "operator_decision": "prepare_external_export_download",
+            "output_package_ids": package_construction["output_package_ids"],
+            "package_kinds": package_construction["package_kinds"],
+            "payload_refs": package_construction["payload_refs"],
+            "payload_hashes": package_construction["payload_hashes"],
+        },
+        validate_source_artifact=False,
+    )
+    assert external_export["status"] == "prepared"
+    assert external_export["schema_id"] == "layer3.source_intake_external_export_download_prepare.v1"
+    assert external_export["analysis_run_id"] is None
+    assert external_export["source_intake_record_id"] == "src-intake-plan-001"
+    assert external_export["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+    assert external_export["output_payload_hash"] == output_payload["output_hash"]
+    assert external_export["package_review_submit_schema_id"] == "layer3.source_intake_package_review_submit.v1"
+    assert external_export["external_export_download_state"] == "external_export_download_prepared"
+    assert external_export["aps_handoff_record_ref"] == aps_handoff["aps_handoff_record_ref"]
+    assert external_export["aps_output_package_id"] == aps_handoff["aps_output_package_id"]
+    assert external_export["aps_bundle_ref"] == aps_handoff["aps_bundle_ref"]
+    assert external_export["browser_download_enabled"] is False
+    assert external_export["download_url_enabled"] is False
+    assert external_export["connector_dispatch_enabled"] is False
+    assert external_export["destination_selection_enabled"] is False
+    assert external_export["generic_downstream_dispatch_enabled"] is False
+    assert "external_export_download_descriptor" in external_export
+    assert db_session.query(AnalysisRun).count() == 0
+    assert db_session.query(L3OutputPackage).count() == 4
+    assert db_session.query(L3ReconciliationRecord).count() == 1
+    source_packages_after_external_export = [
+        package
+        for package in db_session.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        if package.package_kind != "aps_evidence_bundle_handoff"
+    ]
+    assert {
+        package.package_kind: package.payload_ref for package in source_packages_after_external_export
+    } == original_payload_refs_by_kind
+    assert {
+        package.package_kind: package.payload_hash for package in source_packages_after_external_export
+    } == original_payload_hashes_by_kind
+
+    external_export_replay = layer3_workbench.external_export_download_prepare(
+        db_session,
+        {
+            "client_request_id": "source-intake-external-export-download",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "result_review_record_ref": result_review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            "reconciliation_record_id": package_construction["reconciliation_record_id"],
+            "package_review_submit_record_ref": package_review_submit["submit_record_ref"],
+            "package_review_state": package_review_submit["package_review_state"],
+            "prepare_record_ref": handoff_export["prepare_record_ref"],
+            "handoff_export_state": handoff_export["handoff_export_state"],
+            "handoff_export_envelope_ref": handoff_export["handoff_export_envelope"]["envelope_ref"],
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "aps_handoff_record_ref": aps_handoff["aps_handoff_record_ref"],
+            "aps_handoff_state": aps_handoff["aps_handoff_state"],
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "aps_output_package_id": aps_handoff["aps_output_package_id"],
+            "aps_output_package_kind": aps_handoff["aps_output_package_kind"],
+            "aps_bundle_ref": aps_handoff["aps_bundle_ref"],
+            "aps_bundle_id": aps_handoff["aps_bundle_id"],
+            "aps_schema_id": aps_handoff["aps_schema_id"],
+            "export_download_target": "aps_evidence_bundle_download_reference",
+            "download_mode": "reference_only_prepare",
+            "operator_decision": "prepare_external_export_download",
+            "output_package_ids": package_construction["output_package_ids"],
+            "package_kinds": package_construction["package_kinds"],
+            "payload_refs": package_construction["payload_refs"],
+            "payload_hashes": package_construction["payload_hashes"],
+        },
+        validate_source_artifact=False,
+    )
+    assert external_export_replay["status"] == "already_prepared"
+    assert (
+        external_export_replay["external_export_download_record_ref"]
+        == external_export["external_export_download_record_ref"]
+    )
+
 
     pass_run.summary_json = {**(pass_run.summary_json or {}), "analysis_run_id": "unexpected-analysis-run"}
     db_session.commit()

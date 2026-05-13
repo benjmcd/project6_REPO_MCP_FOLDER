@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -45,6 +46,7 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.external_export_download_pr
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
 QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.qual_aps_external_export_download_prepare.v1"
 QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.qual_aps_external_export_download_delivery.v1"
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.source_intake_external_export_download_prepare.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = "layer3.external_export_download_delivery_ui.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_external_export_download"
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
@@ -84,6 +86,8 @@ ASSOCIATED_COHORT_READINESS_IDENTITY_FIELDS = (
     "analysis_set_id",
     "output_payload_ref",
     "output_payload_hash",
+    "source_intake_record_id",
+    "candidate_id",
 )
 
 
@@ -131,6 +135,25 @@ def qualitative_aps_external_export_download_admitted(readiness_state: dict[str,
         and bool(str(readiness_state.get("material_snapshot_id") or "").strip())
         and bool(str(readiness_state.get("analysis_unit_id") or "").strip())
         and bool(str(readiness_state.get("analysis_set_id") or "").strip())
+        and bool(str(readiness_state.get("output_payload_ref") or "").strip())
+        and bool(str(readiness_state.get("output_payload_hash") or "").strip())
+    )
+
+
+def source_intake_external_export_download_admitted(readiness_state: dict[str, Any]) -> bool:
+    return bool(
+        readiness_state.get("pass_type") == PASS_TYPE_SINGLE_ITEM
+        and readiness_state.get("pass_scope") == "qualitative_single_item_operator_uploaded_source"
+        and readiness_state.get("method") == "operator_uploaded_source_review_preview"
+        and readiness_state.get("source_gate") == "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE"
+        and readiness_state.get("package_construction_source_gate")
+        == "314_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY_FREEZE"
+        and readiness_state.get("source_shape") == "operator_uploaded_single_source"
+        and list(readiness_state.get("source_dataset_version_ids") or []) == []
+        and readiness_state.get("package_review_submit_schema_id")
+        == "layer3.source_intake_package_review_submit.v1"
+        and bool(str(readiness_state.get("source_intake_record_id") or "").strip())
+        and bool(str(readiness_state.get("candidate_id") or "").strip())
         and bool(str(readiness_state.get("output_payload_ref") or "").strip())
         and bool(str(readiness_state.get("output_payload_hash") or "").strip())
     )
@@ -301,7 +324,9 @@ def aps_bundle_identity_for_external_export_download(
             blocked_fields=["aps_schema_id"],
         )
     if not validate_source_artifact:
-        source_artifact_hash = str((existing_readiness or {}).get("source_artifact_hash") or "").strip()
+        source_artifact_hash = str(
+            (existing_readiness or {}).get("source_artifact_hash") or package.payload_hash or ""
+        ).strip()
         if not source_artifact_hash or str(package.payload_hash or "").strip() != source_artifact_hash:
             raise Layer3WorkbenchError(
                 f"{error_prefix}_source_artifact_hash_mismatch",
@@ -314,6 +339,11 @@ def aps_bundle_identity_for_external_export_download(
             source_artifact_size = int((existing_readiness or {}).get("source_artifact_size_bytes") or -1)
         except (TypeError, ValueError):
             source_artifact_size = -1
+        if source_artifact_size < 0:
+            try:
+                source_artifact_size = int(Path(aps_bundle_ref).stat().st_size)
+            except (OSError, ValueError):
+                source_artifact_size = -1
         if source_artifact_size < 0:
             raise Layer3WorkbenchError(
                 f"{error_prefix}_source_artifact_size_mismatch",
@@ -615,6 +645,8 @@ def external_export_download_prepare_response(
         **base_response(
             QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
             if qualitative_aps_external_export_download_admitted(readiness_state)
+            else SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+            if source_intake_external_export_download_admitted(readiness_state)
             else EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
             request_id=request_id,
             status=status,
