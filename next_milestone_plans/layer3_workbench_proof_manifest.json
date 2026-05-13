@@ -15773,5 +15773,25 @@
       "python .\\tools\\l3-progress-check.py -> PASS",
       "git diff --check -> CRLF warnings only"
     ]
+  },
+  "source_intake_provider_public_url_durable_state_current_main_sync_proof": {
+    "status": "completed_current_main_sync_pr_929",
+    "branch": "codex/l3-provider-public-state-sync-929",
+    "merged_pr": "#929",
+    "merge_commit": "7b83e7490b67e6f0f5eb815cc84716388292b1fc",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/340_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC.md",
+    "implemented_boundary_doc": "next_milestone_plans/Layer3_planning_docs/339_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE.md",
+    "owner_service": "backend/app/services/layer3_provider_public_url_state.py",
+    "github_checks_passed": [
+      "backend-layer3-api",
+      "test"
+    ],
+    "comments": [],
+    "reviews": [],
+    "reviewThreads": [],
+    "post_merge_validation": "python .\\tools\\l3-progress-check.py -> PASS",
+    "runtime_behavior_change": false,
+    "next_boundary": "source_intake_provider_public_url_route_entry_freeze",
+    "proof_kind": "source_intake_provider_public_url_durable_state_current_main_sync"
   }
 }
