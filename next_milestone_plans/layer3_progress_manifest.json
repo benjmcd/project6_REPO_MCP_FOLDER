@@ -8088,6 +8088,13 @@
       "rendered_source_controls",
       "non_text_binary_preview"
     ],
-    "material_preview_status": "bounded operator-uploaded text material preview enabled for source-intake records only"
+    "material_preview_status": "bounded operator-uploaded text material preview enabled for source-intake records only",
+    "hardening_guards": {
+      "media_type_parameter_normalization": true,
+      "streamed_hash_and_preview_extraction": true
+    },
+    "hardening_tests": [
+      "test_layer3_source_intake_material_preview_accepts_media_type_parameters"
+    ]
   }
 }
