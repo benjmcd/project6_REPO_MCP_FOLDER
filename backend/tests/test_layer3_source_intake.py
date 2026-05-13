@@ -19,6 +19,16 @@ sys.path.insert(0, str(BACKEND))
 from app.api.deps import get_db
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
+from app.models.models import (
+    AnalysisArtifact,
+    AnalysisRun,
+    L3Descriptor,
+    L3GateBIdempotencyKey,
+    L3MaterialSnapshot,
+    L3OutputPackage,
+    L3PassRun,
+    L3Session,
+)
 from app.services import layer3_source_intake
 from app.services.layer3_source_boundary import source_boundary_contract
 from main import app
@@ -47,6 +57,7 @@ def client(tmp_path, monkeypatch):
 
     app.dependency_overrides[get_db] = override_get_db
     test_client = TestClient(app)
+    test_client.layer3_session_factory = session_local
     try:
         yield test_client
     finally:
@@ -78,6 +89,7 @@ def test_layer3_source_boundary_admits_operator_upload_intake_without_broad_sour
         "operator_single_upload_source_intake",
         "operator_source_intake_inventory_read_only",
         "operator_source_intake_material_preview_read_only",
+        "source_intake_gate_b_material_admission",
     ]
     assert contract["source_upload_enabled"] is False
     assert contract["source_intake_upload_enabled"] is True
@@ -85,6 +97,9 @@ def test_layer3_source_boundary_admits_operator_upload_intake_without_broad_sour
     assert contract["generic_source_upload_preflight_field_enabled"] is False
     assert contract["operator_upload_material_preview_enabled"] is True
     assert contract["operator_upload_material_preview_requires_later_freeze"] is False
+    assert contract["source_intake_gate_b_material_admission_enabled"] is True
+    assert contract["operator_upload_gate_b_admission_requires_later_freeze"] is False
+    assert contract["source_intake_gate_b_material_admission_route"] == "/api/v1/layer3/gate-b/decision"
     assert contract["broad_file_upload_enabled"] is False
     assert contract["local_directory_enabled"] is False
     assert contract["web_connector_enabled"] is False
@@ -139,6 +154,7 @@ def test_layer3_source_intake_openapi_contract(client):
         "source_intake_preview_mode",
         "source_intake_record_id",
         "material_preview_id",
+        "material_preview_hash",
         "material_candidate",
         "partial_retrieval",
         "downstream_eligibility",
@@ -164,6 +180,8 @@ def test_layer3_source_intake_upload_records_server_owned_authority(client):
     assert body["downstream_eligibility"]["eligible_for_source_inventory"] is True
     assert body["downstream_eligibility"]["eligible_for_material_preview"] is True
     assert body["downstream_eligibility"]["material_preview_requires_later_freeze"] is False
+    assert body["downstream_eligibility"]["eligible_for_gate_b_material_admission"] is True
+    assert body["downstream_eligibility"]["gate_b_material_admission_requires_later_freeze"] is False
     assert body["negative_invariants"]["broad_file_upload_enabled"] is False
     assert body["negative_invariants"]["local_directory_enabled"] is False
     assert body["negative_invariants"]["web_connector_enabled"] is False
@@ -234,7 +252,10 @@ def test_layer3_source_intake_material_preview_returns_bounded_text_only(client)
     assert body["source_gate"]["rag_vector_index_enabled"] is False
     assert body["source_gate"]["web_connector_enabled"] is False
     assert body["source_gate"]["package_construction_enabled"] is False
+    assert body["source_gate"]["gate_b_material_admission_route"] == "POST /api/v1/layer3/gate-b/decision"
     assert body["downstream_eligibility"]["eligible_for_material_preview"] is True
+    assert body["downstream_eligibility"]["eligible_for_gate_b_material_admission"] is True
+    assert body["material_preview_hash"]
     assert body["negative_invariants"]["rag_vector_index_enabled"] is False
     assert body["negative_invariants"]["unbounded_material_preview_enabled_for_operator_upload"] is False
     assert body["partial_retrieval"] is True
@@ -242,12 +263,207 @@ def test_layer3_source_intake_material_preview_returns_bounded_text_only(client)
     candidate = body["material_candidate"]
     assert candidate["candidate_id"] == f"mat-source_intake_record-{record_id}"
     assert candidate["source_class"] == "operator_uploaded_single_source"
+    assert candidate["query_basis"] == "operator_uploaded_source_intake"
+    assert candidate["source_ref"] == f"source_intake_record:{record_id}"
+    assert candidate["source_identity"]["source_intake_record_id"] == record_id
+    assert candidate["payload"]["source_intake_record_id"] == record_id
+    assert candidate["load_summary"]["source_intake_gate_b_material_admission"] is True
     assert candidate["preview_text"] == "Layer 3 oper"
     assert candidate["preview_char_count"] == 12
     assert candidate["preview_truncated"] is True
     assert candidate["storage_pointer"]["absolute_path_exposed"] is False
     assert "file_bytes" not in candidate
     assert "absolute_path" not in candidate["storage_pointer"]
+
+
+def _source_intake_gate_b_payload(
+    preview_body: dict[str, object],
+    *,
+    client_request_id: str = "source-intake-gate-b-001",
+) -> dict[str, object]:
+    candidate = preview_body["material_candidate"]
+    assert isinstance(candidate, dict)
+    decision_basis = {
+        "source_ref": candidate["source_ref"],
+        "query_basis": candidate["query_basis"],
+        "provenance_ref": candidate["provenance_ref"],
+        "source_identity": candidate["source_identity"],
+        "source_provenance": candidate["source_provenance"],
+        "payload": candidate["payload"],
+        "load_summary": candidate["load_summary"],
+    }
+    return {
+        "client_request_id": client_request_id,
+        "preflight_id": "source-intake-preflight-001",
+        "source_set_id": "source-intake-source-set-001",
+        "material_preview_id": preview_body["material_preview_id"],
+        "material_preview_hash": preview_body["material_preview_hash"],
+        "actor": "operator",
+        "candidate_decisions": [
+            {
+                "candidate_id": candidate["candidate_id"],
+                "decision": "approved",
+                "operator_reason": "Admit the persisted source-intake record for Gate B material selection.",
+                "decision_basis": decision_basis,
+            }
+        ],
+        "commit_reason": "Gate B admission for existing source-intake record.",
+    }
+
+
+def test_layer3_source_intake_gate_b_decision_admits_existing_record_without_downstream_side_effects(client):
+    upload = _upload_source_intake(client)
+    record_id = upload.json()["source_intake_record_id"]
+    preview = client.get(f"/api/v1/layer3/source/intake/{record_id}/preview")
+    preview_body = preview.json()
+    payload = _source_intake_gate_b_payload(preview_body)
+
+    response = client.post("/api/v1/layer3/gate-b/decision", json=payload)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["material_preview_hash"] == preview_body["material_preview_hash"]
+    assert body["approved_candidate_ids"] == [preview_body["material_candidate"]["candidate_id"]]
+    assert body["next_state"] == "gate_c_preview_ready"
+
+    replay = client.post("/api/v1/layer3/gate-b/decision", json=payload)
+    replay_body = replay.json()
+    assert replay.status_code == 200
+    assert replay_body["status"] == "already_committed"
+    assert replay_body["session_id"] == body["session_id"]
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3Session).count() == 1
+        assert db.query(L3Descriptor).count() == 1
+        assert db.query(L3MaterialSnapshot).count() == 1
+        assert db.query(L3GateBIdempotencyKey).count() == 1
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+        snapshot = db.query(L3MaterialSnapshot).one()
+        assert snapshot.source_shape == "operator_uploaded_single_source"
+        assert snapshot.source_identity_json["source_intake_record_id"] == record_id
+        assert snapshot.source_identity_json["content_sha256"] == upload.json()["content_sha256"]
+        assert "absolute_path" not in snapshot.source_identity_json
+    finally:
+        db.close()
+
+
+def test_layer3_source_intake_gate_b_decision_rejects_forbidden_or_stale_authority(client):
+    upload = _upload_source_intake(client)
+    record_id = upload.json()["source_intake_record_id"]
+    preview = client.get(f"/api/v1/layer3/source/intake/{record_id}/preview")
+    preview_body = preview.json()
+    forbidden_payload = _source_intake_gate_b_payload(
+        preview_body,
+        client_request_id="source-intake-gate-b-forbidden-001",
+    )
+    forbidden_payload["candidate_decisions"][0]["decision_basis"]["local_path"] = "C:/tmp/not-admitted.txt"
+
+    forbidden_response = client.post("/api/v1/layer3/gate-b/decision", json=forbidden_payload)
+
+    assert forbidden_response.status_code == 400
+    forbidden_body = forbidden_response.json()
+    assert forbidden_body["status"] == "blocked"
+    assert forbidden_body["error_code"] == "source_intake_gate_b_forbidden_field_not_admitted"
+    assert (
+        "candidate_decisions.decision_basis.local_path"
+        in forbidden_body["blocked_fields"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        record = db.get(layer3_source_intake.L3SourceIntakeRecord, record_id)
+        record.status = "already_recorded"
+        db.commit()
+    finally:
+        db.close()
+
+    stale_payload = _source_intake_gate_b_payload(
+        preview_body,
+        client_request_id="source-intake-gate-b-stale-001",
+    )
+    stale_response = client.post("/api/v1/layer3/gate-b/decision", json=stale_payload)
+
+    assert stale_response.status_code == 409
+    stale_body = stale_response.json()
+    assert stale_body["status"] == "conflict"
+    assert stale_body["error_code"] == "source_intake_gate_b_record_not_admitted"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3MaterialSnapshot).count() == 0
+        assert db.query(L3GateBIdempotencyKey).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_source_intake_gate_b_decision_rejects_fabricated_binary_admission(client):
+    upload = _upload_source_intake(
+        client,
+        data={
+            "client_request_id": "source-intake-binary-001",
+            "declared_media_type": "application/pdf",
+        },
+    )
+    upload_body = upload.json()
+    record_id = upload_body["source_intake_record_id"]
+    source_identity = {
+        **upload_body["source_identity"],
+        "source_intake_record_id": record_id,
+    }
+    decision_basis = {
+        "source_ref": f"source_intake_record:{record_id}",
+        "query_basis": "operator_uploaded_source_intake",
+        "provenance_ref": f"source_intake_record:{record_id}:metadata:{upload_body['metadata_hash']}",
+        "source_identity": source_identity,
+        "source_provenance": upload_body["source_provenance"],
+        "payload": {
+            "source_intake_record_id": record_id,
+            "source_class": "operator_uploaded_single_source",
+            "content_sha256": upload_body["content_sha256"],
+            "metadata_hash": upload_body["metadata_hash"],
+            "authority_basis_hash": upload_body["authority_basis_hash"],
+        },
+        "load_summary": {"source_intake_gate_b_material_admission": True},
+    }
+
+    response = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "source-intake-gate-b-binary-001",
+            "preflight_id": "source-intake-preflight-binary-001",
+            "source_set_id": "source-intake-source-set-binary-001",
+            "material_preview_id": "fabricated-binary-preview",
+            "candidate_decisions": [
+                {
+                    "candidate_id": f"mat-source_intake_record-{record_id}",
+                    "decision": "approved",
+                    "operator_reason": "Fabricated binary admission should fail closed.",
+                    "decision_basis": decision_basis,
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error_code"] == "source_intake_gate_b_media_type_not_admitted"
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3MaterialSnapshot).count() == 0
+    finally:
+        db.close()
 
 
 def test_layer3_source_intake_material_preview_accepts_media_type_parameters(client):
@@ -351,6 +567,8 @@ def test_layer3_source_intake_inventory_bounds_legacy_description_and_preview_el
             "eligible_for_source_inventory": True,
             "eligible_for_material_preview": False,
             "material_preview_requires_later_freeze": True,
+            "eligible_for_gate_b_material_admission": False,
+            "gate_b_material_admission_requires_later_freeze": True,
             "eligible_for_rag_vector_index": False,
             "eligible_for_web_connector": False,
             "eligible_for_unbounded_runtime_db": False,
@@ -366,6 +584,8 @@ def test_layer3_source_intake_inventory_bounds_legacy_description_and_preview_el
     assert body["source_description_truncated"] is True
     assert body["downstream_eligibility"]["eligible_for_material_preview"] is True
     assert body["downstream_eligibility"]["material_preview_requires_later_freeze"] is False
+    assert body["downstream_eligibility"]["eligible_for_gate_b_material_admission"] is True
+    assert body["downstream_eligibility"]["gate_b_material_admission_requires_later_freeze"] is False
 
 
 def test_layer3_source_intake_rejects_deferred_source_modes(client):
