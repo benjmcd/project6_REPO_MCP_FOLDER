@@ -566,6 +566,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_BACKEND_API = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "343_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_CURRENT_MAIN_SYNC.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE = (
+    PLANNING_DOCS / "344_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -28747,6 +28750,41 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public prepare/status current-main sync term: {term}")
+
+    revoke_freeze_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE, errors)
+    for term in (
+        "Status: planning/control revoke-route freeze only; no runtime route behavior admitted.",
+        "source_intake_provider_public_url_revoke_route_freeze",
+        "implement_source_intake_provider_public_url_revoke_backend_api",
+        "revocation semantics must be frozen before public URL delivery/use exposure",
+        "No provider-public URL delivery/use route is admitted.",
+        "No rendered provider-public controls are admitted.",
+        "auth/security behavior",
+    ):
+        if term not in revoke_freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE)} missing provider-public revoke-route freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Revoke Route Freeze",
+            "344_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE.md",
+            "implement_source_intake_provider_public_url_revoke_backend_api",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_revoke_route_freeze",
+            "implement_source_intake_provider_public_url_revoke_backend_api",
+            "revocation_before_delivery_use",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_revoke_route_freeze_proof",
+            "implement_source_intake_provider_public_url_revoke_backend_api",
+            "revocation_before_delivery_use",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public revoke-route freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []

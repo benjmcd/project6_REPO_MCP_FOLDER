@@ -15922,5 +15922,49 @@
       "auth_security_behavior",
       "frontend_only_durable_authority"
     ]
+  },
+  "source_intake_provider_public_url_revoke_route_freeze_proof": {
+    "proof_kind": "source_intake_provider_public_url_revoke_route_freeze",
+    "status": "completed_source_intake_provider_public_url_revoke_route_freeze",
+    "branch": "codex/l3-provider-public-revoke-route-freeze",
+    "current_main_predecessor_commit": "01eb0ea74b2d66260285eb85807c529e31d66ff1",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/344_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE.md",
+    "predecessor_sync": "source_intake_provider_public_url_prepare_status_current_main_sync",
+    "selected_next_implementation": "source_intake_provider_public_url_revoke_backend_api",
+    "next_allowed_action": "implement_source_intake_provider_public_url_revoke_backend_api",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "route_behavior_change": false,
+    "sequencing_rule": "revocation_before_delivery_use",
+    "allowed_future_route_surface": [
+      "POST /api/v1/layer3/handoff/export/download/provider-public-url/revoke"
+    ],
+    "blocked_scope": [
+      "provider_public_url_delivery_use_route",
+      "rendered_provider_public_url_controls",
+      "public_url_enabled_true",
+      "raw_public_url_persistence_or_response_exposure",
+      "provider_network_object_store_writes",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "rag_vector_behavior",
+      "broad_qualitative_behavior",
+      "full_mockup_activation",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required",
+    "implementation_entry_reasoning": "revocation_before_delivery_use",
+    "required_future_tests": [
+      "openapi_revoke_schema_forbidden_fields",
+      "revoke_success_idempotency",
+      "revoke_conflicting_idempotency_fail_closed",
+      "missing_receipt_fail_closed",
+      "status_observes_revoked_state",
+      "raw_public_url_never_echoed",
+      "negative_side_effect_absence"
+    ]
   }
 }
