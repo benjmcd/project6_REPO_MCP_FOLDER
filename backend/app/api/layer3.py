@@ -4365,7 +4365,7 @@ async def post_source_intake_upload(
     responses=_workbench_error_responses(400),
 )
 def get_source_intake_inventory(
-    limit: int = 50,
+    limit: str = "50",
     source_family: str | None = None,
     status: str | None = None,
     db: Session = Depends(get_db),
