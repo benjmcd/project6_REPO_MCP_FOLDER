@@ -14220,5 +14220,31 @@
     "rendered_ui_behavior_change": false,
     "proof_kind": "source_intake_gate_c_typing_entry_freeze",
     "repo_confirmed_failure_boundary": "layer3_typing_entry supports dataset_version and aps_content_document but not operator_uploaded_single_source"
+  },
+  "source_intake_gate_c_typing_entry_proof": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-gate-c-typing",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "source_intake_gate_c_typing_entry",
+    "freeze_predecessor": "source_intake_gate_c_typing_entry_freeze",
+    "canonical_source_of_truth": "server_owned_gate_b_state_from_L3SourceIntakeRecord",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/298_SOURCE_INTAKE_GATE_C_TYPING_ENTRY.md",
+    "owner_service": "backend/app/services/layer3_typing_entry.py",
+    "targeted_test": "backend/tests/test_layer3_typing_entry.py",
+    "targeted_validation": "pytest .\\backend\\tests\\test_layer3_typing_entry.py",
+    "targeted_validation_result": "5 passed",
+    "source_shape": "operator_uploaded_single_source",
+    "planning_shape_family": "document_chunks",
+    "chosen_modality": "qualitative",
+    "unit_kind": "atomic",
+    "confidence_basis": "frozen_source_intake_text_document_default",
+    "proof_kind": "source_intake_gate_c_typing_entry",
+    "live_behavior_change": true,
+    "runtime_behavior_change": true,
+    "rendered_ui_behavior_change": false,
+    "new_route_added": false,
+    "model_migration_changed": false,
+    "no_analysis_run_side_effect": true,
+    "next_boundary": "source_intake_plan_preview_boundary_freeze"
   }
 }

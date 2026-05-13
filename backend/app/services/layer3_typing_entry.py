@@ -19,6 +19,7 @@ from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED,
     SESSION_STATUS_COMPLETED_WITH_WARNINGS,
 )
+from app.services.layer3_source_boundary import SOURCE_INTAKE_GATE_B_SOURCE_CLASS
 from app.services.layer3_utils import (
     json_clone as _json_clone,
     stable_hash as _hash_json,
@@ -53,6 +54,7 @@ class _TypingRule:
     chosen_modality: str
     confidence: float
     unit_kind: str = UNIT_KIND_ATOMIC
+    confidence_basis: str = "frozen_shape_default"
 
 
 @dataclass
@@ -93,6 +95,13 @@ SUPPORTED_TYPING_RULES = {
         candidate_modalities=(MODALITY_QUALITATIVE,),
         chosen_modality=MODALITY_QUALITATIVE,
         confidence=1.0,
+    ),
+    SOURCE_INTAKE_GATE_B_SOURCE_CLASS: _TypingRule(
+        planning_shape_family="document_chunks",
+        candidate_modalities=(MODALITY_QUALITATIVE,),
+        chosen_modality=MODALITY_QUALITATIVE,
+        confidence=1.0,
+        confidence_basis="frozen_source_intake_text_document_default",
     ),
 }
 
@@ -154,7 +163,7 @@ def _typing_basis_for_snapshot(snapshot: L3MaterialSnapshot, rule: _TypingRule) 
         "planning_shape_family": rule.planning_shape_family,
         "candidate_modalities_json": list(rule.candidate_modalities),
         "chosen_modality": rule.chosen_modality,
-        "confidence_basis": "frozen_shape_default",
+        "confidence_basis": rule.confidence_basis,
         "descriptor_id": snapshot.descriptor_id,
         "source_plane": snapshot.source_plane,
     }
