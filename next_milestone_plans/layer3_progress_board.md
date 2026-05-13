@@ -1275,3 +1275,11 @@ Refresh this board against:
 - Duplicate non-file multipart form fields now fail closed with `source_intake_duplicate_field` instead of being collapsed by last-write-wins dictionary construction.
 - Existing forbidden-field, unknown-field, idempotency, hash, storage-ref, inventory, and bounded-preview behavior remains unchanged.
 - Generic source upload, local path/local directory authority, web connector expansion, RAG/vector indexing, package construction, rendered source controls, non-text binary preview, and unbounded runtime DB behavior remain blocked.
+
+## Source Intake File Part Guard
+
+- `290_SOURCE_INTAKE_FILE_PART_GUARD.md` hardens the existing operator-upload route without admitting a new source family.
+- Branch `codex/l3-source-intake-file-guard` extends `normalise_source_intake_form_items(...)` to detect multipart file-part ambiguity before bytes are read or persisted.
+- Duplicate multipart `file` parts now fail closed with `source_intake_duplicate_file_field`.
+- Existing duplicate non-file field, forbidden-field, unknown-field, idempotency, hash, storage-ref, inventory, and bounded-preview behavior remains unchanged.
+- Generic source upload, broad file upload, local path/local directory authority, web connector expansion, RAG/vector indexing, package construction, rendered source controls, non-text binary preview, and unbounded runtime DB behavior remain blocked.
