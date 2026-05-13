@@ -14204,5 +14204,21 @@
   },
   "latest_source_intake_gate_b_rendered_admission_controls_pr": "#879",
   "latest_source_intake_gate_b_rendered_admission_controls_implementation_commit": "f079d0ffc3d760bc24a948141745d5852ccd061c",
-  "latest_source_intake_gate_b_rendered_admission_controls_merge_commit": "204d551a88b136882d1ee27a2c31d02798e2547c"
+  "latest_source_intake_gate_b_rendered_admission_controls_merge_commit": "204d551a88b136882d1ee27a2c31d02798e2547c",
+  "source_intake_gate_c_typing_entry_freeze_proof": {
+    "status": "completed_source_intake_gate_c_typing_entry_freeze",
+    "implementation_branch": "codex/l3-source-intake-gate-c-freeze",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "source_intake_gate_c_typing_entry",
+    "runtime_predecessor": "source_intake_gate_b_rendered_admission_controls",
+    "canonical_source_of_truth": "server_owned_gate_b_state_from_L3SourceIntakeRecord",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/297_SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE.md",
+    "next_allowed_action": "implement_source_intake_gate_c_typing_entry",
+    "implementation_entry_allowed_next": true,
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "proof_kind": "source_intake_gate_c_typing_entry_freeze",
+    "repo_confirmed_failure_boundary": "layer3_typing_entry supports dataset_version and aps_content_document but not operator_uploaded_single_source"
+  }
 }
