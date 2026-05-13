@@ -7096,7 +7096,8 @@
     "source_intake_package_construction_commit_boundary_freeze": "completed_source_intake_package_construction_commit_boundary_freeze",
     "source_intake_package_construction_commit_boundary": "branch_local_implemented_targeted_tests_passed",
     "source_intake_package_review_submit_boundary_freeze": "completed_source_intake_package_review_submit_boundary_freeze",
-    "source_intake_package_review_submit_boundary": "branch_local_implemented_targeted_tests_passed"
+    "source_intake_package_review_submit_boundary": "branch_local_implemented_targeted_tests_passed",
+    "source_intake_handoff_export_prepare_boundary_freeze": "completed_source_intake_handoff_export_prepare_boundary_freeze"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -9768,5 +9769,54 @@
   "latest_source_intake_package_review_submit_boundary_branch": "codex/l3-source-intake-package-review-submit",
   "latest_source_intake_package_review_submit_boundary_doc": "next_milestone_plans/Layer3_planning_docs/317_SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_BOUNDARY.md",
   "latest_source_intake_package_review_submit_boundary_summary": "Branch-local source_intake_package_review_submit_boundary admits bounded submit decision state through package_review_submit, preserves source-intake identity and package refs/hashes without AnalysisRun, and keeps handoff/export plus downstream connector/provider/RAG/UI/model/auth surfaces blocked.",
-  "latest_source_intake_package_review_submit_boundary_live_behavior_change": true
+  "latest_source_intake_package_review_submit_boundary_live_behavior_change": true,
+  "source_intake_handoff_export_prepare_boundary_freeze": {
+    "status": "completed_source_intake_handoff_export_prepare_boundary_freeze",
+    "planning_branch": "codex/l3-source-intake-handoff-export-freeze",
+    "current_main_predecessor_commit": "bf46340d200d8807aae3279dcf597d23298c0641",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "source_intake_handoff_export_prepare_boundary",
+    "freeze_predecessor": "source_intake_package_review_submit_boundary",
+    "canonical_source_of_truth": "server_owned_source_intake_package_review_submit_state_and_package_payload_identity",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/318_SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "current_failure_boundary": "source_intake_handoff_export_prepare_not_admitted",
+    "future_handoff_export_prepare_semantics": {
+      "request_contract": "existing_handoff_export_prepare_request_contract",
+      "required_package_review_submit_schema_id": "layer3.source_intake_package_review_submit.v1",
+      "required_package_construction_schema_id": "layer3.source_intake_package_construction_commit.v1",
+      "required_output_schema_id": "layer3.source_intake_execution_output.v1",
+      "required_engine_family": "source_intake_qualitative_preview",
+      "analysis_run_created": false,
+      "route_added": false,
+      "model_migration_changed": false,
+      "rendered_ui_changed": false,
+      "external_export_download_created": false
+    },
+    "required_future_proofs": [
+      "source_intake_package_review_submit_can_prepare_internal_export_envelope",
+      "source_intake_handoff_export_prepare_identity_is_deterministic_and_server_derived",
+      "source_intake_identity_preserved_in_handoff_export_prepare_state",
+      "package_payload_refs_and_hashes_match_durable_package_state",
+      "package_review_submit_record_ref_matches_durable_submit_state",
+      "no_analysis_run_required_or_created",
+      "duplicate_or_conflicting_handoff_export_prepare_requests_fail_closed_or_replay_idempotently",
+      "mismatched_package_review_submit_record_ref_fails_closed",
+      "mismatched_package_review_state_fails_closed",
+      "mismatched_package_review_submit_schema_id_fails_closed",
+      "mismatched_output_package_ids_or_payload_hashes_fail_closed",
+      "aps_handoff_dispatch_remains_blocked",
+      "external_export_download_remains_blocked",
+      "existing_associated_cohort_and_single_aps_handoff_export_prepare_unchanged"
+    ],
+    "implementation_entry_allowed_next": true,
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_boundary": "source_intake_handoff_export_prepare_boundary"
+  },
+  "latest_source_intake_handoff_export_prepare_boundary_freeze_branch": "codex/l3-source-intake-handoff-export-freeze",
+  "latest_source_intake_handoff_export_prepare_boundary_freeze_doc": "next_milestone_plans/Layer3_planning_docs/318_SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE.md",
+  "latest_source_intake_handoff_export_prepare_boundary_freeze_summary": "Doc 318 freezes source-intake handoff/export prepare as the next narrow owner-service boundary after current-main source-intake package-review submit. It preserves source_intake_handoff_export_prepare_not_admitted until a later implementation proves bounded internal export-envelope prepare state without AnalysisRun, APS dispatch, external export/download delivery, connector, provider, RAG, route, UI, model, migration, or auth/security widening.",
+  "latest_source_intake_handoff_export_prepare_boundary_freeze_live_behavior_change": false
 }

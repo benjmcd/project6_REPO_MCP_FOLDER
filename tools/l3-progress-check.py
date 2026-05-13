@@ -488,6 +488,9 @@ SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_BOUNDARY_FREEZE = (
 SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_BOUNDARY = (
     PLANNING_DOCS / "317_SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_BOUNDARY.md"
 )
+SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE = (
+    PLANNING_DOCS / "318_SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -22311,6 +22314,76 @@ def _check_source_intake_package_review_submit_boundary(errors: list[str]) -> No
                 errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_package_review_submit_boundary_proof.{key} must be {expected!r}")
 
 
+def _check_source_intake_handoff_export_prepare_boundary_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE, errors)
+    for term in (
+        "source_intake_handoff_export_prepare_boundary",
+        "codex/l3-source-intake-handoff-export-freeze",
+        "317_SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_BOUNDARY.md",
+        "backend/app/services/layer3_workbench.py",
+        "source_intake_handoff_export_prepare_not_admitted",
+        "handoff_export_prepare",
+        "layer3.source_intake_package_review_submit.v1",
+        "layer3.source_intake_package_construction_commit.v1",
+        "implement_source_intake_handoff_export_prepare_boundary",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE)} missing source-intake handoff/export freeze term: {term}")
+    for path, terms in {
+        BOARD: ("## Source Intake Handoff Export Prepare Boundary Freeze", "318_SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE.md", "source_intake_handoff_export_prepare_not_admitted"),
+        MANIFEST: ("source_intake_handoff_export_prepare_boundary_freeze", "latest_source_intake_handoff_export_prepare_boundary_freeze_branch", "layer3.source_intake_package_review_submit.v1"),
+        PROOF_MANIFEST: ("source_intake_handoff_export_prepare_boundary_freeze_proof", "318_SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE.md", "source_intake_handoff_export_prepare_not_admitted"),
+        ROOT / "backend/app/services/layer3_workbench.py": ("source_intake_handoff_export_prepare_not_admitted", "handoff_export_prepare", "_raise_if_source_intake_downstream_not_admitted"),
+        ROOT / "backend/tests/test_layer3_workbench.py": ("source-intake-handoff-export-blocked", "source_intake_handoff_export_prepare_not_admitted"),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing source-intake handoff/export freeze term: {term}")
+    manifest = _load_json(MANIFEST, errors)
+    freeze = manifest.get("source_intake_handoff_export_prepare_boundary_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(freeze, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_handoff_export_prepare_boundary_freeze")
+    else:
+        for key, expected in {
+            "status": "completed_source_intake_handoff_export_prepare_boundary_freeze",
+            "planning_branch": "codex/l3-source-intake-handoff-export-freeze",
+            "current_main_predecessor_commit": "bf46340d200d8807aae3279dcf597d23298c0641",
+            "selected_runtime_mode": "source_intake_handoff_export_prepare_boundary",
+            "freeze_predecessor": "source_intake_package_review_submit_boundary",
+            "canonical_source_of_truth": "server_owned_source_intake_package_review_submit_state_and_package_payload_identity",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/318_SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE.md",
+            "owner_service": "backend/app/services/layer3_workbench.py",
+            "current_failure_boundary": "source_intake_handoff_export_prepare_not_admitted",
+            "implementation_entry_allowed_next": True,
+            "live_behavior_change": False,
+            "runtime_behavior_change": False,
+            "rendered_ui_behavior_change": False,
+            "next_boundary": "source_intake_handoff_export_prepare_boundary",
+        }.items():
+            if freeze.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_handoff_export_prepare_boundary_freeze.{key} must be {expected!r}")
+        semantics = freeze.get("future_handoff_export_prepare_semantics")
+        if not isinstance(semantics, dict) or semantics.get("required_package_review_submit_schema_id") != "layer3.source_intake_package_review_submit.v1" or semantics.get("external_export_download_created") is not False:
+            errors.append(f"{_rel(MANIFEST)} source_intake_handoff_export_prepare_boundary_freeze future_handoff_export_prepare_semantics invalid")
+        for required in (
+            "source_intake_package_review_submit_can_prepare_internal_export_envelope",
+            "source_intake_identity_preserved_in_handoff_export_prepare_state",
+            "aps_handoff_dispatch_remains_blocked",
+            "existing_associated_cohort_and_single_aps_handoff_export_prepare_unchanged",
+        ):
+            if required not in freeze.get("required_future_proofs", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_handoff_export_prepare_boundary_freeze required_future_proofs missing {required}")
+    if isinstance(manifest, dict):
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_handoff_export_prepare_boundary_freeze") != "completed_source_intake_handoff_export_prepare_boundary_freeze":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake handoff/export freeze scope status")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_handoff_export_prepare_boundary_freeze_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict) or proof_entry.get("proof_kind") != "source_intake_handoff_export_prepare_boundary_freeze":
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_handoff_export_prepare_boundary_freeze_proof")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -27331,6 +27404,7 @@ def main() -> int:
     _check_source_intake_package_construction_commit_boundary(errors)
     _check_source_intake_package_review_submit_boundary_freeze(errors)
     _check_source_intake_package_review_submit_boundary(errors)
+    _check_source_intake_handoff_export_prepare_boundary_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
