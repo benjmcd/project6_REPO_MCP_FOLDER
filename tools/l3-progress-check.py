@@ -461,6 +461,9 @@ SOURCE_INTAKE_EXECUTION_START_BOUNDARY = (
 SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY_FREEZE = (
     PLANNING_DOCS / "308_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY_FREEZE.md"
 )
+SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY = (
+    PLANNING_DOCS / "309_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -21575,6 +21578,78 @@ def _check_source_intake_execution_result_status_boundary_freeze(errors: list[st
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_execution_result_status_boundary_freeze_proof")
 
 
+def _check_source_intake_execution_result_status_boundary(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY, errors)
+    for term in (
+        "source_intake_execution_result_status_boundary",
+        "codex/l3-source-intake-result-status",
+        "308_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY_FREEZE.md",
+        "backend/app/services/layer3_workbench.py",
+        "layer3.source_intake_execution_output.v1",
+        "source_intake_execution_result_status_output_not_admitted",
+        "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
+        "missing_output_metadata",
+        "source_intake_execution_result_review_boundary_freeze",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY)} missing source-intake result/status implementation term: {term}")
+    for path, terms in {
+        BOARD: ("## Source Intake Execution Result Status Boundary", "309_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY.md", "source_intake_execution_result_review_boundary_freeze"),
+        MANIFEST: ("source_intake_execution_result_status_boundary", "latest_source_intake_execution_result_status_boundary_branch", "source_intake_execution_result_review_boundary_freeze"),
+        PROOF_MANIFEST: ("source_intake_execution_result_status_boundary_proof", "source_intake_execution_result_status_output_not_admitted", "22 passed"),
+        ROOT / "backend/app/services/layer3_workbench.py": ("_source_intake_result_status_output_summary", "source_intake_execution_result_status_output_not_admitted", "source_intake_pass"),
+        ROOT / "backend/tests/test_layer3_workbench.py": ("source-intake-result-status", "missing_output_metadata", "source_intake_execution_result_status_output_not_admitted"),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing source-intake result/status implementation term: {term}")
+    manifest = _load_json(MANIFEST, errors)
+    entry = manifest.get("source_intake_execution_result_status_boundary") if isinstance(manifest, dict) else None
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_execution_result_status_boundary")
+    else:
+        for key, expected in {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-result-status",
+            "selected_runtime_mode": "source_intake_execution_result_status_boundary",
+            "freeze_predecessor": "source_intake_execution_result_status_boundary_freeze",
+            "canonical_source_of_truth": "server_owned_completed_L3PassRun_and_source_intake_execution_output_payload",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/309_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY.md",
+            "owner_service": "backend/app/services/layer3_workbench.py",
+            "targeted_validation_result": "22 passed",
+            "output_schema_id": "layer3.source_intake_execution_output.v1",
+            "analysis_run_created": False,
+            "package_created": False,
+            "route_added": False,
+            "rendered_ui_changed": False,
+            "model_migration_changed": False,
+            "next_boundary": "source_intake_execution_result_review_boundary_freeze",
+        }.items():
+            if entry.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_execution_result_status_boundary.{key} must be {expected!r}")
+        guards = entry.get("contract_guards")
+        if not isinstance(guards, dict) or guards.get("missing_output_payload_fails_closed") is not True or guards.get("mismatched_output_source_identity_fails_closed") is not True:
+            errors.append(f"{_rel(MANIFEST)} source_intake_execution_result_status_boundary missing required guards")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_execution_result_status_boundary_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_execution_result_status_boundary_proof")
+    else:
+        for key, expected in {
+            "proof_kind": "source_intake_execution_result_status_boundary",
+            "branch": "codex/l3-source-intake-result-status",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/309_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY.md",
+            "test_name": "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
+            "targeted_validation_result": "22 passed",
+            "analysis_run_created": False,
+            "package_created": False,
+            "blocked_downstream_boundary": "source_intake_execution_result_review_boundary_freeze",
+        }.items():
+            if proof_entry.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_execution_result_status_boundary_proof.{key} must be {expected!r}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -26586,6 +26661,7 @@ def main() -> int:
     _check_source_intake_execution_start_boundary_freeze(errors)
     _check_source_intake_execution_start_boundary(errors)
     _check_source_intake_execution_result_status_boundary_freeze(errors)
+    _check_source_intake_execution_result_status_boundary(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

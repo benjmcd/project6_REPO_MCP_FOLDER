@@ -250,6 +250,71 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert idempotent_start["status"] == "already_completed"
     assert db_session.query(L3PassRun).count() == 1
 
+    status = layer3_workbench.execution_result_status(
+        db_session,
+        {
+            "client_request_id": "source-intake-result-status",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "operator_view_mode": "status_only",
+        },
+    )
+    assert status["status"] == "available"
+    assert status["result_status_available"] is True
+    assert status["analysis_run_id"] is None
+    assert status["analysis_run_status"] is None
+    assert status["result_review_enabled"] is False
+    assert status["package_review_enabled"] is False
+    assert status["handoff_enabled"] is False
+    assert status["output_metadata_summary"]["schema_id"] == "layer3.source_intake_execution_output.v1"
+    assert status["output_metadata_summary"]["source_intake_record_id"] == "src-intake-plan-001"
+    assert status["output_metadata_summary"]["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+    assert status["output_metadata_summary"]["storage_pointer"]["absolute_path_exposed"] is False
+    assert db_session.query(AnalysisRun).count() == 0
+    assert db_session.query(L3OutputPackage).count() == 0
+
+    original_output_ref = pass_run.output_payload_ref
+    pass_run.output_payload_ref = None
+    db_session.commit()
+    missing_status = layer3_workbench.execution_result_status(
+        db_session,
+        {
+            "client_request_id": "source-intake-result-status-missing-output",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "operator_view_mode": "status_only",
+        },
+    )
+    assert missing_status["status"] == "missing_output_metadata"
+    assert missing_status["result_status_available"] is False
+    assert missing_status["output_metadata_error"] == "output_payload_ref_missing"
+
+    pass_run.output_payload_ref = original_output_ref
+    tampered_payload = {**output_payload, "source_intake_record_id": "wrong-source-intake-record"}
+    Path(original_output_ref).write_text(json.dumps(tampered_payload), encoding="utf-8")
+    db_session.commit()
+    with pytest.raises(Layer3WorkbenchError) as mismatched_output:
+        layer3_workbench.execution_result_status(
+            db_session,
+            {
+                "client_request_id": "source-intake-result-status-mismatch",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+                "operator_view_mode": "status_only",
+            },
+        )
+    assert mismatched_output.value.error_code == "source_intake_execution_result_status_output_not_admitted"
+    assert "source_intake_record_id" in mismatched_output.value.blocked_fields
+
 
 def _gate_b_payload(preflight: dict, source: dict, material: dict) -> dict:
     candidates = material["material_candidates"]
