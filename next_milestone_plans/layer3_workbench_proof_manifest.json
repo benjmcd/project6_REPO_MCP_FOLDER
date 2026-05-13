@@ -16197,5 +16197,34 @@
   },
   "latest_source_intake_provider_public_url_delivery_use_freeze_branch": "codex/l3-provider-public-delivery-use-freeze",
   "latest_source_intake_provider_public_url_delivery_use_freeze_live_behavior_change": false,
-  "latest_source_intake_provider_public_url_delivery_use_freeze_summary": "Provider-public delivery/use is branch-local frozen as not selected; next allowed action is authority-contract-only or a separate deferred server-authoritative runtime-lane freeze."
+  "latest_source_intake_provider_public_url_delivery_use_freeze_summary": "Provider-public delivery/use is branch-local frozen as not selected; next allowed action is authority-contract-only or a separate deferred server-authoritative runtime-lane freeze.",
+  "source_intake_provider_public_url_delivery_use_freeze_current_main_sync_proof": {
+    "proof_kind": "source_intake_provider_public_url_delivery_use_freeze_current_main_sync",
+    "status": "completed_current_main_sync_pr_940",
+    "branch": "codex/l3-provider-public-delivery-use-freeze-sync-940",
+    "merged_pr": "#940",
+    "source_branch": "codex/l3-provider-public-delivery-use-freeze",
+    "head_commit": "ca2b56a004e8905afdf0154a76fed35b5562408d",
+    "merge_commit": "05c1977a8be9393fe311b9c67aa5593c0016cd66",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/351_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_MAIN_SYNC.md",
+    "evidence": [
+      "GitHub backend-layer3-api -> SUCCESS",
+      "GitHub test -> SUCCESS",
+      "PR comments/reviews/review threads -> empty",
+      "mergeStateStatus -> CLEAN",
+      "post-merge python .\\tools\\l3-progress-check.py -> PASS"
+    ],
+    "negative_invariants_preserved": [
+      "no provider-public delivery/use implementation may proceed directly",
+      "no provider-public delivery/use route admitted",
+      "no raw public URL display admitted",
+      "no public_url_enabled true rail admitted",
+      "no public proxy runtime admitted",
+      "no frontend-only durable provider-public authority admitted"
+    ],
+    "next_required_action": "select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract"
+  },
+  "latest_source_intake_provider_public_url_delivery_use_freeze_current_main_sync_branch": "codex/l3-provider-public-delivery-use-freeze-sync-940",
+  "latest_source_intake_provider_public_url_delivery_use_freeze_current_main_sync_live_behavior_change": false,
+  "latest_source_intake_provider_public_url_delivery_use_freeze_current_main_sync_summary": "Current-main sync after PR #940 records passing checks, empty review surfaces, clean merge, post-merge progress PASS, and continued block on provider-public delivery/use implementation."
 }
