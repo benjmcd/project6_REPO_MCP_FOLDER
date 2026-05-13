@@ -524,6 +524,9 @@ SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_CURRENT_MAIN_SYNC = (
 SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE = (
     PLANNING_DOCS / "329_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE.md"
 )
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY = (
+    PLANNING_DOCS / "330_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -27998,6 +28001,120 @@ def _check_source_intake_external_export_download_post_920_sync(errors: list[str
     if not isinstance(proof.get("source_intake_external_export_download_signed_reference_boundary_freeze_proof") if isinstance(proof, dict) else None, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} missing signed-reference boundary freeze proof")
 
+
+def _check_source_intake_external_export_download_signed_reference_boundary(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY, errors)
+    for term in (
+        "Status: branch-local implementation",
+        "source_intake_external_export_download_signed_reference_boundary",
+        "codex/l3-source-intake-signed-reference",
+        "329_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE.md",
+        "layer3.source_intake_external_export_download_prepare.v1",
+        "layer3.source_intake_external_export_download_delivery.v1",
+        "source_intake_external_export_download_signed_reference_gate",
+        "token-only use",
+        "provider-private signed URL controls still retain",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY)} missing signed-reference implementation term: {term}")
+    for path, terms in {
+        BOARD: (
+            "## Source Intake External Export Download Signed Reference Boundary",
+            "330_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY.md",
+            "source_intake_external_export_download_signed_reference_gate",
+            "Provider/public URLs, connector/destination dispatch",
+        ),
+        MANIFEST: (
+            "source_intake_external_export_download_signed_reference_boundary",
+            "latest_source_intake_external_export_download_signed_reference_boundary_branch",
+            "source_intake_external_export_download_signed_reference_gate",
+            "layer3.external_export_download_signed_reference_use.v1",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_external_export_download_signed_reference_boundary_proof",
+            "330_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY.md",
+            "source_intake_external_export_download_signed_reference_gate",
+            "targeted_tests_and_progress_check_required",
+        ),
+        ROOT / "backend/app/services/layer3_workbench.py": (
+            "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID",
+            "_signed_reference_required_source_intake_authority",
+            "_signed_reference_required_delivery_authority",
+            "source_intake_external_export_download_signed_reference_gate",
+        ),
+        ROOT / "backend/app/review_ui/static/layer3.js": (
+            "function canGenerateExternalExportDownloadSignedReference",
+            "externalExportDownloadDeliveryUiAdmitted(external)",
+            "function canPrepareProviderPrivateSignedUrl",
+            "!isSourceIntakeExternalExportDownloadState(external)",
+        ),
+        ROOT / "backend/tests/test_layer3_workbench.py": (
+            "source-intake-external-export-download-signed-reference",
+            "source_intake_external_export_download_signed_reference_gate",
+            "layer3.external_export_download_signed_reference_use.v1",
+        ),
+        ROOT / "backend/tests/test_layer3_page.py": (
+            "signed_reference_gate",
+            "provider_signed_url_start",
+            "!isSourceIntakeExternalExportDownloadState(external)",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-intake signed-reference implementation term: {term}")
+    manifest = _load_json(MANIFEST, errors)
+    entry = manifest.get("source_intake_external_export_download_signed_reference_boundary") if isinstance(manifest, dict) else None
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_external_export_download_signed_reference_boundary")
+    else:
+        for key, expected in {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-signed-reference",
+            "current_main_predecessor_commit": "f30b501e9590c9b2f961c8390e912f1b40a85580",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "source_intake_external_export_download_signed_reference_boundary",
+            "freeze_predecessor": "source_intake_external_export_download_signed_reference_boundary_freeze",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/330_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY.md",
+            "freeze_doc": "next_milestone_plans/Layer3_planning_docs/329_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE.md",
+            "owner_service": "backend/app/services/layer3_workbench.py",
+            "owner_ui": "backend/app/review_ui/static/layer3.js",
+            "signed_reference_schema_id": "layer3.external_export_download_signed_reference.v1",
+            "signed_reference_use_schema_id": "layer3.external_export_download_signed_reference_use.v1",
+            "server_authority": "source_intake_external_export_download_signed_reference_gate",
+            "runtime_behavior_change": True,
+            "rendered_ui_behavior_change": True,
+            "route_added": False,
+            "model_migration_changed": False,
+            "next_boundary": "current_main_proof_control_sync_then_next_named_freeze",
+        }.items():
+            if entry.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_signed_reference_boundary.{key} must be {expected!r}")
+        guards = entry.get("contract_guards")
+        if not isinstance(guards, dict) or guards.get("source_intake_signed_reference_generation_admitted") is not True or guards.get("token_only_use_revalidates_delivery_authority") is not True or guards.get("provider_url_behavior_remains_blocked") is not True:
+            errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_signed_reference_boundary contract_guards invalid")
+    if isinstance(manifest, dict):
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_external_export_download_signed_reference_boundary") != "branch_local_implemented_targeted_tests_passed":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake signed-reference implementation scope status")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_external_export_download_signed_reference_boundary_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_external_export_download_signed_reference_boundary_proof")
+    else:
+        for key, expected in {
+            "proof_kind": "source_intake_external_export_download_signed_reference_boundary",
+            "branch": "codex/l3-source-intake-signed-reference",
+            "current_main_predecessor_commit": "f30b501e9590c9b2f961c8390e912f1b40a85580",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/330_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY.md",
+            "freeze_doc": "next_milestone_plans/Layer3_planning_docs/329_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE.md",
+            "owner_service": "backend/app/services/layer3_workbench.py",
+            "owner_ui": "backend/app/review_ui/static/layer3.js",
+            "validation_status": "targeted_tests_and_progress_check_required",
+        }.items():
+            if proof_entry.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_external_export_download_signed_reference_boundary_proof.{key} must be {expected!r}")
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -28420,6 +28537,7 @@ def main() -> int:
     _check_source_intake_external_export_download_rendered_controls_boundary_freeze(errors)
     _check_source_intake_external_export_download_rendered_controls_boundary(errors)
     _check_source_intake_external_export_download_post_920_sync(errors)
+    _check_source_intake_external_export_download_signed_reference_boundary(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

@@ -1888,7 +1888,6 @@ function canGenerateExternalExportDownloadSignedReference() {
     const external = externalExportDownloadPrepareState() || {};
     return Boolean(
         recordedExternalExportDownloadPrepare()
-        && !isSourceIntakeExternalExportDownloadState(external)
         && externalExportDownloadDeliveryUiAdmitted(external)
         && !State.externalExportDownloadSignedReference?.signed_reference_token
         && !State.externalExportDownloadPreparePending

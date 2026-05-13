@@ -397,7 +397,11 @@ PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID = "layer3.package_construction_commi
 APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.aps_handoff_dispatch.v1"
 QUAL_APS_APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.qual_aps_aps_handoff_dispatch.v1"
 SOURCE_INTAKE_APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.source_intake_aps_handoff_dispatch.v1"
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.source_intake_external_export_download_prepare.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = (
+    "layer3.source_intake_external_export_download_delivery.v1"
+)
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID = "layer3.external_export_download_signed_reference.v1"
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_SCHEMA_ID = "layer3.external_export_download_signed_reference_use.v1"
 EXECUTION_RESULT_REVIEW_READY_STATE = "execution_result_review_ready"
@@ -10262,6 +10266,42 @@ def _signed_reference_required_cohort_authority(authority: dict[str, Any]) -> li
     return [field for field, expected in required if authority.get(field) != expected]
 
 
+def _signed_reference_required_source_intake_authority(authority: dict[str, Any]) -> list[str]:
+    blocked: list[str] = []
+    if authority.get("schema_id") != SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID:
+        blocked.append("schema_id")
+    if authority.get("analysis_run_id") is not None:
+        blocked.append("analysis_run_id")
+    if not authority.get("aps_schema_id"):
+        blocked.append("aps_schema_id")
+    for field in (
+        "source_intake_record_id",
+        "candidate_id",
+        "output_payload_hash",
+        "source_artifact_hash",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+    ):
+        if not authority.get(field):
+            blocked.append(field)
+    return blocked
+
+
+def _signed_reference_required_delivery_authority(authority: dict[str, Any]) -> list[str]:
+    cohort_blocked = _signed_reference_required_cohort_authority(authority)
+    if not cohort_blocked:
+        return []
+    source_intake_blocked = _signed_reference_required_source_intake_authority(authority)
+    if not source_intake_blocked:
+        return []
+    if (
+        authority.get("schema_id") == SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        or authority.get("source_intake_record_id")
+    ):
+        return source_intake_blocked
+    return cohort_blocked
+
+
 def _signed_reference_authority_basis(
     *,
     payload: dict[str, Any],
@@ -10285,6 +10325,11 @@ def _signed_reference_authority_basis(
         "aps_bundle_ref": str(payload.get("aps_bundle_ref") or ""),
         "aps_bundle_id": str(payload.get("aps_bundle_id") or ""),
         "aps_schema_id": str(payload.get("aps_schema_id") or ""),
+        "schema_id": authority.get("schema_id"),
+        "analysis_run_id": authority.get("analysis_run_id"),
+        "source_intake_record_id": authority.get("source_intake_record_id"),
+        "candidate_id": authority.get("candidate_id"),
+        "output_payload_hash": authority.get("output_payload_hash"),
         "pass_type": authority.get("pass_type"),
         "pass_scope": authority.get("pass_scope"),
         "method": authority.get("method"),
@@ -10359,6 +10404,12 @@ def _decode_signed_reference_token(token: str) -> dict[str, Any]:
     return body
 
 
+def _signed_reference_server_authority(authority_basis: dict[str, Any]) -> str:
+    if authority_basis.get("schema_id") == SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID:
+        return "source_intake_external_export_download_signed_reference_gate"
+    return "associated_cohort_external_export_download_signed_reference_gate"
+
+
 def _delivery_response_from_signed_reference(
     *,
     request_id: str,
@@ -10391,10 +10442,15 @@ def _delivery_response_from_signed_reference(
         "signed_reference_expires_in_seconds": max(0, expires_at_epoch - now_epoch),
         "signed_reference_use_endpoint": f"{API_ROOT}/handoff/export/download/signed-reference/use",
         "delivery_mode": "same_origin_signed_delivery_reference",
-        "server_authority": "associated_cohort_external_export_download_signed_reference_gate",
+        "server_authority": _signed_reference_server_authority(authority_basis),
         "source_artifact_ref": authority_basis["source_artifact_ref"],
         "source_artifact_hash": authority_basis["source_artifact_hash"],
         "source_artifact_size_bytes": authority_basis["source_artifact_size_bytes"],
+        "schema_id_authority": authority_basis["schema_id"],
+        "analysis_run_id": authority_basis["analysis_run_id"],
+        "source_intake_record_id": authority_basis["source_intake_record_id"],
+        "candidate_id": authority_basis["candidate_id"],
+        "output_payload_hash": authority_basis["output_payload_hash"],
         "pass_type": authority_basis["pass_type"],
         "pass_scope": authority_basis["pass_scope"],
         "method": authority_basis["method"],
@@ -10437,14 +10493,14 @@ def external_export_download_generate_signed_reference(
             status="invalid",
             blocked_fields=["client_request_id"],
             next_allowed_actions=["submit_idempotent_external_export_download_signed_reference_request"],
-        )
+    )
     _signed_reference_signing_key()
     delivery = external_export_download_deliver(db, payload)
-    blocked = _signed_reference_required_cohort_authority(delivery.authority)
+    blocked = _signed_reference_required_delivery_authority(delivery.authority)
     if blocked:
         raise Layer3WorkbenchError(
             "external_export_download_signed_reference_scope_not_admitted",
-            "Signed delivery references are limited to the associated-cohort descriptive-summary download authority rail.",
+            "Signed delivery references are limited to associated-cohort descriptive-summary or source-intake external export/download authority rails.",
             status="blocked",
             http_status=409,
             blocked_fields=blocked,
@@ -10536,11 +10592,11 @@ def external_export_download_use_signed_reference(
             blocked_fields=["signed_reference_token"],
         )
     delivery = external_export_download_deliver(db, delivery_payload)
-    blocked = _signed_reference_required_cohort_authority(delivery.authority)
+    blocked = _signed_reference_required_delivery_authority(delivery.authority)
     if blocked:
         raise Layer3WorkbenchError(
             "external_export_download_signed_reference_scope_not_admitted",
-            "Signed delivery references are limited to the associated-cohort descriptive-summary download authority rail.",
+            "Signed delivery references are limited to associated-cohort descriptive-summary or source-intake external export/download authority rails.",
             status="blocked",
             http_status=409,
             blocked_fields=blocked,
