@@ -1336,3 +1336,16 @@ Refresh this board against:
 - Side-effect boundary: successful admission creates only existing Gate B selection state (`L3Session`, `L3SelectionManifest`, `L3Descriptor`, `L3MaterialSnapshot`, `L3GateBIdempotencyKey`) and creates no `L3PassRun`, `AnalysisRun`, `AnalysisArtifact`, or `L3OutputPackage`.
 - Blocked scope: new route, model, migration, rendered UI behavior, generic/broad upload, local path/local-directory authority, web connector retrieval, RAG/vector indexing, package construction/mutation, connector/destination dispatch, provider-private signed URL prepare, execution start, auth/security behavior, frontend-only durable authority, and non-text binary preview.
 - Next likely boundary: `source_intake_gate_b_rendered_admission_controls_freeze`.
+
+## Source Intake Gate B Rendered Admission Controls Freeze
+
+- Status: planning/control freeze for `source_intake_gate_b_rendered_admission_controls_freeze`.
+- Branch: `codex/l3-source-intake-gate-b-rendered-freeze`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/295_SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS_FREEZE.md`.
+- Selected rendered-control mode: `source_intake_gate_b_rendered_admission_controls`.
+- Runtime predecessor: `source_intake_gate_b_material_admission_runtime`.
+- Canonical source of truth: `L3SourceIntakeRecord`.
+- Admitted future rendered path: `/review/layer3` may submit server-previewed `mat-source_intake_record-` candidates to `POST /api/v1/layer3/gate-b/decision`.
+- Implementation allowed next: `implement_source_intake_gate_b_rendered_admission_controls`.
+- Required future proof: submitted `decision_basis` and `material_preview_hash` must come from the source-intake preview response; browser state must not become durable authority; headed and headless browser proof must both exercise the admission path.
+- Blocked scope: new backend route, DTO widening, model/migration change, package construction/mutation, connector/destination dispatch, provider URL behavior, execution start, RAG/vector indexing, web connector retrieval, generic/broad upload, local path/local-directory authority, non-text binary preview, auth/security behavior, and frontend-only durable authority.
