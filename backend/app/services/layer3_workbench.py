@@ -121,6 +121,7 @@ from app.services.layer3_package_submit_response import (
     COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+    SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     package_review_submit_response as _package_review_submit_response,
 )
 from app.services.layer3_handoff_export_response import (
@@ -6132,11 +6133,38 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
-    _raise_if_source_intake_downstream_not_admitted(
+    source_intake_submit = _source_intake_result_review_source_admitted(
         status_body=status_body,
-        action_label="Package-review submit",
-        error_code="source_intake_package_review_submit_not_admitted",
+        output_metadata_summary=output_metadata_summary,
     )
+    if (
+        status_body.get("engine_family") == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW
+        and not source_intake_submit
+    ):
+        raise Layer3WorkbenchError(
+            "source_intake_package_review_submit_not_admitted",
+            "Package-review submit is not admitted for this source-intake result/status authority.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["inspect_execution_result_status"],
+        )
+    if source_intake_submit:
+        source_intake_missing = []
+        if not supplied_construction_basis_hash:
+            source_intake_missing.append("construction_basis_hash")
+        if not raw_payload_refs:
+            source_intake_missing.append("payload_refs")
+        if source_intake_missing:
+            raise Layer3WorkbenchError(
+                "missing_source_intake_package_review_submit_fields",
+                (
+                    "Source-intake package-review submit request is missing required fields: "
+                    f"{', '.join(source_intake_missing)}."
+                ),
+                status="invalid",
+                blocked_fields=source_intake_missing,
+                next_allowed_actions=["submit_complete_source_intake_package_review_submit_request"],
+            )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
@@ -6275,7 +6303,17 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             blocked_fields=["result_review_record_ref"],
         )
 
-    if qualitative_aps_submit:
+    if source_intake_submit:
+        expected_package_preview_hash = _source_intake_package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            result_review_record_ref=supplied_review_ref,
+            output_metadata_summary=output_metadata_summary,
+        )
+    elif qualitative_aps_submit:
         expected_package_preview_hash = _qualitative_aps_package_review_preview_hash(
             session_id=session_id,
             analysis_plan_id=analysis_plan_id,
@@ -6395,6 +6433,14 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             next_allowed_actions=["inspect_existing_package_state"],
         )
     package_construction_source_gate = str(reconciliation_summary.get("source_gate") or "")
+    if source_intake_submit and package_construction_source_gate != SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE:
+        raise Layer3WorkbenchError(
+            "source_intake_package_review_submit_construction_source_gate_mismatch",
+            "Source-intake package-review submit requires source-intake package-construction authority from doc 315.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
     if qualitative_aps_submit and package_construction_source_gate != SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE:
         raise Layer3WorkbenchError(
             "qualitative_aps_package_review_submit_construction_source_gate_mismatch",
@@ -6427,6 +6473,14 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             http_status=409,
             blocked_fields=["reconciliation_record_id"],
         )
+    if not source_intake_submit and package_construction_source_gate == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE:
+        raise Layer3WorkbenchError(
+            "package_review_submit_construction_source_gate_mismatch",
+            "Non-source-intake package-review submit cannot use source-intake package-construction authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
     commit_mismatches = [
         field
         for field, expected in {
@@ -6446,6 +6500,14 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
     expected_construction_basis_hash = str(
         commit_summary.get("construction_basis_hash") or commit_summary.get("authority_basis_hash") or ""
     )
+    if source_intake_submit and supplied_construction_basis_hash != expected_construction_basis_hash:
+        raise Layer3WorkbenchError(
+            "source_intake_package_review_submit_construction_basis_mismatch",
+            "Supplied construction_basis_hash does not match the persisted source-intake package construction.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["construction_basis_hash"],
+        )
     if qualitative_aps_submit and supplied_construction_basis_hash != expected_construction_basis_hash:
         raise Layer3WorkbenchError(
             "qualitative_aps_package_review_submit_construction_basis_mismatch",
@@ -6456,10 +6518,14 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         )
 
     canonical_payload_refs = None
-    if qualitative_aps_submit:
+    if source_intake_submit or qualitative_aps_submit:
         if not isinstance(raw_payload_refs, (list, dict)):
             raise Layer3WorkbenchError(
-                "qualitative_aps_package_review_submit_payload_refs_invalid",
+                (
+                    "source_intake_package_review_submit_payload_refs_invalid"
+                    if source_intake_submit
+                    else "qualitative_aps_package_review_submit_payload_refs_invalid"
+                ),
                 "payload_refs must be either a list of package refs or a mapping keyed by package kind or package id.",
                 status="invalid",
                 blocked_fields=["payload_refs"],
@@ -6467,7 +6533,11 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         canonical_payload_refs = _canonical_payload_refs(payload_refs=raw_payload_refs, packages=packages)
         if canonical_payload_refs is None:
             raise Layer3WorkbenchError(
-                "qualitative_aps_package_review_submit_payload_refs_mismatch",
+                (
+                    "source_intake_package_review_submit_payload_refs_mismatch"
+                    if source_intake_submit
+                    else "qualitative_aps_package_review_submit_payload_refs_mismatch"
+                ),
                 "Supplied payload_refs do not match the constructed package payload refs.",
                 status="conflict",
                 http_status=409,
@@ -6485,11 +6555,11 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "analysis_run_id": analysis_run_id,
         "result_review_record_ref": supplied_review_ref,
         "package_review_preview_hash": supplied_package_preview_hash,
-        "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_submit else None,
+        "construction_basis_hash": expected_construction_basis_hash if (source_intake_submit or qualitative_aps_submit) else None,
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": expected_package_ids,
         "package_kinds": [package.package_kind for package in ordered_packages],
-        "payload_refs": canonical_payload_refs if qualitative_aps_submit else None,
+        "payload_refs": canonical_payload_refs if (source_intake_submit or qualitative_aps_submit) else None,
         "payload_hashes": canonical_payload_hashes,
         "operator_decision": operator_decision,
         "decision_notes": decision_notes or None,
@@ -6498,9 +6568,28 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "method": output_metadata_summary.get("selected_method_name"),
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
-        "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT if qualitative_aps_submit else output_metadata_summary.get("cohort_shape"),
-        "source_dataset_version_ids": [] if qualitative_aps_submit else _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "source_shape": (
+            SOURCE_INTAKE_SOURCE_FAMILY
+            if source_intake_submit
+            else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
+            if qualitative_aps_submit
+            else output_metadata_summary.get("cohort_shape")
+        ),
+        "source_dataset_version_ids": (
+            []
+            if (source_intake_submit or qualitative_aps_submit)
+            else _json_clone(output_metadata_summary.get("source_dataset_version_ids") or [])
+        ),
     }
+    if source_intake_submit:
+        submit_basis.update(
+            {
+                "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+                "candidate_id": output_metadata_summary.get("candidate_id"),
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": output_metadata_summary.get("output_hash"),
+            }
+        )
     if qualitative_basis is not None:
         submit_basis.update(
             {
@@ -6551,9 +6640,12 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         package_review_state,
         associated_cohort_submit=associated_cohort_submit,
         qualitative_aps_submit=qualitative_aps_submit,
+        source_intake_submit=source_intake_submit,
     )
     package_review_submit_schema_id = (
-        QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        if source_intake_submit
+        else QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
         if qualitative_aps_submit
         else COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
         if associated_cohort_submit
@@ -6575,25 +6667,44 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "analysis_run_id": analysis_run_id,
         "result_review_record_ref": supplied_review_ref,
         "package_review_preview_hash": supplied_package_preview_hash,
-        "construction_basis_hash": expected_construction_basis_hash if qualitative_aps_submit else None,
+        "construction_basis_hash": expected_construction_basis_hash if (source_intake_submit or qualitative_aps_submit) else None,
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": expected_package_ids,
         "package_kinds": [package.package_kind for package in ordered_packages],
-        "payload_refs": canonical_payload_refs if qualitative_aps_submit else None,
+        "payload_refs": canonical_payload_refs if (source_intake_submit or qualitative_aps_submit) else None,
         "payload_hashes": canonical_payload_hashes,
         "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_submit else pass_run.pass_type,
         "pass_scope": output_metadata_summary.get("pass_scope"),
         "method": output_metadata_summary.get("selected_method_name"),
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
-        "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT if qualitative_aps_submit else output_metadata_summary.get("cohort_shape"),
-        "source_dataset_version_ids": [] if qualitative_aps_submit else _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "source_shape": (
+            SOURCE_INTAKE_SOURCE_FAMILY
+            if source_intake_submit
+            else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
+            if qualitative_aps_submit
+            else output_metadata_summary.get("cohort_shape")
+        ),
+        "source_dataset_version_ids": (
+            []
+            if (source_intake_submit or qualitative_aps_submit)
+            else _json_clone(output_metadata_summary.get("source_dataset_version_ids") or [])
+        ),
         "recorded_at": _utcnow_iso(),
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
         "export_enabled": False,
         "downstream_unavailable": list(downstream_unavailable),
     }
+    if source_intake_submit:
+        submit_state.update(
+            {
+                "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+                "candidate_id": output_metadata_summary.get("candidate_id"),
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": output_metadata_summary.get("output_hash"),
+            }
+        )
     commit_summary = {**commit_summary, "package_review_submit_enabled": False}
     reconciliation.summary_json = {
         **reconciliation_summary,
@@ -6614,14 +6725,30 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             "reconciliation_record_id": reconciliation_record_id,
             "output_package_ids": expected_package_ids,
             "package_kinds": [package.package_kind for package in ordered_packages],
-            "payload_refs": canonical_payload_refs if qualitative_aps_submit else None,
+            "payload_refs": canonical_payload_refs if (source_intake_submit or qualitative_aps_submit) else None,
             "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_submit else pass_run.pass_type,
             "pass_scope": output_metadata_summary.get("pass_scope"),
             "method": output_metadata_summary.get("selected_method_name"),
             "source_gate": output_metadata_summary.get("source_gate"),
             "package_construction_source_gate": package_construction_source_gate,
-            "source_shape": SOURCE_SHAPE_APS_CONTENT_DOCUMENT if qualitative_aps_submit else output_metadata_summary.get("cohort_shape"),
-            "source_dataset_version_ids": [] if qualitative_aps_submit else _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+            "source_shape": (
+                SOURCE_INTAKE_SOURCE_FAMILY
+                if source_intake_submit
+                else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
+                if qualitative_aps_submit
+                else output_metadata_summary.get("cohort_shape")
+            ),
+            "source_dataset_version_ids": (
+                []
+                if (source_intake_submit or qualitative_aps_submit)
+                else _json_clone(output_metadata_summary.get("source_dataset_version_ids") or [])
+            ),
+            "source_intake_record_id": (
+                output_metadata_summary.get("source_intake_record_id") if source_intake_submit else None
+            ),
+            "candidate_id": output_metadata_summary.get("candidate_id") if source_intake_submit else None,
+            "output_payload_ref": output_metadata_summary.get("output_payload_ref") if source_intake_submit else None,
+            "output_payload_hash": output_metadata_summary.get("output_hash") if source_intake_submit else None,
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
             "export_enabled": False,
