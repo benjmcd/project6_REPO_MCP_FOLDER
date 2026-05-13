@@ -20309,8 +20309,11 @@ def _check_source_intake_gate_c_typing_entry(errors: list[str]) -> None:
         errors.append(f"{_rel(MANIFEST)} missing source_intake_gate_c_typing_entry")
     else:
         for key, expected in {
-            "status": "branch_local_implemented_targeted_tests_passed",
+            "status": "current_main_implemented_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-gate-c-typing",
+            "implementation_commit": "c77bc9902efff6d9b5e058882b0059c6a0fcc9f1",
+            "pr": "#882",
+            "current_main_commit": "7752ee9e51941f254b30767e4ff4f414977daefe",
             "selected_runtime_family": "source_breadth_runtime",
             "selected_runtime_mode": "source_intake_gate_c_typing_entry",
             "freeze_predecessor": "source_intake_gate_c_typing_entry_freeze",
@@ -20374,7 +20377,7 @@ def _check_source_intake_gate_c_typing_entry(errors: list[str]) -> None:
             if manifest.get(key) != expected:
                 errors.append(f"{_rel(MANIFEST)} {key} must be {expected!r}")
         scope_status = manifest.get("scope_status")
-        if not isinstance(scope_status, dict) or scope_status.get("source_intake_gate_c_typing_entry") != "branch_local_implemented_targeted_tests_passed":
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_gate_c_typing_entry") != "current_main_implemented_targeted_tests_passed":
             errors.append(f"{_rel(MANIFEST)} missing Gate C typing implementation scope status")
 
     proof = _load_json(PROOF_MANIFEST, errors)
@@ -20383,8 +20386,11 @@ def _check_source_intake_gate_c_typing_entry(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_gate_c_typing_entry_proof")
         return
     for key, expected in {
-        "status": "branch_local_implemented_targeted_tests_passed",
+        "status": "current_main_implemented_targeted_tests_passed",
         "implementation_branch": "codex/l3-source-intake-gate-c-typing",
+        "implementation_commit": "c77bc9902efff6d9b5e058882b0059c6a0fcc9f1",
+        "pr": "#882",
+        "current_main_commit": "7752ee9e51941f254b30767e4ff4f414977daefe",
         "selected_runtime_family": "source_breadth_runtime",
         "selected_runtime_mode": "source_intake_gate_c_typing_entry",
         "freeze_predecessor": "source_intake_gate_c_typing_entry_freeze",
