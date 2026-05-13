@@ -587,6 +587,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_MAIN_SYNC = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT = (
     PLANNING_DOCS / "352_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29035,6 +29038,40 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public delivery-use authority contract term: {term}")
+
+    delivery_use_contract_sync_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for provider-public delivery/use authority contract; no runtime delivery/use behavior admitted.",
+        "source_intake_provider_public_url_delivery_use_authority_contract",
+        "6c493ea1ba44329ebaba93a86b04fb932efd07b4",
+        "Post-merge `python .\\tools\\l3-progress-check.py`: `PASS`",
+        "Provider-public delivery/use remains blocked as runtime behavior.",
+        "next_deferred_server_authoritative_runtime_lane_freeze",
+    ):
+        if term not in delivery_use_contract_sync_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC)} missing provider-public delivery-use authority contract current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Delivery/Use Authority Contract Current-main Sync",
+            "353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "next_deferred_server_authoritative_runtime_lane_freeze",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_authority_contract_current_main_sync",
+            "6c493ea1ba44329ebaba93a86b04fb932efd07b4",
+            "next_deferred_server_authoritative_runtime_lane_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_authority_contract_current_main_sync_proof",
+            "6c493ea1ba44329ebaba93a86b04fb932efd07b4",
+            "Provider-public delivery/use remains blocked",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public delivery-use authority contract current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
