@@ -341,6 +341,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "durable_token_state" in js.text
     assert "function externalExportDownloadDeliveryUiAdmitted" in js.text
     assert "function isQualitativeApsExternalExportDownloadState" in js.text
+    assert "external.export_download_target || summary.export_download_target" in js.text
+    assert "external.aps_schema_id || summary.aps_schema_id" in js.text
+    assert "function qualitativeApsDeliveryUiState" in js.text
+    assert "qualitativeApsDeliveryUiState(external)" in js.text
     assert "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_intake_external_export_download_prepare.v1'" in js.text
     assert "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.source_intake_external_export_download_delivery.v1'" in js.text
     assert "function isSourceIntakeExternalExportDownloadState" in js.text
