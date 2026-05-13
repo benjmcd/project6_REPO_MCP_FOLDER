@@ -738,7 +738,8 @@
     "latest_source_breadth_runtime_entry_base_commit": "7cae7ecc81dba90b4f8ab2ba5f8997fe4a5e9b91",
     "latest_source_breadth_runtime_entry_head_commit": "60bfa2283e8ab49f17e46c3a8b10bd8d285be515",
     "latest_source_breadth_runtime_entry_live_behavior_change": true,
-    "latest_source_breadth_runtime_entry_summary": "Current main now includes PR #861 as the bounded source_breadth_runtime entry for operator_single_upload_source_intake. It adds POST /api/v1/layer3/source/intake/upload, L3SourceIntakeRecord/l3_source_intake_record, 0024_layer3_source_intake_record.py, and backend/app/services/layer3_source_intake.py to persist a server-owned operator-uploaded single-source intake record with source identity, content and metadata hashes, provenance, freshness, relative storage pointer, and downstream eligibility. It keeps source-preview classes limited to dataset_version and aps_content_document, keeps source_upload_enabled false for generic preflight/source expansion, and keeps broad file upload, local directory/local path authority, web connector retrieval, RAG/vector indexing, unbounded runtime DB source reads/writes, rendered source controls, and operator-uploaded material preview blocked. The next source-breadth runtime step requires a separate named freeze before the intake record can feed material preview, RAG, connector dispatch, package construction, UI controls, or any other downstream flow. operator-uploaded material preview remains blocked."
+    "latest_source_breadth_runtime_entry_summary": "Current main now includes PR #861 as the bounded source_breadth_runtime entry for operator_single_upload_source_intake. It adds POST /api/v1/layer3/source/intake/upload, L3SourceIntakeRecord/l3_source_intake_record, 0024_layer3_source_intake_record.py, and backend/app/services/layer3_source_intake.py to persist a server-owned operator-uploaded single-source intake record with source identity, content and metadata hashes, provenance, freshness, relative storage pointer, and downstream eligibility. It keeps source-preview classes limited to dataset_version and aps_content_document, keeps source_upload_enabled false for generic preflight/source expansion, and keeps broad file upload, local directory/local path authority, web connector retrieval, RAG/vector indexing, unbounded runtime DB source reads/writes, rendered source controls, and operator-uploaded material preview blocked. The next source-breadth runtime step requires a separate named freeze before the intake record can feed material preview, RAG, connector dispatch, package construction, UI controls, or any other downstream flow. operator-uploaded material preview remains blocked.",
+    "next_required_decision_authority_scope": "global_layer3_progress_not_aps_only"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -12754,7 +12755,10 @@
       "visual_page_refs_json",
       "nrc_aps_evidence_citation_pack",
       "citations[].highlight_spans",
-      "source_bundle.run_id"
+      "source_bundle.run_id",
+      "ApsContentDocument.content_contract_id",
+      "ApsContentChunk.content_contract_id",
+      "ApsContentChunk.chunking_contract_id"
     ],
     "blocked_surfaces": [
       "no raw PDF blob streaming",
@@ -12771,7 +12775,9 @@
       "no package mutation",
       "no auth/security behavior change",
       "no full durable mockup activation",
-      "no frontend-only durable authority"
+      "no frontend-only durable authority",
+      "no vector index creation",
+      "no broad qualitative/hybrid/RAG runtime"
     ],
     "future_required_tests": [
       "successful projection from existing aps_content_document chunk/page/citation authority",
@@ -12780,7 +12786,11 @@
       "fail closed missing page chunk or highlight authority",
       "no raw path blob ref provider URL token prompt or connector secret leakage",
       "no backend source package connector auth/security RAG/vector or full-mockup side effects",
-      "headed and headless rendered proof if surfaced in the mockup workbench theme"
+      "headed and headless rendered proof if surfaced in the mockup workbench theme",
+      "fail closed content contract id mismatch",
+      "fail closed chunking contract id mismatch",
+      "fail closed non-PDF content document",
+      "fail closed missing visual page authority"
     ]
   },
   "pdf_location_projection_proof": {
@@ -12900,7 +12910,11 @@
       "next_milestone_plans/layer3_progress_manifest.json",
       "next_milestone_plans/layer3_workbench_proof_manifest.json",
       "tools/l3-progress-check.py"
-    ]
+    ],
+    "per_frame_capture_state": {
+      "authority": "next_milestone_plans/layer3-mockups/frames/manifest.json rendered_projection entries",
+      "rule": "Each frame is captured by its own rendered_projection id with the selector and state needed for that frame; shared selectors are allowed only when the harness records a separate frame-specific capture."
+    }
   },
   "mockup_visual_diff_harness_proof": {
     "status": "completed_repo_local_mockup_visual_diff_harness",

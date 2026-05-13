@@ -1080,6 +1080,10 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
             "layer3_workbench_current_decision.state must have artifact_render_contract.state_visuals coverage: "
             f"{state!r}"
         )
+    if manifest.get("next_required_decision_authority_scope") != "global_layer3_progress_not_aps_only":
+        errors.append(
+            f"{_rel(MANIFEST)} must declare next_required_decision_authority_scope as global_layer3_progress_not_aps_only"
+        )
 
     next_required = decision.get("next_required_decision")
     if not isinstance(next_required, str) or not next_required:
@@ -16727,6 +16731,14 @@ def _check_mockup_runtime_gate(errors: list[str]) -> None:
                 errors.append(f"{_rel(MANIFEST)} mockup_runtime_gate {key} mismatch")
 
     proof = _load_json(PROOF_MANIFEST, errors)
+    proof_scope = proof.get("scope") if isinstance(proof, dict) else None
+    if not isinstance(proof_scope, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing scope object for mockup runtime gate")
+    else:
+        if proof_scope.get("mockup_runtime_gate") != "completed_no_runtime_selected_after_mockup_visual_proof":
+            errors.append(f"{_rel(PROOF_MANIFEST)} scope mockup_runtime_gate mismatch")
+        if proof_scope.get("latest_mockup_runtime_gate_live_behavior_change") is not False:
+            errors.append(f"{_rel(PROOF_MANIFEST)} scope latest_mockup_runtime_gate_live_behavior_change mismatch")
     proof_entry = proof.get("mockup_runtime_gate_proof") if isinstance(proof, dict) else None
     if not isinstance(proof_entry, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_runtime_gate_proof")
@@ -16779,17 +16791,23 @@ def _check_pdf_location_freeze(errors: list[str]) -> None:
         "ApsContentDocument",
         "ApsContentChunk.page_start",
         "ApsContentChunk.page_end",
+        "content_contract_id",
+        "chunking_contract_id",
         "visual_page_refs_json",
         "nrc_aps_evidence_citation_pack",
         "citations[].highlight_spans",
         "source_bundle.run_id",
         "This freeze does not implement runtime behavior.",
         "no raw PDF blob streaming",
+        "no PDF byte download or provider/object-store URL exposure",
         "no browser-owned authoritative PDF location",
         "no new source family runtime",
         "no local upload",
         "no local-directory ingestion",
         "no arbitrary local path input",
+        "no web connector retrieval",
+        "no vector index creation",
+        "no broad qualitative/hybrid/RAG runtime",
         "no RAG/vector retrieval",
         "no connector/destination dispatch",
         "no package mutation",
@@ -16870,6 +16888,9 @@ def _check_pdf_location_freeze(errors: list[str]) -> None:
         "ApsContentDocument",
         "ApsContentChunk.page_start",
         "ApsContentChunk.page_end",
+        "ApsContentDocument.content_contract_id",
+        "ApsContentChunk.content_contract_id",
+        "ApsContentChunk.chunking_contract_id",
         "visual_page_refs_json",
         "nrc_aps_evidence_citation_pack",
         "citations[].highlight_spans",
@@ -17204,6 +17225,24 @@ def _check_mockup_visual_diff_freeze(errors: list[str]) -> None:
     scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
     if not isinstance(scope_status, dict) or scope_status.get("mockup_visual_diff_freeze") != "completed_planning_control_visual_diff_acceptance_freeze":
         errors.append(f"{_rel(MANIFEST)} missing completed mockup visual-diff freeze scope status")
+    manifest_freeze = manifest.get("mockup_visual_diff_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(manifest_freeze, dict):
+        errors.append(f"{_rel(MANIFEST)} missing structured mockup_visual_diff_freeze entry")
+    else:
+        expected_manifest_freeze = {
+            "status": "completed_planning_control_visual_diff_acceptance_freeze",
+            "implementation_branch": "codex/l3-mockup-visual-diff-freeze",
+            "live_behavior_change": False,
+            "selected_proof_mode": "repo_local_mockup_frame_visual_diff_acceptance",
+            "runtime_behavior_change": False,
+            "rendered_ui_behavior_change": False,
+            "next_allowed_action": "implement_repo_local_mockup_visual_diff_harness",
+        }
+        for key, expected in expected_manifest_freeze.items():
+            if manifest_freeze.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mockup_visual_diff_freeze {key} mismatch")
+        if not isinstance(manifest_freeze.get("per_frame_capture_state"), dict):
+            errors.append(f"{_rel(MANIFEST)} mockup_visual_diff_freeze missing per_frame_capture_state")
 
     proof = _load_json(PROOF_MANIFEST, errors)
     proof_entry = proof.get("mockup_visual_diff_freeze_proof") if isinstance(proof, dict) else None
@@ -17222,6 +17261,8 @@ def _check_mockup_visual_diff_freeze(errors: list[str]) -> None:
     for key, expected in expected_scalars.items():
         if proof_entry.get(key) != expected:
             errors.append(f"{_rel(PROOF_MANIFEST)} mockup visual-diff freeze proof {key} mismatch")
+    if not isinstance(proof_entry.get("per_frame_capture_state"), dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} mockup visual-diff freeze proof missing per_frame_capture_state")
 
 
 def _check_mockup_visual_diff_harness(errors: list[str]) -> None:
