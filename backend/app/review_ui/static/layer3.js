@@ -247,6 +247,7 @@ const SUBLAYER_MODALITY_META = {
 };
 const OPERATION_DOCK_STEPS = [
     { id: 'intent-band', key: 'intent', label: 'Intent', shortLabel: 'Intent', canvasLink: '3A intake setup', canvasTarget: '3a', canvasRole: 'Sublayer 3A intake/specification field' },
+    { id: 'source-intake-rendered-controls', key: 'source_intake', label: 'Source Intake Controls', shortLabel: 'Source Intake', canvasLink: '3A source intake', canvasTarget: '3a', canvasRole: 'Sublayer 3A source intake upload/inventory/preview controls' },
     { id: 'gate-b-band', key: 'gate_b', label: 'Gate B Material Ledger', shortLabel: 'Gate B', canvasLink: '3A material ledger', canvasTarget: '3a', canvasRole: 'Sublayer 3A session-scoped material ledger' },
     { id: 'gate-c-band', key: 'gate_c', label: 'Gate C Typing Review', shortLabel: 'Gate C', canvasLink: '3B modality grouping', canvasTarget: '3b', canvasRole: 'Sublayer 3B modality object banks' },
     { id: 'plan-band', key: 'plan', label: 'Plan Preview And Approval', shortLabel: 'Plan', canvasLink: '3C process planning', canvasTarget: '3c-process', canvasRole: 'Sublayer 3C process/status planes' },
@@ -4553,6 +4554,8 @@ function operationDockStatus(step) {
         return State.preflight
             ? { state: 'live', label: 'preflight passed', detail: 'Intent and source posture are loaded.' }
             : { state: 'ready', label: 'ready', detail: 'Run preflight to load source and material previews.' };
+    case 'source_intake':
+        return { state: 'ready', label: 'ready', detail: 'Upload, inventory, and preview use existing server-authoritative source-intake APIs.' };
     case 'gate_b':
         if (sessionReady) return { state: 'live', label: 'session scoped', detail: 'Gate B has a session-scoped material boundary.' };
         if ((State.materialPreview?.material_candidates || []).length) return { state: 'ready', label: 'review ready', detail: 'Material preview is loaded and ready for Gate B decisions.' };
@@ -4633,7 +4636,7 @@ function renderOperationsDock() {
     if (!State.operationDockManual) {
         const suggestedStep = [...availableSteps]
             .reverse()
-            .find((step) => operationDockStatus(step).state !== 'blocked');
+            .find((step) => step.key !== 'source_intake' && operationDockStatus(step).state !== 'blocked');
         if (suggestedStep) State.activeOperationId = suggestedStep.id;
     }
     elements.operationsDock.dataset.activeOperation = State.activeOperationId;
@@ -6314,7 +6317,7 @@ init();
 
 (function sourceIntakeRenderedControls() {
     const sourceIntakeApiRoot = '/api/v1/layer3';
-    const sourceIntakeState = { latestRecordId: null };
+    const sourceIntakeState = { latestRecordId: null, pendingUpload: false };
     const byId = (id) => document.getElementById(id);
     const escapeSourceIntakeText = (value) => String(value ?? '').replace(/[&<>"]/g, (char) => ({
         '&': '&amp;',
@@ -6400,25 +6403,41 @@ init();
             setSourceIntakeStatus('Select a file before upload.', 'error');
             return;
         }
+        if (sourceIntakeState.pendingUpload) {
+            setSourceIntakeStatus('Upload already in progress; wait for the current source-intake request to finish.', 'busy');
+            return;
+        }
+        const submitButton = byId('source-intake-upload-submit');
+        sourceIntakeState.pendingUpload = true;
+        if (submitButton) submitButton.disabled = true;
         const formData = new FormData(form);
-        if (!String(formData.get('client_request_id') || '').trim()) {
-            formData.set('client_request_id', `source-intake-ui-${Date.now()}`);
+        try {
+            if (!String(formData.get('client_request_id') || '').trim()) {
+                formData.set('client_request_id', `source-intake-ui-${Date.now()}`);
+            }
+            const freshness = sourceIntakeFreshnessIso(formData.get('freshness_timestamp'));
+            if (freshness) {
+                formData.set('freshness_timestamp', freshness);
+            } else {
+                formData.delete('freshness_timestamp');
+            }
+            setSourceIntakeStatus('Uploading source intake through existing durable API...', 'busy');
+            const payload = await sourceIntakeJson(await fetch(`${sourceIntakeApiRoot}/source/intake/upload`, {
+                method: 'POST',
+                body: formData,
+            }));
+            sourceIntakeState.latestRecordId = payload?.source_intake_record_id || null;
+            setSourceIntakeStatus(`Source intake recorded: ${sourceIntakeState.latestRecordId || 'record id unavailable'}.`, 'ok');
+            try {
+                await refreshSourceIntakeInventory();
+                setSourceIntakeStatus(`Source intake recorded: ${sourceIntakeState.latestRecordId || 'record id unavailable'}. Inventory refreshed.`, 'ok');
+            } catch (refreshError) {
+                setSourceIntakeStatus(`Source intake recorded: ${sourceIntakeState.latestRecordId || 'record id unavailable'}. Inventory refresh failed: ${refreshError.message}`, 'error');
+            }
+        } finally {
+            sourceIntakeState.pendingUpload = false;
+            if (submitButton) submitButton.disabled = false;
         }
-        const freshness = sourceIntakeFreshnessIso(formData.get('freshness_timestamp'));
-        if (freshness) {
-            formData.set('freshness_timestamp', freshness);
-        } else {
-            formData.delete('freshness_timestamp');
-        }
-        setSourceIntakeStatus('Uploading source intake through existing durable API...', 'busy');
-        const payload = await sourceIntakeJson(await fetch(`${sourceIntakeApiRoot}/source/intake/upload`, {
-            method: 'POST',
-            body: formData,
-        }));
-        sourceIntakeState.latestRecordId = payload?.source_intake_record_id || null;
-        setSourceIntakeStatus(`Source intake recorded: ${sourceIntakeState.latestRecordId || 'record id unavailable'}.`, 'ok');
-        await refreshSourceIntakeInventory();
-        setSourceIntakeStatus(`Source intake recorded: ${sourceIntakeState.latestRecordId || 'record id unavailable'}. Inventory refreshed.`, 'ok');
     }
 
     async function previewSourceIntake(recordId) {

@@ -693,7 +693,7 @@ test('Layer 3 workbench drives qualitative APS package handoff to external readi
   expect(initialSummary.execution_result_review.review_state).toBe('execution_result_review_approved');
 
   await expect(page.locator('#package-review-preview-inspect')).toBeEnabled();
-  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expect(page.locator('input[type="file"]:not(#source-intake-file)')).toHaveCount(0);
 
   const packagePreviewRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/package/review/preview'));
   const packagePreviewResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/preview'));
@@ -955,8 +955,12 @@ test('Layer 3 workbench drives qualitative APS package handoff to external readi
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText('external_export_download_delivery_ui_unavailable');
   await expect(page.locator('#external-export-download-signed-reference-generate')).toBeDisabled();
   await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText('external_export_download_signed_reference_ui_blocked');
+  const uploadButtonIds = await page.getByRole('button', { name: /upload/i }).evaluateAll((buttons) => (
+    buttons.map((button) => button.id).sort()
+  ));
+  expect(uploadButtonIds.filter((id) => id !== 'source-intake-upload-submit')).toEqual([]);
   await expect(page.getByRole('button', {
-    name: /upload|ingest|local directory|web connector|rag|vector|provider url|public url|connector dispatch|destination|mockup|auth/i,
+    name: /ingest|local directory|web connector|rag|vector|provider url|public url|connector dispatch|destination|mockup|auth/i,
   })).toHaveCount(0);
 });
 

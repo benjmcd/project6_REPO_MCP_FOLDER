@@ -181,7 +181,7 @@ async function expectNoDeferredRawMixedControls(page) {
   const uploadButtonIds = await page.getByRole('button', { name: /upload/i }).evaluateAll((buttons) => (
     buttons.map((button) => button.id).sort()
   ));
-  expect(uploadButtonIds).toEqual(['source-intake-upload-submit']);
+  expect(uploadButtonIds.filter((id) => id !== 'source-intake-upload-submit')).toEqual([]);
   await expect(page.getByRole('button', {
     name: /ingest|local directory|web connector|rag|vector|provider url|public url|connector dispatch|destination|mockup|auth/i,
   })).toHaveCount(0);
@@ -4294,7 +4294,7 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await page.locator('#theme-selector').selectOption('workbench');
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.operation-dock-tab')).toHaveCount(9);
+  await expect(page.locator('.operation-dock-tab')).toHaveCount(10);
   await expect(page.locator('.operations-dock > .operation-panel-active')).toHaveCount(1);
   await expect(page.locator('.operations-dock > .operation-panel-inactive').first()).toBeAttached();
   await expect(page.locator('#operations-dock-summary')).toContainText('Intent');
@@ -4375,7 +4375,7 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   expect(workbenchStyles.workspaceShare).toBeGreaterThan(0.92);
   expect(workbenchStyles.railBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(workbenchStyles.chipBackground).not.toBe('rgba(0, 0, 0, 0)');
-  await expect(page.locator('.operation-dock-tab')).toHaveCount(9);
+  await expect(page.locator('.operation-dock-tab')).toHaveCount(10);
   await expect(page.locator('.operation-dock-tab').first()).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#gate-b-band')).toHaveAttribute('data-operation-active', 'false');
@@ -4383,8 +4383,18 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await page.locator('.operation-dock-tab').first().focus();
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('.operation-dock-tab').nth(1)).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('#gate-b-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#source-intake-rendered-controls')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'false');
+  await expect(page.locator('#operations-dock-summary')).toContainText('Source Intake Controls');
+  await expect(page.locator('#operations-dock-summary')).toContainText('3A source intake');
+  await expect(page.locator('#operations-dock-summary')).toContainText('Sublayer 3A source intake upload/inventory/preview controls');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-canvas', '3a');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-key', 'source_intake');
+
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('.operation-dock-tab').nth(2)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#gate-b-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#source-intake-rendered-controls')).toHaveAttribute('data-operation-active', 'false');
   await expect(page.locator('#operations-dock-summary')).toContainText('Gate B Material Ledger');
   await expect(page.locator('#operations-dock-summary')).toContainText('3A material ledger');
   await expect(page.locator('#operations-dock-summary')).toContainText('Sublayer 3A session-scoped material ledger');
@@ -4392,7 +4402,7 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-key', 'gate_b');
 
   await page.keyboard.press('ArrowRight');
-  await expect(page.locator('.operation-dock-tab').nth(2)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.operation-dock-tab').nth(3)).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#gate-c-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#operations-dock-summary')).toContainText('Sublayer 3B modality object banks');
   await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-canvas', '3b');

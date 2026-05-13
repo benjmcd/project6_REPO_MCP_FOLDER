@@ -32,6 +32,9 @@ The browser state is display and interaction state only. Server response rows, h
 - Use multipart upload fields required by the existing API contract, including `operator_decision=record_operator_uploaded_source`.
 - Display durable inventory rows from `L3SourceIntakeRecord`.
 - Display bounded preview text from `material_candidate.preview_text`.
+- Register the rendered workband with the operation dock so it is never an overlaying untracked panel.
+- Prevent duplicate durable uploads by treating submit as a single-flight operation while the upload is pending.
+- Preserve the successful durable upload message if the follow-up inventory refresh fails.
 - Prove the rendered path in static page tests and a focused Playwright workbench test.
 
 ## Scope blocked
@@ -48,6 +51,7 @@ The browser state is display and interaction state only. Server response rows, h
 - `python -m pytest .\backend\tests\test_layer3_page.py .\backend\tests\test_layer3_source_intake.py .\backend\tests\test_layer3_source_boundary.py -q`
 - `npx playwright test layer3-workbench.spec.js --grep "rendered source-intake upload inventory and preview" --project=chromium`
 - `npx playwright test layer3-workbench.spec.js --grep "rendered source-intake upload inventory and preview" --project=chromium --headed`
+- `npx playwright test --project=chromium`
 
 ## Acceptance
 

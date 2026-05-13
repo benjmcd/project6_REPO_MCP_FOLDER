@@ -1301,4 +1301,5 @@ Refresh this board against:
 - Canonical source of truth: `L3SourceIntakeRecord`.
 - Rendered route: `/review/layer3`.
 - Admitted path: existing source-intake upload, inventory, and bounded preview APIs only.
+- Review hardening: operation dock registration, single-flight upload submit guard, and durable upload success preservation when inventory refresh fails.
 - Blocked scope: backend route/DTO/model/migration/service change, generic source upload, local path/local directory authority, web connector retrieval, RAG/vector indexing, package construction/mutation, provider-private signed URL prepare, connector/destination dispatch, execution start, auth/security behavior, and frontend-only durable authority.
