@@ -8,7 +8,7 @@ Branch: `codex/l3-source-intake-result-status`.
 
 Implementation commit: `3a4dd5c1d801ededec4d605d0f3747f3a8c37093`.
 
-Review-fix commit: `ea19e2c992cd65bc425cf93791589108ee97f443`.
+Review-fix commit: `ea19e2c987ed020501d28c3dc37bcee15dada8fb`.
 
 Pull request: `#899`.
 
