@@ -449,6 +449,9 @@ SOURCE_INTAKE_EXECUTION_SELECTION_GUARD = (
 SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE = (
     PLANNING_DOCS / "304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md"
 )
+SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY = (
+    PLANNING_DOCS / "305_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -21124,13 +21127,13 @@ def _check_source_intake_execution_selection_guard(errors: list[str]) -> None:
         ),
         ROOT / "backend/app/services/layer3_workbench.py": (
             "PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE",
-            "source_intake_execution_selection_not_admitted",
-            "freeze_source_intake_execution_selection_boundary",
+            "unsupported_analysis_execution_engine",
+            "execution_selection",
         ),
         ROOT / "backend/tests/test_layer3_workbench.py": (
-            "test_execution_selection_blocks_source_intake_approved_plan_before_boundary",
-            "source_intake_execution_selection_not_admitted",
-            "db_session.query(L3PassRun).count() == 0",
+            "test_execution_selection_selects_source_intake_approved_plan_without_execution",
+            "unsupported_analysis_execution_engine",
+            "db_session.query(L3PassRun).count() == 1",
         ),
     }.items():
         surface_text = _read_required_text(path, errors)
@@ -21265,6 +21268,73 @@ def _check_source_intake_execution_selection_boundary_freeze(errors: list[str]) 
     proof_entry = proof.get("source_intake_execution_selection_boundary_freeze_proof") if isinstance(proof, dict) else None
     if not isinstance(proof_entry, dict) or proof_entry.get("proof_kind") != "source_intake_execution_selection_boundary_freeze":
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_execution_selection_boundary_freeze_proof")
+
+
+def _check_source_intake_execution_selection_boundary(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY, errors)
+    for term in (
+        "source_intake_execution_selection_boundary",
+        "codex/l3-source-intake-exec-selection",
+        "304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md",
+        "backend/app/services/layer3_workbench.py",
+        "selected_not_started",
+        "source_intake_qualitative_preview",
+        "unsupported_analysis_execution_engine",
+        "pytest .\\backend\\tests\\test_layer3_workbench.py",
+        "22 passed",
+        "source_intake_execution_start_boundary_freeze",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY)} missing source-intake execution-selection implementation term: {term}")
+    for path, terms in {
+        BOARD: ("## Source Intake Execution Selection Boundary", "305_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY.md", "source_intake_execution_start_boundary_freeze"),
+        MANIFEST: ("source_intake_execution_selection_boundary", "latest_source_intake_execution_selection_boundary_branch", "selected_not_started_l3_pass_run_shell_created"),
+        PROOF_MANIFEST: ("source_intake_execution_selection_boundary_proof", "305_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY.md", "22 passed"),
+        ROOT / "backend/tests/test_layer3_workbench.py": ("test_execution_selection_selects_source_intake_approved_plan_without_execution", "unsupported_analysis_execution_engine", "idempotent"),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing source-intake execution-selection implementation term: {term}")
+    source_text = _read_required_text(ROOT / "backend/app/services/layer3_workbench.py", errors)
+    if "source_intake_execution_selection_not_admitted" in source_text:
+        errors.append(f"{_rel(ROOT / 'backend/app/services/layer3_workbench.py')} must not keep the source-intake execution-selection not-admitted guard after doc 305")
+    manifest = _load_json(MANIFEST, errors)
+    entry = manifest.get("source_intake_execution_selection_boundary") if isinstance(manifest, dict) else None
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_execution_selection_boundary")
+    else:
+        for key, expected in {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-exec-selection",
+            "selected_runtime_mode": "source_intake_execution_selection_boundary",
+            "freeze_predecessor": "source_intake_execution_selection_boundary_freeze",
+            "canonical_source_of_truth": "server_owned_approved_L3AnalysisPlan_from_L3SourceIntakeRecord",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/305_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY.md",
+            "owner_service": "backend/app/services/layer3_workbench.py",
+            "targeted_validation_result": "22 passed",
+            "pass_run_status": "selected_not_started",
+            "execution_start_error_code": "unsupported_analysis_execution_engine",
+            "live_behavior_change": True,
+            "runtime_behavior_change": True,
+            "rendered_ui_behavior_change": False,
+            "new_route_added": False,
+            "model_migration_changed": False,
+            "next_boundary": "source_intake_execution_start_boundary_freeze",
+        }.items():
+            if entry.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_execution_selection_boundary.{key} must be {expected!r}")
+        guards = entry.get("contract_guards")
+        if not isinstance(guards, dict) or guards.get("selected_not_started_l3_pass_run_shell_created") is not True or guards.get("source_intake_execution_start_blocked") is not True:
+            errors.append(f"{_rel(MANIFEST)} source_intake_execution_selection_boundary missing required guards")
+    if isinstance(manifest, dict):
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_execution_selection_boundary") != "branch_local_implemented_targeted_tests_passed":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake execution-selection implementation scope status")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_execution_selection_boundary_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict) or proof_entry.get("proof_kind") != "source_intake_execution_selection_boundary":
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_execution_selection_boundary_proof")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -25999,6 +26069,7 @@ def main() -> int:
         SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY,
         SOURCE_INTAKE_EXECUTION_SELECTION_GUARD,
         SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE,
+        SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -26273,6 +26344,7 @@ def main() -> int:
     _check_source_intake_plan_approval_boundary(errors)
     _check_source_intake_execution_selection_guard(errors)
     _check_source_intake_execution_selection_boundary_freeze(errors)
+    _check_source_intake_execution_selection_boundary(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
