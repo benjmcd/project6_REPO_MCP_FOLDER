@@ -287,7 +287,10 @@ async function expectLiveThemeParityCheckpoint(page, checkpointLabel, visibleSur
     await expect(page.locator('#external-export-download-band')).toHaveCount(1);
     await expect(page.locator('#external-export-download-signed-reference-panel')).toHaveCount(1);
     await expect(page.locator('#provider-private-signed-url-panel')).toHaveCount(1);
+    await expect(page.locator('#provider-public-url-panel')).toHaveCount(1);
     await expect(page.locator('#provider-private-signed-url-use')).toHaveCount(0);
+    await expect(page.locator('#provider-public-url-use')).toHaveCount(0);
+    await expect(page.locator('#provider-public-url-deliver')).toHaveCount(0);
     await expect(page.locator('#connector-destination-panel')).toHaveCount(0);
     await expect(page.locator('#package-mutation-panel')).toHaveCount(0);
   }
@@ -2227,6 +2230,127 @@ async function submitRenderedProviderPrivateSignedUrl(
   expect(status.audit_receipt || {}).not.toHaveProperty('provider_private_signed_url_token');
   expect(JSON.stringify(status)).not.toContain('raw_provider_private_signed_url_token');
 
+  await expect(page.locator('#provider-public-url-panel')).toContainText('provider_public_url_ui_ready');
+  await expect(page.locator('#provider-public-url-prepare')).toBeEnabled();
+  await expect(page.locator('#provider-public-url-status')).toBeDisabled();
+  await expect(page.locator('#provider-public-url-revoke')).toBeDisabled();
+  await expect(page.locator('#provider-public-url-use')).toHaveCount(0);
+  await expect(page.locator('#provider-public-url-deliver')).toHaveCount(0);
+
+  const publicPrepareRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/handoff/export/download/provider-public-url/prepare')
+    && apiRequest.method() === 'POST'
+  ));
+  const publicPrepareResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/handoff/export/download/provider-public-url/prepare')
+  ));
+  await page.locator('#provider-public-url-prepare').click();
+  const publicPreparePayload = (await publicPrepareRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(publicPreparePayload, [
+    'client_request_id',
+    'decision_notes',
+    'delivery_mode',
+    'operator_decision',
+    'provider_private_signed_url_receipt_id',
+    'recipient_scope',
+    'requested_ttl_seconds',
+  ]);
+  expect(publicPreparePayload.provider_private_signed_url_receipt_id).toBe(prepare.provider_signed_url_receipt_id);
+  expect(publicPreparePayload.delivery_mode).toBe('provider_public_url');
+  expect(publicPreparePayload.operator_decision).toBe('prepare_provider_public_url');
+  expect(publicPreparePayload.requested_ttl_seconds).toBe(300);
+  expect(publicPreparePayload).not.toHaveProperty('provider_public_url');
+  expect(publicPreparePayload).not.toHaveProperty('public_url');
+  expect(publicPreparePayload).not.toHaveProperty('raw_public_url');
+  expect(publicPreparePayload).not.toHaveProperty('public_proxy_url');
+  expect(publicPreparePayload).not.toHaveProperty('connector_dispatch');
+  expect(publicPreparePayload).not.toHaveProperty('package_mutation');
+  expect(publicPreparePayload).not.toHaveProperty('source_expansion');
+
+  const publicPrepare = await expectJson(await publicPrepareResponsePromise);
+  expect(publicPrepare.schema_id).toBe('layer3.provider_public_url.prepare.v1');
+  expect(publicPrepare.provider_private_signed_url_receipt_id).toBe(prepare.provider_signed_url_receipt_id);
+  expect(publicPrepare.provider_public_url_state).toBe('provider_public_url_prepared');
+  expect(publicPrepare.provider_public_url_receipt_id).toBeTruthy();
+  expect(publicPrepare.delivery_mode).toBe('provider_public_url');
+  expect(publicPrepare.provider_public_url_redacted).toBe('provider-public-url:redacted');
+  expect(publicPrepare.provider_public_url_revoked).toBe(false);
+  expect(publicPrepare.raw_public_url_exposed).toBe(false);
+  expect(publicPrepare.public_url_enabled).toBe(false);
+  expect(publicPrepare).not.toHaveProperty('provider_public_url');
+  expect(publicPrepare).not.toHaveProperty('public_url');
+  expect(publicPrepare).not.toHaveProperty('raw_public_url');
+  expect(JSON.stringify(publicPrepare)).not.toContain('provider-public.invalid');
+  await expect(page.locator('#provider-public-url-panel')).toContainText(publicPrepare.provider_public_url_receipt_id);
+  await expect(page.locator('#provider-public-url-panel')).toContainText('provider-public-url:redacted');
+  await expect(page.locator('#provider-public-url-prepare')).toBeDisabled();
+  await expect(page.locator('#provider-public-url-status')).toBeEnabled();
+  await expect(page.locator('#provider-public-url-revoke')).toBeEnabled();
+
+  const publicStatusResponsePromise = page.waitForResponse((response) => (
+    response.url().includes(`/api/v1/layer3/handoff/export/download/provider-public-url/status/${publicPrepare.provider_public_url_receipt_id}`)
+  ));
+  await page.locator('#provider-public-url-status').click();
+  const publicStatus = await expectJson(await publicStatusResponsePromise);
+  expect(publicStatus.provider_public_url_receipt_id).toBe(publicPrepare.provider_public_url_receipt_id);
+  expect(publicStatus.provider_public_url_state).toBe('provider_public_url_prepared');
+  expect(publicStatus.provider_public_url_redacted).toBe('provider-public-url:redacted');
+  expect(publicStatus.raw_public_url_exposed).toBe(false);
+  expect(publicStatus.public_url_enabled).toBe(false);
+  expect(JSON.stringify(publicStatus)).not.toContain('provider-public.invalid');
+
+  const publicRevokeRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/handoff/export/download/provider-public-url/revoke')
+    && apiRequest.method() === 'POST'
+  ));
+  const publicRevokeResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/handoff/export/download/provider-public-url/revoke')
+  ));
+  await page.locator('#provider-public-url-revoke').click();
+  const publicRevokePayload = (await publicRevokeRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(publicRevokePayload, [
+    'client_request_id',
+    'decision_notes',
+    'idempotency_key',
+    'operator_decision',
+    'provider_public_url_receipt_id',
+    'revocation_reason',
+    'revoked_by',
+  ]);
+  expect(publicRevokePayload.provider_public_url_receipt_id).toBe(publicPrepare.provider_public_url_receipt_id);
+  expect(publicRevokePayload.operator_decision).toBe('revoke_provider_public_url');
+  expect(publicRevokePayload.idempotency_key).toBe(`provider-public-revoke:${publicPrepare.provider_public_url_receipt_id}`);
+  expect(publicRevokePayload.revoked_by).toBe('layer3-rendered-workbench');
+  expect(publicRevokePayload).not.toHaveProperty('provider_public_url');
+  expect(publicRevokePayload).not.toHaveProperty('public_url');
+  expect(publicRevokePayload).not.toHaveProperty('raw_public_url');
+  expect(publicRevokePayload).not.toHaveProperty('public_proxy_url');
+
+  const publicRevoke = await expectJson(await publicRevokeResponsePromise);
+  expect(publicRevoke.schema_id).toBe('layer3.provider_public_url.revoke.v1');
+  expect(publicRevoke.provider_public_url_receipt_id).toBe(publicPrepare.provider_public_url_receipt_id);
+  expect(publicRevoke.provider_public_url_state).toBe('provider_public_url_revoked');
+  expect(publicRevoke.provider_public_url_redacted).toBe('provider-public-url:redacted');
+  expect(publicRevoke.provider_public_url_revoked).toBe(true);
+  expect(publicRevoke.raw_public_url_exposed).toBe(false);
+  expect(publicRevoke.public_url_enabled).toBe(false);
+  await expect(page.locator('#provider-public-url-panel')).toContainText('provider_public_url_revoked');
+  await expect(page.locator('#provider-public-url-revoke')).toBeDisabled();
+
+  const publicRevokedStatusResponsePromise = page.waitForResponse((response) => (
+    response.url().includes(`/api/v1/layer3/handoff/export/download/provider-public-url/status/${publicPrepare.provider_public_url_receipt_id}`)
+  ));
+  await page.locator('#provider-public-url-status').click();
+  const publicRevokedStatus = await expectJson(await publicRevokedStatusResponsePromise);
+  expect(publicRevokedStatus.provider_public_url_receipt_id).toBe(publicPrepare.provider_public_url_receipt_id);
+  expect(publicRevokedStatus.provider_public_url_state).toBe('provider_public_url_revoked');
+  expect(publicRevokedStatus.provider_public_url_redacted).toBe('provider-public-url:redacted');
+  const providerPublicStorageKeys = await page.evaluate(() => [
+    ...Object.keys(window.localStorage),
+    ...Object.keys(window.sessionStorage),
+  ].filter((key) => key.toLowerCase().includes('provider_public')));
+  expect(providerPublicStorageKeys).toEqual([]);
+
   const revokeRequestPromise = page.waitForRequest((apiRequest) => (
     apiRequest.url().includes('/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke')
     && apiRequest.method() === 'POST'
@@ -2279,7 +2403,22 @@ async function submitRenderedProviderPrivateSignedUrl(
   expect(revokedStatus.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
   expect(revokedStatus.provider_url_redacted).toBe('provider-private-signed-url:redacted');
   await expectNoDeferredRawMixedControls(page);
-  return { prepare, status, revoke, revokedStatus, preparePayload, revokePayload };
+  return {
+    prepare,
+    status,
+    revoke,
+    revokedStatus,
+    preparePayload,
+    revokePayload,
+    providerPublic: {
+      prepare: publicPrepare,
+      status: publicStatus,
+      revoke: publicRevoke,
+      revokedStatus: publicRevokedStatus,
+      preparePayload: publicPreparePayload,
+      revokePayload: publicRevokePayload,
+    },
+  };
 }
 
 function qualitativeApsPackageSubmitUiFixture() {
@@ -3589,7 +3728,7 @@ test('Layer 3 workbench drives raw mixed rendered external export download signe
   ]);
 });
 
-test('Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke', async ({ page, request }) => {
+test('Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke and provider-public URL prepare status revoke', async ({ page, request }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   const materialization = await openRawMixedMaterializedWorkbench(page, request);
   await expectLiveThemeParityCheckpoint(page, 'materialized-source-selection', '#source-fieldset');
@@ -3690,18 +3829,27 @@ test('Layer 3 workbench drives raw mixed rendered provider-private signed URL pr
 
   expect(providerPrivate.prepare.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
   expect(providerPrivate.status.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
+  expect(providerPrivate.providerPublic.prepare.provider_public_url_state).toBe('provider_public_url_prepared');
+  expect(providerPrivate.providerPublic.status.provider_public_url_state).toBe('provider_public_url_prepared');
+  expect(providerPrivate.providerPublic.revoke.provider_public_url_state).toBe('provider_public_url_revoked');
+  expect(providerPrivate.providerPublic.revokedStatus.provider_public_url_state).toBe('provider_public_url_revoked');
   expect(providerPrivate.revoke.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
   expect(providerPrivate.revokedStatus.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
   await expectLiveThemeParityCheckpoint(
     page,
-    'provider-private-signed-url-revoked',
-    '#provider-private-signed-url-panel',
+    'provider-public-url-revoked',
+    '#provider-public-url-panel',
   );
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-private-signed-url/prepare'))).toHaveLength(1);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-private-signed-url/status'))).toHaveLength(2);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-private-signed-url/revoke'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-public-url/prepare'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-public-url/status'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-public-url/revoke'))).toHaveLength(1);
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
     '/handoff/export/download/provider-private-signed-url/use',
+    '/handoff/export/download/provider-public-url/use',
+    '/handoff/export/download/provider-public-url/deliver',
     '/package/mutation',
     '/package/replacement',
     '/package/supersession',
