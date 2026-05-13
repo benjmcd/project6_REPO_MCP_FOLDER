@@ -70,6 +70,7 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="source-intake-refresh"' in response.text
     assert 'id="source-intake-inventory-list"' in response.text
     assert 'id="source-intake-preview-panel"' in response.text
+    assert 'id="source-intake-gate-b-status"' in response.text
     assert 'id="raw-mixed-corpus-batch-id"' in response.text
     assert 'id="raw-mixed-manifest-ref"' in response.text
     assert 'id="raw-mixed-manifest-hash"' in response.text
@@ -198,6 +199,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".source-intake-panel" in css.text
     assert ".source-intake-inventory-item" in css.text
     assert ".source-intake-preview-text" in css.text
+    assert ".source-intake-gate-b-admission" in css.text
+    assert ".source-intake-proof-list" in css.text
     assert ".raw-mixed-materialization" in css.text
     assert ".raw-mixed-materialization-grid" in css.text
     assert ".dataset-version-selector" in css.text
@@ -283,6 +286,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "source/intake/upload" in js.text
     assert "source/intake/inventory?limit=10" in js.text
     assert "sourceIntakeJson" in js.text
+    assert "sourceIntakeGateBPayload" in js.text
+    assert "source_intake_gate_b_rendered_admission" in js.text
+    assert "detail?.error_code" in js.text
+    assert "Commit Preview To Gate B" in js.text
+    assert "source-intake-gate-b-submit" in js.text
     assert "not_admitted_or_deferred_families" in js.text
     assert "renderMaterialTrace" in js.text
     assert "source_trace" in js.text
