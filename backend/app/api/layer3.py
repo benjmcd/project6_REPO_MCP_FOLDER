@@ -1413,6 +1413,19 @@ class Layer3SourceIntakeRecordResponse(Layer3BaseResponse):
     negative_invariants: dict[str, bool]
 
 
+class Layer3SourceIntakeInventoryResponse(Layer3BaseResponse):
+    source_gate: dict[str, Any]
+    source_intake_inventory_mode: str
+    source_family: str
+    inventory_count: int
+    limit: int
+    filters: dict[str, Any]
+    records: list[dict[str, Any]]
+    downstream_eligibility: dict[str, bool]
+    next_allowed_actions: list[str]
+    negative_invariants: dict[str, bool]
+
+
 class Layer3MaterialPreviewResponse(Layer3BaseResponse):
     material_preview_id: str
     material_preview_hash: str
@@ -4329,6 +4342,28 @@ async def post_source_intake_upload(
             original_filename=file.filename,
             media_type=file.content_type,
             form_fields=fields,
+        )
+    except layer3_source_intake.SourceIntakeError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.get(
+    "/source/intake/inventory",
+    response_model=Layer3SourceIntakeInventoryResponse,
+    responses=_workbench_error_responses(400),
+)
+def get_source_intake_inventory(
+    limit: int = 50,
+    source_family: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db),
+):
+    try:
+        return layer3_source_intake.source_intake_inventory(
+            db,
+            limit=limit,
+            source_family=source_family,
+            status=status,
         )
     except layer3_source_intake.SourceIntakeError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())

@@ -22,6 +22,10 @@ SOURCE_INTAKE_OPERATOR_DECISION = "record_operator_uploaded_source"
 SOURCE_INTAKE_STATUS = "recorded"
 SOURCE_INTAKE_SOURCE_FAMILY = "operator_uploaded_single_source"
 SOURCE_INTAKE_STORAGE_SEGMENT = "layer3-source-intake"
+SOURCE_INTAKE_INVENTORY_SCHEMA_ID = "layer3.source_intake_inventory.v1"
+SOURCE_INTAKE_INVENTORY_MODE = "operator_source_intake_inventory_read_only"
+SOURCE_INTAKE_INVENTORY_DEFAULT_LIMIT = 50
+SOURCE_INTAKE_INVENTORY_MAX_LIMIT = 100
 
 SERVER_AUTHORITY = (
     "Layer 3 source intake record owns source identity, bytes/metadata hash, "
@@ -263,6 +267,100 @@ def record_operator_upload_source_intake(
     return _record_response(record)
 
 
+def source_intake_inventory(
+    db: Session,
+    *,
+    limit: int = SOURCE_INTAKE_INVENTORY_DEFAULT_LIMIT,
+    source_family: str | None = None,
+    status: str | None = None,
+) -> dict[str, Any]:
+    try:
+        normalized_limit = int(limit)
+    except (TypeError, ValueError) as exc:
+        raise SourceIntakeError(
+            "source_intake_inventory_limit_invalid",
+            "source-intake inventory limit must be an integer from 1 through 100.",
+            details={"limit": limit},
+        ) from exc
+    if normalized_limit < 1 or normalized_limit > SOURCE_INTAKE_INVENTORY_MAX_LIMIT:
+        raise SourceIntakeError(
+            "source_intake_inventory_limit_invalid",
+            "source-intake inventory limit must be an integer from 1 through 100.",
+            details={
+                "limit": normalized_limit,
+                "max_limit": SOURCE_INTAKE_INVENTORY_MAX_LIMIT,
+            },
+        )
+
+    normalized_source_family = (source_family or SOURCE_INTAKE_SOURCE_FAMILY).strip()
+    if normalized_source_family != SOURCE_INTAKE_SOURCE_FAMILY:
+        raise SourceIntakeError(
+            "source_intake_inventory_source_family_not_admitted",
+            "source-intake inventory is limited to the approved operator-uploaded single-source family.",
+            details={
+                "expected_source_family": SOURCE_INTAKE_SOURCE_FAMILY,
+                "received_source_family": normalized_source_family,
+            },
+        )
+
+    normalized_status = (status or SOURCE_INTAKE_STATUS).strip()
+    if normalized_status != SOURCE_INTAKE_STATUS:
+        raise SourceIntakeError(
+            "source_intake_inventory_status_not_admitted",
+            "source-intake inventory is limited to recorded intake rows.",
+            details={
+                "expected_status": SOURCE_INTAKE_STATUS,
+                "received_status": normalized_status,
+            },
+        )
+
+    records = (
+        db.query(L3SourceIntakeRecord)
+        .filter(L3SourceIntakeRecord.source_family == normalized_source_family)
+        .filter(L3SourceIntakeRecord.status == normalized_status)
+        .order_by(
+            L3SourceIntakeRecord.created_at.desc(),
+            L3SourceIntakeRecord.source_intake_record_id.desc(),
+        )
+        .limit(normalized_limit)
+        .all()
+    )
+
+    return {
+        "schema_id": SOURCE_INTAKE_INVENTORY_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": "source-intake-inventory",
+        "server_time": _server_time(),
+        "mode": SOURCE_INTAKE_INVENTORY_MODE,
+        "status": "available",
+        "message": "Layer 3 source intake inventory returned safe record metadata only.",
+        "source_gate": {
+            "canonical_source_of_truth": "L3SourceIntakeRecord",
+            "source_gate": SOURCE_INTAKE_SOURCE_GATE,
+            "writer_route": "POST /api/v1/layer3/source/intake/upload",
+            "read_route": "GET /api/v1/layer3/source/intake/inventory",
+            "no_file_bytes_returned": True,
+            "absolute_path_exposed": False,
+            "material_preview_enabled": False,
+        },
+        "source_intake_inventory_mode": SOURCE_INTAKE_INVENTORY_MODE,
+        "source_family": SOURCE_INTAKE_SOURCE_FAMILY,
+        "inventory_count": len(records),
+        "limit": normalized_limit,
+        "filters": {
+            "source_family": normalized_source_family,
+            "status": normalized_status,
+        },
+        "records": [_inventory_record_response(record) for record in records],
+        "downstream_eligibility": _downstream_eligibility(),
+        "negative_invariants": _negative_invariants(),
+        "next_allowed_actions": [
+            "use_record_metadata_for_source_inventory_only",
+            "define_later_freeze_before_material_preview_or_rag_use",
+        ],
+    }
+
+
 def _normalise_fields(form_fields: Mapping[str, Any]) -> dict[str, str]:
     fields = {
         str(key): str(value).strip()
@@ -439,6 +537,43 @@ def _record_response(
             "treat_source_intake_record_as_inventory_authority",
             "define_later_freeze_before_material_preview_or_rag_use",
         ],
+    }
+
+
+def _inventory_record_response(record: L3SourceIntakeRecord) -> dict[str, Any]:
+    return {
+        "source_intake_record_id": record.source_intake_record_id,
+        "client_request_id": record.client_request_id,
+        "status": record.status,
+        "source_intake_mode": SOURCE_INTAKE_MODE,
+        "source_family": record.source_family,
+        "source_label": record.source_label,
+        "source_description": record.source_description,
+        "original_filename": record.original_filename,
+        "media_type": record.media_type,
+        "content_sha256": record.content_sha256,
+        "content_size_bytes": record.content_size_bytes,
+        "metadata_hash": record.metadata_hash,
+        "authority_basis_hash": record.authority_basis_hash,
+        "source_identity": {
+            "source_family": record.source_family,
+            "source_label": record.source_label,
+            "original_filename": record.original_filename,
+            "content_size_bytes": record.content_size_bytes,
+            "content_sha256": record.content_sha256,
+            "metadata_hash": record.metadata_hash,
+        },
+        "source_provenance": record.provenance_json or {},
+        "storage_pointer": {
+            "storage_ref": record.storage_ref,
+            "storage_authority": "server_raw_storage",
+            "content_addressed": True,
+            "absolute_path_exposed": False,
+        },
+        "downstream_eligibility": record.downstream_eligibility_json or _downstream_eligibility(),
+        "freshness_timestamp": _iso_or_none(record.freshness_timestamp),
+        "created_at": _iso_or_none(record.created_at),
+        "updated_at": _iso_or_none(record.updated_at),
     }
 
 
