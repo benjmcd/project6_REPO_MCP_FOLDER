@@ -331,11 +331,78 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert db_session.query(L3OutputPackage).count() == 0
     assert db_session.query(L3ReconciliationRecord).count() == 0
 
-    with pytest.raises(Layer3WorkbenchError) as package_construction_blocked:
+    package_construction = layer3_workbench.package_construction_commit(
+        db_session,
+        {
+            "client_request_id": "source-intake-package-construction-commit",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "result_review_record_ref": result_review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+        },
+    )
+    assert package_construction["status"] == "committed"
+    assert package_construction["schema_id"] == "layer3.source_intake_package_construction_commit.v1"
+    assert package_construction["analysis_run_id"] is None
+    assert package_construction["source_intake_record_id"] == "src-intake-plan-001"
+    assert package_construction["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+    assert package_construction["output_payload_hash"] == output_payload["output_hash"]
+    assert package_construction["package_review_submit_enabled"] is False
+    assert package_construction["next_allowed_actions"] == []
+    assert package_construction["package_construction_source_gate"] == (
+        "314_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY_FREEZE"
+    )
+    assert set(package_construction["package_kinds"]) == {
+        "canonical_internal",
+        "user_facing",
+        "review_facing",
+    }
+    assert db_session.query(AnalysisRun).count() == 0
+    assert db_session.query(L3OutputPackage).count() == 3
+    assert db_session.query(L3ReconciliationRecord).count() == 1
+
+    package_construction_replay = layer3_workbench.package_construction_commit(
+        db_session,
+        {
+            "client_request_id": "source-intake-package-construction-commit",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "result_review_record_ref": result_review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+        },
+    )
+    assert package_construction_replay["status"] == "already_committed"
+    assert package_construction_replay["output_package_ids"] == package_construction["output_package_ids"]
+    assert db_session.query(L3OutputPackage).count() == 3
+    assert db_session.query(L3ReconciliationRecord).count() == 1
+
+    with pytest.raises(Layer3WorkbenchError) as package_review_submit_blocked:
         layer3_workbench.package_construction_commit(
             db_session,
             {
-                "client_request_id": "source-intake-package-construction-blocked",
+                "client_request_id": "source-intake-package-construction-conflict",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+                "result_review_record_ref": result_review["review_record_ref"],
+                "package_review_preview_hash": "source-intake-package-preview-hash-mismatch",
+            },
+        )
+    assert package_review_submit_blocked.value.error_code == "package_review_preview_mismatch"
+
+    with pytest.raises(Layer3WorkbenchError) as package_review_submit_blocked:
+        layer3_workbench.package_review_submit(
+            db_session,
+            {
+                "client_request_id": "source-intake-package-review-submit-blocked",
                 "session_id": session.session_id,
                 "analysis_plan_id": plan.analysis_plan_id,
                 "pass_run_id": pass_run.pass_run_id,
@@ -343,9 +410,14 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
                 "preview_hash": "source-intake-preview-hash",
                 "result_review_record_ref": result_review["review_record_ref"],
                 "package_review_preview_hash": package_preview["package_review_preview_hash"],
+                "construction_basis_hash": package_construction["construction_basis_hash"],
+                "reconciliation_record_id": package_construction["reconciliation_record_id"],
+                "output_package_ids": package_construction["output_package_ids"],
+                "payload_hashes": package_construction["payload_hashes"],
+                "operator_decision": "approved",
             },
         )
-    assert package_construction_blocked.value.error_code == "source_intake_package_construction_commit_not_admitted"
+    assert package_review_submit_blocked.value.error_code == "source_intake_package_review_submit_not_admitted"
 
     pass_run.summary_json = {**(pass_run.summary_json or {}), "analysis_run_id": "unexpected-analysis-run"}
     db_session.commit()
