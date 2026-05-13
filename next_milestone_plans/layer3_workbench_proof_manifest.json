@@ -15074,5 +15074,38 @@
     ],
     "validation_status": "targeted_tests_and_progress_check_passed",
     "targeted_validation_result": "22 passed"
+  },
+  "source_intake_aps_handoff_dispatch_boundary_freeze_proof": {
+    "proof_kind": "source_intake_aps_handoff_dispatch_boundary_freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/320_SOURCE_INTAKE_APS_HANDOFF_DISPATCH_BOUNDARY_FREEZE.md",
+    "branch": "codex/l3-source-intake-aps-dispatch-freeze",
+    "current_main_predecessor_commit": "d80b68687a293232945cd6cded51ab6b675e5b7f",
+    "repo_confirmed_failure_boundary": "aps_handoff_dispatch blocks source-intake handoff/export prepare state with source_intake_aps_handoff_dispatch_not_admitted",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "frozen_future_scope": [
+      "existing_aps_handoff_dispatch_request_contract",
+      "layer3.source_intake_handoff_export_prepare.v1",
+      "layer3.source_intake_package_review_submit.v1",
+      "layer3.source_intake_package_construction_commit.v1",
+      "layer3.source_intake_execution_output.v1",
+      "source_intake_qualitative_preview",
+      "bounded_aps_evidence_bundle_handoff_dispatch_state",
+      "no_analysis_run_created",
+      "no_external_export_download_created"
+    ],
+    "blocked_scope": [
+      "external_export_download",
+      "connector_destination_dispatch",
+      "provider_url",
+      "rag_vector",
+      "route",
+      "rendered_ui",
+      "model_migration",
+      "auth_security",
+      "package_mutation",
+      "source_expansion",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required"
   }
 }
