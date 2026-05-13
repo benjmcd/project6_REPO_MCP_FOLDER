@@ -15618,5 +15618,36 @@
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required",
     "next_boundary": "source_intake_provider_public_url_boundary"
+  },
+  "source_intake_provider_public_url_boundary_audit_proof": {
+    "proof_kind": "source_intake_provider_public_url_boundary_audit",
+    "status": "implementation_blocked_pending_authority_contract",
+    "branch": "codex/l3-source-intake-provider-public-url",
+    "current_main_predecessor_commit": "af9240310a21ce8e444df076ac232831dc421a2c",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/336_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_AUDIT.md",
+    "audited_boundary": "source_intake_provider_public_url_boundary",
+    "next_boundary": "source_intake_provider_public_url_authority_contract",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "repo_confirmed_evidence": [
+      "backend/app/models/models.py has L3ProviderPrivateSignedUrl durable rows but no provider-public row family",
+      "backend/app/services/layer3_provider_private_signed_url_state.py persists provider-private signed URL durable state only",
+      "backend/app/services/layer3_provider_private_signed_url.py forbids public_url public_proxy_url provider_url download_url and signed_url",
+      "backend/app/services/layer3_provider_private_signed_url_fake_provider.py returns public_url_enabled false",
+      "backend/app/services/layer3_external_export_response.py keeps public_url_enabled false and signed_url_enabled false",
+      "backend tests assert provider-public/public URL fields remain forbidden deferred absent or disabled"
+    ],
+    "blocked_scope": [
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "rag_vector_behavior",
+      "route_model_migration_changes",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "validation_status": "progress_check_required"
   }
 }
