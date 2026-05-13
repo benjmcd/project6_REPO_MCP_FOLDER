@@ -1511,8 +1511,12 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 
 ## Source Intake Execution Selection Boundary
 
-- Status: branch-local implementation/proof for `source_intake_execution_selection_boundary`.
+- Status: current-main implementation/proof for `source_intake_execution_selection_boundary`.
 - Branch: `codex/l3-source-intake-exec-selection`.
+- Implementation commit: `cc4044b6a8ec555bcac381bf230440e00f83b6dc`.
+- Merged PR: `#893`.
+- Merge commit/current-main authority: `ca3640bfb315666fd6550f2c19048fa1a37a9b44`.
+- GitHub checks: `backend-layer3-api` success and `test` success.
 - Governing doc: `next_milestone_plans/Layer3_planning_docs/305_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY.md`.
 - Freeze predecessor: `next_milestone_plans/Layer3_planning_docs/304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md`.
 - Canonical source of truth: server-owned approved `L3AnalysisPlan` payload derived from `L3SourceIntakeRecord` Gate C and plan-preview state, plus existing `L3Session` execution-selection summary state.
