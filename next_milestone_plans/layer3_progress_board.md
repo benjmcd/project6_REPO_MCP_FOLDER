@@ -1560,3 +1560,9 @@ Targeted validation: `pytest .\backend\tests\test_layer3_workbench.py` passed wi
 Current-main planning/control continuation: doc `310_SOURCE_INTAKE_EXECUTION_RESULT_REVIEW_BOUNDARY_FREEZE.md` freezes `source_intake_execution_result_review_boundary` as the next exact owner-service boundary after PR `#899` source-intake result/status and PR `#900` current-main proof/control sync. The repo-confirmed failure boundary is `execution_result_review` blocking source-intake output with `source_intake_result_review_not_admitted` in `backend/app/services/layer3_workbench.py`.
 
 The next code-bearing action is `implement_source_intake_execution_result_review_boundary` only. It must reuse the existing `execution_result_review` request contract, require admitted `execution_result_status` over `layer3.source_intake_execution_output.v1`, preserve source-intake identity and no-`AnalysisRun` semantics, and avoid package, handoff, export, connector, provider, RAG/vector, route, UI, model, migration, auth/security, or broad qualitative behavior.
+
+## Source Intake Execution Result Review Boundary
+
+Branch-local implementation continuation: doc `311_SOURCE_INTAKE_EXECUTION_RESULT_REVIEW_BOUNDARY.md` records `source_intake_execution_result_review_boundary` on branch `codex/l3-source-intake-result-review`. `backend/app/services/layer3_workbench.py` now admits exactly the frozen source-intake result/status authority through `execution_result_review`, persists bounded source-intake review state, and keeps package review, package construction, handoff/export, connector, provider, RAG/vector, route, UI, model, migration, auth/security, and broad qualitative behavior absent.
+
+Targeted validation: `pytest .\backend\tests\test_layer3_workbench.py` passed with 22 tests. Next required decision is `source_intake_package_review_preview_boundary_freeze` before source-intake reviewed output may move into package-review preview or downstream package surfaces.
