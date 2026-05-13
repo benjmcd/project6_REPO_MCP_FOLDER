@@ -15237,5 +15237,40 @@
       "broad_qualitative_execution"
     ],
     "validation_status": "targeted_tests_and_progress_check_passed"
+  },
+  "source_intake_external_export_download_delivery_boundary_freeze_proof": {
+    "proof_kind": "source_intake_external_export_download_delivery_boundary_freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/324_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY_FREEZE.md",
+    "branch": "codex/l3-source-intake-download-delivery-freeze",
+    "current_main_predecessor_commit": "1dbd71744fbada7d52eceacc6fed5167fb1a1d08",
+    "repo_confirmed_failure_boundary": "external_export_download_deliver blocks source-intake prepare/readiness with source_intake_external_export_download_delivery_not_admitted",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "response_helper": "backend/app/services/layer3_external_export_response.py",
+    "targeted_test": "backend/tests/test_layer3_workbench.py",
+    "test_name": "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
+    "targeted_validation": "python -m pytest .\\backend\\tests\\test_layer3_workbench.py",
+    "frozen_future_scope": [
+      "existing_external_export_download_delivery_request_contract",
+      "layer3.source_intake_external_export_download_prepare.v1",
+      "layer3.source_intake_aps_handoff_dispatch.v1",
+      "source_intake_qualitative_preview",
+      "same_origin_artifact_stream",
+      "no_analysis_run_created",
+      "no_source_package_mutation"
+    ],
+    "blocked_scope": [
+      "rendered_ui_controls",
+      "connector_destination_dispatch",
+      "provider_url",
+      "signed_reference_behavior",
+      "rag_vector",
+      "route",
+      "model_migration",
+      "auth_security",
+      "package_mutation",
+      "source_expansion",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "targeted_tests_and_progress_check_required"
   }
 }

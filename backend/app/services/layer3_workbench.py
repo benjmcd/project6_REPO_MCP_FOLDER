@@ -10180,6 +10180,15 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
             blocked_fields=["external_export_download_state"],
             next_allowed_actions=["record_external_export_download_prepare"],
         )
+    if _source_intake_external_export_download_admitted(readiness_state):
+        raise Layer3WorkbenchError(
+            "source_intake_external_export_download_delivery_not_admitted",
+            "Source-intake external export/download delivery requires a dedicated delivery boundary freeze before same-origin artifact streaming is admitted.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["external_export_download_record_ref"],
+            next_allowed_actions=["freeze_source_intake_external_export_download_delivery_boundary"],
+        )
     if not str(readiness_state.get("client_request_id") or "").strip():
         raise Layer3WorkbenchError(
             "external_export_download_delivery_readiness_request_id_missing",
