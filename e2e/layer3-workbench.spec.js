@@ -163,7 +163,7 @@ async function expectNoDeferredRawMixedControls(page) {
     inputs.map((input) => input.value).sort()
   ));
   expect(sourceClassValues).toEqual(['aps_content_document', 'dataset_version']);
-  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expect(page.locator('input[type="file"]:not(#source-intake-file)')).toHaveCount(0);
   await expect(page.locator([
     'input[name*="upload"]',
     'input[name*="directory"]',
@@ -178,8 +178,12 @@ async function expectNoDeferredRawMixedControls(page) {
     'textarea[name*="rag"]',
     'textarea[name*="vector"]',
   ].join(','))).toHaveCount(0);
+  const uploadButtonIds = await page.getByRole('button', { name: /upload/i }).evaluateAll((buttons) => (
+    buttons.map((button) => button.id).sort()
+  ));
+  expect(uploadButtonIds).toEqual(['source-intake-upload-submit']);
   await expect(page.getByRole('button', {
-    name: /upload|ingest|local directory|web connector|rag|vector|provider url|public url|connector dispatch|destination|mockup|auth/i,
+    name: /ingest|local directory|web connector|rag|vector|provider url|public url|connector dispatch|destination|mockup|auth/i,
   })).toHaveCount(0);
 }
 
@@ -5164,6 +5168,46 @@ test('Layer 3 mockup workbench visual diff harness compares repo-local frames', 
     '#mockup-sublayers-ab-board',
     '#mockup-execution-lanes',
   ]));
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'source/mixed-corpus/materialize',
+    'package/mutation',
+    'handoff/connector',
+    'provider-private-signed-url/prepare',
+    'execution/start',
+  ]);
+});
+
+test('Layer 3 workbench drives rendered source-intake upload inventory and preview', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+
+  await expect(page.locator('#source-intake-rendered-controls')).toBeVisible();
+  await expect(page.locator('#source-intake-rendered-controls')).toContainText(
+    'Server-authoritative upload / inventory / preview only',
+  );
+
+  const requestId = `source-intake-ui-${Date.now()}`;
+  await page.locator('#source-intake-client-request-id').fill(requestId);
+  await page.locator('#source-intake-source-label').fill('Rendered source intake E2E');
+  await page.locator('#source-intake-source-description').fill(
+    'Rendered source-intake proof uses only existing server-authoritative APIs.',
+  );
+  await page.locator('#source-intake-declared-media-type').fill('text/plain; charset=utf-8');
+  await page.locator('#source-intake-file').setInputFiles({
+    name: 'rendered-source-intake.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Layer 3 rendered source intake body for bounded preview.'),
+  });
+
+  await page.locator('#source-intake-upload-submit').click();
+  await expect(page.locator('#source-intake-status')).toContainText('Source intake recorded:');
+  await expect(page.locator('#source-intake-inventory-list')).toContainText('Rendered source intake E2E');
+
+  await page.locator('.source-intake-preview-button').first().click();
+  await expect(page.locator('#source-intake-preview-panel')).toContainText('Bounded text preview');
+  await expect(page.locator('#source-intake-preview-panel')).toContainText(
+    'Layer 3 rendered source intake body for bounded preview.',
+  );
   expectNoRequestsToLayer3Paths(apiRequests, [
     'source/mixed-corpus/materialize',
     'package/mutation',

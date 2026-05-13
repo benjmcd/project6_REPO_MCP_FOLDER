@@ -410,6 +410,9 @@ SOURCE_INTAKE_FILE_PART_GUARD = (
 SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT = (
     PLANNING_DOCS / "291_SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT.md"
 )
+SOURCE_INTAKE_RENDERED_CONTROLS = (
+    PLANNING_DOCS / "292_SOURCE_INTAKE_RENDERED_CONTROLS.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -19260,6 +19263,115 @@ def _check_source_intake_review_debt_closeout(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_review_debt_closeout_proof")
 
 
+def _check_source_intake_rendered_controls(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_RENDERED_CONTROLS, errors)
+    for term in (
+        "source_intake_rendered_controls",
+        "codex/l3-source-intake-rendered-controls",
+        "operator_source_intake_rendered_controls",
+        "POST /api/v1/layer3/source/intake/upload",
+        "GET /api/v1/layer3/source/intake/inventory",
+        "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "L3SourceIntakeRecord",
+        "No backend route, DTO, model, migration, or service change",
+        "no frontend-only durable authority",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_RENDERED_CONTROLS)} missing source-intake rendered controls term: {term}")
+
+    for path, terms in {
+        LAYER3_HTML: (
+            'id="source-intake-rendered-controls"',
+            'data-rendered-mode="operator_source_intake_rendered_controls"',
+            'id="source-intake-upload-form"',
+            'name="operator_decision"',
+            'id="source-intake-file"',
+            'id="source-intake-inventory-list"',
+            'id="source-intake-preview-panel"',
+        ),
+        LAYER3_CSS: (
+            ".source-intake-panel",
+            ".source-intake-inventory-item",
+            ".source-intake-preview-text",
+        ),
+        LAYER3_JS: (
+            "function sourceIntakeRenderedControls",
+            "source-intake-ui-",
+            "source/intake/upload",
+            "source/intake/inventory?limit=10",
+            "sourceIntakeJson",
+            "material_candidate",
+        ),
+        LAYER3_PAGE_TEST: (
+            "source-intake-rendered-controls",
+            "operator_source_intake_rendered_controls",
+            "source/intake/upload",
+            "source/intake/inventory?limit=10",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "drives rendered source-intake upload inventory and preview",
+            "source-intake-upload-submit",
+            "source-intake-preview-button",
+            "source/mixed-corpus/materialize",
+            "provider-private-signed-url/prepare",
+        ),
+        BOARD: (
+            "## Source Intake Rendered Controls",
+            "292_SOURCE_INTAKE_RENDERED_CONTROLS.md",
+            "operator_source_intake_rendered_controls",
+        ),
+        MANIFEST: (
+            "latest_source_intake_rendered_controls_branch",
+            "source_intake_rendered_controls",
+            "operator_source_intake_rendered_controls",
+            "rendered_ui_behavior_change",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_rendered_controls_proof",
+            "292_SOURCE_INTAKE_RENDERED_CONTROLS.md",
+            "operator_source_intake_rendered_controls",
+        ),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing source-intake rendered controls term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    controls = manifest.get("source_intake_rendered_controls") if isinstance(manifest, dict) else None
+    if not isinstance(controls, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_rendered_controls")
+    else:
+        expected_scalars = {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-rendered-controls",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "operator_source_intake_rendered_controls",
+            "rendered_route": "/review/layer3",
+            "canonical_source_of_truth": "L3SourceIntakeRecord",
+            "production_backend_behavior_change": False,
+            "rendered_ui_behavior_change": True,
+        }
+        for key, expected in expected_scalars.items():
+            if controls.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_rendered_controls.{key} must be {expected!r}")
+        for blocked in (
+            "backend_route_model_migration_service_change",
+            "frontend_only_durable_authority",
+            "rag_vector_indexing",
+            "web_connector_retrieval",
+            "package_construction",
+            "provider_private_signed_url_prepare",
+            "execution_start",
+        ):
+            if blocked not in controls.get("blocked_scope", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_rendered_controls blocked_scope missing {blocked}")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    if isinstance(proof, dict) and "source_intake_rendered_controls_proof" not in proof:
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_rendered_controls_proof")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -23979,6 +24091,7 @@ def main() -> int:
         MOCKUP_PDF_TEXT_DENSITY_REFINEMENT_PROOF,
         MOCKUP_PIXEL_PROOF_CLOSEOUT,
         RUNTIME_FREEZE_INTAKE_CHECKLIST,
+        SOURCE_INTAKE_RENDERED_CONTROLS,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -24240,6 +24353,7 @@ def main() -> int:
     _check_source_intake_upload_contract_guard(errors)
     _check_source_intake_file_part_guard(errors)
     _check_source_intake_review_debt_closeout(errors)
+    _check_source_intake_rendered_controls(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

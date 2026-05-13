@@ -6311,3 +6311,159 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
 });
 
 init();
+
+(function sourceIntakeRenderedControls() {
+    const sourceIntakeApiRoot = '/api/v1/layer3';
+    const sourceIntakeState = { latestRecordId: null };
+    const byId = (id) => document.getElementById(id);
+    const escapeSourceIntakeText = (value) => String(value ?? '').replace(/[&<>"]/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+    }[char]));
+
+    function setSourceIntakeStatus(message, state = 'idle') {
+        const status = byId('source-intake-status');
+        if (!status) return;
+        status.textContent = message;
+        status.dataset.state = state;
+    }
+
+    async function sourceIntakeJson(response) {
+        const text = await response.text();
+        let body = null;
+        if (text) {
+            try {
+                body = JSON.parse(text);
+            } catch (error) {
+                throw new Error(`Source intake API returned non-JSON response (${response.status}).`);
+            }
+        }
+        if (!response.ok) {
+            const message = body?.detail || body?.message || `Source intake API failed (${response.status}).`;
+            throw new Error(typeof message === 'string' ? message : JSON.stringify(message));
+        }
+        return body;
+    }
+
+    function sourceIntakeFreshnessIso(rawValue) {
+        if (!rawValue) return '';
+        const parsed = new Date(rawValue);
+        return Number.isNaN(parsed.getTime()) ? rawValue : parsed.toISOString();
+    }
+
+    function renderSourceIntakeInventory(payload) {
+        const list = byId('source-intake-inventory-list');
+        if (!list) return;
+        const records = Array.isArray(payload?.records) ? payload.records : [];
+        if (!records.length) {
+            list.textContent = 'No durable source-intake records returned.';
+            return;
+        }
+        list.innerHTML = records.map((record) => {
+            const recordId = record.source_intake_record_id || record.record_id || '';
+            const label = record.source_label || record.original_filename || 'Unlabeled source';
+            const mediaType = record.media_type || record.declared_media_type || record.detected_media_type || 'media type unavailable';
+            const byteSize = record.content_size_bytes ?? record.byte_size ?? record.content_length ?? 'unknown';
+            const createdAt = record.created_at || record.freshness_timestamp || 'timestamp unavailable';
+            return `
+                <article class="source-intake-inventory-item">
+                    <div>
+                        <strong>${escapeSourceIntakeText(label)}</strong>
+                        <div class="source-intake-meta">
+                            <span>${escapeSourceIntakeText(recordId)}</span>
+                            <span>${escapeSourceIntakeText(mediaType)}</span>
+                            <span>${escapeSourceIntakeText(byteSize)} bytes</span>
+                            <span>${escapeSourceIntakeText(createdAt)}</span>
+                        </div>
+                    </div>
+                    <button class="secondary-btn source-intake-preview-button" type="button" data-source-intake-record-id="${escapeSourceIntakeText(recordId)}">Preview</button>
+                </article>
+            `;
+        }).join('');
+    }
+
+    async function refreshSourceIntakeInventory() {
+        setSourceIntakeStatus('Refreshing durable source-intake inventory...', 'busy');
+        const payload = await sourceIntakeJson(await fetch(`${sourceIntakeApiRoot}/source/intake/inventory?limit=10`));
+        renderSourceIntakeInventory(payload);
+        setSourceIntakeStatus('Inventory refreshed from server-authoritative records.', 'ok');
+        return payload;
+    }
+
+    async function uploadSourceIntake(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const fileInput = byId('source-intake-file');
+        if (!fileInput?.files?.length) {
+            setSourceIntakeStatus('Select a file before upload.', 'error');
+            return;
+        }
+        const formData = new FormData(form);
+        if (!String(formData.get('client_request_id') || '').trim()) {
+            formData.set('client_request_id', `source-intake-ui-${Date.now()}`);
+        }
+        const freshness = sourceIntakeFreshnessIso(formData.get('freshness_timestamp'));
+        if (freshness) {
+            formData.set('freshness_timestamp', freshness);
+        } else {
+            formData.delete('freshness_timestamp');
+        }
+        setSourceIntakeStatus('Uploading source intake through existing durable API...', 'busy');
+        const payload = await sourceIntakeJson(await fetch(`${sourceIntakeApiRoot}/source/intake/upload`, {
+            method: 'POST',
+            body: formData,
+        }));
+        sourceIntakeState.latestRecordId = payload?.source_intake_record_id || null;
+        setSourceIntakeStatus(`Source intake recorded: ${sourceIntakeState.latestRecordId || 'record id unavailable'}.`, 'ok');
+        await refreshSourceIntakeInventory();
+        setSourceIntakeStatus(`Source intake recorded: ${sourceIntakeState.latestRecordId || 'record id unavailable'}. Inventory refreshed.`, 'ok');
+    }
+
+    async function previewSourceIntake(recordId) {
+        const panel = byId('source-intake-preview-panel');
+        if (!recordId || !panel) return;
+        setSourceIntakeStatus('Requesting bounded server preview...', 'busy');
+        const payload = await sourceIntakeJson(await fetch(`${sourceIntakeApiRoot}/source/intake/${encodeURIComponent(recordId)}/preview?max_chars=1000`));
+        const candidate = payload?.material_candidate || {};
+        const previewText = candidate.preview_text || payload?.preview_text || payload?.text_preview || payload?.content_preview || '';
+        panel.innerHTML = `
+            <h3>Bounded text preview</h3>
+            <div class="source-intake-meta">
+                <span>${escapeSourceIntakeText(recordId)}</span>
+                <span>${escapeSourceIntakeText(candidate.media_type || payload?.declared_media_type || payload?.detected_media_type || 'media type unavailable')}</span>
+                <span>${escapeSourceIntakeText(candidate.preview_truncated || payload?.partial_retrieval ? 'truncated' : 'not truncated')}</span>
+            </div>
+            <pre class="source-intake-preview-text">${escapeSourceIntakeText(previewText || 'No preview text returned.')}</pre>
+        `;
+        setSourceIntakeStatus('Bounded preview returned by existing source-intake API.', 'ok');
+    }
+
+    function bindSourceIntakeControls() {
+        const panel = byId('source-intake-rendered-controls');
+        if (!panel) return;
+        const form = byId('source-intake-upload-form');
+        const refresh = byId('source-intake-refresh');
+        form?.addEventListener('submit', (event) => {
+            uploadSourceIntake(event).catch((error) => setSourceIntakeStatus(error.message, 'error'));
+        });
+        refresh?.addEventListener('click', () => {
+            refreshSourceIntakeInventory().catch((error) => setSourceIntakeStatus(error.message, 'error'));
+        });
+        panel.addEventListener('click', (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            const button = target?.closest('.source-intake-preview-button');
+            const recordId = button?.getAttribute('data-source-intake-record-id');
+            if (recordId) {
+                previewSourceIntake(recordId).catch((error) => setSourceIntakeStatus(error.message, 'error'));
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindSourceIntakeControls);
+    } else {
+        bindSourceIntakeControls();
+    }
+}());

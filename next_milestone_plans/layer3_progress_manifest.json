@@ -7070,7 +7070,8 @@
     "source_intake_material_preview_read_only": "branch_local_implemented_targeted_tests_passed",
     "source_intake_upload_contract_guard": "branch_local_implemented_targeted_tests_passed",
     "source_intake_file_part_guard": "branch_local_implemented_targeted_tests_passed",
-    "source_intake_review_debt_closeout": "branch_local_implemented_targeted_tests_passed"
+    "source_intake_review_debt_closeout": "branch_local_implemented_targeted_tests_passed",
+    "source_intake_rendered_controls": "branch_local_implemented_targeted_tests_passed"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -8224,6 +8225,63 @@
       "package_construction",
       "rendered_source_controls",
       "non_text_binary_preview"
+    ]
+  },
+  "latest_source_intake_rendered_controls_branch": "codex/l3-source-intake-rendered-controls",
+  "latest_source_intake_rendered_controls_live_behavior_change": true,
+  "latest_source_intake_rendered_controls_summary": "Branch codex/l3-source-intake-rendered-controls implements rendered /review/layer3 controls for the existing source-intake upload, inventory, and bounded preview APIs. The canonical authority remains L3SourceIntakeRecord; this pass changes static UI/test/progress proof surfaces only and admits no backend route, DTO, model, migration, or service change, no frontend-only durable authority, and no RAG, connector, package, provider, execution, or auth expansion.",
+  "source_intake_rendered_controls": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-rendered-controls",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "operator_source_intake_rendered_controls",
+    "rendered_route": "/review/layer3",
+    "canonical_source_of_truth": "L3SourceIntakeRecord",
+    "existing_api_routes": [
+      "POST /api/v1/layer3/source/intake/upload",
+      "GET /api/v1/layer3/source/intake/inventory",
+      "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview"
+    ],
+    "production_backend_behavior_change": false,
+    "rendered_ui_behavior_change": true,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/292_SOURCE_INTAKE_RENDERED_CONTROLS.md",
+    "targeted_tests": [
+      "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py -q",
+      "npx playwright test layer3-workbench.spec.js --grep \"rendered source-intake upload inventory and preview\" --project=chromium",
+      "npx playwright test layer3-workbench.spec.js --grep \"rendered source-intake upload inventory and preview\" --project=chromium --headed"
+    ],
+    "contract_guards": {
+      "uses_existing_upload_inventory_preview_only": true,
+      "no_backend_route_dto_model_migration_service_change": true,
+      "browser_state_is_not_durable_authority": true,
+      "preview_text_source": "material_candidate.preview_text",
+      "operator_decision_field": "record_operator_uploaded_source"
+    },
+    "blocked_scope": [
+      "backend_route_model_migration_service_change",
+      "frontend_only_durable_authority",
+      "generic_source_upload",
+      "local_path_or_local_directory_authority",
+      "web_connector_retrieval",
+      "rag_vector_indexing",
+      "package_construction",
+      "package_mutation",
+      "provider_private_signed_url_prepare",
+      "connector_destination_dispatch",
+      "execution_start",
+      "auth_security_behavior"
+    ],
+    "proof_files": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/Layer3_planning_docs/292_SOURCE_INTAKE_RENDERED_CONTROLS.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
     ]
   }
 }

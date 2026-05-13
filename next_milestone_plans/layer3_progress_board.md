@@ -1292,3 +1292,13 @@ Refresh this board against:
 - PR `#868` already settled parameterized media-type preview admission; this pass records that item as addressed in the closeout chain.
 - Existing upload, inventory, bounded-preview, duplicate-field, duplicate-file, forbidden-field, unknown-field, idempotency, hash, and storage-ref behavior remains unchanged except for the review-debt fixes above.
 - Generic source upload, broad file upload, local path/local directory authority, web connector expansion, RAG/vector indexing, package construction, rendered source controls, non-text binary preview, and unbounded runtime DB behavior remain blocked.
+## Source Intake Rendered Controls
+
+- Status: branch-local implementation/proof for `source_intake_rendered_controls`.
+- Branch: `codex/l3-source-intake-rendered-controls`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/292_SOURCE_INTAKE_RENDERED_CONTROLS.md`.
+- Mode: `operator_source_intake_rendered_controls`.
+- Canonical source of truth: `L3SourceIntakeRecord`.
+- Rendered route: `/review/layer3`.
+- Admitted path: existing source-intake upload, inventory, and bounded preview APIs only.
+- Blocked scope: backend route/DTO/model/migration/service change, generic source upload, local path/local directory authority, web connector retrieval, RAG/vector indexing, package construction/mutation, provider-private signed URL prepare, connector/destination dispatch, execution start, auth/security behavior, and frontend-only durable authority.

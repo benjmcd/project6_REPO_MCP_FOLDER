@@ -463,6 +463,58 @@
                 </form>
             </section>
 
+            <section id="source-intake-rendered-controls" class="workband source-intake-panel" data-rendered-mode="operator_source_intake_rendered_controls" aria-labelledby="source-intake-heading" tabindex="-1">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Source intake rendered controls</p>
+                        <h2 id="source-intake-heading">Server-authoritative upload / inventory / preview only</h2>
+                        <p class="muted">This panel records source files through the existing source-intake APIs, refreshes the durable inventory, and opens bounded previews without materializing mixed-corpus, package, connector, provider, execution, or RAG state.</p>
+                    </div>
+                    <button id="source-intake-refresh" class="secondary-btn" type="button">Refresh Inventory</button>
+                </div>
+                <form id="source-intake-upload-form" class="source-intake-form">
+                    <input type="hidden" name="operator_decision" value="record_operator_uploaded_source">
+                    <div class="source-intake-grid">
+                        <label>
+                            Client request ID
+                            <input id="source-intake-client-request-id" name="client_request_id" type="text" autocomplete="off" placeholder="Generated on submit when blank">
+                        </label>
+                        <label>
+                            Source label
+                            <input id="source-intake-source-label" name="source_label" type="text" autocomplete="off" value="Layer 3 rendered source intake">
+                        </label>
+                        <label>
+                            Declared media type
+                            <input id="source-intake-declared-media-type" name="declared_media_type" type="text" autocomplete="off" placeholder="text/plain; charset=utf-8">
+                        </label>
+                        <label>
+                            Source freshness
+                            <input id="source-intake-source-freshness" name="freshness_timestamp" type="datetime-local">
+                        </label>
+                    </div>
+                    <label>
+                        Source description
+                        <textarea id="source-intake-source-description" name="source_description" rows="3">Rendered operator source intake proof over existing upload, inventory, and preview APIs.</textarea>
+                    </label>
+                    <label class="source-intake-file-picker">
+                        Source file
+                        <input id="source-intake-file" name="file" type="file" required>
+                    </label>
+                    <div class="source-intake-actions">
+                        <button id="source-intake-upload-submit" class="primary-btn" type="submit">Upload Source Intake</button>
+                        <span id="source-intake-status" class="source-intake-status" role="status">Idle: no browser state is authority.</span>
+                    </div>
+                </form>
+                <div class="source-intake-card" aria-labelledby="source-intake-inventory-heading">
+                    <h3 id="source-intake-inventory-heading">Durable inventory</h3>
+                    <div id="source-intake-inventory-list" class="source-intake-inventory-list">Inventory not loaded.</div>
+                </div>
+                <div id="source-intake-preview-panel" class="source-intake-card source-intake-preview" aria-live="polite">
+                    <h3>Bounded preview</h3>
+                    <p class="muted">Select a durable source-intake record from the inventory to request a bounded server preview.</p>
+                </div>
+            </section>
+
             <section id="gate-b-band" class="workband material-band" aria-labelledby="material-heading" tabindex="-1">
                 <div class="section-heading">
                     <h2 id="material-heading">Gate B Material Ledger</h2>
