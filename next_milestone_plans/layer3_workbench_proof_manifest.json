@@ -13797,5 +13797,63 @@
       "rendered_source_controls_enabled": false,
       "non_text_binary_preview_enabled": false
     }
+  },
+  "source_intake_review_debt_closeout_proof": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-closeout",
+    "live_behavior_change": true,
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "operator_single_upload_source_intake_review_debt_closeout",
+    "canonical_source_of_truth": "L3SourceIntakeRecord",
+    "owner_service": "backend/app/services/layer3_source_intake.py",
+    "api_surface": "backend/app/api/layer3.py",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/291_SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT.md",
+    "targeted_tests": "python -m pytest .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py -q",
+    "review_debt_addressed": {
+      "pr_866_unbounded_inventory_descriptions": true,
+      "pr_866_malformed_inventory_limit_contract": true,
+      "pr_867_parameterized_media_type_preview": "already_addressed_by_pr_868",
+      "pr_867_stale_preview_eligibility_response_normalization": true,
+      "pr_867_next_allowed_actions_material_preview_sync": true
+    },
+    "contract_guards": {
+      "source_description_upload_max_chars": 2000,
+      "inventory_description_max_chars": 512,
+      "malformed_inventory_limit_uses_source_intake_error_contract": true,
+      "legacy_preview_eligibility_normalized_at_response_time": true,
+      "material_preview_next_action_wording_current": true
+    },
+    "blocked_adjacent_modes": [
+      "generic_source_upload",
+      "broad_file_upload",
+      "local_directory",
+      "local_path_authority",
+      "web_connector",
+      "rag_vector_index",
+      "unbounded_runtime_db",
+      "package_construction",
+      "rendered_source_controls",
+      "non_text_binary_preview"
+    ],
+    "proof_files": [
+      "backend/app/api/layer3.py",
+      "backend/app/services/layer3_source_intake.py",
+      "backend/tests/test_layer3_source_intake.py",
+      "next_milestone_plans/Layer3_planning_docs/291_SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "negative_invariants": {
+      "generic_source_upload_enabled": false,
+      "broad_file_upload_enabled": false,
+      "local_directory_enabled": false,
+      "web_connector_enabled": false,
+      "rag_vector_index_enabled": false,
+      "runtime_db_write_enabled": false,
+      "package_construction_enabled": false,
+      "rendered_source_controls_enabled": false,
+      "non_text_binary_preview_enabled": false
+    }
   }
 }

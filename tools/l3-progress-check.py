@@ -407,6 +407,9 @@ SOURCE_INTAKE_UPLOAD_CONTRACT_GUARD = (
 SOURCE_INTAKE_FILE_PART_GUARD = (
     PLANNING_DOCS / "290_SOURCE_INTAKE_FILE_PART_GUARD.md"
 )
+SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT = (
+    PLANNING_DOCS / "291_SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -19143,6 +19146,120 @@ def _check_source_intake_file_part_guard(errors: list[str]) -> None:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source-intake file guard contract {key} mismatch")
 
 
+def _check_source_intake_review_debt_closeout(errors: list[str]) -> None:
+    freeze_text = _read_required_text(SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT, errors)
+    for term in (
+        "source_intake_review_debt_closeout",
+        "codex/l3-source-intake-closeout",
+        "PR `#866` review debt",
+        "PR `#867` review debt",
+        "source_intake_inventory_limit_invalid",
+        "source_description_truncated",
+        "eligible_for_material_preview: true",
+        "Generic source upload",
+    ):
+        if term not in freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT)} missing source-intake review-debt term: {term}")
+
+    service_text = _read_required_text(SOURCE_INTAKE_SERVICE, errors)
+    for term in (
+        "SOURCE_INTAKE_DESCRIPTION_MAX_CHARS = 2000",
+        "SOURCE_INTAKE_INVENTORY_DESCRIPTION_MAX_CHARS = 512",
+        "source_intake_description_too_long",
+        "_bounded_inventory_description",
+        "source_description_truncated",
+        "_response_downstream_eligibility",
+        "use_bounded_preview_for_operator_review_only",
+        "define_later_freeze_before_rag_connector_package_or_rendered_source_controls",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_SERVICE)} missing source-intake review-debt service term: {term}")
+
+    api_path = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api_text = _read_required_text(api_path, errors)
+    if (
+        "def get_source_intake_inventory(" not in api_text
+        or 'limit: str = "50",' not in api_text
+    ):
+        errors.append(f"{_rel(api_path)} source-intake inventory limit must remain raw string for service-owned malformed-limit errors")
+
+    test_text = _read_required_text(SOURCE_INTAKE_TEST, errors)
+    for term in (
+        "test_layer3_source_intake_inventory_rejects_malformed_limit_with_contract_error",
+        "test_layer3_source_intake_rejects_unbounded_source_description",
+        "test_layer3_source_intake_inventory_bounds_legacy_description_and_preview_eligibility",
+        "source_intake_description_too_long",
+        "source_description_truncated",
+        "define_later_freeze_before_material_preview_or_rag_use",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_TEST)} missing source-intake review-debt test term: {term}")
+
+    for text_path, required_terms in (
+        (
+            BOARD,
+            (
+                "## Source Intake Review Debt Closeout",
+                "291_SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT.md",
+                "codex/l3-source-intake-closeout",
+                "source-intake review debt",
+            ),
+        ),
+        (
+            MANIFEST,
+            (
+                "latest_source_intake_review_debt_closeout_branch",
+                "source_intake_review_debt_closeout",
+                "pr_866_unbounded_inventory_descriptions",
+                "pr_867_next_allowed_actions_material_preview_sync",
+            ),
+        ),
+        (
+            PROOF_MANIFEST,
+            (
+                "source_intake_review_debt_closeout_proof",
+                "291_SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT.md",
+                "malformed_inventory_limit_uses_source_intake_error_contract",
+            ),
+        ),
+    ):
+        surface_text = _read_required_text(text_path, errors)
+        for term in required_terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(text_path)} missing source-intake review-debt term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    if not isinstance(manifest, dict):
+        return
+    if manifest.get("latest_source_intake_review_debt_closeout_branch") != "codex/l3-source-intake-closeout":
+        errors.append(f"{_rel(MANIFEST)} latest_source_intake_review_debt_closeout_branch mismatch")
+    scope_status = manifest.get("scope_status")
+    if not isinstance(scope_status, dict) or scope_status.get("source_intake_review_debt_closeout") != "branch_local_implemented_targeted_tests_passed":
+        errors.append(f"{_rel(MANIFEST)} scope_status missing source_intake_review_debt_closeout")
+    closeout = manifest.get("source_intake_review_debt_closeout")
+    if not isinstance(closeout, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_review_debt_closeout")
+    else:
+        guards = closeout.get("contract_guards")
+        if not isinstance(guards, dict):
+            errors.append(f"{_rel(MANIFEST)} source-intake review-debt missing contract_guards")
+        else:
+            for key, expected in (
+                ("source_description_upload_max_chars", 2000),
+                ("inventory_description_max_chars", 512),
+                ("malformed_inventory_limit_uses_source_intake_error_contract", True),
+                ("legacy_preview_eligibility_normalized_at_response_time", True),
+                ("material_preview_next_action_wording_current", True),
+            ):
+                if guards.get(key) != expected:
+                    errors.append(f"{_rel(MANIFEST)} source-intake review-debt contract {key} mismatch")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_review_debt_closeout_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_review_debt_closeout_proof")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -24122,6 +24239,7 @@ def main() -> int:
     _check_source_intake_material_preview_read_only(errors)
     _check_source_intake_upload_contract_guard(errors)
     _check_source_intake_file_part_guard(errors)
+    _check_source_intake_review_debt_closeout(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

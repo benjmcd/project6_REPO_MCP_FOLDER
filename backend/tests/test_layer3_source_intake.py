@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from types import SimpleNamespace
 import sys
 
 import pytest
@@ -18,6 +19,7 @@ sys.path.insert(0, str(BACKEND))
 from app.api.deps import get_db
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
+from app.services import layer3_source_intake
 from app.services.layer3_source_boundary import source_boundary_contract
 from main import app
 
@@ -205,7 +207,12 @@ def test_layer3_source_intake_inventory_lists_safe_metadata_only(client):
     assert ":" not in record["storage_pointer"]["storage_ref"]
     assert "file_bytes" not in record
     assert "absolute_path" not in record["storage_pointer"]
+    assert record["source_description_truncated"] is False
+    assert len(record["source_description"]) <= 512
     assert record["downstream_eligibility"]["eligible_for_rag_vector_index"] is False
+
+    assert "define_later_freeze_before_material_preview_or_rag_use" not in body["next_allowed_actions"]
+    assert "use_bounded_preview_for_operator_review_only" in body["next_allowed_actions"]
 
 
 def test_layer3_source_intake_material_preview_returns_bounded_text_only(client):
@@ -296,6 +303,69 @@ def test_layer3_source_intake_inventory_rejects_invalid_limit(client):
     body = response.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "source_intake_inventory_limit_invalid"
+
+
+def test_layer3_source_intake_inventory_rejects_malformed_limit_with_contract_error(client):
+    response = client.get("/api/v1/layer3/source/intake/inventory", params={"limit": "abc"})
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_intake_inventory_limit_invalid"
+
+
+def test_layer3_source_intake_rejects_unbounded_source_description(client):
+    response = _upload_source_intake(
+        client,
+        data={
+            "client_request_id": "source-intake-long-description-001",
+            "source_description": "x" * 2001,
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_intake_description_too_long"
+    assert body["error"]["details"]["max_chars"] == 2000
+
+
+def test_layer3_source_intake_inventory_bounds_legacy_description_and_preview_eligibility():
+    record = SimpleNamespace(
+        source_intake_record_id="source-intake-record-legacy",
+        client_request_id="source-intake-legacy-001",
+        status="recorded",
+        source_family="operator_uploaded_single_source",
+        source_label="Legacy source",
+        source_description="d" * 600,
+        original_filename="legacy.txt",
+        media_type="text/plain",
+        content_sha256="a" * 64,
+        content_size_bytes=12,
+        metadata_hash="b" * 64,
+        authority_basis_hash="c" * 64,
+        provenance_json={},
+        storage_ref="raw/layer3-source-intake/legacy.txt",
+        downstream_eligibility_json={
+            "source_intake_recorded": True,
+            "eligible_for_source_inventory": True,
+            "eligible_for_material_preview": False,
+            "material_preview_requires_later_freeze": True,
+            "eligible_for_rag_vector_index": False,
+            "eligible_for_web_connector": False,
+            "eligible_for_unbounded_runtime_db": False,
+        },
+        freshness_timestamp=None,
+        created_at=None,
+        updated_at=None,
+    )
+
+    body = layer3_source_intake._inventory_record_response(record)
+
+    assert len(body["source_description"]) == 512
+    assert body["source_description_truncated"] is True
+    assert body["downstream_eligibility"]["eligible_for_material_preview"] is True
+    assert body["downstream_eligibility"]["material_preview_requires_later_freeze"] is False
 
 
 def test_layer3_source_intake_rejects_deferred_source_modes(client):

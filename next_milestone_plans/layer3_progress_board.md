@@ -1283,3 +1283,12 @@ Refresh this board against:
 - Duplicate multipart `file` parts now fail closed with `source_intake_duplicate_file_field`.
 - Existing duplicate non-file field, forbidden-field, unknown-field, idempotency, hash, storage-ref, inventory, and bounded-preview behavior remains unchanged.
 - Generic source upload, broad file upload, local path/local directory authority, web connector expansion, RAG/vector indexing, package construction, rendered source controls, non-text binary preview, and unbounded runtime DB behavior remain blocked.
+
+
+## Source Intake Review Debt Closeout
+
+- `291_SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT.md` settles source-intake review debt from prior merged PRs without admitting a new source family.
+- Branch `codex/l3-source-intake-closeout` caps new `source_description` values, truncates legacy inventory descriptions, keeps malformed inventory limits inside the source-intake 400 error contract, normalizes stale persisted preview eligibility at response time, and updates stale material-preview next-action wording.
+- PR `#868` already settled parameterized media-type preview admission; this pass records that item as addressed in the closeout chain.
+- Existing upload, inventory, bounded-preview, duplicate-field, duplicate-file, forbidden-field, unknown-field, idempotency, hash, and storage-ref behavior remains unchanged except for the review-debt fixes above.
+- Generic source upload, broad file upload, local path/local directory authority, web connector expansion, RAG/vector indexing, package construction, rendered source controls, non-text binary preview, and unbounded runtime DB behavior remain blocked.
