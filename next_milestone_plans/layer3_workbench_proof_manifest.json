@@ -14920,5 +14920,36 @@
       "source_intake_package_review_submit_not_admitted"
     ],
     "targeted_validation_result": "22 passed"
+  },
+  "source_intake_package_review_submit_boundary_freeze_proof": {
+    "proof_kind": "source_intake_package_review_submit_boundary_freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/316_SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_BOUNDARY_FREEZE.md",
+    "branch": "codex/l3-source-intake-package-review-submit-freeze",
+    "current_main_predecessor_commit": "824d3bb2c415e81f91bdef52e09349f881648c1b",
+    "repo_confirmed_failure_boundary": "package_review_submit blocks source-intake package construction state with source_intake_package_review_submit_not_admitted",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "frozen_future_scope": [
+      "existing_package_review_submit_request_contract",
+      "layer3.source_intake_package_construction_commit.v1",
+      "layer3.source_intake_execution_output.v1",
+      "source_intake_qualitative_preview",
+      "bounded_package_review_submit_state",
+      "no_analysis_run_created",
+      "no_handoff_export_created"
+    ],
+    "blocked_scope": [
+      "handoff_export_prepare_or_dispatch",
+      "aps_handoff_dispatch",
+      "external_export_download",
+      "connector_destination_dispatch",
+      "provider_url",
+      "rag_vector",
+      "route",
+      "rendered_ui",
+      "model_migration",
+      "auth_security",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required"
   }
 }
