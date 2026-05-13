@@ -2556,6 +2556,7 @@ PROVIDER_PRIVATE_SIGNED_URL_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "source_artifact_size_bytes": {"type": "integer"},
         "recipient_scope": {"type": "string"},
         "requested_ttl_seconds": {"type": "integer", "minimum": 1, "maximum": 900, "default": 300},
+        "signed_reference_receipt_id": {"type": "string"},
         "decision_notes": {"type": "string"},
         **{
             field: _forbidden_request_field_schema()
