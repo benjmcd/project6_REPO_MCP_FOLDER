@@ -21771,7 +21771,7 @@ def _check_source_intake_execution_result_review_boundary(errors: list[str]) -> 
         errors.append(f"{_rel(MANIFEST)} missing source_intake_execution_result_review_boundary")
     else:
         for key, expected in {
-            "status": "branch_local_implemented_targeted_tests_passed",
+            "status": "current_main_implemented_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-result-review",
             "selected_runtime_mode": "source_intake_execution_result_review_boundary",
             "freeze_predecessor": "source_intake_execution_result_review_boundary_freeze",
@@ -21779,6 +21779,9 @@ def _check_source_intake_execution_result_review_boundary(errors: list[str]) -> 
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/311_SOURCE_INTAKE_EXECUTION_RESULT_REVIEW_BOUNDARY.md",
             "owner_service": "backend/app/services/layer3_workbench.py",
             "targeted_validation_result": "22 passed",
+            "implementation_commit": "d791416c",
+            "pr": "#902",
+            "current_main_commit": "ff4dc0a36aef7a9e1bb60ca66a246f53e0545792",
             "output_schema_id": "layer3.source_intake_execution_output.v1",
             "analysis_run_created": False,
             "package_created": False,
@@ -21803,6 +21806,9 @@ def _check_source_intake_execution_result_review_boundary(errors: list[str]) -> 
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/311_SOURCE_INTAKE_EXECUTION_RESULT_REVIEW_BOUNDARY.md",
             "test_name": "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
             "targeted_validation_result": "22 passed",
+            "implementation_commit": "d791416c",
+            "pr": "#902",
+            "merge_commit": "ff4dc0a36aef7a9e1bb60ca66a246f53e0545792",
             "analysis_run_created": False,
             "package_created": False,
             "blocked_downstream_boundary": "source_intake_package_review_preview_boundary_freeze",
