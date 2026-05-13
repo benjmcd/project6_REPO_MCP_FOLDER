@@ -2677,6 +2677,35 @@ def _raise_if_source_intake_downstream_not_admitted(
     )
 
 
+def _source_intake_result_review_source_admitted(
+    *,
+    status_body: dict[str, Any],
+    output_metadata_summary: dict[str, Any],
+) -> bool:
+    if status_body.get("engine_family") != ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW:
+        return False
+    storage_pointer = output_metadata_summary.get("storage_pointer")
+    return bool(
+        status_body.get("status") == "available"
+        and status_body.get("result_status_available") is True
+        and status_body.get("analysis_run_id") is None
+        and status_body.get("pass_type") == PASS_TYPE_SINGLE_ITEM
+        and status_body.get("pass_scope") == PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE
+        and status_body.get("selected_method_name") == SOURCE_INTAKE_EXECUTION_METHOD_NAME
+        and output_metadata_summary.get("schema_id") == SOURCE_INTAKE_EXECUTION_OUTPUT_SCHEMA_ID
+        and output_metadata_summary.get("engine_family") == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW
+        and output_metadata_summary.get("pass_scope") == PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE
+        and output_metadata_summary.get("selected_method_name") == SOURCE_INTAKE_EXECUTION_METHOD_NAME
+        and output_metadata_summary.get("source_gate") == SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE
+        and output_metadata_summary.get("analysis_run_id") is None
+        and bool(str(output_metadata_summary.get("source_intake_record_id") or "").strip())
+        and bool(str(output_metadata_summary.get("candidate_id") or "").strip())
+        and bool(str(output_metadata_summary.get("output_hash") or "").strip())
+        and isinstance(storage_pointer, dict)
+        and storage_pointer.get("absolute_path_exposed") is False
+    )
+
+
 def _raise_qualitative_aps_package_review_preview_not_admitted(
     reason: str,
     *,
@@ -4460,11 +4489,19 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             blocked_fields=["pass_run_id"],
         )
 
-    _raise_if_source_intake_downstream_not_admitted(
+    source_intake_result_review = _source_intake_result_review_source_admitted(
         status_body=status_body,
-        action_label="Execution result-review",
-        error_code="source_intake_result_review_not_admitted",
+        output_metadata_summary=output_metadata_summary,
     )
+    if status_body.get("engine_family") == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW and not source_intake_result_review:
+        raise Layer3WorkbenchError(
+            "source_intake_result_review_not_admitted",
+            "Source-intake result-review requires exact admitted source-intake result/status output.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+            next_allowed_actions=["inspect_execution_result_status"],
+        )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
@@ -4585,6 +4622,16 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
         "handoff_enabled": False,
         "downstream_unavailable": list(EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE),
     }
+    if source_intake_result_review:
+        review_state.update(
+            {
+                "output_schema_id": output_metadata_summary.get("schema_id"),
+                "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+                "candidate_id": output_metadata_summary.get("candidate_id"),
+                "output_hash": output_metadata_summary.get("output_hash"),
+                "planned_pass_source_gate": output_metadata_summary.get("planned_pass_source_gate"),
+            }
+        )
     pass_run.summary_json = {
         **_json_clone(pass_run.summary_json or {}),
         "execution_result_review": review_state,
@@ -4995,6 +5042,11 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_source_intake_downstream_not_admitted(
+        status_body=status_body,
+        action_label="Package-review preview",
+        error_code="source_intake_package_review_preview_not_admitted",
+    )
     session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).first()
     if session is None or pass_run is None:
@@ -5373,6 +5425,11 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_source_intake_downstream_not_admitted(
+        status_body=status_body,
+        action_label="Package construction commit",
+        error_code="source_intake_package_construction_commit_not_admitted",
+    )
     qualitative_aps_commit = status_body.get("engine_family") == ENGINE_FAMILY_QUAL_APS_DOCUMENT
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
@@ -5807,6 +5864,11 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_source_intake_downstream_not_admitted(
+        status_body=status_body,
+        action_label="Package-review submit",
+        error_code="source_intake_package_review_submit_not_admitted",
+    )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
@@ -6474,6 +6536,11 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_source_intake_downstream_not_admitted(
+        status_body=status_body,
+        action_label="Handoff/export preparation",
+        error_code="source_intake_handoff_export_prepare_not_admitted",
+    )
     qualitative_aps_prepare = (
         status_body.get("engine_family") == ENGINE_FAMILY_QUAL_APS_DOCUMENT
         or status_body.get("pass_scope") == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
@@ -7378,6 +7445,11 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_source_intake_downstream_not_admitted(
+        status_body=status_body,
+        action_label="APS handoff dispatch",
+        error_code="source_intake_aps_handoff_dispatch_not_admitted",
+    )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
@@ -8376,6 +8448,11 @@ def external_export_download_prepare(
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_source_intake_downstream_not_admitted(
+        status_body=status_body,
+        action_label="External export/download readiness",
+        error_code="source_intake_external_export_download_prepare_not_admitted",
+    )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
