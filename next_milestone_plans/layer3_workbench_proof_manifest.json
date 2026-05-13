@@ -15028,5 +15028,51 @@
       "broad_qualitative_execution"
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required"
+  },
+  "source_intake_handoff_export_prepare_boundary_proof": {
+    "proof_kind": "source_intake_handoff_export_prepare_boundary",
+    "branch": "codex/l3-source-intake-handoff-export",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/319_SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/318_SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_BOUNDARY_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "targeted_test": "backend/tests/test_layer3_workbench.py",
+    "schema_id": "layer3.source_intake_handoff_export_prepare.v1",
+    "source_schema_id": "layer3.source_intake_package_review_submit.v1",
+    "output_schema_id": "layer3.source_intake_execution_output.v1",
+    "analysis_run_created": false,
+    "handoff_export_prepare_created": true,
+    "aps_handoff_dispatch_created": false,
+    "external_export_download_created": false,
+    "blocked_downstream_boundary": "source_intake_aps_handoff_dispatch_boundary_freeze",
+    "blocked_error_codes": [
+      "source_intake_aps_handoff_dispatch_not_admitted"
+    ],
+    "source_identity_preserved": [
+      "source_intake_record_id",
+      "candidate_id",
+      "output_payload_hash"
+    ],
+    "durable_state": [
+      "L3OutputPackage",
+      "L3ReconciliationRecord"
+    ],
+    "blocked_scope": [
+      "aps_handoff_dispatch",
+      "external_export_download",
+      "connector_destination_dispatch",
+      "provider_private_or_public_url",
+      "web_connector_retrieval",
+      "rag_vector_indexing",
+      "generic_source_upload",
+      "broad_file_upload",
+      "local_path_or_local_directory_authority",
+      "model_or_migration_changes",
+      "new_backend_route",
+      "rendered_ui_changes",
+      "auth_security_behavior",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "targeted_tests_and_progress_check_passed",
+    "targeted_validation_result": "22 passed"
   }
 }

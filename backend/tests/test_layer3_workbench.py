@@ -398,6 +398,33 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
         )
     assert package_review_submit_blocked.value.error_code == "package_review_preview_mismatch"
 
+    with pytest.raises(Layer3WorkbenchError) as handoff_export_not_admitted:
+        layer3_workbench.handoff_export_prepare(
+            db_session,
+            {
+                "client_request_id": "source-intake-handoff-export-blocked",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+                "result_review_record_ref": result_review["review_record_ref"],
+                "package_review_preview_hash": package_preview["package_review_preview_hash"],
+                "construction_basis_hash": package_construction["construction_basis_hash"],
+                "reconciliation_record_id": package_construction["reconciliation_record_id"],
+                "package_review_submit_record_ref": "source-intake-package-review-submit-missing",
+                "package_review_state": "package_review_approved",
+                "package_review_submit_schema_id": "layer3.source_intake_package_review_submit.v1",
+                "handoff_target": "internal_export_envelope",
+                "export_mode": "prepare_only",
+                "operator_decision": "authorize_prepare",
+                "output_package_ids": package_construction["output_package_ids"],
+                "payload_refs": package_construction["payload_refs"],
+                "payload_hashes": package_construction["payload_hashes"],
+            },
+        )
+    assert handoff_export_not_admitted.value.error_code == "handoff_export_prepare_requires_approved_package_review"
+
     with pytest.raises(Layer3WorkbenchError) as package_review_submit_mismatched_construction:
         layer3_workbench.package_review_submit(
             db_session,
@@ -478,11 +505,11 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert package_review_submit_replay["status"] == "already_submitted"
     assert package_review_submit_replay["submit_record_ref"] == package_review_submit["submit_record_ref"]
 
-    with pytest.raises(Layer3WorkbenchError) as handoff_export_blocked:
+    with pytest.raises(Layer3WorkbenchError) as handoff_export_mismatched_construction:
         layer3_workbench.handoff_export_prepare(
             db_session,
             {
-                "client_request_id": "source-intake-handoff-export-blocked",
+                "client_request_id": "source-intake-handoff-export-construction-mismatch",
                 "session_id": session.session_id,
                 "analysis_plan_id": plan.analysis_plan_id,
                 "pass_run_id": pass_run.pass_run_id,
@@ -490,7 +517,7 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
                 "preview_hash": "source-intake-preview-hash",
                 "result_review_record_ref": result_review["review_record_ref"],
                 "package_review_preview_hash": package_preview["package_review_preview_hash"],
-                "construction_basis_hash": package_construction["construction_basis_hash"],
+                "construction_basis_hash": "source-intake-handoff-construction-mismatch",
                 "reconciliation_record_id": package_construction["reconciliation_record_id"],
                 "package_review_submit_record_ref": package_review_submit["submit_record_ref"],
                 "package_review_state": package_review_submit["package_review_state"],
@@ -503,7 +530,77 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
                 "payload_hashes": package_construction["payload_hashes"],
             },
         )
-    assert handoff_export_blocked.value.error_code == "source_intake_handoff_export_prepare_not_admitted"
+    assert (
+        handoff_export_mismatched_construction.value.error_code
+        == "source_intake_handoff_export_prepare_construction_basis_mismatch"
+    )
+
+    handoff_export = layer3_workbench.handoff_export_prepare(
+        db_session,
+        {
+            "client_request_id": "source-intake-handoff-export-prepare",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "result_review_record_ref": result_review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            "construction_basis_hash": package_construction["construction_basis_hash"],
+            "reconciliation_record_id": package_construction["reconciliation_record_id"],
+            "package_review_submit_record_ref": package_review_submit["submit_record_ref"],
+            "package_review_state": package_review_submit["package_review_state"],
+            "package_review_submit_schema_id": package_review_submit["schema_id"],
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "operator_decision": "authorize_prepare",
+            "output_package_ids": package_construction["output_package_ids"],
+            "payload_refs": package_construction["payload_refs"],
+            "payload_hashes": package_construction["payload_hashes"],
+        },
+    )
+    assert handoff_export["status"] == "prepared"
+    assert handoff_export["schema_id"] == "layer3.source_intake_handoff_export_prepare.v1"
+    assert handoff_export["analysis_run_id"] is None
+    assert handoff_export["source_intake_record_id"] == "src-intake-plan-001"
+    assert handoff_export["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+    assert handoff_export["output_payload_hash"] == output_payload["output_hash"]
+    assert handoff_export["package_review_submit_schema_id"] == "layer3.source_intake_package_review_submit.v1"
+    assert handoff_export["handoff_export_state"] == "handoff_export_prepared"
+    assert handoff_export["handoff_export_envelope"]["external_handoff_enabled"] is False
+    assert handoff_export["aps_handoff_enabled"] is False
+    assert handoff_export["external_export_download_enabled"] is False
+    assert db_session.query(AnalysisRun).count() == 0
+    assert db_session.query(L3OutputPackage).count() == 3
+    assert db_session.query(L3ReconciliationRecord).count() == 1
+
+    handoff_export_replay = layer3_workbench.handoff_export_prepare(
+        db_session,
+        {
+            "client_request_id": "source-intake-handoff-export-prepare",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "result_review_record_ref": result_review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            "construction_basis_hash": package_construction["construction_basis_hash"],
+            "reconciliation_record_id": package_construction["reconciliation_record_id"],
+            "package_review_submit_record_ref": package_review_submit["submit_record_ref"],
+            "package_review_state": package_review_submit["package_review_state"],
+            "package_review_submit_schema_id": package_review_submit["schema_id"],
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "operator_decision": "authorize_prepare",
+            "output_package_ids": package_construction["output_package_ids"],
+            "payload_refs": package_construction["payload_refs"],
+            "payload_hashes": package_construction["payload_hashes"],
+        },
+    )
+    assert handoff_export_replay["status"] == "already_prepared"
+    assert handoff_export_replay["prepare_record_ref"] == handoff_export["prepare_record_ref"]
+
 
     pass_run.summary_json = {**(pass_run.summary_json or {}), "analysis_run_id": "unexpected-analysis-run"}
     db_session.commit()
