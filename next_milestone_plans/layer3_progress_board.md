@@ -1736,3 +1736,9 @@ Current-main proof/control sync: PR `#929` merged `339_SOURCE_INTAKE_PROVIDER_PU
 The sync doc `340_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/reviewThreads were empty, merge state was `CLEAN`, and post-merge `python .\tools\l3-progress-check.py` passed. Provider-public URL routes, rendered controls, delivery/use, `public_url_enabled: True`, public proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
 
 The next required decision is `source_intake_provider_public_url_route_entry_freeze`.
+
+## Source Intake Provider Public URL Route Entry Freeze
+
+Branch-local planning/control freeze: `341_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE.md` selects `source_intake_provider_public_url_prepare_status_backend_api` as the next bounded code-bearing slice after the current-main provider-public URL durable-state substrate from PR `#929`.
+
+The next implementation may add only backend/API prepare and status surfaces over server-owned source-intake, provider-private, and provider-public durable-state authority. Public URL delivery/use, revoke route, rendered controls, `public_url_enabled: True` on existing rails, raw public URL persistence or response exposure, provider network/object-store writes, public proxy URL runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
