@@ -145,6 +145,7 @@ from app.services.layer3_external_export_response import (
     qualitative_aps_external_export_download_admitted as _qualitative_aps_external_export_download_admitted,
     qualitative_aps_external_export_download_deferred as _qualitative_aps_external_export_download_deferred,
     safe_download_token as _safe_download_token,
+    source_intake_external_export_download_admitted as _source_intake_external_export_download_admitted,
 )
 from app.services.layer3_gate_b_state import (
     GATE_B_DECISIONS,
@@ -4756,6 +4757,8 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
                 "output_schema_id": output_metadata_summary.get("schema_id"),
                 "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
                 "candidate_id": output_metadata_summary.get("candidate_id"),
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": output_metadata_summary.get("output_hash"),
                 "output_hash": output_metadata_summary.get("output_hash"),
                 "planned_pass_source_gate": output_metadata_summary.get("planned_pass_source_gate"),
             }
@@ -9119,11 +9122,27 @@ def external_export_download_prepare(
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
-    _raise_if_source_intake_downstream_not_admitted(
+    source_intake_readiness_candidate = status_body.get("engine_family") == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW
+    source_intake_readiness = _source_intake_result_review_source_admitted(
         status_body=status_body,
-        action_label="External export/download readiness",
-        error_code="source_intake_external_export_download_prepare_not_admitted",
+        output_metadata_summary=output_metadata_summary,
     )
+    if source_intake_readiness_candidate and supplied_analysis_run_id:
+        raise Layer3WorkbenchError(
+            "source_intake_external_export_download_analysis_run_not_admitted",
+            "Source-intake external export/download readiness must not provide analysis_run_id.",
+            status="invalid",
+            blocked_fields=["analysis_run_id"],
+        )
+    if source_intake_readiness_candidate and not source_intake_readiness:
+        raise Layer3WorkbenchError(
+            "source_intake_external_export_download_prepare_not_admitted",
+            "Source-intake external export/download readiness requires exact source-intake result/status authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+            next_allowed_actions=["inspect_source_intake_execution_authority"],
+        )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
@@ -9150,6 +9169,18 @@ def external_export_download_prepare(
             status="conflict",
             http_status=409,
             blocked_fields=["pass_run_id"],
+        )
+    if source_intake_readiness and (
+        pass_run.engine_family != ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW
+        or pass_run.pass_type != PASS_TYPE_SINGLE_ITEM
+    ):
+        raise Layer3WorkbenchError(
+            "source_intake_external_export_download_prepare_not_admitted",
+            "Source-intake external export/download readiness requires exact source-intake selected-pass authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+            next_allowed_actions=["inspect_source_intake_execution_authority"],
         )
     associated_cohort_readiness = status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
     qualitative_aps_readiness_candidate = _qualitative_aps_external_export_download_deferred(
@@ -9233,6 +9264,27 @@ def external_export_download_prepare(
             blocked_fields=["result_review_record_ref"],
             next_allowed_actions=["inspect_execution_result_review_state"],
         )
+    source_intake_review_mismatches: list[str] = []
+    if source_intake_readiness:
+        if list(review_state.get("source_dataset_version_ids") or []) != []:
+            source_intake_review_mismatches.append("source_dataset_version_ids")
+        for field, expected in {
+            "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+            "candidate_id": output_metadata_summary.get("candidate_id"),
+            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+            "output_payload_hash": output_metadata_summary.get("output_hash"),
+        }.items():
+            if str(review_state.get(field) or "") != str(expected or ""):
+                source_intake_review_mismatches.append(field)
+    if source_intake_review_mismatches:
+        raise Layer3WorkbenchError(
+            "source_intake_external_export_download_prepare_not_admitted",
+            "Source-intake external export/download readiness requires exact approved source-intake result-review authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=sorted(set(source_intake_review_mismatches)),
+            next_allowed_actions=["inspect_execution_result_review_state"],
+        )
     mismatched_review_fields = [
         field
         for field, expected in {
@@ -9254,7 +9306,17 @@ def external_export_download_prepare(
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
     qualitative_basis = None
-    if qualitative_aps_readiness:
+    if source_intake_readiness:
+        expected_package_preview_hash = _source_intake_package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            result_review_record_ref=supplied_review_ref,
+            output_metadata_summary=output_metadata_summary,
+        )
+    elif qualitative_aps_readiness:
         qualitative_basis = _require_qualitative_aps_package_review_authority(
             db,
             session_id=session_id,
@@ -9448,6 +9510,29 @@ def external_export_download_prepare(
             blocked_fields=["package_review_submit_record_ref"],
             next_allowed_actions=["inspect_package_review_submit_state"],
         )
+    source_intake_submit_mismatches: list[str] = []
+    if source_intake_readiness:
+        if not _source_intake_aps_dispatch_prepare_state_admitted(package_review_submit):
+            source_intake_submit_mismatches.append("package_review_submit_record_ref")
+        if list(package_review_submit.get("source_dataset_version_ids") or []) != []:
+            source_intake_submit_mismatches.append("source_dataset_version_ids")
+        for field, expected in {
+            "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+            "candidate_id": output_metadata_summary.get("candidate_id"),
+            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+            "output_payload_hash": output_metadata_summary.get("output_hash"),
+        }.items():
+            if str(package_review_submit.get(field) or "") != str(expected or ""):
+                source_intake_submit_mismatches.append(field)
+    if source_intake_submit_mismatches:
+        raise Layer3WorkbenchError(
+            "source_intake_external_export_download_prepare_not_admitted",
+            "Source-intake external export/download readiness requires exact approved source-intake package-review submit authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=sorted(set(source_intake_submit_mismatches)),
+            next_allowed_actions=["inspect_package_review_submit_state"],
+        )
 
     prepare_state = _handoff_export_prepare_from_reconciliation(reconciliation)
     if prepare_state is None or prepare_state.get("handoff_export_state") != HANDOFF_EXPORT_PREPARED_STATE:
@@ -9537,6 +9622,29 @@ def external_export_download_prepare(
             blocked_fields=["prepare_record_ref"],
             next_allowed_actions=["inspect_handoff_export_prepare_state"],
         )
+    source_intake_prepare_mismatches: list[str] = []
+    if source_intake_readiness:
+        if not _source_intake_aps_dispatch_prepare_state_admitted(prepare_state):
+            source_intake_prepare_mismatches.append("handoff_export_state")
+        if list(prepare_state.get("source_dataset_version_ids") or []) != []:
+            source_intake_prepare_mismatches.append("source_dataset_version_ids")
+        for field, expected in {
+            "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+            "candidate_id": output_metadata_summary.get("candidate_id"),
+            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+            "output_payload_hash": output_metadata_summary.get("output_hash"),
+        }.items():
+            if str(prepare_state.get(field) or "") != str(expected or ""):
+                source_intake_prepare_mismatches.append(field)
+    if source_intake_prepare_mismatches:
+        raise Layer3WorkbenchError(
+            "source_intake_external_export_download_prepare_not_admitted",
+            "Source-intake external export/download readiness requires exact prepared source-intake handoff/export authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=sorted(set(source_intake_prepare_mismatches)),
+            next_allowed_actions=["inspect_handoff_export_prepare_state"],
+        )
     recorded_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
     if recorded_dispatch is None or recorded_dispatch.get("aps_handoff_state") != APS_HANDOFF_DISPATCHED_STATE:
         raise Layer3WorkbenchError(
@@ -9589,6 +9697,15 @@ def external_export_download_prepare(
     if list(recorded_dispatch.get("payload_hashes") or []) != canonical_payload_hashes:
         dispatch_mismatches.append("payload_hashes")
     if dispatch_mismatches:
+        if source_intake_readiness:
+            raise Layer3WorkbenchError(
+                "source_intake_external_export_download_prepare_not_admitted",
+                "Source-intake external export/download readiness requires exact source-intake APS handoff dispatch authority.",
+                status="blocked",
+                http_status=409,
+                blocked_fields=sorted(set(dispatch_mismatches)),
+                next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+            )
         raise Layer3WorkbenchError(
             "external_export_download_prepare_aps_dispatch_mismatch",
             "Stored APS handoff dispatch authority does not match the supplied readiness basis.",
@@ -9620,6 +9737,27 @@ def external_export_download_prepare(
             status="blocked",
             http_status=409,
             blocked_fields=["aps_handoff_record_ref"],
+            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+        )
+    source_intake_dispatch_mismatches: list[str] = []
+    if source_intake_readiness:
+        if list(recorded_dispatch.get("source_dataset_version_ids") or []) != []:
+            source_intake_dispatch_mismatches.append("source_dataset_version_ids")
+        for field, expected in {
+            "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+            "candidate_id": output_metadata_summary.get("candidate_id"),
+            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+            "output_payload_hash": output_metadata_summary.get("output_hash"),
+        }.items():
+            if str(recorded_dispatch.get(field) or "") != str(expected or ""):
+                source_intake_dispatch_mismatches.append(field)
+    if source_intake_dispatch_mismatches:
+        raise Layer3WorkbenchError(
+            "source_intake_external_export_download_prepare_not_admitted",
+            "Source-intake external export/download readiness requires exact source-intake APS handoff dispatch authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=sorted(set(source_intake_dispatch_mismatches)),
             next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
         )
     for field, supplied, expected in (
@@ -9719,6 +9857,23 @@ def external_export_download_prepare(
                     recorded_dispatch.get("source_dataset_version_ids") or []
                 ),
                 "package_review_submit_schema_id": COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+            }
+        )
+    elif source_intake_readiness:
+        readiness_basis.update(
+            {
+                "pass_type": PASS_TYPE_SINGLE_ITEM,
+                "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+                "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
+                "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+                "package_construction_source_gate": SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE,
+                "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+                "source_dataset_version_ids": [],
+                "package_review_submit_schema_id": SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+                "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+                "candidate_id": output_metadata_summary.get("candidate_id"),
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": output_metadata_summary.get("output_hash"),
             }
         )
     elif qualitative_aps_readiness:
@@ -9854,6 +10009,23 @@ def external_export_download_prepare(
             }
         )
         readiness_state["delivery_ui"] = _associated_cohort_delivery_ui_state(readiness_state)
+    elif source_intake_readiness:
+        readiness_state.update(
+            {
+                "pass_type": PASS_TYPE_SINGLE_ITEM,
+                "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+                "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
+                "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+                "package_construction_source_gate": SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE,
+                "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+                "source_dataset_version_ids": [],
+                "package_review_submit_schema_id": SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+                "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+                "candidate_id": output_metadata_summary.get("candidate_id"),
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": output_metadata_summary.get("output_hash"),
+            }
+        )
     elif qualitative_aps_readiness:
         readiness_state.update(_cohort_readiness_identity(recorded_dispatch))
     reconciliation.summary_json = {
