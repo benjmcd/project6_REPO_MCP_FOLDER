@@ -351,6 +351,13 @@ def test_single_aps_doc_qualitative_pass_executes_without_analysis_run_or_datase
     ]
     assert len(output["output_items_json"]) == 2
     assert output["output_items_json"][0]["trace"]["chunk_id"] == f"{flow['content_id']}-chunk-1"
+    assert output["output_items_json"][0]["highlight_spans"] == [
+        {
+            "start": 0,
+            "end": output["output_items_json"][0]["text_char_count"],
+            "source": "citations[].highlight_spans",
+        }
+    ]
 
     status = layer3_workbench.execution_result_status(
         db_session,

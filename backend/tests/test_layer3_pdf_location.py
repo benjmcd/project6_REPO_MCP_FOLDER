@@ -105,11 +105,13 @@ def _write_output(
     *,
     content_id: str = "content-pdf-location",
     chunk_hash: str | None = None,
+    summary_chunk_hash: str | None = None,
     highlight_spans: list[dict[str, int]] | None = None,
     session_id: str = "session-pdf-location",
 ) -> Path:
     text = "Cooling pump inspection evidence appears in the selected PDF paragraph."
     chunk_hash = chunk_hash or hashlib.sha256(text.encode("utf-8")).hexdigest()
+    summary_chunk_hash = summary_chunk_hash or chunk_hash
     if highlight_spans is None:
         highlight_spans = [{"start": 0, "end": 16}]
     output = tmp_path / "output.json"
@@ -130,7 +132,7 @@ def _write_output(
                 },
                 "chunk_summary": {
                     "chunk_ids": ["chunk-pdf-location-1"],
-                    "chunk_hashes": {"chunk-pdf-location-1": chunk_hash},
+                    "chunk_hashes": {"chunk-pdf-location-1": summary_chunk_hash},
                 },
                 "output_items_json": [
                     {
@@ -259,3 +261,39 @@ def test_pdf_location_projection_fails_closed_without_visual_page_authority(db_s
 
     assert projection["available"] is False
     assert projection["blocked_reason"] == "pdf_location_visual_page_authority_missing"
+
+
+def test_pdf_location_projection_fails_closed_when_visual_refs_miss_chunk_page(db_session, tmp_path) -> None:
+    _seed_document(db_session, visual_page_refs_json=json.dumps([{"page_number": 1, "status": "preserved"}]))
+    pass_run = _pass_run(str(_write_output(tmp_path)))
+    db_session.add(pass_run)
+    db_session.flush()
+
+    projection = layer3_pdf_location.pdf_location_projection_for_pass_run(db_session, pass_run=pass_run)
+
+    assert projection["available"] is False
+    assert projection["blocked_reason"] == "pdf_location_visual_page_authority_missing"
+
+
+def test_pdf_location_projection_fails_closed_for_malformed_highlight_span(db_session, tmp_path) -> None:
+    _seed_document(db_session)
+    pass_run = _pass_run(str(_write_output(tmp_path, highlight_spans=[{}])))
+    db_session.add(pass_run)
+    db_session.flush()
+
+    projection = layer3_pdf_location.pdf_location_projection_for_pass_run(db_session, pass_run=pass_run)
+
+    assert projection["available"] is False
+    assert projection["blocked_reason"] == "pdf_location_highlight_authority_missing"
+
+
+def test_pdf_location_projection_fails_closed_for_conflicting_chunk_hashes(db_session, tmp_path) -> None:
+    _seed_document(db_session)
+    pass_run = _pass_run(str(_write_output(tmp_path, summary_chunk_hash="conflicting-summary-hash")))
+    db_session.add(pass_run)
+    db_session.flush()
+
+    projection = layer3_pdf_location.pdf_location_projection_for_pass_run(db_session, pass_run=pass_run)
+
+    assert projection["available"] is False
+    assert projection["blocked_reason"] == "pdf_location_chunk_hash_conflict"
