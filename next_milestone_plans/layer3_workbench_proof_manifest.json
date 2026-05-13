@@ -15438,5 +15438,42 @@
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required",
     "next_boundary": "source_intake_external_export_download_signed_reference_boundary"
+  },
+  "source_intake_external_export_download_signed_reference_boundary_proof": {
+    "proof_kind": "source_intake_external_export_download_signed_reference_boundary",
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "branch": "codex/l3-source-intake-signed-reference",
+    "current_main_predecessor_commit": "f30b501e9590c9b2f961c8390e912f1b40a85580",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/330_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/329_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+    "delivery_schema_id": "layer3.source_intake_external_export_download_delivery.v1",
+    "signed_reference_schema_id": "layer3.external_export_download_signed_reference.v1",
+    "signed_reference_use_schema_id": "layer3.external_export_download_signed_reference_use.v1",
+    "server_authority": "source_intake_external_export_download_signed_reference_gate",
+    "runtime_behavior_change": true,
+    "rendered_ui_behavior_change": true,
+    "route_added": false,
+    "model_migration_changed": false,
+    "validation_status": "targeted_tests_and_progress_check_required",
+    "blocked_scope": [
+      "provider_private_or_public_url_behavior",
+      "connector_destination_dispatch",
+      "package_mutation_or_reconstruction",
+      "source_expansion",
+      "local_directory_authority",
+      "web_connector_retrieval",
+      "rag_vector_behavior",
+      "broad_qualitative_behavior",
+      "full_mockup_activation",
+      "route_model_migration_changes",
+      "auth_security_behavior"
+    ],
+    "targeted_validation_result": {
+      "pytest": "25 passed, 3 warnings",
+      "playwright_chromium": "34 passed"
+    }
   }
 }

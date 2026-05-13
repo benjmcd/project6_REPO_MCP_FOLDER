@@ -351,7 +351,13 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function isSourceIntakeExternalExportDownloadState" in js.text
     assert "function sourceIntakeDeliveryUiState" in js.text
     assert "source_intake_external_export_download_delivery_ui_ready" in js.text
-    assert "!isSourceIntakeExternalExportDownloadState(external)" in js.text
+    signed_reference_start = js.text.find("function canGenerateExternalExportDownloadSignedReference")
+    provider_signed_url_start = js.text.find("function canPrepareProviderPrivateSignedUrl")
+    assert signed_reference_start != -1
+    assert provider_signed_url_start != -1
+    signed_reference_gate = js.text[signed_reference_start:provider_signed_url_start]
+    assert "!isSourceIntakeExternalExportDownloadState(external)" not in signed_reference_gate
+    assert "!isSourceIntakeExternalExportDownloadState(external)" in js.text[provider_signed_url_start:]
     assert "if (!isAssociatedCohortExternalExportDownloadState(external))" in js.text
     assert "return false;" in js.text
     assert "if (isQualitativeApsExternalExportDownloadState(external))" in js.text
