@@ -21587,6 +21587,7 @@ def _check_source_intake_execution_result_status_boundary(errors: list[str]) -> 
         "backend/app/services/layer3_workbench.py",
         "layer3.source_intake_execution_output.v1",
         "source_intake_execution_result_status_output_not_admitted",
+        "source_intake_result_review_not_admitted",
         "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
         "missing_output_metadata",
         "source_intake_execution_result_review_boundary_freeze",
@@ -21597,8 +21598,8 @@ def _check_source_intake_execution_result_status_boundary(errors: list[str]) -> 
         BOARD: ("## Source Intake Execution Result Status Boundary", "309_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY.md", "source_intake_execution_result_review_boundary_freeze"),
         MANIFEST: ("source_intake_execution_result_status_boundary", "latest_source_intake_execution_result_status_boundary_branch", "source_intake_execution_result_review_boundary_freeze"),
         PROOF_MANIFEST: ("source_intake_execution_result_status_boundary_proof", "source_intake_execution_result_status_output_not_admitted", "22 passed"),
-        ROOT / "backend/app/services/layer3_workbench.py": ("_source_intake_result_status_output_summary", "source_intake_execution_result_status_output_not_admitted", "source_intake_pass"),
-        ROOT / "backend/tests/test_layer3_workbench.py": ("source-intake-result-status", "missing_output_metadata", "source_intake_execution_result_status_output_not_admitted"),
+        ROOT / "backend/app/services/layer3_workbench.py": ("_source_intake_result_status_output_summary", "source_intake_execution_result_status_output_not_admitted", "source_intake_result_review_not_admitted", "source_intake_pass"),
+        ROOT / "backend/tests/test_layer3_workbench.py": ("source-intake-result-status", "missing_output_metadata", "source_intake_execution_result_status_output_not_admitted", "source_intake_result_review_not_admitted"),
     }.items():
         surface_text = _read_required_text(path, errors)
         for term in terms:

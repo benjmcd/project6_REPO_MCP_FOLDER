@@ -14716,6 +14716,10 @@
     "route_added": false,
     "model_migration_changed": false,
     "blocked_downstream_boundary": "source_intake_execution_result_review_boundary_freeze",
-    "review_threads": "not_created_yet"
+    "review_threads": "not_created_yet",
+    "result_review_error_code": "source_intake_result_review_not_admitted",
+    "analysis_run_error_code": "source_intake_execution_result_status_analysis_run_not_admitted",
+    "output_hash_recomputed_from_payload": true,
+    "review_comment_closeout": "recomputed output hash, source-intake AnalysisRun rejection, and downstream result-review block added before merge"
   }
 }

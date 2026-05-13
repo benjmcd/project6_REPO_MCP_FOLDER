@@ -9297,7 +9297,10 @@
       "downstream_artifacts_blocked": true,
       "missing_output_payload_fails_closed": true,
       "mismatched_output_source_identity_fails_closed": true,
-      "unsupported_engines_remain_blocked": true
+      "unsupported_engines_remain_blocked": true,
+      "output_hash_recomputed_from_payload": true,
+      "analysis_run_reference_fails_closed": true,
+      "result_review_remains_blocked": true
     },
     "blocked_scope": [
       "execution_result_review",
@@ -9317,10 +9320,11 @@
       "non_text_binary_preview",
       "frontend_only_durable_authority",
       "broad_qualitative_execution"
-    ]
+    ],
+    "latest_review_comment_closeout": "PR #899 Code Review P2 comments addressed: recomputed output hash, no-AnalysisRun invariant, and source-intake result-review downstream block."
   },
   "latest_source_intake_execution_result_status_boundary_branch": "codex/l3-source-intake-result-status",
   "latest_source_intake_execution_result_status_boundary_doc": "next_milestone_plans/Layer3_planning_docs/309_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY.md",
-  "latest_source_intake_execution_result_status_boundary_summary": "Branch-local source_intake_execution_result_status_boundary admits read-only inspection of completed layer3.source_intake_execution_output.v1 metadata through existing execution_result_status without AnalysisRun, package, connector, provider, RAG/vector, route, UI, model, migration, or auth/security widening; result review remains deferred behind source_intake_execution_result_review_boundary_freeze.",
+  "latest_source_intake_execution_result_status_boundary_summary": "Branch-local source_intake_execution_result_status_boundary admits read-only inspection of completed layer3.source_intake_execution_output.v1 metadata through existing execution_result_status, recomputes output hash authority, rejects AnalysisRun references, and blocks source-intake result review without package, connector, provider, RAG/vector, route, UI, model, migration, or auth/security widening; result review remains deferred behind source_intake_execution_result_review_boundary_freeze.",
   "latest_source_intake_execution_result_status_boundary_live_behavior_change": true
 }
