@@ -15186,5 +15186,56 @@
       "broad_qualitative_execution"
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required"
+  },
+  "source_intake_external_export_download_boundary_proof": {
+    "proof_kind": "source_intake_external_export_download_boundary",
+    "branch": "codex/l3-source-intake-export-download",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/323_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_BOUNDARY.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/322_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_BOUNDARY_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "response_helper": "backend/app/services/layer3_external_export_response.py",
+    "targeted_test": "backend/tests/test_layer3_workbench.py",
+    "test_name": "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
+    "targeted_validation": "python -m pytest .\\backend\\tests\\test_layer3_workbench.py",
+    "targeted_validation_result": "22 passed",
+    "schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+    "source_schema_id": "layer3.source_intake_aps_handoff_dispatch.v1",
+    "output_schema_id": "layer3.source_intake_execution_output.v1",
+    "analysis_run_created": false,
+    "external_export_download_prepare_created": true,
+    "external_export_download_delivery_created": false,
+    "source_package_mutated": false,
+    "blocked_downstream_boundary": "source_intake_external_export_download_delivery_boundary_freeze",
+    "blocked_error_codes": [
+      "source_intake_external_export_download_prepare_not_admitted"
+    ],
+    "source_identity_preserved": [
+      "source_intake_record_id",
+      "candidate_id",
+      "output_payload_ref",
+      "output_payload_hash"
+    ],
+    "durable_state": [
+      "L3OutputPackage",
+      "L3ReconciliationRecord"
+    ],
+    "blocked_scope": [
+      "external_export_download_delivery",
+      "rendered_ui_controls",
+      "connector_destination_dispatch",
+      "provider_private_or_public_url",
+      "signed_reference_behavior",
+      "web_connector_retrieval",
+      "rag_vector_indexing",
+      "generic_source_upload",
+      "broad_file_upload",
+      "local_path_or_local_directory_authority",
+      "package_mutation_or_reconstruction",
+      "model_or_migration_changes",
+      "new_backend_route",
+      "auth_security_behavior",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "targeted_tests_and_progress_check_passed"
   }
 }
