@@ -38,7 +38,15 @@ def db_session():
         db.close()
 
 
-def _seed_document(db, *, page_start: int | None = 2) -> None:
+def _seed_document(
+    db,
+    *,
+    page_start: int | None = 2,
+    media_type: str = "application/pdf",
+    visual_page_refs_json: str | None = json.dumps(
+        [{"page_number": 2, "status": "preserved", "blob_ref": "secret.pdf"}]
+    ),
+) -> None:
     text = "Cooling pump inspection evidence appears in the selected PDF paragraph."
     db.add(
         ApsContentDocument(
@@ -50,14 +58,12 @@ def _seed_document(db, *, page_start: int | None = 2) -> None:
             normalized_char_count=len(text),
             chunk_count=1,
             content_status="indexed",
-            media_type="application/pdf",
+            media_type=media_type,
             document_class="inspection_report",
             quality_status="strong",
             page_count=4,
             diagnostics_ref="secret-diagnostics.json",
-            visual_page_refs_json=json.dumps(
-                [{"page_number": 2, "status": "preserved", "blob_ref": "secret.pdf"}]
-            ),
+            visual_page_refs_json=visual_page_refs_json,
         )
     )
     db.add(
@@ -94,13 +100,24 @@ def _pass_run(output_payload_ref: str | None) -> L3PassRun:
     )
 
 
-def _write_output(tmp_path: Path, *, content_id: str = "content-pdf-location") -> Path:
+def _write_output(
+    tmp_path: Path,
+    *,
+    content_id: str = "content-pdf-location",
+    chunk_hash: str | None = None,
+    highlight_spans: list[dict[str, int]] | None = None,
+    session_id: str = "session-pdf-location",
+) -> Path:
+    text = "Cooling pump inspection evidence appears in the selected PDF paragraph."
+    chunk_hash = chunk_hash or hashlib.sha256(text.encode("utf-8")).hexdigest()
+    if highlight_spans is None:
+        highlight_spans = [{"start": 0, "end": 16}]
     output = tmp_path / "output.json"
     output.write_text(
         json.dumps(
             {
                 "source_shape": "aps_content_document",
-                "session_id": "session-pdf-location",
+                "session_id": session_id,
                 "analysis_plan_id": "plan-pdf-location",
                 "pass_run_id": "pass-run-pdf-location",
                 "material_snapshot_id": "snapshot-pdf-location",
@@ -113,14 +130,15 @@ def _write_output(tmp_path: Path, *, content_id: str = "content-pdf-location") -
                 },
                 "chunk_summary": {
                     "chunk_ids": ["chunk-pdf-location-1"],
-                    "chunk_hashes": ["hash-pdf-location"],
+                    "chunk_hashes": {"chunk-pdf-location-1": chunk_hash},
                 },
                 "output_items_json": [
                     {
                         "item_ref": "item-pdf-location",
                         "chunk_id": "chunk-pdf-location-1",
+                        "chunk_text_sha256": chunk_hash,
                         "bounded_text_preview": "Cooling pump inspection evidence appears.",
-                        "highlight_spans": [{"start": 0, "end": 16}],
+                        "highlight_spans": highlight_spans,
                     }
                 ],
             }
@@ -150,7 +168,7 @@ def test_pdf_location_projection_uses_existing_document_chunk_page_authority(db_
     assert projection["location_items"][0]["page_end"] == 2
     assert projection["location_items"][0]["page_label"] == "p. 2"
     assert projection["location_items"][0]["highlight_spans"] == [
-        {"start": 0, "end": 16, "source": "sections[].citations[].highlight_spans"}
+        {"start": 0, "end": 16, "source": "citations[].highlight_spans"}
     ]
     serialized = json.dumps(projection)
     assert "secret.pdf" not in serialized
@@ -181,3 +199,63 @@ def test_pdf_location_projection_fails_closed_without_page_authority(db_session,
 
     assert projection["available"] is False
     assert projection["blocked_reason"] == "pdf_location_page_authority_missing"
+
+
+def test_pdf_location_projection_fails_closed_without_highlight_authority(db_session, tmp_path) -> None:
+    _seed_document(db_session)
+    pass_run = _pass_run(str(_write_output(tmp_path, highlight_spans=[])))
+    db_session.add(pass_run)
+    db_session.flush()
+
+    projection = layer3_pdf_location.pdf_location_projection_for_pass_run(db_session, pass_run=pass_run)
+
+    assert projection["available"] is False
+    assert projection["blocked_reason"] == "pdf_location_highlight_authority_missing"
+
+
+def test_pdf_location_projection_fails_closed_for_stale_chunk_hash(db_session, tmp_path) -> None:
+    _seed_document(db_session)
+    pass_run = _pass_run(str(_write_output(tmp_path, chunk_hash="stale-payload-hash")))
+    db_session.add(pass_run)
+    db_session.flush()
+
+    projection = layer3_pdf_location.pdf_location_projection_for_pass_run(db_session, pass_run=pass_run)
+
+    assert projection["available"] is False
+    assert projection["blocked_reason"] == "pdf_location_chunk_hash_mismatch"
+
+
+def test_pdf_location_projection_fails_closed_for_payload_session_mismatch(db_session, tmp_path) -> None:
+    _seed_document(db_session)
+    pass_run = _pass_run(str(_write_output(tmp_path, session_id="other-session")))
+    db_session.add(pass_run)
+    db_session.flush()
+
+    projection = layer3_pdf_location.pdf_location_projection_for_pass_run(db_session, pass_run=pass_run)
+
+    assert projection["available"] is False
+    assert projection["blocked_reason"] == "pdf_location_payload_session_id_mismatch"
+
+
+def test_pdf_location_projection_fails_closed_for_non_pdf_document(db_session, tmp_path) -> None:
+    _seed_document(db_session, media_type="text/plain")
+    pass_run = _pass_run(str(_write_output(tmp_path)))
+    db_session.add(pass_run)
+    db_session.flush()
+
+    projection = layer3_pdf_location.pdf_location_projection_for_pass_run(db_session, pass_run=pass_run)
+
+    assert projection["available"] is False
+    assert projection["blocked_reason"] == "pdf_location_document_not_pdf"
+
+
+def test_pdf_location_projection_fails_closed_without_visual_page_authority(db_session, tmp_path) -> None:
+    _seed_document(db_session, visual_page_refs_json=None)
+    pass_run = _pass_run(str(_write_output(tmp_path)))
+    db_session.add(pass_run)
+    db_session.flush()
+
+    projection = layer3_pdf_location.pdf_location_projection_for_pass_run(db_session, pass_run=pass_run)
+
+    assert projection["available"] is False
+    assert projection["blocked_reason"] == "pdf_location_visual_page_authority_missing"
