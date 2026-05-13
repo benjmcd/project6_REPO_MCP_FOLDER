@@ -572,6 +572,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API = (
     PLANNING_DOCS / "345_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "346_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -28843,6 +28846,41 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public revoke implementation term: {term}")
+
+    revoke_sync_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync.",
+        "PR `#935`",
+        "4f29b6db1879749ada7a2d5e66aa3ff6778f79e1",
+        "backend-layer3-api",
+        "reviewThreads",
+        "source_intake_provider_public_url_delivery_use_or_rendered_control_freeze",
+        "Provider-public URL revoke backend API is now current-main behavior",
+    ):
+        if term not in revoke_sync_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC)} missing provider-public revoke current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Revoke Current-main Sync",
+            "346_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC.md",
+            "source_intake_provider_public_url_delivery_use_or_rendered_control_freeze",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_revoke_current_main_sync",
+            "completed_current_main_sync_pr_935",
+            "source_intake_provider_public_url_delivery_use_or_rendered_control_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_revoke_current_main_sync_proof",
+            "completed_current_main_sync_pr_935",
+            "source_intake_provider_public_url_delivery_use_or_rendered_control_freeze",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public revoke current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
