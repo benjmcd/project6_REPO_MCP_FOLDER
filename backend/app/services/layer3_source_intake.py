@@ -26,6 +26,8 @@ SOURCE_INTAKE_INVENTORY_SCHEMA_ID = "layer3.source_intake_inventory.v1"
 SOURCE_INTAKE_INVENTORY_MODE = "operator_source_intake_inventory_read_only"
 SOURCE_INTAKE_INVENTORY_DEFAULT_LIMIT = 50
 SOURCE_INTAKE_INVENTORY_MAX_LIMIT = 100
+SOURCE_INTAKE_DESCRIPTION_MAX_CHARS = 2000
+SOURCE_INTAKE_INVENTORY_DESCRIPTION_MAX_CHARS = 512
 SOURCE_INTAKE_PREVIEW_SCHEMA_ID = "layer3.source_intake_material_preview.v1"
 SOURCE_INTAKE_PREVIEW_MODE = "operator_source_intake_material_preview_read_only"
 SOURCE_INTAKE_PREVIEW_MAX_CHARS = 4000
@@ -182,6 +184,15 @@ def record_operator_upload_source_intake(
         )
 
     source_description = fields.get("source_description") or None
+    if source_description is not None and len(source_description) > SOURCE_INTAKE_DESCRIPTION_MAX_CHARS:
+        raise SourceIntakeError(
+            "source_intake_description_too_long",
+            "source_description must be 2000 characters or fewer.",
+            details={
+                "source_description_length": len(source_description),
+                "max_chars": SOURCE_INTAKE_DESCRIPTION_MAX_CHARS,
+            },
+        )
     declared_media_type = fields.get("declared_media_type") or None
     effective_media_type = declared_media_type or media_type or "application/octet-stream"
     if len(effective_media_type) > 128:
@@ -389,7 +400,8 @@ def source_intake_inventory(
         "negative_invariants": _negative_invariants(),
         "next_allowed_actions": [
             "use_record_metadata_for_source_inventory_only",
-            "define_later_freeze_before_material_preview_or_rag_use",
+            "use_bounded_preview_for_operator_review_only",
+            "define_later_freeze_before_rag_connector_package_or_rendered_source_controls",
         ],
     }
 
@@ -731,7 +743,7 @@ def _record_response(
     *,
     response_status: str | None = None,
 ) -> dict[str, Any]:
-    downstream_eligibility = record.downstream_eligibility_json or _downstream_eligibility()
+    downstream_eligibility = _response_downstream_eligibility(record.downstream_eligibility_json)
     negative_invariants = _negative_invariants()
     return {
         "schema_id": SOURCE_INTAKE_SCHEMA_ID,
@@ -768,12 +780,14 @@ def _record_response(
         "negative_invariants": negative_invariants,
         "next_allowed_actions": [
             "treat_source_intake_record_as_inventory_authority",
-            "define_later_freeze_before_material_preview_or_rag_use",
+            "use_bounded_preview_for_operator_review_only",
+            "define_later_freeze_before_rag_connector_package_or_rendered_source_controls",
         ],
     }
 
 
 def _inventory_record_response(record: L3SourceIntakeRecord) -> dict[str, Any]:
+    source_description = _bounded_inventory_description(record.source_description)
     return {
         "source_intake_record_id": record.source_intake_record_id,
         "client_request_id": record.client_request_id,
@@ -781,7 +795,11 @@ def _inventory_record_response(record: L3SourceIntakeRecord) -> dict[str, Any]:
         "source_intake_mode": SOURCE_INTAKE_MODE,
         "source_family": record.source_family,
         "source_label": record.source_label,
-        "source_description": record.source_description,
+        "source_description": source_description,
+        "source_description_truncated": (
+            record.source_description is not None
+            and len(record.source_description) > SOURCE_INTAKE_INVENTORY_DESCRIPTION_MAX_CHARS
+        ),
         "original_filename": record.original_filename,
         "media_type": record.media_type,
         "content_sha256": record.content_sha256,
@@ -803,11 +821,36 @@ def _inventory_record_response(record: L3SourceIntakeRecord) -> dict[str, Any]:
             "content_addressed": True,
             "absolute_path_exposed": False,
         },
-        "downstream_eligibility": record.downstream_eligibility_json or _downstream_eligibility(),
+        "downstream_eligibility": _response_downstream_eligibility(record.downstream_eligibility_json),
         "freshness_timestamp": _iso_or_none(record.freshness_timestamp),
         "created_at": _iso_or_none(record.created_at),
         "updated_at": _iso_or_none(record.updated_at),
     }
+
+
+def _bounded_inventory_description(source_description: str | None) -> str | None:
+    if source_description is None:
+        return None
+    if len(source_description) <= SOURCE_INTAKE_INVENTORY_DESCRIPTION_MAX_CHARS:
+        return source_description
+    return source_description[:SOURCE_INTAKE_INVENTORY_DESCRIPTION_MAX_CHARS]
+
+
+def _response_downstream_eligibility(stored: Mapping[str, Any] | None) -> dict[str, bool]:
+    eligibility = dict(_downstream_eligibility())
+    if stored:
+        for key in (
+            "source_intake_recorded",
+            "eligible_for_source_inventory",
+            "eligible_for_rag_vector_index",
+            "eligible_for_web_connector",
+            "eligible_for_unbounded_runtime_db",
+        ):
+            if key in stored:
+                eligibility[key] = bool(stored[key])
+    eligibility["eligible_for_material_preview"] = True
+    eligibility["material_preview_requires_later_freeze"] = False
+    return eligibility
 
 
 def _downstream_eligibility() -> dict[str, bool]:
