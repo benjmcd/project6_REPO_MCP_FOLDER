@@ -545,6 +545,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_AUDIT = (
     PLANNING_DOCS / "336_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_AUDIT.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_AUTHORITY_CONTRACT = (
+    PLANNING_DOCS / "337_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_AUTHORITY_CONTRACT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -28432,6 +28435,40 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public audit term: {term}")
+
+    contract_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_AUTHORITY_CONTRACT, errors)
+    for term in (
+        "Status: planning/control authority contract only; no runtime behavior admitted.",
+        "source_intake_provider_public_url_authority_contract",
+        "provider_public_url_runtime_blocked_until_substrate_freeze",
+        "a separate provider-public URL authority row or explicitly proven existing equivalent",
+        "No provider-public URL runtime is admitted.",
+        "source_intake_provider_public_url_substrate_freeze",
+    ):
+        if term not in contract_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_AUTHORITY_CONTRACT)} missing provider-public authority-contract term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Authority Contract",
+            "337_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_AUTHORITY_CONTRACT.md",
+            "source_intake_provider_public_url_substrate_freeze",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_authority_contract",
+            "provider_public_url_runtime_blocked_until_substrate_freeze",
+            "source_intake_provider_public_url_substrate_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_authority_contract_proof",
+            "provider_public_url_runtime_blocked_until_substrate_freeze",
+            "source_intake_provider_public_url_substrate_freeze",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public authority-contract term: {term}")
 
 def main() -> int:
     errors: list[str] = []
