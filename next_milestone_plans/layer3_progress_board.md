@@ -1406,3 +1406,20 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 - Targeted validation: `pytest .\backend\tests\test_layer3_typing_entry.py` passed with 5 tests.
 - Blocked scope remains plan approval, execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, generic/broad upload, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
 - Next required decision: `source_intake_plan_preview_boundary_freeze` before source-intake Gate C output is allowed to drive plan preview/approval semantics beyond existing generic readiness.
+
+
+## Source Intake Plan Preview Boundary Freeze
+
+- Status: planning/control freeze for `source_intake_plan_preview_boundary`.
+- Branch: `codex/l3-source-intake-plan-preview-freeze`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md`.
+- Runtime predecessor: `source_intake_gate_c_typing_entry`.
+- Selected runtime family: `source_breadth_runtime`.
+- Selected runtime mode: `source_intake_plan_preview_boundary`.
+- Named operator/product use case: `operator_uploaded_single_source_previews_plan_after_gate_c_typing`.
+- Canonical source of truth: server-owned Gate C state derived from `L3SourceIntakeRecord`, specifically finalized `L3Session`, `L3AnalysisSet`, `L3AnalysisUnit`, and `L3MaterialSnapshot` rows for qualitative `operator_uploaded_single_source` material.
+- Repo-confirmed failure boundary: `backend/app/services/layer3_pass_entry.py` `_classify_sets` admits quantitative dataset-version sets and APS qualitative single-document sets, but source-intake qualitative singleton plan preview needs its own admission rule.
+- Future preview semantics: existing `POST /api/v1/layer3/plan/preview` may return preview-only source-intake planned-pass material after committed source-intake Gate C typing, without creating `L3AnalysisPlan`, `L3PassRun`, `AnalysisRun`, `AnalysisArtifact`, `L3OutputPackage`, package, connector, provider, RAG/vector, local-authority, auth/security, or frontend-only durable state.
+- Next allowed code-bearing action: `implement_source_intake_plan_preview_boundary` only.
+- Required future proof: source-intake preview-only planned pass, source-intake-specific pass scope/source gate, deterministic preview hash, no downstream rows/artifacts, APS/dataset behavior unchanged, unsupported adjacent qualitative shapes blocked, and headed/headless proof only if rendered controls change.
+- Blocked scope: source-intake plan approval, execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, provider/private URL behavior, web connector retrieval, RAG/vector indexing, generic/broad upload, local path/local-directory authority, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
