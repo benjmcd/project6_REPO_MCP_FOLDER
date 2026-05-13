@@ -55,7 +55,7 @@ def test_source_boundary_contract_keeps_deferred_source_expansion_fail_closed() 
     contract = source_boundary_contract()
 
     assert contract["schema_id"] == "layer3.source_boundary_contract.v1"
-    assert contract["mode"] == "supported_source_classes_only"
+    assert contract["mode"] == "supported_source_classes_plus_operator_source_intake"
     assert contract["supported_source_classes"] == [
         "dataset_version",
         "aps_content_document",
@@ -87,6 +87,12 @@ def test_source_boundary_contract_keeps_deferred_source_expansion_fail_closed() 
         "schema_widening",
     }
     assert contract["source_upload_enabled"] is False
+    assert contract["supported_source_intake_modes"] == ["operator_single_upload_source_intake"]
+    assert contract["source_intake_upload_enabled"] is True
+    assert contract["source_intake_record_enabled"] is True
+    assert contract["generic_source_upload_preflight_field_enabled"] is False
+    assert contract["operator_upload_material_preview_enabled"] is False
+    assert contract["operator_upload_material_preview_requires_later_freeze"] is True
     assert contract["local_directory_enabled"] is False
     assert contract["broad_file_upload_enabled"] is False
     assert contract["web_connector_enabled"] is False
