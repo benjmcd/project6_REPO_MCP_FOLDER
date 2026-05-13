@@ -95,7 +95,7 @@ def _preflight_source_material() -> tuple[dict, dict, dict]:
     return preflight, source, material
 
 
-def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(db_session) -> None:
+def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(db_session, monkeypatch) -> None:
     now = datetime.now(timezone.utc)
     session = L3Session(
         session_id="session-source-intake-exec-selection",
@@ -600,6 +600,151 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     )
     assert handoff_export_replay["status"] == "already_prepared"
     assert handoff_export_replay["prepare_record_ref"] == handoff_export["prepare_record_ref"]
+
+    original_payload_refs_by_kind = dict(zip(package_construction["package_kinds"], package_construction["payload_refs"]))
+    original_payload_hashes_by_kind = dict(zip(package_construction["package_kinds"], package_construction["payload_hashes"]))
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "check_aps_handoff_compatibility",
+        lambda db, *, session_id: type("Compat", (), {"compatible": True, "blocked_reason": None})(),
+    )
+
+    def fake_materialize_aps_handoff(db, *, session_id):
+        bundle_ref = Path(settings.storage_dir) / "source-intake-aps-bundle.json"
+        bundle_ref.write_text(json.dumps({"bundle_id": "source-intake-aps-bundle"}), encoding="utf-8")
+        output_package = L3OutputPackage(
+            output_package_id="source-intake-aps-output-package",
+            session_id=session_id,
+            reconciliation_record_id=package_construction["reconciliation_record_id"],
+            package_kind="aps_evidence_bundle_handoff",
+            status="complete",
+            payload_ref=str(bundle_ref),
+            payload_hash=hashlib.sha256(bundle_ref.read_bytes()).hexdigest(),
+            summary_json={
+                "bundle_id": "source-intake-aps-bundle",
+                "aps_schema_id": "layer3.aps_evidence_bundle_handoff.v1",
+            },
+        )
+        db.add(output_package)
+        db.flush()
+        return type("ApsResult", (), {"output_package": output_package, "bundle_payload": {}})()
+
+    monkeypatch.setattr(layer3_workbench, "materialize_aps_handoff", fake_materialize_aps_handoff)
+
+    with pytest.raises(Layer3WorkbenchError) as aps_handoff_prepare_ref_mismatch:
+        layer3_workbench.aps_handoff_dispatch(
+            db_session,
+            {
+                "client_request_id": "source-intake-aps-handoff-prepare-mismatch",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+                "result_review_record_ref": result_review["review_record_ref"],
+                "package_review_preview_hash": package_preview["package_review_preview_hash"],
+                "reconciliation_record_id": package_construction["reconciliation_record_id"],
+                "package_review_submit_record_ref": package_review_submit["submit_record_ref"],
+                "package_review_state": package_review_submit["package_review_state"],
+                "prepare_record_ref": "source-intake-prepare-ref-mismatch",
+                "handoff_export_state": handoff_export["handoff_export_state"],
+                "handoff_export_envelope_ref": handoff_export["handoff_export_envelope"]["envelope_ref"],
+                "handoff_target": "internal_export_envelope",
+                "export_mode": "prepare_only",
+                "aps_handoff_target": "aps_evidence_bundle",
+                "dispatch_mode": "server_side_aps_handoff",
+                "operator_decision": "dispatch_aps_handoff",
+                "output_package_ids": package_construction["output_package_ids"],
+                "package_kinds": package_construction["package_kinds"],
+                "payload_refs": package_construction["payload_refs"],
+                "payload_hashes": package_construction["payload_hashes"],
+            },
+        )
+    assert aps_handoff_prepare_ref_mismatch.value.error_code == "aps_handoff_dispatch_prepare_ref_mismatch"
+
+    aps_handoff = layer3_workbench.aps_handoff_dispatch(
+        db_session,
+        {
+            "client_request_id": "source-intake-aps-handoff-dispatch",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "result_review_record_ref": result_review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            "reconciliation_record_id": package_construction["reconciliation_record_id"],
+            "package_review_submit_record_ref": package_review_submit["submit_record_ref"],
+            "package_review_state": package_review_submit["package_review_state"],
+            "prepare_record_ref": handoff_export["prepare_record_ref"],
+            "handoff_export_state": handoff_export["handoff_export_state"],
+            "handoff_export_envelope_ref": handoff_export["handoff_export_envelope"]["envelope_ref"],
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "operator_decision": "dispatch_aps_handoff",
+            "output_package_ids": package_construction["output_package_ids"],
+            "package_kinds": package_construction["package_kinds"],
+            "payload_refs": package_construction["payload_refs"],
+            "payload_hashes": package_construction["payload_hashes"],
+        },
+    )
+    assert aps_handoff["status"] == "dispatched"
+    assert aps_handoff["schema_id"] == "layer3.source_intake_aps_handoff_dispatch.v1"
+    assert aps_handoff["analysis_run_id"] is None
+    assert aps_handoff["source_intake_record_id"] == "src-intake-plan-001"
+    assert aps_handoff["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+    assert aps_handoff["output_payload_hash"] == output_payload["output_hash"]
+    assert aps_handoff["package_review_submit_schema_id"] == "layer3.source_intake_package_review_submit.v1"
+    assert aps_handoff["aps_handoff_state"] == "aps_handoff_dispatched"
+    assert aps_handoff["aps_output_package_kind"] == "aps_evidence_bundle_handoff"
+    assert aps_handoff["external_export_enabled"] is False
+    assert aps_handoff["download_enabled"] is False
+    assert aps_handoff["connector_dispatch_enabled"] is False
+    assert aps_handoff["next_allowed_actions"] == []
+    assert db_session.query(AnalysisRun).count() == 0
+    assert db_session.query(L3OutputPackage).count() == 4
+    assert db_session.query(L3ReconciliationRecord).count() == 1
+    source_packages_after_dispatch = [
+        package
+        for package in db_session.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        if package.package_kind != "aps_evidence_bundle_handoff"
+    ]
+    assert {package.package_kind: package.payload_ref for package in source_packages_after_dispatch} == original_payload_refs_by_kind
+    assert {package.package_kind: package.payload_hash for package in source_packages_after_dispatch} == original_payload_hashes_by_kind
+
+    aps_handoff_replay = layer3_workbench.aps_handoff_dispatch(
+        db_session,
+        {
+            "client_request_id": "source-intake-aps-handoff-dispatch",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "result_review_record_ref": result_review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            "reconciliation_record_id": package_construction["reconciliation_record_id"],
+            "package_review_submit_record_ref": package_review_submit["submit_record_ref"],
+            "package_review_state": package_review_submit["package_review_state"],
+            "prepare_record_ref": handoff_export["prepare_record_ref"],
+            "handoff_export_state": handoff_export["handoff_export_state"],
+            "handoff_export_envelope_ref": handoff_export["handoff_export_envelope"]["envelope_ref"],
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "operator_decision": "dispatch_aps_handoff",
+            "output_package_ids": package_construction["output_package_ids"],
+            "package_kinds": package_construction["package_kinds"],
+            "payload_refs": package_construction["payload_refs"],
+            "payload_hashes": package_construction["payload_hashes"],
+        },
+    )
+    assert aps_handoff_replay["status"] == "already_dispatched"
+    assert aps_handoff_replay["aps_handoff_record_ref"] == aps_handoff["aps_handoff_record_ref"]
 
 
     pass_run.summary_json = {**(pass_run.summary_json or {}), "analysis_run_id": "unexpected-analysis-run"}

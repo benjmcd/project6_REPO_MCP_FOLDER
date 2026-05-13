@@ -395,6 +395,7 @@ QUAL_APS_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.qual_aps_package_constr
 PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID = "layer3.package_construction_commit_state.v1"
 APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.aps_handoff_dispatch.v1"
 QUAL_APS_APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.qual_aps_aps_handoff_dispatch.v1"
+SOURCE_INTAKE_APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.source_intake_aps_handoff_dispatch.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID = "layer3.external_export_download_signed_reference.v1"
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_SCHEMA_ID = "layer3.external_export_download_signed_reference_use.v1"
@@ -3241,6 +3242,27 @@ def _associated_cohort_aps_dispatch_prepare_state_admitted(
     )
 
 
+def _source_intake_aps_dispatch_prepare_state_admitted(
+    prepare_state: dict[str, Any],
+) -> bool:
+    return bool(
+        prepare_state.get("pass_type") == PASS_TYPE_SINGLE_ITEM
+        and prepare_state.get("pass_scope") == PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE
+        and prepare_state.get("method") == SOURCE_INTAKE_EXECUTION_METHOD_NAME
+        and prepare_state.get("source_gate") == SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE
+        and prepare_state.get("package_construction_source_gate")
+        == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE
+        and prepare_state.get("source_shape") == SOURCE_INTAKE_SOURCE_FAMILY
+        and list(prepare_state.get("source_dataset_version_ids") or []) == []
+        and prepare_state.get("package_review_submit_schema_id")
+        == SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        and bool(str(prepare_state.get("source_intake_record_id") or "").strip())
+        and bool(str(prepare_state.get("candidate_id") or "").strip())
+        and bool(str(prepare_state.get("output_payload_ref") or "").strip())
+        and bool(str(prepare_state.get("output_payload_hash") or "").strip())
+    )
+
+
 def _qualitative_aps_aps_dispatch_source_admitted(
     *,
     status_body: dict[str, Any],
@@ -4878,11 +4900,20 @@ def _aps_handoff_dispatch_response(
         or dispatch_state.get("package_construction_source_gate")
         == SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE
     )
+    source_intake_dispatch = (
+        dispatch_state.get("pass_scope") == PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE
+        or dispatch_state.get("source_gate") == SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE
+        or dispatch_state.get("package_construction_source_gate")
+        == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE
+    )
+    response_schema_id = APS_HANDOFF_DISPATCH_SCHEMA_ID
+    if qualitative_aps_dispatch:
+        response_schema_id = QUAL_APS_APS_HANDOFF_DISPATCH_SCHEMA_ID
+    if source_intake_dispatch:
+        response_schema_id = SOURCE_INTAKE_APS_HANDOFF_DISPATCH_SCHEMA_ID
     body = {
         **_base_response(
-            QUAL_APS_APS_HANDOFF_DISPATCH_SCHEMA_ID
-            if qualitative_aps_dispatch
-            else APS_HANDOFF_DISPATCH_SCHEMA_ID,
+            response_schema_id,
             request_id=request_id,
             status=status,
         ),
@@ -4931,12 +4962,16 @@ def _aps_handoff_dispatch_response(
         "connector_dispatch_enabled": False,
         "provider_public_url_enabled": False,
         "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
-        "next_allowed_actions": [] if qualitative_aps_dispatch else ["prepare_external_export_download"],
+        "next_allowed_actions": [] if (qualitative_aps_dispatch or source_intake_dispatch) else ["prepare_external_export_download"],
         "next_state": dispatch_state["aps_handoff_state"],
         "authority_rail": _authority_rail(
             session_id=session_id,
             current_gate="package",
-            persistence_mode="durable_aps_handoff_dispatch",
+            persistence_mode=(
+                "durable_source_intake_aps_handoff_dispatch"
+                if source_intake_dispatch
+                else "durable_aps_handoff_dispatch"
+            ),
             downstream_unavailable=APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE,
             execution_enabled=False,
             package_review_enabled=False,
@@ -4953,6 +4988,14 @@ def _aps_handoff_dispatch_response(
             "output_payload_ref",
             "output_payload_hash",
             "chunk_count",
+        ):
+            body[field] = _json_clone(dispatch_state.get(field))
+    if source_intake_dispatch:
+        for field in (
+            "source_intake_record_id",
+            "candidate_id",
+            "output_payload_ref",
+            "output_payload_hash",
         ):
             body[field] = _json_clone(dispatch_state.get(field))
     return body
@@ -7957,11 +8000,18 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
-    _raise_if_source_intake_downstream_not_admitted(
+    source_intake_dispatch = _source_intake_result_review_source_admitted(
         status_body=status_body,
-        action_label="APS handoff dispatch",
-        error_code="source_intake_aps_handoff_dispatch_not_admitted",
+        output_metadata_summary=output_metadata_summary,
     )
+    if status_body.get("engine_family") == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW and not source_intake_dispatch:
+        raise Layer3WorkbenchError(
+            "source_intake_aps_handoff_dispatch_not_admitted",
+            "APS handoff dispatch is admitted only for exact source-intake result/status authority.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["inspect_execution_result_status"],
+        )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
@@ -7992,7 +8042,15 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
     associated_cohort_dispatch = False
     qualitative_aps_dispatch = False
     qualitative_basis = None
-    if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
+    if source_intake_dispatch:
+        if supplied_analysis_run_id:
+            raise Layer3WorkbenchError(
+                "source_intake_aps_handoff_dispatch_analysis_run_not_admitted",
+                "Source-intake APS handoff dispatch must not provide analysis_run_id.",
+                status="invalid",
+                blocked_fields=["analysis_run_id"],
+            )
+    elif status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
         associated_cohort_dispatch = _associated_cohort_aps_dispatch_source_admitted(
             status_body=status_body,
             pass_run=pass_run,
@@ -8093,7 +8151,17 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
         )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
-    if qualitative_aps_dispatch:
+    if source_intake_dispatch:
+        expected_package_preview_hash = _source_intake_package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            result_review_record_ref=supplied_review_ref,
+            output_metadata_summary=output_metadata_summary,
+        )
+    elif qualitative_aps_dispatch:
         expected_package_preview_hash = _qualitative_aps_package_review_preview_hash(
             session_id=session_id,
             analysis_plan_id=analysis_plan_id,
@@ -8304,6 +8372,43 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             http_status=409,
             blocked_fields=sorted(set(submit_mismatches)),
         )
+    if source_intake_dispatch:
+        source_intake_submit_mismatches = [
+            field
+            for field, expected in {
+                "pass_type": PASS_TYPE_SINGLE_ITEM,
+                "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+                "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
+                "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+                "package_construction_source_gate": SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE,
+                "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+                "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+                "candidate_id": output_metadata_summary.get("candidate_id"),
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": output_metadata_summary.get("output_hash"),
+            }.items()
+            if str(package_review_submit.get(field) or "") != str(expected or "")
+        ]
+        submit_schema_id = str(
+            package_review_submit.get("package_review_submit_schema_id")
+            or package_review_submit.get("schema_id")
+            or ""
+        )
+        if submit_schema_id != SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID:
+            source_intake_submit_mismatches.append("package_review_submit_schema_id")
+        if list(package_review_submit.get("source_dataset_version_ids") or []) != []:
+            source_intake_submit_mismatches.append("source_dataset_version_ids")
+        if list(package_review_submit.get("payload_refs") or []) != canonical_payload_refs:
+            source_intake_submit_mismatches.append("payload_refs")
+        if source_intake_submit_mismatches:
+            raise Layer3WorkbenchError(
+                "source_intake_aps_handoff_dispatch_not_admitted",
+                "Source-intake APS handoff dispatch requires exact approved source-intake package-review submit authority.",
+                status="blocked",
+                http_status=409,
+                blocked_fields=sorted(set(source_intake_submit_mismatches)),
+                next_allowed_actions=["inspect_package_review_submit_state"],
+            )
     if associated_cohort_dispatch:
         cohort_submit_mismatches = [
             field
@@ -8435,6 +8540,29 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             http_status=409,
             blocked_fields=sorted(set(prepare_mismatches)),
         )
+    source_intake_prepare_mismatches: list[str] = []
+    if source_intake_dispatch:
+        if not _source_intake_aps_dispatch_prepare_state_admitted(prepare_state):
+            source_intake_prepare_mismatches.append("handoff_export_state")
+        if list(prepare_state.get("source_dataset_version_ids") or []) != []:
+            source_intake_prepare_mismatches.append("source_dataset_version_ids")
+        for field, expected in {
+            "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+            "candidate_id": output_metadata_summary.get("candidate_id"),
+            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+            "output_payload_hash": output_metadata_summary.get("output_hash"),
+        }.items():
+            if str(prepare_state.get(field) or "") != str(expected or ""):
+                source_intake_prepare_mismatches.append(field)
+    if source_intake_prepare_mismatches:
+        raise Layer3WorkbenchError(
+            "source_intake_aps_handoff_dispatch_not_admitted",
+            "Source-intake APS handoff dispatch requires exact prepared source-intake handoff/export authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=sorted(set(source_intake_prepare_mismatches)),
+            next_allowed_actions=["inspect_handoff_export_prepare_state"],
+        )
     cohort_prepare_mismatches: list[str] = []
     if associated_cohort_dispatch:
         if not _associated_cohort_aps_dispatch_prepare_state_admitted(prepare_state):
@@ -8510,6 +8638,23 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
         "operator_decision": APS_HANDOFF_DISPATCH_OPERATOR_DECISION,
         "decision_notes": decision_notes or None,
     }
+    if source_intake_dispatch:
+        dispatch_basis.update(
+            {
+                "pass_type": PASS_TYPE_SINGLE_ITEM,
+                "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+                "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
+                "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+                "package_construction_source_gate": SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE,
+                "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+                "source_dataset_version_ids": [],
+                "package_review_submit_schema_id": SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+                "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+                "candidate_id": output_metadata_summary.get("candidate_id"),
+                "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+                "output_payload_hash": output_metadata_summary.get("output_hash"),
+            }
+        )
     if associated_cohort_dispatch:
         dispatch_basis.update(
             {
@@ -8666,6 +8811,16 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
         "connector_dispatch_enabled": False,
         "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
     }
+    if source_intake_dispatch:
+        dispatch_state.update(
+            {
+                "source_intake_record_id": prepare_state.get("source_intake_record_id"),
+                "candidate_id": prepare_state.get("candidate_id"),
+                "output_payload_ref": prepare_state.get("output_payload_ref"),
+                "output_payload_hash": prepare_state.get("output_payload_hash"),
+                "provider_public_url_enabled": False,
+            }
+        )
     if qualitative_aps_dispatch:
         dispatch_state.update(
             {
@@ -8710,6 +8865,10 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             "aps_output_package_id": aps_package.output_package_id,
             "aps_bundle_ref": aps_package.payload_ref,
             "aps_bundle_id": str(aps_summary.get("bundle_id") or ""),
+            "source_intake_record_id": prepare_state.get("source_intake_record_id") if source_intake_dispatch else None,
+            "candidate_id": prepare_state.get("candidate_id") if source_intake_dispatch else None,
+            "output_payload_ref": prepare_state.get("output_payload_ref") if source_intake_dispatch else None,
+            "output_payload_hash": prepare_state.get("output_payload_hash") if source_intake_dispatch else None,
             "external_export_enabled": False,
             "download_enabled": False,
             "connector_dispatch_enabled": False,
@@ -10703,6 +10862,34 @@ def _aps_handoff_dispatch_summary(
             handoff_export_prepare_state.get("package_construction_source_gate")
         )
     )
+    source_intake_prepare_source = (
+        handoff_export_prepare_state.get("pass_scope") == PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE
+        or handoff_export_prepare_state.get("package_construction_source_gate")
+        == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE
+    )
+    if source_intake_prepare_source and not _source_intake_aps_dispatch_prepare_state_admitted(
+        handoff_export_prepare_state
+    ):
+        return {
+            "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+            "available": False,
+            "state": APS_HANDOFF_UNAVAILABLE_STATE,
+            "blocked_reason": "source_intake_aps_handoff_dispatch_not_admitted",
+            "reconciliation_record_id": reconciliation_record_id,
+            "prepare_record_ref": prepare_record_ref,
+            "handoff_export_envelope_ref": envelope_ref,
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "aps_output_package_id": None,
+            "aps_output_package_kind": None,
+            "aps_bundle_ref": None,
+            "aps_bundle_id": None,
+            "aps_schema_id": None,
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
+        }
     if qualitative_prepare_source and not _qualitative_aps_aps_dispatch_prepare_state_admitted(
         handoff_export_prepare_state
     ):
