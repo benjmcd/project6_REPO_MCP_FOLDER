@@ -1461,8 +1461,12 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 
 ## Source Intake Plan Approval Boundary
 
-- Status: branch-local implementation/proof for `source_intake_plan_approval_boundary`.
+- Status: current-main implementation/proof for `source_intake_plan_approval_boundary`.
 - Branch: `codex/l3-source-intake-plan-approval`.
+- Implementation commit: `29f499b9c9c49222c38da500d750891b44abe1b4`.
+- Merged PR: `#888`.
+- Merge commit/current-main authority: `98a189aaf43eff89d785c10384d6ac5256de7fd0`.
+- GitHub checks: `backend-layer3-api` success and `test` success.
 - Governing doc: `next_milestone_plans/Layer3_planning_docs/302_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY.md`.
 - Freeze predecessor: `next_milestone_plans/Layer3_planning_docs/301_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE.md`.
 - Canonical source of truth: server-owned Gate C and plan-preview state derived from `L3SourceIntakeRecord`, finalized `L3Session`, qualitative `L3AnalysisSet`, `L3AnalysisUnit`, `L3MaterialSnapshot`, and the source-intake plan preview hash/payload emitted by `backend/app/services/layer3_pass_entry.py`.
