@@ -14783,5 +14783,37 @@
       "backend-layer3-api:SUCCESS",
       "test:SUCCESS"
     ]
+  },
+
+  "source_intake_package_review_preview_boundary_freeze_proof": {
+    "proof_kind": "source_intake_package_review_preview_boundary_freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/312_SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_BOUNDARY_FREEZE.md",
+    "branch": "codex/l3-source-intake-package-review-freeze",
+    "current_main_predecessor_commit": "2c616d8d6a7ebfb204bbb54c3c72f51e94f9d28c",
+    "repo_confirmed_failure_boundary": "package_review_preview blocks source-intake reviewed output with source_intake_package_review_preview_not_admitted",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "frozen_future_scope": [
+      "existing_package_review_preview_request_contract",
+      "layer3.source_intake_execution_output.v1",
+      "source_intake_qualitative_preview",
+      "approved_source_intake_result_review_state",
+      "read_only_package_review_preview_readiness",
+      "no_analysis_run_created",
+      "no_package_or_reconciliation_rows_created"
+    ],
+    "blocked_scope": [
+      "package_construction_or_mutation",
+      "package_review_submit_or_commit",
+      "handoff_export_prepare_or_dispatch",
+      "connector_destination_dispatch",
+      "provider_url",
+      "rag_vector",
+      "route",
+      "rendered_ui",
+      "model_migration",
+      "auth_security",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required"
   }
 }
