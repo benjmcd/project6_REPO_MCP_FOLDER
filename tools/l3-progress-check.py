@@ -578,6 +578,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE = (
     PLANNING_DOCS / "347_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE = (
+    PLANNING_DOCS / "350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -28919,6 +28922,42 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public rendered-controls freeze term: {term}")
+
+    delivery_use_freeze_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE, errors)
+    for term in (
+        "Status: planning/control delivery-use freeze only; no runtime delivery/use behavior admitted.",
+        "source_intake_provider_public_url_delivery_use_freeze",
+        "select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract",
+        "Provider-public delivery/use is not selected as the next implementation.",
+        "No provider-public URL delivery/use route is admitted.",
+        "No raw public URL display is admitted.",
+        "No `public_url_enabled: True` rail is admitted.",
+        "No auth/security behavior is admitted.",
+    ):
+        if term not in delivery_use_freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE)} missing provider-public delivery-use freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Delivery/Use Freeze",
+            "350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md",
+            "select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_freeze",
+            "provider_public_url_delivery_use_authority_contract_only",
+            "next_deferred_server_authoritative_runtime_lane_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_freeze_proof",
+            "select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract",
+            "delivery_use_selected",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public delivery-use freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []
