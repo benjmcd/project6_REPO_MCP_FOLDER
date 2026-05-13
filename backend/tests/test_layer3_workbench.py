@@ -20,6 +20,7 @@ sys.path.insert(0, str(BACKEND))
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
 from app.models.models import (
+    AnalysisRun,
     ApsContentChunk,
     ApsContentDocument,
     ApsContentLinkage,
@@ -33,9 +34,11 @@ from app.models.models import (
     L3AnalysisSet,
     L3AnalysisUnit,
     L3MaterialSnapshot,
+    L3OutputPackage,
     L3PassRun,
     L3SelectionManifest,
     L3Session,
+    L3SourceIntakeRecord,
     L3TypingRecord,
     VariableDefinition,
 )
@@ -91,7 +94,7 @@ def _preflight_source_material() -> tuple[dict, dict, dict]:
     return preflight, source, material
 
 
-def test_execution_selection_selects_source_intake_approved_plan_without_execution(db_session) -> None:
+def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(db_session) -> None:
     now = datetime.now(timezone.utc)
     session = L3Session(
         session_id="session-source-intake-exec-selection",
@@ -129,7 +132,33 @@ def test_execution_selection_selects_source_intake_approved_plan_without_executi
         },
         created_at=now,
     )
-    db_session.add_all([session, plan])
+    source_record = L3SourceIntakeRecord(
+        source_intake_record_id="src-intake-plan-001",
+        client_request_id="source-intake-record-request",
+        operator_decision="record_operator_uploaded_source",
+        source_family="operator_uploaded_single_source",
+        source_label="Operator uploaded source",
+        source_description="Source-intake execution-start proof fixture.",
+        original_filename="operator-source.txt",
+        media_type="text/plain",
+        content_size_bytes=27,
+        content_sha256="a" * 64,
+        metadata_hash="b" * 64,
+        authority_basis_hash="c" * 64,
+        storage_ref="raw/layer3-source-intake/operator-source.txt",
+        freshness_timestamp=now,
+        provenance_json={
+            "schema_id": "layer3.source_intake_record.v1",
+            "mode": "operator_single_upload_source_intake",
+            "source_gate": "286_SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE",
+        },
+        downstream_eligibility_json={"gate_b_material_candidate": True},
+        summary_json={"metadata": {"source_label": "Operator uploaded source"}},
+        status="recorded",
+        created_at=now,
+        updated_at=now,
+    )
+    db_session.add_all([session, plan, source_record])
     db_session.commit()
 
     result = layer3_workbench.execution_selection(
@@ -174,19 +203,51 @@ def test_execution_selection_selects_source_intake_approved_plan_without_executi
     assert idempotent_replay["status"] == "already_selected"
     assert db_session.query(L3PassRun).count() == 1
 
-    with pytest.raises(Layer3WorkbenchError) as start_error:
-        layer3_workbench.analysis_execution_start(
-            db_session,
-            {
-                "client_request_id": "source-intake-execution-start",
-                "session_id": session.session_id,
-                "analysis_plan_id": plan.analysis_plan_id,
-                "pass_run_id": pass_run.pass_run_id,
-                "preview_id": "source-intake-plan-preview",
-                "preview_hash": "source-intake-preview-hash",
-            },
-        )
-    assert start_error.value.error_code == "unsupported_analysis_execution_engine"
+    start = layer3_workbench.analysis_execution_start(
+        db_session,
+        {
+            "client_request_id": "source-intake-execution-start",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+        },
+    )
+    db_session.refresh(pass_run)
+    output_payload = json.loads(Path(pass_run.output_payload_ref).read_text(encoding="utf-8"))
+
+    assert start["status"] == "completed"
+    assert start["execution_started"] is True
+    assert start["analysis_run_id"] is None
+    assert start["pass_run_status"] == "completed"
+    assert start["engine_family"] == "source_intake_qualitative_preview"
+    assert pass_run.status == "completed"
+    assert pass_run.summary_json["execution_started"] is True
+    assert pass_run.summary_json["analysis_run_id"] is None
+    assert pass_run.summary_json["source_intake_record_id"] == "src-intake-plan-001"
+    assert pass_run.summary_json["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+    assert pass_run.summary_json["source_gate"] == "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE"
+    assert output_payload["schema_id"] == "layer3.source_intake_execution_output.v1"
+    assert output_payload["analysis_run_id"] is None
+    assert output_payload["source_intake_record_id"] == "src-intake-plan-001"
+    assert output_payload["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+    assert output_payload["storage_pointer"]["absolute_path_exposed"] is False
+    assert db_session.query(AnalysisRun).count() == 0
+    assert db_session.query(L3OutputPackage).count() == 0
+
+    idempotent_start = layer3_workbench.analysis_execution_start(
+        db_session,
+        {
+            "client_request_id": "source-intake-execution-start",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+        },
+    )
+    assert idempotent_start["status"] == "already_completed"
     assert db_session.query(L3PassRun).count() == 1
 
 
