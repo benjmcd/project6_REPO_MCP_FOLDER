@@ -107,14 +107,24 @@ class SourceIntakeError(Exception):
 def normalise_source_intake_form_items(form_items: Iterable[tuple[Any, Any]]) -> dict[str, str]:
     fields: dict[str, str] = {}
     duplicate_fields: set[str] = set()
+    file_part_count = 0
     for raw_key, value in form_items:
         key = str(raw_key)
-        if key == "file" or value is None:
+        if key == "file":
+            file_part_count += 1
+            continue
+        if value is None:
             continue
         if key in fields:
             duplicate_fields.add(key)
             continue
         fields[key] = str(value).strip()
+    if file_part_count > 1:
+        raise SourceIntakeError(
+            "source_intake_duplicate_file_field",
+            "The source-intake upload includes duplicate file fields and is ambiguous.",
+            details={"duplicate_file_fields": ["file"], "file_part_count": file_part_count},
+        )
     if duplicate_fields:
         raise SourceIntakeError(
             "source_intake_duplicate_field",

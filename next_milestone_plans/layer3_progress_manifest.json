@@ -7068,7 +7068,8 @@
     "source_breadth_runtime_entry": "completed_live_bounded_source_intake_record",
     "source_intake_inventory_read_only": "branch_local_implemented_targeted_tests_passed",
     "source_intake_material_preview_read_only": "branch_local_implemented_targeted_tests_passed",
-    "source_intake_upload_contract_guard": "branch_local_implemented_targeted_tests_passed"
+    "source_intake_upload_contract_guard": "branch_local_implemented_targeted_tests_passed",
+    "source_intake_file_part_guard": "branch_local_implemented_targeted_tests_passed"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -8129,6 +8130,50 @@
     ],
     "blocked_adjacent_modes": [
       "generic_source_upload",
+      "local_directory",
+      "local_path_authority",
+      "web_connector",
+      "rag_vector_index",
+      "unbounded_runtime_db",
+      "package_construction",
+      "rendered_source_controls",
+      "non_text_binary_preview"
+    ]
+  },
+  "latest_source_intake_file_part_guard_branch": "codex/l3-source-intake-file-guard",
+  "latest_source_intake_file_part_guard_live_behavior_change": true,
+  "latest_source_intake_file_part_guard_summary": "Branch codex/l3-source-intake-file-guard hardens the existing operator_single_upload_source_intake upload route. Duplicate multipart file parts now fail closed with source_intake_duplicate_file_field before bytes are read or persisted. The pass admits no generic source upload, broad file upload, local path/local directory authority, web connector retrieval, RAG/vector indexing, package construction, rendered source controls, non-text binary preview, or unbounded runtime DB behavior.",
+  "source_intake_file_part_guard": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-file-guard",
+    "live_behavior_change": true,
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "operator_single_upload_source_intake",
+    "runtime_route": "POST /api/v1/layer3/source/intake/upload",
+    "canonical_source_of_truth": "L3SourceIntakeRecord",
+    "owner_service": "backend/app/services/layer3_source_intake.py",
+    "api_surface": "backend/app/api/layer3.py",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/290_SOURCE_INTAKE_FILE_PART_GUARD.md",
+    "targeted_tests": "python -m pytest .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py -q",
+    "contract_guards": {
+      "duplicate_file_parts_fail_closed": true,
+      "duplicate_file_error_code": "source_intake_duplicate_file_field",
+      "single_file_parameter_remains_uploadfile_owned": true,
+      "duplicate_non_file_form_fields_still_fail_closed": true
+    },
+    "unchanged_behaviors": [
+      "duplicate_non_file_field_rejection",
+      "forbidden_field_rejection",
+      "unknown_field_rejection",
+      "idempotency_conflict_rejection",
+      "content_hash_persistence",
+      "relative_storage_ref",
+      "source_intake_inventory_read_only",
+      "source_intake_material_preview_read_only"
+    ],
+    "blocked_adjacent_modes": [
+      "generic_source_upload",
+      "broad_file_upload",
       "local_directory",
       "local_path_authority",
       "web_connector",
