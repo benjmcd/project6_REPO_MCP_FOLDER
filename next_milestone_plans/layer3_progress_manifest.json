@@ -7086,7 +7086,8 @@
     "source_intake_execution_selection_boundary_freeze": "completed_source_intake_execution_selection_boundary_freeze",
     "source_intake_execution_selection_boundary": "current_main_implemented_targeted_tests_passed",
     "source_intake_execution_start_boundary_freeze": "completed_source_intake_execution_start_boundary_freeze",
-    "source_intake_execution_start_boundary": "current_main_implemented_targeted_tests_passed"
+    "source_intake_execution_start_boundary": "current_main_implemented_targeted_tests_passed",
+    "source_intake_execution_result_status_boundary_freeze": "completed_source_intake_execution_result_status_boundary_freeze"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -9227,5 +9228,43 @@
   "latest_source_intake_execution_start_boundary_doc": "next_milestone_plans/Layer3_planning_docs/307_SOURCE_INTAKE_EXECUTION_START_BOUNDARY.md",
   "latest_source_intake_execution_start_boundary_summary": "PR #896 merged source_intake_execution_start_boundary to current main at 1bcfd43a. The implementation allows exactly the frozen source-intake selected pass to complete deterministic execution-start metadata without AnalysisRun, package, connector, provider, RAG, route, UI, model, or migration widening; result/status remains deferred behind source_intake_execution_result_status_boundary_freeze.",
   "latest_source_intake_execution_start_boundary_pr": "#896",
-  "latest_source_intake_execution_start_boundary_merge_commit": "1bcfd43ad7bae61f0c79f9142eefcc4131a16c8a"
+  "latest_source_intake_execution_start_boundary_merge_commit": "1bcfd43ad7bae61f0c79f9142eefcc4131a16c8a",
+  "source_intake_execution_result_status_boundary_freeze": {
+    "status": "completed_source_intake_execution_result_status_boundary_freeze",
+    "planning_branch": "codex/l3-source-intake-result-status-freeze",
+    "current_main_predecessor_commit": "82fb2078484a6bd627986198e6c6c9c4c9f53253",
+    "selected_runtime_mode": "source_intake_execution_result_status_boundary",
+    "freeze_predecessor": "source_intake_execution_start_boundary",
+    "canonical_source_of_truth": "server_owned_completed_L3PassRun_and_source_intake_execution_output_payload",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/308_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "current_failure_boundary": "unsupported_execution_result_status_engine",
+    "future_result_status_semantics": {
+      "request_contract": "existing_execution_result_status_request_contract",
+      "required_pass_status": "completed",
+      "required_output_schema_id": "layer3.source_intake_execution_output.v1",
+      "required_engine_family": "source_intake_qualitative_preview",
+      "analysis_run_created": false,
+      "route_added": false,
+      "model_migration_changed": false,
+      "rendered_ui_changed": false
+    },
+    "required_future_proofs": [
+      "source_intake_completed_pass_run_can_be_inspected_by_result_status",
+      "source_intake_output_payload_identity_preserved",
+      "no_analysis_run_required_or_created",
+      "missing_output_payload_fails_closed",
+      "mismatched_output_source_identity_fails_closed",
+      "unsupported_engines_remain_blocked",
+      "existing_quantitative_and_single_aps_qualitative_result_status_unchanged"
+    ],
+    "implementation_entry_allowed_next": true,
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_boundary": "source_intake_execution_result_status_boundary"
+  },
+  "latest_source_intake_execution_result_status_boundary_freeze_branch": "codex/l3-source-intake-result-status-freeze",
+  "latest_source_intake_execution_result_status_boundary_freeze_doc": "next_milestone_plans/Layer3_planning_docs/308_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY_FREEZE.md",
+  "latest_source_intake_execution_result_status_boundary_freeze_summary": "Doc 308 freezes source-intake execution result/status as the next narrow read-only owner-service boundary after deterministic source-intake execution-start metadata. It preserves the current unsupported_execution_result_status_engine failure boundary until a later implementation proves read-only inspection of layer3.source_intake_execution_output.v1 without AnalysisRun, package, connector, provider, RAG, route, UI, model, or migration widening."
 }
