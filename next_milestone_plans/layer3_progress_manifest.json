@@ -7085,7 +7085,8 @@
     "source_intake_execution_selection_guard": "current_main_corrective_guard_targeted_tests_passed",
     "source_intake_execution_selection_boundary_freeze": "completed_source_intake_execution_selection_boundary_freeze",
     "source_intake_execution_selection_boundary": "current_main_implemented_targeted_tests_passed",
-    "source_intake_execution_start_boundary_freeze": "completed_source_intake_execution_start_boundary_freeze"
+    "source_intake_execution_start_boundary_freeze": "completed_source_intake_execution_start_boundary_freeze",
+    "source_intake_execution_start_boundary": "branch_local_implemented_targeted_tests_passed"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -9187,5 +9188,35 @@
   },
   "latest_source_intake_execution_start_boundary_freeze_branch": "codex/l3-source-intake-exec-start-freeze",
   "latest_source_intake_execution_start_boundary_freeze_doc": "next_milestone_plans/Layer3_planning_docs/306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE.md",
-  "latest_source_intake_execution_start_boundary_freeze_summary": "Doc 306 freezes source-intake execution start as the next narrow owner-service boundary after selected-not-started pass-run shell creation. It preserves the current unsupported_analysis_execution_engine failure boundary until a later implementation proves deterministic source-intake execution-start semantics without AnalysisRun, package, connector, provider, RAG, route, UI, model, or migration widening."
+  "latest_source_intake_execution_start_boundary_freeze_summary": "Doc 306 freezes source-intake execution start as the next narrow owner-service boundary after selected-not-started pass-run shell creation. It preserves the current unsupported_analysis_execution_engine failure boundary until a later implementation proves deterministic source-intake execution-start semantics without AnalysisRun, package, connector, provider, RAG, route, UI, model, or migration widening.",
+  "source_intake_execution_start_boundary": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-exec-start",
+    "selected_runtime_mode": "source_intake_execution_start_boundary",
+    "freeze_predecessor": "source_intake_execution_start_boundary_freeze",
+    "canonical_source_of_truth": "server_owned_selected_L3PassRun_and_L3SourceIntakeRecord",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/307_SOURCE_INTAKE_EXECUTION_START_BOUNDARY.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "targeted_validation": "pytest .\\backend\\tests\\test_layer3_workbench.py",
+    "targeted_validation_result": "22 passed",
+    "pass_run_status": "completed",
+    "output_schema_id": "layer3.source_intake_execution_output.v1",
+    "source_gate": "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE",
+    "analysis_run_created": false,
+    "package_created": false,
+    "route_added": false,
+    "rendered_ui_changed": false,
+    "model_migration_changed": false,
+    "next_boundary": "source_intake_execution_result_status_boundary_freeze",
+    "contract_guards": {
+      "approved_plan_and_preview_identity_revalidated": true,
+      "source_intake_record_loaded_from_server_state": true,
+      "source_identity_preserved": true,
+      "idempotent_replay_already_completed": true,
+      "downstream_artifacts_blocked": true
+    }
+  },
+  "latest_source_intake_execution_start_boundary_branch": "codex/l3-source-intake-exec-start",
+  "latest_source_intake_execution_start_boundary_doc": "next_milestone_plans/Layer3_planning_docs/307_SOURCE_INTAKE_EXECUTION_START_BOUNDARY.md",
+  "latest_source_intake_execution_start_boundary_summary": "Branch-local implementation allows exactly the frozen source-intake selected pass to complete deterministic execution-start metadata without AnalysisRun, package, connector, provider, RAG, route, UI, model, or migration widening; result/status remains deferred behind source_intake_execution_result_status_boundary_freeze."
 }

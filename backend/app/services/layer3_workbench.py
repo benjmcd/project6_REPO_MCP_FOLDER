@@ -14,6 +14,7 @@ from typing import Any
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.models import (
     AnalysisRun,
     ApsContentChunk,
@@ -32,6 +33,7 @@ from app.models.models import (
     L3ReconciliationRecord,
     L3SelectionManifest,
     L3Session,
+    L3SourceIntakeRecord,
     L3TypingRecord,
     VariableDefinition,
     uuid_str,
@@ -51,6 +53,7 @@ from app.services.layer3_pass_entry import (
     PASS_TYPE_SINGLE_ITEM,
     PLAN_STATUS_APPROVED,
     SOURCE_GATE_COHORT_DESC_FREEZE,
+    SOURCE_GATE_SOURCE_INTAKE_PLAN_PREVIEW_FREEZE,
     Layer3PassEntryError,
     approve_pass_entry_plan,
     execute_selected_pass_run,
@@ -374,6 +377,10 @@ API_ROOT = "/api/v1/layer3"
 GATE_LABELS = ("intent", "sources", "gate_b", "gate_c", "plan", "execution", "results", "package")
 ACTIVE_GATES = ("intent", "sources", "gate_b", "gate_c")
 DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
+ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW = "source_intake_qualitative_preview"
+SOURCE_INTAKE_EXECUTION_OUTPUT_SCHEMA_ID = "layer3.source_intake_execution_output.v1"
+SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE = "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE"
+SOURCE_INTAKE_EXECUTION_METHOD_NAME = "operator_uploaded_source_review_preview"
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
@@ -3437,6 +3444,155 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _is_source_intake_execution_start_planned_pass(*, pass_run: L3PassRun, planned_pass: dict[str, Any]) -> bool:
+    return (
+        pass_run.pass_type == PASS_TYPE_SINGLE_ITEM
+        and pass_run.engine_family == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW
+        and planned_pass.get("pass_type") == PASS_TYPE_SINGLE_ITEM
+        and planned_pass.get("pass_scope") == PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE
+        and planned_pass.get("engine_family") == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW
+        and planned_pass.get("selected_method_name") == SOURCE_INTAKE_EXECUTION_METHOD_NAME
+        and planned_pass.get("source_gate") == SOURCE_GATE_SOURCE_INTAKE_PLAN_PREVIEW_FREEZE
+        and bool(str(planned_pass.get("source_intake_record_id") or "").strip())
+        and bool(str(planned_pass.get("candidate_id") or "").strip())
+    )
+
+
+def _source_intake_execution_output_ref(*, pass_run_id: str, payload: dict[str, Any]) -> str:
+    output_dir = Path(settings.artifact_storage_dir) / "layer3"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / f"l3_source_intake_output_{pass_run_id}.json"
+    output_path.write_bytes(_canonical_json_bytes(payload))
+    return str(output_path)
+
+
+def _execute_source_intake_execution_start(
+    db: Session,
+    *,
+    pass_run: L3PassRun,
+    planned_pass: dict[str, Any],
+    client_request_id: str,
+) -> None:
+    if not _is_source_intake_execution_start_planned_pass(pass_run=pass_run, planned_pass=planned_pass):
+        raise Layer3WorkbenchError(
+            "unsupported_source_intake_execution_start_pass",
+            "Source-intake execution start admits only the frozen operator-uploaded single-source preview pass.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+    if pass_run.status != PASS_STATUS_SELECTED_NOT_STARTED:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_start_pass_state_invalid",
+            "Source-intake execution start requires a selected_not_started pass run.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+    if pass_run.output_payload_ref or (pass_run.summary_json or {}).get("analysis_run_id"):
+        raise Layer3WorkbenchError(
+            "source_intake_execution_start_state_not_admitted",
+            "Source-intake execution start requires no existing output payload or AnalysisRun reference.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+
+    source_intake_record_id = str(planned_pass.get("source_intake_record_id") or "").strip()
+    record = (
+        db.query(L3SourceIntakeRecord)
+        .filter(L3SourceIntakeRecord.source_intake_record_id == source_intake_record_id)
+        .with_for_update()
+        .first()
+    )
+    if record is None:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_start_record_missing",
+            "Source-intake execution start could not find the server-owned source-intake record.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["source_intake_record_id"],
+        )
+
+    completed_at = datetime.now(timezone.utc)
+    completed_at_text = completed_at.isoformat()
+    output_payload = {
+        "schema_id": SOURCE_INTAKE_EXECUTION_OUTPUT_SCHEMA_ID,
+        "client_request_id": client_request_id,
+        "analysis_run_id": None,
+        "analysis_plan_id": pass_run.analysis_plan_id,
+        "analysis_set_id": pass_run.analysis_set_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+        "planned_pass_source_gate": planned_pass.get("source_gate"),
+        "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+        "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
+        "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
+        "source_intake_record_id": record.source_intake_record_id,
+        "candidate_id": planned_pass.get("candidate_id"),
+        "source_identity": {
+            "source_family": record.source_family,
+            "source_label": record.source_label,
+            "original_filename": record.original_filename,
+            "media_type": record.media_type,
+            "content_size_bytes": record.content_size_bytes,
+            "content_sha256": record.content_sha256,
+            "metadata_hash": record.metadata_hash,
+            "authority_basis_hash": record.authority_basis_hash,
+        },
+        "source_provenance": _json_clone(record.provenance_json or {}),
+        "storage_pointer": {
+            "storage_ref": record.storage_ref,
+            "storage_authority": "server_raw_storage",
+            "content_addressed": True,
+            "absolute_path_exposed": False,
+        },
+        "artifact_refs_json": [],
+        "artifact_types_json": [],
+        "package_review_enabled": False,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "created_at": completed_at_text,
+    }
+    output_payload["output_hash"] = _stable_hash(output_payload)
+    output_ref = _source_intake_execution_output_ref(pass_run_id=pass_run.pass_run_id, payload=output_payload)
+
+    pass_run.status = PASS_STATUS_COMPLETED
+    pass_run.started_at = completed_at
+    pass_run.completed_at = completed_at
+    pass_run.output_payload_ref = output_ref
+    pass_run.summary_json = {
+        **_json_clone(pass_run.summary_json or {}),
+        "execution_started": True,
+        "analysis_run_id": None,
+        "dataset_version_id": None,
+        "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
+        "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+        "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+        "planned_pass_source_gate": planned_pass.get("source_gate"),
+        "source_intake_record_id": record.source_intake_record_id,
+        "candidate_id": planned_pass.get("candidate_id"),
+        "source_label": record.source_label,
+        "content_sha256": record.content_sha256,
+        "metadata_hash": record.metadata_hash,
+        "output_payload_ref": output_ref,
+        "source_intake_output_hash": output_payload["output_hash"],
+        "artifact_refs_json": [],
+        "artifact_types_json": [],
+        "analysis_execution_start": {
+            "schema_id": ANALYSIS_EXECUTION_START_STATE_SCHEMA_ID,
+            "client_request_id": client_request_id,
+            "state": EXECUTION_PASS_COMPLETED_STATE,
+            "analysis_run_id": None,
+            "output_payload_ref": output_ref,
+            "started_at": completed_at_text,
+            "completed_at": completed_at_text,
+            "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+        },
+    }
+    db.flush()
+
+
 def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
@@ -3634,14 +3790,18 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
         pass_run=pass_run,
         planned_pass=planned_pass,
     )
+    source_intake_pass = _is_source_intake_execution_start_planned_pass(
+        pass_run=pass_run,
+        planned_pass=planned_pass,
+    )
     wrapped_quantitative_pass = (
         pass_run.engine_family == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
         and str(planned_pass.get("engine_family") or "") == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
     )
-    if not wrapped_quantitative_pass and not qualitative_aps_pass:
+    if not wrapped_quantitative_pass and not qualitative_aps_pass and not source_intake_pass:
         raise Layer3WorkbenchError(
             "unsupported_analysis_execution_engine",
-            "This execution-start slice admits only wrapped quantitative pass runs or the frozen single APS-document qualitative pass.",
+            "This execution-start slice admits only wrapped quantitative pass runs, the frozen single APS-document qualitative pass, or the frozen source-intake qualitative preview pass.",
             status="conflict",
             http_status=409,
         )
@@ -3694,6 +3854,13 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
     try:
         if qualitative_aps_pass:
             execute_single_aps_doc_qualitative_pass(
+                db,
+                pass_run=pass_run,
+                planned_pass=planned_pass,
+                client_request_id=request_id,
+            )
+        elif source_intake_pass:
+            _execute_source_intake_execution_start(
                 db,
                 pass_run=pass_run,
                 planned_pass=planned_pass,
