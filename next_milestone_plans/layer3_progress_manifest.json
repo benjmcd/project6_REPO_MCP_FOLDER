@@ -7104,7 +7104,8 @@
     "source_intake_external_export_download_boundary_freeze": "completed_source_intake_external_export_download_boundary_freeze",
     "source_intake_external_export_download_boundary": "branch_local_implemented_targeted_tests_passed",
     "source_intake_external_export_download_delivery_boundary_freeze": "completed_source_intake_external_export_download_delivery_boundary_freeze",
-    "source_intake_external_export_download_delivery_boundary": "branch_local_implemented_targeted_tests_passed"
+    "source_intake_external_export_download_delivery_boundary": "branch_local_implemented_targeted_tests_passed",
+    "source_intake_external_export_download_rendered_controls_boundary_freeze": "completed_source_intake_external_export_download_rendered_controls_boundary_freeze"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -10208,5 +10209,53 @@
   "latest_source_intake_external_export_download_delivery_boundary_branch": "codex/l3-source-intake-download-delivery",
   "latest_source_intake_external_export_download_delivery_boundary_doc": "next_milestone_plans/Layer3_planning_docs/325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md",
   "latest_source_intake_external_export_download_delivery_boundary_summary": "Branch-local source_intake_external_export_download_delivery_boundary admits same-origin artifact streaming through external_export_download_deliver over durable source-intake prepare/readiness and APS handoff authority, emits layer3.source_intake_external_export_download_delivery.v1, and keeps rendered UI, connector/provider/signed-reference/RAG/route/model/auth/package-mutation surfaces blocked.",
-  "latest_source_intake_external_export_download_delivery_boundary_live_behavior_change": true
+  "latest_source_intake_external_export_download_delivery_boundary_live_behavior_change": true,
+  "source_intake_external_export_download_rendered_controls_boundary_freeze": {
+    "status": "completed_source_intake_external_export_download_rendered_controls_boundary_freeze",
+    "planning_branch": "codex/l3-source-intake-delivery-controls-freeze",
+    "current_main_predecessor_commit": "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "source_intake_external_export_download_rendered_controls_boundary",
+    "freeze_predecessor": "source_intake_external_export_download_delivery_boundary",
+    "canonical_source_of_truth": "server_owned_source_intake_external_export_download_delivery_authority_and_rendered_projection_state",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
+    "owner_ui": "backend/app/review_ui/static/claude.html",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "current_failure_boundary": "source_intake_external_export_download_rendered_controls_absent",
+    "future_rendered_controls_semantics": {
+      "required_delivery_schema_id": "layer3.source_intake_external_export_download_delivery.v1",
+      "required_prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+      "server_authority_only": true,
+      "rendered_ui_changed": false,
+      "runtime_behavior_change": false,
+      "route_added": false,
+      "model_migration_changed": false,
+      "provider_url_created": false,
+      "signed_reference_created": false,
+      "connector_dispatch_created": false,
+      "frontend_authority_created": false
+    },
+    "required_future_proofs": [
+      "source_intake_delivery_controls_project_server_authority_only",
+      "source_intake_delivery_control_uses_existing_same_origin_delivery_path",
+      "source_intake_delivery_control_requires_external_export_download_prepared_state",
+      "source_intake_delivery_control_preserves_source_intake_identity",
+      "provider_public_private_url_controls_remain_blocked",
+      "signed_reference_controls_remain_blocked",
+      "connector_destination_controls_remain_blocked",
+      "package_mutation_controls_remain_blocked",
+      "source_expansion_controls_remain_blocked",
+      "rag_vector_controls_remain_blocked"
+    ],
+    "implementation_entry_allowed_next": true,
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_boundary": "source_intake_external_export_download_rendered_controls_boundary",
+    "rendered_surface": "backend/app/review_ui/static/claude.html"
+  },
+  "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_branch": "codex/l3-source-intake-delivery-controls-freeze",
+  "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
+  "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_summary": "Doc 326 freezes source-intake external export/download rendered controls as the next boundary after source-intake same-origin delivery. It records source_intake_external_export_download_rendered_controls_absent as the rendered failure boundary, admits no rendered UI or runtime behavior, and requires any future UI slice to project server-owned delivery authority only.",
+  "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_live_behavior_change": false
 }
