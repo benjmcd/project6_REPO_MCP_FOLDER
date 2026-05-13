@@ -132,6 +132,13 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="external-export-download-signed-reference-panel"' in response.text
     assert 'id="external-export-download-signed-reference-generate"' in response.text
     assert 'id="external-export-download-signed-reference-use"' in response.text
+    assert 'id="provider-public-url-form"' in response.text
+    assert 'data-rendered-mode="provider_public_url_prepare_status_revoke_controls"' in response.text
+    assert 'id="provider-public-url-panel"' in response.text
+    assert 'id="provider-public-url-prepare"' in response.text
+    assert 'id="provider-public-url-status"' in response.text
+    assert 'id="provider-public-url-revoke"' in response.text
+    assert "Provider-public delivery/use, raw public URL display" in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
     assert "Plan</button>" in response.text
@@ -240,6 +247,20 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function providerPrivateSignedUrlBlocksPrepare" in js.text
     assert "function providerPrivateSignedUrlPrepareRequestId" in js.text
     assert "client_request_id: providerPrivateSignedUrlPrepareRequestId()" in js.text
+    assert "PROVIDER_PUBLIC_URL_REPLACEABLE_STATES" in js.text
+    assert "function providerPublicUrlPrepareRequestId" in js.text
+    assert "client_request_id: providerPublicUrlPrepareRequestId()" in js.text
+    assert "provider_public_url_redacted" in js.text
+    assert "raw_public_url_exposed" in js.text
+    assert "public_url_enabled" in js.text
+    assert "browser_durable_authority: 'blocked_not_persisted'" in js.text
+    assert "/handoff/export/download/provider-public-url/prepare" in js.text
+    assert "/handoff/export/download/provider-public-url/status/" in js.text
+    assert "/handoff/export/download/provider-public-url/revoke" in js.text
+    assert "provider-public delivery/use and raw URL exposure remain closed" in js.text
+    assert "provider_public_url/deliver" not in js.text
+    assert "provider_public_url/use" not in js.text
+    assert "LAYER3_PROVIDER_PUBLIC" not in js.text
     assert "function stateActionContractSignature" in js.text
     assert "state_action_contract_signature: stateActionContractSignature(State.sessionSummary)" in js.text
     assert "state_action_contract_signature: stateActionContractSignature()" in js.text

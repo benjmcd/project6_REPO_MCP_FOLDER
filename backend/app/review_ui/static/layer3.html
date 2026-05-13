@@ -726,6 +726,17 @@
                         <button id="provider-private-signed-url-revoke" class="secondary-btn" type="button" disabled>Revoke Provider-Private Receipt</button>
                     </div>
                 </form>
+                <form id="provider-public-url-form" class="result-review-form" data-rendered-mode="provider_public_url_prepare_status_revoke_controls">
+                    <div id="provider-public-url-panel" class="result-review-panel">
+                        <div class="empty-panel">Prepare a provider-private receipt before provider-public redacted URL controls.</div>
+                    </div>
+                    <div class="result-review-controls external-export-download-controls" aria-label="Provider-public URL controls">
+                        <button id="provider-public-url-prepare" class="primary-btn" type="submit" disabled>Prepare Provider-Public Receipt</button>
+                        <button id="provider-public-url-status" class="secondary-btn" type="button" disabled>Inspect Provider-Public Status</button>
+                        <button id="provider-public-url-revoke" class="secondary-btn" type="button" disabled>Revoke Provider-Public Receipt</button>
+                    </div>
+                    <p class="muted">Provider-public delivery/use, raw public URL display, public proxy access, and browser durable authority remain blocked. This panel shows server-returned redacted state only.</p>
+                </form>
             </section>
             </section>
         </section>

@@ -16102,5 +16102,44 @@
       "headed_browser_proof",
       "headless_browser_proof"
     ]
-  }
+  },
+  "source_intake_provider_public_url_rendered_controls_proof": {
+    "proof_kind": "source_intake_provider_public_url_rendered_controls",
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "branch": "codex/l3-provider-public-rendered-controls",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/348_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS.md",
+    "implementation_files": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py"
+    ],
+    "server_authority": [
+      "POST /api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+      "GET /api/v1/layer3/handoff/export/download/provider-public-url/status/{provider_public_url_receipt_id}",
+      "POST /api/v1/layer3/handoff/export/download/provider-public-url/revoke"
+    ],
+    "negative_invariants": [
+      "no provider-public delivery route admitted",
+      "no provider-public use route admitted",
+      "no raw public URL rendering or copying",
+      "no public proxy runtime",
+      "no frontend-only durable provider-public authority",
+      "no connector/destination dispatch",
+      "no package mutation or source expansion"
+    ],
+    "validation_status": "branch_local_targeted_tests_headed_headless_browser_passed",
+    "validation_evidence": [
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py -q -> 3 passed, 3 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"provider_public_url\" -q -> 3 passed, 146 deselected, 3 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_provider_public_url_state.py -q -> 5 passed",
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js -> passed",
+      "npx playwright test e2e/layer3-workbench.spec.js --grep \"provider-public URL prepare status revoke\" --project=chromium -> 1 passed",
+      "npx playwright test e2e/layer3-workbench.spec.js --grep \"provider-public URL prepare status revoke\" --project=chromium --headed -> 1 passed",
+      "python .\\tools\\l3-progress-check.py -> PASS",
+      "git diff --check -> no actionable whitespace errors; CRLF normalization warnings only"
+    ]
+  },
+  "latest_source_intake_provider_public_url_rendered_controls_branch": "codex/l3-provider-public-rendered-controls",
+  "latest_source_intake_provider_public_url_rendered_controls_live_behavior_change": true,
+  "latest_source_intake_provider_public_url_rendered_controls_summary": "Rendered provider-public prepare/status/revoke controls are branch-local, redacted-only, and passed focused static/API/state/progress plus headed/headless browser validation."
 }
