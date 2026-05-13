@@ -437,6 +437,9 @@ SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE = (
 SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY = (
     PLANNING_DOCS / "300_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY.md"
 )
+SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE = (
+    PLANNING_DOCS / "301_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -20748,6 +20751,155 @@ def _check_source_intake_plan_preview_boundary(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_plan_preview_boundary_proof.{key} must be {expected!r}")
 
 
+def _check_source_intake_plan_approval_boundary_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE, errors)
+    for term in (
+        "source_intake_plan_approval_boundary",
+        "codex/l3-source-intake-plan-approval-freeze",
+        "source_intake_plan_preview_boundary",
+        "operator_uploaded_single_source_approves_previewed_plan_after_gate_c_typing",
+        "server-owned Gate C and plan-preview state derived from `L3SourceIntakeRecord`",
+        "backend/app/services/layer3_pass_entry.py",
+        "approve_pass_entry_plan",
+        "source-intake plan approval is not admitted by this preview-only boundary",
+        "POST /api/v1/layer3/plan/approve",
+        "L3AnalysisPlan",
+        "implement_source_intake_plan_approval_boundary",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE)} missing source-intake plan-approval freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Plan Approval Boundary Freeze",
+            "301_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE.md",
+            "source_intake_plan_approval_boundary",
+            "implement_source_intake_plan_approval_boundary",
+            "approval-only `L3AnalysisPlan`",
+        ),
+        MANIFEST: (
+            "latest_source_intake_plan_approval_boundary_freeze_branch",
+            "source_intake_plan_approval_boundary_freeze",
+            "source_intake_plan_approval_boundary",
+            "implement_source_intake_plan_approval_boundary",
+            "server_owned_gate_c_and_plan_preview_state_from_L3SourceIntakeRecord",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_plan_approval_boundary_freeze_proof",
+            "301_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE.md",
+            "source_intake_plan_approval_boundary",
+            "approve_pass_entry_plan currently fails closed",
+        ),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing source-intake plan-approval freeze term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    freeze = manifest.get("source_intake_plan_approval_boundary_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(freeze, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_plan_approval_boundary_freeze")
+    else:
+        expected_scalars = {
+            "status": "completed_source_intake_plan_approval_boundary_freeze",
+            "implementation_branch": "codex/l3-source-intake-plan-approval-freeze",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "source_intake_plan_approval_boundary",
+            "runtime_predecessor": "source_intake_plan_preview_boundary",
+            "canonical_source_of_truth": "server_owned_gate_c_and_plan_preview_state_from_L3SourceIntakeRecord",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/301_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE.md",
+            "next_allowed_action": "implement_source_intake_plan_approval_boundary",
+            "implementation_entry_allowed_next": True,
+            "live_behavior_change": False,
+            "runtime_behavior_change": False,
+            "rendered_ui_behavior_change": False,
+        }
+        for key, expected in expected_scalars.items():
+            if freeze.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_plan_approval_boundary_freeze.{key} must be {expected!r}")
+        semantics = freeze.get("future_approval_semantics")
+        if not isinstance(semantics, dict):
+            errors.append(f"{_rel(MANIFEST)} source_intake_plan_approval_boundary_freeze missing future_approval_semantics")
+        else:
+            for key, expected in {
+                "route_surface": "POST /api/v1/layer3/plan/approve",
+                "persistence_mode": "approval_only_l3_analysis_plan",
+                "source_shape": "operator_uploaded_single_source",
+                "set_type": "single_item",
+                "analysis_modality": "qualitative",
+                "required_preview_boundary": "source_intake_plan_preview_boundary",
+                "operator_confirmation_required": True,
+                "preview_hash_revalidation_required": True,
+                "execution_started": False,
+            }.items():
+                if semantics.get(key) != expected:
+                    errors.append(f"{_rel(MANIFEST)} source_intake_plan_approval_boundary_freeze.future_approval_semantics.{key} must be {expected!r}")
+        for required in (
+            "source_intake_preview_only_planned_pass_becomes_approval_only_l3_analysis_plan",
+            "source_intake_approval_preserves_preview_identity_and_source_identity",
+            "preview_hash_mismatch_fails_closed_before_persistence",
+            "missing_operator_confirmation_fails_closed_before_persistence",
+            "no_pass_run_analysis_run_artifact_or_package_created",
+            "execution_start_remains_blocked_for_source_intake_approved_plans",
+            "dataset_version_approval_behavior_unchanged",
+            "aps_qualitative_approval_behavior_unchanged",
+            "unsupported_adjacent_qualitative_source_shapes_remain_blocked",
+        ):
+            if required not in freeze.get("required_future_proofs", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_plan_approval_boundary_freeze required_future_proofs missing {required}")
+        for blocked in (
+            "execution_start",
+            "package_construction_or_mutation",
+            "connector_destination_dispatch",
+            "provider_private_signed_url_prepare",
+            "web_connector_retrieval",
+            "rag_vector_indexing",
+            "generic_source_upload",
+            "broad_file_upload",
+            "local_path_or_local_directory_authority",
+            "model_or_migration_changes",
+            "new_backend_route",
+            "rendered_ui_changes",
+            "auth_security_behavior",
+            "frontend_only_durable_authority",
+        ):
+            if blocked not in freeze.get("blocked_scope", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_plan_approval_boundary_freeze blocked_scope missing {blocked}")
+    if isinstance(manifest, dict):
+        for key, expected in (
+            ("latest_source_intake_plan_approval_boundary_freeze_branch", "codex/l3-source-intake-plan-approval-freeze"),
+            ("latest_source_intake_plan_approval_boundary_freeze_live_behavior_change", False),
+        ):
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} {key} must be {expected!r}")
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_plan_approval_boundary_freeze") != "completed_source_intake_plan_approval_boundary_freeze":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake plan-approval freeze scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_plan_approval_boundary_freeze_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_plan_approval_boundary_freeze_proof")
+        return
+    for key, expected in {
+        "status": "completed_source_intake_plan_approval_boundary_freeze",
+        "implementation_branch": "codex/l3-source-intake-plan-approval-freeze",
+        "selected_runtime_family": "source_breadth_runtime",
+        "selected_runtime_mode": "source_intake_plan_approval_boundary",
+        "runtime_predecessor": "source_intake_plan_preview_boundary",
+        "canonical_source_of_truth": "server_owned_gate_c_and_plan_preview_state_from_L3SourceIntakeRecord",
+        "next_allowed_action": "implement_source_intake_plan_approval_boundary",
+        "implementation_entry_allowed_next": True,
+        "live_behavior_change": False,
+        "runtime_behavior_change": False,
+        "rendered_ui_behavior_change": False,
+        "proof_kind": "source_intake_plan_approval_boundary_freeze",
+    }.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_plan_approval_boundary_freeze_proof.{key} must be {expected!r}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -25476,6 +25628,7 @@ def main() -> int:
         SOURCE_INTAKE_GATE_C_TYPING_ENTRY,
         SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE,
         SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY,
+        SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -25746,6 +25899,7 @@ def main() -> int:
     _check_source_intake_gate_c_typing_entry(errors)
     _check_source_intake_plan_preview_boundary_freeze(errors)
     _check_source_intake_plan_preview_boundary(errors)
+    _check_source_intake_plan_approval_boundary_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
