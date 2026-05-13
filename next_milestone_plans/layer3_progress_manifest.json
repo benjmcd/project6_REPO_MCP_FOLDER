@@ -7023,7 +7023,10 @@
     "latest_source_intake_external_export_download_signed_reference_boundary_freeze_doc": "next_milestone_plans/Layer3_planning_docs/329_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE.md",
     "latest_source_intake_provider_private_signed_url_boundary_branch": "codex/l3-source-intake-provider-private-url",
     "latest_source_intake_provider_private_signed_url_boundary_live_behavior_change": true,
-    "source_intake_provider_private_signed_url_boundary": "branch-local provider-private signed URL source-intake admission requires durable signed-reference receipt authority; backend/API/page tests, rendered Chromium tests, and progress check passed."
+    "source_intake_provider_private_signed_url_boundary": "branch-local provider-private signed URL source-intake admission requires durable signed-reference receipt authority; backend/API/page tests, rendered Chromium tests, and progress check passed.",
+    "latest_source_intake_provider_private_signed_url_current_main_sync_branch": "codex/l3-source-intake-postmerge-sync-924",
+    "latest_source_intake_provider_public_url_boundary_freeze_branch": "codex/l3-source-intake-postmerge-sync-924",
+    "source_intake_provider_public_url_boundary_freeze": "provider-public URL is selected as the next exact boundary after PR #924; planning/control only, no runtime admitted."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -7118,7 +7121,9 @@
     "source_intake_external_export_download_signed_reference_boundary": "branch_local_implemented_targeted_tests_passed",
     "source_intake_external_export_download_signed_reference_current_main_sync": "completed_current_main_sync_pr_922",
     "source_intake_provider_private_signed_url_boundary_freeze": "completed_source_intake_provider_private_signed_url_boundary_freeze",
-    "source_intake_provider_private_signed_url_boundary": "branch_local_implemented_targeted_tests_passed"
+    "source_intake_provider_private_signed_url_boundary": "branch_local_implemented_targeted_tests_passed",
+    "source_intake_provider_private_signed_url_current_main_sync": "completed_current_main_sync_pr_924",
+    "source_intake_provider_public_url_boundary_freeze": "completed_source_intake_provider_public_url_boundary_freeze"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -10595,5 +10600,83 @@
   "latest_source_intake_provider_private_signed_url_boundary_branch": "codex/l3-source-intake-provider-private-url",
   "latest_source_intake_provider_private_signed_url_boundary_doc": "next_milestone_plans/Layer3_planning_docs/333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY.md",
   "latest_source_intake_provider_private_signed_url_boundary_summary": "Branch-local source_intake_provider_private_signed_url_boundary admits provider-private signed URL prepare/status/revoke for source-intake readiness only after durable same-origin signed-reference use receipt authority, while keeping public URL, connector/destination, package mutation, source expansion, RAG, route/model/migration, auth/security, and frontend-only authority blocked.",
-  "latest_source_intake_provider_private_signed_url_boundary_live_behavior_change": true
+  "latest_source_intake_provider_private_signed_url_boundary_live_behavior_change": true,
+  "source_intake_provider_private_signed_url_current_main_sync": {
+    "status": "completed_current_main_sync_pr_924",
+    "branch": "codex/l3-source-intake-postmerge-sync-924",
+    "merged_pr": "#924",
+    "implementation_branch": "codex/l3-source-intake-provider-private-url",
+    "merge_commit": "1ff2e3a4d55e41d1936f067cbc9c8f9a610f448e",
+    "merged_at": "2026-05-13T16:12:57Z",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/334_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC.md",
+    "implemented_boundary_doc": "next_milestone_plans/Layer3_planning_docs/333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY.md",
+    "owner_service": "backend/app/services/layer3_provider_private_signed_url.py",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "github_checks_passed": [
+      "backend-layer3-api",
+      "test"
+    ],
+    "review_threads": "empty",
+    "comments": [],
+    "reviews": [],
+    "post_merge_validation": "python .\\tools\\l3-progress-check.py -> PASS",
+    "next_boundary": "source_intake_provider_public_url_boundary_freeze",
+    "live_behavior_change": false
+  },
+  "source_intake_provider_public_url_boundary_freeze": {
+    "status": "completed_source_intake_provider_public_url_boundary_freeze",
+    "planning_branch": "codex/l3-source-intake-postmerge-sync-924",
+    "current_main_predecessor_commit": "1ff2e3a4d55e41d1936f067cbc9c8f9a610f448e",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "source_intake_provider_public_url_boundary",
+    "freeze_predecessor": "source_intake_provider_private_signed_url_current_main_sync",
+    "canonical_source_of_truth": "server_owned_source_intake_provider_private_receipt_and_provider_public_url_authority_to_be_proven",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/335_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE.md",
+    "owner_service_candidates": [
+      "backend/app/services/layer3_provider_private_signed_url.py",
+      "backend/app/services/layer3_external_export_response.py"
+    ],
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "current_failure_boundary": "source_intake_provider_public_url_not_admitted",
+    "repo_confirmed_blocking_surfaces": [
+      "public_url_forbidden_in_provider_private_prepare_payload",
+      "public_proxy_url_forbidden_in_provider_private_prepare_payload",
+      "provider_private_authority_rail_public_url_enabled_false",
+      "same_origin_delivery_public_url_enabled_false",
+      "rendered_page_public_url_fields_absent_or_disabled",
+      "docs_110_111_require_separate_provider_public_url_entry_freeze"
+    ],
+    "future_provider_public_url_semantics": {
+      "request_contract": "future_exact_provider_public_url_prepare_status_revoke_contracts_only_after_audit",
+      "required_prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+      "required_provider_private_receipt_state": "layer3.provider_private_signed_url.prepare.v1",
+      "provider_public_url_created": "not_admitted_by_this_freeze",
+      "connector_dispatch_created": false,
+      "route_added": false,
+      "model_migration_changed": false,
+      "frontend_authority_created": false
+    },
+    "required_future_proofs": [
+      "source_intake_provider_public_url_authority_chain_is_server_owned",
+      "provider_object_store_or_fake_provider_public_url_authority_is_proven",
+      "public_url_ttl_revocation_redaction_and_leak_controls_are_proven",
+      "receipt_audit_lifecycle_is_idempotent_and_fail_closed",
+      "rendered_controls_require_server_public_url_state",
+      "provider_public_url_behavior_does_not_admit_connector_destination_dispatch"
+    ],
+    "implementation_entry_allowed_next": true,
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_boundary": "source_intake_provider_public_url_boundary"
+  },
+  "latest_source_intake_provider_private_signed_url_current_main_sync_branch": "codex/l3-source-intake-postmerge-sync-924",
+  "latest_source_intake_provider_private_signed_url_current_main_sync_pr": "#924",
+  "latest_source_intake_provider_private_signed_url_current_main_sync_merge_commit": "1ff2e3a4d55e41d1936f067cbc9c8f9a610f448e",
+  "latest_source_intake_provider_private_signed_url_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/334_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC.md",
+  "latest_source_intake_provider_private_signed_url_current_main_sync_live_behavior_change": false,
+  "latest_source_intake_provider_public_url_boundary_freeze_branch": "codex/l3-source-intake-postmerge-sync-924",
+  "latest_source_intake_provider_public_url_boundary_freeze_doc": "next_milestone_plans/Layer3_planning_docs/335_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE.md",
+  "latest_source_intake_provider_public_url_boundary_freeze_summary": "Doc 335 freezes source-intake provider-public URL as the next exact downstream boundary after current-main PR #924. It records current blocking evidence and permits only a later audited provider-public URL implementation over server-owned source-intake/provider-private receipt authority; connector/destination, package mutation, source expansion, RAG, route/model/migration, auth/security, and frontend-only authority remain blocked.",
+  "latest_source_intake_provider_public_url_boundary_freeze_live_behavior_change": false
 }
