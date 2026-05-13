@@ -4346,7 +4346,7 @@ async def post_source_intake_upload(
     )
     try:
         form = await request.form()
-        fields = {str(key): value for key, value in form.multi_items() if key != "file"}
+        fields = layer3_source_intake.normalise_source_intake_form_items(form.multi_items())
         file_bytes = await file.read()
         return layer3_source_intake.record_operator_upload_source_intake(
             db,
