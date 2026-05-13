@@ -15560,5 +15560,63 @@
       "playwright_chromium": "34 passed",
       "progress_check": "PASS"
     }
+  },
+  "source_intake_provider_private_signed_url_current_main_sync_proof": {
+    "proof_kind": "source_intake_provider_private_signed_url_current_main_sync",
+    "status": "completed_current_main_sync_pr_924",
+    "branch": "codex/l3-source-intake-postmerge-sync-924",
+    "merged_pr": "#924",
+    "merge_commit": "1ff2e3a4d55e41d1936f067cbc9c8f9a610f448e",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/334_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC.md",
+    "implemented_boundary_doc": "next_milestone_plans/Layer3_planning_docs/333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY.md",
+    "owner_service": "backend/app/services/layer3_provider_private_signed_url.py",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "github_checks_passed": [
+      "backend-layer3-api",
+      "test"
+    ],
+    "comments": [],
+    "reviews": [],
+    "reviewThreads": [],
+    "post_merge_validation": "python .\\tools\\l3-progress-check.py -> PASS",
+    "next_boundary": "source_intake_provider_public_url_boundary_freeze"
+  },
+  "source_intake_provider_public_url_boundary_freeze_proof": {
+    "proof_kind": "source_intake_provider_public_url_boundary_freeze",
+    "status": "completed_source_intake_provider_public_url_boundary_freeze",
+    "branch": "codex/l3-source-intake-postmerge-sync-924",
+    "current_main_predecessor_commit": "1ff2e3a4d55e41d1936f067cbc9c8f9a610f448e",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/335_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE.md",
+    "repo_confirmed_failure_boundary": "source_intake_provider_public_url_not_admitted",
+    "owner_service_candidates": [
+      "backend/app/services/layer3_provider_private_signed_url.py",
+      "backend/app/services/layer3_external_export_response.py"
+    ],
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "blocking_evidence": [
+      "public_url forbidden in provider-private prepare payload",
+      "public_proxy_url forbidden in provider-private prepare payload",
+      "public_url_enabled remains false in provider-private authority rail",
+      "same-origin delivery public_url_enabled remains false",
+      "docs 110 and 111 require separate provider/public URL implementation-entry freeze"
+    ],
+    "frozen_future_scope": [
+      "source_intake_provider_public_url_boundary",
+      "server-owned provider/object-store or fake-provider public URL authority",
+      "public URL TTL revocation redaction leak controls",
+      "receipt and audit lifecycle",
+      "rendered controls only after server-authoritative public URL state"
+    ],
+    "excluded_scope": [
+      "provider_public_url_runtime_by_this_freeze",
+      "public_proxy_url_runtime_by_this_freeze",
+      "connector_destination_dispatch_remains_blocked",
+      "package_mutation_remains_blocked",
+      "source_expansion_and_rag_vector_behavior_remain_blocked",
+      "route_model_migration_auth_security_changes_remain_blocked",
+      "frontend_only_durable_authority_remains_blocked"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required",
+    "next_boundary": "source_intake_provider_public_url_boundary"
   }
 }

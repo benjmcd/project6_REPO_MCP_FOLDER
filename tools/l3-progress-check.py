@@ -536,6 +536,12 @@ SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE = (
 SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY = (
     PLANNING_DOCS / "333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY.md"
 )
+SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "334_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC.md"
+)
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE = (
+    PLANNING_DOCS / "335_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -28291,6 +28297,105 @@ def _check_source_intake_provider_private_signed_url_boundary(errors: list[str])
             if proof_entry.get(key) != expected_value:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source-intake provider-private proof {key} mismatch")
 
+
+def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[str]) -> None:
+    sync_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync",
+        "PR `#924`",
+        "1ff2e3a4d55e41d1936f067cbc9c8f9a610f448e",
+        "backend-layer3-api",
+        "reviewThreads",
+        "source_intake_provider_public_url_boundary_freeze",
+        "public URL behavior remains blocked",
+    ):
+        if term not in sync_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC)} missing post-924 sync term: {term}")
+
+    freeze_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE, errors)
+    for term in (
+        "Status: current-main planning/control freeze",
+        "source_intake_provider_public_url_boundary",
+        "source_intake_provider_public_url_not_admitted",
+        "public_url",
+        "public_proxy_url",
+        "public_url_enabled: False",
+        "110_PROVIDER_URL_FREEZE.md",
+        "111_PROVIDER_URL_CONTRACT.md",
+        "implement_source_intake_provider_public_url_boundary",
+        "No connector/destination dispatch is admitted.",
+    ):
+        if term not in freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE)} missing provider-public freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Private Signed URL Current-main Sync",
+            "334_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC.md",
+            "## Source Intake Provider Public URL Boundary Freeze",
+            "335_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE.md",
+            "source_intake_provider_public_url_boundary",
+        ),
+        MANIFEST: (
+            "source_intake_provider_private_signed_url_current_main_sync",
+            "completed_current_main_sync_pr_924",
+            "source_intake_provider_public_url_boundary_freeze",
+            "source_intake_provider_public_url_not_admitted",
+            "latest_source_intake_provider_public_url_boundary_freeze_branch",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_private_signed_url_current_main_sync_proof",
+            "source_intake_provider_public_url_boundary_freeze_proof",
+            "source_intake_provider_public_url_not_admitted",
+            "planning_control_freeze_only_progress_check_required",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing post-924 provider-public sync term: {term}")
+
+    service_text = _read_required_text(PROVIDER_PRIVATE_SIGNED_URL_SERVICE, errors)
+    for term in (
+        "public_url",
+        "public_proxy_url",
+        '"public_url_enabled": False',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PROVIDER_PRIVATE_SIGNED_URL_SERVICE)} missing provider-public blocked service term: {term}")
+
+    response_text = _read_required_text(EXTERNAL_EXPORT_RESPONSE_SERVICE, errors)
+    for term in (
+        '"public_url_enabled": False',
+        '"signed_url_enabled": False',
+        '"connector_dispatch_enabled": False',
+        '"destination_selection_enabled": False',
+    ):
+        if term not in response_text:
+            errors.append(f"{_rel(EXTERNAL_EXPORT_RESPONSE_SERVICE)} missing provider-public blocked response term: {term}")
+
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    for term in (
+        "deliveryUi.public_url_enabled === false",
+        '"public_url"',
+        '"signed_url"',
+    ):
+        if term not in page_test_text:
+            errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing provider-public blocked page-test term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    sync = manifest.get("source_intake_provider_private_signed_url_current_main_sync") if isinstance(manifest, dict) else None
+    if not isinstance(sync, dict) or sync.get("merged_pr") != "#924" or sync.get("merge_commit") != "1ff2e3a4d55e41d1936f067cbc9c8f9a610f448e":
+        errors.append(f"{_rel(MANIFEST)} provider-private current-main sync metadata mismatch")
+    freeze = manifest.get("source_intake_provider_public_url_boundary_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(freeze, dict) or freeze.get("current_failure_boundary") != "source_intake_provider_public_url_not_admitted" or freeze.get("next_boundary") != "source_intake_provider_public_url_boundary":
+        errors.append(f"{_rel(MANIFEST)} source-intake provider-public freeze metadata mismatch")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    if not isinstance(proof.get("source_intake_provider_private_signed_url_current_main_sync_proof") if isinstance(proof, dict) else None, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing provider-private current-main sync proof")
+    if not isinstance(proof.get("source_intake_provider_public_url_boundary_freeze_proof") if isinstance(proof, dict) else None, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source-intake provider-public freeze proof")
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -28716,6 +28821,7 @@ def main() -> int:
     _check_source_intake_external_export_download_signed_reference_boundary(errors)
     _check_source_intake_external_export_download_post_922_sync(errors)
     _check_source_intake_provider_private_signed_url_boundary(errors)
+    _check_source_intake_provider_private_signed_url_post_924_sync(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
