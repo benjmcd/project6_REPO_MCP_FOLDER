@@ -19399,10 +19399,43 @@ def _check_source_intake_rendered_controls(errors: list[str]) -> None:
         ):
             if blocked not in controls.get("blocked_scope", []):
                 errors.append(f"{_rel(MANIFEST)} source_intake_rendered_controls blocked_scope missing {blocked}")
+    next_required = manifest.get("next_required_decision") if isinstance(manifest, dict) else None
+    if not isinstance(next_required, str):
+        errors.append(f"{_rel(MANIFEST)} missing next_required_decision for source-intake current-state sync")
+    else:
+        for term in (
+            "operator_source_intake_material_preview_read_only",
+            "operator_source_intake_rendered_controls",
+            "source_intake_gate_b_material_admission",
+            "exactly one named server-authoritative runtime/use-case freeze",
+            "L3SourceIntakeRecord as canonical authority",
+            "package construction",
+            "RAG/vector indexing",
+            "frontend-only durable authority",
+        ):
+            if term not in next_required:
+                errors.append(f"{_rel(MANIFEST)} next_required_decision missing source-intake current-state term: {term}")
+        for stale_term in (
+            "operator-uploaded material preview remains blocked",
+            "record-only plus inventory-only",
+        ):
+            if stale_term in next_required:
+                errors.append(f"{_rel(MANIFEST)} next_required_decision still contains stale source-intake term: {stale_term}")
 
     proof = _load_json(PROOF_MANIFEST, errors)
     if isinstance(proof, dict) and "source_intake_rendered_controls_proof" not in proof:
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_rendered_controls_proof")
+    proof_next_required = proof.get("next_required_decision") if isinstance(proof, dict) else None
+    if not isinstance(proof_next_required, str):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing next_required_decision for source-intake current-state sync")
+    else:
+        for term in (
+            "operator_source_intake_material_preview_read_only",
+            "operator_source_intake_rendered_controls",
+            "source_intake_gate_b_material_admission",
+        ):
+            if term not in proof_next_required:
+                errors.append(f"{_rel(PROOF_MANIFEST)} next_required_decision missing source-intake current-state term: {term}")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
