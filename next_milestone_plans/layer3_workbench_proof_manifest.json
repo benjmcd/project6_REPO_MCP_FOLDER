@@ -14784,7 +14784,6 @@
       "test:SUCCESS"
     ]
   },
-
   "source_intake_package_review_preview_boundary_freeze_proof": {
     "proof_kind": "source_intake_package_review_preview_boundary_freeze",
     "governing_doc": "next_milestone_plans/Layer3_planning_docs/312_SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_BOUNDARY_FREEZE.md",
@@ -14816,7 +14815,6 @@
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required"
   },
-
   "source_intake_package_review_preview_boundary_proof": {
     "proof_kind": "source_intake_package_review_preview_boundary",
     "governing_doc": "next_milestone_plans/Layer3_planning_docs/313_SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_BOUNDARY.md",
@@ -14845,7 +14843,6 @@
       "test:SUCCESS"
     ]
   },
-
   "source_intake_package_construction_commit_boundary_freeze_proof": {
     "proof_kind": "source_intake_package_construction_commit_boundary_freeze",
     "governing_doc": "next_milestone_plans/Layer3_planning_docs/314_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY_FREEZE.md",
@@ -14875,5 +14872,53 @@
       "broad_qualitative_execution"
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required"
+  },
+  "source_intake_package_construction_commit_boundary_proof": {
+    "proof_kind": "source_intake_package_construction_commit_boundary",
+    "branch": "codex/l3-source-intake-package-construction",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/315_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/314_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "targeted_test": "backend/tests/test_layer3_workbench.py",
+    "schema_id": "layer3.source_intake_package_construction_commit.v1",
+    "source_schema_id": "layer3.source_intake_package_review_preview.v1",
+    "output_schema_id": "layer3.source_intake_execution_output.v1",
+    "analysis_run_created": false,
+    "package_created": true,
+    "reconciliation_record_created": true,
+    "package_review_submit_created": false,
+    "blocked_downstream_boundary": "source_intake_package_review_submit_boundary_freeze",
+    "source_identity_preserved": [
+      "source_intake_record_id",
+      "candidate_id",
+      "output_payload_hash"
+    ],
+    "durable_state": [
+      "L3OutputPackage",
+      "L3ReconciliationRecord"
+    ],
+    "blocked_scope": [
+      "package_review_submit_or_commit_approval",
+      "handoff_export_prepare_or_dispatch",
+      "aps_handoff_dispatch",
+      "external_export_download",
+      "connector_destination_dispatch",
+      "provider_private_or_public_url",
+      "web_connector_retrieval",
+      "rag_vector_indexing",
+      "generic_source_upload",
+      "broad_file_upload",
+      "local_path_or_local_directory_authority",
+      "model_or_migration_changes",
+      "new_backend_route",
+      "rendered_ui_changes",
+      "auth_security_behavior",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "targeted_tests_and_progress_check_passed",
+    "blocked_error_codes": [
+      "source_intake_package_review_submit_not_admitted"
+    ],
+    "targeted_validation_result": "22 passed"
   }
 }
