@@ -1478,8 +1478,12 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 
 ## Source Intake Execution Selection Guard
 
-- Status: branch-local corrective guard/proof for `source_intake_execution_selection_guard`.
+- Status: current-main corrective guard/proof for `source_intake_execution_selection_guard`.
 - Branch: `codex/l3-source-intake-exec-selection-guard`.
+- Implementation commit: `609b6262f13163a4043c76c9b4f952ecc3eeb9fc`.
+- Merged PR: `#890`.
+- Merge commit/current-main authority: `c0c8defd169d3132bbed9fa202f829794f86b32f`.
+- GitHub checks: `backend-layer3-api` success and `test` success.
 - Governing doc: `next_milestone_plans/Layer3_planning_docs/303_SOURCE_INTAKE_EXECUTION_SELECTION_GUARD.md`.
 - Corrective predecessor: `next_milestone_plans/Layer3_planning_docs/302_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY.md`.
 - Canonical source of truth: server-owned approved `L3AnalysisPlan` payload derived from `L3SourceIntakeRecord` Gate C and plan-preview state.

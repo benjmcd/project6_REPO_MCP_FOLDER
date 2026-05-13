@@ -21141,8 +21141,11 @@ def _check_source_intake_execution_selection_guard(errors: list[str]) -> None:
         errors.append(f"{_rel(MANIFEST)} missing source_intake_execution_selection_guard")
     else:
         for key, expected in {
-            "status": "branch_local_corrective_guard_targeted_tests_passed",
+            "status": "current_main_corrective_guard_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-exec-selection-guard",
+            "implementation_commit": "609b6262f13163a4043c76c9b4f952ecc3eeb9fc",
+            "pr": "#890",
+            "current_main_commit": "c0c8defd169d3132bbed9fa202f829794f86b32f",
             "corrective_predecessor": "source_intake_plan_approval_boundary",
             "canonical_source_of_truth": "server_owned_approved_L3AnalysisPlan_from_L3SourceIntakeRecord",
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/303_SOURCE_INTAKE_EXECUTION_SELECTION_GUARD.md",
@@ -21168,7 +21171,7 @@ def _check_source_intake_execution_selection_guard(errors: list[str]) -> None:
             errors.append(f"{_rel(MANIFEST)} source_intake_execution_selection_guard missing required contract guards")
     if isinstance(manifest, dict):
         scope_status = manifest.get("scope_status")
-        if not isinstance(scope_status, dict) or scope_status.get("source_intake_execution_selection_guard") != "branch_local_corrective_guard_targeted_tests_passed":
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_execution_selection_guard") != "current_main_corrective_guard_targeted_tests_passed":
             errors.append(f"{_rel(MANIFEST)} missing source-intake execution-selection guard scope status")
 
     proof = _load_json(PROOF_MANIFEST, errors)
@@ -21177,8 +21180,11 @@ def _check_source_intake_execution_selection_guard(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_execution_selection_guard_proof")
         return
     for key, expected in {
-        "status": "branch_local_corrective_guard_targeted_tests_passed",
+        "status": "current_main_corrective_guard_targeted_tests_passed",
         "implementation_branch": "codex/l3-source-intake-exec-selection-guard",
+        "implementation_commit": "609b6262f13163a4043c76c9b4f952ecc3eeb9fc",
+        "pr": "#890",
+        "current_main_commit": "c0c8defd169d3132bbed9fa202f829794f86b32f",
         "proof_kind": "source_intake_execution_selection_guard",
         "targeted_validation_result": "22 passed",
         "error_code": "source_intake_execution_selection_not_admitted",

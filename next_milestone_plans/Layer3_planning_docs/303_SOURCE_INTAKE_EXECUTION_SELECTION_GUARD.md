@@ -2,9 +2,19 @@
 
 ## Status
 
-Status: branch-local corrective guard with targeted validation passed for `source_intake_execution_selection_guard`.
+Status: current-main corrective guard with targeted validation passed for `source_intake_execution_selection_guard`.
 
 Implementation branch: `codex/l3-source-intake-exec-selection-guard`.
+
+Implementation commit: `609b6262f13163a4043c76c9b4f952ecc3eeb9fc`.
+
+Merged PR: `#890`.
+
+Merge commit/current-main authority: `c0c8defd169d3132bbed9fa202f829794f86b32f`.
+
+Merged at: `2026-05-13T08:03:58Z`.
+
+GitHub checks: `backend-layer3-api` success and `test` success.
 
 Corrective predecessor: `302_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY.md`.
 
