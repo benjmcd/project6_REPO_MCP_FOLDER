@@ -1786,3 +1786,9 @@ The next required decision is `source_intake_provider_public_url_delivery_use_or
 Branch-local planning/control freeze: `347_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE.md` selects `implement_source_intake_provider_public_url_rendered_controls` as the next bounded implementation after current-main provider-public revoke API sync. The selected surface is rendered controls over prepare/status/revoke only, not delivery/use, because delivery/use would require raw public URL exposure, `public_url_enabled: True`, public access semantics, and auth/security authority that remain blocked.
 
 The next implementation may add only rendered controls backed by the existing provider-public prepare/status/revoke APIs, redacted state display, disabled/blocked delivery-use affordances, headed/headless browser proof, and progress/proof updates. Provider-public delivery/use, raw public URL display, `public_url_enabled: True`, raw public URL persistence or response exposure, provider network/object-store writes, public proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
+
+## Source Intake Provider Public URL Rendered Controls
+
+Branch-local implementation: `348_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS.md` and branch `codex/l3-provider-public-rendered-controls` add only `/review/layer3` rendered provider-public prepare/status/revoke controls over the existing backend APIs.
+
+The implementation keeps delivery/use, raw public URL display, public proxy runtime, `public_url_enabled: True`, connector/destination dispatch, package mutation, source expansion, broad qualitative/RAG/vector behavior, full mockup activation, auth/security behavior, and frontend-only durable provider-public authority blocked.
