@@ -1371,3 +1371,20 @@ Proof scope: `backend/app/review_ui/static/layer3.html`, `backend/app/review_ui/
 Blocked scope preserved: no new backend route, DTO, model, migration, service, package construction/mutation, connector/destination dispatch, provider URL behavior, execution start, RAG/vector indexing, web connector retrieval, generic/broad source upload, local path/directory authority, non-text binary preview, auth/security behavior, or frontend-only durable authority.
 
 Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`, and post-merge `python .\tools\l3-progress-check.py` passed against `project6-origin/main` at `204d551a88b136882d1ee27a2c31d02798e2547c`.
+
+
+## Source Intake Gate C Typing Entry Freeze
+
+- Status: planning/control freeze for `source_intake_gate_c_typing_entry`.
+- Branch: `codex/l3-source-intake-gate-c-freeze`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/297_SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE.md`.
+- Runtime predecessor: `source_intake_gate_b_rendered_admission_controls`.
+- Selected runtime family: `source_breadth_runtime`.
+- Selected runtime mode: `source_intake_gate_c_typing_entry`.
+- Named operator/product use case: `operator_uploaded_single_source_commits_gate_c_typing`.
+- Canonical source of truth: server-owned Gate B state derived from `L3SourceIntakeRecord`, specifically `L3Session`, latest `L3SelectionManifest`, `L3Descriptor`, and `L3MaterialSnapshot` rows for `operator_uploaded_single_source`.
+- Repo-confirmed failure boundary: `backend/app/services/layer3_typing_entry.py` currently supports only `dataset_version` and `aps_content_document`; source-intake material admitted by Gate B has no proven Gate C typing rule yet.
+- Future typing semantics: `operator_uploaded_single_source` must commit as qualitative `document_chunks` with an atomic analysis unit, durable server-row authority, and no browser-state authority.
+- Next allowed code-bearing action: `implement_source_intake_gate_c_typing_entry` only.
+- Required future proof: source-intake Gate C commit, duplicate typing fail-closed behavior, no downstream rows/artifacts, unsupported adjacent shapes remain blocked, and headed/headless proof only if rendered controls change.
+- Blocked scope: generic/broad upload, local path/local-directory authority, web connector retrieval, RAG/vector indexing, plan approval, execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, provider/private URL behavior, model/migration changes, new backend route, auth/security behavior, non-text binary preview, and frontend-only durable authority.
