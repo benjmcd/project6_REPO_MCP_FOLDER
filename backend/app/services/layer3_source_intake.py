@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -102,6 +102,26 @@ class SourceIntakeError(Exception):
                 "details": self.details,
             },
         }
+
+
+def normalise_source_intake_form_items(form_items: Iterable[tuple[Any, Any]]) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    duplicate_fields: set[str] = set()
+    for raw_key, value in form_items:
+        key = str(raw_key)
+        if key == "file" or value is None:
+            continue
+        if key in fields:
+            duplicate_fields.add(key)
+            continue
+        fields[key] = str(value).strip()
+    if duplicate_fields:
+        raise SourceIntakeError(
+            "source_intake_duplicate_field",
+            "The source-intake upload includes duplicate form fields and is ambiguous.",
+            details={"duplicate_fields": sorted(duplicate_fields)},
+        )
+    return _normalise_fields(fields)
 
 
 def record_operator_upload_source_intake(
