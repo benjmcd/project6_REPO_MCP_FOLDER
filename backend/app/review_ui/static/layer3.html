@@ -467,8 +467,8 @@
                 <div class="section-heading">
                     <div>
                         <p class="eyebrow">Source intake rendered controls</p>
-                        <h2 id="source-intake-heading">Server-authoritative upload / inventory / preview only</h2>
-                        <p class="muted">This panel records source files through the existing source-intake APIs, refreshes the durable inventory, and opens bounded previews without materializing mixed-corpus, package, connector, provider, execution, or RAG state.</p>
+                        <h2 id="source-intake-heading">Server-authoritative upload / inventory / preview / Gate B admission</h2>
+                        <p class="muted">This panel records source files through the existing source-intake APIs, refreshes the durable inventory, opens bounded previews, and admits only the server-previewed material candidate to the existing Gate B decision API without materializing mixed-corpus, package, connector, provider, execution, or RAG state.</p>
                     </div>
                     <button id="source-intake-refresh" class="secondary-btn" type="button">Refresh Inventory</button>
                 </div>
@@ -513,6 +513,7 @@
                     <h3>Bounded preview</h3>
                     <p class="muted">Select a durable source-intake record from the inventory to request a bounded server preview.</p>
                 </div>
+                <p id="source-intake-gate-b-status" class="source-intake-status" data-state="idle" role="status" aria-live="polite">Gate B admission is waiting for a server-authoritative source-intake preview.</p>
             </section>
 
             <section id="gate-b-band" class="workband material-band" aria-labelledby="material-heading" tabindex="-1">

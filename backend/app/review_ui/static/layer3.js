@@ -6317,7 +6317,14 @@ init();
 
 (function sourceIntakeRenderedControls() {
     const sourceIntakeApiRoot = '/api/v1/layer3';
-    const sourceIntakeState = { latestRecordId: null, pendingUpload: false };
+    const sourceIntakeState = {
+        latestRecordId: null,
+        pendingUpload: false,
+        pendingGateB: false,
+        latestPreview: null,
+        gateBClientRequestId: null,
+        committedPreviewId: null,
+    };
     const byId = (id) => document.getElementById(id);
     const escapeSourceIntakeText = (value) => String(value ?? '').replace(/[&<>"]/g, (char) => ({
         '&': '&amp;',
@@ -6328,6 +6335,13 @@ init();
 
     function setSourceIntakeStatus(message, state = 'idle') {
         const status = byId('source-intake-status');
+        if (!status) return;
+        status.textContent = message;
+        status.dataset.state = state;
+    }
+
+    function setSourceIntakeGateBStatus(message, state = 'idle') {
+        const status = byId('source-intake-gate-b-status');
         if (!status) return;
         status.textContent = message;
         status.dataset.state = state;
@@ -6354,6 +6368,61 @@ init();
         if (!rawValue) return '';
         const parsed = new Date(rawValue);
         return Number.isNaN(parsed.getTime()) ? rawValue : parsed.toISOString();
+    }
+
+    function sourceIntakeGateBDecisionBasis(candidate) {
+        return {
+            source_ref: candidate.source_ref,
+            query_basis: candidate.query_basis,
+            provenance_ref: candidate.provenance_ref,
+            source_identity: candidate.source_identity,
+            source_provenance: candidate.source_provenance,
+            payload: candidate.payload,
+            load_summary: candidate.load_summary,
+        };
+    }
+
+    function sourceIntakeGateBPayload(preview) {
+        const candidate = preview?.material_candidate;
+        if (!candidate?.candidate_id || !preview?.material_preview_id || !preview?.material_preview_hash) {
+            throw new Error('Source intake Gate B admission requires a complete server preview candidate.');
+        }
+        if (!sourceIntakeState.gateBClientRequestId) {
+            sourceIntakeState.gateBClientRequestId = requestId();
+        }
+        return {
+            schema_id: 'layer3.gate_b_decision_request.v1',
+            client_request_id: sourceIntakeState.gateBClientRequestId,
+            material_preview_id: preview.material_preview_id,
+            material_preview_hash: preview.material_preview_hash,
+            candidate_decisions: [
+                {
+                    candidate_id: candidate.candidate_id,
+                    decision: 'approved',
+                    operator_reason: 'Rendered source-intake Gate B admission from server preview.',
+                    decision_basis: sourceIntakeGateBDecisionBasis(candidate),
+                },
+            ],
+            commit_reason: 'source_intake_gate_b_rendered_admission',
+            actor: 'operator',
+        };
+    }
+
+    function renderSourceIntakeGateBAdmission(payload) {
+        const candidate = payload.material_candidate || {};
+        return `
+            <div class="source-intake-gate-b-admission">
+                <div>
+                    <h4>Gate B admission candidate</h4>
+                    <p>This control commits exactly the server-previewed source-intake material candidate through the existing Gate B API.</p>
+                </div>
+                <ul class="source-intake-proof-list">
+                    <li><strong>candidate:</strong> ${escapeSourceIntakeText(candidate.candidate_id || 'missing')}</li>
+                    <li><strong>preview:</strong> ${escapeSourceIntakeText(payload.material_preview_id || 'missing')}</li>
+                    <li><strong>hash:</strong> ${escapeSourceIntakeText(payload.material_preview_hash || 'missing')}</li>
+                </ul>
+                <button class="primary-btn" id="source-intake-gate-b-submit" type="button">Commit Preview To Gate B</button>
+            </div>`;
     }
 
     function renderSourceIntakeInventory(payload) {
@@ -6445,6 +6514,8 @@ init();
         if (!recordId || !panel) return;
         setSourceIntakeStatus('Requesting bounded server preview...', 'busy');
         const payload = await sourceIntakeJson(await fetch(`${sourceIntakeApiRoot}/source/intake/${encodeURIComponent(recordId)}/preview?max_chars=1000`));
+        sourceIntakeState.latestPreview = payload;
+        sourceIntakeState.gateBClientRequestId = null;
         const candidate = payload?.material_candidate || {};
         const previewText = candidate.preview_text || payload?.preview_text || payload?.text_preview || payload?.content_preview || '';
         panel.innerHTML = `
@@ -6455,8 +6526,62 @@ init();
                 <span>${escapeSourceIntakeText(candidate.preview_truncated || payload?.partial_retrieval ? 'truncated' : 'not truncated')}</span>
             </div>
             <pre class="source-intake-preview-text">${escapeSourceIntakeText(previewText || 'No preview text returned.')}</pre>
+            ${renderSourceIntakeGateBAdmission(payload)}
         `;
         setSourceIntakeStatus('Bounded preview returned by existing source-intake API.', 'ok');
+        setSourceIntakeGateBStatus('Gate B admission is ready for the server-previewed material candidate.', 'idle');
+    }
+
+    async function submitSourceIntakeGateB() {
+        const preview = sourceIntakeState.latestPreview;
+        if (!preview) {
+            setSourceIntakeGateBStatus('Gate B admission requires an active source-intake preview.', 'error');
+            return;
+        }
+        if (sourceIntakeState.pendingGateB) {
+            setSourceIntakeGateBStatus('Gate B admission is already in progress.', 'busy');
+            return;
+        }
+        if (State.gateB?.session_id && sourceIntakeState.committedPreviewId === preview.material_preview_id) {
+            setSourceIntakeGateBStatus(`Gate B already committed session ${State.gateB.session_id} for this preview.`, 'ok');
+            return;
+        }
+        const button = byId('source-intake-gate-b-submit');
+        try {
+            sourceIntakeState.pendingGateB = true;
+            if (button) setBusy(button, true, 'Commit Preview To Gate B');
+            setSourceIntakeGateBStatus('Committing server-previewed source-intake candidate to Gate B...', 'busy');
+            State.gateB = await postJson('/gate-b/decision', sourceIntakeGateBPayload(preview));
+            State.materialPreview = {
+                schema_id: preview.schema_id,
+                material_preview_id: preview.material_preview_id,
+                material_preview_hash: preview.material_preview_hash,
+                source_intake_record_id: preview.source_intake_record_id,
+                material_candidates: [preview.material_candidate],
+                partial_retrieval: preview.partial_retrieval || false,
+            };
+            State.gateC = null;
+            State.planPreview = null;
+            State.planApproval = null;
+            State.planRevision = null;
+            clearResultReviewState();
+            persistSessionRecoveryAnchor('source_intake_gate_b_commit');
+            sourceIntakeState.committedPreviewId = preview.material_preview_id;
+            addEvent(`Source intake Gate B committed session ${State.gateB.session_id}.`);
+            setSourceIntakeGateBStatus(`Gate B committed session ${State.gateB.session_id} from source-intake preview.`, 'ok');
+            renderAll();
+            setGateControls();
+        } catch (error) {
+            const detail = error.payload?.detail;
+            const errorMessage = typeof detail === 'string' ? detail : detail?.message || error.message;
+            const errorCodeValue = error.payload?.error_code || detail?.error_code || detail?.code;
+            const errorCode = errorCodeValue ? ` (${errorCodeValue})` : '';
+            setSourceIntakeGateBStatus(`Gate B admission blocked: ${errorMessage}${errorCode}`, 'error');
+            addEvent(`Source intake Gate B blocked: ${errorMessage}${errorCode}`);
+        } finally {
+            sourceIntakeState.pendingGateB = false;
+            if (button) setBusy(button, false, 'Commit Preview To Gate B');
+        }
     }
 
     function bindSourceIntakeControls() {
@@ -6476,6 +6601,9 @@ init();
             const recordId = button?.getAttribute('data-source-intake-record-id');
             if (recordId) {
                 previewSourceIntake(recordId).catch((error) => setSourceIntakeStatus(error.message, 'error'));
+            }
+            if (target?.closest('#source-intake-gate-b-submit')) {
+                submitSourceIntakeGateB();
             }
         });
     }
