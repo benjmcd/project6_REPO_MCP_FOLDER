@@ -527,6 +527,12 @@ SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE = (
 SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY = (
     PLANNING_DOCS / "330_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY.md"
 )
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "331_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CURRENT_MAIN_SYNC.md"
+)
+SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE = (
+    PLANNING_DOCS / "332_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -28115,6 +28121,45 @@ def _check_source_intake_external_export_download_signed_reference_boundary(erro
             if proof_entry.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_external_export_download_signed_reference_boundary_proof.{key} must be {expected!r}")
 
+
+def _check_source_intake_external_export_download_post_922_sync(errors: list[str]) -> None:
+    sync_text = _read_required_text(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync",
+        "PR `#922`",
+        "d4df0c4892303a3fd05fd1c6a87edeaf880682cf",
+        "source_intake_external_export_download_signed_reference_gate",
+        "reviewThreads",
+        "backend-layer3-api",
+        "source_intake_provider_private_signed_url_boundary_freeze",
+    ):
+        if term not in sync_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CURRENT_MAIN_SYNC)} missing post-922 sync term: {term}")
+    freeze_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE, errors)
+    for term in (
+        "Status: current-main planning/control freeze",
+        "source_intake_provider_private_signed_url_boundary",
+        "provider-private signed URL controls",
+        "source_intake_external_export_download_signed_reference_gate",
+        "token-only same-origin signed-reference authority",
+        "implement_source_intake_provider_private_signed_url_boundary",
+        "connector/destination dispatch remains blocked",
+    ):
+        if term not in freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE)} missing provider-private freeze term: {term}")
+    manifest = _load_json(MANIFEST, errors)
+    sync = manifest.get("source_intake_external_export_download_signed_reference_current_main_sync") if isinstance(manifest, dict) else None
+    if not isinstance(sync, dict) or sync.get("merged_pr") != "#922" or sync.get("merge_commit") != "d4df0c4892303a3fd05fd1c6a87edeaf880682cf":
+        errors.append(f"{_rel(MANIFEST)} signed-reference current-main sync metadata mismatch")
+    freeze = manifest.get("source_intake_provider_private_signed_url_boundary_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(freeze, dict) or freeze.get("current_failure_boundary") != "source_intake_provider_private_signed_url_not_admitted" or freeze.get("next_boundary") != "source_intake_provider_private_signed_url_boundary":
+        errors.append(f"{_rel(MANIFEST)} source-intake provider-private freeze metadata mismatch")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    if not isinstance(proof.get("source_intake_external_export_download_signed_reference_current_main_sync_proof") if isinstance(proof, dict) else None, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing signed-reference current-main sync proof")
+    if not isinstance(proof.get("source_intake_provider_private_signed_url_boundary_freeze_proof") if isinstance(proof, dict) else None, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source-intake provider-private freeze proof")
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -28538,6 +28583,7 @@ def main() -> int:
     _check_source_intake_external_export_download_rendered_controls_boundary(errors)
     _check_source_intake_external_export_download_post_920_sync(errors)
     _check_source_intake_external_export_download_signed_reference_boundary(errors)
+    _check_source_intake_external_export_download_post_922_sync(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
