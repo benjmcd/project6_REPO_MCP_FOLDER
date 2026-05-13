@@ -1071,6 +1071,15 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
             "layer3_workbench_current_decision.state must match exactly one "
             f"layer3_workbench_slices main_state; found {len(matching)} for {state!r}"
         )
+    artifact_contract = manifest.get("artifact_render_contract")
+    state_visuals = (
+        artifact_contract.get("state_visuals") if isinstance(artifact_contract, dict) else None
+    )
+    if not isinstance(state_visuals, dict) or state not in state_visuals:
+        errors.append(
+            "layer3_workbench_current_decision.state must have artifact_render_contract.state_visuals coverage: "
+            f"{state!r}"
+        )
 
     next_required = decision.get("next_required_decision")
     if not isinstance(next_required, str) or not next_required:
@@ -16691,13 +16700,31 @@ def _check_mockup_runtime_gate(errors: list[str]) -> None:
         ("latest_mockup_runtime_gate_branch", "codex/l3-post-mockup-runtime-gate"),
         ("latest_mockup_runtime_gate_live_behavior_change", False),
     ):
-        if key not in manifest and not (
-            isinstance(current_status, dict) and current_status.get(key) == expected
-        ):
-            errors.append(f"{_rel(MANIFEST)} missing or mismatched mockup runtime gate key: {key}")
+        if key in manifest:
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mismatched mockup runtime gate key: {key}")
+        elif not (isinstance(current_status, dict) and current_status.get(key) == expected):
+            errors.append(f"{_rel(MANIFEST)} missing mockup runtime gate key: {key}")
     scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
     if not isinstance(scope_status, dict) or scope_status.get("mockup_runtime_gate") != "completed_no_runtime_selected_after_mockup_visual_proof":
         errors.append(f"{_rel(MANIFEST)} missing completed mockup runtime gate scope status")
+    manifest_gate = manifest.get("mockup_runtime_gate") if isinstance(manifest, dict) else None
+    if not isinstance(manifest_gate, dict):
+        errors.append(f"{_rel(MANIFEST)} missing structured mockup_runtime_gate entry")
+    else:
+        expected_gate_scalars = {
+            "status": "completed_no_runtime_selected_after_mockup_visual_proof",
+            "implementation_branch": "codex/l3-post-mockup-runtime-gate",
+            "live_behavior_change": False,
+            "selected_planning_mode": "post_mockup_runtime_gate",
+            "entry_decision": "no_runtime_selected_after_mockup_visual_proof",
+            "mockup_visual_proof_status": "static_theme_frame_projection_proven",
+            "runtime_implementation_allowed_next": False,
+            "next_required_boundary": "exact_named_server_authoritative_runtime_use_case_freeze",
+        }
+        for key, expected in expected_gate_scalars.items():
+            if manifest_gate.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mockup_runtime_gate {key} mismatch")
 
     proof = _load_json(PROOF_MANIFEST, errors)
     proof_entry = proof.get("mockup_runtime_gate_proof") if isinstance(proof, dict) else None
@@ -16729,6 +16756,9 @@ def _check_mockup_runtime_gate(errors: list[str]) -> None:
     if not isinstance(blocked_runtime, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} mockup runtime gate proof missing blocked_runtime_families")
     else:
+        extra_keys = sorted(set(blocked_runtime) - set(expected_blocked))
+        if extra_keys:
+            errors.append(f"{_rel(PROOF_MANIFEST)} mockup runtime gate proof has unexpected blocked families: {extra_keys}")
         for key, expected in expected_blocked.items():
             if blocked_runtime.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} mockup runtime gate proof blocked {key} mismatch")
@@ -16751,7 +16781,7 @@ def _check_pdf_location_freeze(errors: list[str]) -> None:
         "ApsContentChunk.page_end",
         "visual_page_refs_json",
         "nrc_aps_evidence_citation_pack",
-        "sections[].citations[].highlight_spans",
+        "citations[].highlight_spans",
         "source_bundle.run_id",
         "This freeze does not implement runtime behavior.",
         "no raw PDF blob streaming",
@@ -16780,7 +16810,7 @@ def _check_pdf_location_freeze(errors: list[str]) -> None:
             "272_PDF_LOCATION_FREEZE.md",
             "pdf_location_use_case_freeze",
             "ApsContentDocument",
-            "sections[].citations[].highlight_spans",
+            "citations[].highlight_spans",
         ),
         MANIFEST: (
             "pdf_location_use_case_freeze",
@@ -16806,10 +16836,11 @@ def _check_pdf_location_freeze(errors: list[str]) -> None:
         ("latest_pdf_location_freeze_branch", "codex/l3-pdf-location-use-case-freeze"),
         ("latest_pdf_location_freeze_live_behavior_change", False),
     ):
-        if key not in manifest and not (
-            isinstance(current_status, dict) and current_status.get(key) == expected
-        ):
-            errors.append(f"{_rel(MANIFEST)} missing or mismatched PDF-location freeze key: {key}")
+        if key in manifest:
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mismatched PDF-location freeze key: {key}")
+        elif not (isinstance(current_status, dict) and current_status.get(key) == expected):
+            errors.append(f"{_rel(MANIFEST)} missing PDF-location freeze key: {key}")
     scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
     if not isinstance(scope_status, dict) or scope_status.get("pdf_location_use_case_freeze") != "completed_named_pdf_location_runtime_use_case_selected_planning_only":
         errors.append(f"{_rel(MANIFEST)} missing completed PDF-location freeze scope status")
@@ -16841,7 +16872,7 @@ def _check_pdf_location_freeze(errors: list[str]) -> None:
         "ApsContentChunk.page_end",
         "visual_page_refs_json",
         "nrc_aps_evidence_citation_pack",
-        "sections[].citations[].highlight_spans",
+        "citations[].highlight_spans",
         "source_bundle.run_id",
         "no raw PDF blob streaming",
         "no browser-owned authoritative PDF location",
@@ -16862,7 +16893,7 @@ def _check_pdf_location_projection(errors: list[str]) -> None:
         "ApsContentChunk.page_start",
         "ApsContentChunk.page_end",
         "visual_page_refs_json",
-        "sections[].citations[].highlight_spans",
+        "citations[].highlight_spans",
         "raw_pdf_blob_streaming",
         "browser_owned_authoritative_pdf_location",
         "no_side_effects",
@@ -17084,10 +17115,11 @@ def _check_pdf_location_theme_projection(errors: list[str]) -> None:
         ("latest_pdf_location_theme_branch", "codex/l3-pdf-location-theme-projection"),
         ("latest_pdf_location_theme_live_behavior_change", True),
     ):
-        if key not in manifest and not (
-            isinstance(current_status, dict) and current_status.get(key) == expected
-        ):
-            errors.append(f"{_rel(MANIFEST)} missing or mismatched PDF-location theme projection key: {key}")
+        if key in manifest:
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mismatched PDF-location theme projection key: {key}")
+        elif not (isinstance(current_status, dict) and current_status.get(key) == expected):
+            errors.append(f"{_rel(MANIFEST)} missing PDF-location theme projection key: {key}")
     scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
     if not isinstance(scope_status, dict) or scope_status.get("pdf_location_theme_projection") != "completed_rendered_pdf_location_projection_from_session_summary":
         errors.append(f"{_rel(MANIFEST)} missing completed PDF-location theme projection scope status")
@@ -17164,10 +17196,11 @@ def _check_mockup_visual_diff_freeze(errors: list[str]) -> None:
         ("latest_mockup_visual_diff_freeze_branch", "codex/l3-mockup-visual-diff-freeze"),
         ("latest_mockup_visual_diff_freeze_live_behavior_change", False),
     ):
-        if key not in manifest and not (
-            isinstance(current_status, dict) and current_status.get(key) == expected
-        ):
-            errors.append(f"{_rel(MANIFEST)} missing or mismatched mockup visual-diff freeze key: {key}")
+        if key in manifest:
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} mismatched mockup visual-diff freeze key: {key}")
+        elif not (isinstance(current_status, dict) and current_status.get(key) == expected):
+            errors.append(f"{_rel(MANIFEST)} missing mockup visual-diff freeze key: {key}")
     scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
     if not isinstance(scope_status, dict) or scope_status.get("mockup_visual_diff_freeze") != "completed_planning_control_visual_diff_acceptance_freeze":
         errors.append(f"{_rel(MANIFEST)} missing completed mockup visual-diff freeze scope status")
@@ -17183,6 +17216,7 @@ def _check_mockup_visual_diff_freeze(errors: list[str]) -> None:
         "live_behavior_change": False,
         "selected_proof_mode": "repo_local_mockup_frame_visual_diff_acceptance",
         "runtime_behavior_change": False,
+        "rendered_ui_behavior_change": False,
         "next_allowed_action": "implement_repo_local_mockup_visual_diff_harness",
     }
     for key, expected in expected_scalars.items():

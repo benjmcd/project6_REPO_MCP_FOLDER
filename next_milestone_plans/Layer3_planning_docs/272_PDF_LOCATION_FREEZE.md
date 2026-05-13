@@ -33,7 +33,7 @@ The selected server authority is the existing APS document/citation chain:
 - `ApsContentChunk.page_start` and `ApsContentChunk.page_end` for chunk-to-page location.
 - `visual_page_refs_json` for canonical visual page references already preserved by the retrieval-plane contract.
 - `nrc_aps_evidence_citation_pack` for persisted citation-pack provenance.
-- `sections[].citations[].highlight_spans` for citation-to-text-span evidence where a citation pack is present.
+- `citations[].highlight_spans` for citation-to-text-span evidence where a citation pack is present.
 - `source_bundle.run_id`, bundle id, bundle checksum, citation id, content id, and chunk id for stale-authority checks.
 
 The browser may display these values, but it may not invent, persist, or correct them as authority.
@@ -43,7 +43,7 @@ The browser may display these values, but it may not invent, persist, or correct
 A later implementation may proceed only as a read-only projection from existing authority:
 
 - Resolve the selected session/run/result/citation to one existing `aps_content_document` identity.
-- Resolve one or more chunk/page references from `ApsContentChunk.page_start`, `ApsContentChunk.page_end`, `visual_page_refs_json`, or citation-pack `sections[].citations[].highlight_spans`.
+- Resolve one or more chunk/page references from `ApsContentChunk.page_start`, `ApsContentChunk.page_end`, `visual_page_refs_json`, or citation-pack `citations[].highlight_spans`.
 - Fail closed when document identity, chunk identity, page references, citation pack, source bundle, run id, or checksum authority is missing or stale.
 - Return only bounded location metadata and display labels needed for the workbench projection.
 - Add headed and headless proof if rendered `/review/layer3` behavior changes.

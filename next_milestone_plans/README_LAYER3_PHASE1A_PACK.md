@@ -1620,7 +1620,7 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 ## PDF Location Use Case Freeze
 
 - `Layer3_planning_docs/272_PDF_LOCATION_FREEZE.md` records `pdf_location_use_case_freeze` as the first named runtime-use-case freeze after the mockup runtime gate.
-- The selected use case is `pdf_location_from_aps_content_document_citation`, a read-only projection from existing `ApsContentDocument`, `ApsContentChunk.page_start`/`ApsContentChunk.page_end`, `visual_page_refs_json`, `nrc_aps_evidence_citation_pack`, `sections[].citations[].highlight_spans`, and `source_bundle.run_id` authority.
+- The selected use case is `pdf_location_from_aps_content_document_citation`, a read-only projection from existing `ApsContentDocument`, `ApsContentChunk.page_start`/`ApsContentChunk.page_end`, `visual_page_refs_json`, `nrc_aps_evidence_citation_pack`, `citations[].highlight_spans`, and `source_bundle.run_id` authority.
 - The freeze does not implement runtime behavior; it only permits a later `implement_read_only_pdf_location_projection_from_existing_authority` pass and keeps raw PDF blob streaming, new source families, local upload/directory/path input, RAG/vector retrieval, connector/destination dispatch, package mutation, auth/security widening, full durable mockup activation, and browser-owned authoritative PDF location blocked.
 
 ## PDF Location Projection Implementation

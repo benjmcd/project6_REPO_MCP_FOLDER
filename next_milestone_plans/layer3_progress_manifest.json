@@ -3961,6 +3961,28 @@
         "label": "Live single APS-doc qual",
         "fill": "#d8f5d0",
         "stroke": "#2f6b2f"
+      },
+      "live_bounded_mockup_theme_shell_and_fixture_projection": {
+        "rendered_surface": "#mockup-theme-shell",
+        "theme_target": "layer3_mockup_workbench_theme",
+        "source_state": "layer3_workbench_current_decision.state",
+        "proof_files": [
+          "backend/app/review_ui/static/layer3.html",
+          "backend/app/review_ui/static/layer3.css",
+          "backend/app/review_ui/static/layer3.js",
+          "e2e/layer3-workbench.spec.js"
+        ],
+        "coverage": [
+          "mockup shell and fixture projection",
+          "Sublayer 3A/3B board",
+          "Sublayer 3C execution lanes",
+          "user-flow and PDF-location projection",
+          "headed/headless visual-diff proof surfaces"
+        ],
+        "non_authority": [
+          "no browser-owned durable workflow authority",
+          "no backend/runtime/source expansion from this visual contract"
+        ]
       }
     },
     "hard_rules": [
@@ -7204,7 +7226,7 @@
       "ApsContentChunk.page_end",
       "visual_page_refs_json",
       "nrc_aps_evidence_citation_pack",
-      "sections[].citations[].highlight_spans",
+      "citations[].highlight_spans",
       "source_bundle.run_id"
     ],
     "blocked_surfaces": [

@@ -12753,7 +12753,7 @@
       "ApsContentChunk.page_end",
       "visual_page_refs_json",
       "nrc_aps_evidence_citation_pack",
-      "sections[].citations[].highlight_spans",
+      "citations[].highlight_spans",
       "source_bundle.run_id"
     ],
     "blocked_surfaces": [
@@ -12826,7 +12826,7 @@
       "ApsContentChunk.page_start",
       "ApsContentChunk.page_end",
       "visual_page_refs_json",
-      "sections[].citations[].highlight_spans",
+      "citations[].highlight_spans",
       "no raw PDF blob streaming",
       "no browser-owned authoritative PDF location"
     ]
