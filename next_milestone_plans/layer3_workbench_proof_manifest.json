@@ -14729,5 +14729,34 @@
       "backend-layer3-api:SUCCESS",
       "test:SUCCESS"
     ]
+  },
+  "source_intake_execution_result_review_boundary_freeze_proof": {
+    "proof_kind": "source_intake_execution_result_review_boundary_freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/310_SOURCE_INTAKE_EXECUTION_RESULT_REVIEW_BOUNDARY_FREEZE.md",
+    "branch": "codex/l3-source-intake-result-review-freeze",
+    "current_main_predecessor_commit": "19861825c52c2fa8a27e4b4bd568093db7435750",
+    "repo_confirmed_failure_boundary": "execution_result_review blocks source-intake output with source_intake_result_review_not_admitted",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "frozen_future_scope": [
+      "existing_execution_result_review_request_contract",
+      "layer3.source_intake_execution_output.v1",
+      "source_intake_qualitative_preview",
+      "bounded_result_review_state",
+      "no_analysis_run_created"
+    ],
+    "blocked_scope": [
+      "package",
+      "handoff",
+      "export",
+      "connector_destination_dispatch",
+      "provider_url",
+      "rag_vector",
+      "route",
+      "rendered_ui",
+      "model_migration",
+      "auth_security",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required"
   }
 }
