@@ -21926,7 +21926,7 @@ def _check_source_intake_package_review_preview_boundary(errors: list[str]) -> N
         errors.append(f"{_rel(MANIFEST)} missing source_intake_package_review_preview_boundary")
     else:
         for key, expected in {
-            "status": "branch_local_implemented_targeted_tests_passed",
+            "status": "current_main_implemented_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-package-review-preview",
             "selected_runtime_mode": "source_intake_package_review_preview_boundary",
             "freeze_predecessor": "source_intake_package_review_preview_boundary_freeze",
@@ -21934,6 +21934,9 @@ def _check_source_intake_package_review_preview_boundary(errors: list[str]) -> N
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/313_SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_BOUNDARY.md",
             "owner_service": "backend/app/services/layer3_workbench.py",
             "targeted_validation_result": "22 passed",
+            "implementation_commit": "6f69f9fba57c805b7b10c9492749302f43f014cc",
+            "pr": "#905",
+            "current_main_commit": "bf6539c85212f7f0b4d3e08d9b8c4c6344dec5ab",
             "package_review_preview_schema_id": "layer3.source_intake_package_review_preview.v1",
             "package_review_preview_hash_schema_id": "layer3.source_intake_package_review_preview_hash.v1",
             "output_schema_id": "layer3.source_intake_execution_output.v1",
@@ -21961,6 +21964,9 @@ def _check_source_intake_package_review_preview_boundary(errors: list[str]) -> N
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/313_SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_BOUNDARY.md",
             "test_name": "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
             "targeted_validation_result": "22 passed",
+            "implementation_commit": "6f69f9fba57c805b7b10c9492749302f43f014cc",
+            "pr": "#905",
+            "merge_commit": "bf6539c85212f7f0b4d3e08d9b8c4c6344dec5ab",
             "package_review_preview_schema_id": "layer3.source_intake_package_review_preview.v1",
             "package_review_preview_hash_schema_id": "layer3.source_intake_package_review_preview_hash.v1",
             "analysis_run_created": False,
