@@ -46,10 +46,13 @@ The rendered logic explicitly blocks these adjacent controls for source-intake d
 - signed-reference generation/use remains blocked by `!isSourceIntakeExternalExportDownloadState(external)`
 - provider-private signed URL prepare/status/revoke remains blocked by `!isSourceIntakeExternalExportDownloadState(external)`
 - unknown non-associated/non-qualitative external-export families no longer get implicit delivery UI admission
+- the pre-existing APS evidence-bundle delivery path remains admitted only when the prepare record is explicitly an `aps_evidence_bundle_download_reference` over `aps.evidence_bundle.v2`
 
 ## Validation
 
 - `python -m pytest .\backend\tests\test_layer3_page.py` -> `3 passed, 3 warnings`
+- `npx playwright test e2e/layer3-handoff.spec.js --project=chromium` -> `3 passed`
+- `python .\tools\l3-progress-check.py` -> `Layer 3 progress state check: PASS`
 - `git diff --check` -> clean except expected CRLF normalization warnings
 
 ## Next required decision

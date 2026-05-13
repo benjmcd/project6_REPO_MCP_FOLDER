@@ -1739,7 +1739,11 @@ function isQualitativeApsExternalExportDownloadState(external = externalExportDo
         || external.source_gate === QUAL_APS_SOURCE_GATE
         || summary.source_gate === QUAL_APS_SOURCE_GATE
         || external.source_shape === QUAL_APS_SOURCE_SHAPE
-        || summary.source_shape === QUAL_APS_SOURCE_SHAPE;
+        || summary.source_shape === QUAL_APS_SOURCE_SHAPE
+        || (
+            (external.export_download_target || summary.export_download_target) === 'aps_evidence_bundle_download_reference'
+            && (external.aps_schema_id || summary.aps_schema_id) === 'aps.evidence_bundle.v2'
+        );
 }
 
 function associatedCohortDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
@@ -1747,6 +1751,42 @@ function associatedCohortDeliveryUiState(external = externalExportDownloadPrepar
     const deliveryUi = external?.delivery_ui || summary.delivery_ui || null;
     if (deliveryUi) return deliveryUi;
     return null;
+}
+
+function qualitativeApsDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
+    if (!isQualitativeApsExternalExportDownloadState(external)) return null;
+    const summary = State.sessionSummary?.external_export_download || {};
+    const deliveryUi = external?.delivery_ui || summary.delivery_ui || null;
+    if (deliveryUi) return deliveryUi;
+    const descriptor = external.external_export_download_descriptor || {};
+    const readinessState = externalExportDownloadStateName(external);
+    const available = Boolean(
+        external.schema_id === 'layer3.external_export_download_prepare.v1'
+        && readinessState === 'external_export_download_prepared'
+        && external.external_export_download_record_ref
+        && external.export_download_descriptor_ref
+        && (external.export_download_target || descriptor.export_download_target) === 'aps_evidence_bundle_download_reference'
+        && (external.download_mode || descriptor.download_mode) === 'reference_only_prepare'
+        && external.aps_bundle_ref
+        && external.source_artifact_hash
+    );
+    return {
+        available,
+        state: available
+            ? 'external_export_download_delivery_ui_ready'
+            : 'external_export_download_delivery_ui_unavailable',
+        operator_decision: 'deliver_external_export_download',
+        delivery_mode: 'same_origin_artifact_stream',
+        browser_managed_same_origin_attachment_enabled: available,
+        public_url_enabled: false,
+        signed_url_enabled: false,
+        connector_dispatch_enabled: false,
+        destination_selection_enabled: false,
+        generic_downstream_dispatch_enabled: false,
+        package_mutation_enabled: false,
+        schema_runtime_source_widening_enabled: false,
+        server_authority: 'layer3.external_export_download_prepare.v1',
+    };
 }
 
 function isSourceIntakeExternalExportDownloadState(external = externalExportDownloadPrepareState() || {}) {
@@ -1815,15 +1855,15 @@ function externalExportDownloadDeliveryUiAdmitted(external = externalExportDownl
             'source_intake_external_export_download_delivery_ui_ready',
         ]);
     }
-    const deliveryUi = associatedCohortDeliveryUiState(external);
     if (isQualitativeApsExternalExportDownloadState(external)) {
-        return deliveryUiStateAdmitted(deliveryUi, [
+        return deliveryUiStateAdmitted(qualitativeApsDeliveryUiState(external), [
             'external_export_download_delivery_ui_ready',
         ]);
     }
     if (!isAssociatedCohortExternalExportDownloadState(external)) {
         return false;
     }
+    const deliveryUi = associatedCohortDeliveryUiState(external);
     return deliveryUiStateAdmitted(deliveryUi, [
         'associated_cohort_external_export_download_delivery_ui_ready',
         'external_export_download_delivery_ui_ready',
@@ -4347,7 +4387,7 @@ function externalExportDownloadDeliveryPanelState() {
     const stateName = externalExportDownloadStateName(external);
     const associatedCohort = isAssociatedCohortExternalExportDownloadState(external);
     const sourceIntake = isSourceIntakeExternalExportDownloadState(external);
-    const deliveryUi = sourceIntakeDeliveryUiState(external) || associatedCohortDeliveryUiState(external);
+    const deliveryUi = sourceIntakeDeliveryUiState(external) || qualitativeApsDeliveryUiState(external) || associatedCohortDeliveryUiState(external);
     if (State.externalExportDownloadDeliveryPending) {
         return { label: 'external_export_download_delivery_ui_downloading', pill: 'preview', message: 'Submitting one same-origin attachment request for browser-managed download.' };
     }
@@ -4380,7 +4420,7 @@ function externalExportDownloadDeliveryPanelState() {
 function renderExternalExportDownloadDeliveryPanel() {
     const external = externalExportDownloadPrepareState() || {};
     const panelState = externalExportDownloadDeliveryPanelState();
-    const deliveryUi = sourceIntakeDeliveryUiState(external) || associatedCohortDeliveryUiState(external) || {};
+    const deliveryUi = sourceIntakeDeliveryUiState(external) || qualitativeApsDeliveryUiState(external) || associatedCohortDeliveryUiState(external) || {};
     const downstream = [
         'public_url',
         'signed_url',
