@@ -16,6 +16,7 @@ from app.services.layer3_workbench_package_state import (
 PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.package_review_submit.v1"
 COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.cohort_package_review_submit.v1"
 QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.qual_aps_package_review_submit.v1"
+SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.source_intake_package_review_submit.v1"
 
 
 def package_review_submit_response(
@@ -42,10 +43,15 @@ def package_review_submit_response(
         str(review_state.get("package_construction_source_gate") or "")
         == "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE"
     )
+    source_intake_submit = (
+        str(review_state.get("package_construction_source_gate") or "")
+        == "314_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY_FREEZE"
+    )
     downstream_unavailable = package_review_submit_downstream_unavailable(
         str(review_state.get("package_review_state") or ""),
         associated_cohort_submit=associated_cohort_submit,
         qualitative_aps_submit=qualitative_aps_submit,
+        source_intake_submit=source_intake_submit,
     )
     body = {
         **base_response(PACKAGE_REVIEW_SUBMIT_SCHEMA_ID, request_id=request_id, status=status),
@@ -73,6 +79,10 @@ def package_review_submit_response(
         "package_construction_source_gate": review_state.get("package_construction_source_gate"),
         "source_shape": review_state.get("source_shape"),
         "source_dataset_version_ids": json_clone(review_state.get("source_dataset_version_ids") or []),
+        "source_intake_record_id": review_state.get("source_intake_record_id"),
+        "candidate_id": review_state.get("candidate_id"),
+        "output_payload_ref": review_state.get("output_payload_ref"),
+        "output_payload_hash": review_state.get("output_payload_hash"),
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
         "export_enabled": False,
@@ -85,7 +95,11 @@ def package_review_submit_response(
         "authority_rail": authority_rail(
             session_id=session_id,
             current_gate="package",
-            persistence_mode="durable_package_review_submit",
+            persistence_mode=(
+                "durable_source_intake_package_review_submit"
+                if source_intake_submit
+                else "durable_package_review_submit"
+            ),
             downstream_unavailable=downstream_unavailable,
             execution_enabled=False,
             package_review_enabled=False,
@@ -95,4 +109,6 @@ def package_review_submit_response(
         body["schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     if qualitative_aps_submit:
         body["schema_id"] = QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    if source_intake_submit:
+        body["schema_id"] = SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     return body
