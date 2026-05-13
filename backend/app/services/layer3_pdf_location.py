@@ -364,17 +364,20 @@ def _payload_chunk_hashes(payload: dict[str, Any]) -> tuple[dict[str, str], bool
             for chunk_id, chunk_hash in summary_hashes.items():
                 has_conflict = _record_payload_chunk_hash(hashes, chunk_id, chunk_hash) or has_conflict
         elif isinstance(summary_hashes, list):
-            if isinstance(summary_ids, list):
-                for chunk_id, chunk_hash in zip(summary_ids, summary_hashes):
-                    has_conflict = _record_payload_chunk_hash(hashes, chunk_id, chunk_hash) or has_conflict
-            else:
-                for item in summary_hashes:
-                    if isinstance(item, dict):
-                        has_conflict = _record_payload_chunk_hash(
-                            hashes,
-                            item.get("chunk_id"),
-                            item.get("chunk_text_sha256") or item.get("chunk_hash") or item.get("sha256"),
-                        ) or has_conflict
+            for index, item in enumerate(summary_hashes):
+                if isinstance(item, dict):
+                    fallback_chunk_id = (
+                        summary_ids[index]
+                        if isinstance(summary_ids, list) and index < len(summary_ids)
+                        else None
+                    )
+                    has_conflict = _record_payload_chunk_hash(
+                        hashes,
+                        item.get("chunk_id") or fallback_chunk_id,
+                        item.get("chunk_text_sha256") or item.get("chunk_hash") or item.get("sha256"),
+                    ) or has_conflict
+                elif isinstance(summary_ids, list) and index < len(summary_ids):
+                    has_conflict = _record_payload_chunk_hash(hashes, summary_ids[index], item) or has_conflict
     return hashes, has_conflict
 
 
