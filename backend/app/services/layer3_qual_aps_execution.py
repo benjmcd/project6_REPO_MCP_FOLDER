@@ -418,6 +418,7 @@ def _chunk_output_item(
         "page_end": chunk.page_end,
         "text_char_count": len(text),
         "bounded_text_preview": _bounded_preview(text),
+        "highlight_spans": _highlight_spans_for_chunk(text),
         "trace": {
             "session_id": pass_run.session_id,
             "analysis_plan_id": pass_run.analysis_plan_id,
@@ -440,6 +441,18 @@ def _bounded_preview(text: str, *, limit: int = 160) -> str:
     if len(collapsed) <= limit:
         return collapsed
     return collapsed[: limit - 3].rstrip() + "..."
+
+
+def _highlight_spans_for_chunk(text: str) -> list[dict[str, Any]]:
+    if not text:
+        return []
+    return [
+        {
+            "start": 0,
+            "end": len(text),
+            "source": "citations[].highlight_spans",
+        }
+    ]
 
 
 def _linkage_refs(linkages: tuple[ApsContentLinkage, ...] | list[ApsContentLinkage]) -> list[dict[str, Any]]:
