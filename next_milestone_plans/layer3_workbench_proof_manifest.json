@@ -739,7 +739,10 @@
     "latest_source_breadth_runtime_entry_head_commit": "60bfa2283e8ab49f17e46c3a8b10bd8d285be515",
     "latest_source_breadth_runtime_entry_live_behavior_change": true,
     "latest_source_breadth_runtime_entry_summary": "Current main now includes PR #861 as the bounded source_breadth_runtime entry for operator_single_upload_source_intake. It adds POST /api/v1/layer3/source/intake/upload, L3SourceIntakeRecord/l3_source_intake_record, 0024_layer3_source_intake_record.py, and backend/app/services/layer3_source_intake.py to persist a server-owned operator-uploaded single-source intake record with source identity, content and metadata hashes, provenance, freshness, relative storage pointer, and downstream eligibility. It keeps source-preview classes limited to dataset_version and aps_content_document, keeps source_upload_enabled false for generic preflight/source expansion, and keeps broad file upload, local directory/local path authority, web connector retrieval, RAG/vector indexing, unbounded runtime DB source reads/writes, rendered source controls, and operator-uploaded material preview blocked. The next source-breadth runtime step requires a separate named freeze before the intake record can feed material preview, RAG, connector dispatch, package construction, UI controls, or any other downstream flow. operator-uploaded material preview remains blocked.",
-    "next_required_decision_authority_scope": "global_layer3_progress_not_aps_only"
+    "next_required_decision_authority_scope": "global_layer3_progress_not_aps_only",
+    "latest_source_intake_rendered_controls_branch": "codex/l3-source-intake-rendered-controls",
+    "latest_source_intake_rendered_controls_live_behavior_change": true,
+    "latest_source_intake_rendered_controls_summary": "Branch codex/l3-source-intake-rendered-controls implements rendered /review/layer3 controls for the existing source-intake upload, inventory, and bounded preview APIs. The canonical authority remains L3SourceIntakeRecord; this pass changes static UI/test/progress proof surfaces only and admits no backend route, DTO, model, migration, or service change, no frontend-only durable authority, and no RAG, connector, package, provider, execution, or auth expansion."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -13854,6 +13857,78 @@
       "package_construction_enabled": false,
       "rendered_source_controls_enabled": false,
       "non_text_binary_preview_enabled": false
+    }
+  },
+  "latest_source_intake_rendered_controls_branch": "codex/l3-source-intake-rendered-controls",
+  "latest_source_intake_rendered_controls_live_behavior_change": true,
+  "latest_source_intake_rendered_controls_summary": "Branch codex/l3-source-intake-rendered-controls implements rendered /review/layer3 controls for the existing source-intake upload, inventory, and bounded preview APIs. The canonical authority remains L3SourceIntakeRecord; this pass changes static UI/test/progress proof surfaces only and admits no backend route, DTO, model, migration, or service change, no frontend-only durable authority, and no RAG, connector, package, provider, execution, or auth expansion.",
+  "source_intake_rendered_controls_proof": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-rendered-controls",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "operator_source_intake_rendered_controls",
+    "rendered_route": "/review/layer3",
+    "canonical_source_of_truth": "L3SourceIntakeRecord",
+    "existing_api_routes": [
+      "POST /api/v1/layer3/source/intake/upload",
+      "GET /api/v1/layer3/source/intake/inventory",
+      "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview"
+    ],
+    "production_backend_behavior_change": false,
+    "rendered_ui_behavior_change": true,
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/292_SOURCE_INTAKE_RENDERED_CONTROLS.md",
+    "targeted_tests": [
+      "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py -q",
+      "npx playwright test layer3-workbench.spec.js --grep \"rendered source-intake upload inventory and preview\" --project=chromium",
+      "npx playwright test layer3-workbench.spec.js --grep \"rendered source-intake upload inventory and preview\" --project=chromium --headed",
+      "npx playwright test --project=chromium"
+    ],
+    "contract_guards": {
+      "uses_existing_upload_inventory_preview_only": true,
+      "no_backend_route_dto_model_migration_service_change": true,
+      "browser_state_is_not_durable_authority": true,
+      "preview_text_source": "material_candidate.preview_text",
+      "operator_decision_field": "record_operator_uploaded_source",
+      "operation_dock_panel_registered": true,
+      "upload_submit_single_flight_guard": true,
+      "upload_success_preserved_when_inventory_refresh_fails": true
+    },
+    "blocked_scope": [
+      "backend_route_model_migration_service_change",
+      "frontend_only_durable_authority",
+      "generic_source_upload",
+      "local_path_or_local_directory_authority",
+      "web_connector_retrieval",
+      "rag_vector_indexing",
+      "package_construction",
+      "package_mutation",
+      "provider_private_signed_url_prepare",
+      "connector_destination_dispatch",
+      "execution_start",
+      "auth_security_behavior"
+    ],
+    "proof_files": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
+      "e2e/layer3-handoff.spec.js",
+      "next_milestone_plans/Layer3_planning_docs/292_SOURCE_INTAKE_RENDERED_CONTROLS.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "proof_kind": "rendered_ui_upload_inventory_preview_path",
+    "negative_invariants": {
+      "backend_route_model_migration_service_change": false,
+      "frontend_only_durable_authority": false,
+      "rag_vector_indexing": false,
+      "web_connector_retrieval": false,
+      "package_construction": false,
+      "provider_private_signed_url_prepare": false,
+      "execution_start": false
     }
   }
 }
