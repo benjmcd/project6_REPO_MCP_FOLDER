@@ -1127,7 +1127,7 @@ Refresh this board against:
 - Status: implementation-entry selected as planning/control only; no runtime behavior changed in this pass.
 - Selected first slice: `mockup_theme_shell_and_fixture_projection` for `layer3_mockup_workbench_theme` on `/review/layer3`.
 - Visual target: selected first-slice frames from `userflow`, `clear-screenshots`, and `focus_on_these`, with deterministic `semiconductor_infrastructure_auto_supply_chain` fixture projection where current runtime cannot produce the visualized state.
-- Required next proof: headed Chrome, headless Chrome, visual diff or screenshot comparison, responsive stacked layout, keyboard navigation, contrast, and non-color-only status labeling.
+- Required proof outcome: headed Chrome, headless Chrome, visual diff or screenshot comparison, responsive stacked layout, keyboard navigation, contrast, and non-color-only status labeling were required for this entry-freeze path; later mockup shell/proof, visual-diff harness, pixel-refinement, and pixel-proof closeout entries record that the admitted first-slice proof path has been executed and closed. New visual work now requires a new explicit mockup frame target or threshold gap.
 - Forbidden without refreeze: backend API/model/migration/service behavior, new source runtime, connector/destination writes, rendered package mutation controls, broad qualitative/hybrid/RAG runtime, auth/security runtime, full mockup durable workflow activation, and browser-owned durable authority.
 
 ## Mockup Theme Shell Implementation
