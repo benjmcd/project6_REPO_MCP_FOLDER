@@ -28,10 +28,12 @@ from app.models.models import (
     Dataset,
     DatasetSourceProvenance,
     DatasetVersion,
+    L3AnalysisPlan,
     L3AnalysisGroup,
     L3AnalysisSet,
     L3AnalysisUnit,
     L3MaterialSnapshot,
+    L3PassRun,
     L3SelectionManifest,
     L3Session,
     L3TypingRecord,
@@ -87,6 +89,66 @@ def _preflight_source_material() -> tuple[dict, dict, dict]:
         }
     )
     return preflight, source, material
+
+
+def test_execution_selection_blocks_source_intake_approved_plan_before_boundary(db_session) -> None:
+    now = datetime.now(timezone.utc)
+    session = L3Session(
+        session_id="session-source-intake-exec-selection",
+        status="completed",
+        selection_manifest_id="manifest-source-intake-exec-selection",
+        entry_route_context_json={"entrypoint": "pytest"},
+        operator_context_json={"operator": "pytest"},
+        summary_json={},
+        started_at=now,
+        created_at=now,
+        completed_at=now,
+    )
+    plan = L3AnalysisPlan(
+        analysis_plan_id="plan-source-intake-exec-selection",
+        session_id=session.session_id,
+        analysis_set_ids_json=["analysis-set-source-intake"],
+        status="approved",
+        approved_by_operator=True,
+        approved_at=now,
+        plan_json={
+            "source_preview_id": "source-intake-plan-preview",
+            "source_preview_hash": "source-intake-preview-hash",
+            "planned_passes_json": [
+                {
+                    "analysis_set_id": "analysis-set-source-intake",
+                    "pass_type": "single_item",
+                    "pass_scope": "qualitative_single_item_operator_uploaded_source",
+                    "engine_family": "source_intake_qualitative_preview",
+                    "selected_method_name": "operator_uploaded_source_review_preview",
+                    "source_gate": "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE",
+                    "source_intake_record_id": "src-intake-plan-001",
+                    "candidate_id": "mat-source_intake_record-src-intake-plan-001",
+                }
+            ],
+        },
+        created_at=now,
+    )
+    db_session.add_all([session, plan])
+    db_session.commit()
+
+    with pytest.raises(Layer3WorkbenchError) as exc_info:
+        layer3_workbench.execution_selection(
+            db_session,
+            {
+                "client_request_id": "source-intake-exec-selection",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+            },
+        )
+
+    assert exc_info.value.error_code == "source_intake_execution_selection_not_admitted"
+    assert exc_info.value.status == "blocked"
+    assert exc_info.value.http_status == 409
+    assert exc_info.value.blocked_fields == ["analysis_plan_id"]
+    assert db_session.query(L3PassRun).count() == 0
 
 
 def _gate_b_payload(preflight: dict, source: dict, material: dict) -> dict:

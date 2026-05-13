@@ -29,7 +29,7 @@ This slice implements exactly the approval-only boundary selected by doc 301:
 - Preview-hash revalidation remains required when a preview hash is supplied.
 - Approval persists only an `L3AnalysisPlan` with `approval_only` true and `execution_started` false.
 - The approved owner plan payload preserves `material_snapshot_id`, `source_intake_record_id`, `candidate_id`, `pass_scope`, `source_gate`, `engine_family`, and `selected_method_name`, including selected method marker `operator_uploaded_source_review_preview`.
-- Source-intake execution remains blocked because selected-pass execution still rejects `source_intake_qualitative_preview` as an unsupported execution engine family.
+- Source-intake execution remains blocked because selected-pass execution still rejects `source_intake_qualitative_preview` as an unsupported execution engine family. Execution-selection guard note: `303_SOURCE_INTAKE_EXECUTION_SELECTION_GUARD.md` additionally restores the intended boundary before `L3PassRun` shell creation.
 
 No route, DTO, model, migration, rendered UI, provider URL, connector, execution, package, RAG/vector, auth/security, local-directory, or frontend-only durable authority behavior is added.
 
@@ -38,10 +38,10 @@ No route, DTO, model, migration, rendered UI, provider URL, connector, execution
 Targeted validation run:
 
 ```text
-pytest .ackend	ests	est_layer3_pass_entry.py
+pytest .\backend\tests\test_layer3_pass_entry.py
 ```
 
-Result: `24 passed`. Validation literal: `pytest .\backend\tests\test_layer3_pass_entry.py`.
+Result: `24 passed`.
 
 The focused test coverage proves:
 
