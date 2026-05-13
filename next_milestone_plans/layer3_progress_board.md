@@ -1822,3 +1822,9 @@ The contract keeps provider-public delivery/use blocked and records the required
 Current-main proof/control sync: PR `#942` merged `352_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT.md` at merge commit `6c493ea1ba44329ebaba93a86b04fb932efd07b4`.
 
 The sync doc `353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Provider-public delivery/use remains blocked; the next required decision is `next_deferred_server_authoritative_runtime_lane_freeze`.
+
+## Next Deferred Server-authoritative Runtime Lane Freeze
+
+Branch-local planning/control freeze: `354_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE.md` selects `connector_destination_named_target_revalidation_packet` as the next deferred lane after the provider-public delivery/use authority contract current-main sync.
+
+The freeze does not admit connector runtime. It selects a revalidation packet only, because connector/destination is the nearest downstream integration candidate after handoff/export and provider URL planning, while current-main authority still lacks a named connector or destination target. Package mutation, broad qualitative/hybrid/RAG behavior, full mockup activation, auth/security behavior, provider-public delivery/use, and frontend-only durable authority remain blocked.
