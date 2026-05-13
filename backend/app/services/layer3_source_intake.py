@@ -417,7 +417,7 @@ def source_intake_material_preview(
             },
         )
 
-    media_type = str(record.media_type or "").lower()
+    media_type = _normalise_media_type(record.media_type)
     if not _is_text_preview_media_type(media_type):
         raise SourceIntakeError(
             "source_intake_preview_media_type_not_admitted",
@@ -433,8 +433,10 @@ def source_intake_material_preview(
             http_status=404,
             details={"storage_ref": record.storage_ref},
         )
-    file_bytes = storage_path.read_bytes()
-    content_sha256 = hashlib.sha256(file_bytes).hexdigest()
+    preview_text, decoded_char_count, content_sha256 = _preview_text_and_hash(
+        storage_path,
+        normalized_max_chars,
+    )
     if content_sha256 != record.content_sha256:
         raise SourceIntakeError(
             "source_intake_preview_hash_mismatch",
@@ -443,9 +445,7 @@ def source_intake_material_preview(
             details={"source_intake_record_id": record.source_intake_record_id},
         )
 
-    decoded = file_bytes.decode("utf-8", errors="replace")
-    preview_text = decoded[:normalized_max_chars]
-    truncated = len(decoded) > normalized_max_chars
+    truncated = decoded_char_count > normalized_max_chars
     material_candidate_id = f"mat-source_intake_record-{record.source_intake_record_id}"
     return {
         "schema_id": SOURCE_INTAKE_PREVIEW_SCHEMA_ID,
@@ -637,6 +637,25 @@ def _is_text_preview_media_type(media_type: str) -> bool:
     if media_type.startswith("text/"):
         return True
     return media_type in {"application/json", "application/xml", "application/x-ndjson"}
+
+
+def _normalise_media_type(media_type: str | None) -> str:
+    return str(media_type or "").split(";", 1)[0].strip().lower()
+
+
+def _preview_text_and_hash(storage_path: Path, max_chars: int) -> tuple[str, int, str]:
+    digest = hashlib.sha256()
+    preview_parts: list[str] = []
+    decoded_char_count = 0
+    with storage_path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+            decoded_chunk = chunk.decode("utf-8", errors="replace")
+            decoded_char_count += len(decoded_chunk)
+            remaining = max_chars - sum(len(part) for part in preview_parts)
+            if remaining > 0:
+                preview_parts.append(decoded_chunk[:remaining])
+    return "".join(preview_parts), decoded_char_count, digest.hexdigest()
 
 
 def _existing_record(

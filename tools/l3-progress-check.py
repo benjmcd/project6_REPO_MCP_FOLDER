@@ -18768,6 +18768,8 @@ def _check_source_intake_material_preview_read_only(errors: list[str]) -> None:
         "SOURCE_INTAKE_PREVIEW_MODE = \"operator_source_intake_material_preview_read_only\"",
         "def source_intake_material_preview(",
         "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "def _normalise_media_type(",
+        "def _preview_text_and_hash(",
         "source_intake_preview_hash_mismatch",
         "source_intake_preview_storage_ref_not_admitted",
         "source_intake_preview_media_type_not_admitted",
@@ -18800,6 +18802,7 @@ def _check_source_intake_material_preview_read_only(errors: list[str]) -> None:
     test_text = _read_required_text(SOURCE_INTAKE_TEST, errors)
     for term in (
         "test_layer3_source_intake_material_preview_returns_bounded_text_only",
+        "test_layer3_source_intake_material_preview_accepts_media_type_parameters",
         "test_layer3_source_intake_material_preview_rejects_invalid_limit",
         "layer3.source_intake_material_preview.v1",
         "operator_source_intake_material_preview_read_only",
@@ -18827,6 +18830,8 @@ def _check_source_intake_material_preview_read_only(errors: list[str]) -> None:
             "288_SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE.md",
             "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
             "hash_verified_before_preview",
+            "media_type_parameter_normalization",
+            "streamed_hash_and_preview_extraction",
         ),
     }.items():
         text = _read_required_text(path, errors)
@@ -18884,6 +18889,13 @@ def _check_source_intake_material_preview_read_only(errors: list[str]) -> None:
         ):
             if guards.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source-intake preview response guard {key} mismatch")
+    hardening_guards = proof_entry.get("hardening_guards")
+    if not isinstance(hardening_guards, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} source-intake preview proof missing hardening_guards")
+    else:
+        for key in ("media_type_parameter_normalization", "streamed_hash_and_preview_extraction"):
+            if hardening_guards.get(key) is not True:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source-intake preview hardening guard {key} mismatch")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:

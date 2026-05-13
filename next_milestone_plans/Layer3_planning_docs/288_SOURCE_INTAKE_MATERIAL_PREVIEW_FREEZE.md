@@ -17,6 +17,8 @@ Expose a bounded text preview for one already persisted operator-uploaded source
 
 The route may read the server-owned content-addressed file identified by `L3SourceIntakeRecord.storage_ref`, verify the file hash against `L3SourceIntakeRecord.content_sha256`, and return a bounded UTF-8 text preview for text-like media types only.
 
+Hardening note: preview must normalize media-type parameters such as `text/plain; charset=utf-8` before admission checks and must stream hash/preview extraction instead of reading the entire source object into memory.
+
 ## Current authority chain
 
 1. `POST /api/v1/layer3/source/intake/upload` remains the only admitted writer for operator-uploaded source-intake rows.

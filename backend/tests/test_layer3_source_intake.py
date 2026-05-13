@@ -243,6 +243,25 @@ def test_layer3_source_intake_material_preview_returns_bounded_text_only(client)
     assert "absolute_path" not in candidate["storage_pointer"]
 
 
+def test_layer3_source_intake_material_preview_accepts_media_type_parameters(client):
+    upload = _upload_source_intake(
+        client,
+        data={
+            "client_request_id": "source-intake-api-charset-001",
+            "declared_media_type": "text/plain; charset=utf-8",
+        },
+    )
+    record_id = upload.json()["source_intake_record_id"]
+
+    response = client.get(f"/api/v1/layer3/source/intake/{record_id}/preview")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["schema_id"] == "layer3.source_intake_material_preview.v1"
+    assert body["material_candidate"]["media_type"] == "text/plain; charset=utf-8"
+    assert body["material_candidate"]["preview_text"] == "Layer 3 operator source body"
+
+
 def test_layer3_source_intake_material_preview_rejects_invalid_limit(client):
     upload = _upload_source_intake(client)
     record_id = upload.json()["source_intake_record_id"]
