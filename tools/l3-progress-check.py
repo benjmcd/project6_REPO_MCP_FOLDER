@@ -518,6 +518,12 @@ SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE = (
 SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY = (
     PLANNING_DOCS / "327_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY.md"
 )
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "328_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_CURRENT_MAIN_SYNC.md"
+)
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE = (
+    PLANNING_DOCS / "329_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -27951,6 +27957,47 @@ def _check_pr798_review_debt_closeout(errors: list[str]) -> None:
         errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing stale Claude manual-node absence assertion")
 
 
+
+def _check_source_intake_external_export_download_post_920_sync(errors: list[str]) -> None:
+    sync_text = _read_required_text(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync",
+        "PR `#920`",
+        "11185c51b1af4c68a8df9f28a1fd0bb66cf5cf32",
+        "source_intake_external_export_download_delivery_ui_ready",
+        "reviewThreads",
+        "backend-layer3-api",
+        "source_intake_external_export_download_signed_reference_boundary_freeze",
+    ):
+        if term not in sync_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_CURRENT_MAIN_SYNC)} missing post-920 sync term: {term}")
+    freeze_text = _read_required_text(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE, errors)
+    for term in (
+        "Status: current-main planning/control freeze",
+        "source_intake_external_export_download_signed_reference_boundary",
+        "external_export_download_signed_reference_scope_not_admitted",
+        "_signed_reference_required_cohort_authority",
+        "layer3.source_intake_external_export_download_prepare.v1",
+        "layer3.source_intake_external_export_download_delivery.v1",
+        "same_origin_signed_delivery_reference",
+        "token-only request",
+        "implement_source_intake_external_export_download_signed_reference_boundary",
+    ):
+        if term not in freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE)} missing signed-reference freeze term: {term}")
+    manifest = _load_json(MANIFEST, errors)
+    sync = manifest.get("source_intake_external_export_download_rendered_controls_current_main_sync") if isinstance(manifest, dict) else None
+    if not isinstance(sync, dict) or sync.get("merged_pr") != "#920" or sync.get("merge_commit") != "11185c51b1af4c68a8df9f28a1fd0bb66cf5cf32":
+        errors.append(f"{_rel(MANIFEST)} rendered-controls current-main sync metadata mismatch")
+    freeze = manifest.get("source_intake_external_export_download_signed_reference_boundary_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(freeze, dict) or freeze.get("current_failure_boundary") != "external_export_download_signed_reference_scope_not_admitted" or freeze.get("next_boundary") != "source_intake_external_export_download_signed_reference_boundary":
+        errors.append(f"{_rel(MANIFEST)} signed-reference freeze metadata mismatch")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    if not isinstance(proof.get("source_intake_external_export_download_rendered_controls_current_main_sync_proof") if isinstance(proof, dict) else None, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing rendered-controls current-main sync proof")
+    if not isinstance(proof.get("source_intake_external_export_download_signed_reference_boundary_freeze_proof") if isinstance(proof, dict) else None, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing signed-reference boundary freeze proof")
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -28372,6 +28419,7 @@ def main() -> int:
     _check_source_intake_external_export_download_delivery_boundary(errors)
     _check_source_intake_external_export_download_rendered_controls_boundary_freeze(errors)
     _check_source_intake_external_export_download_rendered_controls_boundary(errors)
+    _check_source_intake_external_export_download_post_920_sync(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
