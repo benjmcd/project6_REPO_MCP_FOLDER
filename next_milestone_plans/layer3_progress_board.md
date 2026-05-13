@@ -1792,3 +1792,9 @@ The next implementation may add only rendered controls backed by the existing pr
 Branch-local implementation: `348_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS.md` and branch `codex/l3-provider-public-rendered-controls` add only `/review/layer3` rendered provider-public prepare/status/revoke controls over the existing backend APIs.
 
 The implementation keeps delivery/use, raw public URL display, public proxy runtime, `public_url_enabled: True`, connector/destination dispatch, package mutation, source expansion, broad qualitative/RAG/vector behavior, full mockup activation, auth/security behavior, and frontend-only durable provider-public authority blocked.
+
+## Source Intake Provider Public URL Rendered Controls Current-main Sync
+
+Current-main proof/control sync: PR `#938` merged `348_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS.md` and the bounded `/review/layer3` provider-public prepare/status/revoke rendered controls at merge commit `e0540652e9528cb72e68bc4af625254f5b7a44a0`.
+
+The sync doc `349_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Provider-public delivery/use, raw public URL exposure, public proxy runtime, connector/destination dispatch, package mutation, source expansion, broad qualitative/RAG/vector behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.

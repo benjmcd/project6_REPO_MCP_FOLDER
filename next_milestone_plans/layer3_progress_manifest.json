@@ -11181,5 +11181,29 @@
   "latest_source_intake_provider_public_url_rendered_controls_branch": "codex/l3-provider-public-rendered-controls",
   "latest_source_intake_provider_public_url_rendered_controls_doc": "next_milestone_plans/Layer3_planning_docs/348_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS.md",
   "latest_source_intake_provider_public_url_rendered_controls_live_behavior_change": true,
-  "latest_source_intake_provider_public_url_rendered_controls_summary": "Branch codex/l3-provider-public-rendered-controls adds only /review/layer3 provider-public prepare/status/revoke controls over existing backend APIs, renders redacted provider-public state, blocks delivery/use/raw public URL/public proxy/frontend-only durable authority, and passed focused static/API/state/progress plus headed/headless browser validation."
+  "latest_source_intake_provider_public_url_rendered_controls_summary": "Branch codex/l3-provider-public-rendered-controls adds only /review/layer3 provider-public prepare/status/revoke controls over existing backend APIs, renders redacted provider-public state, blocks delivery/use/raw public URL/public proxy/frontend-only durable authority, and passed focused static/API/state/progress plus headed/headless browser validation.",
+  "source_intake_provider_public_url_rendered_controls_current_main_sync": {
+    "status": "completed_current_main_sync",
+    "branch": "codex/l3-provider-public-rendered-controls-sync-938",
+    "merged_pr": "#938",
+    "merge_commit": "e0540652e9528cb72e68bc4af625254f5b7a44a0",
+    "head_commit": "20e5e63c0b949a1277784fdc3029873cd890ceb0",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/349_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_CURRENT_MAIN_SYNC.md",
+    "live_behavior_change": false,
+    "synced_boundary": "source_intake_provider_public_url_rendered_controls",
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": [],
+      "reviews": [],
+      "review_threads": [],
+      "merge_state": "CLEAN",
+      "post_merge_progress_check": "PASS"
+    },
+    "next_required_action": "provider_public_url_delivery_use_or_downstream_expansion_freeze_before_any_delivery_use"
+  },
+  "latest_source_intake_provider_public_url_rendered_controls_current_main_sync_branch": "codex/l3-provider-public-rendered-controls-sync-938",
+  "latest_source_intake_provider_public_url_rendered_controls_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/349_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_CURRENT_MAIN_SYNC.md",
+  "latest_source_intake_provider_public_url_rendered_controls_current_main_sync_live_behavior_change": false,
+  "latest_source_intake_provider_public_url_rendered_controls_current_main_sync_summary": "PR #938 merged provider-public rendered prepare/status/revoke controls at e0540652e9528cb72e68bc4af625254f5b7a44a0 with GitHub checks passing, no comments/reviews/review threads, clean merge state, and post-merge progress check PASS; provider-public delivery/use remains blocked pending a later freeze."
 }
