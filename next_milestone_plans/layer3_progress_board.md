@@ -1475,3 +1475,16 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 - Targeted validation: `pytest .\backend\tests\test_layer3_pass_entry.py` passed with 24 tests.
 - Blocked scope remains execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, generic/broad upload, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
 - Next required decision: `source_intake_execution_selection_boundary_freeze` before a source-intake approved plan may create selected pass-run state or start execution.
+
+## Source Intake Execution Selection Guard
+
+- Status: branch-local corrective guard/proof for `source_intake_execution_selection_guard`.
+- Branch: `codex/l3-source-intake-exec-selection-guard`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/303_SOURCE_INTAKE_EXECUTION_SELECTION_GUARD.md`.
+- Corrective predecessor: `next_milestone_plans/Layer3_planning_docs/302_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY.md`.
+- Canonical source of truth: server-owned approved `L3AnalysisPlan` payload derived from `L3SourceIntakeRecord` Gate C and plan-preview state.
+- Corrected boundary: `backend/app/services/layer3_workbench.py` rejects source-intake approved planned passes before `L3PassRun` shell creation when `pass_scope` is `qualitative_single_item_operator_uploaded_source` or `engine_family` is `source_intake_qualitative_preview`.
+- Error contract: `source_intake_execution_selection_not_admitted`, blocked field `analysis_plan_id`, next action `freeze_source_intake_execution_selection_boundary`.
+- Proof: `backend/tests/test_layer3_workbench.py` proves no `L3PassRun` is created for a source-intake approved plan, and `pytest .\backend\tests\test_layer3_workbench.py` passed with 22 tests.
+- Blocked scope remains source-intake execution selection, execution start, package construction/mutation, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, generic/broad upload, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
+- Next required decision remains `source_intake_execution_selection_boundary_freeze`.

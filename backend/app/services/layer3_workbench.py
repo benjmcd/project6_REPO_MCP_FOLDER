@@ -46,6 +46,7 @@ from app.services.layer3_pass_entry import (
     PASS_STATUS_RUNNING,
     PASS_STATUS_SELECTED_NOT_STARTED,
     PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+    PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
     PASS_TYPE_ASSOCIATED_COHORT,
     PASS_TYPE_SINGLE_ITEM,
     PLAN_STATUS_APPROVED,
@@ -3366,6 +3367,18 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 f"Approved plan '{analysis_plan_id}' has a planned pass without pass_type.",
                 status="conflict",
                 http_status=409,
+            )
+        if (
+            str(planned_pass.get("pass_scope") or "").strip() == PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE
+            or str(planned_pass.get("engine_family") or "").strip() == "source_intake_qualitative_preview"
+        ):
+            raise Layer3WorkbenchError(
+                "source_intake_execution_selection_not_admitted",
+                "Source-intake approved plans are not admitted for execution selection before the execution-selection boundary freeze.",
+                status="blocked",
+                http_status=409,
+                blocked_fields=["analysis_plan_id"],
+                next_allowed_actions=["freeze_source_intake_execution_selection_boundary"],
             )
         selected_planned_passes.append(planned_pass)
 
