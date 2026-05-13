@@ -7100,7 +7100,8 @@
     "source_intake_handoff_export_prepare_boundary_freeze": "completed_source_intake_handoff_export_prepare_boundary_freeze",
     "source_intake_handoff_export_prepare_boundary": "branch_local_implemented_targeted_tests_passed",
     "source_intake_aps_handoff_dispatch_boundary_freeze": "completed_source_intake_aps_handoff_dispatch_boundary_freeze",
-    "source_intake_aps_handoff_dispatch_boundary": "branch_local_implemented_targeted_tests_passed"
+    "source_intake_aps_handoff_dispatch_boundary": "branch_local_implemented_targeted_tests_passed",
+    "source_intake_external_export_download_boundary_freeze": "completed_source_intake_external_export_download_boundary_freeze"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -9976,5 +9977,55 @@
   "latest_source_intake_aps_handoff_dispatch_boundary_branch": "codex/l3-source-intake-aps-dispatch",
   "latest_source_intake_aps_handoff_dispatch_boundary_doc": "next_milestone_plans/Layer3_planning_docs/321_SOURCE_INTAKE_APS_HANDOFF_DISPATCH_BOUNDARY.md",
   "latest_source_intake_aps_handoff_dispatch_boundary_summary": "Branch-local source_intake_aps_handoff_dispatch_boundary admits bounded APS evidence-bundle handoff dispatch through aps_handoff_dispatch, preserves source-intake identity and package refs/hashes without AnalysisRun, and keeps external export/download connector/provider/RAG/UI/model/auth/package-mutation surfaces blocked.",
-  "latest_source_intake_aps_handoff_dispatch_boundary_live_behavior_change": true
+  "latest_source_intake_aps_handoff_dispatch_boundary_live_behavior_change": true,
+  "source_intake_external_export_download_boundary_freeze": {
+    "status": "completed_source_intake_external_export_download_boundary_freeze",
+    "planning_branch": "codex/l3-source-intake-export-download-freeze",
+    "current_main_predecessor_commit": "77878d000fd04f68192038d1be6ae43531b40f4e",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "source_intake_external_export_download_boundary",
+    "freeze_predecessor": "source_intake_aps_handoff_dispatch_boundary",
+    "canonical_source_of_truth": "server_owned_source_intake_aps_handoff_dispatch_state_package_payload_identity_and_dispatch_package",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/322_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_BOUNDARY_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "current_failure_boundary": "source_intake_external_export_download_not_admitted",
+    "future_external_export_download_semantics": {
+      "request_contract": "existing_external_export_download_request_contract",
+      "required_aps_handoff_dispatch_schema_id": "layer3.source_intake_aps_handoff_dispatch.v1",
+      "required_handoff_export_prepare_schema_id": "layer3.source_intake_handoff_export_prepare.v1",
+      "required_package_review_submit_schema_id": "layer3.source_intake_package_review_submit.v1",
+      "required_package_construction_schema_id": "layer3.source_intake_package_construction_commit.v1",
+      "required_output_schema_id": "layer3.source_intake_execution_output.v1",
+      "required_engine_family": "source_intake_qualitative_preview",
+      "analysis_run_created": false,
+      "route_added": false,
+      "model_migration_changed": false,
+      "rendered_ui_changed": false,
+      "connector_dispatch_created": false,
+      "provider_url_created": false
+    },
+    "required_future_proofs": [
+      "source_intake_aps_handoff_dispatch_can_prepare_external_export_download",
+      "source_intake_external_export_download_identity_is_deterministic_and_server_derived",
+      "source_intake_identity_preserved_in_external_export_download_state",
+      "aps_handoff_dispatch_record_ref_matches_durable_dispatch_state",
+      "handoff_export_prepare_record_ref_matches_durable_prepare_state",
+      "source_package_payload_refs_and_hashes_match_durable_package_state",
+      "aps_evidence_bundle_payload_ref_and_hash_match_durable_dispatch_package",
+      "no_analysis_run_required_or_created",
+      "no_source_package_rows_or_payloads_mutated",
+      "connector_destination_dispatch_remains_blocked",
+      "provider_public_private_url_remains_blocked",
+      "existing_associated_cohort_single_aps_qualitative_aps_and_source_intake_dispatch_unchanged"
+    ],
+    "implementation_entry_allowed_next": true,
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_boundary": "source_intake_external_export_download_boundary"
+  },
+  "latest_source_intake_external_export_download_boundary_freeze_branch": "codex/l3-source-intake-export-download-freeze",
+  "latest_source_intake_external_export_download_boundary_freeze_doc": "next_milestone_plans/Layer3_planning_docs/322_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_BOUNDARY_FREEZE.md",
+  "latest_source_intake_external_export_download_boundary_freeze_summary": "Doc 322 freezes source-intake external export/download as the next narrow owner-service boundary after current-main source-intake APS handoff dispatch. It preserves source_intake_external_export_download_not_admitted until a later implementation proves bounded same-origin export/download readiness or delivery over layer3.source_intake_aps_handoff_dispatch.v1 without AnalysisRun, connector, provider URL, RAG, route, UI, model, migration, package mutation, source expansion, or auth/security widening.",
+  "latest_source_intake_external_export_download_boundary_freeze_live_behavior_change": false
 }
