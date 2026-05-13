@@ -19906,6 +19906,9 @@ def _check_source_intake_gate_b_rendered_admission_controls(errors: list[str]) -
     for term in (
         "source_intake_gate_b_rendered_admission_controls",
         "codex/l3-source-intake-gate-b-rendered-controls",
+        "#879",
+        "204d551a88b136882d1ee27a2c31d02798e2547c",
+        "current-main implementation with targeted validation passed",
         "L3SourceIntakeRecord",
         "295_SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS_FREEZE.md",
         "POST /api/v1/layer3/gate-b/decision",
@@ -19963,6 +19966,8 @@ def _check_source_intake_gate_b_rendered_admission_controls(errors: list[str]) -
             "latest_source_intake_gate_b_rendered_admission_controls_branch",
             "source_intake_gate_b_rendered_admission_controls",
             "codex/l3-source-intake-gate-b-rendered-controls",
+            "#879",
+            "204d551a88b136882d1ee27a2c31d02798e2547c",
             "296_SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS.md",
             "transient_only_not_durable_authority",
         ),
@@ -19971,6 +19976,8 @@ def _check_source_intake_gate_b_rendered_admission_controls(errors: list[str]) -
             "296_SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS.md",
             "source_intake_gate_b_rendered_admission_controls",
             "workbench_error_envelope_preserves_nested_error_code",
+            "#879",
+            "204d551a88b136882d1ee27a2c31d02798e2547c",
         ),
     }.items():
         surface_text = _read_required_text(path, errors)
@@ -19984,8 +19991,12 @@ def _check_source_intake_gate_b_rendered_admission_controls(errors: list[str]) -
         errors.append(f"{_rel(MANIFEST)} missing source_intake_gate_b_rendered_admission_controls")
     else:
         for key, expected in {
-            "status": "branch_local_implemented_targeted_tests_passed",
+            "status": "current_main_implemented_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-gate-b-rendered-controls",
+            "implementation_commit": "f079d0ffc3d760bc24a948141745d5852ccd061c",
+            "pr": "#879",
+            "merge_commit": "204d551a88b136882d1ee27a2c31d02798e2547c",
+            "current_main_commit": "204d551a88b136882d1ee27a2c31d02798e2547c",
             "selected_runtime_family": "source_breadth_runtime",
             "selected_rendered_control_mode": "source_intake_gate_b_rendered_admission_controls",
             "runtime_predecessor": "source_intake_gate_b_material_admission_runtime",
@@ -20052,7 +20063,7 @@ def _check_source_intake_gate_b_rendered_admission_controls(errors: list[str]) -
             if manifest.get(key) != expected:
                 errors.append(f"{_rel(MANIFEST)} {key} must be {expected!r}")
         scope_status = manifest.get("scope_status")
-        if not isinstance(scope_status, dict) or scope_status.get("source_intake_gate_b_rendered_admission_controls") != "branch_local_implemented_targeted_tests_passed":
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_gate_b_rendered_admission_controls") != "current_main_implemented_targeted_tests_passed":
             errors.append(f"{_rel(MANIFEST)} missing rendered-admission implementation scope status")
 
     proof = _load_json(PROOF_MANIFEST, errors)
@@ -20061,8 +20072,12 @@ def _check_source_intake_gate_b_rendered_admission_controls(errors: list[str]) -
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_gate_b_rendered_admission_controls_proof")
         return
     for key, expected in {
-        "status": "branch_local_implemented_targeted_tests_passed",
+        "status": "current_main_implemented_targeted_tests_passed",
         "implementation_branch": "codex/l3-source-intake-gate-b-rendered-controls",
+        "implementation_commit": "f079d0ffc3d760bc24a948141745d5852ccd061c",
+        "pr": "#879",
+        "merge_commit": "204d551a88b136882d1ee27a2c31d02798e2547c",
+        "current_main_commit": "204d551a88b136882d1ee27a2c31d02798e2547c",
         "selected_runtime_family": "source_breadth_runtime",
         "selected_rendered_control_mode": "source_intake_gate_b_rendered_admission_controls",
         "runtime_predecessor": "source_intake_gate_b_material_admission_runtime",
