@@ -14614,5 +14614,35 @@
     }
   },
   "latest_source_intake_execution_selection_boundary_branch": "codex/l3-source-intake-exec-selection",
-  "latest_source_intake_execution_selection_boundary_live_behavior_change": true
+  "latest_source_intake_execution_selection_boundary_live_behavior_change": true,
+  "source_intake_execution_start_boundary_freeze_proof": {
+    "proof_kind": "source_intake_execution_start_boundary_freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE.md",
+    "branch": "codex/l3-source-intake-exec-start-freeze",
+    "current_main_predecessor_commit": "b33c11269597df0e30f1ff4b79fbd03929a1e493",
+    "repo_confirmed_failure_boundary": "analysis_execution_start rejects source-intake selected pass runs with unsupported_analysis_execution_engine",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "frozen_future_scope": [
+      "existing_analysis_execution_start_request_contract",
+      "source_intake_qualitative_preview",
+      "qualitative_single_item_operator_uploaded_source",
+      "operator_uploaded_source_review_preview",
+      "server_owned_source_intake_record_identity",
+      "no_analysis_run_created"
+    ],
+    "blocked_scope": [
+      "package",
+      "handoff",
+      "export",
+      "connector_destination_dispatch",
+      "provider_url",
+      "rag_vector",
+      "route",
+      "rendered_ui",
+      "model_migration",
+      "auth_security",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required"
+  }
 }

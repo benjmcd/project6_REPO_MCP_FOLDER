@@ -452,6 +452,9 @@ SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE = (
 SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY = (
     PLANNING_DOCS / "305_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY.md"
 )
+SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE = (
+    PLANNING_DOCS / "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -21340,6 +21343,85 @@ def _check_source_intake_execution_selection_boundary(errors: list[str]) -> None
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_execution_selection_boundary_proof")
 
 
+
+def _check_source_intake_execution_start_boundary_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE, errors)
+    for term in (
+        "source_intake_execution_start_boundary",
+        "codex/l3-source-intake-exec-start-freeze",
+        "305_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY.md",
+        "backend/app/services/layer3_workbench.py",
+        "unsupported_analysis_execution_engine",
+        "analysis_execution_start",
+        "source_intake_qualitative_preview",
+        "qualitative_single_item_operator_uploaded_source",
+        "operator_uploaded_source_review_preview",
+        "source_intake_record_id",
+        "candidate_id",
+        "no `AnalysisRun`",
+        "implement_source_intake_execution_start_boundary",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE)} missing source-intake execution-start freeze term: {term}")
+    for path, terms in {
+        BOARD: ("## Source Intake Execution Start Boundary Freeze", "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE.md", "unsupported_analysis_execution_engine"),
+        MANIFEST: ("source_intake_execution_start_boundary_freeze", "latest_source_intake_execution_start_boundary_freeze_branch", "source_intake_qualitative_preview"),
+        PROOF_MANIFEST: ("source_intake_execution_start_boundary_freeze_proof", "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE.md", "no_analysis_run_created"),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing source-intake execution-start freeze term: {term}")
+    source_text = _read_required_text(ROOT / "backend/app/services/layer3_workbench.py", errors)
+    for term in ("unsupported_analysis_execution_engine", "wrapped_quantitative_pass", "qualitative_aps_pass"):
+        if term not in source_text:
+            errors.append(f"{_rel(ROOT / 'backend/app/services/layer3_workbench.py')} missing current execution-start boundary term: {term}")
+    manifest = _load_json(MANIFEST, errors)
+    freeze = manifest.get("source_intake_execution_start_boundary_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(freeze, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_execution_start_boundary_freeze")
+    else:
+        for key, expected in {
+            "status": "completed_source_intake_execution_start_boundary_freeze",
+            "planning_branch": "codex/l3-source-intake-exec-start-freeze",
+            "current_main_predecessor_commit": "b33c11269597df0e30f1ff4b79fbd03929a1e493",
+            "selected_runtime_mode": "source_intake_execution_start_boundary",
+            "freeze_predecessor": "source_intake_execution_selection_boundary",
+            "canonical_source_of_truth": "server_owned_selected_L3PassRun_from_source_intake_approved_L3AnalysisPlan",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE.md",
+            "owner_service": "backend/app/services/layer3_workbench.py",
+            "current_failure_boundary": "unsupported_analysis_execution_engine",
+            "implementation_entry_allowed_next": True,
+            "live_behavior_change": False,
+            "runtime_behavior_change": False,
+            "rendered_ui_behavior_change": False,
+            "next_boundary": "source_intake_execution_start_boundary",
+        }.items():
+            if freeze.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_execution_start_boundary_freeze.{key} must be {expected!r}")
+        semantics = freeze.get("future_execution_start_semantics")
+        if not isinstance(semantics, dict) or semantics.get("required_engine_family") != "source_intake_qualitative_preview" or semantics.get("analysis_run_created") is not False:
+            errors.append(f"{_rel(MANIFEST)} source_intake_execution_start_boundary_freeze future_execution_start_semantics invalid")
+        for required in (
+            "source_intake_selected_pass_run_can_start_execution",
+            "current_approved_plan_and_preview_identity_revalidated",
+            "source_intake_planned_pass_identity_preserved",
+            "no_analysis_run_created",
+            "unsupported_engines_remain_blocked",
+            "existing_quantitative_and_single_aps_qualitative_execution_start_unchanged",
+        ):
+            if required not in freeze.get("required_future_proofs", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_execution_start_boundary_freeze required_future_proofs missing {required}")
+    if isinstance(manifest, dict):
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_execution_start_boundary_freeze") != "completed_source_intake_execution_start_boundary_freeze":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake execution-start freeze scope status")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_execution_start_boundary_freeze_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict) or proof_entry.get("proof_kind") != "source_intake_execution_start_boundary_freeze":
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_execution_start_boundary_freeze_proof")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -26348,6 +26430,7 @@ def main() -> int:
     _check_source_intake_execution_selection_guard(errors)
     _check_source_intake_execution_selection_boundary_freeze(errors)
     _check_source_intake_execution_selection_boundary(errors)
+    _check_source_intake_execution_start_boundary_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
