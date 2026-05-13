@@ -1816,3 +1816,9 @@ The sync doc `351_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_
 Branch-local planning/control authority contract: `352_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT.md` completes `provider_public_url_delivery_use_authority_contract_only` after current-main PR `#941`.
 
 The contract keeps provider-public delivery/use blocked and records the required proof before any future raw public URL delivery/use implementation can be reopened: route/DTO shape, raw URL response policy, `public_url_enabled: True` authority, provider/object-store owner, public access behavior, TTL/credential lifetime, revocation after exposure, HTTPS/transport assumptions, API auth/security, leak controls, cache headers, audit redaction, browser proof, and fail-closed negative tests. The next required decision is `next_deferred_server_authoritative_runtime_lane_freeze`.
+
+## Source Intake Provider Public URL Delivery/Use Authority Contract Current-main Sync
+
+Current-main proof/control sync: PR `#942` merged `352_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT.md` at merge commit `6c493ea1ba44329ebaba93a86b04fb932efd07b4`.
+
+The sync doc `353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Provider-public delivery/use remains blocked; the next required decision is `next_deferred_server_authoritative_runtime_lane_freeze`.
