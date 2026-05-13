@@ -13,6 +13,10 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import L3SourceIntakeRecord
+from app.services.layer3_gate_b_state import (
+    material_candidate_basis_from_preview as _gate_b_material_candidate_basis_from_preview,
+    material_preview_hash as _gate_b_material_preview_hash,
+)
 
 
 SOURCE_INTAKE_SCHEMA_ID = "layer3.source_intake_record.v1"
@@ -31,6 +35,8 @@ SOURCE_INTAKE_INVENTORY_DESCRIPTION_MAX_CHARS = 512
 SOURCE_INTAKE_PREVIEW_SCHEMA_ID = "layer3.source_intake_material_preview.v1"
 SOURCE_INTAKE_PREVIEW_MODE = "operator_source_intake_material_preview_read_only"
 SOURCE_INTAKE_PREVIEW_MAX_CHARS = 4000
+SOURCE_INTAKE_GATE_B_MODE = "source_intake_gate_b_material_admission"
+SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX = "mat-source_intake_record-"
 
 SERVER_AUTHORITY = (
     "Layer 3 source intake record owns source identity, bytes/metadata hash, "
@@ -488,7 +494,69 @@ def source_intake_material_preview(
         )
 
     truncated = decoded_char_count > normalized_max_chars
-    material_candidate_id = f"mat-source_intake_record-{record.source_intake_record_id}"
+    material_preview_id = _stable_hash(
+        {
+            "mode": SOURCE_INTAKE_PREVIEW_MODE,
+            "source_intake_record_id": record.source_intake_record_id,
+            "content_sha256": record.content_sha256,
+            "max_chars": normalized_max_chars,
+        }
+    )[:36]
+    source_ref = f"source_intake_record:{record.source_intake_record_id}"
+    source_identity = {
+        **_inventory_record_response(record)["source_identity"],
+        "source_intake_record_id": record.source_intake_record_id,
+    }
+    source_provenance = {
+        **(record.provenance_json or {}),
+        "mode": SOURCE_INTAKE_GATE_B_MODE,
+        "source_ref": source_ref,
+    }
+    material_candidate = {
+        "candidate_id": f"{SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX}{record.source_intake_record_id}",
+        "source_class": SOURCE_INTAKE_SOURCE_FAMILY,
+        "source_ref": source_ref,
+        "query_basis": "operator_uploaded_source_intake",
+        "provenance_ref": f"source_intake_record:{record.source_intake_record_id}:metadata:{record.metadata_hash}",
+        "source_label": record.source_label,
+        "media_type": record.media_type,
+        "content_size_bytes": record.content_size_bytes,
+        "content_sha256": record.content_sha256,
+        "metadata_hash": record.metadata_hash,
+        "authority_basis_hash": record.authority_basis_hash,
+        "preview_text": preview_text,
+        "preview_char_count": len(preview_text),
+        "preview_truncated": truncated,
+        "preview_encoding": "utf-8-replace",
+        "storage_pointer": {
+            "storage_ref": record.storage_ref,
+            "storage_authority": "server_raw_storage",
+            "content_addressed": True,
+            "absolute_path_exposed": False,
+        },
+        "source_identity": source_identity,
+        "source_provenance": source_provenance,
+        "payload": {
+            "source_intake_record_id": record.source_intake_record_id,
+            "source_class": SOURCE_INTAKE_SOURCE_FAMILY,
+            "content_sha256": record.content_sha256,
+            "metadata_hash": record.metadata_hash,
+            "authority_basis_hash": record.authority_basis_hash,
+            "bounded_preview_char_count": len(preview_text),
+            "preview_truncated": truncated,
+        },
+        "load_summary": {
+            "loaded_records": 1,
+            "failed_records": 0,
+            "preview_material": True,
+            "bounded_text_preview": True,
+            "source_intake_gate_b_material_admission": True,
+        },
+        "current_decision_state": "candidate",
+    }
+    material_preview_hash = _gate_b_material_preview_hash(
+        [_gate_b_material_candidate_basis_from_preview(material_candidate)]
+    )
     return {
         "schema_id": SOURCE_INTAKE_PREVIEW_SCHEMA_ID,
         "schema_version": 1,
@@ -503,6 +571,7 @@ def source_intake_material_preview(
             "writer_route": "POST /api/v1/layer3/source/intake/upload",
             "inventory_route": "GET /api/v1/layer3/source/intake/inventory",
             "preview_route": "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+            "gate_b_material_admission_route": "POST /api/v1/layer3/gate-b/decision",
             "absolute_path_exposed": False,
             "bounded_text_preview": True,
             "rag_vector_index_enabled": False,
@@ -511,52 +580,230 @@ def source_intake_material_preview(
         },
         "source_intake_preview_mode": SOURCE_INTAKE_PREVIEW_MODE,
         "source_intake_record_id": record.source_intake_record_id,
-        "material_preview_id": _stable_hash(
-            {
-                "mode": SOURCE_INTAKE_PREVIEW_MODE,
-                "source_intake_record_id": record.source_intake_record_id,
-                "content_sha256": record.content_sha256,
-                "max_chars": normalized_max_chars,
-            }
-        )[:36],
-        "material_candidate": {
-            "candidate_id": material_candidate_id,
-            "source_class": "operator_uploaded_single_source",
-            "source_ref": f"source_intake_record:{record.source_intake_record_id}",
-            "source_label": record.source_label,
-            "media_type": record.media_type,
-            "content_size_bytes": record.content_size_bytes,
-            "content_sha256": record.content_sha256,
-            "metadata_hash": record.metadata_hash,
-            "authority_basis_hash": record.authority_basis_hash,
-            "preview_text": preview_text,
-            "preview_char_count": len(preview_text),
-            "preview_truncated": truncated,
-            "preview_encoding": "utf-8-replace",
-            "storage_pointer": {
-                "storage_ref": record.storage_ref,
-                "storage_authority": "server_raw_storage",
-                "content_addressed": True,
-                "absolute_path_exposed": False,
-            },
-            "source_identity": _inventory_record_response(record)["source_identity"],
-            "source_provenance": record.provenance_json or {},
-            "load_summary": {
-                "loaded_records": 1,
-                "failed_records": 0,
-                "preview_material": True,
-                "bounded_text_preview": True,
-            },
-            "current_decision_state": "candidate",
-        },
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "material_candidate": material_candidate,
         "partial_retrieval": truncated,
         "downstream_eligibility": _downstream_eligibility(),
         "negative_invariants": _negative_invariants(),
         "next_allowed_actions": [
-            "use_bounded_preview_for_operator_review_only",
+            "submit_source_intake_material_candidate_to_gate_b_decision",
             "define_later_freeze_before_rag_connector_package_or_rendered_source_controls",
         ],
     }
+
+
+_SOURCE_INTAKE_GATE_B_FORBIDDEN_FIELDS = {
+    "absolute_path",
+    "auth_policy",
+    "connector_target",
+    "destination",
+    "directory_path",
+    "execution_mode",
+    "file",
+    "file_bytes",
+    "frontend_state",
+    "local_path",
+    "package_payload",
+    "provider_url",
+    "public_url",
+    "rag_index",
+    "vector_index",
+    "web_connector",
+}
+
+
+def validate_source_intake_gate_b_decision_basis(
+    db: Session,
+    *,
+    candidate_id: str,
+    decision_basis: Mapping[str, Any],
+) -> None:
+    blocked_fields = _gate_b_forbidden_decision_basis_fields(decision_basis)
+    if blocked_fields:
+        raise SourceIntakeError(
+            "source_intake_gate_b_forbidden_field_not_admitted",
+            "The source-intake Gate B decision basis includes a field from a deferred or forbidden runtime mode.",
+            details={"blocked_fields": blocked_fields},
+        )
+
+    record_id = _source_intake_record_id_from_candidate(candidate_id)
+    if not record_id:
+        raise SourceIntakeError(
+            "source_intake_gate_b_candidate_id_not_admitted",
+            "The Gate B material candidate is not an admitted source-intake record candidate.",
+            details={"blocked_fields": ["candidate_decisions.candidate_id"]},
+        )
+
+    record = db.get(L3SourceIntakeRecord, record_id)
+    if record is None:
+        raise SourceIntakeError(
+            "source_intake_gate_b_record_not_found",
+            "No source-intake authority row exists for the Gate B material candidate.",
+            http_status=404,
+            details={"source_intake_record_id": record_id},
+        )
+    if record.status != SOURCE_INTAKE_STATUS or record.source_family != SOURCE_INTAKE_SOURCE_FAMILY:
+        raise SourceIntakeError(
+            "source_intake_gate_b_record_not_admitted",
+            "Only recorded operator-uploaded single-source rows are admitted for Gate B material selection.",
+            http_status=409,
+            details={
+                "source_intake_record_id": record.source_intake_record_id,
+                "status": record.status,
+                "source_family": record.source_family,
+                "blocked_fields": ["candidate_decisions.decision_basis.source_intake_record_id"],
+            },
+        )
+    media_type = _normalise_media_type(record.media_type)
+    if not _is_text_preview_media_type(media_type):
+        raise SourceIntakeError(
+            "source_intake_gate_b_media_type_not_admitted",
+            "Only bounded text-like operator-uploaded source material is admitted for Gate B material selection.",
+            details={
+                "source_intake_record_id": record.source_intake_record_id,
+                "media_type": record.media_type,
+                "blocked_fields": ["candidate_decisions.decision_basis.media_type"],
+            },
+        )
+
+    storage_path = _storage_path_from_ref(record.storage_ref)
+    if not storage_path.exists() or not storage_path.is_file():
+        raise SourceIntakeError(
+            "source_intake_gate_b_storage_missing",
+            "The source-intake storage object is not available for Gate B material selection.",
+            http_status=404,
+            details={"source_intake_record_id": record.source_intake_record_id, "storage_ref": record.storage_ref},
+        )
+    _, _, content_sha256 = _preview_text_and_hash(storage_path, 1)
+    if content_sha256 != record.content_sha256:
+        raise SourceIntakeError(
+            "source_intake_gate_b_hash_mismatch",
+            "The source-intake storage object hash does not match the persisted authority row.",
+            http_status=409,
+            details={"source_intake_record_id": record.source_intake_record_id},
+        )
+
+    expected_source_ref = f"source_intake_record:{record.source_intake_record_id}"
+    source_ref = str(decision_basis.get("source_ref") or "").strip()
+    if source_ref != expected_source_ref:
+        raise SourceIntakeError(
+            "source_intake_gate_b_source_ref_mismatch",
+            "The Gate B decision basis source_ref does not match the source-intake authority row.",
+            http_status=409,
+            details={
+                "expected_source_ref": expected_source_ref,
+                "received_source_ref": source_ref,
+                "blocked_fields": ["candidate_decisions.decision_basis.source_ref"],
+            },
+        )
+    if str(decision_basis.get("query_basis") or "").strip() != "operator_uploaded_source_intake":
+        raise SourceIntakeError(
+            "source_intake_gate_b_query_basis_mismatch",
+            "The Gate B decision basis query_basis does not match the source-intake material preview.",
+            http_status=409,
+            details={"blocked_fields": ["candidate_decisions.decision_basis.query_basis"]},
+        )
+    expected_provenance_ref = f"source_intake_record:{record.source_intake_record_id}:metadata:{record.metadata_hash}"
+    if str(decision_basis.get("provenance_ref") or "").strip() != expected_provenance_ref:
+        raise SourceIntakeError(
+            "source_intake_gate_b_provenance_ref_mismatch",
+            "The Gate B decision basis provenance_ref does not match the source-intake authority row.",
+            http_status=409,
+            details={"blocked_fields": ["candidate_decisions.decision_basis.provenance_ref"]},
+        )
+
+    source_identity = decision_basis.get("source_identity")
+    if not isinstance(source_identity, Mapping):
+        raise SourceIntakeError(
+            "source_intake_gate_b_source_identity_missing",
+            "The Gate B decision basis must include source_identity from the source-intake material preview.",
+            details={"blocked_fields": ["candidate_decisions.decision_basis.source_identity"]},
+        )
+    _assert_gate_b_basis_matches_record(
+        source_identity,
+        record,
+        fields={
+            "source_intake_record_id": record.source_intake_record_id,
+            "source_family": SOURCE_INTAKE_SOURCE_FAMILY,
+            "content_sha256": record.content_sha256,
+            "metadata_hash": record.metadata_hash,
+        },
+        field_prefix="candidate_decisions.decision_basis.source_identity",
+        code="source_intake_gate_b_source_identity_mismatch",
+        message="The Gate B decision basis source_identity does not match the source-intake authority row.",
+    )
+
+    payload = decision_basis.get("payload")
+    if not isinstance(payload, Mapping):
+        raise SourceIntakeError(
+            "source_intake_gate_b_payload_missing",
+            "The Gate B decision basis must include the source-intake material preview payload.",
+            details={"blocked_fields": ["candidate_decisions.decision_basis.payload"]},
+        )
+    _assert_gate_b_basis_matches_record(
+        payload,
+        record,
+        fields={
+            "source_intake_record_id": record.source_intake_record_id,
+            "source_class": SOURCE_INTAKE_SOURCE_FAMILY,
+            "content_sha256": record.content_sha256,
+            "metadata_hash": record.metadata_hash,
+            "authority_basis_hash": record.authority_basis_hash,
+        },
+        field_prefix="candidate_decisions.decision_basis.payload",
+        code="source_intake_gate_b_payload_mismatch",
+        message="The Gate B decision basis payload does not match the source-intake authority row.",
+    )
+
+
+def _source_intake_record_id_from_candidate(candidate_id: str) -> str | None:
+    value = str(candidate_id or "").strip()
+    if not value.startswith(SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX):
+        return None
+    record_id = value[len(SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX) :].strip()
+    return record_id or None
+
+
+def _gate_b_forbidden_decision_basis_fields(value: Any, prefix: str = "candidate_decisions.decision_basis") -> list[str]:
+    blocked: list[str] = []
+    if isinstance(value, Mapping):
+        for raw_key, nested_value in value.items():
+            key = str(raw_key)
+            field_path = f"{prefix}.{key}"
+            if key in _SOURCE_INTAKE_GATE_B_FORBIDDEN_FIELDS:
+                blocked.append(field_path)
+            blocked.extend(_gate_b_forbidden_decision_basis_fields(nested_value, field_path))
+    elif isinstance(value, list):
+        for index, nested_value in enumerate(value):
+            blocked.extend(_gate_b_forbidden_decision_basis_fields(nested_value, f"{prefix}.{index}"))
+    return sorted(set(blocked))
+
+
+def _assert_gate_b_basis_matches_record(
+    value: Mapping[str, Any],
+    record: L3SourceIntakeRecord,
+    *,
+    fields: Mapping[str, Any],
+    field_prefix: str,
+    code: str,
+    message: str,
+) -> None:
+    mismatched_fields = [
+        f"{field_prefix}.{key}"
+        for key, expected in fields.items()
+        if str(value.get(key) or "") != str(expected)
+    ]
+    if mismatched_fields:
+        raise SourceIntakeError(
+            code,
+            message,
+            http_status=409,
+            details={
+                "source_intake_record_id": record.source_intake_record_id,
+                "blocked_fields": mismatched_fields,
+            },
+        )
 
 
 def _normalise_fields(form_fields: Mapping[str, Any]) -> dict[str, str]:
@@ -842,6 +1089,7 @@ def _response_downstream_eligibility(stored: Mapping[str, Any] | None) -> dict[s
         for key in (
             "source_intake_recorded",
             "eligible_for_source_inventory",
+            "eligible_for_gate_b_material_admission",
             "eligible_for_rag_vector_index",
             "eligible_for_web_connector",
             "eligible_for_unbounded_runtime_db",
@@ -850,6 +1098,8 @@ def _response_downstream_eligibility(stored: Mapping[str, Any] | None) -> dict[s
                 eligibility[key] = bool(stored[key])
     eligibility["eligible_for_material_preview"] = True
     eligibility["material_preview_requires_later_freeze"] = False
+    eligibility["eligible_for_gate_b_material_admission"] = True
+    eligibility["gate_b_material_admission_requires_later_freeze"] = False
     return eligibility
 
 
@@ -859,6 +1109,8 @@ def _downstream_eligibility() -> dict[str, bool]:
         "eligible_for_source_inventory": True,
         "eligible_for_material_preview": True,
         "material_preview_requires_later_freeze": False,
+        "eligible_for_gate_b_material_admission": True,
+        "gate_b_material_admission_requires_later_freeze": False,
         "eligible_for_rag_vector_index": False,
         "eligible_for_web_connector": False,
         "eligible_for_unbounded_runtime_db": False,

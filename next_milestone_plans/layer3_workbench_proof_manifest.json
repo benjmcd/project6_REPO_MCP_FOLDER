@@ -745,7 +745,10 @@
     "latest_source_intake_rendered_controls_summary": "Branch codex/l3-source-intake-rendered-controls implements rendered /review/layer3 controls for the existing source-intake upload, inventory, and bounded preview APIs. The canonical authority remains L3SourceIntakeRecord; this pass changes static UI/test/progress proof surfaces only and admits no backend route, DTO, model, migration, or service change, no frontend-only durable authority, and no RAG, connector, package, provider, execution, or auth expansion.",
     "latest_source_intake_gate_b_material_admission_freeze_branch": "codex/l3-source-intake-gate-b-freeze",
     "latest_source_intake_gate_b_material_admission_freeze_live_behavior_change": false,
-    "latest_source_intake_gate_b_material_admission_freeze_summary": "Doc 293 freezes source_intake_gate_b_material_admission as the exact next source-breadth implementation-entry boundary over L3SourceIntakeRecord authority. It is planning/control only and admits no runtime behavior, rendered UI behavior, backend route, DTO, model, migration, or service change by itself."
+    "latest_source_intake_gate_b_material_admission_freeze_summary": "Doc 293 freezes source_intake_gate_b_material_admission as the exact next source-breadth implementation-entry boundary over L3SourceIntakeRecord authority. It is planning/control only and admits no runtime behavior, rendered UI behavior, backend route, DTO, model, migration, or service change by itself.",
+    "latest_source_intake_gate_b_material_admission_runtime_branch": "codex/l3-source-intake-gate-b-runtime",
+    "latest_source_intake_gate_b_material_admission_runtime_live_behavior_change": true,
+    "latest_source_intake_gate_b_material_admission_runtime_summary": "Branch codex/l3-source-intake-gate-b-runtime implements source_intake_gate_b_material_admission through the existing POST /api/v1/layer3/gate-b/decision route. The source-intake material preview now emits material_preview_hash and a Gate B-ready mat-source_intake_record- candidate, while Gate B validates the submitted decision basis against L3SourceIntakeRecord and server-owned storage hash authority before creating only existing Gate B selection state. It admits no new route, model, migration, rendered UI behavior, package construction, connector/destination dispatch, execution start, RAG/vector, provider URL, or auth/security behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -13973,5 +13976,74 @@
       "leakage_controls_for_paths_storage_refs_errors_and_logs",
       "headed_headless_theme_proof_if_rendered_ui_changes"
     ]
+  },
+  "source_intake_gate_b_material_admission_runtime_proof": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-gate-b-runtime",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "source_intake_gate_b_material_admission",
+    "runtime_proof_name": "source_intake_gate_b_material_admission_runtime",
+    "canonical_source_of_truth": "L3SourceIntakeRecord",
+    "gate_b_route": "POST /api/v1/layer3/gate-b/decision",
+    "preview_route": "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+    "material_candidate_prefix": "mat-source_intake_record-",
+    "material_source_class": "operator_uploaded_single_source",
+    "live_behavior_change": true,
+    "runtime_behavior_change": true,
+    "rendered_ui_behavior_change": false,
+    "model_migration_change": false,
+    "new_route_added": false,
+    "material_preview_hash_emitted": true,
+    "idempotent_replay_semantics": true,
+    "stale_authority_fail_closed": true,
+    "forbidden_adjacent_fields_fail_closed": true,
+    "side_effect_boundary": {
+      "creates_l3_session": true,
+      "creates_l3_selection_manifest": true,
+      "creates_l3_descriptor": true,
+      "creates_l3_material_snapshot": true,
+      "creates_l3_gate_b_idempotency_key": true,
+      "creates_l3_pass_run": false,
+      "creates_analysis_run": false,
+      "creates_analysis_artifact": false,
+      "creates_l3_output_package": false
+    },
+    "next_boundary": "source_intake_gate_b_rendered_admission_controls_freeze",
+    "blocked_scope": [
+      "generic_source_upload",
+      "broad_file_upload",
+      "local_path_authority",
+      "local_directory_authority",
+      "web_connector_retrieval",
+      "rag_vector_indexing",
+      "package_construction_mutation",
+      "connector_destination_dispatch",
+      "provider_private_signed_url_prepare",
+      "execution_start",
+      "auth_security_behavior",
+      "frontend_only_durable_authority",
+      "non_text_binary_preview",
+      "rendered_gate_b_source_intake_controls"
+    ],
+    "proof_files": [
+      "backend/app/services/layer3_source_intake.py",
+      "backend/app/services/layer3_source_boundary.py",
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/api/layer3.py",
+      "backend/tests/test_layer3_source_intake.py",
+      "backend/tests/test_layer3_source_boundary.py",
+      "backend/tests/test_layer3_gate_b_state.py",
+      "next_milestone_plans/Layer3_planning_docs/294_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "targeted_tests": [
+      "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py .\\backend\\tests\\test_layer3_gate_b_state.py -q"
+    ],
+    "proof_kind": "source_intake_gate_b_material_admission_runtime",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/294_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME.md"
   }
 }

@@ -91,6 +91,7 @@ def test_source_boundary_contract_keeps_deferred_source_expansion_fail_closed() 
         "operator_single_upload_source_intake",
         "operator_source_intake_inventory_read_only",
         "operator_source_intake_material_preview_read_only",
+        "source_intake_gate_b_material_admission",
     ]
     assert contract["source_intake_upload_enabled"] is True
     assert contract["source_intake_record_enabled"] is True
