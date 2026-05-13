@@ -14272,7 +14272,7 @@
     "repo_confirmed_failure_boundary": "layer3_pass_entry _classify_sets admits dataset_version quantitative and APS qualitative paths but source-intake qualitative singleton requires its own plan-preview admission rule"
   },
   "source_intake_plan_preview_boundary_proof": {
-    "status": "branch_local_implemented_targeted_tests_passed",
+    "status": "current_main_implemented_targeted_tests_passed",
     "implementation_branch": "codex/l3-source-intake-plan-preview",
     "selected_runtime_family": "source_breadth_runtime",
     "selected_runtime_mode": "source_intake_plan_preview_boundary",
@@ -14296,6 +14296,14 @@
     "model_migration_changed": false,
     "source_intake_plan_approval_blocked": true,
     "no_downstream_side_effect": true,
-    "next_boundary": "source_intake_plan_approval_boundary_freeze"
+    "next_boundary": "source_intake_plan_approval_boundary_freeze",
+    "implementation_commit": "46af1d10828ef1bbe0eb7459a1dca6c5a3e1a0fc",
+    "pr": "#885",
+    "current_main_commit": "28ab25cc0dc1d8e2e1d92f017f817990dc5ed05c",
+    "merged_at": "2026-05-13T06:48:29Z",
+    "github_checks": {
+      "backend-layer3-api": "success",
+      "test": "success"
+    }
   }
 }
