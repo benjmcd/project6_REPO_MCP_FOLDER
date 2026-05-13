@@ -276,7 +276,49 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert db_session.query(AnalysisRun).count() == 0
     assert db_session.query(L3OutputPackage).count() == 0
 
-    with pytest.raises(Layer3WorkbenchError) as result_review_blocked:
+    result_review = layer3_workbench.execution_result_review(
+        db_session,
+        {
+            "client_request_id": "source-intake-result-review-approved",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "operator_decision": "approved",
+        },
+    )
+    db_session.refresh(pass_run)
+    stored_review = pass_run.summary_json["execution_result_review"]
+    assert result_review["status"] == "recorded"
+    assert result_review["analysis_run_id"] is None
+    assert result_review["review_state"] == "execution_result_review_approved"
+    assert result_review["operator_decision"] == "approved"
+    assert result_review["package_review_enabled"] is False
+    assert result_review["handoff_enabled"] is False
+    assert stored_review["source_intake_record_id"] == "src-intake-plan-001"
+    assert stored_review["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+    assert stored_review["output_schema_id"] == "layer3.source_intake_execution_output.v1"
+    assert stored_review["output_hash"] == output_payload["output_hash"]
+    assert db_session.query(AnalysisRun).count() == 0
+    assert db_session.query(L3OutputPackage).count() == 0
+
+    with pytest.raises(Layer3WorkbenchError) as package_preview_blocked:
+        layer3_workbench.package_review_preview(
+            db_session,
+            {
+                "client_request_id": "source-intake-package-preview-blocked",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+                "result_review_record_ref": result_review["review_record_ref"],
+            },
+        )
+    assert package_preview_blocked.value.error_code == "source_intake_package_review_preview_not_admitted"
+
+    with pytest.raises(Layer3WorkbenchError) as duplicate_review_blocked:
         layer3_workbench.execution_result_review(
             db_session,
             {
@@ -289,7 +331,7 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
                 "operator_decision": "approved",
             },
         )
-    assert result_review_blocked.value.error_code == "source_intake_result_review_not_admitted"
+    assert duplicate_review_blocked.value.error_code == "execution_result_review_already_recorded"
 
     original_summary = pass_run.summary_json
     pass_run.summary_json = {**original_summary, "analysis_run_id": "unexpected-analysis-run"}
