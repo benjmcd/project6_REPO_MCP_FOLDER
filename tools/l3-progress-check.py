@@ -575,6 +575,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "346_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE = (
+    PLANNING_DOCS / "347_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -28881,6 +28884,41 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public revoke current-main sync term: {term}")
+
+    rendered_freeze_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE, errors)
+    for term in (
+        "Status: planning/control rendered-controls freeze only; no rendered behavior admitted.",
+        "source_intake_provider_public_url_rendered_controls_freeze",
+        "implement_source_intake_provider_public_url_rendered_controls",
+        "rendered controls over prepare/status/revoke only",
+        "No provider-public URL delivery/use route is admitted.",
+        "No raw public URL display is admitted.",
+        "auth/security behavior",
+    ):
+        if term not in rendered_freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE)} missing provider-public rendered-controls freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Rendered Controls Freeze",
+            "347_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE.md",
+            "implement_source_intake_provider_public_url_rendered_controls",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_rendered_controls_freeze",
+            "implement_source_intake_provider_public_url_rendered_controls",
+            "rendered_controls_over_prepare_status_revoke_only",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_rendered_controls_freeze_proof",
+            "implement_source_intake_provider_public_url_rendered_controls",
+            "rendered_controls_over_prepare_status_revoke_only",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public rendered-controls freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []
