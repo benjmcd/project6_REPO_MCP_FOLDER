@@ -1772,3 +1772,11 @@ Branch-local implementation: `345_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKE
 Validation status is `branch_local_implemented_targeted_tests_passed`: targeted provider-public API tests, provider-public durable-state tests, progress check, and diff hygiene passed. Provider-public delivery/use, rendered controls, `public_url_enabled: True`, raw public URL persistence or response exposure, provider network/object-store writes, public proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
 
 The next required action is `source_intake_provider_public_url_revoke_backend_api_current_main_sync` after merge.
+
+## Source Intake Provider Public URL Revoke Current-main Sync
+
+Current-main proof/control sync: PR `#935` merged `345_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API.md` at `4f29b6db1879749ada7a2d5e66aa3ff6778f79e1`. Provider-public URL revoke backend API is now current-main behavior, limited to owner-service revoke logic, POST `/api/v1/layer3/handoff/export/download/provider-public-url/revoke`, DTO/schema guards, focused API tests, and progress/proof controls.
+
+The sync doc `346_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/reviewThreads were empty, merge state was `CLEAN`, and post-merge `python .\tools\l3-progress-check.py` passed. Provider-public delivery/use, rendered controls, `public_url_enabled: True`, raw public URL persistence or response exposure, provider network/object-store writes, public proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
+
+The next required decision is `source_intake_provider_public_url_delivery_use_or_rendered_control_freeze`.
