@@ -1810,3 +1810,9 @@ Delivery/use is not selected as the next implementation. The next allowed action
 Current-main proof/control sync: PR `#940` merged `350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md` at merge commit `05c1977a8be9393fe311b9c67aa5593c0016cd66`.
 
 The sync doc `351_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The next required decision remains `select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract`; provider-public delivery/use implementation remains blocked.
+
+## Source Intake Provider Public URL Delivery/Use Authority Contract
+
+Branch-local planning/control authority contract: `352_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT.md` completes `provider_public_url_delivery_use_authority_contract_only` after current-main PR `#941`.
+
+The contract keeps provider-public delivery/use blocked and records the required proof before any future raw public URL delivery/use implementation can be reopened: route/DTO shape, raw URL response policy, `public_url_enabled: True` authority, provider/object-store owner, public access behavior, TTL/credential lifetime, revocation after exposure, HTTPS/transport assumptions, API auth/security, leak controls, cache headers, audit redaction, browser proof, and fail-closed negative tests. The next required decision is `next_deferred_server_authoritative_runtime_lane_freeze`.
