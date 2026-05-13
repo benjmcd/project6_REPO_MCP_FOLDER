@@ -16057,5 +16057,50 @@
       "auth_security_behavior",
       "frontend_only_durable_authority"
     ]
+  },
+  "source_intake_provider_public_url_rendered_controls_freeze_proof": {
+    "proof_kind": "source_intake_provider_public_url_rendered_controls_freeze",
+    "status": "completed_source_intake_provider_public_url_rendered_controls_freeze",
+    "branch": "codex/l3-provider-public-rendered-controls-freeze",
+    "current_main_predecessor_commit": "28d97881900f8c57767400550ba856348d1d19e0",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/347_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE.md",
+    "predecessor_sync": "source_intake_provider_public_url_revoke_current_main_sync",
+    "selected_next_implementation": "source_intake_provider_public_url_rendered_controls",
+    "next_allowed_action": "implement_source_intake_provider_public_url_rendered_controls",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "route_behavior_change": false,
+    "sequencing_rule": "rendered_controls_over_prepare_status_revoke_only",
+    "delivery_use_selected": false,
+    "allowed_future_surface": [
+      "rendered controls over provider-public prepare/status/revoke only"
+    ],
+    "blocked_scope": [
+      "provider_public_url_delivery_use_route",
+      "raw_public_url_display",
+      "public_url_enabled_true",
+      "raw_public_url_persistence_or_response_exposure",
+      "provider_network_object_store_writes",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "rag_vector_behavior",
+      "broad_qualitative_behavior",
+      "full_mockup_activation",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required",
+    "implementation_entry_reasoning": "rendered_controls_before_delivery_use",
+    "required_future_tests": [
+      "rendered_prepare_status_revoke_controls_use_server_api_state",
+      "raw_public_url_never_displayed_or_copied",
+      "delivery_use_controls_disabled_or_absent",
+      "revoke_status_transition_visible",
+      "no_frontend_only_durable_authority",
+      "headed_browser_proof",
+      "headless_browser_proof"
+    ]
   }
 }
