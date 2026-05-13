@@ -20971,8 +20971,11 @@ def _check_source_intake_plan_approval_boundary(errors: list[str]) -> None:
         errors.append(f"{_rel(MANIFEST)} missing source_intake_plan_approval_boundary")
     else:
         for key, expected in {
-            "status": "branch_local_implemented_targeted_tests_passed",
+            "status": "current_main_implemented_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-plan-approval",
+            "implementation_commit": "29f499b9c9c49222c38da500d750891b44abe1b4",
+            "pr": "#888",
+            "current_main_commit": "98a189aaf43eff89d785c10384d6ac5256de7fd0",
             "selected_runtime_family": "source_breadth_runtime",
             "selected_runtime_mode": "source_intake_plan_approval_boundary",
             "freeze_predecessor": "source_intake_plan_approval_boundary_freeze",
@@ -21037,7 +21040,7 @@ def _check_source_intake_plan_approval_boundary(errors: list[str]) -> None:
             if manifest.get(key) != expected:
                 errors.append(f"{_rel(MANIFEST)} {key} must be {expected!r}")
         scope_status = manifest.get("scope_status")
-        if not isinstance(scope_status, dict) or scope_status.get("source_intake_plan_approval_boundary") != "branch_local_implemented_targeted_tests_passed":
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_plan_approval_boundary") != "current_main_implemented_targeted_tests_passed":
             errors.append(f"{_rel(MANIFEST)} missing source-intake plan-approval implementation scope status")
 
     proof = _load_json(PROOF_MANIFEST, errors)
@@ -21046,8 +21049,11 @@ def _check_source_intake_plan_approval_boundary(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_plan_approval_boundary_proof")
         return
     for key, expected in {
-        "status": "branch_local_implemented_targeted_tests_passed",
+        "status": "current_main_implemented_targeted_tests_passed",
         "implementation_branch": "codex/l3-source-intake-plan-approval",
+        "implementation_commit": "29f499b9c9c49222c38da500d750891b44abe1b4",
+        "pr": "#888",
+        "current_main_commit": "98a189aaf43eff89d785c10384d6ac5256de7fd0",
         "selected_runtime_family": "source_breadth_runtime",
         "selected_runtime_mode": "source_intake_plan_approval_boundary",
         "freeze_predecessor": "source_intake_plan_approval_boundary_freeze",
