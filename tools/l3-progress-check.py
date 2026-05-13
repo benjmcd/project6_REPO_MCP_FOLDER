@@ -581,6 +581,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE = (
     PLANNING_DOCS / "350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "351_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -28958,6 +28961,40 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public delivery-use freeze term: {term}")
+
+    delivery_use_sync_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for provider-public delivery/use freeze; no runtime delivery/use behavior admitted.",
+        "source_intake_provider_public_url_delivery_use_freeze",
+        "05c1977a8be9393fe311b9c67aa5593c0016cd66",
+        "Post-merge `python .\\tools\\l3-progress-check.py`: `PASS`",
+        "select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract",
+        "No provider-public delivery/use implementation may proceed directly from this current-main sync.",
+    ):
+        if term not in delivery_use_sync_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_MAIN_SYNC)} missing provider-public delivery-use current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Delivery/Use Freeze Current-main Sync",
+            "351_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_MAIN_SYNC.md",
+            "select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_freeze_current_main_sync",
+            "05c1977a8be9393fe311b9c67aa5593c0016cd66",
+            "select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_freeze_current_main_sync_proof",
+            "05c1977a8be9393fe311b9c67aa5593c0016cd66",
+            "no provider-public delivery/use implementation may proceed directly",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public delivery-use current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []

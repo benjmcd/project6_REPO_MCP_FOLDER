@@ -1804,3 +1804,9 @@ The sync doc `349_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_CURRENT_MA
 Branch-local planning/control freeze: `350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md` records `source_intake_provider_public_url_delivery_use_freeze` after current-main provider-public rendered controls sync from PR `#939`.
 
 Delivery/use is not selected as the next implementation. The next allowed action is `select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract`: either write a provider-public delivery/use authority contract as planning/control only, or select a separate deferred server-authoritative Layer 3 lane. Provider-public delivery/use routes, raw public URL display, `public_url_enabled: True`, raw public URL persistence or response exposure, provider network/object-store writes, public proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
+
+## Source Intake Provider Public URL Delivery/Use Freeze Current-main Sync
+
+Current-main proof/control sync: PR `#940` merged `350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md` at merge commit `05c1977a8be9393fe311b9c67aa5593c0016cd66`.
+
+The sync doc `351_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The next required decision remains `select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract`; provider-public delivery/use implementation remains blocked.
