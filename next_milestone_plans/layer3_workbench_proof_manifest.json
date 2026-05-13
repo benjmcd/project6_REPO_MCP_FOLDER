@@ -16020,5 +16020,42 @@
       "raw_public_url_exposed_false",
       "public_url_enabled_false"
     ]
+  },
+  "source_intake_provider_public_url_revoke_current_main_sync_proof": {
+    "proof_kind": "source_intake_provider_public_url_revoke_current_main_sync",
+    "status": "completed_current_main_sync_pr_935",
+    "branch": "codex/l3-provider-public-revoke-sync-935",
+    "merged_pr": "#935",
+    "merge_commit": "4f29b6db1879749ada7a2d5e66aa3ff6778f79e1",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/346_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_CURRENT_MAIN_SYNC.md",
+    "implemented_boundary_doc": "next_milestone_plans/Layer3_planning_docs/345_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API.md",
+    "owner_service": "backend/app/services/layer3_provider_public_url.py",
+    "github_checks_passed": [
+      "backend-layer3-api",
+      "test"
+    ],
+    "comments": [],
+    "reviews": [],
+    "reviewThreads": [],
+    "post_merge_validation": "python .\\tools\\l3-progress-check.py -> PASS",
+    "runtime_behavior_change": false,
+    "next_boundary": "source_intake_provider_public_url_delivery_use_or_rendered_control_freeze",
+    "merge_state": "CLEAN",
+    "current_main_behavior": "provider_public_url_revoke_backend_api_only",
+    "preserved_blocked_scope": [
+      "provider_public_url_delivery_use_route",
+      "rendered_provider_public_url_controls",
+      "public_url_enabled_true",
+      "raw_public_url_persistence_or_response_exposure",
+      "provider_network_object_store_writes",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "rag_vector_behavior",
+      "broad_qualitative_behavior",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ]
   }
 }
