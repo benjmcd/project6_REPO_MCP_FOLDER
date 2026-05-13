@@ -153,6 +153,11 @@ def pdf_location_projection_for_pass_run(db: Session, *, pass_run: L3PassRun) ->
             session_id=pass_run.session_id,
             pass_run_id=pass_run.pass_run_id,
         )
+    visual_page_numbers = {
+        page_ref["page_number"]
+        for page_ref in visual_page_refs
+        if isinstance(page_ref.get("page_number"), int)
+    }
 
     chunk_ids = _ordered_chunk_ids(payload)
     if not chunk_ids:
@@ -178,7 +183,13 @@ def pdf_location_projection_for_pass_run(db: Session, *, pass_run: L3PassRun) ->
         )
 
     output_items_by_chunk = _output_items_by_chunk(payload)
-    payload_chunk_hashes = _payload_chunk_hashes(payload)
+    payload_chunk_hashes, has_hash_conflict = _payload_chunk_hashes(payload)
+    if has_hash_conflict:
+        return unavailable_pdf_location_projection(
+            "pdf_location_chunk_hash_conflict",
+            session_id=pass_run.session_id,
+            pass_run_id=pass_run.pass_run_id,
+        )
     for chunk_id in chunk_ids:
         expected_hash = payload_chunk_hashes.get(chunk_id)
         if not expected_hash:
@@ -200,6 +211,12 @@ def pdf_location_projection_for_pass_run(db: Session, *, pass_run: L3PassRun) ->
         if chunk.page_start is None or chunk.page_end is None:
             return unavailable_pdf_location_projection(
                 "pdf_location_page_authority_missing",
+                session_id=pass_run.session_id,
+                pass_run_id=pass_run.pass_run_id,
+            )
+        if any(page_number not in visual_page_numbers for page_number in range(int(chunk.page_start), int(chunk.page_end) + 1)):
+            return unavailable_pdf_location_projection(
+                "pdf_location_visual_page_authority_missing",
                 session_id=pass_run.session_id,
                 pass_run_id=pass_run.pass_run_id,
             )
@@ -325,41 +342,52 @@ def _ordered_chunk_ids(payload: dict[str, Any]) -> list[str]:
     return chunk_ids
 
 
-def _payload_chunk_hashes(payload: dict[str, Any]) -> dict[str, str]:
+def _payload_chunk_hashes(payload: dict[str, Any]) -> tuple[dict[str, str], bool]:
     hashes: dict[str, str] = {}
+    has_conflict = False
     output_items = payload.get("output_items_json")
     if isinstance(output_items, list):
         for item in output_items:
             if not isinstance(item, dict):
                 continue
-            _record_payload_chunk_hash(
+            has_conflict = _record_payload_chunk_hash(
                 hashes,
                 item.get("chunk_id"),
                 item.get("chunk_text_sha256") or item.get("chunk_hash") or item.get("chunk_sha256"),
-            )
+            ) or has_conflict
 
     chunk_summary = payload.get("chunk_summary")
     if isinstance(chunk_summary, dict):
+        summary_ids = chunk_summary.get("chunk_ids")
         summary_hashes = chunk_summary.get("chunk_hashes")
         if isinstance(summary_hashes, dict):
             for chunk_id, chunk_hash in summary_hashes.items():
-                _record_payload_chunk_hash(hashes, chunk_id, chunk_hash)
+                has_conflict = _record_payload_chunk_hash(hashes, chunk_id, chunk_hash) or has_conflict
         elif isinstance(summary_hashes, list):
-            for item in summary_hashes:
-                if isinstance(item, dict):
-                    _record_payload_chunk_hash(
-                        hashes,
-                        item.get("chunk_id"),
-                        item.get("chunk_text_sha256") or item.get("chunk_hash") or item.get("sha256"),
-                    )
-    return hashes
+            if isinstance(summary_ids, list):
+                for chunk_id, chunk_hash in zip(summary_ids, summary_hashes):
+                    has_conflict = _record_payload_chunk_hash(hashes, chunk_id, chunk_hash) or has_conflict
+            else:
+                for item in summary_hashes:
+                    if isinstance(item, dict):
+                        has_conflict = _record_payload_chunk_hash(
+                            hashes,
+                            item.get("chunk_id"),
+                            item.get("chunk_text_sha256") or item.get("chunk_hash") or item.get("sha256"),
+                        ) or has_conflict
+    return hashes, has_conflict
 
 
-def _record_payload_chunk_hash(hashes: dict[str, str], raw_chunk_id: Any, raw_hash: Any) -> None:
+def _record_payload_chunk_hash(hashes: dict[str, str], raw_chunk_id: Any, raw_hash: Any) -> bool:
     chunk_id = _string(raw_chunk_id)
     chunk_hash = _string(raw_hash)
-    if chunk_id and chunk_hash and chunk_id not in hashes:
-        hashes[chunk_id] = chunk_hash
+    if not chunk_id or not chunk_hash:
+        return False
+    existing = hashes.get(chunk_id)
+    if existing is not None:
+        return existing != chunk_hash
+    hashes[chunk_id] = chunk_hash
+    return False
 
 
 def _output_items_by_chunk(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -384,10 +412,14 @@ def _highlight_spans(output_item: dict[str, Any]) -> list[dict[str, Any]]:
     for span in spans:
         if not isinstance(span, dict):
             continue
+        start = _safe_int(span.get("start"))
+        end = _safe_int(span.get("end"))
+        if start is None or end is None or start < 0 or end <= start:
+            continue
         safe_spans.append(
             {
-                "start": _safe_int(span.get("start")),
-                "end": _safe_int(span.get("end")),
+                "start": start,
+                "end": end,
                 "source": _string(span.get("source")) or CITATION_HIGHLIGHT_AUTHORITY,
             }
         )
