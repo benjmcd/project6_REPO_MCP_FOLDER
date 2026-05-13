@@ -1349,3 +1349,17 @@ Refresh this board against:
 - Implementation allowed next: `implement_source_intake_gate_b_rendered_admission_controls`.
 - Required future proof: submitted `decision_basis` and `material_preview_hash` must come from the source-intake preview response; browser state must not become durable authority; headed and headless browser proof must both exercise the admission path.
 - Blocked scope: new backend route, DTO widening, model/migration change, package construction/mutation, connector/destination dispatch, provider URL behavior, execution start, RAG/vector indexing, web connector retrieval, generic/broad upload, local path/local-directory authority, non-text binary preview, auth/security behavior, and frontend-only durable authority.
+
+## Source Intake Gate B Rendered Admission Controls
+
+Status: branch-local implementation with targeted validation passed for `source_intake_gate_b_rendered_admission_controls`.
+
+Branch: `codex/l3-source-intake-gate-b-rendered-controls`.
+
+Doc: `296_SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS.md`.
+
+This slice renders the doc-295 source-intake Gate B admission boundary on `/review/layer3`: the panel uses the existing source-intake upload, inventory, and preview APIs, then submits exactly the server-previewed `mat-source_intake_record-` candidate to the existing Gate B decision API. The submitted decision basis copies `source_ref`, `query_basis`, `provenance_ref`, `source_identity`, `source_provenance`, `payload`, and `load_summary` from the server preview response, and the submitted `material_preview_hash` must match that preview response. No `preflight_id` or `source_set_id` is fabricated for source-intake admission.
+
+Proof scope: `backend/app/review_ui/static/layer3.html`, `backend/app/review_ui/static/layer3.css`, `backend/app/review_ui/static/layer3.js`, `backend/tests/test_layer3_page.py`, `e2e/layer3-workbench.spec.js`, `next_milestone_plans/layer3_progress_manifest.json`, `next_milestone_plans/layer3_workbench_proof_manifest.json`, and `tools/l3-progress-check.py`.
+
+Blocked scope preserved: no new backend route, DTO, model, migration, service, package construction/mutation, connector/destination dispatch, provider URL behavior, execution start, RAG/vector indexing, web connector retrieval, generic/broad source upload, local path/directory authority, non-text binary preview, auth/security behavior, or frontend-only durable authority.

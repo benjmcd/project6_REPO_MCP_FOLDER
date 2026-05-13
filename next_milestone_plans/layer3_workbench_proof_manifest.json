@@ -11319,7 +11319,8 @@
     "mockup_pdf_text_density_refinement": "completed_pdf_location_text_density_and_disabled_chip_refinement",
     "mockup_pixel_proof_closeout": "completed_mockup_pixel_proof_closeout",
     "runtime_freeze_intake_checklist": "completed_runtime_freeze_intake_checklist",
-    "source_breadth_runtime_entry": "completed_live_bounded_source_intake_record"
+    "source_breadth_runtime_entry": "completed_live_bounded_source_intake_record",
+    "source_intake_gate_b_rendered_admission_controls": "branch_local_implemented_targeted_tests_passed"
   },
   "provider_private_signed_url_revoke_api_proof": {
     "status": "completed_backend_api_only",
@@ -14107,5 +14108,88 @@
       "tools/l3-progress-check.py"
     ],
     "proof_kind": "source_intake_gate_b_rendered_admission_controls_freeze"
+  },
+  "latest_source_intake_gate_b_rendered_admission_controls_branch": "codex/l3-source-intake-gate-b-rendered-controls",
+  "latest_source_intake_gate_b_rendered_admission_controls_live_behavior_change": true,
+  "latest_source_intake_gate_b_rendered_admission_controls_summary": "Branch codex/l3-source-intake-gate-b-rendered-controls implements rendered /review/layer3 Gate B admission controls for server-previewed source-intake material candidates. The rendered panel submits exactly the previewed mat-source_intake_record- candidate and copied decision basis to the existing Gate B decision API, reuses a client request id for retry, suppresses duplicate success submits, and admits no new backend route, DTO, model, migration, service, package, connector, provider URL, execution, RAG/vector, auth/security, local path/directory, non-text binary preview, or frontend-only durable authority.",
+  "source_intake_gate_b_rendered_admission_controls_proof": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-gate-b-rendered-controls",
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_rendered_control_mode": "source_intake_gate_b_rendered_admission_controls",
+    "runtime_predecessor": "source_intake_gate_b_material_admission_runtime",
+    "runtime_predecessor_doc": "next_milestone_plans/Layer3_planning_docs/294_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME.md",
+    "freeze_predecessor_doc": "next_milestone_plans/Layer3_planning_docs/295_SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS_FREEZE.md",
+    "canonical_source_of_truth": "L3SourceIntakeRecord",
+    "rendered_route": "/review/layer3",
+    "gate_b_route": "POST /api/v1/layer3/gate-b/decision",
+    "preview_route": "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+    "material_candidate_prefix": "mat-source_intake_record-",
+    "material_source_class": "operator_uploaded_single_source",
+    "live_behavior_change": true,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": true,
+    "model_migration_change": false,
+    "new_route_added": false,
+    "backend_dto_widened": false,
+    "browser_state_authority": "transient_only_not_durable_authority",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/296_SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS.md",
+    "proof_kind": "source_intake_gate_b_rendered_admission_controls",
+    "allowed_existing_routes": [
+      "POST /api/v1/layer3/source/intake/upload",
+      "GET /api/v1/layer3/source/intake/inventory",
+      "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+      "POST /api/v1/layer3/gate-b/decision"
+    ],
+    "contract_guards": {
+      "rendered_controls_surface_one_eligible_source_intake_preview_candidate": true,
+      "candidate_id_uses_mat_source_intake_record_prefix": true,
+      "decision_basis_copied_from_server_preview_response": true,
+      "material_preview_hash_matches_server_preview_response": true,
+      "gate_b_success_projects_session_id_approved_candidate_and_next_state": true,
+      "single_flight_submit_guard": true,
+      "retry_reuses_client_request_id_after_blocked_submit": true,
+      "duplicate_success_submit_suppressed_for_committed_preview": true,
+      "workbench_error_envelope_preserves_nested_error_code": true,
+      "no_preflight_or_source_set_fabricated": true,
+      "blocked_adjacent_controls_not_exposed": true
+    },
+    "targeted_tests": [
+      "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py .\\backend\\tests\\test_layer3_gate_b_state.py -q",
+      "npx playwright test layer3-workbench.spec.js --grep \"rendered source-intake upload inventory and preview\" --project=chromium",
+      "npx playwright test layer3-workbench.spec.js --grep \"rendered source-intake upload inventory and preview\" --project=chromium --headed"
+    ],
+    "blocked_scope": [
+      "new_backend_route",
+      "backend_dto_widening",
+      "model_migration_change",
+      "package_construction_mutation",
+      "connector_destination_dispatch",
+      "provider_private_signed_url_prepare",
+      "provider_public_url_behavior",
+      "execution_start",
+      "rag_vector_indexing",
+      "web_connector_retrieval",
+      "generic_source_upload",
+      "broad_file_upload",
+      "local_path_authority",
+      "local_directory_authority",
+      "non_text_binary_preview",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "proof_files": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/Layer3_planning_docs/296_SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ]
   }
 }

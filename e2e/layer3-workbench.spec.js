@@ -5193,7 +5193,7 @@ test('Layer 3 workbench drives rendered source-intake upload inventory and previ
 
   await expect(page.locator('#source-intake-rendered-controls')).toBeVisible();
   await expect(page.locator('#source-intake-rendered-controls')).toContainText(
-    'Server-authoritative upload / inventory / preview only',
+    'Server-authoritative upload / inventory / preview / Gate B admission',
   );
 
   const requestId = `source-intake-ui-${Date.now()}`;
@@ -5213,11 +5213,105 @@ test('Layer 3 workbench drives rendered source-intake upload inventory and previ
   await expect(page.locator('#source-intake-status')).toContainText('Source intake recorded:');
   await expect(page.locator('#source-intake-inventory-list')).toContainText('Rendered source intake E2E');
 
+  const sourcePreviewResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/source/intake/')
+    && response.url().includes('/preview')
+  ));
   await page.locator('.source-intake-preview-button').first().click();
+  const sourcePreview = await expectJson(await sourcePreviewResponsePromise);
+  const sourceCandidate = sourcePreview.material_candidate;
+  expect(sourcePreview.material_preview_hash).toBeTruthy();
+  expect(sourceCandidate.candidate_id).toMatch(/^mat-source_intake_record-/);
   await expect(page.locator('#source-intake-preview-panel')).toContainText('Bounded text preview');
   await expect(page.locator('#source-intake-preview-panel')).toContainText(
     'Layer 3 rendered source intake body for bounded preview.',
   );
+  await expect(page.locator('#source-intake-gate-b-submit')).toBeEnabled();
+
+  const forcedGateBErrors = [
+    'source_intake_gate_b_forbidden_field_not_admitted',
+    'source_intake_gate_b_record_not_admitted',
+  ];
+  await page.route('**/api/v1/layer3/gate-b/decision', async (route) => {
+    const errorCode = forcedGateBErrors.shift();
+    if (!errorCode) {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({
+      status: 400,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: 'Gate B admission blocked by server authority.',
+        detail: {
+          error_code: errorCode,
+          message: 'Gate B admission blocked by server authority.',
+        },
+      }),
+    });
+  });
+  await page.locator('#source-intake-gate-b-submit').click();
+  await expect(page.locator('#source-intake-gate-b-status')).toContainText(
+    'source_intake_gate_b_forbidden_field_not_admitted',
+  );
+  await page.locator('#source-intake-gate-b-submit').click();
+  await expect(page.locator('#source-intake-gate-b-status')).toContainText(
+    'source_intake_gate_b_record_not_admitted',
+  );
+
+  const gateBRequestPromise = page.waitForRequest((gateBRequest) => (
+    gateBRequest.url().includes('/api/v1/layer3/gate-b/decision') && gateBRequest.method() === 'POST'
+  ));
+  const gateBResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/gate-b/decision')
+  ));
+  await page.locator('#source-intake-gate-b-submit').click();
+  const gateBPayload = gateBRequestPromise.then((request) => request.postDataJSON());
+  const gateB = await expectJson(await gateBResponsePromise);
+  const submittedGateBPayload = await gateBPayload;
+
+  expectOnlyPayloadKeys(submittedGateBPayload, [
+    'schema_id',
+    'client_request_id',
+    'material_preview_id',
+    'material_preview_hash',
+    'candidate_decisions',
+    'commit_reason',
+    'actor',
+  ]);
+  expect(submittedGateBPayload.schema_id).toBe('layer3.gate_b_decision_request.v1');
+  expect(submittedGateBPayload.material_preview_id).toBe(sourcePreview.material_preview_id);
+  expect(submittedGateBPayload.material_preview_hash).toBe(sourcePreview.material_preview_hash);
+  expect(submittedGateBPayload.commit_reason).toBe('source_intake_gate_b_rendered_admission');
+  expect(submittedGateBPayload.actor).toBe('operator');
+  expect(submittedGateBPayload.candidate_decisions).toHaveLength(1);
+  expect(submittedGateBPayload).not.toHaveProperty('preflight_id');
+  expect(submittedGateBPayload).not.toHaveProperty('source_set_id');
+
+  const submittedDecision = submittedGateBPayload.candidate_decisions[0];
+  expectOnlyPayloadKeys(submittedDecision, [
+    'candidate_id',
+    'decision',
+    'operator_reason',
+    'decision_basis',
+  ]);
+  expect(submittedDecision.candidate_id).toBe(sourceCandidate.candidate_id);
+  expect(submittedDecision.decision).toBe('approved');
+  expect(submittedDecision.decision_basis).toMatchObject({
+    source_ref: sourceCandidate.source_ref,
+    query_basis: sourceCandidate.query_basis,
+    provenance_ref: sourceCandidate.provenance_ref,
+    source_identity: sourceCandidate.source_identity,
+    source_provenance: sourceCandidate.source_provenance,
+    payload: sourceCandidate.payload,
+    load_summary: sourceCandidate.load_summary,
+  });
+  expectNoDeferredRawMixedPayloadFields(submittedGateBPayload);
+  expect(gateB.status).toBe('ok');
+  expect(gateB.approved_candidate_ids).toEqual([sourceCandidate.candidate_id]);
+  await expect(page.locator('#source-intake-gate-b-status')).toContainText('Gate B committed session');
+  await expect(page.locator('#gate-c-preview')).toBeEnabled();
+  await expect(page.locator('#gate-c-commit')).toBeEnabled();
   expectNoRequestsToLayer3Paths(apiRequests, [
     'source/mixed-corpus/materialize',
     'package/mutation',
