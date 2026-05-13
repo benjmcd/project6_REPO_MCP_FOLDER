@@ -2,9 +2,19 @@
 
 ## Status
 
-Status: branch-local implementation with targeted validation passed for `source_intake_execution_start_boundary`.
+Status: current-main implementation with targeted validation passed for `source_intake_execution_start_boundary`.
 
 Implementation branch: `codex/l3-source-intake-exec-start`.
+
+Implementation commit: `aa7a614f70ae41bd36e5ee8bb52bfca023d904ac`.
+
+Merged PR: `#896`.
+
+Merge commit/current-main authority: `1bcfd43ad7bae61f0c79f9142eefcc4131a16c8a`.
+
+Merged at: `2026-05-13T09:22:14Z`.
+
+GitHub checks: `backend-layer3-api` success and `test` success.
 
 Implementation predecessor: `306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE.md`.
 
