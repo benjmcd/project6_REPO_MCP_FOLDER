@@ -1442,3 +1442,19 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 - Targeted validation: `pytest .\backend\tests\test_layer3_pass_entry.py` passed with 22 tests.
 - Blocked scope remains source-intake plan approval, execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, generic/broad upload, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
 - Next required decision: `source_intake_plan_approval_boundary_freeze` before source-intake preview-only plan material may become an approved plan.
+
+## Source Intake Plan Approval Boundary Freeze
+
+- Status: planning/control freeze for `source_intake_plan_approval_boundary`.
+- Branch: `codex/l3-source-intake-plan-approval-freeze`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/301_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE.md`.
+- Runtime predecessor: `source_intake_plan_preview_boundary`.
+- Selected runtime family: `source_breadth_runtime`.
+- Selected runtime mode: `source_intake_plan_approval_boundary`.
+- Named operator/product use case: `operator_uploaded_single_source_approves_previewed_plan_after_gate_c_typing`.
+- Canonical source of truth: server-owned Gate C and plan-preview state derived from `L3SourceIntakeRecord`, specifically finalized `L3Session`, qualitative `L3AnalysisSet`, `L3AnalysisUnit`, `L3MaterialSnapshot`, and the service-owned preview hash/payload emitted by `backend/app/services/layer3_pass_entry.py`.
+- Repo-confirmed failure boundary: `approve_pass_entry_plan` currently fails closed for source-intake preview candidates with `source-intake plan approval is not admitted by this preview-only boundary`.
+- Future approval semantics: `POST /api/v1/layer3/plan/approve` may persist only an approval-only `L3AnalysisPlan` for the existing source-intake preview candidate after preview-hash revalidation and operator confirmation.
+- Next allowed code-bearing action: `implement_source_intake_plan_approval_boundary` only.
+- Required future proof: approval-only source-intake `L3AnalysisPlan`, preserved preview/source identity, hash-mismatch and missing-confirmation fail-closed behavior, no `L3PassRun`/`AnalysisRun`/`AnalysisArtifact`/`L3OutputPackage`, execution still blocked, existing dataset-version and APS qualitative behavior unchanged, and unsupported adjacent qualitative shapes still blocked.
+- Blocked scope: execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, provider/private URL behavior, web connector retrieval, RAG/vector indexing, generic/broad upload, local path/local-directory authority, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
