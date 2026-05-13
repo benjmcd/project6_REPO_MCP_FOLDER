@@ -548,6 +548,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_AUDIT = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_AUTHORITY_CONTRACT = (
     PLANNING_DOCS / "337_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_AUTHORITY_CONTRACT.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE = (
+    PLANNING_DOCS / "338_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -28469,6 +28472,40 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public authority-contract term: {term}")
+
+    substrate_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE, errors)
+    for term in (
+        "Status: planning/control freeze only; no runtime behavior admitted.",
+        "source_intake_provider_public_url_durable_state_substrate",
+        "fake-provider contract double",
+        "It must not enable `public_url_enabled: True`",
+        "No provider-public URL prepare/status/revoke route is admitted.",
+        "implement_source_intake_provider_public_url_durable_state_substrate",
+    ):
+        if term not in substrate_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE)} missing provider-public substrate-freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Substrate Freeze",
+            "338_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE.md",
+            "source_intake_provider_public_url_durable_state_substrate",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_substrate_freeze",
+            "source_intake_provider_public_url_durable_state_substrate",
+            "implement_source_intake_provider_public_url_durable_state_substrate",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_substrate_freeze_proof",
+            "source_intake_provider_public_url_durable_state_substrate",
+            "implement_source_intake_provider_public_url_durable_state_substrate",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public substrate-freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []
