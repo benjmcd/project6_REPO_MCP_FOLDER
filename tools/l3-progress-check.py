@@ -16881,6 +16881,27 @@ def _check_pdf_location_freeze(errors: list[str]) -> None:
     scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
     if not isinstance(scope_status, dict) or scope_status.get("pdf_location_use_case_freeze") != "completed_named_pdf_location_runtime_use_case_selected_planning_only":
         errors.append(f"{_rel(MANIFEST)} missing completed PDF-location freeze scope status")
+    canonical_freeze = manifest.get("pdf_location_use_case_freeze") if isinstance(manifest, dict) else None
+    freeze_alias = manifest.get("pdf_location_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(canonical_freeze, dict):
+        errors.append(f"{_rel(MANIFEST)} missing structured pdf_location_use_case_freeze entry")
+    if not isinstance(freeze_alias, dict):
+        errors.append(f"{_rel(MANIFEST)} missing structured pdf_location_freeze entry")
+    if isinstance(canonical_freeze, dict) and isinstance(freeze_alias, dict):
+        if canonical_freeze != freeze_alias:
+            errors.append(f"{_rel(MANIFEST)} pdf_location_use_case_freeze and pdf_location_freeze must match")
+        for term in (
+            "ApsContentDocument.content_contract_id",
+            "ApsContentChunk.content_contract_id",
+            "ApsContentChunk.chunking_contract_id",
+            "no vector index creation",
+            "no broad qualitative/hybrid/RAG runtime",
+            "fail closed chunking contract id mismatch",
+            "fail closed non-PDF content document",
+            "fail closed missing visual page authority",
+        ):
+            if term not in str(canonical_freeze):
+                errors.append(f"{_rel(MANIFEST)} PDF-location canonical freeze missing term: {term}")
 
     proof = _load_json(PROOF_MANIFEST, errors)
     proof_entry = proof.get("pdf_location_freeze_proof") if isinstance(proof, dict) else None

@@ -297,3 +297,25 @@ def test_pdf_location_projection_fails_closed_for_conflicting_chunk_hashes(db_se
 
     assert projection["available"] is False
     assert projection["blocked_reason"] == "pdf_location_chunk_hash_conflict"
+
+
+def test_pdf_location_projection_accepts_dict_form_summary_hashes_with_chunk_ids(db_session, tmp_path) -> None:
+    _seed_document(db_session)
+    output_path = _write_output(tmp_path)
+    output = json.loads(output_path.read_text(encoding="utf-8"))
+    chunk_hash = output["chunk_summary"]["chunk_hashes"]["chunk-pdf-location-1"]
+    output["chunk_summary"]["chunk_hashes"] = [
+        {
+            "chunk_id": "chunk-pdf-location-1",
+            "chunk_text_sha256": chunk_hash,
+        }
+    ]
+    output_path.write_text(json.dumps(output), encoding="utf-8")
+    pass_run = _pass_run(str(output_path))
+    db_session.add(pass_run)
+    db_session.flush()
+
+    projection = layer3_pdf_location.pdf_location_projection_for_pass_run(db_session, pass_run=pass_run)
+
+    assert projection["available"] is True
+    assert projection["location_items"][0]["chunk_id"] == "chunk-pdf-location-1"
