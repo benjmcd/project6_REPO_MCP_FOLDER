@@ -308,6 +308,26 @@ def test_layer3_source_intake_rejects_deferred_source_modes(client):
     assert body["error"]["details"]["forbidden_fields"] == ["local_directory"]
 
 
+def test_layer3_source_intake_rejects_duplicate_form_fields(client):
+    response = client.post(
+        "/api/v1/layer3/source/intake/upload",
+        files=[
+            ("client_request_id", (None, "source-intake-duplicate-001")),
+            ("client_request_id", (None, "source-intake-duplicate-002")),
+            ("operator_decision", (None, "record_operator_uploaded_source")),
+            ("source_label", (None, "Operator uploaded source")),
+            ("freshness_timestamp", (None, "2026-05-13T00:00:00Z")),
+            ("file", ("operator-source.txt", b"Layer 3 operator source body", "text/plain")),
+        ],
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_intake_duplicate_field"
+    assert body["error"]["details"]["duplicate_fields"] == ["client_request_id"]
+
+
 def test_layer3_source_intake_rejects_wrong_operator_decision(client):
     response = _upload_source_intake(client, data={"operator_decision": "materialize_uploaded_source"})
 

@@ -401,6 +401,9 @@ SOURCE_INTAKE_INVENTORY_FREEZE = (
 SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE = (
     PLANNING_DOCS / "288_SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE.md"
 )
+SOURCE_INTAKE_UPLOAD_CONTRACT_GUARD = (
+    PLANNING_DOCS / "289_SOURCE_INTAKE_UPLOAD_CONTRACT_GUARD.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -18898,6 +18901,113 @@ def _check_source_intake_material_preview_read_only(errors: list[str]) -> None:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source-intake preview hardening guard {key} mismatch")
 
 
+def _check_source_intake_upload_contract_guard(errors: list[str]) -> None:
+    freeze_text = _read_required_text(SOURCE_INTAKE_UPLOAD_CONTRACT_GUARD, errors)
+    for term in (
+        "Status: branch-local hardening entry for `source_intake_upload_contract_guard`.",
+        "implementation_branch: `codex/l3-source-intake-upload-guard`",
+        "runtime_route: `POST /api/v1/layer3/source/intake/upload`",
+        "Reject duplicate non-file multipart form fields",
+        "source_intake_duplicate_field",
+        "last-write-wins ambiguity",
+        "Generic source upload",
+    ):
+        if term not in freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_UPLOAD_CONTRACT_GUARD)} missing source-intake upload guard freeze term: {term}")
+
+    service_text = _read_required_text(SOURCE_INTAKE_SERVICE, errors)
+    for term in (
+        "def normalise_source_intake_form_items(",
+        "source_intake_duplicate_field",
+        "duplicate_fields",
+        "return _normalise_fields(fields)",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_SERVICE)} missing source-intake upload guard service term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "normalise_source_intake_form_items(form.multi_items())",
+        "record_operator_upload_source_intake",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing source-intake upload guard API term: {term}")
+
+    test_text = _read_required_text(SOURCE_INTAKE_TEST, errors)
+    for term in (
+        "test_layer3_source_intake_rejects_duplicate_form_fields",
+        "source_intake_duplicate_field",
+        "duplicate_fields",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_TEST)} missing source-intake upload guard test term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Upload Contract Guard",
+            "289_SOURCE_INTAKE_UPLOAD_CONTRACT_GUARD.md",
+            "source_intake_duplicate_field",
+            "last-write-wins",
+        ),
+        MANIFEST: (
+            "latest_source_intake_upload_contract_guard_branch",
+            "source_intake_upload_contract_guard",
+            "source_intake_duplicate_field",
+            "duplicate_non_file_form_fields_fail_closed",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_upload_contract_guard_proof",
+            "289_SOURCE_INTAKE_UPLOAD_CONTRACT_GUARD.md",
+            "source_intake_duplicate_field",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-intake upload guard sync term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    guard = manifest.get("source_intake_upload_contract_guard") if isinstance(manifest, dict) else None
+    if not isinstance(guard, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_upload_contract_guard")
+    else:
+        expected_guard_scalars = {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-upload-guard",
+            "live_behavior_change": True,
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "operator_single_upload_source_intake",
+            "runtime_route": "POST /api/v1/layer3/source/intake/upload",
+            "canonical_source_of_truth": "L3SourceIntakeRecord",
+        }
+        for key, expected in expected_guard_scalars.items():
+            if guard.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source-intake upload guard {key} mismatch")
+        contract_guards = guard.get("contract_guards")
+        if not isinstance(contract_guards, dict) or contract_guards.get("duplicate_non_file_form_fields_fail_closed") is not True:
+            errors.append(f"{_rel(MANIFEST)} source-intake upload guard missing duplicate-field contract guard")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("source_intake_upload_contract_guard") != "branch_local_implemented_targeted_tests_passed":
+        errors.append(f"{_rel(MANIFEST)} missing source-intake upload guard scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_upload_contract_guard_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_upload_contract_guard_proof")
+        return
+    contract_guards = proof_entry.get("contract_guards")
+    if not isinstance(contract_guards, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} source-intake upload guard proof missing contract_guards")
+    else:
+        for key, expected in (
+            ("duplicate_non_file_form_fields_fail_closed", True),
+            ("duplicate_field_error_code", "source_intake_duplicate_field"),
+            ("file_parameter_remains_uploadfile_owned", True),
+        ):
+            if contract_guards.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source-intake upload guard contract {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -23875,6 +23985,7 @@ def main() -> int:
     _check_source_breadth_runtime_entry(errors)
     _check_source_intake_inventory_read_only(errors)
     _check_source_intake_material_preview_read_only(errors)
+    _check_source_intake_upload_contract_guard(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
