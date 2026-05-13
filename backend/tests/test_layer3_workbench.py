@@ -36,6 +36,7 @@ from app.models.models import (
     L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,
+    L3ReconciliationRecord,
     L3SelectionManifest,
     L3Session,
     L3SourceIntakeRecord,
@@ -303,11 +304,56 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert db_session.query(AnalysisRun).count() == 0
     assert db_session.query(L3OutputPackage).count() == 0
 
-    with pytest.raises(Layer3WorkbenchError) as package_preview_blocked:
+    package_preview = layer3_workbench.package_review_preview(
+        db_session,
+        {
+            "client_request_id": "source-intake-package-preview-ready",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+            "result_review_record_ref": result_review["review_record_ref"],
+        },
+    )
+    assert package_preview["status"] == "available"
+    assert package_preview["schema_id"] == "layer3.source_intake_package_review_preview.v1"
+    assert package_preview["analysis_run_id"] is None
+    assert package_preview["package_review_preview_enabled"] is True
+    assert package_preview["package_commit_enabled"] is False
+    assert package_preview["package_review_submit_enabled"] is False
+    assert package_preview["source_intake_record_id"] == "src-intake-plan-001"
+    assert package_preview["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+    assert package_preview["output_payload_hash"] == output_payload["output_hash"]
+    assert package_preview["package_owner_compatibility"]["workbench_package_commit_callable"] is False
+    assert "package_construction" in package_preview["downstream_unavailable"]
+    assert db_session.query(AnalysisRun).count() == 0
+    assert db_session.query(L3OutputPackage).count() == 0
+    assert db_session.query(L3ReconciliationRecord).count() == 0
+
+    with pytest.raises(Layer3WorkbenchError) as package_construction_blocked:
+        layer3_workbench.package_construction_commit(
+            db_session,
+            {
+                "client_request_id": "source-intake-package-construction-blocked",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+                "result_review_record_ref": result_review["review_record_ref"],
+                "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            },
+        )
+    assert package_construction_blocked.value.error_code == "source_intake_package_construction_commit_not_admitted"
+
+    pass_run.summary_json = {**(pass_run.summary_json or {}), "analysis_run_id": "unexpected-analysis-run"}
+    db_session.commit()
+    with pytest.raises(Layer3WorkbenchError) as package_preview_analysis_run_blocked:
         layer3_workbench.package_review_preview(
             db_session,
             {
-                "client_request_id": "source-intake-package-preview-blocked",
+                "client_request_id": "source-intake-package-preview-analysis-run-blocked",
                 "session_id": session.session_id,
                 "analysis_plan_id": plan.analysis_plan_id,
                 "pass_run_id": pass_run.pass_run_id,
@@ -316,7 +362,14 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
                 "result_review_record_ref": result_review["review_record_ref"],
             },
         )
-    assert package_preview_blocked.value.error_code == "source_intake_package_review_preview_not_admitted"
+    assert (
+        package_preview_analysis_run_blocked.value.error_code
+        == "source_intake_execution_result_status_analysis_run_not_admitted"
+    )
+    pass_run.summary_json = {
+        key: value for key, value in (pass_run.summary_json or {}).items() if key != "analysis_run_id"
+    }
+    db_session.commit()
 
     with pytest.raises(Layer3WorkbenchError) as duplicate_review_blocked:
         layer3_workbench.execution_result_review(
