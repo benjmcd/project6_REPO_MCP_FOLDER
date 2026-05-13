@@ -1267,3 +1267,11 @@ Refresh this board against:
 - The route normalizes media-type parameters before admission checks and streams hash/preview extraction to avoid full-file memory coupling.
 - The route rejects unknown records, non-recorded rows, non-operator-uploaded source families, invalid `max_chars`, storage refs outside `raw/layer3-source-intake`, missing storage objects, hash mismatch, and non-text-like media.
 - RAG/vector indexing, web connector use, generic source upload, local path/local directory authority, package construction, rendered source controls, non-text binary preview, and unbounded runtime DB behavior still require a later named freeze.
+
+## Source Intake Upload Contract Guard
+
+- `289_SOURCE_INTAKE_UPLOAD_CONTRACT_GUARD.md` hardens the existing operator-upload route without admitting a new source family.
+- Branch `codex/l3-source-intake-upload-guard` moves multipart form-field normalization into `normalise_source_intake_form_items(...)`.
+- Duplicate non-file multipart form fields now fail closed with `source_intake_duplicate_field` instead of being collapsed by last-write-wins dictionary construction.
+- Existing forbidden-field, unknown-field, idempotency, hash, storage-ref, inventory, and bounded-preview behavior remains unchanged.
+- Generic source upload, local path/local directory authority, web connector expansion, RAG/vector indexing, package construction, rendered source controls, non-text binary preview, and unbounded runtime DB behavior remain blocked.
