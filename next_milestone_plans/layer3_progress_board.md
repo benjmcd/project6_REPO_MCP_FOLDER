@@ -1458,3 +1458,16 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 - Next allowed code-bearing action: `implement_source_intake_plan_approval_boundary` only.
 - Required future proof: approval-only source-intake `L3AnalysisPlan`, preserved preview/source identity, hash-mismatch and missing-confirmation fail-closed behavior, no `L3PassRun`/`AnalysisRun`/`AnalysisArtifact`/`L3OutputPackage`, execution still blocked, existing dataset-version and APS qualitative behavior unchanged, and unsupported adjacent qualitative shapes still blocked.
 - Blocked scope: execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, provider/private URL behavior, web connector retrieval, RAG/vector indexing, generic/broad upload, local path/local-directory authority, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
+
+## Source Intake Plan Approval Boundary
+
+- Status: branch-local implementation/proof for `source_intake_plan_approval_boundary`.
+- Branch: `codex/l3-source-intake-plan-approval`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/302_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY.md`.
+- Freeze predecessor: `next_milestone_plans/Layer3_planning_docs/301_SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE.md`.
+- Canonical source of truth: server-owned Gate C and plan-preview state derived from `L3SourceIntakeRecord`, finalized `L3Session`, qualitative `L3AnalysisSet`, `L3AnalysisUnit`, `L3MaterialSnapshot`, and the source-intake plan preview hash/payload emitted by `backend/app/services/layer3_pass_entry.py`.
+- Implemented owner-service boundary: `approve_pass_entry_plan` allows source-intake qualitative preview candidates to become approval-only `L3AnalysisPlan` rows while preserving preview hash, `source_intake_record_id`, `candidate_id`, `pass_scope`, `source_gate`, `engine_family`, and `selected_method_name`.
+- Proof: `backend/tests/test_layer3_pass_entry.py` covers source-intake approval-only persistence, hash-mismatch fail-closed behavior, missing-operator-confirmation fail-closed behavior, no `L3PassRun`/`AnalysisRun`/`AnalysisArtifact`/`L3OutputPackage` side effects, and selected-pass execution still blocked for `source_intake_qualitative_preview`.
+- Targeted validation: `pytest .\backend\tests\test_layer3_pass_entry.py` passed with 24 tests.
+- Blocked scope remains execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, generic/broad upload, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
+- Next required decision: `source_intake_execution_selection_boundary_freeze` before a source-intake approved plan may create selected pass-run state or start execution.

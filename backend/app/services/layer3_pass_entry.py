@@ -1166,8 +1166,6 @@ def approve_pass_entry_plan(
         raise Layer3PassEntryError("operator confirmation is required for Layer 3 plan approval")
 
     session, admitted, excluded, preview = _load_admitted_preview_basis(db, session_id=session_id)
-    if any(_is_source_intake_qualitative_candidate(candidate) for candidate in admitted):
-        raise Layer3PassEntryError("source-intake plan approval is not admitted by this preview-only boundary")
     if preview_hash is not None and preview_hash != preview.preview_hash:
         raise Layer3PassEntryError("Layer 3 plan approval preview hash mismatch")
 
