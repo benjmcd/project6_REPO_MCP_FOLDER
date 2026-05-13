@@ -2660,6 +2660,23 @@ def _raise_if_qualitative_aps_downstream_not_admitted(
     )
 
 
+def _raise_if_source_intake_downstream_not_admitted(
+    *,
+    status_body: dict[str, Any],
+    action_label: str,
+    error_code: str,
+) -> None:
+    if status_body.get("engine_family") != ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW:
+        return
+    raise Layer3WorkbenchError(
+        error_code,
+        f"{action_label} is not admitted for the source-intake result/status-only execution slice.",
+        status="blocked",
+        http_status=409,
+        next_allowed_actions=["inspect_execution_result_status"],
+    )
+
+
 def _raise_qualitative_aps_package_review_preview_not_admitted(
     reason: str,
     *,
@@ -3667,7 +3684,13 @@ def _source_intake_result_status_output_summary(
         blocked_fields.append("storage_pointer.absolute_path_exposed")
 
     output_hash = payload.get("output_hash")
-    if not output_hash or output_hash != pass_summary.get("source_intake_output_hash"):
+    hash_basis = dict(payload)
+    hash_basis.pop("output_hash", None)
+    if (
+        not output_hash
+        or output_hash != _stable_hash(hash_basis)
+        or output_hash != pass_summary.get("source_intake_output_hash")
+    ):
         blocked_fields.append("output_hash")
 
     if blocked_fields:
@@ -4295,6 +4318,14 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
         )
 
     analysis_run_id = _pass_run_analysis_run_id(pass_run)
+    if source_intake_pass and analysis_run_id:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_result_status_analysis_run_not_admitted",
+            "Source-intake result/status requires no AnalysisRun reference.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["analysis_run_id"],
+        )
     if supplied_analysis_run_id and supplied_analysis_run_id != str(analysis_run_id or ""):
         raise Layer3WorkbenchError(
             "analysis_run_mismatch",
@@ -4428,6 +4459,12 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+
+    _raise_if_source_intake_downstream_not_admitted(
+        status_body=status_body,
+        action_label="Execution result-review",
+        error_code="source_intake_result_review_not_admitted",
+    )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()

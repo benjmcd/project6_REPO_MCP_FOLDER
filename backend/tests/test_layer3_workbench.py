@@ -276,6 +276,41 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert db_session.query(AnalysisRun).count() == 0
     assert db_session.query(L3OutputPackage).count() == 0
 
+    with pytest.raises(Layer3WorkbenchError) as result_review_blocked:
+        layer3_workbench.execution_result_review(
+            db_session,
+            {
+                "client_request_id": "source-intake-result-review-blocked",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+                "operator_decision": "approved",
+            },
+        )
+    assert result_review_blocked.value.error_code == "source_intake_result_review_not_admitted"
+
+    original_summary = pass_run.summary_json
+    pass_run.summary_json = {**original_summary, "analysis_run_id": "unexpected-analysis-run"}
+    db_session.commit()
+    with pytest.raises(Layer3WorkbenchError) as analysis_run_blocked:
+        layer3_workbench.execution_result_status(
+            db_session,
+            {
+                "client_request_id": "source-intake-result-status-analysis-run",
+                "session_id": session.session_id,
+                "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
+                "preview_id": "source-intake-plan-preview",
+                "preview_hash": "source-intake-preview-hash",
+                "operator_view_mode": "status_only",
+            },
+        )
+    assert analysis_run_blocked.value.error_code == "source_intake_execution_result_status_analysis_run_not_admitted"
+    pass_run.summary_json = original_summary
+    db_session.commit()
+
     original_output_ref = pass_run.output_payload_ref
     pass_run.output_payload_ref = None
     db_session.commit()
@@ -296,7 +331,8 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert missing_status["output_metadata_error"] == "output_payload_ref_missing"
 
     pass_run.output_payload_ref = original_output_ref
-    tampered_payload = {**output_payload, "source_intake_record_id": "wrong-source-intake-record"}
+    tampered_payload = json.loads(Path(original_output_ref).read_text(encoding="utf-8"))
+    tampered_payload["source_identity"]["source_label"] = "Tampered source label"
     Path(original_output_ref).write_text(json.dumps(tampered_payload), encoding="utf-8")
     db_session.commit()
     with pytest.raises(Layer3WorkbenchError) as mismatched_output:
@@ -313,7 +349,7 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
             },
         )
     assert mismatched_output.value.error_code == "source_intake_execution_result_status_output_not_admitted"
-    assert "source_intake_record_id" in mismatched_output.value.blocked_fields
+    assert "output_hash" in mismatched_output.value.blocked_fields
 
 
 def _gate_b_payload(preflight: dict, source: dict, material: dict) -> dict:

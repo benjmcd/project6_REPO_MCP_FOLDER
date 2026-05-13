@@ -53,9 +53,12 @@ The implementation fails closed when:
 - output source-intake identity does not match the selected planned pass
 - output selected method, engine family, pass scope, or source gate does not match the frozen source-intake execution-start boundary
 - output hash does not match the persisted pass-run source-intake output hash
+- output hash does not recompute from the loaded payload after removing the embedded `output_hash` field
 - storage pointer exposes an absolute path
 - a source-intake pass is not completed
+- a source-intake pass has any `AnalysisRun` reference
 - a non-admitted engine family reaches result/status
+- a downstream result-review path tries to treat source-intake status-only output as reviewable
 
 ## Proof
 
@@ -68,8 +71,10 @@ Focused test coverage in `test_execution_start_runs_source_intake_selected_pass_
 - no `L3OutputPackage` is created
 - source-intake output identity is preserved in `output_metadata_summary`
 - result review, package review, and handoff remain disabled
+- source-intake result review raises `source_intake_result_review_not_admitted`
+- source-intake result/status rejects any `AnalysisRun` reference
 - missing output payload fails closed as `missing_output_metadata`
-- mismatched output source identity raises `source_intake_execution_result_status_output_not_admitted`
+- post-write output tampering raises `source_intake_execution_result_status_output_not_admitted` through recomputed output-hash mismatch
 
 Targeted validation: `pytest .\backend\tests\test_layer3_workbench.py`.
 
