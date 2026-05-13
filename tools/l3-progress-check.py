@@ -434,6 +434,9 @@ SOURCE_INTAKE_GATE_C_TYPING_ENTRY = (
 SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE = (
     PLANNING_DOCS / "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md"
 )
+SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY = (
+    PLANNING_DOCS / "300_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -20569,6 +20572,176 @@ def _check_source_intake_plan_preview_boundary_freeze(errors: list[str]) -> None
             errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_plan_preview_boundary_freeze_proof.{key} must be {expected!r}")
 
 
+def _check_source_intake_plan_preview_boundary(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY, errors)
+    for term in (
+        "source_intake_plan_preview_boundary",
+        "codex/l3-source-intake-plan-preview",
+        "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md",
+        "server-owned Gate C state derived from `L3SourceIntakeRecord`",
+        "operator_uploaded_single_source",
+        "qualitative_single_item_operator_uploaded_source",
+        "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE",
+        "source_intake_qualitative_preview",
+        "operator_uploaded_source_review_preview",
+        "source-intake plan approval is not admitted by this preview-only boundary",
+        "pytest .\\backend\\tests\\test_layer3_pass_entry.py",
+        "22 passed",
+        "source_intake_plan_approval_boundary_freeze",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY)} missing source-intake plan-preview implementation term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Plan Preview Boundary",
+            "300_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY.md",
+            "source_intake_plan_preview_boundary",
+            "source_intake_qualitative_preview",
+            "source_intake_plan_approval_boundary_freeze",
+        ),
+        MANIFEST: (
+            "latest_source_intake_plan_preview_boundary_branch",
+            "source_intake_plan_preview_boundary",
+            "backend/app/services/layer3_pass_entry.py",
+            "backend/tests/test_layer3_pass_entry.py",
+            "qualitative_single_item_operator_uploaded_source",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_plan_preview_boundary_proof",
+            "300_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY.md",
+            "source_intake_plan_preview_boundary",
+            "22 passed",
+        ),
+        ROOT / "backend/app/services/layer3_pass_entry.py": (
+            "SOURCE_INTAKE_GATE_B_SOURCE_CLASS",
+            "PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE",
+            "SOURCE_GATE_SOURCE_INTAKE_PLAN_PREVIEW_FREEZE",
+            "source_intake_qualitative_preview",
+            "source-intake plan approval is not admitted by this preview-only boundary",
+        ),
+        ROOT / "backend/tests/test_layer3_pass_entry.py": (
+            "test_gatec_pass_entry_preview_admits_source_intake_without_materializing_downstream",
+            "test_gatec_pass_entry_source_intake_plan_approval_remains_blocked",
+            "qualitative_single_item_operator_uploaded_source",
+            "source_intake_qualitative_preview",
+        ),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing source-intake plan-preview implementation term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    entry = manifest.get("source_intake_plan_preview_boundary") if isinstance(manifest, dict) else None
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_plan_preview_boundary")
+    else:
+        for key, expected in {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-plan-preview",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "source_intake_plan_preview_boundary",
+            "freeze_predecessor": "source_intake_plan_preview_boundary_freeze",
+            "canonical_source_of_truth": "server_owned_gate_c_state_from_L3SourceIntakeRecord",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/300_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY.md",
+            "owner_service": "backend/app/services/layer3_pass_entry.py",
+            "targeted_test": "backend/tests/test_layer3_pass_entry.py",
+            "targeted_validation_result": "22 passed",
+            "source_shape": "operator_uploaded_single_source",
+            "pass_scope": "qualitative_single_item_operator_uploaded_source",
+            "source_gate": "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE",
+            "engine_family": "source_intake_qualitative_preview",
+            "selected_method_name": "operator_uploaded_source_review_preview",
+            "live_behavior_change": True,
+            "runtime_behavior_change": True,
+            "rendered_ui_behavior_change": False,
+            "new_route_added": False,
+            "model_migration_changed": False,
+            "next_boundary": "source_intake_plan_approval_boundary_freeze",
+        }.items():
+            if entry.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_plan_preview_boundary.{key} must be {expected!r}")
+        guards = entry.get("contract_guards")
+        if not isinstance(guards, dict):
+            errors.append(f"{_rel(MANIFEST)} source_intake_plan_preview_boundary missing contract_guards")
+        else:
+            for key in (
+                "preview_only_planned_pass_created",
+                "preview_hash_deterministic",
+                "source_summary_reports_operator_uploaded_single_source",
+                "source_intake_plan_approval_blocked",
+                "no_analysis_plan_side_effect",
+                "no_pass_run_side_effect",
+                "no_analysis_run_artifact_package_side_effect",
+            ):
+                if guards.get(key) is not True:
+                    errors.append(f"{_rel(MANIFEST)} source_intake_plan_preview_boundary.contract_guards.{key} must be true")
+        for blocked in (
+            "source_intake_plan_approval",
+            "execution_start",
+            "package_construction_or_mutation",
+            "connector_destination_dispatch",
+            "provider_private_signed_url_prepare",
+            "web_connector_retrieval",
+            "rag_vector_indexing",
+            "generic_source_upload",
+            "broad_file_upload",
+            "local_path_or_local_directory_authority",
+            "model_migration_change",
+            "new_backend_route",
+            "rendered_ui_change",
+            "auth_security_behavior",
+            "frontend_only_durable_authority",
+        ):
+            if blocked not in entry.get("blocked_scope", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_plan_preview_boundary blocked_scope missing {blocked}")
+    if isinstance(manifest, dict):
+        for key, expected in (
+            ("latest_source_intake_plan_preview_boundary_branch", "codex/l3-source-intake-plan-preview"),
+            ("latest_source_intake_plan_preview_boundary_live_behavior_change", True),
+        ):
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} {key} must be {expected!r}")
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_plan_preview_boundary") != "branch_local_implemented_targeted_tests_passed":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake plan-preview implementation scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_plan_preview_boundary_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_plan_preview_boundary_proof")
+        return
+    for key, expected in {
+        "status": "branch_local_implemented_targeted_tests_passed",
+        "implementation_branch": "codex/l3-source-intake-plan-preview",
+        "selected_runtime_family": "source_breadth_runtime",
+        "selected_runtime_mode": "source_intake_plan_preview_boundary",
+        "freeze_predecessor": "source_intake_plan_preview_boundary_freeze",
+        "canonical_source_of_truth": "server_owned_gate_c_state_from_L3SourceIntakeRecord",
+        "governing_doc": "next_milestone_plans/Layer3_planning_docs/300_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY.md",
+        "owner_service": "backend/app/services/layer3_pass_entry.py",
+        "targeted_test": "backend/tests/test_layer3_pass_entry.py",
+        "targeted_validation_result": "22 passed",
+        "source_shape": "operator_uploaded_single_source",
+        "pass_scope": "qualitative_single_item_operator_uploaded_source",
+        "source_gate": "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE",
+        "engine_family": "source_intake_qualitative_preview",
+        "selected_method_name": "operator_uploaded_source_review_preview",
+        "proof_kind": "source_intake_plan_preview_boundary",
+        "live_behavior_change": True,
+        "runtime_behavior_change": True,
+        "rendered_ui_behavior_change": False,
+        "new_route_added": False,
+        "model_migration_changed": False,
+        "source_intake_plan_approval_blocked": True,
+        "no_downstream_side_effect": True,
+        "next_boundary": "source_intake_plan_approval_boundary_freeze",
+    }.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_plan_preview_boundary_proof.{key} must be {expected!r}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -25296,6 +25469,7 @@ def main() -> int:
         SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE,
         SOURCE_INTAKE_GATE_C_TYPING_ENTRY,
         SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE,
+        SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -25565,6 +25739,7 @@ def main() -> int:
     _check_source_intake_gate_c_typing_entry_freeze(errors)
     _check_source_intake_gate_c_typing_entry(errors)
     _check_source_intake_plan_preview_boundary_freeze(errors)
+    _check_source_intake_plan_preview_boundary(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
