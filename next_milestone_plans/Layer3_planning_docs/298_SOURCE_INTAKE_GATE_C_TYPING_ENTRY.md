@@ -2,9 +2,19 @@
 
 ## Status
 
-Status: branch-local implementation with targeted validation passed for `source_intake_gate_c_typing_entry`.
+Status: current-main implementation with targeted validation passed for `source_intake_gate_c_typing_entry`.
 
 Implementation branch: `codex/l3-source-intake-gate-c-typing`.
+
+Implementation commit: `c77bc9902efff6d9b5e058882b0059c6a0fcc9f1`.
+
+Merged PR: `#882`.
+
+Merge commit/current-main authority: `7752ee9e51941f254b30767e4ff4f414977daefe`.
+
+Merged at: `2026-05-13T06:16:39Z`.
+
+GitHub checks: `backend-layer3-api` success and `test` success.
 
 Implementation predecessor: `297_SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE.md`.
 

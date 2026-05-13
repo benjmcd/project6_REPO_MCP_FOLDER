@@ -14222,7 +14222,7 @@
     "repo_confirmed_failure_boundary": "layer3_typing_entry supports dataset_version and aps_content_document but not operator_uploaded_single_source"
   },
   "source_intake_gate_c_typing_entry_proof": {
-    "status": "branch_local_implemented_targeted_tests_passed",
+    "status": "current_main_implemented_targeted_tests_passed",
     "implementation_branch": "codex/l3-source-intake-gate-c-typing",
     "selected_runtime_family": "source_breadth_runtime",
     "selected_runtime_mode": "source_intake_gate_c_typing_entry",
@@ -14245,6 +14245,14 @@
     "new_route_added": false,
     "model_migration_changed": false,
     "no_analysis_run_side_effect": true,
-    "next_boundary": "source_intake_plan_preview_boundary_freeze"
+    "next_boundary": "source_intake_plan_preview_boundary_freeze",
+    "implementation_commit": "c77bc9902efff6d9b5e058882b0059c6a0fcc9f1",
+    "pr": "#882",
+    "current_main_commit": "7752ee9e51941f254b30767e4ff4f414977daefe",
+    "merged_at": "2026-05-13T06:16:39Z",
+    "github_checks": {
+      "backend-layer3-api": "success",
+      "test": "success"
+    }
   }
 }
