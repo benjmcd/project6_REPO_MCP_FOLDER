@@ -7,10 +7,14 @@ SOURCE_BOUNDARY_CONTRACT_SCHEMA_ID = "layer3.source_boundary_contract.v1"
 SOURCE_BOUNDARY_MODE = "supported_source_classes_plus_operator_source_intake"
 
 SUPPORTED_SOURCE_CLASSES = ("dataset_version", "aps_content_document")
+SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_MODE = "source_intake_gate_b_material_admission"
+SOURCE_INTAKE_GATE_B_SOURCE_CLASS = "operator_uploaded_single_source"
+SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX = "mat-source_intake_record-"
 SOURCE_INTAKE_SUPPORTED_MODES = (
     "operator_single_upload_source_intake",
     "operator_source_intake_inventory_read_only",
     "operator_source_intake_material_preview_read_only",
+    SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_MODE,
 )
 UNSUPPORTED_SOURCE_CLASSES = (
     "rag_vector_index",
@@ -62,6 +66,8 @@ def source_class_from_material_candidate_id(candidate_id: str) -> str | None:
     for source_class in SUPPORTED_SOURCE_CLASSES:
         if candidate_id.startswith(f"mat-{source_class}-"):
             return source_class
+    if candidate_id.startswith(SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX):
+        return SOURCE_INTAKE_GATE_B_SOURCE_CLASS
     return None
 
 
@@ -80,6 +86,9 @@ def source_boundary_contract() -> dict[str, Any]:
         "source_intake_upload_route": "/api/v1/layer3/source/intake/upload",
         "source_intake_inventory_route": "/api/v1/layer3/source/intake/inventory",
         "source_intake_material_preview_route": "/api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "source_intake_gate_b_material_admission_route": "/api/v1/layer3/gate-b/decision",
+        "source_intake_gate_b_material_admission_enabled": True,
+        "operator_upload_gate_b_admission_requires_later_freeze": False,
         "generic_source_upload_preflight_field_enabled": False,
         "operator_upload_material_preview_enabled": True,
         "operator_upload_material_preview_requires_later_freeze": False,

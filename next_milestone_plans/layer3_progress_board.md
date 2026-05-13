@@ -1322,3 +1322,17 @@ Refresh this board against:
 - Current source-intake posture now includes the exact admitted chain: `operator_single_upload_source_intake`, `operator_source_intake_inventory_read_only`, `operator_source_intake_material_preview_read_only`, upload duplicate-field/file guards, source-intake review-debt closeout, and `operator_source_intake_rendered_controls` on `/review/layer3`.
 - Earlier board/progress statements that said operator-uploaded material preview or rendered source-intake controls were still blocked are superseded only for those exact bounded modes; package construction, Gate B admission from uploaded material, RAG/vector indexing, web connector retrieval, generic/broad upload, local path/local-directory authority, connector/destination dispatch, provider-private signed URL prepare, execution start, auth/security behavior, backend route/DTO/model/migration/service expansion, and frontend-only durable authority remain blocked.
 - If the next product step is to use an operator-uploaded source inside the normal Layer 3 flow, the next freeze should be `source_intake_gate_b_material_admission` with `L3SourceIntakeRecord` as canonical authority, exact request/response contracts, stale-authority/idempotency semantics, negative tests for every adjacent blocked mode, leakage controls, and headed/headless/theme proof before implementation.
+
+## Source Intake Gate B Material Admission Runtime
+
+- Status: branch-local implementation/proof for `source_intake_gate_b_material_admission_runtime`.
+- Branch: `codex/l3-source-intake-gate-b-runtime`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/294_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME.md`.
+- Mode: `source_intake_gate_b_material_admission`.
+- Canonical source of truth: `L3SourceIntakeRecord`.
+- Preview route: `GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview`.
+- Gate B route: `POST /api/v1/layer3/gate-b/decision`.
+- Material candidate: `mat-source_intake_record-` with source class `operator_uploaded_single_source` and `material_preview_hash` derived through the normal Gate B hash basis.
+- Side-effect boundary: successful admission creates only existing Gate B selection state (`L3Session`, `L3SelectionManifest`, `L3Descriptor`, `L3MaterialSnapshot`, `L3GateBIdempotencyKey`) and creates no `L3PassRun`, `AnalysisRun`, `AnalysisArtifact`, or `L3OutputPackage`.
+- Blocked scope: new route, model, migration, rendered UI behavior, generic/broad upload, local path/local-directory authority, web connector retrieval, RAG/vector indexing, package construction/mutation, connector/destination dispatch, provider-private signed URL prepare, execution start, auth/security behavior, frontend-only durable authority, and non-text binary preview.
+- Next likely boundary: `source_intake_gate_b_rendered_admission_controls_freeze`.

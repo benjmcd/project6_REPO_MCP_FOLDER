@@ -416,6 +416,9 @@ SOURCE_INTAKE_RENDERED_CONTROLS = (
 SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE = (
     PLANNING_DOCS / "293_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE.md"
 )
+SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME = (
+    PLANNING_DOCS / "294_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -19565,6 +19568,192 @@ def _check_source_intake_gate_b_material_admission_freeze(errors: list[str]) -> 
             errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_gate_b_material_admission_freeze_proof.{key} must be {expected!r}")
 
 
+def _check_source_intake_gate_b_material_admission_runtime(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME, errors)
+    for term in (
+        "source_intake_gate_b_material_admission_runtime",
+        "codex/l3-source-intake-gate-b-runtime",
+        "source_intake_gate_b_material_admission",
+        "L3SourceIntakeRecord",
+        "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "POST /api/v1/layer3/gate-b/decision",
+        "mat-source_intake_record-",
+        "operator_uploaded_single_source",
+        "material_preview_hash",
+        "new route, model, migration",
+        "L3MaterialSnapshot",
+        "L3PassRun",
+        "AnalysisRun",
+        "L3OutputPackage",
+        "source_intake_gate_b_rendered_admission_controls_freeze",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME)} missing Gate B material-admission runtime term: {term}")
+
+    for path, terms in {
+        SOURCE_BOUNDARY_SERVICE: (
+            "SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_MODE",
+            "SOURCE_INTAKE_GATE_B_SOURCE_CLASS",
+            "SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX",
+            "\"source_intake_gate_b_material_admission_route\"",
+            "\"source_intake_gate_b_material_admission_enabled\": True",
+        ),
+        SOURCE_INTAKE_SERVICE: (
+            "SOURCE_INTAKE_GATE_B_MODE",
+            "SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX",
+            "validate_source_intake_gate_b_decision_basis",
+            "material_preview_hash",
+            "source_intake_gate_b_forbidden_field_not_admitted",
+            "source_intake_gate_b_record_not_admitted",
+            "eligible_for_gate_b_material_admission",
+            "gate_b_material_admission_requires_later_freeze",
+        ),
+        WORKBENCH_SERVICE: (
+            "validate_source_intake_gate_b_decision_basis",
+            "SOURCE_INTAKE_SOURCE_FAMILY",
+            "SourceIntakeError",
+            "refresh_source_intake_material_preview",
+        ),
+        LAYER3_API: (
+            "class Layer3SourceIntakeMaterialPreviewResponse",
+            "material_preview_hash: str",
+            "\"/source/intake/{source_intake_record_id}/preview\"",
+            "\"/gate-b/decision\"",
+        ),
+        SOURCE_INTAKE_TEST: (
+            "test_layer3_source_intake_gate_b_decision_admits_existing_record_without_downstream_side_effects",
+            "test_layer3_source_intake_gate_b_decision_rejects_forbidden_or_stale_authority",
+            "source_intake_gate_b_forbidden_field_not_admitted",
+            "source_intake_gate_b_record_not_admitted",
+            "L3MaterialSnapshot",
+            "db.query(L3PassRun).count() == 0",
+            "db.query(AnalysisRun).count() == 0",
+            "db.query(AnalysisArtifact).count() == 0",
+            "db.query(L3OutputPackage).count() == 0",
+        ),
+        BOARD: (
+            "## Source Intake Gate B Material Admission Runtime",
+            "294_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME.md",
+            "source_intake_gate_b_material_admission_runtime",
+            "mat-source_intake_record-",
+            "source_intake_gate_b_rendered_admission_controls_freeze",
+        ),
+        MANIFEST: (
+            "latest_source_intake_gate_b_material_admission_runtime_branch",
+            "source_intake_gate_b_material_admission_runtime",
+            "source_intake_gate_b_material_admission",
+            "POST /api/v1/layer3/gate-b/decision",
+            "mat-source_intake_record-",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_gate_b_material_admission_runtime_proof",
+            "294_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME.md",
+            "source_intake_gate_b_material_admission_runtime",
+            "material_preview_hash_emitted",
+        ),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing Gate B material-admission runtime sync term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    runtime = manifest.get("source_intake_gate_b_material_admission_runtime") if isinstance(manifest, dict) else None
+    if not isinstance(runtime, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_gate_b_material_admission_runtime")
+    else:
+        expected_scalars = {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-gate-b-runtime",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "source_intake_gate_b_material_admission",
+            "runtime_proof_name": "source_intake_gate_b_material_admission_runtime",
+            "canonical_source_of_truth": "L3SourceIntakeRecord",
+            "gate_b_route": "POST /api/v1/layer3/gate-b/decision",
+            "preview_route": "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+            "material_candidate_prefix": "mat-source_intake_record-",
+            "material_source_class": "operator_uploaded_single_source",
+            "live_behavior_change": True,
+            "runtime_behavior_change": True,
+            "rendered_ui_behavior_change": False,
+            "model_migration_change": False,
+            "new_route_added": False,
+            "material_preview_hash_emitted": True,
+            "stale_authority_fail_closed": True,
+            "forbidden_adjacent_fields_fail_closed": True,
+            "next_boundary": "source_intake_gate_b_rendered_admission_controls_freeze",
+        }
+        for key, expected in expected_scalars.items():
+            if runtime.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_gate_b_material_admission_runtime.{key} must be {expected!r}")
+        side_effects = runtime.get("side_effect_boundary")
+        if not isinstance(side_effects, dict):
+            errors.append(f"{_rel(MANIFEST)} source_intake_gate_b_material_admission_runtime missing side_effect_boundary")
+        else:
+            for key in ("creates_l3_session", "creates_l3_selection_manifest", "creates_l3_descriptor", "creates_l3_material_snapshot", "creates_l3_gate_b_idempotency_key"):
+                if side_effects.get(key) is not True:
+                    errors.append(f"{_rel(MANIFEST)} side_effect_boundary.{key} must be true")
+            for key in ("creates_l3_pass_run", "creates_analysis_run", "creates_analysis_artifact", "creates_l3_output_package"):
+                if side_effects.get(key) is not False:
+                    errors.append(f"{_rel(MANIFEST)} side_effect_boundary.{key} must be false")
+        for blocked in (
+            "generic_source_upload",
+            "broad_file_upload",
+            "local_path_authority",
+            "local_directory_authority",
+            "web_connector_retrieval",
+            "rag_vector_indexing",
+            "package_construction_mutation",
+            "connector_destination_dispatch",
+            "provider_private_signed_url_prepare",
+            "execution_start",
+            "auth_security_behavior",
+            "frontend_only_durable_authority",
+            "non_text_binary_preview",
+            "rendered_gate_b_source_intake_controls",
+        ):
+            if blocked not in runtime.get("blocked_scope", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_gate_b_material_admission_runtime blocked_scope missing {blocked}")
+    if isinstance(manifest, dict):
+        for key, expected in (
+            ("latest_source_intake_gate_b_material_admission_runtime_branch", "codex/l3-source-intake-gate-b-runtime"),
+            ("latest_source_intake_gate_b_material_admission_runtime_live_behavior_change", True),
+        ):
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} {key} must be {expected!r}")
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_gate_b_material_admission_runtime") != "branch_local_implemented_targeted_tests_passed":
+            errors.append(f"{_rel(MANIFEST)} missing Gate B material-admission runtime scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_gate_b_material_admission_runtime_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_gate_b_material_admission_runtime_proof")
+        return
+    for key, expected in {
+        "status": "branch_local_implemented_targeted_tests_passed",
+        "implementation_branch": "codex/l3-source-intake-gate-b-runtime",
+        "selected_runtime_family": "source_breadth_runtime",
+        "selected_runtime_mode": "source_intake_gate_b_material_admission",
+        "runtime_proof_name": "source_intake_gate_b_material_admission_runtime",
+        "proof_kind": "source_intake_gate_b_material_admission_runtime",
+        "canonical_source_of_truth": "L3SourceIntakeRecord",
+        "gate_b_route": "POST /api/v1/layer3/gate-b/decision",
+        "preview_route": "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "material_candidate_prefix": "mat-source_intake_record-",
+        "material_source_class": "operator_uploaded_single_source",
+        "live_behavior_change": True,
+        "runtime_behavior_change": True,
+        "rendered_ui_behavior_change": False,
+        "model_migration_change": False,
+        "new_route_added": False,
+        "material_preview_hash_emitted": True,
+        "next_boundary": "source_intake_gate_b_rendered_admission_controls_freeze",
+    }.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_gate_b_material_admission_runtime_proof.{key} must be {expected!r}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -24286,6 +24475,7 @@ def main() -> int:
         RUNTIME_FREEZE_INTAKE_CHECKLIST,
         SOURCE_INTAKE_RENDERED_CONTROLS,
         SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE,
+        SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_RUNTIME,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -24549,6 +24739,7 @@ def main() -> int:
     _check_source_intake_review_debt_closeout(errors)
     _check_source_intake_rendered_controls(errors)
     _check_source_intake_gate_b_material_admission_freeze(errors)
+    _check_source_intake_gate_b_material_admission_runtime(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

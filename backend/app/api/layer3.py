@@ -1431,6 +1431,7 @@ class Layer3SourceIntakeMaterialPreviewResponse(Layer3BaseResponse):
     source_intake_preview_mode: str
     source_intake_record_id: str
     material_preview_id: str
+    material_preview_hash: str
     material_candidate: dict[str, Any]
     partial_retrieval: bool
     downstream_eligibility: dict[str, bool]
