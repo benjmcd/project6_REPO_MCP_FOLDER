@@ -20638,8 +20638,11 @@ def _check_source_intake_plan_preview_boundary(errors: list[str]) -> None:
         errors.append(f"{_rel(MANIFEST)} missing source_intake_plan_preview_boundary")
     else:
         for key, expected in {
-            "status": "branch_local_implemented_targeted_tests_passed",
+            "status": "current_main_implemented_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-plan-preview",
+            "implementation_commit": "46af1d10828ef1bbe0eb7459a1dca6c5a3e1a0fc",
+            "pr": "#885",
+            "current_main_commit": "28ab25cc0dc1d8e2e1d92f017f817990dc5ed05c",
             "selected_runtime_family": "source_breadth_runtime",
             "selected_runtime_mode": "source_intake_plan_preview_boundary",
             "freeze_predecessor": "source_intake_plan_preview_boundary_freeze",
@@ -20704,7 +20707,7 @@ def _check_source_intake_plan_preview_boundary(errors: list[str]) -> None:
             if manifest.get(key) != expected:
                 errors.append(f"{_rel(MANIFEST)} {key} must be {expected!r}")
         scope_status = manifest.get("scope_status")
-        if not isinstance(scope_status, dict) or scope_status.get("source_intake_plan_preview_boundary") != "branch_local_implemented_targeted_tests_passed":
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_plan_preview_boundary") != "current_main_implemented_targeted_tests_passed":
             errors.append(f"{_rel(MANIFEST)} missing source-intake plan-preview implementation scope status")
 
     proof = _load_json(PROOF_MANIFEST, errors)
@@ -20713,8 +20716,11 @@ def _check_source_intake_plan_preview_boundary(errors: list[str]) -> None:
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_plan_preview_boundary_proof")
         return
     for key, expected in {
-        "status": "branch_local_implemented_targeted_tests_passed",
+        "status": "current_main_implemented_targeted_tests_passed",
         "implementation_branch": "codex/l3-source-intake-plan-preview",
+        "implementation_commit": "46af1d10828ef1bbe0eb7459a1dca6c5a3e1a0fc",
+        "pr": "#885",
+        "current_main_commit": "28ab25cc0dc1d8e2e1d92f017f817990dc5ed05c",
         "selected_runtime_family": "source_breadth_runtime",
         "selected_runtime_mode": "source_intake_plan_preview_boundary",
         "freeze_predecessor": "source_intake_plan_preview_boundary_freeze",
