@@ -446,6 +446,9 @@ SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY = (
 SOURCE_INTAKE_EXECUTION_SELECTION_GUARD = (
     PLANNING_DOCS / "303_SOURCE_INTAKE_EXECUTION_SELECTION_GUARD.md"
 )
+SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE = (
+    PLANNING_DOCS / "304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -21194,6 +21197,76 @@ def _check_source_intake_execution_selection_guard(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_execution_selection_guard_proof.{key} must be {expected!r}")
 
 
+def _check_source_intake_execution_selection_boundary_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE, errors)
+    for term in (
+        "source_intake_execution_selection_boundary",
+        "codex/l3-source-intake-exec-selection-freeze-2",
+        "source_intake_execution_selection_guard",
+        "operator_uploaded_single_source_selects_approved_plan_for_execution_shell",
+        "server-owned approved `L3AnalysisPlan` payload derived from `L3SourceIntakeRecord`",
+        "backend/app/services/layer3_workbench.py",
+        "execution_selection",
+        "source_intake_execution_selection_not_admitted",
+        "L3PassRun",
+        "selected_not_started",
+        "implement_source_intake_execution_selection_boundary",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE)} missing source-intake execution-selection freeze term: {term}")
+    for path, terms in {
+        BOARD: ("## Source Intake Execution Selection Boundary Freeze", "304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md", "implement_source_intake_execution_selection_boundary"),
+        MANIFEST: ("source_intake_execution_selection_boundary_freeze", "latest_source_intake_execution_selection_boundary_freeze_branch", "selected_not_started_l3_pass_run_shell_only"),
+        PROOF_MANIFEST: ("source_intake_execution_selection_boundary_freeze_proof", "304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md", "source_intake_execution_selection_not_admitted"),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing source-intake execution-selection freeze term: {term}")
+    manifest = _load_json(MANIFEST, errors)
+    freeze = manifest.get("source_intake_execution_selection_boundary_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(freeze, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_execution_selection_boundary_freeze")
+    else:
+        for key, expected in {
+            "status": "completed_source_intake_execution_selection_boundary_freeze",
+            "implementation_branch": "codex/l3-source-intake-exec-selection-freeze-2",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "source_intake_execution_selection_boundary",
+            "runtime_predecessor": "source_intake_execution_selection_guard",
+            "canonical_source_of_truth": "server_owned_approved_L3AnalysisPlan_from_L3SourceIntakeRecord",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md",
+            "next_allowed_action": "implement_source_intake_execution_selection_boundary",
+            "implementation_entry_allowed_next": True,
+            "live_behavior_change": False,
+            "runtime_behavior_change": False,
+            "rendered_ui_behavior_change": False,
+        }.items():
+            if freeze.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_execution_selection_boundary_freeze.{key} must be {expected!r}")
+        semantics = freeze.get("future_selection_semantics")
+        if not isinstance(semantics, dict) or semantics.get("persistence_mode") != "selected_not_started_l3_pass_run_shell_only" or semantics.get("execution_started") is not False:
+            errors.append(f"{_rel(MANIFEST)} source_intake_execution_selection_boundary_freeze future_selection_semantics invalid")
+        for required in (
+            "source_intake_approved_plan_creates_selected_not_started_l3_pass_run_shell",
+            "selected_pass_run_preserves_preview_identity_and_source_identity",
+            "preview_id_or_hash_mismatch_fails_closed_before_pass_run_creation",
+            "client_request_id_replay_is_idempotent_and_conflict_fails_closed",
+            "no_analysis_run_artifact_or_package_created",
+            "source_intake_execution_start_remains_blocked_after_selection",
+        ):
+            if required not in freeze.get("required_future_proofs", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_execution_selection_boundary_freeze required_future_proofs missing {required}")
+    if isinstance(manifest, dict):
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_execution_selection_boundary_freeze") != "completed_source_intake_execution_selection_boundary_freeze":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake execution-selection freeze scope status")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_execution_selection_boundary_freeze_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict) or proof_entry.get("proof_kind") != "source_intake_execution_selection_boundary_freeze":
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_execution_selection_boundary_freeze_proof")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -25925,6 +25998,7 @@ def main() -> int:
         SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY_FREEZE,
         SOURCE_INTAKE_PLAN_APPROVAL_BOUNDARY,
         SOURCE_INTAKE_EXECUTION_SELECTION_GUARD,
+        SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -26198,6 +26272,7 @@ def main() -> int:
     _check_source_intake_plan_approval_boundary_freeze(errors)
     _check_source_intake_plan_approval_boundary(errors)
     _check_source_intake_execution_selection_guard(errors)
+    _check_source_intake_execution_selection_boundary_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

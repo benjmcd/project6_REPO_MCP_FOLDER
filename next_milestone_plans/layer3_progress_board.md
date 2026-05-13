@@ -1492,3 +1492,19 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 - Proof: `backend/tests/test_layer3_workbench.py` proves no `L3PassRun` is created for a source-intake approved plan, and `pytest .\backend\tests\test_layer3_workbench.py` passed with 22 tests.
 - Blocked scope remains source-intake execution selection, execution start, package construction/mutation, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, generic/broad upload, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
 - Next required decision remains `source_intake_execution_selection_boundary_freeze`.
+
+## Source Intake Execution Selection Boundary Freeze
+
+- Status: planning/control freeze for `source_intake_execution_selection_boundary`.
+- Branch: `codex/l3-source-intake-exec-selection-freeze-2`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md`.
+- Runtime predecessor: `source_intake_execution_selection_guard`.
+- Selected runtime family: `source_breadth_runtime`.
+- Selected runtime mode: `source_intake_execution_selection_boundary`.
+- Named operator/product use case: `operator_uploaded_single_source_selects_approved_plan_for_execution_shell`.
+- Canonical source of truth: server-owned approved `L3AnalysisPlan` payload derived from `L3SourceIntakeRecord` Gate C and plan-preview state, plus existing `L3Session` execution-selection summary state.
+- Repo-confirmed failure boundary: `execution_selection` currently rejects source-intake approved planned passes before `L3PassRun` shell creation with `source_intake_execution_selection_not_admitted`.
+- Future selection semantics: existing `execution_selection` may create only selected-not-started `L3PassRun` shells for the source-intake approved plan, preserving preview/source identity and idempotency while creating no execution/artifact/package state.
+- Next allowed code-bearing action: `implement_source_intake_execution_selection_boundary` only.
+- Required future proof: selected-not-started `L3PassRun` shell creation, preview/source identity preservation, preview mismatch fail-closed behavior, idempotent replay/conflict behavior, no `AnalysisRun`/`AnalysisArtifact`/`L3OutputPackage`, source-intake execution start still blocked, and existing execution-selection behavior unchanged.
+- Blocked scope: execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, provider/private URL behavior, web connector retrieval, RAG/vector indexing, generic/broad upload, local path/local-directory authority, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
