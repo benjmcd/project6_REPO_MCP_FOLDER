@@ -1352,9 +1352,15 @@ Refresh this board against:
 
 ## Source Intake Gate B Rendered Admission Controls
 
-Status: branch-local implementation with targeted validation passed for `source_intake_gate_b_rendered_admission_controls`.
+Status: current-main implementation with targeted validation passed for `source_intake_gate_b_rendered_admission_controls`.
 
-Branch: `codex/l3-source-intake-gate-b-rendered-controls`.
+Implementation branch: `codex/l3-source-intake-gate-b-rendered-controls`.
+
+Implementation commit: `f079d0ffc3d760bc24a948141745d5852ccd061c`.
+
+Merged PR: `#879`.
+
+Merge commit/current-main authority: `204d551a88b136882d1ee27a2c31d02798e2547c`.
 
 Doc: `296_SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS.md`.
 
@@ -1363,3 +1369,5 @@ This slice renders the doc-295 source-intake Gate B admission boundary on `/revi
 Proof scope: `backend/app/review_ui/static/layer3.html`, `backend/app/review_ui/static/layer3.css`, `backend/app/review_ui/static/layer3.js`, `backend/tests/test_layer3_page.py`, `e2e/layer3-workbench.spec.js`, `next_milestone_plans/layer3_progress_manifest.json`, `next_milestone_plans/layer3_workbench_proof_manifest.json`, and `tools/l3-progress-check.py`.
 
 Blocked scope preserved: no new backend route, DTO, model, migration, service, package construction/mutation, connector/destination dispatch, provider URL behavior, execution start, RAG/vector indexing, web connector retrieval, generic/broad source upload, local path/directory authority, non-text binary preview, auth/security behavior, or frontend-only durable authority.
+
+Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`, and post-merge `python .\tools\l3-progress-check.py` passed against `project6-origin/main` at `204d551a88b136882d1ee27a2c31d02798e2547c`.
