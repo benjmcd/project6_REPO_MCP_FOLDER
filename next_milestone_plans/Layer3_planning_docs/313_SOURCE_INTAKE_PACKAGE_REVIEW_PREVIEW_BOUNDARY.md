@@ -2,9 +2,19 @@
 
 ## Status
 
-Status: branch-local implementation/proof for `source_intake_package_review_preview_boundary`.
+Status: current-main implementation/proof for `source_intake_package_review_preview_boundary`.
 
 Branch: `codex/l3-source-intake-package-review-preview`.
+
+Implementation commit: `6f69f9fba57c805b7b10c9492749302f43f014cc`.
+
+Merged PR: `#905`.
+
+Merge commit/current-main authority: `bf6539c85212f7f0b4d3e08d9b8c4c6344dec5ab`.
+
+GitHub checks: `backend-layer3-api` success and `test` success.
+
+Review threads: empty; no comments or reviews required action.
 
 Freeze predecessor: `312_SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_BOUNDARY_FREEZE.md`.
 
@@ -73,6 +83,8 @@ Focused test coverage in `test_execution_start_runs_source_intake_selected_pass_
 - no `L3ReconciliationRecord` is created
 
 Targeted validation: `pytest .\backend\tests\test_layer3_workbench.py` passed with 22 tests.
+
+Current-main validation: PR `#905` merged at `bf6539c85212f7f0b4d3e08d9b8c4c6344dec5ab` with `backend-layer3-api` and `test` checks successful, no comments/reviews/reviewThreads requiring action, and `python .\tools\l3-progress-check.py` passing after fast-forwarding local `main`.
 
 ## Explicit Non-Goals
 

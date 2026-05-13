@@ -14836,6 +14836,13 @@
     "route_added": false,
     "model_migration_changed": false,
     "blocked_downstream_boundary": "source_intake_package_construction_commit_boundary_freeze",
-    "review_threads": "not_created_yet"
+    "review_threads": "empty",
+    "implementation_commit": "6f69f9fba57c805b7b10c9492749302f43f014cc",
+    "pr": "#905",
+    "merge_commit": "bf6539c85212f7f0b4d3e08d9b8c4c6344dec5ab",
+    "github_checks": [
+      "backend-layer3-api:SUCCESS",
+      "test:SUCCESS"
+    ]
   }
 }
