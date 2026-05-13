@@ -16167,5 +16167,35 @@
   },
   "latest_source_intake_provider_public_url_rendered_controls_current_main_sync_branch": "codex/l3-provider-public-rendered-controls-sync-938",
   "latest_source_intake_provider_public_url_rendered_controls_current_main_sync_live_behavior_change": false,
-  "latest_source_intake_provider_public_url_rendered_controls_current_main_sync_summary": "Current-main sync after PR #938 records passing checks, empty review surfaces, clean merge, post-merge progress PASS, and continued block on provider-public delivery/use."
+  "latest_source_intake_provider_public_url_rendered_controls_current_main_sync_summary": "Current-main sync after PR #938 records passing checks, empty review surfaces, clean merge, post-merge progress PASS, and continued block on provider-public delivery/use.",
+  "source_intake_provider_public_url_delivery_use_freeze_proof": {
+    "proof_kind": "source_intake_provider_public_url_delivery_use_freeze",
+    "status": "completed_source_intake_provider_public_url_delivery_use_freeze",
+    "branch": "codex/l3-provider-public-delivery-use-freeze",
+    "current_main_predecessor_commit": "bd4c230fd84e26e5c314c0be2a8138fc6e2667c8",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md",
+    "predecessor_sync": "source_intake_provider_public_url_rendered_controls_current_main_sync",
+    "next_allowed_action": "select_next_deferred_server_authoritative_layer3_lane_or_write_provider_public_delivery_use_authority_contract",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "route_behavior_change": false,
+    "delivery_use_selected": false,
+    "allowed_next_decisions": [
+      "provider_public_url_delivery_use_authority_contract_only",
+      "next_deferred_server_authoritative_runtime_lane_freeze"
+    ],
+    "negative_invariants_preserved": [
+      "no provider-public delivery/use route admitted",
+      "no raw public URL display admitted",
+      "no public_url_enabled true rail admitted",
+      "no public proxy runtime admitted",
+      "no frontend-only durable provider-public authority admitted",
+      "no connector/destination dispatch admitted",
+      "no package mutation/source expansion/broad qualitative/RAG/full mockup/auth-security behavior admitted"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required"
+  },
+  "latest_source_intake_provider_public_url_delivery_use_freeze_branch": "codex/l3-provider-public-delivery-use-freeze",
+  "latest_source_intake_provider_public_url_delivery_use_freeze_live_behavior_change": false,
+  "latest_source_intake_provider_public_url_delivery_use_freeze_summary": "Provider-public delivery/use is branch-local frozen as not selected; next allowed action is authority-contract-only or a separate deferred server-authoritative runtime-lane freeze."
 }
