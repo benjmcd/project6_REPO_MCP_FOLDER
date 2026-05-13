@@ -87,12 +87,16 @@ def test_source_boundary_contract_keeps_deferred_source_expansion_fail_closed() 
         "schema_widening",
     }
     assert contract["source_upload_enabled"] is False
-    assert contract["supported_source_intake_modes"] == ["operator_single_upload_source_intake"]
+    assert contract["supported_source_intake_modes"] == [
+        "operator_single_upload_source_intake",
+        "operator_source_intake_inventory_read_only",
+        "operator_source_intake_material_preview_read_only",
+    ]
     assert contract["source_intake_upload_enabled"] is True
     assert contract["source_intake_record_enabled"] is True
     assert contract["generic_source_upload_preflight_field_enabled"] is False
-    assert contract["operator_upload_material_preview_enabled"] is False
-    assert contract["operator_upload_material_preview_requires_later_freeze"] is True
+    assert contract["operator_upload_material_preview_enabled"] is True
+    assert contract["operator_upload_material_preview_requires_later_freeze"] is False
     assert contract["local_directory_enabled"] is False
     assert contract["broad_file_upload_enabled"] is False
     assert contract["web_connector_enabled"] is False

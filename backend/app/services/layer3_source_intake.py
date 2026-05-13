@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from datetime import datetime, timezone
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 from typing import Any
 
@@ -26,6 +26,9 @@ SOURCE_INTAKE_INVENTORY_SCHEMA_ID = "layer3.source_intake_inventory.v1"
 SOURCE_INTAKE_INVENTORY_MODE = "operator_source_intake_inventory_read_only"
 SOURCE_INTAKE_INVENTORY_DEFAULT_LIMIT = 50
 SOURCE_INTAKE_INVENTORY_MAX_LIMIT = 100
+SOURCE_INTAKE_PREVIEW_SCHEMA_ID = "layer3.source_intake_material_preview.v1"
+SOURCE_INTAKE_PREVIEW_MODE = "operator_source_intake_material_preview_read_only"
+SOURCE_INTAKE_PREVIEW_MAX_CHARS = 4000
 
 SERVER_AUTHORITY = (
     "Layer 3 source intake record owns source identity, bytes/metadata hash, "
@@ -361,6 +364,159 @@ def source_intake_inventory(
     }
 
 
+def source_intake_material_preview(
+    db: Session,
+    *,
+    source_intake_record_id: str,
+    max_chars: int = SOURCE_INTAKE_PREVIEW_MAX_CHARS,
+) -> dict[str, Any]:
+    record_id = str(source_intake_record_id or "").strip()
+    if not record_id:
+        raise SourceIntakeError(
+            "source_intake_preview_record_id_required",
+            "source_intake_record_id is required for operator-uploaded material preview.",
+            details={"field": "source_intake_record_id"},
+        )
+    try:
+        normalized_max_chars = int(max_chars)
+    except (TypeError, ValueError) as exc:
+        raise SourceIntakeError(
+            "source_intake_preview_max_chars_invalid",
+            "source-intake material preview max_chars must be an integer from 1 through 4000.",
+            details={"max_chars": max_chars},
+        ) from exc
+    if normalized_max_chars < 1 or normalized_max_chars > SOURCE_INTAKE_PREVIEW_MAX_CHARS:
+        raise SourceIntakeError(
+            "source_intake_preview_max_chars_invalid",
+            "source-intake material preview max_chars must be an integer from 1 through 4000.",
+            details={
+                "max_chars": normalized_max_chars,
+                "max_allowed_chars": SOURCE_INTAKE_PREVIEW_MAX_CHARS,
+            },
+        )
+
+    record = (
+        db.query(L3SourceIntakeRecord)
+        .filter(L3SourceIntakeRecord.source_intake_record_id == record_id)
+        .one_or_none()
+    )
+    if record is None:
+        raise SourceIntakeError(
+            "source_intake_preview_record_not_found",
+            "No source-intake record exists for the requested preview.",
+            http_status=404,
+            details={"source_intake_record_id": record_id},
+        )
+    if record.status != SOURCE_INTAKE_STATUS or record.source_family != SOURCE_INTAKE_SOURCE_FAMILY:
+        raise SourceIntakeError(
+            "source_intake_preview_record_not_admitted",
+            "Only recorded operator-uploaded single-source rows are admitted for material preview.",
+            details={
+                "status": record.status,
+                "source_family": record.source_family,
+            },
+        )
+
+    media_type = str(record.media_type or "").lower()
+    if not _is_text_preview_media_type(media_type):
+        raise SourceIntakeError(
+            "source_intake_preview_media_type_not_admitted",
+            "Only bounded text-like operator-uploaded source material preview is admitted.",
+            details={"media_type": record.media_type},
+        )
+
+    storage_path = _storage_path_from_ref(record.storage_ref)
+    if not storage_path.exists() or not storage_path.is_file():
+        raise SourceIntakeError(
+            "source_intake_preview_storage_missing",
+            "The source-intake storage object is not available for preview.",
+            http_status=404,
+            details={"storage_ref": record.storage_ref},
+        )
+    file_bytes = storage_path.read_bytes()
+    content_sha256 = hashlib.sha256(file_bytes).hexdigest()
+    if content_sha256 != record.content_sha256:
+        raise SourceIntakeError(
+            "source_intake_preview_hash_mismatch",
+            "The source-intake storage object hash does not match the persisted authority row.",
+            http_status=409,
+            details={"source_intake_record_id": record.source_intake_record_id},
+        )
+
+    decoded = file_bytes.decode("utf-8", errors="replace")
+    preview_text = decoded[:normalized_max_chars]
+    truncated = len(decoded) > normalized_max_chars
+    material_candidate_id = f"mat-source_intake_record-{record.source_intake_record_id}"
+    return {
+        "schema_id": SOURCE_INTAKE_PREVIEW_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": record.client_request_id,
+        "server_time": _server_time(),
+        "mode": SOURCE_INTAKE_PREVIEW_MODE,
+        "status": "available",
+        "message": "Layer 3 source-intake material preview returned bounded text from one server-owned intake record.",
+        "source_gate": {
+            "canonical_source_of_truth": "L3SourceIntakeRecord",
+            "source_gate": "288_SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE",
+            "writer_route": "POST /api/v1/layer3/source/intake/upload",
+            "inventory_route": "GET /api/v1/layer3/source/intake/inventory",
+            "preview_route": "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+            "absolute_path_exposed": False,
+            "bounded_text_preview": True,
+            "rag_vector_index_enabled": False,
+            "web_connector_enabled": False,
+            "package_construction_enabled": False,
+        },
+        "source_intake_preview_mode": SOURCE_INTAKE_PREVIEW_MODE,
+        "source_intake_record_id": record.source_intake_record_id,
+        "material_preview_id": _stable_hash(
+            {
+                "mode": SOURCE_INTAKE_PREVIEW_MODE,
+                "source_intake_record_id": record.source_intake_record_id,
+                "content_sha256": record.content_sha256,
+                "max_chars": normalized_max_chars,
+            }
+        )[:36],
+        "material_candidate": {
+            "candidate_id": material_candidate_id,
+            "source_class": "operator_uploaded_single_source",
+            "source_ref": f"source_intake_record:{record.source_intake_record_id}",
+            "source_label": record.source_label,
+            "media_type": record.media_type,
+            "content_size_bytes": record.content_size_bytes,
+            "content_sha256": record.content_sha256,
+            "metadata_hash": record.metadata_hash,
+            "authority_basis_hash": record.authority_basis_hash,
+            "preview_text": preview_text,
+            "preview_char_count": len(preview_text),
+            "preview_truncated": truncated,
+            "preview_encoding": "utf-8-replace",
+            "storage_pointer": {
+                "storage_ref": record.storage_ref,
+                "storage_authority": "server_raw_storage",
+                "content_addressed": True,
+                "absolute_path_exposed": False,
+            },
+            "source_identity": _inventory_record_response(record)["source_identity"],
+            "source_provenance": record.provenance_json or {},
+            "load_summary": {
+                "loaded_records": 1,
+                "failed_records": 0,
+                "preview_material": True,
+                "bounded_text_preview": True,
+            },
+            "current_decision_state": "candidate",
+        },
+        "partial_retrieval": truncated,
+        "downstream_eligibility": _downstream_eligibility(),
+        "negative_invariants": _negative_invariants(),
+        "next_allowed_actions": [
+            "use_bounded_preview_for_operator_review_only",
+            "define_later_freeze_before_rag_connector_package_or_rendered_source_controls",
+        ],
+    }
+
+
 def _normalise_fields(form_fields: Mapping[str, Any]) -> dict[str, str]:
     fields = {
         str(key): str(value).strip()
@@ -453,6 +609,34 @@ def _write_content_addressed_file(file_bytes: bytes, content_sha256: str, safe_f
         storage_path.write_bytes(file_bytes)
     raw_root_name = Path(settings.raw_storage_dir).name
     return f"{raw_root_name}/{SOURCE_INTAKE_STORAGE_SEGMENT}/{storage_name}"
+
+
+def _storage_path_from_ref(storage_ref: str) -> Path:
+    ref = PurePosixPath(str(storage_ref or "").strip())
+    parts = ref.parts
+    raw_root = Path(settings.raw_storage_dir)
+    if len(parts) != 3 or parts[0] != raw_root.name or parts[1] != SOURCE_INTAKE_STORAGE_SEGMENT:
+        raise SourceIntakeError(
+            "source_intake_preview_storage_ref_not_admitted",
+            "The source-intake storage reference is outside the admitted server-owned raw storage segment.",
+            details={"storage_ref": storage_ref},
+        )
+    storage_path = raw_root / SOURCE_INTAKE_STORAGE_SEGMENT / parts[2]
+    resolved_root = (raw_root / SOURCE_INTAKE_STORAGE_SEGMENT).resolve()
+    resolved_path = storage_path.resolve()
+    if resolved_root not in resolved_path.parents:
+        raise SourceIntakeError(
+            "source_intake_preview_storage_ref_not_admitted",
+            "The source-intake storage reference resolves outside the admitted server-owned raw storage segment.",
+            details={"storage_ref": storage_ref},
+        )
+    return storage_path
+
+
+def _is_text_preview_media_type(media_type: str) -> bool:
+    if media_type.startswith("text/"):
+        return True
+    return media_type in {"application/json", "application/xml", "application/x-ndjson"}
 
 
 def _existing_record(
@@ -581,8 +765,8 @@ def _downstream_eligibility() -> dict[str, bool]:
     return {
         "source_intake_recorded": True,
         "eligible_for_source_inventory": True,
-        "eligible_for_material_preview": False,
-        "material_preview_requires_later_freeze": True,
+        "eligible_for_material_preview": True,
+        "material_preview_requires_later_freeze": False,
         "eligible_for_rag_vector_index": False,
         "eligible_for_web_connector": False,
         "eligible_for_unbounded_runtime_db": False,
@@ -596,7 +780,7 @@ def _negative_invariants() -> dict[str, bool]:
         "web_connector_enabled": False,
         "rag_vector_index_enabled": False,
         "runtime_db_write_enabled": False,
-        "material_preview_enabled_for_operator_upload": False,
+        "unbounded_material_preview_enabled_for_operator_upload": False,
     }
 
 
