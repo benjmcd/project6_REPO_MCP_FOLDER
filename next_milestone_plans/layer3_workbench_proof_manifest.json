@@ -15649,5 +15649,46 @@
       "frontend_only_durable_authority"
     ],
     "validation_status": "progress_check_required"
+  },
+  "source_intake_provider_public_url_authority_contract_proof": {
+    "proof_kind": "source_intake_provider_public_url_authority_contract",
+    "status": "completed_source_intake_provider_public_url_authority_contract",
+    "branch": "codex/l3-provider-public-authority-contract",
+    "current_main_predecessor_commit": "6df1608e790a08b15546c2fe3d23a4a41bb12d4e",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/337_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_AUTHORITY_CONTRACT.md",
+    "selected_implementation_entry_posture": "provider_public_url_runtime_blocked_until_substrate_freeze",
+    "next_boundary": "source_intake_provider_public_url_substrate_freeze",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "blocked_scope": [
+      "provider_public_url_runtime",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "local_directory_authority",
+      "web_connector_retrieval",
+      "rag_vector_behavior",
+      "broad_qualitative_behavior",
+      "full_mockup_activation",
+      "route_model_migration_changes",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "required_future_substrate_decisions": [
+      "provider_object_store_owner",
+      "public_url_identity",
+      "public_url_value_redaction",
+      "ttl_expiry_policy",
+      "revocation_policy",
+      "stale_authority_policy",
+      "replay_and_use_model",
+      "route_dto_contract",
+      "model_migration_contract",
+      "rendered_controls_contract",
+      "auth_security_contract",
+      "test_obligations"
+    ],
+    "validation_status": "progress_check_required"
   }
 }
