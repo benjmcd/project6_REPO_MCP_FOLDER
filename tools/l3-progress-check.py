@@ -21305,8 +21305,11 @@ def _check_source_intake_execution_selection_boundary(errors: list[str]) -> None
         errors.append(f"{_rel(MANIFEST)} missing source_intake_execution_selection_boundary")
     else:
         for key, expected in {
-            "status": "branch_local_implemented_targeted_tests_passed",
+            "status": "current_main_implemented_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-exec-selection",
+            "implementation_commit": "cc4044b6a8ec555bcac381bf230440e00f83b6dc",
+            "pr": "#893",
+            "current_main_commit": "ca3640bfb315666fd6550f2c19048fa1a37a9b44",
             "selected_runtime_mode": "source_intake_execution_selection_boundary",
             "freeze_predecessor": "source_intake_execution_selection_boundary_freeze",
             "canonical_source_of_truth": "server_owned_approved_L3AnalysisPlan_from_L3SourceIntakeRecord",
@@ -21329,7 +21332,7 @@ def _check_source_intake_execution_selection_boundary(errors: list[str]) -> None
             errors.append(f"{_rel(MANIFEST)} source_intake_execution_selection_boundary missing required guards")
     if isinstance(manifest, dict):
         scope_status = manifest.get("scope_status")
-        if not isinstance(scope_status, dict) or scope_status.get("source_intake_execution_selection_boundary") != "branch_local_implemented_targeted_tests_passed":
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_execution_selection_boundary") != "current_main_implemented_targeted_tests_passed":
             errors.append(f"{_rel(MANIFEST)} missing source-intake execution-selection implementation scope status")
     proof = _load_json(PROOF_MANIFEST, errors)
     proof_entry = proof.get("source_intake_execution_selection_boundary_proof") if isinstance(proof, dict) else None
