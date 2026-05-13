@@ -2,9 +2,17 @@
 
 ## Status
 
-Status: branch-local implementation with targeted validation passed for `source_intake_gate_b_rendered_admission_controls`.
+Status: current-main implementation with targeted validation passed for `source_intake_gate_b_rendered_admission_controls`.
 
-Branch: `codex/l3-source-intake-gate-b-rendered-controls`.
+Implementation branch: `codex/l3-source-intake-gate-b-rendered-controls`.
+
+Implementation commit: `f079d0ffc3d760bc24a948141745d5852ccd061c`.
+
+Merged PR: `#879`.
+
+Merge commit/current-main authority: `204d551a88b136882d1ee27a2c31d02798e2547c`.
+
+Merged at: `2026-05-13T05:43:29Z`.
 
 Runtime predecessor: `source_intake_gate_b_material_admission_runtime`.
 
@@ -90,6 +98,9 @@ On failure, the workbench preserves the server error envelope by showing the ret
 - `python -m pytest .\backend\tests\test_layer3_page.py .\backend\tests\test_layer3_source_intake.py .\backend\tests\test_layer3_source_boundary.py .\backend\tests\test_layer3_gate_b_state.py -q`: `37 passed, 3 warnings`.
 - `npx playwright test layer3-workbench.spec.js --grep "rendered source-intake upload inventory and preview" --project=chromium`: `1 passed`.
 - `npx playwright test layer3-workbench.spec.js --grep "rendered source-intake upload inventory and preview" --project=chromium --headed`: `1 passed`.
+- GitHub `backend-layer3-api`: passed for PR `#879`.
+- GitHub `test`: passed for PR `#879`.
+- Post-merge `python .\tools\l3-progress-check.py`: passed against `project6-origin/main` at `204d551a88b136882d1ee27a2c31d02798e2547c`.
 
 ## Blocked Scope Preserved
 
