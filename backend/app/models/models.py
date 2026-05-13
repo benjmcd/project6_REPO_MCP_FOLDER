@@ -1301,6 +1301,43 @@ class L3ReplacementOutputPackage(Base):
     package_supersession_commit: Mapped[L3PackageSupersessionCommit] = relationship()
 
 
+class L3SourceIntakeRecord(Base):
+    __tablename__ = "l3_source_intake_record"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_source_intake_client_request"),
+        UniqueConstraint("authority_basis_hash", name="uq_l3_source_intake_authority_basis"),
+        CheckConstraint(
+            "operator_decision = 'record_operator_uploaded_source'",
+            name="ck_l3_source_intake_operator_decision",
+        ),
+        CheckConstraint("status IN ('recorded', 'already_recorded')", name="ck_l3_source_intake_status"),
+        Index("ix_l3_source_intake_content_sha256", "content_sha256"),
+        Index("ix_l3_source_intake_source_family", "source_family"),
+        Index("ix_l3_source_intake_status", "status"),
+    )
+
+    source_intake_record_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    operator_decision: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_family: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_label: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_description: Mapped[str | None] = mapped_column(Text)
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    media_type: Mapped[str | None] = mapped_column(String(128))
+    content_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    metadata_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    storage_ref: Mapped[str] = mapped_column(String(1024), nullable=False)
+    freshness_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    provenance_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    downstream_eligibility_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default="recorded")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class L3SignedReferenceToken(Base):
     __tablename__ = "l3_signed_reference_token"
     __table_args__ = (

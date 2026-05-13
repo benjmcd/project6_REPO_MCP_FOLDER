@@ -1,0 +1,47 @@
+{
+  "schema_id": "layer3.source_breadth_runtime_entry_proof.v1",
+  "status": "branch_local_implemented_targeted_tests_passed",
+  "date": "2026-05-13",
+  "branch": "codex/l3-source-breadth-runtime",
+  "runtime_family": "source_breadth_runtime",
+  "approved_packet": {
+    "operator_product_use_case": "server-owned operator upload of a single source document/corpus that current dataset_version and aps_content_document paths cannot represent",
+    "server_authority": "Layer 3 source intake record owning source identity, bytes/metadata hash, provenance, freshness, storage pointer, and downstream eligibility"
+  },
+  "canonical_surfaces": {
+    "model": "backend/app/models/models.py::L3SourceIntakeRecord",
+    "migration": "backend/alembic/versions/0024_layer3_source_intake_record.py",
+    "service": "backend/app/services/layer3_source_intake.py",
+    "api_route": "POST /api/v1/layer3/source/intake/upload",
+    "boundary_contract": "backend/app/services/layer3_source_boundary.py",
+    "tests": "backend/tests/test_layer3_source_intake.py",
+    "freeze_note": "next_milestone_plans/Layer3_planning_docs/286_SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE.md"
+  },
+  "admitted_scope": {
+    "operator_single_upload_source_intake": true,
+    "persist_source_identity": true,
+    "persist_bytes_hash": true,
+    "persist_metadata_hash": true,
+    "persist_provenance": true,
+    "persist_freshness": true,
+    "persist_relative_storage_pointer": true,
+    "return_downstream_eligibility": true
+  },
+  "unchanged_source_preview_classes": [
+    "dataset_version",
+    "aps_content_document"
+  ],
+  "not_admitted": {
+    "broad_file_upload": true,
+    "local_directory": true,
+    "web_connector": true,
+    "rag_vector_index": true,
+    "unbounded_runtime_db": true,
+    "operator_upload_material_preview": true,
+    "general_sources_upload_widening": true
+  },
+  "targeted_tests": {
+    "command": "python -m pytest .\\backend\\tests\\test_layer3_source_boundary.py .\\backend\\tests\\test_layer3_source_intake.py -q",
+    "result": "8 passed, 3 warnings"
+  }
+}

@@ -4,7 +4,7 @@ import json
 from typing import Any, Callable, Literal
 from urllib.parse import parse_qsl
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
@@ -20,6 +20,7 @@ from app.services import (
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_set_authority,
     layer3_provider_private_signed_url,
+    layer3_source_intake,
     layer3_workbench,
 )
 from app.services.layer3_preflight_request_contract import PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS
@@ -1393,6 +1394,23 @@ class Layer3SourcePreviewResponse(Layer3BaseResponse):
     source_candidates: list[dict[str, Any]]
     unsupported_sources: list[Any]
     authority_rail: dict[str, Any]
+
+
+class Layer3SourceIntakeRecordResponse(Layer3BaseResponse):
+    source_intake_record_id: str
+    source_intake_mode: str
+    source_family: str
+    source_label: str
+    source_identity: dict[str, Any]
+    source_provenance: dict[str, Any]
+    storage_pointer: dict[str, Any]
+    content_sha256: str
+    metadata_hash: str
+    authority_basis_hash: str
+    downstream_eligibility: dict[str, Any]
+    source_gate: str
+    next_allowed_actions: list[str]
+    negative_invariants: dict[str, bool]
 
 
 class Layer3MaterialPreviewResponse(Layer3BaseResponse):
@@ -4272,6 +4290,48 @@ def post_preflight(payload: Layer3PreflightRequest) -> dict[str, Any] | JSONResp
 )
 def post_source_preview(payload: Layer3SourcePreviewRequest) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.source_preview(payload.model_dump(exclude_none=True)))
+
+
+@router.post(
+    "/source/intake/upload",
+    response_model=Layer3SourceIntakeRecordResponse,
+    status_code=201,
+    responses=_workbench_error_responses(400, 409),
+)
+async def post_source_intake_upload(
+    request: Request,
+    file: UploadFile = File(...),
+    client_request_id: str = Form(...),
+    operator_decision: str = Form(...),
+    source_label: str = Form(...),
+    source_description: str | None = Form(None),
+    source_family: str | None = Form(None),
+    freshness_timestamp: str | None = Form(None),
+    declared_media_type: str | None = Form(None),
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    _ = (
+        client_request_id,
+        operator_decision,
+        source_label,
+        source_description,
+        source_family,
+        freshness_timestamp,
+        declared_media_type,
+    )
+    try:
+        form = await request.form()
+        fields = {str(key): value for key, value in form.multi_items() if key != "file"}
+        file_bytes = await file.read()
+        return layer3_source_intake.record_operator_upload_source_intake(
+            db,
+            file_bytes=file_bytes,
+            original_filename=file.filename,
+            media_type=file.content_type,
+            form_fields=fields,
+        )
+    except layer3_source_intake.SourceIntakeError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
 @router.post(
