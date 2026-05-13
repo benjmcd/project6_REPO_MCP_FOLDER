@@ -557,6 +557,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "340_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE = (
+    PLANNING_DOCS / "341_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
 PROVIDER_PUBLIC_URL_FAKE_PROVIDER_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_fake_provider.py"
@@ -28611,6 +28614,40 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public current-main sync term: {term}")
+
+    route_freeze_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE, errors)
+    for term in (
+        "Status: planning/control route-entry freeze only; no runtime route behavior admitted.",
+        "source_intake_provider_public_url_prepare_status_backend_api",
+        "implement_source_intake_provider_public_url_prepare_status_backend_api",
+        "public URL delivery/use route",
+        "revoke route unless separately frozen",
+        "auth/security behavior",
+    ):
+        if term not in route_freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE)} missing provider-public route-entry freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Route Entry Freeze",
+            "341_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE.md",
+            "source_intake_provider_public_url_prepare_status_backend_api",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_route_entry_freeze",
+            "source_intake_provider_public_url_prepare_status_backend_api",
+            "implement_source_intake_provider_public_url_prepare_status_backend_api",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_route_entry_freeze_proof",
+            "source_intake_provider_public_url_prepare_status_backend_api",
+            "implement_source_intake_provider_public_url_prepare_status_backend_api",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public route-entry freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []

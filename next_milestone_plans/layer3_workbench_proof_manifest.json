@@ -15793,5 +15793,39 @@
     "runtime_behavior_change": false,
     "next_boundary": "source_intake_provider_public_url_route_entry_freeze",
     "proof_kind": "source_intake_provider_public_url_durable_state_current_main_sync"
+  },
+  "source_intake_provider_public_url_route_entry_freeze_proof": {
+    "proof_kind": "source_intake_provider_public_url_route_entry_freeze",
+    "status": "completed_source_intake_provider_public_url_route_entry_freeze",
+    "branch": "codex/l3-provider-public-route-entry-freeze",
+    "current_main_predecessor_commit": "7b9e3b5784d86280fb8fa0e843cb0ded777b8092",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/341_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE.md",
+    "predecessor_sync": "source_intake_provider_public_url_durable_state_current_main_sync",
+    "selected_next_implementation": "source_intake_provider_public_url_prepare_status_backend_api",
+    "next_allowed_action": "implement_source_intake_provider_public_url_prepare_status_backend_api",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "allowed_future_route_surface": [
+      "prepare_endpoint",
+      "status_endpoint"
+    ],
+    "blocked_scope": [
+      "public_url_delivery_use_route",
+      "provider_public_url_revoke_route",
+      "rendered_controls",
+      "public_url_enabled_true",
+      "raw_public_url_persistence_or_response_exposure",
+      "provider_network_object_store_writes",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "rag_vector_behavior",
+      "broad_qualitative_behavior",
+      "full_mockup_activation",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required"
   }
 }
