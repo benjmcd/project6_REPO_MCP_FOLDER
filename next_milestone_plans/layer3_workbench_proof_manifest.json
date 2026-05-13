@@ -16226,5 +16226,47 @@
   },
   "latest_source_intake_provider_public_url_delivery_use_freeze_current_main_sync_branch": "codex/l3-provider-public-delivery-use-freeze-sync-940",
   "latest_source_intake_provider_public_url_delivery_use_freeze_current_main_sync_live_behavior_change": false,
-  "latest_source_intake_provider_public_url_delivery_use_freeze_current_main_sync_summary": "Current-main sync after PR #940 records passing checks, empty review surfaces, clean merge, post-merge progress PASS, and continued block on provider-public delivery/use implementation."
+  "latest_source_intake_provider_public_url_delivery_use_freeze_current_main_sync_summary": "Current-main sync after PR #940 records passing checks, empty review surfaces, clean merge, post-merge progress PASS, and continued block on provider-public delivery/use implementation.",
+  "source_intake_provider_public_url_delivery_use_authority_contract_proof": {
+    "proof_kind": "source_intake_provider_public_url_delivery_use_authority_contract",
+    "status": "completed_provider_public_url_delivery_use_authority_contract_branch_local",
+    "branch": "codex/l3-provider-public-delivery-use-authority-contract",
+    "current_main_predecessor_commit": "9fe3d4dbf4bf51c0fa523d7f8392950dce4ddc41",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/352_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT.md",
+    "selected_contract": "provider_public_url_delivery_use_authority_contract_only",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "route_behavior_change": false,
+    "delivery_use_selected": false,
+    "required_future_proof_before_delivery_use": [
+      "route_dto_shape",
+      "raw_public_url_response_policy",
+      "public_url_enabled_true_authority_source",
+      "provider_object_store_owner",
+      "public_access_behavior",
+      "ttl_expiration_clock_credential_lifetime",
+      "revocation_after_exposure",
+      "https_transport_assumptions",
+      "api_auth_security_model",
+      "log_telemetry_browser_clipboard_dom_network_error_leak_controls",
+      "cache_control_response_headers",
+      "audit_redaction",
+      "headed_headless_browser_proof_if_rendered",
+      "fail_closed_negative_tests"
+    ],
+    "negative_invariants_preserved": [
+      "no provider-public delivery/use route admitted",
+      "no raw public URL display admitted",
+      "no public_url_enabled true rail admitted",
+      "no provider network/object-store write admitted",
+      "no public proxy runtime admitted",
+      "no auth/security behavior admitted",
+      "no frontend-only durable authority admitted"
+    ],
+    "next_required_action": "next_deferred_server_authoritative_runtime_lane_freeze",
+    "validation_status": "planning_control_contract_only_progress_check_required"
+  },
+  "latest_source_intake_provider_public_url_delivery_use_authority_contract_branch": "codex/l3-provider-public-delivery-use-authority-contract",
+  "latest_source_intake_provider_public_url_delivery_use_authority_contract_live_behavior_change": false,
+  "latest_source_intake_provider_public_url_delivery_use_authority_contract_summary": "Provider-public delivery/use authority contract is branch-local planning/control only; runtime delivery/use remains blocked and next action is next_deferred_server_authoritative_runtime_lane_freeze."
 }
