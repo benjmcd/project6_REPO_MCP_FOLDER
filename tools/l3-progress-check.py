@@ -554,6 +554,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE = (
     PLANNING_DOCS / "339_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "340_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
 PROVIDER_PUBLIC_URL_FAKE_PROVIDER_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_fake_provider.py"
@@ -28573,6 +28576,41 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public substrate implementation term: {term}")
+
+    sync_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync.",
+        "PR `#929`",
+        "7b83e7490b67e6f0f5eb815cc84716388292b1fc",
+        "backend-layer3-api",
+        "reviewThreads",
+        "source_intake_provider_public_url_route_entry_freeze",
+        "Provider-public URL durable state exists",
+    ):
+        if term not in sync_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC)} missing provider-public current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Durable State Current-main Sync",
+            "340_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC.md",
+            "source_intake_provider_public_url_route_entry_freeze",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_durable_state_current_main_sync",
+            "completed_current_main_sync_pr_929",
+            "source_intake_provider_public_url_route_entry_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_durable_state_current_main_sync_proof",
+            "completed_current_main_sync_pr_929",
+            "source_intake_provider_public_url_route_entry_freeze",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
