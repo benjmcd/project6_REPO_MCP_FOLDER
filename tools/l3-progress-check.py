@@ -389,6 +389,12 @@ MOCKUP_PIXEL_PROOF_CLOSEOUT = (
 RUNTIME_FREEZE_INTAKE_CHECKLIST = (
     PLANNING_DOCS / "285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md"
 )
+SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE = (
+    PLANNING_DOCS / "286_SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE.md"
+)
+SOURCE_BREADTH_RUNTIME_ENTRY_PROOF = (
+    PLANNING_DOCS / "286-source-breadth-proof.json"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -515,6 +521,13 @@ PROVIDER_PRIVATE_SIGNED_URL_RECIPIENT_SCOPE_MIGRATION = (
     / "versions"
     / "0023_layer3_provider_private_signed_url_recipient_scope.py"
 )
+SOURCE_INTAKE_MIGRATION = (
+    ROOT
+    / "backend"
+    / "alembic"
+    / "versions"
+    / "0024_layer3_source_intake_record.py"
+)
 LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
 MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
@@ -546,6 +559,9 @@ PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_SERVICE = (
 )
 PROVIDER_PRIVATE_SIGNED_URL_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_provider_private_signed_url.py"
+)
+SOURCE_INTAKE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_intake.py"
 )
 WORKBENCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
@@ -600,6 +616,7 @@ RAW_MIXED_BRIDGE_TEST = ROOT / "backend" / "tests" / "test_layer3_raw_mixed_brid
 RAW_MIXED_MATERIALIZATION_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_raw_mixed_materialization.py"
 )
+SOURCE_INTAKE_TEST = ROOT / "backend" / "tests" / "test_layer3_source_intake.py"
 QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_mockup_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
@@ -4996,13 +5013,20 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
     service_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
     for term in (
         "SOURCE_BOUNDARY_CONTRACT_SCHEMA_ID = \"layer3.source_boundary_contract.v1\"",
-        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_only\"",
+        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_plus_operator_source_intake\"",
+        "SOURCE_INTAKE_SUPPORTED_MODES = (\"operator_single_upload_source_intake\",)",
         "def requested_source_classes(",
         "def unsupported_requested(",
         "def source_class_from_source_candidate_id(",
         "def source_class_from_material_candidate_id(",
         "def source_boundary_contract(",
         "\"source_upload_enabled\": False",
+        "\"source_intake_upload_enabled\": True",
+        "\"source_intake_record_enabled\": True",
+        "\"source_intake_upload_route\": \"/api/v1/layer3/source/intake/upload\"",
+        "\"generic_source_upload_preflight_field_enabled\": False",
+        "\"operator_upload_material_preview_enabled\": False",
+        "\"operator_upload_material_preview_requires_later_freeze\": True",
         "\"local_directory_enabled\": False",
         "\"broad_file_upload_enabled\": False",
         "\"web_connector_enabled\": False",
@@ -5180,7 +5204,7 @@ def _check_raw_mixed_bridge_freeze(errors: list[str]) -> None:
 
     service_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
     for term in (
-        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_only\"",
+        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_plus_operator_source_intake\"",
         "SUPPORTED_SOURCE_CLASSES = (\"dataset_version\", \"aps_content_document\")",
     ):
         if term not in service_text:
@@ -5244,7 +5268,7 @@ def _check_source_breadth_freeze(errors: list[str]) -> None:
 
     service_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
     for term in (
-        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_only\"",
+        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_plus_operator_source_intake\"",
         "SUPPORTED_SOURCE_CLASSES = (\"dataset_version\", \"aps_content_document\")",
     ):
         if term not in service_text:
@@ -18320,6 +18344,185 @@ def _check_runtime_freeze_intake_checklist(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} runtime-freeze intake proof {key} mismatch")
 
 
+def _check_source_breadth_runtime_entry(errors: list[str]) -> None:
+    freeze_text = _read_required_text(SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE, errors)
+    for term in (
+        "Status: branch-local implementation entry",
+        "runtime_family: source_breadth_runtime",
+        "server-owned operator upload of a single source document/corpus",
+        "Layer 3 source intake record owning source identity",
+        "L3SourceIntakeRecord",
+        "l3_source_intake_record",
+        "POST /api/v1/layer3/source/intake/upload",
+        "operator_uploaded_single_source",
+        "record_operator_uploaded_source",
+        "eligible_for_material_preview\": false",
+        "material_preview_requires_later_freeze\": true",
+        "Broad file upload source expansion.",
+        "Local directory ingestion.",
+        "Web connector fetch.",
+        "RAG or vector-index source authority.",
+        "Unbounded runtime database writes.",
+    ):
+        if term not in freeze_text:
+            errors.append(f"{_rel(SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE)} missing source-intake runtime term: {term}")
+
+    proof_doc = _load_json(SOURCE_BREADTH_RUNTIME_ENTRY_PROOF, errors)
+    expected_proof_doc = {
+        "schema_id": "layer3.source_breadth_runtime_entry_proof.v1",
+        "status": "branch_local_implemented_targeted_tests_passed",
+        "branch": "codex/l3-source-breadth-runtime",
+        "runtime_family": "source_breadth_runtime",
+    }
+    for key, expected in expected_proof_doc.items():
+        if proof_doc.get(key) != expected:
+            errors.append(f"{_rel(SOURCE_BREADTH_RUNTIME_ENTRY_PROOF)} {key} mismatch")
+    targeted_tests = proof_doc.get("targeted_tests")
+    if not isinstance(targeted_tests, dict) or targeted_tests.get("result") != "8 passed, 3 warnings":
+        errors.append(f"{_rel(SOURCE_BREADTH_RUNTIME_ENTRY_PROOF)} missing targeted test result")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Breadth Runtime Entry",
+            "286_SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE.md",
+            "operator_single_upload_source_intake",
+            "operator-uploaded material preview remains blocked",
+        ),
+        MANIFEST: (
+            "latest_source_breadth_runtime_entry_branch",
+            "source_breadth_runtime_entry",
+            "operator_single_upload_source_intake",
+            "source_intake_recorded",
+            "operator-uploaded material preview remains blocked",
+        ),
+        PROOF_MANIFEST: (
+            "source_breadth_runtime_entry_proof",
+            "286_SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE.md",
+            "POST /api/v1/layer3/source/intake/upload",
+            "L3SourceIntakeRecord",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-intake runtime sync term: {term}")
+
+    service_text = _read_required_text(SOURCE_INTAKE_SERVICE, errors)
+    for term in (
+        "SOURCE_INTAKE_SCHEMA_ID = \"layer3.source_intake_record.v1\"",
+        "SOURCE_INTAKE_MODE = \"operator_single_upload_source_intake\"",
+        "SOURCE_INTAKE_OPERATOR_DECISION = \"record_operator_uploaded_source\"",
+        "SOURCE_INTAKE_SOURCE_FAMILY = \"operator_uploaded_single_source\"",
+        "record_operator_upload_source_intake",
+        "_downstream_eligibility",
+        "\"eligible_for_material_preview\": False",
+        "\"material_preview_requires_later_freeze\": True",
+        "\"broad_file_upload_enabled\": False",
+        "\"runtime_db_write_enabled\": False",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_SERVICE)} missing source-intake service term: {term}")
+
+    source_boundary_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
+    for term in (
+        "SOURCE_BOUNDARY_MODE = \"supported_source_classes_plus_operator_source_intake\"",
+        "SUPPORTED_SOURCE_CLASSES = (\"dataset_version\", \"aps_content_document\")",
+        "SOURCE_INTAKE_SUPPORTED_MODES = (\"operator_single_upload_source_intake\",)",
+        "\"operator_upload_material_preview_enabled\": False",
+    ):
+        if term not in source_boundary_text:
+            errors.append(f"{_rel(SOURCE_BOUNDARY_SERVICE)} missing source-intake boundary term: {term}")
+
+    model_text = _read_required_text(MODELS, errors)
+    for term in (
+        "class L3SourceIntakeRecord(Base):",
+        "__tablename__ = \"l3_source_intake_record\"",
+        "uq_l3_source_intake_client_request",
+        "uq_l3_source_intake_authority_basis",
+        "content_sha256",
+        "metadata_hash",
+        "authority_basis_hash",
+        "downstream_eligibility_json",
+    ):
+        if term not in model_text:
+            errors.append(f"{_rel(MODELS)} missing source-intake model term: {term}")
+
+    migration_text = _read_required_text(SOURCE_INTAKE_MIGRATION, errors)
+    for term in (
+        "revision = \"0024_layer3_source_intake_record\"",
+        "down_revision = \"0023_layer3_provider_private_signed_url_recipient_scope\"",
+        "l3_source_intake_record",
+        "uq_l3_source_intake_client_request",
+        "ck_l3_source_intake_operator_decision",
+    ):
+        if term not in migration_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_MIGRATION)} missing source-intake migration term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "layer3_source_intake",
+        "class Layer3SourceIntakeRecordResponse",
+        "\"/source/intake/upload\"",
+        "File(...)",
+        "Form(...)",
+        "record_operator_upload_source_intake",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing source-intake API term: {term}")
+
+    test_text = _read_required_text(SOURCE_INTAKE_TEST, errors)
+    for term in (
+        "test_layer3_source_boundary_admits_operator_upload_intake_without_broad_source_widening",
+        "test_layer3_source_intake_openapi_contract",
+        "test_layer3_source_intake_upload_records_server_owned_authority",
+        "test_layer3_source_intake_rejects_deferred_source_modes",
+        "test_layer3_source_intake_rejects_wrong_operator_decision",
+        "eligible_for_material_preview",
+        "already_recorded",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_TEST)} missing source-intake test term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_source_breadth_runtime_entry_branch", "codex/l3-source-breadth-runtime"),
+        ("latest_source_breadth_runtime_entry_pr", "#861"),
+        ("latest_source_breadth_runtime_entry_merge_commit", "e49ff96747462127217e91198c49d2c246240eb3"),
+        ("latest_source_breadth_runtime_entry_live_behavior_change", True),
+    ):
+        if key in manifest:
+            actual = manifest.get(key)
+        elif isinstance(current_status, dict):
+            actual = current_status.get(key)
+        else:
+            actual = None
+        if actual != expected:
+            errors.append(f"{_rel(MANIFEST)} source-intake runtime {key} mismatch")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("source_breadth_runtime_entry") != "completed_live_bounded_source_intake_record":
+        errors.append(f"{_rel(MANIFEST)} missing source-intake runtime scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_breadth_runtime_entry_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_breadth_runtime_entry_proof")
+        return
+    expected_scalars = {
+        "status": "completed_live_bounded_source_intake_record",
+        "implementation_branch": "codex/l3-source-breadth-runtime",
+        "pr": "#861",
+        "merge_commit": "e49ff96747462127217e91198c49d2c246240eb3",
+        "live_behavior_change": True,
+        "selected_runtime_mode": "operator_single_upload_source_intake",
+        "runtime_route": "POST /api/v1/layer3/source/intake/upload",
+        "source_intake_record_model": "L3SourceIntakeRecord",
+    }
+    for key, expected in expected_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source-intake runtime proof {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -23294,6 +23497,7 @@ def main() -> int:
     _check_mockup_pdf_text_density_refinement(errors)
     _check_mockup_pixel_proof_closeout(errors)
     _check_runtime_freeze_intake_checklist(errors)
+    _check_source_breadth_runtime_entry(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

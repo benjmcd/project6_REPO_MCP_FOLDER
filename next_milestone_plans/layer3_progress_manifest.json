@@ -4986,7 +4986,7 @@
       "unlocks": []
     }
   ],
-  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, and runtime-freeze intake checklist coverage. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and exactly one named server-authoritative runtime/use-case freeze must be selected before source_breadth_runtime, external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, or backend API/model/migration/service work proceeds.",
+  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, runtime-freeze intake checklist coverage, and PR #861 source_breadth_runtime entry for operator_single_upload_source_intake. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and exactly one named server-authoritative runtime/use-case freeze must be selected before downstream use of the #861 source-intake record, external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, or backend API/model/migration/service work proceeds. The #861 source-intake boundary is record-only: source_intake_recorded and eligible_for_source_inventory are true, while operator-uploaded material preview remains blocked along with RAG/vector indexing, web connector use, broad file upload/local-directory authority, package construction, and rendered source controls.",
   "deferred_scope": [
     "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the landed bounded export-package handoff and exact-run gate-hardening lane",
     "package-derived context implementation beyond the landed bounded handoff slice",
@@ -6882,7 +6882,7 @@
         "auth_security_widening"
       ]
     },
-    "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, and runtime-freeze intake checklist coverage. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and exactly one named server-authoritative runtime/use-case freeze must be selected before source_breadth_runtime, external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, or backend API/model/migration/service work proceeds.",
+    "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, runtime-freeze intake checklist coverage, and PR #861 source_breadth_runtime entry for operator_single_upload_source_intake. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and exactly one named server-authoritative runtime/use-case freeze must be selected before downstream use of the #861 source-intake record, external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, or backend API/model/migration/service work proceeds. The #861 source-intake boundary is record-only: source_intake_recorded and eligible_for_source_inventory are true, while operator-uploaded material preview remains blocked along with RAG/vector indexing, web connector use, broad file upload/local-directory authority, package construction, and rendered source controls.",
     "latest_runtime_freeze_intake_branch": "codex/l3-runtime-freeze-intake",
     "latest_runtime_freeze_intake_live_behavior_change": false,
     "latest_runtime_freeze_intake_summary": "Runtime freeze intake checklist: converts the post-mockup pixel-proof boundary into a concrete intake gate for the next non-visual Layer 3 implementation. It admits no runtime and requires exact_named_server_authoritative_runtime_use_case_freeze before source breadth, connector/destination, rendered package mutation, broad qual/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work. Boundary: no_runtime_implementation_without_named_use_case.",
@@ -6916,6 +6916,57 @@
         "headed_headless_theme_proof_if_rendered_ui_changes",
         "explicit_no_go_list_for_unselected_families"
       ]
+    },
+    "latest_source_breadth_runtime_entry_branch": "codex/l3-source-breadth-runtime",
+    "latest_source_breadth_runtime_entry_pr": "#861",
+    "latest_source_breadth_runtime_entry_merge_commit": "e49ff96747462127217e91198c49d2c246240eb3",
+    "latest_source_breadth_runtime_entry_base_commit": "7cae7ecc81dba90b4f8ab2ba5f8997fe4a5e9b91",
+    "latest_source_breadth_runtime_entry_head_commit": "60bfa2283e8ab49f17e46c3a8b10bd8d285be515",
+    "latest_source_breadth_runtime_entry_live_behavior_change": true,
+    "latest_source_breadth_runtime_entry_summary": "Current main now includes PR #861 as the bounded source_breadth_runtime entry for operator_single_upload_source_intake. It adds POST /api/v1/layer3/source/intake/upload, L3SourceIntakeRecord/l3_source_intake_record, 0024_layer3_source_intake_record.py, and backend/app/services/layer3_source_intake.py to persist a server-owned operator-uploaded single-source intake record with source identity, content and metadata hashes, provenance, freshness, relative storage pointer, and downstream eligibility. It keeps source-preview classes limited to dataset_version and aps_content_document, keeps source_upload_enabled false for generic preflight/source expansion, and keeps broad file upload, local directory/local path authority, web connector retrieval, RAG/vector indexing, unbounded runtime DB source reads/writes, rendered source controls, and operator-uploaded material preview blocked. The next source-breadth runtime step requires a separate named freeze before the intake record can feed material preview, RAG, connector dispatch, package construction, UI controls, or any other downstream flow. operator-uploaded material preview remains blocked.",
+    "source_breadth_runtime_entry": {
+      "status": "completed_live_bounded_source_intake_record",
+      "implementation_branch": "codex/l3-source-breadth-runtime",
+      "pr": "#861",
+      "merge_commit": "e49ff96747462127217e91198c49d2c246240eb3",
+      "base_commit": "7cae7ecc81dba90b4f8ab2ba5f8997fe4a5e9b91",
+      "head_commit": "60bfa2283e8ab49f17e46c3a8b10bd8d285be515",
+      "live_behavior_change": true,
+      "selected_runtime_family": "source_breadth_runtime",
+      "selected_runtime_mode": "operator_single_upload_source_intake",
+      "runtime_route": "POST /api/v1/layer3/source/intake/upload",
+      "source_intake_record_model": "L3SourceIntakeRecord",
+      "source_intake_record_table": "l3_source_intake_record",
+      "owner_service": "backend/app/services/layer3_source_intake.py",
+      "migration": "backend/alembic/versions/0024_layer3_source_intake_record.py",
+      "governing_doc": "next_milestone_plans/Layer3_planning_docs/286_SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE.md",
+      "branch_local_proof": "next_milestone_plans/Layer3_planning_docs/286-source-breadth-proof.json",
+      "targeted_tests": "python -m pytest .\\backend\\tests\\test_layer3_source_boundary.py .\\backend\\tests\\test_layer3_source_intake.py -q",
+      "targeted_test_result": "8 passed, 3 warnings",
+      "downstream_eligibility": {
+        "source_intake_recorded": true,
+        "eligible_for_source_inventory": true,
+        "eligible_for_material_preview": false,
+        "material_preview_requires_later_freeze": true,
+        "eligible_for_rag_vector_index": false,
+        "eligible_for_web_connector": false,
+        "eligible_for_unbounded_runtime_db": false
+      },
+      "unchanged_source_preview_classes": [
+        "dataset_version",
+        "aps_content_document"
+      ],
+      "blocked_adjacent_modes": [
+        "broad_file_upload",
+        "local_directory",
+        "local_path_authority",
+        "web_connector",
+        "rag_vector_index",
+        "unbounded_runtime_db",
+        "operator_upload_material_preview",
+        "rendered_source_controls"
+      ],
+      "material_preview_status": "operator-uploaded material preview remains blocked"
     }
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
@@ -6963,7 +7014,8 @@
     "mockup_fixture_slide_refinement": "completed_fixture_query_spec_slide_structure_refinement",
     "mockup_pdf_text_density_refinement": "completed_pdf_location_text_density_and_disabled_chip_refinement",
     "mockup_pixel_proof_closeout": "completed_mockup_pixel_proof_closeout",
-    "runtime_freeze_intake_checklist": "completed_runtime_freeze_intake_checklist"
+    "runtime_freeze_intake_checklist": "completed_runtime_freeze_intake_checklist",
+    "source_breadth_runtime_entry": "completed_live_bounded_source_intake_record"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -7017,7 +7069,14 @@
     "full_mockup_activation_reentry_decision_summary": "Current main now includes the full_mockup_activation_reentry_decision freeze: mockups remain target-state design/specification inputs and existing rendered controls remain live only where server-authoritative paths are already proven, while full mockup activation, frontend-only durable workflow state, browser-local persistence as authority, new rendered mockup controls, route/API changes, source expansion, package mutation, provider/public URL behavior, connector/destination dispatch, broad qualitative/hybrid/RAG behavior, hidden LLM planning, auth/security behavior, and browser-owned workflow authority remain blocked.",
     "latest_goal_stack_reentry_closeout_branch": "codex/l3-goal-stack-reentry-closeout",
     "latest_goal_stack_reentry_closeout_live_behavior_change": false,
-    "goal_stack_reentry_closeout_summary": "Current main now includes the goal_stack_reentry_closeout_and_implementation_gate: the source, connector/destination, package mutation, qualitative/hybrid/RAG, and full mockup reentry sequence is closed as a planning/control and bounded-runtime audit stack, while broad runtime activation remains blocked and any next implementation must first select exactly one named runtime mode with server authority, request/response contracts, stale-authority/idempotency behavior, negative tests, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted."
+    "goal_stack_reentry_closeout_summary": "Current main now includes the goal_stack_reentry_closeout_and_implementation_gate: the source, connector/destination, package mutation, qualitative/hybrid/RAG, and full mockup reentry sequence is closed as a planning/control and bounded-runtime audit stack, while broad runtime activation remains blocked and any next implementation must first select exactly one named runtime mode with server authority, request/response contracts, stale-authority/idempotency behavior, negative tests, leakage controls, and headed/headless/theme proof where rendered UI changes are admitted.",
+    "latest_source_breadth_runtime_entry_branch": "codex/l3-source-breadth-runtime",
+    "latest_source_breadth_runtime_entry_pr": "#861",
+    "latest_source_breadth_runtime_entry_merge_commit": "e49ff96747462127217e91198c49d2c246240eb3",
+    "latest_source_breadth_runtime_entry_base_commit": "7cae7ecc81dba90b4f8ab2ba5f8997fe4a5e9b91",
+    "latest_source_breadth_runtime_entry_head_commit": "60bfa2283e8ab49f17e46c3a8b10bd8d285be515",
+    "latest_source_breadth_runtime_entry_live_behavior_change": true,
+    "latest_source_breadth_runtime_entry_summary": "Current main now includes PR #861 as the bounded source_breadth_runtime entry for operator_single_upload_source_intake. It adds POST /api/v1/layer3/source/intake/upload, L3SourceIntakeRecord/l3_source_intake_record, 0024_layer3_source_intake_record.py, and backend/app/services/layer3_source_intake.py to persist a server-owned operator-uploaded single-source intake record with source identity, content and metadata hashes, provenance, freshness, relative storage pointer, and downstream eligibility. It keeps source-preview classes limited to dataset_version and aps_content_document, keeps source_upload_enabled false for generic preflight/source expansion, and keeps broad file upload, local directory/local path authority, web connector retrieval, RAG/vector indexing, unbounded runtime DB source reads/writes, rendered source controls, and operator-uploaded material preview blocked. The next source-breadth runtime step requires a separate named freeze before the intake record can feed material preview, RAG, connector dispatch, package construction, UI controls, or any other downstream flow. operator-uploaded material preview remains blocked."
   },
   "latest_post_provider_private_roadmap_selection_freeze_branch": "codex/l3-post-provider-roadmap-freeze",
   "latest_post_provider_private_roadmap_selection_freeze_live_behavior_change": false,
@@ -7771,5 +7830,56 @@
       "headed_headless_theme_proof_if_rendered_ui_changes",
       "explicit_no_go_list_for_unselected_families"
     ]
+  },
+  "latest_source_breadth_runtime_entry_branch": "codex/l3-source-breadth-runtime",
+  "latest_source_breadth_runtime_entry_pr": "#861",
+  "latest_source_breadth_runtime_entry_merge_commit": "e49ff96747462127217e91198c49d2c246240eb3",
+  "latest_source_breadth_runtime_entry_base_commit": "7cae7ecc81dba90b4f8ab2ba5f8997fe4a5e9b91",
+  "latest_source_breadth_runtime_entry_head_commit": "60bfa2283e8ab49f17e46c3a8b10bd8d285be515",
+  "latest_source_breadth_runtime_entry_live_behavior_change": true,
+  "latest_source_breadth_runtime_entry_summary": "Current main now includes PR #861 as the bounded source_breadth_runtime entry for operator_single_upload_source_intake. It adds POST /api/v1/layer3/source/intake/upload, L3SourceIntakeRecord/l3_source_intake_record, 0024_layer3_source_intake_record.py, and backend/app/services/layer3_source_intake.py to persist a server-owned operator-uploaded single-source intake record with source identity, content and metadata hashes, provenance, freshness, relative storage pointer, and downstream eligibility. It keeps source-preview classes limited to dataset_version and aps_content_document, keeps source_upload_enabled false for generic preflight/source expansion, and keeps broad file upload, local directory/local path authority, web connector retrieval, RAG/vector indexing, unbounded runtime DB source reads/writes, rendered source controls, and operator-uploaded material preview blocked. The next source-breadth runtime step requires a separate named freeze before the intake record can feed material preview, RAG, connector dispatch, package construction, UI controls, or any other downstream flow. operator-uploaded material preview remains blocked.",
+  "source_breadth_runtime_entry": {
+    "status": "completed_live_bounded_source_intake_record",
+    "implementation_branch": "codex/l3-source-breadth-runtime",
+    "pr": "#861",
+    "merge_commit": "e49ff96747462127217e91198c49d2c246240eb3",
+    "base_commit": "7cae7ecc81dba90b4f8ab2ba5f8997fe4a5e9b91",
+    "head_commit": "60bfa2283e8ab49f17e46c3a8b10bd8d285be515",
+    "live_behavior_change": true,
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "operator_single_upload_source_intake",
+    "runtime_route": "POST /api/v1/layer3/source/intake/upload",
+    "source_intake_record_model": "L3SourceIntakeRecord",
+    "source_intake_record_table": "l3_source_intake_record",
+    "owner_service": "backend/app/services/layer3_source_intake.py",
+    "migration": "backend/alembic/versions/0024_layer3_source_intake_record.py",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/286_SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE.md",
+    "branch_local_proof": "next_milestone_plans/Layer3_planning_docs/286-source-breadth-proof.json",
+    "targeted_tests": "python -m pytest .\\backend\\tests\\test_layer3_source_boundary.py .\\backend\\tests\\test_layer3_source_intake.py -q",
+    "targeted_test_result": "8 passed, 3 warnings",
+    "downstream_eligibility": {
+      "source_intake_recorded": true,
+      "eligible_for_source_inventory": true,
+      "eligible_for_material_preview": false,
+      "material_preview_requires_later_freeze": true,
+      "eligible_for_rag_vector_index": false,
+      "eligible_for_web_connector": false,
+      "eligible_for_unbounded_runtime_db": false
+    },
+    "unchanged_source_preview_classes": [
+      "dataset_version",
+      "aps_content_document"
+    ],
+    "blocked_adjacent_modes": [
+      "broad_file_upload",
+      "local_directory",
+      "local_path_authority",
+      "web_connector",
+      "rag_vector_index",
+      "unbounded_runtime_db",
+      "operator_upload_material_preview",
+      "rendered_source_controls"
+    ],
+    "material_preview_status": "operator-uploaded material preview remains blocked"
   }
 }

@@ -1093,7 +1093,7 @@ Refresh this board against:
 
 ## Source Breadth Named Use Case Packet
 
-`261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md` closes the selected source-breadth named-use-case packet as no-runtime. Current authority supports only `dataset_version` and `aps_content_document`; no concrete new source use case is present, so local upload, local-directory ingestion, broad file upload, web connector retrieval, RAG/vector retrieval, unbounded runtime DB reads, rendered source controls, and source adapter registry behavior remain blocked.
+`261_SOURCE_BREADTH_NAMED_USE_CASE_PACKET.md` closed the selected source-breadth named-use-case packet as no-runtime at that checkpoint because no concrete new source use case is present in that packet. That historical no-runtime posture is superseded only for the later PR `#861` `operator_single_upload_source_intake` record-only slice; local directory ingestion, broad file upload/source expansion, local path authority, web connector retrieval, RAG/vector retrieval, unbounded runtime DB reads, rendered source controls, and source adapter registry behavior remain blocked.
 
 ## Connector Destination Named Target Packet
 
@@ -1117,7 +1117,7 @@ Refresh this board against:
 
 ## Post Reentry Named Packet Closeout
 
-`267_POST_REENTRY_NAMED_PACKET_CLOSEOUT.md` closes the post-reentry named packet stack as no runtime selected. Docs `259` through `266` have now checked runtime selection, source breadth, connector/destination, package mutation, qualitative/hybrid/RAG, full mockup activation, and auth/security; each remains blocked because no user/product-named product/operator use case is selected. Implementation remains blocked until one exact use case names the family, mode, server authority, contracts, stale-authority/idempotency rules, negative tests, leakage controls, and headed/headless/theme proof where rendered behavior is admitted.
+`267_POST_REENTRY_NAMED_PACKET_CLOSEOUT.md` closed the post-reentry named packet stack as no runtime selected before the later source-intake runtime packet. Docs `259` through `266` remain the historical named-packet closeout basis. PR `#861` supersedes that posture only for `source_breadth_runtime` as `operator_single_upload_source_intake`; connector/destination, package mutation, qualitative/hybrid/RAG, full mockup activation, auth/security, and every downstream use of the new source-intake record still require one exact use case naming the family, mode, server authority, contracts, stale-authority/idempotency rules, negative tests, leakage controls, and headed/headless/theme proof where rendered behavior is admitted.
 
 ## Mockup Theme Freeze
 
@@ -1242,3 +1242,11 @@ Refresh this board against:
 - Boundary is `no_runtime_implementation_without_named_use_case`.
 - The next non-visual implementation must start with `exact_named_server_authoritative_runtime_use_case_freeze` for exactly one runtime family.
 - Eligible families remain `source_breadth_runtime`, `external_connector_destination_runtime`, `rendered_package_mutation_runtime`, `broad_qual_hybrid_rag_runtime`, `full_mockup_durable_activation`, and `auth_security_runtime`.
+
+## Source Breadth Runtime Entry
+
+- `286_SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE.md` records the first live `source_breadth_runtime` implementation after the intake checklist.
+- PR `#861` implements `operator_single_upload_source_intake` through `POST /api/v1/layer3/source/intake/upload`, `L3SourceIntakeRecord`, `l3_source_intake_record`, and `backend/app/services/layer3_source_intake.py`.
+- The route records server-owned source identity, content and metadata hashes, provenance, freshness, relative storage pointer, and downstream eligibility for a single operator-uploaded source.
+- Source-preview classes remain `dataset_version` and `aps_content_document`; generic source upload/source expansion remains disabled.
+- operator-uploaded material preview remains blocked, and broad file upload, local directory/local path authority, web connector retrieval, RAG/vector indexing, unbounded runtime DB source reads/writes, rendered source controls, and package construction require a later named freeze.
