@@ -40,6 +40,9 @@ from app.models.models import (
     L3ProviderPrivateSignedUrlObjectAuthority,
     L3ProviderPrivateSignedUrlReceipt,
     L3ProviderPrivateSignedUrlRevocation,
+    L3ProviderPublicUrlAuditEvent,
+    L3ProviderPublicUrlObjectAuthority,
+    L3ProviderPublicUrlReceipt,
     L3ReconciliationRecord,
     L3ReplacementOutputPackage,
     L3ReplacementPackageArtifactManifest,
@@ -3577,6 +3580,23 @@ def _provider_private_signed_url_prepare_payload(
     }
 
 
+def _provider_public_url_prepare_payload(
+    *,
+    request_id: str,
+    provider_private_body: dict,
+    recipient_scope: str = "ops-recipient:layer3-provider-public-e2e",
+    requested_ttl_seconds: int = 300,
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "provider_private_signed_url_receipt_id": provider_private_body["provider_signed_url_receipt_id"],
+        "recipient_scope": recipient_scope,
+        "requested_ttl_seconds": requested_ttl_seconds,
+        "delivery_mode": "provider_public_url",
+        "operator_decision": "prepare_provider_public_url",
+    }
+
+
 def _connector_dispatch_record_payload(
     *,
     request_id: str,
@@ -3997,6 +4017,192 @@ def test_layer3_api_provider_private_signed_url_prepare_success_status_idempoten
     finally:
         db.close()
     assert files_under_tmp() == files_before
+
+
+def test_layer3_api_provider_public_url_openapi_prepare_status_schema(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+    prepare_path = "/api/v1/layer3/handoff/export/download/provider-public-url/prepare"
+    status_path = (
+        "/api/v1/layer3/handoff/export/download/provider-public-url/status/"
+        "{provider_public_url_receipt_id}"
+    )
+    assert prepare_path in spec["paths"]
+    assert status_path in spec["paths"]
+    assert "/api/v1/layer3/handoff/export/download/provider-public-url/revoke" not in spec["paths"]
+    assert "/api/v1/layer3/handoff/export/download/provider-public-url/use" not in spec["paths"]
+    assert "/api/v1/layer3/handoff/export/download/provider-public-url/deliver" not in spec["paths"]
+
+    prepare_schema = spec["paths"][prepare_path]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert prepare_schema["additionalProperties"] is False
+    assert set(prepare_schema["required"]) == {
+        "client_request_id",
+        "provider_private_signed_url_receipt_id",
+        "recipient_scope",
+        "delivery_mode",
+        "operator_decision",
+    }
+    assert prepare_schema["properties"]["delivery_mode"]["enum"] == ["provider_public_url"]
+    assert prepare_schema["properties"]["operator_decision"]["enum"] == ["prepare_provider_public_url"]
+    assert prepare_schema["properties"]["requested_ttl_seconds"]["maximum"] == 900
+    for forbidden in (
+        "provider_public_url",
+        "public_url",
+        "raw_public_url",
+        "public_proxy_url",
+        "download_url",
+        "connector_dispatch",
+        "auth_security_override",
+    ):
+        assert prepare_schema["properties"][forbidden]["not"] == {}
+
+    assert _openapi_response_schema(spec, prepare_path, "post")["title"] == (
+        "Layer3ProviderPublicUrlPrepareResponse"
+    )
+    assert _openapi_response_schema(spec, status_path, "get")["title"] == (
+        "Layer3ProviderPublicUrlStatusResponse"
+    )
+
+
+def test_layer3_api_provider_public_url_prepare_status_idempotent_and_fail_closed(
+    client: TestClient,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-provider-public-url-private-basis",
+    )
+    private_payload = _provider_private_signed_url_prepare_payload(
+        request_id="api-provider-public-url-private-prepare",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        readiness_body=readiness_body,
+    )
+    private_prepare = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare",
+        json=private_payload,
+    )
+    assert private_prepare.status_code == 200, private_prepare.text
+    private_body = private_prepare.json()
+
+    payload = _provider_public_url_prepare_payload(
+        request_id="api-provider-public-url-prepare",
+        provider_private_body=private_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "provider_public_authorities": db.query(L3ProviderPublicUrlObjectAuthority).count(),
+            "provider_public_receipts": db.query(L3ProviderPublicUrlReceipt).count(),
+            "provider_public_audits": db.query(L3ProviderPublicUrlAuditEvent).count(),
+        }
+    finally:
+        db.close()
+
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json=payload,
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    assert prepare_body["schema_id"] == "layer3.provider_public_url.prepare.v1"
+    assert prepare_body["status"] == "prepared"
+    assert prepare_body["provider_public_url_receipt_id"].startswith("ppub_")
+    assert prepare_body["provider_public_url_state"] == "provider_public_url_prepared"
+    assert prepare_body["delivery_mode"] == "provider_public_url"
+    assert prepare_body["provider_private_signed_url_receipt_id"] == private_body["provider_signed_url_receipt_id"]
+    assert prepare_body["provider_public_url_redacted"] == "provider-public-url:redacted"
+    assert 0 < prepare_body["provider_public_url_expires_in_seconds"] <= 300
+    assert prepare_body["provider_public_url_replay_policy"] == "status_only"
+    assert prepare_body["provider_public_url_revocation_supported"] is False
+    assert prepare_body["provider_public_url_revoked"] is False
+    assert prepare_body["raw_public_url_exposed"] is False
+    assert prepare_body["public_url_enabled"] is False
+    assert prepare_body["source_artifact_hash"] == readiness_body["source_artifact_hash"]
+    assert prepare_body["source_artifact_size_bytes"] == readiness_body["source_artifact_size_bytes"]
+    assert prepare_body["authority_rail"]["provider_network_enabled"] is False
+    assert prepare_body["authority_rail"]["provider_object_write_enabled"] is False
+    assert prepare_body["authority_rail"]["connector_dispatch_enabled"] is False
+    assert prepare_body["authority_rail"]["destination_write_enabled"] is False
+    assert prepare_body["authority_rail"]["public_url_enabled"] is False
+    response_text = json.dumps(prepare_body, sort_keys=True)
+    assert "provider-public.invalid" not in response_text
+    for forbidden in ("provider_public_url", "public_url", "raw_public_url", "public_proxy_url", "download_url"):
+        assert forbidden not in prepare_body
+
+    status = client.get(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/status/"
+        f"{prepare_body['provider_public_url_receipt_id']}"
+    )
+    assert status.status_code == 200, status.text
+    status_body = status.json()
+    assert status_body["schema_id"] == "layer3.provider_public_url.status.v1"
+    assert status_body["provider_public_url_receipt_id"] == prepare_body["provider_public_url_receipt_id"]
+    assert status_body["provider_public_url_state"] == "provider_public_url_prepared"
+    assert status_body["provider_public_url_redacted"] == "provider-public-url:redacted"
+    assert status_body["raw_public_url_exposed"] is False
+    assert status_body["public_url_enabled"] is False
+    assert "provider-public.invalid" not in json.dumps(status_body, sort_keys=True)
+
+    retry = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json=payload,
+    )
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["provider_public_url_receipt_id"] == prepare_body["provider_public_url_receipt_id"]
+
+    forbidden = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json={**payload, "provider_public_url": "https://provider-public.invalid/raw-secret"},
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "provider_public_url_prepare_scope_not_admitted"
+    assert "provider-public.invalid" not in forbidden.text
+
+    missing = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json={**payload, "client_request_id": "api-provider-public-url-missing-private", "provider_private_signed_url_receipt_id": "ppsu_missing"},
+    )
+    assert missing.status_code == 404
+    assert missing.json()["error_code"] == "provider_public_url_private_receipt_not_found"
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "provider_public_authorities": db.query(L3ProviderPublicUrlObjectAuthority).count(),
+            "provider_public_receipts": db.query(L3ProviderPublicUrlReceipt).count(),
+        } == {
+            **{key: counts_before[key] for key in ("analysis_runs", "connector_runs", "packages", "reconciliations")},
+            "provider_public_authorities": counts_before["provider_public_authorities"] + 1,
+            "provider_public_receipts": counts_before["provider_public_receipts"] + 1,
+        }
+        assert db.query(L3ProviderPublicUrlAuditEvent).count() == counts_before["provider_public_audits"] + 2
+    finally:
+        db.close()
 
 
 def test_layer3_api_provider_private_signed_url_revoke_success_idempotency_and_fail_closed(

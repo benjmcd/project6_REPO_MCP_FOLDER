@@ -560,6 +560,11 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_CURRENT_MAIN_SYNC = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE = (
     PLANNING_DOCS / "341_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_BACKEND_API = (
+    PLANNING_DOCS / "342_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_BACKEND_API.md"
+)
+PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
+LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
 PROVIDER_PUBLIC_URL_FAKE_PROVIDER_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_fake_provider.py"
@@ -28648,6 +28653,62 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public route-entry freeze term: {term}")
+
+    prepare_status_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_BACKEND_API, errors)
+    for term in (
+        "Status: branch-local backend/API implementation; targeted validation passed.",
+        "source_intake_provider_public_url_prepare_status_backend_api",
+        "backend/app/services/layer3_provider_public_url.py",
+        "POST `/api/v1/layer3/handoff/export/download/provider-public-url/prepare`",
+        "GET `/api/v1/layer3/handoff/export/download/provider-public-url/status/{provider_public_url_receipt_id}`",
+        "No provider-public URL delivery/use route is added.",
+        "No provider-public URL revoke route is added.",
+        "No raw public URL value is persisted or returned.",
+        "current-main proof/control sync",
+    ):
+        if term not in prepare_status_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_BACKEND_API)} missing provider-public prepare/status implementation term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Prepare/Status Backend API",
+            "342_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_BACKEND_API.md",
+            "branch_local_implemented_targeted_tests_passed",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_prepare_status_backend_api",
+            "latest_source_intake_provider_public_url_prepare_status_backend_api_branch",
+            "branch_local_implemented_targeted_tests_passed",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_prepare_status_backend_api_proof",
+            "backend/app/services/layer3_provider_public_url.py",
+            "targeted_tests_passed",
+        ),
+        PROVIDER_PUBLIC_URL_API_SERVICE: (
+            "provider_public_url_prepare",
+            "provider_public_url_status",
+            "provider_public_url_prepare_scope_not_admitted",
+            "raw_public_url_exposed",
+            "public_url_enabled",
+        ),
+        LAYER3_API: (
+            "/handoff/export/download/provider-public-url/prepare",
+            "/handoff/export/download/provider-public-url/status/{provider_public_url_receipt_id}",
+            "Layer3ProviderPublicUrlPrepareRequest",
+            "Layer3ProviderPublicUrlStatusResponse",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_provider_public_url_openapi_prepare_status_schema",
+            "test_layer3_api_provider_public_url_prepare_status_idempotent_and_fail_closed",
+            "provider-public-url/revoke",
+            "provider-public.invalid",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public prepare/status implementation term: {term}")
 
 def main() -> int:
     errors: list[str] = []

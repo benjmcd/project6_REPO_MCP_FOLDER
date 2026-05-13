@@ -1742,3 +1742,11 @@ The next required decision is `source_intake_provider_public_url_route_entry_fre
 Branch-local planning/control freeze: `341_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_ROUTE_ENTRY_FREEZE.md` selects `source_intake_provider_public_url_prepare_status_backend_api` as the next bounded code-bearing slice after the current-main provider-public URL durable-state substrate from PR `#929`.
 
 The next implementation may add only backend/API prepare and status surfaces over server-owned source-intake, provider-private, and provider-public durable-state authority. Public URL delivery/use, revoke route, rendered controls, `public_url_enabled: True` on existing rails, raw public URL persistence or response exposure, provider network/object-store writes, public proxy URL runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
+
+## Source Intake Provider Public URL Prepare/Status Backend API
+
+Branch-local implementation: `342_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_PREPARE_STATUS_BACKEND_API.md` and branch `codex/l3-provider-public-prepare-status-api` implement only `source_intake_provider_public_url_prepare_status_backend_api`. The change adds owner service `backend/app/services/layer3_provider_public_url.py`, POST `/api/v1/layer3/handoff/export/download/provider-public-url/prepare`, GET `/api/v1/layer3/handoff/export/download/provider-public-url/status/{provider_public_url_receipt_id}`, DTO/schema guards, and focused API tests.
+
+Validation status is `branch_local_implemented_targeted_tests_passed`: targeted provider-public API tests, provider-public durable-state tests, progress check, and diff hygiene passed. Provider-public delivery/use, revoke, rendered controls, `public_url_enabled: True`, raw public URL persistence or response exposure, provider network/object-store writes, public proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
+
+The next required action is `source_intake_provider_public_url_prepare_status_backend_api_current_main_sync` after merge.
