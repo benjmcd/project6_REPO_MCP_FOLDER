@@ -83,3 +83,10 @@ The implementation-entry pass that follows this freeze must include targeted tes
 ## Stop condition
 
 Stop before code if the selected implementation cannot be expressed as a read-only projection from existing `ApsContentDocument`, chunk/page, visual-page-ref, and citation/highlight authority. In that case, the work must return to source-breadth or auth/security planning rather than widening this slice.
+
+## Review-debt settlement authority clarifications
+
+- Citation-pack highlight authority is `citations[].highlight_spans`; report-builder `sections[].citations[]` output is not the citation-pack authority shape.
+- Stale-authority checks must include `content_contract_id` and `chunking_contract_id` with `content_id` and `chunk_id`.
+- Page authority is mandatory from `ApsContentChunk.page_start`, `ApsContentChunk.page_end`, and `visual_page_refs_json`; highlight spans are supporting citation evidence, not a substitute for page authority.
+- Additional no-go surfaces remain blocked: no PDF byte download or provider/object-store URL exposure, no web connector retrieval, no vector index creation, and no broad qualitative/hybrid/RAG runtime.

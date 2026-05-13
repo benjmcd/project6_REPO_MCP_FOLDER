@@ -4908,6 +4908,7 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   await expect(page.locator('.mockup-ab-quant .mockup-ab-object')).toHaveCount(7);
   await expect(page.locator('.mockup-ab-qual .mockup-ab-object')).toHaveCount(7);
   await expect(page.locator('.mockup-ab-hybrid .mockup-ab-object')).toHaveCount(6);
+  await expect(page.locator('.mockup-ab-transfer')).toHaveCount(3);
   await expect(page.locator('#mockup-userflow-board')).toBeVisible();
   await expect(page.locator('#mockup-userflow-board')).toHaveAttribute('data-visual-source', 'userflow/layer3_user-flow-overview1.png');
   await expect(page.locator('#mockup-userflow-board')).toHaveAttribute('data-usecase-source', 'clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png');

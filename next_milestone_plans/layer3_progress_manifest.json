@@ -3447,6 +3447,33 @@
         "e2e/layer3-workbench.spec.js",
         "tools/l3-progress-check.py"
       ]
+    },
+    {
+      "slice_id": "mockup_runtime_gate_planning_control",
+      "main_state": "planning_only_post_mockup_runtime_gate",
+      "implementation_branch": "codex/l3-post-mockup-runtime-gate",
+      "base_commit": "ec0c217e082a846a8db26b2475052a81e5ebd072",
+      "status": "completed_no_runtime_selected_after_mockup_visual_proof",
+      "slice_kind": "planning_control_gate",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/271_MOCKUP_RUNTIME_GATE.md"
+      ],
+      "counting_rule": "Counts as one planning/control workbench slice for the post-mockup runtime gate; increments workbench_slice_records and workbench_planning_only_slices, and does not increment live bounded runtime counts.",
+      "authorized_scope": [
+        "static rendered theme proof only",
+        "planning/control synchronization",
+        "next required boundary selection for exactly one named server-authoritative runtime/use-case freeze"
+      ],
+      "explicit_non_goals": [
+        "backend API/model/migration/service change",
+        "source runtime",
+        "connector/destination dispatch",
+        "package mutation",
+        "broad qualitative/hybrid/RAG runtime",
+        "full durable mockup activation",
+        "auth/security runtime",
+        "frontend-only durable authority"
+      ]
     }
   ],
   "summary_counts": {
@@ -3455,9 +3482,9 @@
     "planned_decisions": 1,
     "deferred_scope_items": 8,
     "branch_only_milestones": 0,
-    "workbench_slice_records": 84,
+    "workbench_slice_records": 85,
     "workbench_live_bounded_slices": 47,
-    "workbench_planning_only_slices": 37,
+    "workbench_planning_only_slices": 38,
     "workbench_branch_local_read_only_slices": 0,
     "workbench_branch_only_implementation_slices": 0,
     "workbench_branch_local_planning_slices": 0
@@ -6989,7 +7016,8 @@
         "rendered_source_controls"
       ],
       "material_preview_status": "operator-uploaded material preview remains blocked"
-    }
+    },
+    "next_required_decision_authority_scope": "global_layer3_progress_not_aps_only"
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -7348,7 +7376,11 @@
       "broad_qualitative_hybrid_rag_runtime",
       "full_durable_mockup_activation",
       "auth_security_widening"
-    ]
+    ],
+    "per_frame_capture_state": {
+      "authority": "next_milestone_plans/layer3-mockups/frames/manifest.json rendered_projection entries",
+      "rule": "Each frame is captured by its own rendered_projection id with the selector and state needed for that frame; shared selectors are allowed only when the harness records a separate frame-specific capture."
+    }
   },
   "next_allowed_actions": [
     "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics for bounded UI-only visual refinement; no runtime widening"
@@ -7903,5 +7935,67 @@
       "rendered_source_controls"
     ],
     "material_preview_status": "operator-uploaded material preview remains blocked"
+  },
+  "next_required_decision_authority_scope": "global_layer3_progress_not_aps_only",
+  "pdf_location_freeze": {
+    "status": "completed_named_pdf_location_runtime_use_case_selected_planning_only",
+    "implementation_branch": "codex/l3-pdf-location-use-case-freeze",
+    "live_behavior_change": false,
+    "selected_planning_mode": "pdf_location_use_case_freeze",
+    "entry_decision": "named_server_authoritative_runtime_use_case_selected_planning_only",
+    "named_runtime_use_case": "pdf_location_from_aps_content_document_citation",
+    "selected_activation_mode": "single_mockup_screen_read_only_projection",
+    "selected_source_family": "aps_content_document",
+    "server_authority_contract": "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+    "runtime_implementation_allowed_next": true,
+    "next_allowed_action": "implement_read_only_pdf_location_projection_from_existing_authority",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/271_MOCKUP_RUNTIME_GATE.md",
+      "next_milestone_plans/Layer3_planning_docs/272_PDF_LOCATION_FREEZE.md"
+    ],
+    "server_authority_terms": [
+      "ApsContentDocument",
+      "ApsContentChunk.page_start",
+      "ApsContentChunk.page_end",
+      "visual_page_refs_json",
+      "nrc_aps_evidence_citation_pack",
+      "citations[].highlight_spans",
+      "source_bundle.run_id",
+      "ApsContentDocument.content_contract_id",
+      "ApsContentChunk.content_contract_id",
+      "ApsContentChunk.chunking_contract_id"
+    ],
+    "blocked_surfaces": [
+      "no raw PDF blob streaming",
+      "no PDF byte download or provider/object-store URL exposure",
+      "no browser-owned authoritative PDF location",
+      "no browser correction of server page, chunk, or citation authority",
+      "no new source family runtime",
+      "no local upload",
+      "no local-directory ingestion",
+      "no arbitrary local path input",
+      "no web connector retrieval",
+      "no RAG/vector retrieval",
+      "no connector/destination dispatch",
+      "no package mutation",
+      "no auth/security behavior change",
+      "no full durable mockup activation",
+      "no frontend-only durable authority",
+      "no vector index creation",
+      "no broad qualitative/hybrid/RAG runtime"
+    ],
+    "future_required_tests": [
+      "successful projection from existing aps_content_document chunk/page/citation authority",
+      "fail closed missing document identity",
+      "fail closed stale run id bundle id bundle checksum or citation id",
+      "fail closed missing page chunk or highlight authority",
+      "no raw path blob ref provider URL token prompt or connector secret leakage",
+      "no backend source package connector auth/security RAG/vector or full-mockup side effects",
+      "headed and headless rendered proof if surfaced in the mockup workbench theme",
+      "fail closed content contract id mismatch",
+      "fail closed chunking contract id mismatch",
+      "fail closed non-PDF content document",
+      "fail closed missing visual page authority"
+    ]
   }
 }

@@ -4367,7 +4367,14 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-ab-transfer {
     position: relative;
     display: block;
-    min-height: 90px;
+    min-height: 42px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-ab-transfers {
+    display: grid;
+    grid-template-rows: repeat(3, minmax(42px, 1fr));
+    gap: 10px;
+    align-content: center;
 }
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-ab-transfer::before {
