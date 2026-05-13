@@ -590,6 +590,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
 )
+NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE = (
+    PLANNING_DOCS / "354_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29072,6 +29075,42 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public delivery-use authority contract current-main sync term: {term}")
+
+    next_deferred_lane_text = _read_required_text(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE, errors)
+    for term in (
+        "Status: planning/control next deferred runtime lane freeze only; no runtime behavior admitted.",
+        "next_deferred_server_authoritative_runtime_lane_freeze",
+        "connector_destination_named_target_revalidation_packet",
+        "Provider-public delivery/use did not create a connector target",
+        "The next packet must be `355_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md`.",
+        "No external connector invocation is admitted.",
+        "No destination write is admitted.",
+        "No auth/security behavior is admitted.",
+    ):
+        if term not in next_deferred_lane_text:
+            errors.append(f"{_rel(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE)} missing next deferred runtime lane freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Next Deferred Server-authoritative Runtime Lane Freeze",
+            "354_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE.md",
+            "connector_destination_named_target_revalidation_packet",
+        ),
+        MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_freeze",
+            "connector_destination_named_target_revalidation_packet",
+            "355_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+        ),
+        PROOF_MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_freeze_proof",
+            "connector_destination_named_target_revalidation_packet",
+            "no runtime behavior admitted",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing next deferred runtime lane freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []
