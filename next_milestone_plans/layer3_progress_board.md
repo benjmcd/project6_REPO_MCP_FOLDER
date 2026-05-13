@@ -1258,3 +1258,11 @@ Refresh this board against:
 - The route lists safe source-intake metadata, relative storage references, hashes, provenance, freshness, and downstream eligibility for recorded `operator_uploaded_single_source` rows.
 - The route rejects non-recorded status, rejects any source family except `operator_uploaded_single_source`, exposes no file bytes or absolute paths, and performs no writes.
 - operator-uploaded material preview remains blocked, and RAG/vector indexing, web connector use, generic source upload, local path/local directory authority, package construction, rendered source controls, and unbounded runtime DB behavior still require a later named freeze.
+
+## Source Intake Material Preview
+
+- `288_SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE.md` selects the bounded operator-uploaded material preview follow-up for the existing source-intake record and inventory surfaces.
+- Branch `codex/l3-source-intake-preview` implements `operator_source_intake_material_preview_read_only` through `GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview`, backed only by `L3SourceIntakeRecord`.
+- The route verifies the server-owned storage object hash against `content_sha256`, returns bounded UTF-8 text preview for text-like media only, and exposes no absolute paths.
+- The route rejects unknown records, non-recorded rows, non-operator-uploaded source families, invalid `max_chars`, storage refs outside `raw/layer3-source-intake`, missing storage objects, hash mismatch, and non-text-like media.
+- RAG/vector indexing, web connector use, generic source upload, local path/local directory authority, package construction, rendered source controls, non-text binary preview, and unbounded runtime DB behavior still require a later named freeze.

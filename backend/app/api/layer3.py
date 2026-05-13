@@ -1426,6 +1426,18 @@ class Layer3SourceIntakeInventoryResponse(Layer3BaseResponse):
     negative_invariants: dict[str, bool]
 
 
+class Layer3SourceIntakeMaterialPreviewResponse(Layer3BaseResponse):
+    source_gate: dict[str, Any]
+    source_intake_preview_mode: str
+    source_intake_record_id: str
+    material_preview_id: str
+    material_candidate: dict[str, Any]
+    partial_retrieval: bool
+    downstream_eligibility: dict[str, bool]
+    next_allowed_actions: list[str]
+    negative_invariants: dict[str, bool]
+
+
 class Layer3MaterialPreviewResponse(Layer3BaseResponse):
     material_preview_id: str
     material_preview_hash: str
@@ -4364,6 +4376,26 @@ def get_source_intake_inventory(
             limit=limit,
             source_family=source_family,
             status=status,
+        )
+    except layer3_source_intake.SourceIntakeError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.get(
+    "/source/intake/{source_intake_record_id}/preview",
+    response_model=Layer3SourceIntakeMaterialPreviewResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_source_intake_material_preview(
+    source_intake_record_id: str,
+    max_chars: int = 4000,
+    db: Session = Depends(get_db),
+):
+    try:
+        return layer3_source_intake.source_intake_material_preview(
+            db,
+            source_intake_record_id=source_intake_record_id,
+            max_chars=max_chars,
         )
     except layer3_source_intake.SourceIntakeError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
