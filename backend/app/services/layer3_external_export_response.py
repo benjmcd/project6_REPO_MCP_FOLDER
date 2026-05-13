@@ -47,6 +47,7 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_d
 QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.qual_aps_external_export_download_prepare.v1"
 QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.qual_aps_external_export_download_delivery.v1"
 SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.source_intake_external_export_download_prepare.v1"
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.source_intake_external_export_download_delivery.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = "layer3.external_export_download_delivery_ui.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_external_export_download"
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
@@ -811,6 +812,8 @@ def external_export_download_delivery_response(
             "X-Layer3-Schema-Id": (
                 QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID
                 if qualitative_aps_external_export_download_admitted(validation_body)
+                else SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID
+                if source_intake_external_export_download_admitted(validation_body)
                 else EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID
             ),
             "X-Layer3-Delivery-State": EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
