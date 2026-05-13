@@ -15381,5 +15381,62 @@
       "full_mockup_activation"
     ],
     "validation_status": "targeted_tests_and_progress_check_required"
+  },
+  "source_intake_external_export_download_rendered_controls_current_main_sync_proof": {
+    "proof_kind": "source_intake_external_export_download_rendered_controls_current_main_sync",
+    "status": "completed_current_main_sync_pr_920",
+    "branch": "codex/l3-source-intake-postmerge-sync-920",
+    "merged_pr": "#920",
+    "implementation_branch": "codex/l3-source-intake-rendered-delivery-controls",
+    "head_commit": "3a27a61d243621a264f78f7fe9d32d0507db3b2a",
+    "merge_commit": "11185c51b1af4c68a8df9f28a1fd0bb66cf5cf32",
+    "base_commit": "f17d9e2e9a6e1dacfbb86552dd94b6b9af447634",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/328_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_CURRENT_MAIN_SYNC.md",
+    "implemented_boundary_doc": "next_milestone_plans/Layer3_planning_docs/327_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY.md",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "github_checks_passed": [
+      "backend-layer3-api",
+      "test"
+    ],
+    "review_gate_clean": true,
+    "reviewThreads": [],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": true,
+    "next_boundary": "source_intake_external_export_download_signed_reference_boundary_freeze"
+  },
+  "source_intake_external_export_download_signed_reference_boundary_freeze_proof": {
+    "proof_kind": "source_intake_external_export_download_signed_reference_boundary_freeze",
+    "status": "completed_source_intake_external_export_download_signed_reference_boundary_freeze",
+    "branch": "codex/l3-source-intake-postmerge-sync-920",
+    "current_main_predecessor_commit": "11185c51b1af4c68a8df9f28a1fd0bb66cf5cf32",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/329_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY_FREEZE.md",
+    "repo_confirmed_failure_boundary": "external_export_download_signed_reference_scope_not_admitted from _signed_reference_required_cohort_authority",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "frozen_future_scope": [
+      "existing_external_export_download_signed_reference_generation_and_use_contracts",
+      "layer3.source_intake_external_export_download_prepare.v1",
+      "layer3.source_intake_external_export_download_delivery.v1",
+      "same_origin_signed_delivery_reference",
+      "server_generated_durable_signed_reference_state",
+      "token_only_use",
+      "delivery_authority_revalidated_at_use",
+      "no_analysis_run_created"
+    ],
+    "blocked_scope": [
+      "provider_public_private_url",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "local_directory_authority",
+      "web_connector_retrieval",
+      "rag_vector",
+      "broad_qualitative_execution",
+      "full_mockup_activation",
+      "route_model_migration",
+      "auth_security_behavior"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required",
+    "next_boundary": "source_intake_external_export_download_signed_reference_boundary"
   }
 }
