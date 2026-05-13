@@ -1828,3 +1828,9 @@ The sync doc `353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTR
 Branch-local planning/control freeze: `354_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE.md` selects `connector_destination_named_target_revalidation_packet` as the next deferred lane after the provider-public delivery/use authority contract current-main sync.
 
 The freeze does not admit connector runtime. It selects a revalidation packet only, because connector/destination is the nearest downstream integration candidate after handoff/export and provider URL planning, while current-main authority still lacks a named connector or destination target. Package mutation, broad qualitative/hybrid/RAG behavior, full mockup activation, auth/security behavior, provider-public delivery/use, and frontend-only durable authority remain blocked.
+
+## Next Deferred Server-authoritative Runtime Lane Current-main Sync
+
+Current-main proof/control sync: PR `#944` merged `354_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE.md` at merge commit `531c57f836a4b47fcaae96922f93ff239a945f2b`.
+
+The sync doc `355_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Connector/destination runtime remains blocked; the next required action is `connector_destination_named_target_revalidation_packet` in doc `356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md`.
