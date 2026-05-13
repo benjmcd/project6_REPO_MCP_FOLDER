@@ -14644,5 +14644,21 @@
       "broad_qualitative_execution"
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required"
+  },
+  "source_intake_execution_start_boundary_proof": {
+    "proof_kind": "source_intake_execution_start_boundary",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/307_SOURCE_INTAKE_EXECUTION_START_BOUNDARY.md",
+    "branch": "codex/l3-source-intake-exec-start",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "test_file": "backend/tests/test_layer3_workbench.py",
+    "test_name": "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
+    "targeted_validation": "pytest .\\backend\\tests\\test_layer3_workbench.py",
+    "targeted_validation_result": "22 passed",
+    "output_schema_id": "layer3.source_intake_execution_output.v1",
+    "analysis_run_created": false,
+    "package_created": false,
+    "route_added": false,
+    "model_migration_changed": false,
+    "blocked_downstream_boundary": "source_intake_execution_result_status_boundary_freeze"
   }
 }
