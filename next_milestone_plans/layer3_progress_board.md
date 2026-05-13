@@ -1540,3 +1540,9 @@ Branch-local implementation continuation: doc `307_SOURCE_INTAKE_EXECUTION_START
 Targeted validation: `pytest .\backend\tests\test_layer3_workbench.py` passed with 22 tests. Next required decision is `source_intake_execution_result_status_boundary_freeze` before source-intake execution output may be inspected through result/status or downstream review/package surfaces.
 
 Current-main sync: PR `#896` merged this implementation at `1bcfd43ad7bae61f0c79f9142eefcc4131a16c8a` with `backend-layer3-api` and `test` checks successful and no PR comments/reviews/reviewThreads requiring action. The next required decision remains `source_intake_execution_result_status_boundary_freeze`.
+
+## Source Intake Execution Result Status Boundary Freeze
+
+Current-main planning/control continuation: doc `308_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY_FREEZE.md` freezes `source_intake_execution_result_status_boundary` as the next exact read-only boundary after PR `#896` deterministic source-intake execution-start metadata and PR `#897` current-main proof/control sync. The repo-confirmed failure boundary is `execution_result_status` rejecting source-intake completed pass runs with `unsupported_execution_result_status_engine` in `backend/app/services/layer3_workbench.py`.
+
+The next code-bearing action is `implement_source_intake_execution_result_status_boundary` only. It must reuse the existing `execution_result_status` request contract, revalidate execution-selection and preview identity, require completed source-intake execution output with `layer3.source_intake_execution_output.v1`, preserve source-intake identity, and avoid creating `AnalysisRun`, package, handoff, export, connector, provider, RAG/vector, route, UI, model, migration, auth/security, or broad qualitative behavior.

@@ -14668,5 +14668,35 @@
       "test:SUCCESS"
     ],
     "review_threads": "empty"
+  },
+  "source_intake_execution_result_status_boundary_freeze_proof": {
+    "proof_kind": "source_intake_execution_result_status_boundary_freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/308_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY_FREEZE.md",
+    "branch": "codex/l3-source-intake-result-status-freeze",
+    "current_main_predecessor_commit": "82fb2078484a6bd627986198e6c6c9c4c9f53253",
+    "repo_confirmed_failure_boundary": "execution_result_status rejects source-intake completed pass runs with unsupported_execution_result_status_engine",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "frozen_future_scope": [
+      "existing_execution_result_status_request_contract",
+      "layer3.source_intake_execution_output.v1",
+      "source_intake_qualitative_preview",
+      "completed_pass_run_read_only_status",
+      "no_analysis_run_created"
+    ],
+    "blocked_scope": [
+      "execution_result_review",
+      "package",
+      "handoff",
+      "export",
+      "connector_destination_dispatch",
+      "provider_url",
+      "rag_vector",
+      "route",
+      "rendered_ui",
+      "model_migration",
+      "auth_security",
+      "broad_qualitative_execution"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required"
   }
 }
