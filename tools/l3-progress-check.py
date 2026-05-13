@@ -395,6 +395,9 @@ SOURCE_BREADTH_RUNTIME_ENTRY_FREEZE = (
 SOURCE_BREADTH_RUNTIME_ENTRY_PROOF = (
     PLANNING_DOCS / "286-source-breadth-proof.json"
 )
+SOURCE_INTAKE_INVENTORY_FREEZE = (
+    PLANNING_DOCS / "287_SOURCE_INTAKE_INVENTORY_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -18598,6 +18601,148 @@ def _check_source_breadth_runtime_entry(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} source-intake runtime proof {key} mismatch")
 
 
+def _check_source_intake_inventory_read_only(errors: list[str]) -> None:
+    freeze_text = _read_required_text(SOURCE_INTAKE_INVENTORY_FREEZE, errors)
+    for term in (
+        "Status: branch-local implementation entry for `source_intake_inventory_read_only`.",
+        "selected_runtime_mode: `operator_source_intake_inventory_read_only`",
+        "runtime_route: `GET /api/v1/layer3/source/intake/inventory`",
+        "canonical_source_of_truth: `L3SourceIntakeRecord`",
+        "no_file_bytes_returned: true",
+        "absolute_path_exposed: false",
+        "operator-uploaded material preview",
+        "unbounded runtime database writes",
+    ):
+        if term not in freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_INVENTORY_FREEZE)} missing source-intake inventory freeze term: {term}")
+
+    service_text = _read_required_text(SOURCE_INTAKE_SERVICE, errors)
+    for term in (
+        "SOURCE_INTAKE_INVENTORY_SCHEMA_ID = \"layer3.source_intake_inventory.v1\"",
+        "SOURCE_INTAKE_INVENTORY_MODE = \"operator_source_intake_inventory_read_only\"",
+        "def source_intake_inventory(",
+        "GET /api/v1/layer3/source/intake/inventory",
+        "no_file_bytes_returned",
+        "absolute_path_exposed",
+        "material_preview_enabled",
+        "source_intake_inventory_source_family_not_admitted",
+        "source_intake_inventory_limit_invalid",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_SERVICE)} missing source-intake inventory service term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "Layer3SourceIntakeInventoryResponse",
+        "@router.get(",
+        "\"/source/intake/inventory\"",
+        "layer3_source_intake.source_intake_inventory",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing source-intake inventory API term: {term}")
+
+    test_text = _read_required_text(SOURCE_INTAKE_TEST, errors)
+    for term in (
+        "test_layer3_source_intake_inventory_lists_safe_metadata_only",
+        "test_layer3_source_intake_inventory_rejects_deferred_filters",
+        "test_layer3_source_intake_inventory_rejects_invalid_limit",
+        "layer3.source_intake_inventory.v1",
+        "operator_source_intake_inventory_read_only",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_TEST)} missing source-intake inventory test term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Inventory Read-only",
+            "287_SOURCE_INTAKE_INVENTORY_FREEZE.md",
+            "operator_source_intake_inventory_read_only",
+            "GET /api/v1/layer3/source/intake/inventory",
+            "operator-uploaded material preview remains blocked",
+        ),
+        MANIFEST: (
+            "latest_source_intake_inventory_branch",
+            "source_intake_inventory_read_only",
+            "operator_source_intake_inventory_read_only",
+            "GET /api/v1/layer3/source/intake/inventory",
+            "no file bytes",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_inventory_read_only_proof",
+            "287_SOURCE_INTAKE_INVENTORY_FREEZE.md",
+            "GET /api/v1/layer3/source/intake/inventory",
+            "L3SourceIntakeRecord",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-intake inventory sync term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    current_status = manifest.get("current_status") if isinstance(manifest, dict) else None
+    for key, expected in (
+        ("latest_source_intake_inventory_branch", "codex/l3-source-intake-hardening"),
+        ("latest_source_intake_inventory_live_behavior_change", True),
+    ):
+        if key in manifest:
+            actual = manifest.get(key)
+        elif isinstance(current_status, dict):
+            actual = current_status.get(key)
+        else:
+            actual = None
+        if actual != expected:
+            errors.append(f"{_rel(MANIFEST)} source-intake inventory {key} mismatch")
+    inventory = manifest.get("source_intake_inventory_read_only") if isinstance(manifest, dict) else None
+    if not isinstance(inventory, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_inventory_read_only")
+    else:
+        expected_inventory_scalars = {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-hardening",
+            "live_behavior_change": True,
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "operator_source_intake_inventory_read_only",
+            "runtime_route": "GET /api/v1/layer3/source/intake/inventory",
+            "canonical_source_of_truth": "L3SourceIntakeRecord",
+        }
+        for key, expected in expected_inventory_scalars.items():
+            if inventory.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source-intake inventory {key} mismatch")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("source_intake_inventory_read_only") != "branch_local_implemented_targeted_tests_passed":
+        errors.append(f"{_rel(MANIFEST)} missing source-intake inventory scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_inventory_read_only_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_inventory_read_only_proof")
+        return
+    expected_proof_scalars = {
+        "status": "branch_local_implemented_targeted_tests_passed",
+        "implementation_branch": "codex/l3-source-intake-hardening",
+        "live_behavior_change": True,
+        "selected_runtime_family": "source_breadth_runtime",
+        "selected_runtime_mode": "operator_source_intake_inventory_read_only",
+        "runtime_route": "GET /api/v1/layer3/source/intake/inventory",
+        "canonical_source_of_truth": "L3SourceIntakeRecord",
+    }
+    for key, expected in expected_proof_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source-intake inventory proof {key} mismatch")
+    guards = proof_entry.get("response_guards")
+    if not isinstance(guards, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} source-intake inventory proof missing response_guards")
+    else:
+        for key, expected in (
+            ("no_file_bytes_returned", True),
+            ("absolute_path_exposed", False),
+            ("material_preview_enabled", False),
+        ):
+            if guards.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source-intake inventory response guard {key} mismatch")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -23573,6 +23718,7 @@ def main() -> int:
     _check_mockup_pixel_proof_closeout(errors)
     _check_runtime_freeze_intake_checklist(errors)
     _check_source_breadth_runtime_entry(errors)
+    _check_source_intake_inventory_read_only(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)

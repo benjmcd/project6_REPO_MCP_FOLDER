@@ -5035,7 +5035,7 @@
       "unlocks": []
     }
   ],
-  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, runtime-freeze intake checklist coverage, and PR #861 source_breadth_runtime entry for operator_single_upload_source_intake. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and exactly one named server-authoritative runtime/use-case freeze must be selected before downstream use of the #861 source-intake record, external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, or backend API/model/migration/service work proceeds. The #861 source-intake boundary is record-only: source_intake_recorded and eligible_for_source_inventory are true, while operator-uploaded material preview remains blocked along with RAG/vector indexing, web connector use, broad file upload/local-directory authority, package construction, and rendered source controls.",
+  "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, runtime-freeze intake checklist coverage, and PR #861 source_breadth_runtime entry for operator_single_upload_source_intake. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and the source-intake inventory read-only freeze is now selected only for safe metadata inventory over the #861 source-intake record. Any further downstream use beyond read-only inventory still requires exactly one named server-authoritative runtime/use-case freeze before external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, operator-uploaded material preview, RAG/vector indexing, web connector use, broad file upload/local-directory authority, package construction, rendered source controls, or additional backend API/model/migration/service work proceeds. The #861 source-intake boundary remains record-only plus inventory-only: source_intake_recorded and eligible_for_source_inventory are true, while operator-uploaded material preview remains blocked.",
   "deferred_scope": [
     "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the landed bounded export-package handoff and exact-run gate-hardening lane",
     "package-derived context implementation beyond the landed bounded handoff slice",
@@ -6931,7 +6931,7 @@
         "auth_security_widening"
       ]
     },
-    "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, runtime-freeze intake checklist coverage, and PR #861 source_breadth_runtime entry for operator_single_upload_source_intake. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and exactly one named server-authoritative runtime/use-case freeze must be selected before downstream use of the #861 source-intake record, external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, or backend API/model/migration/service work proceeds. The #861 source-intake boundary is record-only: source_intake_recorded and eligible_for_source_inventory are true, while operator-uploaded material preview remains blocked along with RAG/vector indexing, web connector use, broad file upload/local-directory authority, package construction, and rendered source controls.",
+    "next_required_decision": "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection after the bounded plan_revision_recovery_preview_refresh_entry runtime, approved-plan cancel-without-replacement runtime, and later review-debt/proof closeouts, plus landed user-flow/PDF-location, rendered PDF-location session-summary projection via State.sessionSummary.pdf_location_projection, Sublayer 3A/3B, Sublayer 3C execution-lane, headed/headless, 390 px responsive no-horizontal-overflow, frame-to-rendered-projection contract proof, bounded repo-local visual-diff proof through normalizedMeanDeltaMax 0.19 and highDeltaRatioMax 0.305, runtime-freeze intake checklist coverage, and PR #861 source_breadth_runtime entry for operator_single_upload_source_intake. The current pixel-faithful mockup-theme continuation state is closed by the mockup pixel-proof closeout unless a new explicit mockup frame target or threshold gap is named. The next allowed UI-proof action remains continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics only if such a new visual target is named. Otherwise, boundary is no_runtime_implementation_without_named_use_case: the next non-visual implementation boundary is exact_named_server_authoritative_runtime_use_case_freeze, and the source-intake inventory read-only freeze is now selected only for safe metadata inventory over the #861 source-intake record. Any further downstream use beyond read-only inventory still requires exactly one named server-authoritative runtime/use-case freeze before external_connector_destination_runtime, rendered_package_mutation_runtime, broad_qual_hybrid_rag_runtime, full_mockup_durable_activation, auth_security_runtime, operator-uploaded material preview, RAG/vector indexing, web connector use, broad file upload/local-directory authority, package construction, rendered source controls, or additional backend API/model/migration/service work proceeds. The #861 source-intake boundary remains record-only plus inventory-only: source_intake_recorded and eligible_for_source_inventory are true, while operator-uploaded material preview remains blocked.",
     "latest_runtime_freeze_intake_branch": "codex/l3-runtime-freeze-intake",
     "latest_runtime_freeze_intake_live_behavior_change": false,
     "latest_runtime_freeze_intake_summary": "Runtime freeze intake checklist: converts the post-mockup pixel-proof boundary into a concrete intake gate for the next non-visual Layer 3 implementation. It admits no runtime and requires exact_named_server_authoritative_runtime_use_case_freeze before source breadth, connector/destination, rendered package mutation, broad qual/hybrid/RAG, full mockup durable activation, auth/security, or backend API/model/migration/service work. Boundary: no_runtime_implementation_without_named_use_case.",
@@ -7065,7 +7065,8 @@
     "mockup_pdf_text_density_refinement": "completed_pdf_location_text_density_and_disabled_chip_refinement",
     "mockup_pixel_proof_closeout": "completed_mockup_pixel_proof_closeout",
     "runtime_freeze_intake_checklist": "completed_runtime_freeze_intake_checklist",
-    "source_breadth_runtime_entry": "completed_live_bounded_source_intake_record"
+    "source_breadth_runtime_entry": "completed_live_bounded_source_intake_record",
+    "source_intake_inventory_read_only": "branch_local_implemented_targeted_tests_passed"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -7932,6 +7933,50 @@
       "rag_vector_index",
       "unbounded_runtime_db",
       "operator_upload_material_preview",
+      "rendered_source_controls"
+    ],
+    "material_preview_status": "operator-uploaded material preview remains blocked"
+  },
+  "latest_source_intake_inventory_branch": "codex/l3-source-intake-hardening",
+  "latest_source_intake_inventory_live_behavior_change": true,
+  "latest_source_intake_inventory_summary": "Branch codex/l3-source-intake-hardening implements the bounded source_intake_inventory_read_only follow-up for PR #861 source-intake records. It adds GET /api/v1/layer3/source/intake/inventory as a read-only inventory over L3SourceIntakeRecord metadata, with no file bytes, no absolute paths, no material preview, no RAG/vector indexing, no web connector use, no generic source upload, no local path/local directory authority, no package construction, no rendered source controls, and no unbounded runtime DB behavior.",
+  "source_intake_inventory_read_only": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-hardening",
+    "live_behavior_change": true,
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "operator_source_intake_inventory_read_only",
+    "runtime_route": "GET /api/v1/layer3/source/intake/inventory",
+    "writer_route": "POST /api/v1/layer3/source/intake/upload",
+    "canonical_source_of_truth": "L3SourceIntakeRecord",
+    "source_intake_record_table": "l3_source_intake_record",
+    "owner_service": "backend/app/services/layer3_source_intake.py",
+    "api_surface": "backend/app/api/layer3.py",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/287_SOURCE_INTAKE_INVENTORY_FREEZE.md",
+    "targeted_tests": "python -m pytest .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py -q",
+    "downstream_eligibility": {
+      "source_intake_recorded": true,
+      "eligible_for_source_inventory": true,
+      "eligible_for_material_preview": false,
+      "material_preview_requires_later_freeze": true,
+      "eligible_for_rag_vector_index": false,
+      "eligible_for_web_connector": false,
+      "eligible_for_unbounded_runtime_db": false
+    },
+    "response_guards": {
+      "no_file_bytes_returned": true,
+      "absolute_path_exposed": false,
+      "material_preview_enabled": false
+    },
+    "blocked_adjacent_modes": [
+      "broad_file_upload",
+      "local_directory",
+      "local_path_authority",
+      "web_connector",
+      "rag_vector_index",
+      "unbounded_runtime_db",
+      "operator_upload_material_preview",
+      "package_construction",
       "rendered_source_controls"
     ],
     "material_preview_status": "operator-uploaded material preview remains blocked"
