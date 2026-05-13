@@ -509,6 +509,9 @@ SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_BOUNDARY = (
 SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY_FREEZE = (
     PLANNING_DOCS / "324_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY_FREEZE.md"
 )
+SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY = (
+    PLANNING_DOCS / "325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -22905,14 +22908,12 @@ def _check_source_intake_external_export_download_delivery_boundary_freeze(error
             "source_intake_external_export_download_delivery_not_admitted",
         ),
         ROOT / "backend/app/services/layer3_workbench.py": (
-            "source_intake_external_export_download_delivery_not_admitted",
-            "_source_intake_external_export_download_admitted(readiness_state)",
-            "freeze_source_intake_external_export_download_delivery_boundary",
+            "external_export_download_deliver",
+            "external_export_download_delivery_requires_prepared_readiness",
         ),
         ROOT / "backend/tests/test_layer3_workbench.py": (
-            "source-intake-external-export-download-delivery-blocked",
+            "source-intake-external-export-download-delivery",
             "external_export_download_deliver",
-            "source_intake_external_export_download_delivery_not_admitted",
             "same_origin_artifact_stream",
         ),
     }.items():
@@ -22980,6 +22981,123 @@ def _check_source_intake_external_export_download_delivery_boundary_freeze(error
         }.items():
             if proof_entry.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_external_export_download_delivery_boundary_freeze_proof.{key} must be {expected!r}")
+
+
+def _check_source_intake_external_export_download_delivery_boundary(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY, errors)
+    for term in (
+        "source_intake_external_export_download_delivery_boundary",
+        "codex/l3-source-intake-download-delivery",
+        "324_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY_FREEZE.md",
+        "backend/app/services/layer3_workbench.py",
+        "backend/app/services/layer3_external_export_response.py",
+        "external_export_download_deliver",
+        "layer3.source_intake_external_export_download_delivery.v1",
+        "source_intake_external_export_download_rendered_controls_boundary_freeze",
+        "python -m pytest .\\backend\\tests\\test_layer3_workbench.py",
+        "22 passed",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY)} missing source-intake external export/download delivery implementation term: {term}")
+    for path, terms in {
+        BOARD: (
+            "## Source Intake External Export Download Delivery Boundary",
+            "325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md",
+            "layer3.source_intake_external_export_download_delivery.v1",
+            "source_intake_external_export_download_rendered_controls_boundary_freeze",
+        ),
+        MANIFEST: (
+            "source_intake_external_export_download_delivery_boundary",
+            "latest_source_intake_external_export_download_delivery_boundary_branch",
+            "layer3.source_intake_external_export_download_delivery.v1",
+            "source_intake_external_export_download_rendered_controls_boundary_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_external_export_download_delivery_boundary_proof",
+            "325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md",
+            "layer3.source_intake_external_export_download_delivery.v1",
+            "source_intake_external_export_download_rendered_controls_boundary_freeze",
+        ),
+        ROOT / "backend/app/services/layer3_workbench.py": (
+            "external_export_download_deliver",
+            "external_export_download_delivery_readiness_mismatches",
+            "_external_export_download_delivery_response",
+        ),
+        ROOT / "backend/app/services/layer3_external_export_response.py": (
+            "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID",
+            "source_intake_external_export_download_admitted(validation_body)",
+            "X-Layer3-Schema-Id",
+        ),
+        ROOT / "backend/tests/test_layer3_workbench.py": (
+            "source-intake-external-export-download-delivery",
+            "layer3.source_intake_external_export_download_delivery.v1",
+            "load_persisted_bundle_artifact",
+            "X-Layer3-Delivery-State",
+            "source_intake_delivery.authority",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-intake external export/download delivery implementation term: {term}")
+    manifest = _load_json(MANIFEST, errors)
+    entry = manifest.get("source_intake_external_export_download_delivery_boundary") if isinstance(manifest, dict) else None
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_external_export_download_delivery_boundary")
+    else:
+        for key, expected in {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-download-delivery",
+            "selected_runtime_mode": "source_intake_external_export_download_delivery_boundary",
+            "freeze_predecessor": "source_intake_external_export_download_delivery_boundary_freeze",
+            "canonical_source_of_truth": "server_owned_source_intake_external_export_download_prepare_state_aps_handoff_dispatch_package_identity_and_descriptor",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md",
+            "freeze_doc": "next_milestone_plans/Layer3_planning_docs/324_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY_FREEZE.md",
+            "owner_service": "backend/app/services/layer3_workbench.py",
+            "response_helper": "backend/app/services/layer3_external_export_response.py",
+            "targeted_validation_result": "22 passed",
+            "delivery_schema_id": "layer3.source_intake_external_export_download_delivery.v1",
+            "prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+            "analysis_run_created": False,
+            "external_export_download_delivery_created": True,
+            "source_package_mutated": False,
+            "route_added": False,
+            "rendered_ui_changed": False,
+            "model_migration_changed": False,
+            "next_boundary": "source_intake_external_export_download_rendered_controls_boundary_freeze",
+        }.items():
+            if entry.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_delivery_boundary.{key} must be {expected!r}")
+        guards = entry.get("contract_guards")
+        if not isinstance(guards, dict) or guards.get("source_intake_delivery_revalidates_prepare_readiness_state") is not True or guards.get("source_intake_delivery_revalidates_aps_bundle_ref_id_schema_hash_and_size") is not True or guards.get("rendered_ui_controls_remain_blocked") is not True:
+            errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_delivery_boundary contract_guards invalid")
+    if isinstance(manifest, dict):
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_external_export_download_delivery_boundary") != "branch_local_implemented_targeted_tests_passed":
+            errors.append(f"{_rel(MANIFEST)} missing source-intake external export/download delivery implementation scope status")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_external_export_download_delivery_boundary_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_external_export_download_delivery_boundary_proof")
+    else:
+        for key, expected in {
+            "proof_kind": "source_intake_external_export_download_delivery_boundary",
+            "branch": "codex/l3-source-intake-download-delivery",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md",
+            "freeze_doc": "next_milestone_plans/Layer3_planning_docs/324_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY_FREEZE.md",
+            "owner_service": "backend/app/services/layer3_workbench.py",
+            "response_helper": "backend/app/services/layer3_external_export_response.py",
+            "targeted_validation_result": "22 passed",
+            "schema_id": "layer3.source_intake_external_export_download_delivery.v1",
+            "source_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+            "analysis_run_created": False,
+            "external_export_download_delivery_created": True,
+            "source_package_mutated": False,
+            "blocked_downstream_boundary": "source_intake_external_export_download_rendered_controls_boundary_freeze",
+            "validation_status": "targeted_tests_and_progress_check_passed",
+        }.items():
+            if proof_entry.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_external_export_download_delivery_boundary_proof.{key} must be {expected!r}")
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
@@ -28008,6 +28126,7 @@ def main() -> int:
     _check_source_intake_external_export_download_boundary_freeze(errors)
     _check_source_intake_external_export_download_boundary(errors)
     _check_source_intake_external_export_download_delivery_boundary_freeze(errors)
+    _check_source_intake_external_export_download_delivery_boundary(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
