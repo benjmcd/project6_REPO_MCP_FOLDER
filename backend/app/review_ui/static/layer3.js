@@ -1733,6 +1733,7 @@ function isAssociatedCohortExternalExportDownloadState(external = externalExport
 }
 
 function isQualitativeApsExternalExportDownloadState(external = externalExportDownloadPrepareState() || {}) {
+    if (isAssociatedCohortExternalExportDownloadState(external)) return false;
     const summary = State.sessionSummary?.external_export_download || {};
     return external.pass_scope === QUAL_APS_PASS_SCOPE
         || summary.pass_scope === QUAL_APS_PASS_SCOPE

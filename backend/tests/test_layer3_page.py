@@ -341,6 +341,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "durable_token_state" in js.text
     assert "function externalExportDownloadDeliveryUiAdmitted" in js.text
     assert "function isQualitativeApsExternalExportDownloadState" in js.text
+    assert "if (isAssociatedCohortExternalExportDownloadState(external)) return false;" in js.text
     assert "external.export_download_target || summary.export_download_target" in js.text
     assert "external.aps_schema_id || summary.aps_schema_id" in js.text
     assert "function qualitativeApsDeliveryUiState" in js.text
