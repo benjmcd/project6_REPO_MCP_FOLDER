@@ -21590,6 +21590,8 @@ def _check_source_intake_execution_result_status_boundary(errors: list[str]) -> 
         "source_intake_result_review_not_admitted",
         "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
         "missing_output_metadata",
+        "#899",
+        "8ac4b18f2a6445b6515d6c08aee3d064e96b9b88",
         "source_intake_execution_result_review_boundary_freeze",
     ):
         if term not in doc_text:
@@ -21611,7 +21613,7 @@ def _check_source_intake_execution_result_status_boundary(errors: list[str]) -> 
         errors.append(f"{_rel(MANIFEST)} missing source_intake_execution_result_status_boundary")
     else:
         for key, expected in {
-            "status": "branch_local_implemented_targeted_tests_passed",
+            "status": "current_main_implemented_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-result-status",
             "selected_runtime_mode": "source_intake_execution_result_status_boundary",
             "freeze_predecessor": "source_intake_execution_result_status_boundary_freeze",
@@ -21619,6 +21621,10 @@ def _check_source_intake_execution_result_status_boundary(errors: list[str]) -> 
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/309_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY.md",
             "owner_service": "backend/app/services/layer3_workbench.py",
             "targeted_validation_result": "22 passed",
+            "implementation_commit": "3a4dd5c1d801ededec4d605d0f3747f3a8c37093",
+            "review_fix_commit": "ea19e2c992cd65bc425cf93791589108ee97f443",
+            "pr": "#899",
+            "current_main_commit": "8ac4b18f2a6445b6515d6c08aee3d064e96b9b88",
             "output_schema_id": "layer3.source_intake_execution_output.v1",
             "analysis_run_created": False,
             "package_created": False,
@@ -21643,6 +21649,10 @@ def _check_source_intake_execution_result_status_boundary(errors: list[str]) -> 
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/309_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY.md",
             "test_name": "test_execution_start_runs_source_intake_selected_pass_without_analysis_run",
             "targeted_validation_result": "22 passed",
+            "implementation_commit": "3a4dd5c1d801ededec4d605d0f3747f3a8c37093",
+            "review_fix_commit": "ea19e2c992cd65bc425cf93791589108ee97f443",
+            "pr": "#899",
+            "merge_commit": "8ac4b18f2a6445b6515d6c08aee3d064e96b9b88",
             "analysis_run_created": False,
             "package_created": False,
             "blocked_downstream_boundary": "source_intake_execution_result_review_boundary_freeze",
