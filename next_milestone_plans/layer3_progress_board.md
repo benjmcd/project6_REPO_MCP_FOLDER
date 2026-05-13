@@ -1388,3 +1388,17 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 - Next allowed code-bearing action: `implement_source_intake_gate_c_typing_entry` only.
 - Required future proof: source-intake Gate C commit, duplicate typing fail-closed behavior, no downstream rows/artifacts, unsupported adjacent shapes remain blocked, and headed/headless proof only if rendered controls change.
 - Blocked scope: generic/broad upload, local path/local-directory authority, web connector retrieval, RAG/vector indexing, plan approval, execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, provider/private URL behavior, model/migration changes, new backend route, auth/security behavior, non-text binary preview, and frontend-only durable authority.
+
+
+## Source Intake Gate C Typing Entry
+
+- Status: branch-local implementation/proof for `source_intake_gate_c_typing_entry`.
+- Branch: `codex/l3-source-intake-gate-c-typing`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/298_SOURCE_INTAKE_GATE_C_TYPING_ENTRY.md`.
+- Freeze predecessor: `next_milestone_plans/Layer3_planning_docs/297_SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE.md`.
+- Canonical source of truth: server-owned Gate B state derived from `L3SourceIntakeRecord`, finalized `L3Session`, and `L3MaterialSnapshot` rows for `operator_uploaded_single_source`.
+- Implemented owner-service boundary: `backend/app/services/layer3_typing_entry.py` admits `operator_uploaded_single_source` through `SUPPORTED_TYPING_RULES` as qualitative `document_chunks` with `confidence_basis` `frozen_source_intake_text_document_default`.
+- Proof: `backend/tests/test_layer3_typing_entry.py` covers source-intake Gate C typing, duplicate commit fail-closed behavior, unsupported adjacent shape blocking, finalized-session requirement, atomic singleton unit formation, and no `AnalysisRun` side effect.
+- Targeted validation: `pytest .\backend\tests\test_layer3_typing_entry.py` passed with 5 tests.
+- Blocked scope remains plan approval, execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, generic/broad upload, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
+- Next required decision: `source_intake_plan_preview_boundary_freeze` before source-intake Gate C output is allowed to drive plan preview/approval semantics beyond existing generic readiness.

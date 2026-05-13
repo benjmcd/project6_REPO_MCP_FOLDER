@@ -428,6 +428,9 @@ SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS = (
 SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE = (
     PLANNING_DOCS / "297_SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE.md"
 )
+SOURCE_INTAKE_GATE_C_TYPING_ENTRY = (
+    PLANNING_DOCS / "298_SOURCE_INTAKE_GATE_C_TYPING_ENTRY.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -20242,6 +20245,172 @@ def _check_source_intake_gate_c_typing_entry_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_gate_c_typing_entry_freeze_proof.{key} must be {expected!r}")
 
 
+def _check_source_intake_gate_c_typing_entry(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_GATE_C_TYPING_ENTRY, errors)
+    for term in (
+        "source_intake_gate_c_typing_entry",
+        "codex/l3-source-intake-gate-c-typing",
+        "297_SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE.md",
+        "server-owned Gate B state derived from `L3SourceIntakeRecord`",
+        "operator_uploaded_single_source",
+        "SUPPORTED_TYPING_RULES",
+        "document_chunks",
+        "qualitative",
+        "atomic",
+        "frozen_source_intake_text_document_default",
+        "pytest .\\backend\\tests\\test_layer3_typing_entry.py",
+        "5 passed",
+        "source_intake_plan_preview_boundary_freeze",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_GATE_C_TYPING_ENTRY)} missing Gate C typing implementation term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Gate C Typing Entry",
+            "298_SOURCE_INTAKE_GATE_C_TYPING_ENTRY.md",
+            "source_intake_gate_c_typing_entry",
+            "frozen_source_intake_text_document_default",
+            "source_intake_plan_preview_boundary_freeze",
+        ),
+        MANIFEST: (
+            "latest_source_intake_gate_c_typing_entry_branch",
+            "source_intake_gate_c_typing_entry",
+            "backend/app/services/layer3_typing_entry.py",
+            "backend/tests/test_layer3_typing_entry.py",
+            "frozen_source_intake_text_document_default",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_gate_c_typing_entry_proof",
+            "298_SOURCE_INTAKE_GATE_C_TYPING_ENTRY.md",
+            "source_intake_gate_c_typing_entry",
+            "5 passed",
+        ),
+        ROOT / "backend/app/services/layer3_typing_entry.py": (
+            "SOURCE_INTAKE_GATE_B_SOURCE_CLASS",
+            "SOURCE_INTAKE_GATE_B_SOURCE_CLASS: _TypingRule",
+            "frozen_source_intake_text_document_default",
+        ),
+        ROOT / "backend/tests/test_layer3_typing_entry.py": (
+            "test_gatec_typing_entry_materializes_source_intake_as_qualitative_document_chunks",
+            "test_gatec_typing_entry_source_intake_duplicate_commit_fails_closed",
+            "SOURCE_INTAKE_GATE_B_SOURCE_CLASS",
+            "frozen_source_intake_text_document_default",
+        ),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing Gate C typing implementation term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    entry = manifest.get("source_intake_gate_c_typing_entry") if isinstance(manifest, dict) else None
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_gate_c_typing_entry")
+    else:
+        for key, expected in {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-gate-c-typing",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "source_intake_gate_c_typing_entry",
+            "freeze_predecessor": "source_intake_gate_c_typing_entry_freeze",
+            "canonical_source_of_truth": "server_owned_gate_b_state_from_L3SourceIntakeRecord",
+            "governing_doc": "next_milestone_plans/Layer3_planning_docs/298_SOURCE_INTAKE_GATE_C_TYPING_ENTRY.md",
+            "owner_service": "backend/app/services/layer3_typing_entry.py",
+            "targeted_test": "backend/tests/test_layer3_typing_entry.py",
+            "targeted_validation_result": "5 passed",
+            "source_shape": "operator_uploaded_single_source",
+            "planning_shape_family": "document_chunks",
+            "chosen_modality": "qualitative",
+            "unit_kind": "atomic",
+            "confidence_basis": "frozen_source_intake_text_document_default",
+            "live_behavior_change": True,
+            "runtime_behavior_change": True,
+            "rendered_ui_behavior_change": False,
+            "new_route_added": False,
+            "model_migration_changed": False,
+            "next_boundary": "source_intake_plan_preview_boundary_freeze",
+        }.items():
+            if entry.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_gate_c_typing_entry.{key} must be {expected!r}")
+        guards = entry.get("contract_guards")
+        if not isinstance(guards, dict):
+            errors.append(f"{_rel(MANIFEST)} source_intake_gate_c_typing_entry missing contract_guards")
+        else:
+            for key in (
+                "finalized_session_required",
+                "duplicate_gate_c_commit_fails_closed",
+                "unsupported_adjacent_source_shapes_remain_blocked",
+                "source_intake_snapshot_typed_as_document_chunks",
+                "analysis_unit_atomic_singleton",
+                "no_analysis_run_side_effect",
+            ):
+                if guards.get(key) is not True:
+                    errors.append(f"{_rel(MANIFEST)} source_intake_gate_c_typing_entry.contract_guards.{key} must be true")
+        for blocked in (
+            "generic_source_upload",
+            "broad_file_upload",
+            "local_path_or_local_directory_authority",
+            "web_connector_retrieval",
+            "rag_vector_indexing",
+            "plan_approval",
+            "execution_start",
+            "package_construction_or_mutation",
+            "connector_destination_dispatch",
+            "provider_private_signed_url_prepare",
+            "model_migration_change",
+            "new_backend_route",
+            "rendered_ui_change",
+            "auth_security_behavior",
+            "frontend_only_durable_authority",
+        ):
+            if blocked not in entry.get("blocked_scope", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_gate_c_typing_entry blocked_scope missing {blocked}")
+    if isinstance(manifest, dict):
+        for key, expected in (
+            ("latest_source_intake_gate_c_typing_entry_branch", "codex/l3-source-intake-gate-c-typing"),
+            ("latest_source_intake_gate_c_typing_entry_live_behavior_change", True),
+        ):
+            if manifest.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} {key} must be {expected!r}")
+        scope_status = manifest.get("scope_status")
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_gate_c_typing_entry") != "branch_local_implemented_targeted_tests_passed":
+            errors.append(f"{_rel(MANIFEST)} missing Gate C typing implementation scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_gate_c_typing_entry_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_gate_c_typing_entry_proof")
+        return
+    for key, expected in {
+        "status": "branch_local_implemented_targeted_tests_passed",
+        "implementation_branch": "codex/l3-source-intake-gate-c-typing",
+        "selected_runtime_family": "source_breadth_runtime",
+        "selected_runtime_mode": "source_intake_gate_c_typing_entry",
+        "freeze_predecessor": "source_intake_gate_c_typing_entry_freeze",
+        "canonical_source_of_truth": "server_owned_gate_b_state_from_L3SourceIntakeRecord",
+        "governing_doc": "next_milestone_plans/Layer3_planning_docs/298_SOURCE_INTAKE_GATE_C_TYPING_ENTRY.md",
+        "owner_service": "backend/app/services/layer3_typing_entry.py",
+        "targeted_test": "backend/tests/test_layer3_typing_entry.py",
+        "targeted_validation_result": "5 passed",
+        "source_shape": "operator_uploaded_single_source",
+        "planning_shape_family": "document_chunks",
+        "chosen_modality": "qualitative",
+        "unit_kind": "atomic",
+        "confidence_basis": "frozen_source_intake_text_document_default",
+        "proof_kind": "source_intake_gate_c_typing_entry",
+        "live_behavior_change": True,
+        "runtime_behavior_change": True,
+        "rendered_ui_behavior_change": False,
+        "new_route_added": False,
+        "model_migration_changed": False,
+        "no_analysis_run_side_effect": True,
+        "next_boundary": "source_intake_plan_preview_boundary_freeze",
+    }.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_gate_c_typing_entry_proof.{key} must be {expected!r}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -24967,6 +25136,7 @@ def main() -> int:
         SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS_FREEZE,
         SOURCE_INTAKE_GATE_B_RENDERED_ADMISSION_CONTROLS,
         SOURCE_INTAKE_GATE_C_TYPING_ENTRY_FREEZE,
+        SOURCE_INTAKE_GATE_C_TYPING_ENTRY,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -25234,6 +25404,7 @@ def main() -> int:
     _check_source_intake_gate_b_rendered_admission_controls_freeze(errors)
     _check_source_intake_gate_b_rendered_admission_controls(errors)
     _check_source_intake_gate_c_typing_entry_freeze(errors)
+    _check_source_intake_gate_c_typing_entry(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
