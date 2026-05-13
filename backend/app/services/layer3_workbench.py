@@ -3593,6 +3593,110 @@ def _execute_source_intake_execution_start(
     db.flush()
 
 
+def _source_intake_result_status_output_summary(
+    *,
+    pass_run: L3PassRun,
+    planned_pass: dict[str, Any],
+    output_metadata_summary: dict[str, Any],
+) -> dict[str, Any]:
+    output_ref = str(output_metadata_summary.get("output_payload_ref") or pass_run.output_payload_ref or "").strip()
+    blocked_fields: list[str] = []
+    if not output_ref:
+        blocked_fields.append("output_payload_ref")
+        payload: dict[str, Any] = {}
+    else:
+        try:
+            loaded_payload = json.loads(Path(output_ref).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise Layer3WorkbenchError(
+                "source_intake_execution_result_status_output_not_admitted",
+                "Source-intake result/status requires readable deterministic execution output metadata.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["output_payload_ref"],
+                next_allowed_actions=["rerun_source_intake_execution_start"],
+            ) from exc
+        if not isinstance(loaded_payload, dict):
+            raise Layer3WorkbenchError(
+                "source_intake_execution_result_status_output_not_admitted",
+                "Source-intake result/status requires object-shaped deterministic execution output metadata.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["output_payload_ref"],
+                next_allowed_actions=["rerun_source_intake_execution_start"],
+            )
+        payload = loaded_payload
+
+    pass_summary = pass_run.summary_json or {}
+    expected_scalars = {
+        "schema_id": SOURCE_INTAKE_EXECUTION_OUTPUT_SCHEMA_ID,
+        "analysis_run_id": None,
+        "analysis_plan_id": pass_run.analysis_plan_id,
+        "analysis_set_id": pass_run.analysis_set_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+        "planned_pass_source_gate": planned_pass.get("source_gate"),
+        "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+        "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
+        "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
+        "source_intake_record_id": planned_pass.get("source_intake_record_id"),
+        "candidate_id": planned_pass.get("candidate_id"),
+    }
+    for key, expected in expected_scalars.items():
+        if payload.get(key) != expected:
+            blocked_fields.append(key)
+
+    source_identity = payload.get("source_identity")
+    if not isinstance(source_identity, dict):
+        blocked_fields.append("source_identity")
+        source_identity = {}
+    for key in ("content_sha256", "metadata_hash"):
+        if pass_summary.get(key) and source_identity.get(key) != pass_summary.get(key):
+            blocked_fields.append(f"source_identity.{key}")
+
+    source_provenance = payload.get("source_provenance")
+    if not isinstance(source_provenance, dict):
+        blocked_fields.append("source_provenance")
+        source_provenance = {}
+
+    storage_pointer = payload.get("storage_pointer")
+    if not isinstance(storage_pointer, dict):
+        blocked_fields.append("storage_pointer")
+        storage_pointer = {}
+    elif storage_pointer.get("absolute_path_exposed") is not False:
+        blocked_fields.append("storage_pointer.absolute_path_exposed")
+
+    output_hash = payload.get("output_hash")
+    if not output_hash or output_hash != pass_summary.get("source_intake_output_hash"):
+        blocked_fields.append("output_hash")
+
+    if blocked_fields:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_result_status_output_not_admitted",
+            "Source-intake result/status requires exact selected-pass execution output authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(set(blocked_fields)),
+            next_allowed_actions=["rerun_source_intake_execution_start"],
+        )
+
+    return {
+        **output_metadata_summary,
+        "schema_id": payload.get("schema_id"),
+        "source_intake_record_id": payload.get("source_intake_record_id"),
+        "candidate_id": payload.get("candidate_id"),
+        "planned_pass_source_gate": payload.get("planned_pass_source_gate"),
+        "source_identity": _json_clone(source_identity),
+        "source_provenance": _json_clone(source_provenance),
+        "storage_pointer": {
+            "storage_authority": storage_pointer.get("storage_authority"),
+            "content_addressed": storage_pointer.get("content_addressed"),
+            "absolute_path_exposed": storage_pointer.get("absolute_path_exposed"),
+        },
+        "output_hash": output_hash,
+    }
+
+
 def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
@@ -4112,14 +4216,18 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
         pass_run=pass_run,
         planned_pass=planned_pass,
     )
+    source_intake_pass = _is_source_intake_execution_start_planned_pass(
+        pass_run=pass_run,
+        planned_pass=planned_pass,
+    )
     wrapped_quantitative_pass = (
         pass_run.engine_family == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
         and str(planned_pass.get("engine_family") or "") == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
     )
-    if not wrapped_quantitative_pass and not qualitative_aps_pass:
+    if not wrapped_quantitative_pass and not qualitative_aps_pass and not source_intake_pass:
         raise Layer3WorkbenchError(
             "unsupported_execution_result_status_engine",
-            "This result/status slice admits only wrapped quantitative pass runs or the frozen single APS-document qualitative pass.",
+            "This result/status slice admits only wrapped quantitative pass runs, the frozen single APS-document qualitative pass, or the frozen source-intake execution output pass.",
             status="conflict",
             http_status=409,
         )
@@ -4128,7 +4236,15 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
         planned_pass=planned_pass,
         pass_run=pass_run,
     )
-    if qualitative_aps_pass:
+    if source_intake_pass:
+        if planned_pass_type != PASS_TYPE_SINGLE_ITEM:
+            raise Layer3WorkbenchError(
+                "unsupported_execution_result_status_source_breadth",
+                "Source-intake result/status admits only one selected single-item pass run.",
+                status="conflict",
+                http_status=409,
+            )
+    elif qualitative_aps_pass:
         if planned_pass_type != PASS_TYPE_SINGLE_ITEM:
             raise Layer3WorkbenchError(
                 "unsupported_execution_result_status_source_breadth",
@@ -4161,6 +4277,14 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    if source_intake_pass and pass_run.status != PASS_STATUS_COMPLETED:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_result_status_pass_not_completed",
+            "Source-intake result/status requires a completed source-intake execution pass run.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
     if pass_run.status not in EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES:
         raise Layer3WorkbenchError(
             "pass_run_not_terminal",
@@ -4189,6 +4313,12 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
         )
 
     output_summary, output_error = _output_metadata_summary(pass_run)
+    if source_intake_pass and output_summary is not None:
+        output_summary = _source_intake_result_status_output_summary(
+            pass_run=pass_run,
+            planned_pass=planned_pass,
+            output_metadata_summary=output_summary,
+        )
     if pass_run.status == PASS_STATUS_FAILED:
         response_status = "failed"
     elif output_summary is None:
