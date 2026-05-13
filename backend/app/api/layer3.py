@@ -1349,6 +1349,39 @@ class Layer3ProviderPublicUrlPrepareRequest(BaseModel):
     browser_durable_authority: Any | None = None
 
 
+class Layer3ProviderPublicUrlRevokeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    provider_public_url_receipt_id: str | None = None
+    idempotency_key: str | None = None
+    revoked_by: str | None = None
+    revocation_reason: str | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    raw_public_url: Any | None = None
+    public_proxy_url: Any | None = None
+    download_url: Any | None = None
+    signed_url: Any | None = None
+    provider_url: Any | None = None
+    provider_credentials: Any | None = None
+    provider_secret: Any | None = None
+    provider_token: Any | None = None
+    connector_dispatch: Any | None = None
+    connector_run_id: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    package_mutation: Any | None = None
+    source_expansion: Any | None = None
+    local_directory: Any | None = None
+    web_connector: Any | None = None
+    rag_vector_state: Any | None = None
+    auth_security_override: Any | None = None
+    browser_durable_authority: Any | None = None
+
+
 class Layer3ConnectorDispatchRecordRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -2372,6 +2405,10 @@ class Layer3ProviderPublicUrlStatusResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3ProviderPublicUrlRevokeResponse(Layer3ProviderPublicUrlStatusResponse):
+    pass
+
+
 class Layer3WorkbenchErrorResponse(Layer3BaseResponse):
     error_code: str
     message: str
@@ -2719,6 +2756,38 @@ PROVIDER_PUBLIC_URL_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "requested_ttl_seconds": {"type": "integer", "minimum": 1, "maximum": 900, "default": 300},
         "delivery_mode": {"type": "string", "enum": ["provider_public_url"]},
         "operator_decision": {"type": "string", "enum": ["prepare_provider_public_url"]},
+        "decision_notes": {"type": "string"},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in PROVIDER_PUBLIC_URL_FORBIDDEN_REQUEST_FIELDS
+        },
+    },
+}
+
+
+PROVIDER_PUBLIC_URL_REVOKE_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Backend/API-only provider-public URL revoke entry over current durable "
+        "provider-public URL state; delivery/use, rendered controls, public proxy, "
+        "and auth/security behavior remain deferred."
+    ),
+    "required": [
+        "client_request_id",
+        "provider_public_url_receipt_id",
+        "idempotency_key",
+        "revoked_by",
+        "revocation_reason",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "provider_public_url_receipt_id": {"type": "string"},
+        "idempotency_key": {"type": "string"},
+        "revoked_by": {"type": "string"},
+        "revocation_reason": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["revoke_provider_public_url"]},
         "decision_notes": {"type": "string"},
         **{
             field: _forbidden_request_field_schema()
@@ -5044,6 +5113,24 @@ def get_provider_public_url_status(
         lambda: layer3_provider_public_url.provider_public_url_status(
             db,
             provider_public_url_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/handoff/export/download/provider-public-url/revoke",
+    response_model=Layer3ProviderPublicUrlRevokeResponse,
+    openapi_extra={"requestBody": _json_request_body(PROVIDER_PUBLIC_URL_REVOKE_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_provider_public_url_revoke(
+    payload: Layer3ProviderPublicUrlRevokeRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_provider_public_url.provider_public_url_revoke(
+            db,
+            payload.model_dump(exclude_unset=True),
         )
     )
 

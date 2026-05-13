@@ -15966,5 +15966,59 @@
       "raw_public_url_never_echoed",
       "negative_side_effect_absence"
     ]
+  },
+  "source_intake_provider_public_url_revoke_backend_api_proof": {
+    "proof_kind": "source_intake_provider_public_url_revoke_backend_api",
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "branch": "codex/l3-provider-public-revoke-api",
+    "current_main_predecessor_commit": "caf297fb2c86a4d6758635d736b6ed169d3476d7",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/345_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_BACKEND_API.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/344_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE.md",
+    "implemented_boundary": "source_intake_provider_public_url_revoke_backend_api",
+    "owner_service": "backend/app/services/layer3_provider_public_url.py",
+    "api_file": "backend/app/api/layer3.py",
+    "test_file": "backend/tests/test_layer3_api.py",
+    "runtime_behavior_change": true,
+    "route_behavior_change": true,
+    "rendered_ui_behavior_change": false,
+    "allowed_route_surface": [
+      "POST /api/v1/layer3/handoff/export/download/provider-public-url/revoke"
+    ],
+    "raw_public_url_persistence_or_exposure": false,
+    "public_url_enabled_true": false,
+    "provider_network_object_store_writes": false,
+    "blocked_scope": [
+      "provider_public_url_delivery_use_route",
+      "rendered_provider_public_url_controls",
+      "public_url_enabled_true",
+      "raw_public_url_persistence_or_response_exposure",
+      "provider_network_object_store_writes",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "rag_vector_behavior",
+      "broad_qualitative_behavior",
+      "full_mockup_activation",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "validation_status": "targeted_tests_passed",
+    "validation": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"provider_public_url\" -> 3 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_provider_public_url_state.py -> provider-public durable-state tests passed",
+      "python .\\tools\\l3-progress-check.py -> PASS",
+      "git diff --check -> CRLF warnings only"
+    ],
+    "next_boundary": "source_intake_provider_public_url_revoke_backend_api_current_main_sync_after_merge",
+    "route_absence_guards": [
+      "provider_public_url_delivery_use_route_absent",
+      "provider_public_url_rendered_controls_absent"
+    ],
+    "redaction_guards": [
+      "provider_public_url_redacted_marker_only",
+      "raw_public_url_exposed_false",
+      "public_url_enabled_false"
+    ]
   }
 }
