@@ -91,7 +91,7 @@ def _preflight_source_material() -> tuple[dict, dict, dict]:
     return preflight, source, material
 
 
-def test_execution_selection_blocks_source_intake_approved_plan_before_boundary(db_session) -> None:
+def test_execution_selection_selects_source_intake_approved_plan_without_execution(db_session) -> None:
     now = datetime.now(timezone.utc)
     session = L3Session(
         session_id="session-source-intake-exec-selection",
@@ -132,23 +132,62 @@ def test_execution_selection_blocks_source_intake_approved_plan_before_boundary(
     db_session.add_all([session, plan])
     db_session.commit()
 
-    with pytest.raises(Layer3WorkbenchError) as exc_info:
-        layer3_workbench.execution_selection(
+    result = layer3_workbench.execution_selection(
+        db_session,
+        {
+            "client_request_id": "source-intake-exec-selection",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+        },
+    )
+
+    pass_run = db_session.query(L3PassRun).one()
+    planned_pass = pass_run.summary_json["planned_pass"]
+    assert result["status"] == "selected_not_started"
+    assert result["pass_run_ids"] == [pass_run.pass_run_id]
+    assert result["pass_run_count"] == 1
+    assert result["execution_started"] is False
+    assert result["pass_run_statuses"] == {pass_run.pass_run_id: "selected_not_started"}
+    assert pass_run.status == "selected_not_started"
+    assert pass_run.engine_family == "source_intake_qualitative_preview"
+    assert pass_run.output_payload_ref is None
+    assert pass_run.summary_json["execution_started"] is False
+    assert pass_run.summary_json["analysis_run_id"] is None
+    assert pass_run.summary_json["source_preview_id"] == "source-intake-plan-preview"
+    assert pass_run.summary_json["source_preview_hash"] == "source-intake-preview-hash"
+    assert planned_pass["pass_scope"] == "qualitative_single_item_operator_uploaded_source"
+    assert planned_pass["source_intake_record_id"] == "src-intake-plan-001"
+    assert planned_pass["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+
+    idempotent_replay = layer3_workbench.execution_selection(
+        db_session,
+        {
+            "client_request_id": "source-intake-exec-selection",
+            "session_id": session.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "preview_id": "source-intake-plan-preview",
+            "preview_hash": "source-intake-preview-hash",
+        },
+    )
+    assert idempotent_replay["status"] == "already_selected"
+    assert db_session.query(L3PassRun).count() == 1
+
+    with pytest.raises(Layer3WorkbenchError) as start_error:
+        layer3_workbench.analysis_execution_start(
             db_session,
             {
-                "client_request_id": "source-intake-exec-selection",
+                "client_request_id": "source-intake-execution-start",
                 "session_id": session.session_id,
                 "analysis_plan_id": plan.analysis_plan_id,
+                "pass_run_id": pass_run.pass_run_id,
                 "preview_id": "source-intake-plan-preview",
                 "preview_hash": "source-intake-preview-hash",
             },
         )
-
-    assert exc_info.value.error_code == "source_intake_execution_selection_not_admitted"
-    assert exc_info.value.status == "blocked"
-    assert exc_info.value.http_status == 409
-    assert exc_info.value.blocked_fields == ["analysis_plan_id"]
-    assert db_session.query(L3PassRun).count() == 0
+    assert start_error.value.error_code == "unsupported_analysis_execution_engine"
+    assert db_session.query(L3PassRun).count() == 1
 
 
 def _gate_b_payload(preflight: dict, source: dict, material: dict) -> dict:

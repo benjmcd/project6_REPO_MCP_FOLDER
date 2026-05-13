@@ -1508,3 +1508,17 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 - Next allowed code-bearing action: `implement_source_intake_execution_selection_boundary` only.
 - Required future proof: selected-not-started `L3PassRun` shell creation, preview/source identity preservation, preview mismatch fail-closed behavior, idempotent replay/conflict behavior, no `AnalysisRun`/`AnalysisArtifact`/`L3OutputPackage`, source-intake execution start still blocked, and existing execution-selection behavior unchanged.
 - Blocked scope: execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, provider/private URL behavior, web connector retrieval, RAG/vector indexing, generic/broad upload, local path/local-directory authority, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
+
+## Source Intake Execution Selection Boundary
+
+- Status: branch-local implementation/proof for `source_intake_execution_selection_boundary`.
+- Branch: `codex/l3-source-intake-exec-selection`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/305_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY.md`.
+- Freeze predecessor: `next_milestone_plans/Layer3_planning_docs/304_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY_FREEZE.md`.
+- Canonical source of truth: server-owned approved `L3AnalysisPlan` payload derived from `L3SourceIntakeRecord` Gate C and plan-preview state, plus existing `L3Session` execution-selection summary state.
+- Implemented owner-service boundary: `execution_selection` creates selected-not-started `L3PassRun` shell rows for source-intake approved planned passes while preserving preview/source identity and idempotent replay behavior.
+- Execution-start guard: `analysis_execution_start` still rejects source-intake selected pass runs with `unsupported_analysis_execution_engine`.
+- Proof: `backend/tests/test_layer3_workbench.py` covers source-intake selected-not-started shell creation, preview/source identity preservation, idempotent replay without duplicate pass-run creation, and execution-start blocking.
+- Targeted validation: `pytest .\backend\tests\test_layer3_workbench.py` passed with 22 tests.
+- Blocked scope remains execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, generic/broad upload, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
+- Next required decision: `source_intake_execution_start_boundary_freeze` before a selected source-intake pass run may start execution.

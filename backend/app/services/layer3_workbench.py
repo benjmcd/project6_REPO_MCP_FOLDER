@@ -3368,18 +3368,6 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 status="conflict",
                 http_status=409,
             )
-        if (
-            str(planned_pass.get("pass_scope") or "").strip() == PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE
-            or str(planned_pass.get("engine_family") or "").strip() == "source_intake_qualitative_preview"
-        ):
-            raise Layer3WorkbenchError(
-                "source_intake_execution_selection_not_admitted",
-                "Source-intake approved plans are not admitted for execution selection before the execution-selection boundary freeze.",
-                status="blocked",
-                http_status=409,
-                blocked_fields=["analysis_plan_id"],
-                next_allowed_actions=["freeze_source_intake_execution_selection_boundary"],
-            )
         selected_planned_passes.append(planned_pass)
 
     selected_at = _utcnow_iso()

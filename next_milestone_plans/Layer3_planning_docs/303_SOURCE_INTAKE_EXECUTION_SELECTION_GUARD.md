@@ -73,3 +73,7 @@ The following remain blocked after this corrective guard:
 ## Next Boundary
 
 Next required decision remains `source_intake_execution_selection_boundary_freeze` before a source-intake approved plan may create selected pass-run state or start any execution.
+
+## Supersession Note
+
+The fail-closed execution-selection guard in this corrective closeout is superseded by `305_SOURCE_INTAKE_EXECUTION_SELECTION_BOUNDARY.md` on branch `codex/l3-source-intake-exec-selection`. The guard remains the current-main predecessor that proved the boundary was closed before the freeze; the later implementation admits only selected-not-started `L3PassRun` shell creation and still does not admit execution start or downstream state.
