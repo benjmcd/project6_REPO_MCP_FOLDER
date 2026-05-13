@@ -7066,7 +7066,8 @@
     "mockup_pixel_proof_closeout": "completed_mockup_pixel_proof_closeout",
     "runtime_freeze_intake_checklist": "completed_runtime_freeze_intake_checklist",
     "source_breadth_runtime_entry": "completed_live_bounded_source_intake_record",
-    "source_intake_inventory_read_only": "branch_local_implemented_targeted_tests_passed"
+    "source_intake_inventory_read_only": "branch_local_implemented_targeted_tests_passed",
+    "source_intake_material_preview_read_only": "branch_local_implemented_targeted_tests_passed"
   },
   "latest_provider_private_signed_url_use_model_closeout_branch": "codex/l3-provider-use-model-closeout",
   "latest_provider_private_signed_url_use_model_closeout_live_behavior_change": false,
@@ -8042,5 +8043,51 @@
       "fail closed non-PDF content document",
       "fail closed missing visual page authority"
     ]
+  },
+  "latest_source_intake_material_preview_branch": "codex/l3-source-intake-preview",
+  "latest_source_intake_material_preview_live_behavior_change": true,
+  "latest_source_intake_material_preview_summary": "Branch codex/l3-source-intake-preview implements bounded operator_source_intake_material_preview_read_only for existing source-intake records. It adds GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview, verifies server-owned storage hashes, returns bounded text preview for text-like media only, and keeps RAG/vector indexing, web connector use, generic source upload, local path/local directory authority, package construction, rendered source controls, non-text binary preview, and unbounded runtime DB behavior blocked.",
+  "source_intake_material_preview_read_only": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "implementation_branch": "codex/l3-source-intake-preview",
+    "live_behavior_change": true,
+    "selected_runtime_family": "source_breadth_runtime",
+    "selected_runtime_mode": "operator_source_intake_material_preview_read_only",
+    "runtime_route": "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+    "writer_route": "POST /api/v1/layer3/source/intake/upload",
+    "inventory_route": "GET /api/v1/layer3/source/intake/inventory",
+    "canonical_source_of_truth": "L3SourceIntakeRecord",
+    "source_intake_record_table": "l3_source_intake_record",
+    "owner_service": "backend/app/services/layer3_source_intake.py",
+    "api_surface": "backend/app/api/layer3.py",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/288_SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE.md",
+    "targeted_tests": "python -m pytest .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py -q",
+    "downstream_eligibility": {
+      "source_intake_recorded": true,
+      "eligible_for_source_inventory": true,
+      "eligible_for_material_preview": true,
+      "material_preview_requires_later_freeze": false,
+      "eligible_for_rag_vector_index": false,
+      "eligible_for_web_connector": false,
+      "eligible_for_unbounded_runtime_db": false
+    },
+    "response_guards": {
+      "bounded_text_preview": true,
+      "absolute_path_exposed": false,
+      "hash_verified_before_preview": true,
+      "max_chars": 4000
+    },
+    "blocked_adjacent_modes": [
+      "broad_file_upload",
+      "local_directory",
+      "local_path_authority",
+      "web_connector",
+      "rag_vector_index",
+      "unbounded_runtime_db",
+      "package_construction",
+      "rendered_source_controls",
+      "non_text_binary_preview"
+    ],
+    "material_preview_status": "bounded operator-uploaded text material preview enabled for source-intake records only"
   }
 }

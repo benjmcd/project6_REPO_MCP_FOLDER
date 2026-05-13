@@ -398,6 +398,9 @@ SOURCE_BREADTH_RUNTIME_ENTRY_PROOF = (
 SOURCE_INTAKE_INVENTORY_FREEZE = (
     PLANNING_DOCS / "287_SOURCE_INTAKE_INVENTORY_FREEZE.md"
 )
+SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE = (
+    PLANNING_DOCS / "288_SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -5030,7 +5033,8 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
     for term in (
         "SOURCE_BOUNDARY_CONTRACT_SCHEMA_ID = \"layer3.source_boundary_contract.v1\"",
         "SOURCE_BOUNDARY_MODE = \"supported_source_classes_plus_operator_source_intake\"",
-        "SOURCE_INTAKE_SUPPORTED_MODES = (\"operator_single_upload_source_intake\",)",
+        "\"operator_source_intake_inventory_read_only\"",
+        "\"operator_source_intake_material_preview_read_only\"",
         "def requested_source_classes(",
         "def unsupported_requested(",
         "def source_class_from_source_candidate_id(",
@@ -5041,8 +5045,8 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
         "\"source_intake_record_enabled\": True",
         "\"source_intake_upload_route\": \"/api/v1/layer3/source/intake/upload\"",
         "\"generic_source_upload_preflight_field_enabled\": False",
-        "\"operator_upload_material_preview_enabled\": False",
-        "\"operator_upload_material_preview_requires_later_freeze\": True",
+        "\"operator_upload_material_preview_enabled\": True",
+        "\"operator_upload_material_preview_requires_later_freeze\": False",
         "\"local_directory_enabled\": False",
         "\"broad_file_upload_enabled\": False",
         "\"web_connector_enabled\": False",
@@ -18493,8 +18497,8 @@ def _check_source_breadth_runtime_entry(errors: list[str]) -> None:
         "SOURCE_INTAKE_SOURCE_FAMILY = \"operator_uploaded_single_source\"",
         "record_operator_upload_source_intake",
         "_downstream_eligibility",
-        "\"eligible_for_material_preview\": False",
-        "\"material_preview_requires_later_freeze\": True",
+        "\"eligible_for_material_preview\": True",
+        "\"material_preview_requires_later_freeze\": False",
         "\"broad_file_upload_enabled\": False",
         "\"runtime_db_write_enabled\": False",
     ):
@@ -18505,8 +18509,8 @@ def _check_source_breadth_runtime_entry(errors: list[str]) -> None:
     for term in (
         "SOURCE_BOUNDARY_MODE = \"supported_source_classes_plus_operator_source_intake\"",
         "SUPPORTED_SOURCE_CLASSES = (\"dataset_version\", \"aps_content_document\")",
-        "SOURCE_INTAKE_SUPPORTED_MODES = (\"operator_single_upload_source_intake\",)",
-        "\"operator_upload_material_preview_enabled\": False",
+        "\"operator_source_intake_material_preview_read_only\"",
+        "\"operator_upload_material_preview_enabled\": True",
     ):
         if term not in source_boundary_text:
             errors.append(f"{_rel(SOURCE_BOUNDARY_SERVICE)} missing source-intake boundary term: {term}")
@@ -18741,6 +18745,145 @@ def _check_source_intake_inventory_read_only(errors: list[str]) -> None:
         ):
             if guards.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source-intake inventory response guard {key} mismatch")
+
+
+def _check_source_intake_material_preview_read_only(errors: list[str]) -> None:
+    freeze_text = _read_required_text(SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE, errors)
+    for term in (
+        "Status: branch-local implementation entry for `source_intake_material_preview_read_only`.",
+        "selected_runtime_mode: `operator_source_intake_material_preview_read_only`",
+        "runtime_route: `GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview`",
+        "canonical_source_of_truth: `L3SourceIntakeRecord`",
+        "bounded UTF-8 text preview",
+        "content hash mismatch",
+        "RAG or vector indexing over uploaded source bytes",
+        "unbounded runtime database writes",
+    ):
+        if term not in freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE)} missing source-intake preview freeze term: {term}")
+
+    service_text = _read_required_text(SOURCE_INTAKE_SERVICE, errors)
+    for term in (
+        "SOURCE_INTAKE_PREVIEW_SCHEMA_ID = \"layer3.source_intake_material_preview.v1\"",
+        "SOURCE_INTAKE_PREVIEW_MODE = \"operator_source_intake_material_preview_read_only\"",
+        "def source_intake_material_preview(",
+        "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "source_intake_preview_hash_mismatch",
+        "source_intake_preview_storage_ref_not_admitted",
+        "source_intake_preview_media_type_not_admitted",
+        "\"eligible_for_material_preview\": True",
+        "\"material_preview_requires_later_freeze\": False",
+        "\"unbounded_material_preview_enabled_for_operator_upload\": False",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_SERVICE)} missing source-intake preview service term: {term}")
+
+    boundary_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
+    for term in (
+        "\"operator_source_intake_material_preview_read_only\"",
+        "\"source_intake_material_preview_route\"",
+        "\"operator_upload_material_preview_enabled\": True",
+        "\"operator_upload_material_preview_requires_later_freeze\": False",
+    ):
+        if term not in boundary_text:
+            errors.append(f"{_rel(SOURCE_BOUNDARY_SERVICE)} missing source-intake preview boundary term: {term}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "Layer3SourceIntakeMaterialPreviewResponse",
+        "\"/source/intake/{source_intake_record_id}/preview\"",
+        "layer3_source_intake.source_intake_material_preview",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing source-intake preview API term: {term}")
+
+    test_text = _read_required_text(SOURCE_INTAKE_TEST, errors)
+    for term in (
+        "test_layer3_source_intake_material_preview_returns_bounded_text_only",
+        "test_layer3_source_intake_material_preview_rejects_invalid_limit",
+        "layer3.source_intake_material_preview.v1",
+        "operator_source_intake_material_preview_read_only",
+        "preview_text",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_TEST)} missing source-intake preview test term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Material Preview",
+            "288_SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE.md",
+            "operator_source_intake_material_preview_read_only",
+            "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+            "RAG/vector indexing",
+        ),
+        MANIFEST: (
+            "latest_source_intake_material_preview_branch",
+            "source_intake_material_preview_read_only",
+            "operator_source_intake_material_preview_read_only",
+            "bounded operator-uploaded text material preview enabled",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_material_preview_read_only_proof",
+            "288_SOURCE_INTAKE_MATERIAL_PREVIEW_FREEZE.md",
+            "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+            "hash_verified_before_preview",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-intake preview sync term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    preview = manifest.get("source_intake_material_preview_read_only") if isinstance(manifest, dict) else None
+    if not isinstance(preview, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_material_preview_read_only")
+    else:
+        expected_preview_scalars = {
+            "status": "branch_local_implemented_targeted_tests_passed",
+            "implementation_branch": "codex/l3-source-intake-preview",
+            "live_behavior_change": True,
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "operator_source_intake_material_preview_read_only",
+            "runtime_route": "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+            "canonical_source_of_truth": "L3SourceIntakeRecord",
+        }
+        for key, expected in expected_preview_scalars.items():
+            if preview.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source-intake preview {key} mismatch")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("source_intake_material_preview_read_only") != "branch_local_implemented_targeted_tests_passed":
+        errors.append(f"{_rel(MANIFEST)} missing source-intake preview scope status")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_material_preview_read_only_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_material_preview_read_only_proof")
+        return
+    expected_proof_scalars = {
+        "status": "branch_local_implemented_targeted_tests_passed",
+        "implementation_branch": "codex/l3-source-intake-preview",
+        "live_behavior_change": True,
+        "selected_runtime_family": "source_breadth_runtime",
+        "selected_runtime_mode": "operator_source_intake_material_preview_read_only",
+        "runtime_route": "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "canonical_source_of_truth": "L3SourceIntakeRecord",
+    }
+    for key, expected in expected_proof_scalars.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source-intake preview proof {key} mismatch")
+    guards = proof_entry.get("response_guards")
+    if not isinstance(guards, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} source-intake preview proof missing response_guards")
+    else:
+        for key, expected in (
+            ("bounded_text_preview", True),
+            ("absolute_path_exposed", False),
+            ("hash_verified_before_preview", True),
+            ("max_chars", 4000),
+        ):
+            if guards.get(key) != expected:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source-intake preview response guard {key} mismatch")
 
 
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
@@ -23719,6 +23862,7 @@ def main() -> int:
     _check_runtime_freeze_intake_checklist(errors)
     _check_source_breadth_runtime_entry(errors)
     _check_source_intake_inventory_read_only(errors)
+    _check_source_intake_material_preview_read_only(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
