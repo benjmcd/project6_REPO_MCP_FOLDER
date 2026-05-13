@@ -1423,3 +1423,18 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 - Next allowed code-bearing action: `implement_source_intake_plan_preview_boundary` only.
 - Required future proof: source-intake preview-only planned pass, source-intake-specific pass scope/source gate, deterministic preview hash, no downstream rows/artifacts, APS/dataset behavior unchanged, unsupported adjacent qualitative shapes blocked, and headed/headless proof only if rendered controls change.
 - Blocked scope: source-intake plan approval, execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, provider/private URL behavior, web connector retrieval, RAG/vector indexing, generic/broad upload, local path/local-directory authority, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
+
+
+## Source Intake Plan Preview Boundary
+
+- Status: branch-local implementation/proof for `source_intake_plan_preview_boundary`.
+- Branch: `codex/l3-source-intake-plan-preview`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/300_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY.md`.
+- Freeze predecessor: `next_milestone_plans/Layer3_planning_docs/299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md`.
+- Canonical source of truth: server-owned Gate C state derived from `L3SourceIntakeRecord`, finalized `L3Session`, qualitative `L3AnalysisSet`, `L3AnalysisUnit`, and `L3MaterialSnapshot` rows for `operator_uploaded_single_source`.
+- Implemented owner-service boundary: `backend/app/services/layer3_pass_entry.py` admits source-intake qualitative single-item analysis sets for preview-only plan material with pass scope `qualitative_single_item_operator_uploaded_source`, source gate `299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE`, engine family `source_intake_qualitative_preview`, and selected method marker `operator_uploaded_source_review_preview`.
+- Approval guard: `approve_pass_entry_plan` fails closed for source-intake preview candidates, so source-intake plan approval remains blocked in this slice.
+- Proof: `backend/tests/test_layer3_pass_entry.py` covers source-intake preview-only planned pass formation, deterministic preview hash, source summary projection, no downstream row/artifact creation, and source-intake plan approval blocking.
+- Targeted validation: `pytest .\backend\tests\test_layer3_pass_entry.py` passed with 22 tests.
+- Blocked scope remains source-intake plan approval, execution start, package construction/mutation, handoff/export dispatch, connector/destination dispatch, RAG/vector indexing, provider/private URL behavior, local path/local-directory authority, generic/broad upload, model/migration changes, new backend route, rendered UI changes, auth/security behavior, non-text binary preview, and frontend-only durable authority.
+- Next required decision: `source_intake_plan_approval_boundary_freeze` before source-intake preview-only plan material may become an approved plan.

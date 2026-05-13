@@ -19,11 +19,13 @@ sys.path.insert(0, str(BACKEND))
 from app.core.config import settings
 from app.db.session import Base
 from app.models.models import (
+    AnalysisArtifact,
     AnalysisRun,
     Dataset,
     DatasetVersion,
     L3AnalysisPlan,
     L3AnalysisSet,
+    L3OutputPackage,
     L3PassRun,
     L3Session,
     VariableDefinition,
@@ -46,6 +48,7 @@ from app.services.layer3_session_entry import (
     finalize_session,
     record_retrieval_event,
 )
+from app.services.layer3_source_boundary import SOURCE_INTAKE_GATE_B_SOURCE_CLASS
 from app.services.layer3_typing_entry import materialize_typing_entry
 
 
@@ -499,6 +502,70 @@ def _build_qual_only_ready_session(db, tmp_path: Path) -> tuple[str, str, dateti
     return session.session_id, phase1a_status, phase1a_completed_at
 
 
+def _build_source_intake_plan_preview_session(db, tmp_path: Path) -> tuple[str, str, datetime]:
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_source_intake",
+                "descriptor_type": SOURCE_INTAKE_GATE_B_SOURCE_CLASS,
+                "selector_payload": {
+                    "candidate_id": "mat-source_intake_record-src-intake-plan-001",
+                    "source_ref": "source_intake_record:src-intake-plan-001",
+                    "source_intake_record_id": "src-intake-plan-001",
+                },
+                "selection_basis": {
+                    "selection_id": "sel-source-intake-plan",
+                    "gate_b_decision": "approved",
+                },
+                "expansion_reason": "gate_b_approved_material",
+            }
+        ],
+        source_plane_hints={"source_classes": [SOURCE_INTAKE_GATE_B_SOURCE_CLASS]},
+        commit_reason="source-intake-plan-preview-proof",
+        entry_route_context={"entrypoint": "pytest"},
+        operator_context={"operator": "pytest"},
+        summary={"phase": "source_intake_plan_preview"},
+    )
+
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[0],
+        outcome="loaded",
+        reason_code="gate_b_approved_preview_material",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape=SOURCE_INTAKE_GATE_B_SOURCE_CLASS,
+                source_identity={
+                    "candidate_id": "mat-source_intake_record-src-intake-plan-001",
+                    "source_class": SOURCE_INTAKE_GATE_B_SOURCE_CLASS,
+                    "source_intake_record_id": "src-intake-plan-001",
+                    "content_sha256": "a" * 64,
+                    "metadata_hash": "b" * 64,
+                },
+                source_provenance={
+                    "source_ref": "source_intake_record:src-intake-plan-001",
+                    "query_basis": "operator_uploaded_source_intake",
+                    "provenance_ref": "layer3-source-intake",
+                },
+                payload={"text_preview": "operator uploaded source-intake text"},
+                load_summary={"loaded_records": 1, "failed_records": 0, "preview_material": True},
+            )
+        ],
+        storage_root=tmp_path,
+    )
+    finalize_session(db, session=session)
+    phase1a_status = session.status
+    phase1a_completed_at = session.completed_at
+    db.commit()
+
+    materialize_typing_entry(db, session_id=session.session_id)
+    db.commit()
+    return session.session_id, phase1a_status, phase1a_completed_at
+
+
 def _build_non_timeseries_quant_ready_session(db, tmp_path: Path) -> tuple[str, str, datetime]:
     dataset_version_id = "dv-pass-003"
     _seed_non_timeseries_dataset_version(
@@ -603,6 +670,75 @@ def test_gatec_pass_entry_preview_reports_exclusions_without_materializing(tmp_p
         assert db.query(L3AnalysisPlan).count() == 0
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_preview_admits_source_intake_without_materializing_downstream(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_source_intake_plan_preview_session(db, tmp_path)
+
+        preview = preview_pass_entry(db, session_id=session_id)
+        repeated_preview = preview_pass_entry(db, session_id=session_id)
+
+        assert preview.preview_hash == repeated_preview.preview_hash
+        assert len(preview.admitted_sets) == 1
+        assert preview.excluded_sets == ()
+        assert preview.admitted_sets[0]["readiness"] == "admitted"
+        assert preview.admitted_sets[0]["analysis_modality"] == "qualitative"
+        assert preview.admitted_sets[0]["source_summary"]["source_classes"] == [SOURCE_INTAKE_GATE_B_SOURCE_CLASS]
+
+        planned_pass = preview.planned_passes[0]
+        assert planned_pass["pass_type"] == "single_item"
+        assert planned_pass["pass_scope"] == "qualitative_single_item_operator_uploaded_source"
+        assert planned_pass["engine_family"] == "source_intake_qualitative_preview"
+        assert planned_pass["selected_method_name"] == "operator_uploaded_source_review_preview"
+        assert preview.owner_plan_payload["formation_reason"] == "source_intake_qualitative_plan_preview"
+        assert preview.owner_plan_payload["source_gate"] == "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE"
+        owner_planned_pass = preview.owner_plan_payload["planned_passes_json"][0]
+        assert owner_planned_pass["source_gate"] == "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE"
+        assert owner_planned_pass["source_intake_record_id"] == "src-intake-plan-001"
+        assert owner_planned_pass["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
+
+        session = db.get(L3Session, session_id)
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_source_intake_plan_approval_remains_blocked(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_source_intake_plan_preview_session(db, tmp_path)
+
+        preview = preview_pass_entry(db, session_id=session_id)
+        with pytest.raises(Layer3PassEntryError, match="source-intake plan approval is not admitted"):
+            approve_pass_entry_plan(
+                db,
+                session_id=session_id,
+                preview_hash=preview.preview_hash,
+                source_preview_id="source-intake-plan-preview",
+            )
+
+        session = db.get(L3Session, session_id)
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
     finally:
         settings.storage_dir = original_storage_dir
 

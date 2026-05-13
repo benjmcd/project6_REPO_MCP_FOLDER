@@ -39,6 +39,7 @@ from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED_WITH_WARNINGS,
     SESSION_STATUS_FAILED,
 )
+from app.services.layer3_source_boundary import SOURCE_INTAKE_GATE_B_SOURCE_CLASS
 from app.services.layer3_typing_entry import (
     MODALITY_QUANTITATIVE,
     SET_TYPE_ASSOCIATED_COHORT,
@@ -92,9 +93,11 @@ PASS_STATUS_FAILED = L3_PASS_RUN_STATUS_FAILED
 SOURCE_GATE_PASS_FREEZE = "06_GATEC_PASS_FREEZE"
 SOURCE_GATE_COHORT_FREEZE = "07_GATEC_COHORT_FREEZE"
 SOURCE_GATE_COHORT_DESC_FREEZE = "78_COHORT_FREEZE"
+SOURCE_GATE_SOURCE_INTAKE_PLAN_PREVIEW_FREEZE = "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE"
 PLAN_VERSION = "gatec_pass_entry_v1"
 PASS_SCOPE_QUANT_SINGLE_ITEM = "quantitative_single_item_dataset_version"
 PASS_SCOPE_QUANT_ASSOCIATED_COHORT = "quantitative_associated_cohort_dataset_version"
+PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE = "qualitative_single_item_operator_uploaded_source"
 PASS_TYPE_ASSOCIATED_COHORT = "associated_cohort"
 COHORT_TIME_COLUMN = "observed_at"
 COHORT_SHAPE_ALIGNED_WIDE_TABLE = "aligned_wide_table"
@@ -272,6 +275,28 @@ def _exclusion_entry(analysis_set: L3AnalysisSet, *, reason_code: str, analysis_
         "analysis_modality": analysis_modality,
         "set_type": analysis_set.set_type,
     }
+
+
+def _source_intake_candidate_exclusion_reason(
+    *,
+    analysis_set: L3AnalysisSet,
+    analysis_unit: L3AnalysisUnit,
+    material_snapshot: L3MaterialSnapshot,
+) -> str | None:
+    if analysis_set.set_type != PASS_TYPE_SINGLE_ITEM:
+        return "source_intake_set_type_not_single_item"
+    if analysis_set.formation_basis_json.get("analysis_modality") != "qualitative":
+        return "source_intake_set_modality_not_qualitative"
+    if analysis_unit.analysis_modality != "qualitative":
+        return "source_intake_unit_modality_not_qualitative"
+    if material_snapshot.source_shape != SOURCE_INTAKE_GATE_B_SOURCE_CLASS:
+        return "source_intake_source_shape_not_operator_uploaded_single_source"
+    identity = material_snapshot.source_identity_json or {}
+    if not str(identity.get("source_intake_record_id") or "").strip() and not str(
+        identity.get("candidate_id") or ""
+    ).strip():
+        return "source_intake_identity_incomplete"
+    return None
 
 
 def _choose_method_name_or_raise(db: Session, *, dataset_version_id: str) -> str:
@@ -702,6 +727,26 @@ def _classify_sets(
             )
         if analysis_unit.analysis_modality != MODALITY_QUANTITATIVE:
             if analysis_unit.analysis_modality == "qualitative":
+                source_intake_exclusion_reason = _source_intake_candidate_exclusion_reason(
+                    analysis_set=analysis_set,
+                    analysis_unit=analysis_unit,
+                    material_snapshot=snapshot,
+                )
+                if source_intake_exclusion_reason is None:
+                    admitted.append(
+                        _AdmittedSetCandidate(
+                            analysis_set=analysis_set,
+                            analysis_units=(analysis_unit,),
+                            snapshots=(snapshot,),
+                            pass_type=PASS_TYPE_SINGLE_ITEM,
+                            pass_scope=PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+                            source_gate=SOURCE_GATE_SOURCE_INTAKE_PLAN_PREVIEW_FREEZE,
+                            selected_method_name="operator_uploaded_source_review_preview",
+                            engine_family="source_intake_qualitative_preview",
+                            input_payload_ref=snapshot.payload_ref,
+                        )
+                    )
+                    continue
                 exclusion_reason = qualitative_aps_candidate_exclusion_reason(
                     db,
                     analysis_set=analysis_set,
@@ -823,6 +868,14 @@ def _is_single_aps_doc_qualitative_candidate(candidate: _AdmittedSetCandidate) -
     )
 
 
+def _is_source_intake_qualitative_candidate(candidate: _AdmittedSetCandidate) -> bool:
+    return (
+        candidate.engine_family == "source_intake_qualitative_preview"
+        and candidate.pass_scope == PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE
+        and candidate.source_gate == SOURCE_GATE_SOURCE_INTAKE_PLAN_PREVIEW_FREEZE
+    )
+
+
 def _planned_pass_source_fields(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
     if candidate.dataset_version_id is not None:
         return {"dataset_version_id": candidate.dataset_version_id}
@@ -837,12 +890,22 @@ def _planned_pass_source_fields(candidate: _AdmittedSetCandidate) -> dict[str, A
             "content_contract_id": identity.get("content_contract_id"),
             "chunking_contract_id": identity.get("chunking_contract_id"),
         }
+    if _is_source_intake_qualitative_candidate(candidate):
+        snapshot = candidate.snapshots[0]
+        identity = snapshot.source_identity_json or {}
+        return {
+            "material_snapshot_id": snapshot.material_snapshot_id,
+            "source_intake_record_id": identity.get("source_intake_record_id"),
+            "candidate_id": identity.get("candidate_id"),
+        }
     raise Layer3PassEntryError(
         f"Layer 3 analysis set '{candidate.analysis_set.analysis_set_id}' has no admitted planned-pass source fields"
     )
 
 
 def _plan_formation_reason(admitted: list[_AdmittedSetCandidate]) -> str:
+    if any(_is_source_intake_qualitative_candidate(candidate) for candidate in admitted):
+        return "source_intake_qualitative_plan_preview"
     if any(_is_single_aps_doc_qualitative_candidate(candidate) for candidate in admitted):
         return "single_aps_doc_qualitative_pass_entry"
     return "quantitative_dataset_version_backed_gatec_only"
@@ -1103,6 +1166,8 @@ def approve_pass_entry_plan(
         raise Layer3PassEntryError("operator confirmation is required for Layer 3 plan approval")
 
     session, admitted, excluded, preview = _load_admitted_preview_basis(db, session_id=session_id)
+    if any(_is_source_intake_qualitative_candidate(candidate) for candidate in admitted):
+        raise Layer3PassEntryError("source-intake plan approval is not admitted by this preview-only boundary")
     if preview_hash is not None and preview_hash != preview.preview_hash:
         raise Layer3PassEntryError("Layer 3 plan approval preview hash mismatch")
 
