@@ -15690,5 +15690,52 @@
       "test_obligations"
     ],
     "validation_status": "progress_check_required"
+  },
+  "source_intake_provider_public_url_substrate_freeze_proof": {
+    "proof_kind": "source_intake_provider_public_url_substrate_freeze",
+    "status": "completed_source_intake_provider_public_url_substrate_freeze",
+    "branch": "codex/l3-provider-public-substrate-freeze",
+    "current_main_predecessor_commit": "ef57cf12489c764104ba563449bacb60137ba276",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/338_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE.md",
+    "selected_next_implementation": "source_intake_provider_public_url_durable_state_substrate",
+    "next_allowed_action": "implement_source_intake_provider_public_url_durable_state_substrate",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "allowed_future_write_surface": [
+      "provider_public_url_durable_state_models_if_selected",
+      "provider_public_url_durable_state_migration_if_selected",
+      "provider_public_url_state_service",
+      "provider_public_url_fake_provider_contract_double",
+      "owner_service_tests",
+      "progress_control_updates"
+    ],
+    "required_future_proofs": [
+      "deterministic_receipt_identity",
+      "authority_hash_binding",
+      "ttl_expiry_fail_closed",
+      "revocation_fail_closed",
+      "stale_authority_failure",
+      "redacted_audit_payloads",
+      "no_raw_public_url_persistence_or_exposure",
+      "idempotency_conflict_policy",
+      "no_route_dto_rendered_ui_activation"
+    ],
+    "blocked_scope": [
+      "provider_public_url_prepare_status_revoke_routes",
+      "public_url_delivery_use_route",
+      "rendered_provider_public_url_controls",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "local_directory_authority",
+      "web_connector_retrieval",
+      "rag_vector_behavior",
+      "broad_qualitative_behavior",
+      "full_mockup_activation",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "validation_status": "progress_check_required"
   }
 }
