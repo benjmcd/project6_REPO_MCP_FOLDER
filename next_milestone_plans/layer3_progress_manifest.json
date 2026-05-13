@@ -11155,5 +11155,31 @@
   "latest_source_intake_provider_public_url_rendered_controls_freeze_branch": "codex/l3-provider-public-rendered-controls-freeze",
   "latest_source_intake_provider_public_url_rendered_controls_freeze_doc": "next_milestone_plans/Layer3_planning_docs/347_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS_FREEZE.md",
   "latest_source_intake_provider_public_url_rendered_controls_freeze_live_behavior_change": false,
-  "latest_source_intake_provider_public_url_rendered_controls_freeze_summary": "Doc 347 freezes rendered provider-public URL controls as the next bounded slice after current-main revoke sync. It selects rendered controls over prepare/status/revoke only, not delivery/use, because delivery/use would require raw public URL exposure, public_url_enabled true, and auth/security authority that remain blocked. Raw public URL display, delivery/use, public proxy runtime, connector/destination dispatch, package mutation, source expansion, RAG/vector behavior, auth/security behavior, and frontend-only durable authority remain blocked."
+  "latest_source_intake_provider_public_url_rendered_controls_freeze_summary": "Doc 347 freezes rendered provider-public URL controls as the next bounded slice after current-main revoke sync. It selects rendered controls over prepare/status/revoke only, not delivery/use, because delivery/use would require raw public URL exposure, public_url_enabled true, and auth/security authority that remain blocked. Raw public URL display, delivery/use, public proxy runtime, connector/destination dispatch, package mutation, source expansion, RAG/vector behavior, auth/security behavior, and frontend-only durable authority remain blocked.",
+  "source_intake_provider_public_url_rendered_controls": {
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "branch": "codex/l3-provider-public-rendered-controls",
+    "predecessor_boundary": "source_intake_provider_public_url_rendered_controls_freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/348_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS.md",
+    "implemented_surface": "rendered provider-public prepare/status/revoke controls over existing backend APIs",
+    "live_behavior_change": true,
+    "admitted_controls": [
+      "prepare_provider_public_url",
+      "inspect_provider_public_url_status",
+      "revoke_provider_public_url"
+    ],
+    "blocked_controls": [
+      "provider_public_url_delivery",
+      "provider_public_url_use",
+      "raw_public_url_display",
+      "public_proxy_runtime",
+      "frontend_only_durable_provider_public_authority"
+    ],
+    "validation_status": "branch_local_targeted_tests_headed_headless_browser_passed",
+    "next_required_action": "merge_then_current_main_sync_source_intake_provider_public_url_rendered_controls"
+  },
+  "latest_source_intake_provider_public_url_rendered_controls_branch": "codex/l3-provider-public-rendered-controls",
+  "latest_source_intake_provider_public_url_rendered_controls_doc": "next_milestone_plans/Layer3_planning_docs/348_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_RENDERED_CONTROLS.md",
+  "latest_source_intake_provider_public_url_rendered_controls_live_behavior_change": true,
+  "latest_source_intake_provider_public_url_rendered_controls_summary": "Branch codex/l3-provider-public-rendered-controls adds only /review/layer3 provider-public prepare/status/revoke controls over existing backend APIs, renders redacted provider-public state, blocks delivery/use/raw public URL/public proxy/frontend-only durable authority, and passed focused static/API/state/progress plus headed/headless browser validation."
 }
