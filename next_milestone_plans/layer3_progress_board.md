@@ -1037,6 +1037,19 @@ Source rendered-control decision: `253_SOURCE_RENDERED_CONTROL_DECISION_FREEZE.m
 
 Connector/destination reentry decision: `254_CONNECTOR_DESTINATION_REENTRY_DECISION_FREEZE.md` records the current-main connector/destination posture after the source rendered-control decision. Existing `/api/v1/layer3/handoff/connector/record` internal dispatch record-only behavior is live and bounded to server-authority receipts over already prepared artifacts; external connector invocation, destination writes, connector-run creation, generic downstream dispatch, rendered connector/destination controls, provider/public URL side effects, package mutation, source expansion, broad qualitative/hybrid/RAG behavior, full mockup activation, and browser-owned connector/destination authority remain blocked until a later one-mode freeze proves the missing authority and validation plan.
 
+
+## Source Intake Gate B Material Admission Freeze
+
+- Status: `completed_source_intake_gate_b_material_admission_freeze`.
+- Branch: `codex/l3-source-intake-gate-b-freeze`.
+- Governing doc: `next_milestone_plans/Layer3_planning_docs/293_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE.md`.
+- Mode: `source_intake_gate_b_material_admission`.
+- Named operator/product use case: `operator_uploaded_source_intake_feeds_gate_b_material_review`.
+- Canonical source of truth: `L3SourceIntakeRecord`.
+- This is planning/control only; it admits no runtime behavior, rendered UI behavior, backend route, DTO, model, migration, or service change by itself.
+- Next allowed code-bearing action: `implement_source_intake_gate_b_material_admission_runtime` only, with exact request/response contracts, stale-authority/idempotency/replay/duplicate/rollback semantics, leakage controls, and negative tests for every adjacent blocked mode.
+- Blocked scope remains generic source upload, broad file upload, local path/local directory authority, web connector retrieval, RAG/vector indexing, non-text binary preview, package construction/mutation, provider-private signed URL prepare, connector/destination dispatch, execution start, auth/security behavior, backend expansion outside the exact Gate B admission contract, and frontend-only durable authority.
+
 ## Refresh Inputs
 
 Refresh this board against:

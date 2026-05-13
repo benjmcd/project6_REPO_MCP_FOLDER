@@ -413,6 +413,9 @@ SOURCE_INTAKE_REVIEW_DEBT_CLOSEOUT = (
 SOURCE_INTAKE_RENDERED_CONTROLS = (
     PLANNING_DOCS / "292_SOURCE_INTAKE_RENDERED_CONTROLS.md"
 )
+SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE = (
+    PLANNING_DOCS / "293_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -19438,6 +19441,130 @@ def _check_source_intake_rendered_controls(errors: list[str]) -> None:
                 errors.append(f"{_rel(PROOF_MANIFEST)} next_required_decision missing source-intake current-state term: {term}")
 
 
+def _check_source_intake_gate_b_material_admission_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE, errors)
+    for term in (
+        "source_intake_gate_b_material_admission",
+        "codex/l3-source-intake-gate-b-freeze",
+        "operator_uploaded_source_intake_feeds_gate_b_material_review",
+        "source_breadth_runtime",
+        "L3SourceIntakeRecord",
+        "planning/control only",
+        "implement_source_intake_gate_b_material_admission_runtime",
+        "stale-authority",
+        "Idempotency rule",
+        "Duplicate rule",
+        "Rollback/failure rule",
+        "Leakage rule",
+        "Generic source upload",
+        "RAG/vector indexing",
+        "frontend-only durable authority",
+    ):
+        if term not in doc_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE)} missing Gate B material-admission freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Gate B Material Admission Freeze",
+            "293_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE.md",
+            "source_intake_gate_b_material_admission",
+            "implement_source_intake_gate_b_material_admission_runtime",
+        ),
+        MANIFEST: (
+            "latest_source_intake_gate_b_material_admission_freeze_branch",
+            "source_intake_gate_b_material_admission_freeze",
+            "operator_uploaded_source_intake_feeds_gate_b_material_review",
+            "implement_source_intake_gate_b_material_admission_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_gate_b_material_admission_freeze_proof",
+            "293_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE.md",
+            "source_intake_gate_b_material_admission",
+            "L3SourceIntakeRecord",
+        ),
+    }.items():
+        surface_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in surface_text:
+                errors.append(f"{_rel(path)} missing Gate B material-admission freeze term: {term}")
+
+    manifest = _load_json(MANIFEST, errors)
+    freeze = manifest.get("source_intake_gate_b_material_admission_freeze") if isinstance(manifest, dict) else None
+    if not isinstance(freeze, dict):
+        errors.append(f"{_rel(MANIFEST)} missing source_intake_gate_b_material_admission_freeze")
+    else:
+        expected_scalars = {
+            "status": "completed_source_intake_gate_b_material_admission_freeze",
+            "implementation_branch": "codex/l3-source-intake-gate-b-freeze",
+            "selected_runtime_family": "source_breadth_runtime",
+            "selected_runtime_mode": "source_intake_gate_b_material_admission",
+            "named_operator_product_use_case": "operator_uploaded_source_intake_feeds_gate_b_material_review",
+            "canonical_source_of_truth": "L3SourceIntakeRecord",
+            "next_allowed_action": "implement_source_intake_gate_b_material_admission_runtime",
+            "implementation_entry_allowed_next": True,
+            "live_behavior_change": False,
+            "runtime_behavior_change": False,
+            "rendered_ui_behavior_change": False,
+        }
+        for key, expected in expected_scalars.items():
+            if freeze.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} source_intake_gate_b_material_admission_freeze.{key} must be {expected!r}")
+        for blocked in (
+            "generic_source_upload",
+            "broad_file_upload",
+            "local_path_authority",
+            "local_directory_authority",
+            "web_connector_retrieval",
+            "rag_vector_indexing",
+            "package_construction_mutation",
+            "connector_destination_dispatch",
+            "provider_private_signed_url_prepare",
+            "execution_start",
+            "auth_security_behavior",
+            "frontend_only_durable_authority",
+            "backend_expansion_outside_exact_gate_b_admission_contract",
+        ):
+            if blocked not in freeze.get("blocked_scope", []):
+                errors.append(f"{_rel(MANIFEST)} source_intake_gate_b_material_admission_freeze blocked_scope missing {blocked}")
+    scope_status = manifest.get("scope_status") if isinstance(manifest, dict) else None
+    if not isinstance(scope_status, dict) or scope_status.get("source_intake_gate_b_material_admission_freeze") != "completed_source_intake_gate_b_material_admission_freeze":
+        errors.append(f"{_rel(MANIFEST)} missing completed Gate B material-admission freeze scope status")
+    next_required = manifest.get("next_required_decision") if isinstance(manifest, dict) else None
+    if not isinstance(next_required, str):
+        errors.append(f"{_rel(MANIFEST)} missing next_required_decision for Gate B material-admission freeze")
+    else:
+        for term in (
+            "source_intake_gate_b_material_admission",
+            "implement_source_intake_gate_b_material_admission_runtime",
+            "L3SourceIntakeRecord as canonical authority",
+            "package construction",
+            "RAG/vector indexing",
+            "frontend-only durable authority",
+        ):
+            if term not in next_required:
+                errors.append(f"{_rel(MANIFEST)} next_required_decision missing Gate B material-admission freeze term: {term}")
+
+    proof = _load_json(PROOF_MANIFEST, errors)
+    proof_entry = proof.get("source_intake_gate_b_material_admission_freeze_proof") if isinstance(proof, dict) else None
+    if not isinstance(proof_entry, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_gate_b_material_admission_freeze_proof")
+        return
+    for key, expected in {
+        "status": "completed_source_intake_gate_b_material_admission_freeze",
+        "branch": "codex/l3-source-intake-gate-b-freeze",
+        "selected_runtime_family": "source_breadth_runtime",
+        "selected_runtime_mode": "source_intake_gate_b_material_admission",
+        "named_operator_product_use_case": "operator_uploaded_source_intake_feeds_gate_b_material_review",
+        "canonical_source_of_truth": "L3SourceIntakeRecord",
+        "live_behavior_change": False,
+        "runtime_behavior_change": False,
+        "rendered_ui_behavior_change": False,
+        "next_allowed_action": "implement_source_intake_gate_b_material_admission_runtime",
+    }.items():
+        if proof_entry.get(key) != expected:
+            errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_gate_b_material_admission_freeze_proof.{key} must be {expected!r}")
+
+
 def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
     deferred = _capability_map(
         _load_literal_assignment(
@@ -24158,6 +24285,7 @@ def main() -> int:
         MOCKUP_PIXEL_PROOF_CLOSEOUT,
         RUNTIME_FREEZE_INTAKE_CHECKLIST,
         SOURCE_INTAKE_RENDERED_CONTROLS,
+        SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
@@ -24420,6 +24548,7 @@ def main() -> int:
     _check_source_intake_file_part_guard(errors)
     _check_source_intake_review_debt_closeout(errors)
     _check_source_intake_rendered_controls(errors)
+    _check_source_intake_gate_b_material_admission_freeze(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_gate_b_durable_idempotency_claim(errors)
