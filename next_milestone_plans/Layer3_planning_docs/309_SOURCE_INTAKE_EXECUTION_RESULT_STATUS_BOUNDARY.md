@@ -2,9 +2,23 @@
 
 ## Status
 
-Status: current-main-candidate implementation/proof for `source_intake_execution_result_status_boundary`.
+Status: current-main implementation/proof for `source_intake_execution_result_status_boundary`.
 
 Branch: `codex/l3-source-intake-result-status`.
+
+Implementation commit: `3a4dd5c1d801ededec4d605d0f3747f3a8c37093`.
+
+Review-fix commit: `ea19e2c992cd65bc425cf93791589108ee97f443`.
+
+Pull request: `#899`.
+
+Merge commit/current-main authority: `8ac4b18f2a6445b6515d6c08aee3d064e96b9b88`.
+
+Merged at: `2026-05-13T10:07:58Z`.
+
+GitHub checks: `backend-layer3-api` success and `test` success.
+
+Code Review threads: three P2 threads resolved before merge.
 
 Freeze predecessor: `308_SOURCE_INTAKE_EXECUTION_RESULT_STATUS_BOUNDARY_FREEZE.md`.
 
@@ -76,7 +90,9 @@ Focused test coverage in `test_execution_start_runs_source_intake_selected_pass_
 - missing output payload fails closed as `missing_output_metadata`
 - post-write output tampering raises `source_intake_execution_result_status_output_not_admitted` through recomputed output-hash mismatch
 
-Targeted validation: `pytest .\backend\tests\test_layer3_workbench.py`.
+Targeted validation: `pytest .\backend\tests\test_layer3_workbench.py` passed with 22 tests.
+
+Progress validation: `python .\tools\l3-progress-check.py` passed after merge.
 
 ## Explicit Non-Goals
 
