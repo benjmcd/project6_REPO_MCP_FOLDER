@@ -1427,8 +1427,12 @@ Current-main proof: GitHub `backend-layer3-api` and `test` passed for PR `#879`,
 
 ## Source Intake Plan Preview Boundary
 
-- Status: branch-local implementation/proof for `source_intake_plan_preview_boundary`.
+- Status: current-main implementation/proof for `source_intake_plan_preview_boundary`.
 - Branch: `codex/l3-source-intake-plan-preview`.
+- Implementation commit: `46af1d10828ef1bbe0eb7459a1dca6c5a3e1a0fc`.
+- Merged PR: `#885`.
+- Merge commit/current-main authority: `28ab25cc0dc1d8e2e1d92f017f817990dc5ed05c`.
+- GitHub checks: `backend-layer3-api` success and `test` success.
 - Governing doc: `next_milestone_plans/Layer3_planning_docs/300_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY.md`.
 - Freeze predecessor: `next_milestone_plans/Layer3_planning_docs/299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md`.
 - Canonical source of truth: server-owned Gate C state derived from `L3SourceIntakeRecord`, finalized `L3Session`, qualitative `L3AnalysisSet`, `L3AnalysisUnit`, and `L3MaterialSnapshot` rows for `operator_uploaded_single_source`.

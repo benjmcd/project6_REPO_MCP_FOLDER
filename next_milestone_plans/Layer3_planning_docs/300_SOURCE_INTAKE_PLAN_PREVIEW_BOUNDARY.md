@@ -2,9 +2,19 @@
 
 ## Status
 
-Status: branch-local implementation with targeted validation passed for `source_intake_plan_preview_boundary`.
+Status: current-main implementation with targeted validation passed for `source_intake_plan_preview_boundary`.
 
 Implementation branch: `codex/l3-source-intake-plan-preview`.
+
+Implementation commit: `46af1d10828ef1bbe0eb7459a1dca6c5a3e1a0fc`.
+
+Merged PR: `#885`.
+
+Merge commit/current-main authority: `28ab25cc0dc1d8e2e1d92f017f817990dc5ed05c`.
+
+Merged at: `2026-05-13T06:48:29Z`.
+
+GitHub checks: `backend-layer3-api` success and `test` success.
 
 Implementation predecessor: `299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE.md`.
 
