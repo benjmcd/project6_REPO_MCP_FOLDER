@@ -19296,6 +19296,11 @@ def _check_source_intake_rendered_controls(errors: list[str]) -> None:
         ),
         LAYER3_JS: (
             "function sourceIntakeRenderedControls",
+            "{ id: 'source-intake-rendered-controls', key: 'source_intake'",
+            "step.key !== 'source_intake'",
+            "pendingUpload: false",
+            "Upload already in progress",
+            "Inventory refresh failed",
             "source-intake-ui-",
             "source/intake/upload",
             "source/intake/inventory?limit=10",
@@ -19305,6 +19310,8 @@ def _check_source_intake_rendered_controls(errors: list[str]) -> None:
         LAYER3_PAGE_TEST: (
             "source-intake-rendered-controls",
             "operator_source_intake_rendered_controls",
+            "pendingUpload: false",
+            "Inventory refresh failed",
             "source/intake/upload",
             "source/intake/inventory?limit=10",
         ),
@@ -19314,6 +19321,11 @@ def _check_source_intake_rendered_controls(errors: list[str]) -> None:
             "source-intake-preview-button",
             "source/mixed-corpus/materialize",
             "provider-private-signed-url/prepare",
+        ),
+        LAYER3_HANDOFF_E2E: (
+            'input[type="file"]:not(#source-intake-file)',
+            "source-intake-upload-submit",
+            "name: /ingest|local directory|web connector|rag|vector|provider url|public url|connector dispatch|destination|mockup|auth/i",
         ),
         BOARD: (
             "## Source Intake Rendered Controls",

@@ -8249,14 +8249,18 @@
       "python .\\tools\\l3-progress-check.py",
       "python -m pytest .\\backend\\tests\\test_layer3_page.py .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_source_boundary.py -q",
       "npx playwright test layer3-workbench.spec.js --grep \"rendered source-intake upload inventory and preview\" --project=chromium",
-      "npx playwright test layer3-workbench.spec.js --grep \"rendered source-intake upload inventory and preview\" --project=chromium --headed"
+      "npx playwright test layer3-workbench.spec.js --grep \"rendered source-intake upload inventory and preview\" --project=chromium --headed",
+      "npx playwright test --project=chromium"
     ],
     "contract_guards": {
       "uses_existing_upload_inventory_preview_only": true,
       "no_backend_route_dto_model_migration_service_change": true,
       "browser_state_is_not_durable_authority": true,
       "preview_text_source": "material_candidate.preview_text",
-      "operator_decision_field": "record_operator_uploaded_source"
+      "operator_decision_field": "record_operator_uploaded_source",
+      "operation_dock_panel_registered": true,
+      "upload_submit_single_flight_guard": true,
+      "upload_success_preserved_when_inventory_refresh_fails": true
     },
     "blocked_scope": [
       "backend_route_model_migration_service_change",
@@ -8278,6 +8282,7 @@
       "backend/app/review_ui/static/layer3.js",
       "backend/tests/test_layer3_page.py",
       "e2e/layer3-workbench.spec.js",
+      "e2e/layer3-handoff.spec.js",
       "next_milestone_plans/Layer3_planning_docs/292_SOURCE_INTAKE_RENDERED_CONTROLS.md",
       "next_milestone_plans/layer3_progress_board.md",
       "next_milestone_plans/layer3_progress_manifest.json",

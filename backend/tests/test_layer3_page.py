@@ -274,6 +274,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "getJson('/aps-content-document-candidates')" in js.text
     assert "renderSourceFamilySummary" in js.text
     assert "function sourceIntakeRenderedControls" in js.text
+    assert "{ id: 'source-intake-rendered-controls', key: 'source_intake'" in js.text
+    assert "step.key !== 'source_intake'" in js.text
+    assert "pendingUpload: false" in js.text
+    assert "Upload already in progress" in js.text
+    assert "Inventory refresh failed" in js.text
     assert "source-intake-ui-" in js.text
     assert "source/intake/upload" in js.text
     assert "source/intake/inventory?limit=10" in js.text
