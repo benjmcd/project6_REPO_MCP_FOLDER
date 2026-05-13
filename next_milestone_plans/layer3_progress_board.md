@@ -1146,7 +1146,7 @@ Refresh this board against:
 ## PDF Location Use Case Freeze
 
 - `272_PDF_LOCATION_FREEZE.md` selects `pdf_location_from_aps_content_document_citation` as the first named server-authoritative runtime use case after the mockup runtime gate.
-- The selected activation mode is `single_mockup_screen_read_only_projection` over existing `ApsContentDocument`, chunk page refs, `visual_page_refs_json`, and `sections[].citations[].highlight_spans` authority.
+- The selected activation mode is `single_mockup_screen_read_only_projection` over existing `ApsContentDocument`, chunk page refs, `visual_page_refs_json`, and `citations[].highlight_spans` authority.
 - This freeze is planning/control only; next code may implement only `implement_read_only_pdf_location_projection_from_existing_authority`, with no raw PDF blob streaming, source expansion, package mutation, connector/destination dispatch, auth/security widening, or full durable mockup activation.
 
 ## PDF Location Projection Implementation

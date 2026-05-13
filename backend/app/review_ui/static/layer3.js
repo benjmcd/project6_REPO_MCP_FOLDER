@@ -341,12 +341,17 @@ function renderMockupThemeShell() {
             elements.mockupThemeFrameList.appendChild(item);
         });
     }
-    renderMockupPdfLocationProjection();
+    renderMockupPdfLocationProjection(active);
 }
 
-function renderMockupPdfLocationProjection() {
+function renderMockupPdfLocationProjection(active = State.themePreference === LAYER3_MOCKUP_WORKBENCH_THEME) {
     const panel = elements.mockupPdfLocationProjection;
     if (!panel) return;
+    if (!active) {
+        panel.dataset.projectionState = 'inactive';
+        panel.innerHTML = '';
+        return;
+    }
 
     const projection = State.sessionSummary?.pdf_location_projection || null;
     const locationItems = Array.isArray(projection?.location_items) ? projection.location_items : [];

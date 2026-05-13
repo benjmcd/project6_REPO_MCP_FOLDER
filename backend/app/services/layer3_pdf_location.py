@@ -14,7 +14,7 @@ PDF_LOCATION_AUTHORITY_CONTRACT = "aps_content_document_chunk_page_refs_and_cita
 PDF_LOCATION_USE_CASE = "pdf_location_from_aps_content_document_citation"
 PDF_LOCATION_NEXT_ACTION = "implement_read_only_pdf_location_projection_from_existing_authority"
 SOURCE_SHAPE_APS_CONTENT_DOCUMENT = "aps_content_document"
-CITATION_HIGHLIGHT_AUTHORITY = "sections[].citations[].highlight_spans"
+CITATION_HIGHLIGHT_AUTHORITY = "citations[].highlight_spans"
 _ADMITTED_PASS_STATUSES = {"completed", "completed_with_warnings"}
 _FORBIDDEN_RUNTIME = (
     "raw_pdf_blob_streaming",
@@ -96,6 +96,13 @@ def pdf_location_projection_for_pass_run(db: Session, *, pass_run: L3PassRun) ->
             pass_run_id=pass_run.pass_run_id,
         )
     assert payload is not None
+    payload_identity_error = _payload_identity_error(payload, pass_run)
+    if payload_identity_error is not None:
+        return unavailable_pdf_location_projection(
+            payload_identity_error,
+            session_id=pass_run.session_id,
+            pass_run_id=pass_run.pass_run_id,
+        )
     document_identity = payload.get("document_identity")
     if not isinstance(document_identity, dict):
         return unavailable_pdf_location_projection(
@@ -133,6 +140,19 @@ def pdf_location_projection_for_pass_run(db: Session, *, pass_run: L3PassRun) ->
             session_id=pass_run.session_id,
             pass_run_id=pass_run.pass_run_id,
         )
+    if _string(document.media_type).lower() != "application/pdf":
+        return unavailable_pdf_location_projection(
+            "pdf_location_document_not_pdf",
+            session_id=pass_run.session_id,
+            pass_run_id=pass_run.pass_run_id,
+        )
+    visual_page_refs = _visual_page_refs(document.visual_page_refs_json)
+    if not visual_page_refs:
+        return unavailable_pdf_location_projection(
+            "pdf_location_visual_page_authority_missing",
+            session_id=pass_run.session_id,
+            pass_run_id=pass_run.pass_run_id,
+        )
 
     chunk_ids = _ordered_chunk_ids(payload)
     if not chunk_ids:
@@ -158,12 +178,39 @@ def pdf_location_projection_for_pass_run(db: Session, *, pass_run: L3PassRun) ->
         )
 
     output_items_by_chunk = _output_items_by_chunk(payload)
+    payload_chunk_hashes = _payload_chunk_hashes(payload)
+    for chunk_id in chunk_ids:
+        expected_hash = payload_chunk_hashes.get(chunk_id)
+        if not expected_hash:
+            return unavailable_pdf_location_projection(
+                "pdf_location_chunk_hash_authority_missing",
+                session_id=pass_run.session_id,
+                pass_run_id=pass_run.pass_run_id,
+            )
+        if _string(chunks_by_id[chunk_id].chunk_text_sha256) != expected_hash:
+            return unavailable_pdf_location_projection(
+                "pdf_location_chunk_hash_mismatch",
+                session_id=pass_run.session_id,
+                pass_run_id=pass_run.pass_run_id,
+            )
+
     location_items: list[dict[str, Any]] = []
     for chunk_id in chunk_ids:
         chunk = chunks_by_id[chunk_id]
         if chunk.page_start is None or chunk.page_end is None:
-            continue
+            return unavailable_pdf_location_projection(
+                "pdf_location_page_authority_missing",
+                session_id=pass_run.session_id,
+                pass_run_id=pass_run.pass_run_id,
+            )
         output_item = output_items_by_chunk.get(chunk_id, {})
+        highlight_spans = _highlight_spans(output_item)
+        if not highlight_spans:
+            return unavailable_pdf_location_projection(
+                "pdf_location_highlight_authority_missing",
+                session_id=pass_run.session_id,
+                pass_run_id=pass_run.pass_run_id,
+            )
         location_items.append(
             {
                 "item_ref": _string(output_item.get("item_ref")) or f"chunk:{chunk.chunk_id}",
@@ -174,10 +221,8 @@ def pdf_location_projection_for_pass_run(db: Session, *, pass_run: L3PassRun) ->
                 "page_end": int(chunk.page_end),
                 "page_label": _page_label(chunk.page_start, chunk.page_end),
                 "chunk_text_sha256": chunk.chunk_text_sha256,
-                "highlight_spans": _highlight_spans(output_item),
-                "bounded_text_preview": _bounded_preview(
-                    _string(output_item.get("bounded_text_preview")) or chunk.chunk_text
-                ),
+                "highlight_spans": highlight_spans,
+                "bounded_text_preview": _bounded_preview(chunk.chunk_text),
                 "authority_source": "ApsContentChunk.page_start/ApsContentChunk.page_end",
                 "trace": {
                     "session_id": pass_run.session_id,
@@ -224,9 +269,9 @@ def pdf_location_projection_for_pass_run(db: Session, *, pass_run: L3PassRun) ->
             "document_class": document.document_class,
             "quality_status": document.quality_status,
             "page_count": document.page_count,
-            "visual_page_ref_count": len(_visual_page_refs(document.visual_page_refs_json)),
+            "visual_page_ref_count": len(visual_page_refs),
         },
-        "visual_page_refs": _visual_page_refs(document.visual_page_refs_json),
+        "visual_page_refs": visual_page_refs,
         "location_items": location_items,
         "no_side_effects": True,
         "forbidden_runtime": list(_FORBIDDEN_RUNTIME),
@@ -249,6 +294,18 @@ def _read_output_payload(pass_run: L3PassRun) -> tuple[dict[str, Any] | None, st
     return payload, None
 
 
+def _payload_identity_error(payload: dict[str, Any], pass_run: L3PassRun) -> str | None:
+    expected_values = {
+        "session_id": pass_run.session_id,
+        "analysis_plan_id": pass_run.analysis_plan_id,
+        "pass_run_id": pass_run.pass_run_id,
+    }
+    for key, expected in expected_values.items():
+        if _string(payload.get(key)) != _string(expected):
+            return f"pdf_location_payload_{key}_mismatch"
+    return None
+
+
 def _ordered_chunk_ids(payload: dict[str, Any]) -> list[str]:
     chunk_ids: list[str] = []
     output_items = payload.get("output_items_json")
@@ -266,6 +323,43 @@ def _ordered_chunk_ids(payload: dict[str, Any]) -> list[str]:
             if chunk_id and chunk_id not in chunk_ids:
                 chunk_ids.append(chunk_id)
     return chunk_ids
+
+
+def _payload_chunk_hashes(payload: dict[str, Any]) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    output_items = payload.get("output_items_json")
+    if isinstance(output_items, list):
+        for item in output_items:
+            if not isinstance(item, dict):
+                continue
+            _record_payload_chunk_hash(
+                hashes,
+                item.get("chunk_id"),
+                item.get("chunk_text_sha256") or item.get("chunk_hash") or item.get("chunk_sha256"),
+            )
+
+    chunk_summary = payload.get("chunk_summary")
+    if isinstance(chunk_summary, dict):
+        summary_hashes = chunk_summary.get("chunk_hashes")
+        if isinstance(summary_hashes, dict):
+            for chunk_id, chunk_hash in summary_hashes.items():
+                _record_payload_chunk_hash(hashes, chunk_id, chunk_hash)
+        elif isinstance(summary_hashes, list):
+            for item in summary_hashes:
+                if isinstance(item, dict):
+                    _record_payload_chunk_hash(
+                        hashes,
+                        item.get("chunk_id"),
+                        item.get("chunk_text_sha256") or item.get("chunk_hash") or item.get("sha256"),
+                    )
+    return hashes
+
+
+def _record_payload_chunk_hash(hashes: dict[str, str], raw_chunk_id: Any, raw_hash: Any) -> None:
+    chunk_id = _string(raw_chunk_id)
+    chunk_hash = _string(raw_hash)
+    if chunk_id and chunk_hash and chunk_id not in hashes:
+        hashes[chunk_id] = chunk_hash
 
 
 def _output_items_by_chunk(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
