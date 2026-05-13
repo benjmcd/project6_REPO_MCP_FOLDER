@@ -15737,5 +15737,41 @@
       "frontend_only_durable_authority"
     ],
     "validation_status": "progress_check_required"
+  },
+  "source_intake_provider_public_url_durable_state_substrate_proof": {
+    "proof_kind": "source_intake_provider_public_url_durable_state_substrate",
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "branch": "codex/l3-provider-public-state-substrate",
+    "current_main_predecessor_commit": "6cfc65d8fad35d4eaed6e6f2b00810ed9f521fb5",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/339_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DURABLE_STATE_SUBSTRATE.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/338_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_SUBSTRATE_FREEZE.md",
+    "owner_service": "backend/app/services/layer3_provider_public_url_state.py",
+    "fake_provider_service": "backend/app/services/layer3_provider_public_url_fake_provider.py",
+    "migration": "backend/alembic/versions/0024_layer3_provider_public_url_state.py",
+    "test_file": "backend/tests/test_layer3_provider_public_url_state.py",
+    "runtime_behavior_change": true,
+    "route_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "raw_public_url_persistence_or_exposure": false,
+    "blocked_scope": [
+      "provider_public_url_routes",
+      "public_url_delivery_use",
+      "rendered_provider_public_url_controls",
+      "public_url_enabled_true",
+      "public_proxy_url_runtime",
+      "connector_destination_dispatch",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "rag_vector_behavior",
+      "auth_security_behavior",
+      "frontend_only_durable_authority"
+    ],
+    "validation_status": "targeted_tests_passed",
+    "validation": [
+      "python -m pytest .\\backend\\tests\\test_layer3_provider_public_url_state.py -> 5 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_provider_private_signed_url_state.py -> 9 passed",
+      "python .\\tools\\l3-progress-check.py -> PASS",
+      "git diff --check -> CRLF warnings only"
+    ]
   }
 }
