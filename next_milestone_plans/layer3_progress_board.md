@@ -1692,3 +1692,15 @@ Branch-local implementation: doc `333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_
 The implemented guard requires `signed_reference_receipt_id`, resolves durable `L3SignedReferenceReceipt` and `L3SignedReferenceToken` state, requires the token to be `used`, and compares the signed-reference authority snapshot against the source-intake prepare/readiness identity before provider-private prepare can create provider URL authority. Public URLs, connector/destination dispatch, package mutation/reconstruction, source expansion, local-directory authority, web connector retrieval, RAG/vector behavior, broad qualitative behavior, full mockup activation, route/model/migration changes, auth/security behavior, and frontend-only durable authority remain blocked.
 
 Validation status is `branch_local_implemented_targeted_tests_passed` until local targeted backend/API/rendered tests, progress-check, and diff hygiene pass.
+
+## Source Intake Provider Private Signed URL Current-main Sync
+
+Current-main proof/control sync: PR `#924` merged `333_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY.md` at `1ff2e3a4d55e41d1936f067cbc9c8f9a610f448e`. The source-intake provider-private signed URL path is now current-main behavior when source-intake external export/download readiness is backed by same-origin signed-reference use receipt authority.
+
+The sync doc `334_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/reviewThreads were empty, merge state was `CLEAN`, and post-merge `python .\tools\l3-progress-check.py` passed on `project6-origin/main` at `1ff2e3a4d55e41d1936f067cbc9c8f9a610f448e`.
+
+## Source Intake Provider Public URL Boundary Freeze
+
+Planning/control continuation: doc `335_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE.md` selects `source_intake_provider_public_url_boundary` as the next exact downstream boundary after current-main PR `#924`. Current repo authority still blocks provider-public URL behavior through forbidden public URL fields, `public_url_enabled: False` authority rails, same-origin delivery public URL disablement, and the historical provider/public URL governance docs `110`/`111`.
+
+The next code-bearing action is `implement_source_intake_provider_public_url_boundary` only, and only after auditing provider/object-store authority, TTL, revocation, redaction, leak controls, receipt/audit behavior, stale-authority failures, rendered controls, and auth/security implications. Public proxy URL runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, local-directory authority, web connector retrieval, RAG/vector behavior, broad qualitative behavior, full mockup activation, route/model/migration changes, auth/security behavior, and frontend-only durable authority remain blocked.
