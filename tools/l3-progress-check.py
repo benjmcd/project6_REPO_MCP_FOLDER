@@ -542,6 +542,9 @@ SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_CURRENT_MAIN_SYNC = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE = (
     PLANNING_DOCS / "335_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_FREEZE.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_AUDIT = (
+    PLANNING_DOCS / "336_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_AUDIT.md"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -28395,6 +28398,40 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         errors.append(f"{_rel(PROOF_MANIFEST)} missing provider-private current-main sync proof")
     if not isinstance(proof.get("source_intake_provider_public_url_boundary_freeze_proof") if isinstance(proof, dict) else None, dict):
         errors.append(f"{_rel(PROOF_MANIFEST)} missing source-intake provider-public freeze proof")
+
+    audit_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_AUDIT, errors)
+    for term in (
+        "Status: current-main implementation-entry audit; no runtime behavior admitted.",
+        "source_intake_provider_public_url_boundary",
+        "source_intake_provider_public_url_authority_contract",
+        "no provider-public URL row family",
+        "No provider-public URL runtime is admitted.",
+        "No connector/destination dispatch is admitted.",
+    ):
+        if term not in audit_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_AUDIT)} missing provider-public audit term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Boundary Audit",
+            "336_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_BOUNDARY_AUDIT.md",
+            "source_intake_provider_public_url_authority_contract",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_boundary_audit",
+            "source_intake_provider_public_url_authority_contract",
+            "implementation_blocked_pending_authority_contract",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_boundary_audit_proof",
+            "source_intake_provider_public_url_authority_contract",
+            "implementation_blocked_pending_authority_contract",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public audit term: {term}")
 
 def main() -> int:
     errors: list[str] = []
