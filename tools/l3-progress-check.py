@@ -21438,6 +21438,8 @@ def _check_source_intake_execution_start_boundary(errors: list[str]) -> None:
         "22 passed",
         "already_completed",
         "source_intake_execution_result_status_boundary_freeze",
+        "#896",
+        "1bcfd43ad7bae61f0c79f9142eefcc4131a16c8a",
     ):
         if term not in doc_text:
             errors.append(f"{_rel(SOURCE_INTAKE_EXECUTION_START_BOUNDARY)} missing source-intake execution-start implementation term: {term}")
@@ -21458,7 +21460,7 @@ def _check_source_intake_execution_start_boundary(errors: list[str]) -> None:
         errors.append(f"{_rel(MANIFEST)} missing source_intake_execution_start_boundary")
     else:
         for key, expected in {
-            "status": "branch_local_implemented_targeted_tests_passed",
+            "status": "current_main_implemented_targeted_tests_passed",
             "implementation_branch": "codex/l3-source-intake-exec-start",
             "selected_runtime_mode": "source_intake_execution_start_boundary",
             "freeze_predecessor": "source_intake_execution_start_boundary_freeze",
@@ -21466,6 +21468,9 @@ def _check_source_intake_execution_start_boundary(errors: list[str]) -> None:
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/307_SOURCE_INTAKE_EXECUTION_START_BOUNDARY.md",
             "owner_service": "backend/app/services/layer3_workbench.py",
             "targeted_validation_result": "22 passed",
+            "implementation_commit": "aa7a614f70ae41bd36e5ee8bb52bfca023d904ac",
+            "pr": "#896",
+            "current_main_commit": "1bcfd43ad7bae61f0c79f9142eefcc4131a16c8a",
             "pass_run_status": "completed",
             "output_schema_id": "layer3.source_intake_execution_output.v1",
             "source_gate": "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE",
@@ -21483,7 +21488,7 @@ def _check_source_intake_execution_start_boundary(errors: list[str]) -> None:
             errors.append(f"{_rel(MANIFEST)} source_intake_execution_start_boundary missing required guards")
     if isinstance(manifest, dict):
         scope_status = manifest.get("scope_status")
-        if not isinstance(scope_status, dict) or scope_status.get("source_intake_execution_start_boundary") != "branch_local_implemented_targeted_tests_passed":
+        if not isinstance(scope_status, dict) or scope_status.get("source_intake_execution_start_boundary") != "current_main_implemented_targeted_tests_passed":
             errors.append(f"{_rel(MANIFEST)} missing source-intake execution-start implementation scope status")
     proof = _load_json(PROOF_MANIFEST, errors)
     proof_entry = proof.get("source_intake_execution_start_boundary_proof") if isinstance(proof, dict) else None
