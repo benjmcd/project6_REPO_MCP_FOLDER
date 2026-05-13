@@ -7,7 +7,11 @@ SOURCE_BOUNDARY_CONTRACT_SCHEMA_ID = "layer3.source_boundary_contract.v1"
 SOURCE_BOUNDARY_MODE = "supported_source_classes_plus_operator_source_intake"
 
 SUPPORTED_SOURCE_CLASSES = ("dataset_version", "aps_content_document")
-SOURCE_INTAKE_SUPPORTED_MODES = ("operator_single_upload_source_intake",)
+SOURCE_INTAKE_SUPPORTED_MODES = (
+    "operator_single_upload_source_intake",
+    "operator_source_intake_inventory_read_only",
+    "operator_source_intake_material_preview_read_only",
+)
 UNSUPPORTED_SOURCE_CLASSES = (
     "rag_vector_index",
     "arbitrary_local_directory",
@@ -74,9 +78,11 @@ def source_boundary_contract() -> dict[str, Any]:
         "source_intake_upload_enabled": True,
         "source_intake_record_enabled": True,
         "source_intake_upload_route": "/api/v1/layer3/source/intake/upload",
+        "source_intake_inventory_route": "/api/v1/layer3/source/intake/inventory",
+        "source_intake_material_preview_route": "/api/v1/layer3/source/intake/{source_intake_record_id}/preview",
         "generic_source_upload_preflight_field_enabled": False,
-        "operator_upload_material_preview_enabled": False,
-        "operator_upload_material_preview_requires_later_freeze": True,
+        "operator_upload_material_preview_enabled": True,
+        "operator_upload_material_preview_requires_later_freeze": False,
         "local_directory_enabled": False,
         "broad_file_upload_enabled": False,
         "web_connector_enabled": False,
