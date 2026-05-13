@@ -46,3 +46,9 @@ The source of truth for frame identity, dimensions, and rendered selector mappin
 - no full durable mockup activation;
 - no auth/security widening;
 - no claim that current rendered theme is pixel-perfect before the visual-diff harness exists and passes.
+
+## Review-debt settlement authority clarifications
+
+- The frame manifest remains authoritative for frame identity, source path, repository path, checksum, size, and `rendered_projection`; raw width/height dimensions are image-decode observations captured by the harness, not standalone manifest fields.
+- Shared rendered selectors are allowed only when each frame has a distinct `rendered_projection` capture record. The harness must record per-frame capture state by projection id so different frames mapped to the same selector cannot collapse into a single undifferentiated screenshot.
+- `rendered_ui_behavior_change` remains `false` for this freeze; the freeze defines the proof contract and does not alter rendered UI behavior by itself.
