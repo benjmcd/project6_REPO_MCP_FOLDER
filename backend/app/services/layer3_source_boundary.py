@@ -4,9 +4,10 @@ from typing import Any
 
 
 SOURCE_BOUNDARY_CONTRACT_SCHEMA_ID = "layer3.source_boundary_contract.v1"
-SOURCE_BOUNDARY_MODE = "supported_source_classes_only"
+SOURCE_BOUNDARY_MODE = "supported_source_classes_plus_operator_source_intake"
 
 SUPPORTED_SOURCE_CLASSES = ("dataset_version", "aps_content_document")
+SOURCE_INTAKE_SUPPORTED_MODES = ("operator_single_upload_source_intake",)
 UNSUPPORTED_SOURCE_CLASSES = (
     "rag_vector_index",
     "arbitrary_local_directory",
@@ -65,10 +66,17 @@ def source_boundary_contract() -> dict[str, Any]:
         "schema_id": SOURCE_BOUNDARY_CONTRACT_SCHEMA_ID,
         "mode": SOURCE_BOUNDARY_MODE,
         "supported_source_classes": list(SUPPORTED_SOURCE_CLASSES),
+        "supported_source_intake_modes": list(SOURCE_INTAKE_SUPPORTED_MODES),
         "unsupported_source_classes": list(UNSUPPORTED_SOURCE_CLASSES),
         "deferred_capabilities": list(SOURCE_EXPANSION_DEFERRED_CAPABILITIES),
         "forbidden_runtime_fields": list(SOURCE_BOUNDARY_FORBIDDEN_RUNTIME_FIELDS),
         "source_upload_enabled": False,
+        "source_intake_upload_enabled": True,
+        "source_intake_record_enabled": True,
+        "source_intake_upload_route": "/api/v1/layer3/source/intake/upload",
+        "generic_source_upload_preflight_field_enabled": False,
+        "operator_upload_material_preview_enabled": False,
+        "operator_upload_material_preview_requires_later_freeze": True,
         "local_directory_enabled": False,
         "broad_file_upload_enabled": False,
         "web_connector_enabled": False,

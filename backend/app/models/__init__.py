@@ -41,6 +41,7 @@ from app.models.models import (
     L3RetrievalEvent,
     L3SelectionManifest,
     L3Session,
+    L3SourceIntakeRecord,
     L3SignedReferenceAuditEvent,
     L3SignedReferenceReceipt,
     L3SignedReferenceRevocation,
