@@ -2,9 +2,19 @@
 
 ## Status
 
-Status: branch-local implementation/proof for `source_intake_execution_result_review_boundary`.
+Status: current-main implementation/proof for `source_intake_execution_result_review_boundary`.
 
 Branch: `codex/l3-source-intake-result-review`.
+
+Implementation commit: `d791416c`.
+
+Merged PR: `#902`.
+
+Merge commit/current-main authority: `ff4dc0a36aef7a9e1bb60ca66a246f53e0545792`.
+
+GitHub checks: `backend-layer3-api` success and `test` success.
+
+Review threads: empty; no comments or reviews required action.
 
 Freeze predecessor: `310_SOURCE_INTAKE_EXECUTION_RESULT_REVIEW_BOUNDARY_FREEZE.md`.
 
@@ -74,6 +84,8 @@ Focused test coverage in `test_execution_start_runs_source_intake_selected_pass_
 - tampered output payload still fails closed before status/review admission
 
 Targeted validation: `pytest .\backend\tests\test_layer3_workbench.py` passed with 22 tests.
+
+Current-main validation: PR `#902` merged at `ff4dc0a36aef7a9e1bb60ca66a246f53e0545792` with `backend-layer3-api` and `test` checks successful, no comments/reviews/reviewThreads requiring action, and `python .\tools\l3-progress-check.py` passing after fast-forwarding local `main`.
 
 ## Explicit Non-Goals
 
