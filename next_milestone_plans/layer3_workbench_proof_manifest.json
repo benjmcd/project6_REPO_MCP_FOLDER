@@ -15475,5 +15475,48 @@
       "pytest": "25 passed, 3 warnings",
       "playwright_chromium": "34 passed"
     }
+  },
+  "source_intake_external_export_download_signed_reference_current_main_sync_proof": {
+    "proof_kind": "source_intake_external_export_download_signed_reference_current_main_sync",
+    "status": "completed_current_main_sync_pr_922",
+    "branch": "codex/l3-source-intake-postmerge-sync-922",
+    "merged_pr": "#922",
+    "merge_commit": "d4df0c4892303a3fd05fd1c6a87edeaf880682cf",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/331_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_CURRENT_MAIN_SYNC.md",
+    "implemented_boundary_doc": "next_milestone_plans/Layer3_planning_docs/330_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_BOUNDARY.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "github_checks_passed": [
+      "backend-layer3-api",
+      "test"
+    ],
+    "review_threads": "empty",
+    "post_merge_validation": "python .\\tools\\l3-progress-check.py -> PASS",
+    "next_boundary": "source_intake_provider_private_signed_url_boundary_freeze"
+  },
+  "source_intake_provider_private_signed_url_boundary_freeze_proof": {
+    "proof_kind": "source_intake_provider_private_signed_url_boundary_freeze",
+    "status": "completed_source_intake_provider_private_signed_url_boundary_freeze",
+    "branch": "codex/l3-source-intake-postmerge-sync-922",
+    "current_main_predecessor_commit": "d4df0c4892303a3fd05fd1c6a87edeaf880682cf",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/332_SOURCE_INTAKE_PROVIDER_PRIVATE_SIGNED_URL_BOUNDARY_FREEZE.md",
+    "repo_confirmed_failure_boundary": "source_intake_provider_private_signed_url_not_admitted",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "frozen_future_scope": [
+      "existing_provider_private_signed_url_prepare_status_revoke_contracts",
+      "source_intake_external_export_download_signed_reference_gate",
+      "token-only same-origin signed-reference authority",
+      "source-intake identity and APS artifact identity"
+    ],
+    "excluded_scope": [
+      "provider_public_url_behavior_remains_blocked",
+      "connector_destination_dispatch_remains_blocked",
+      "package_mutation_remains_blocked",
+      "source_expansion_and_rag_vector_behavior_remain_blocked",
+      "rendered_controls_expose_no_public_url_or_connector_destination_controls"
+    ],
+    "validation_status": "planning_control_freeze_only_progress_check_required",
+    "next_boundary": "source_intake_provider_private_signed_url_boundary"
   }
 }
