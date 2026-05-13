@@ -22,6 +22,7 @@ from app.services.layer3_provider_public_url_state import (
     PROVIDER_PUBLIC_URL_STATE_REVOKED,
     ProviderPublicUrlStateError,
     record_prepared_provider_public_url_receipt,
+    revoke_provider_public_url_receipt,
 )
 from app.services.layer3_response_contract import base_response
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -29,12 +30,14 @@ from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 PROVIDER_PUBLIC_URL_PREPARE_SCHEMA_ID = "layer3.provider_public_url.prepare.v1"
 PROVIDER_PUBLIC_URL_STATUS_SCHEMA_ID = "layer3.provider_public_url.status.v1"
+PROVIDER_PUBLIC_URL_REVOKE_SCHEMA_ID = "layer3.provider_public_url.revoke.v1"
 PROVIDER_PUBLIC_URL_DELIVERY_MODE = "provider_public_url"
 PROVIDER_PUBLIC_URL_OPERATOR_DECISION = "prepare_provider_public_url"
+PROVIDER_PUBLIC_URL_REVOKE_OPERATOR_DECISION = "revoke_provider_public_url"
 PROVIDER_PUBLIC_URL_DEFAULT_TTL_SECONDS = 300
 PROVIDER_PUBLIC_URL_FAKE_PROVIDER_AUTHORITY = "layer3_provider_public_url_fake_provider"
 
-PROVIDER_PUBLIC_URL_ALLOWED_FIELDS = frozenset(
+PROVIDER_PUBLIC_URL_PREPARE_ALLOWED_FIELDS = frozenset(
     {
         "client_request_id",
         "provider_private_signed_url_receipt_id",
@@ -45,12 +48,33 @@ PROVIDER_PUBLIC_URL_ALLOWED_FIELDS = frozenset(
         "decision_notes",
     }
 )
-PROVIDER_PUBLIC_URL_REQUIRED_FIELDS = frozenset(
+PROVIDER_PUBLIC_URL_PREPARE_REQUIRED_FIELDS = frozenset(
     {
         "client_request_id",
         "provider_private_signed_url_receipt_id",
         "recipient_scope",
         "delivery_mode",
+        "operator_decision",
+    }
+)
+PROVIDER_PUBLIC_URL_REVOKE_ALLOWED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "provider_public_url_receipt_id",
+        "idempotency_key",
+        "revoked_by",
+        "revocation_reason",
+        "operator_decision",
+        "decision_notes",
+    }
+)
+PROVIDER_PUBLIC_URL_REVOKE_REQUIRED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "provider_public_url_receipt_id",
+        "idempotency_key",
+        "revoked_by",
+        "revocation_reason",
         "operator_decision",
     }
 )
@@ -86,12 +110,12 @@ def _text(payload: dict[str, Any], key: str) -> str:
     return "" if value is None else str(value).strip()
 
 
-def _blocked_fields(payload: dict[str, Any]) -> list[str]:
-    return sorted(field for field, value in payload.items() if field not in PROVIDER_PUBLIC_URL_ALLOWED_FIELDS and value is not None)
+def _blocked_fields(payload: dict[str, Any], *, allowed_fields: frozenset[str]) -> list[str]:
+    return sorted(field for field, value in payload.items() if field not in allowed_fields and value is not None)
 
 
-def _missing_fields(payload: dict[str, Any]) -> list[str]:
-    return sorted(field for field in PROVIDER_PUBLIC_URL_REQUIRED_FIELDS if not _text(payload, field))
+def _missing_fields(payload: dict[str, Any], *, required_fields: frozenset[str]) -> list[str]:
+    return sorted(field for field in required_fields if not _text(payload, field))
 
 
 def _ttl_seconds(payload: dict[str, Any]) -> int:
@@ -117,7 +141,7 @@ def _ttl_seconds(payload: dict[str, Any]) -> int:
     return ttl
 
 
-def _require_fixed_values(payload: dict[str, Any]) -> None:
+def _require_prepare_fixed_values(payload: dict[str, Any]) -> None:
     expected = {
         "delivery_mode": PROVIDER_PUBLIC_URL_DELIVERY_MODE,
         "operator_decision": PROVIDER_PUBLIC_URL_OPERATOR_DECISION,
@@ -130,6 +154,17 @@ def _require_fixed_values(payload: dict[str, Any]) -> None:
             status="invalid",
             blocked_fields=mismatches,
             next_allowed_actions=["submit_provider_public_url_prepare_fixed_values"],
+        )
+
+
+def _require_revoke_fixed_values(payload: dict[str, Any]) -> None:
+    if _text(payload, "operator_decision") != PROVIDER_PUBLIC_URL_REVOKE_OPERATOR_DECISION:
+        raise Layer3WorkbenchError(
+            "provider_public_url_revoke_fixed_value_mismatch",
+            "Provider-public URL revoke request contains non-admitted fixed-value fields.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+            next_allowed_actions=["submit_provider_public_url_revoke_fixed_values"],
         )
 
 
@@ -296,7 +331,7 @@ def provider_public_url_prepare(
     *,
     now_epoch: int | None = None,
 ) -> dict[str, Any]:
-    blocked = _blocked_fields(payload)
+    blocked = _blocked_fields(payload, allowed_fields=PROVIDER_PUBLIC_URL_PREPARE_ALLOWED_FIELDS)
     if blocked:
         raise Layer3WorkbenchError(
             "provider_public_url_prepare_scope_not_admitted",
@@ -305,7 +340,7 @@ def provider_public_url_prepare(
             blocked_fields=blocked,
             next_allowed_actions=["submit_bounded_provider_public_url_prepare_request"],
         )
-    missing = _missing_fields(payload)
+    missing = _missing_fields(payload, required_fields=PROVIDER_PUBLIC_URL_PREPARE_REQUIRED_FIELDS)
     if missing:
         raise Layer3WorkbenchError(
             "missing_provider_public_url_prepare_fields",
@@ -314,7 +349,7 @@ def provider_public_url_prepare(
             blocked_fields=missing,
             next_allowed_actions=["submit_complete_provider_public_url_prepare_request"],
         )
-    _require_fixed_values(payload)
+    _require_prepare_fixed_values(payload)
     effective_now = int(time.time() if now_epoch is None else now_epoch)
     ttl_seconds = _ttl_seconds(payload)
     authority_basis = _private_authority_basis(
@@ -396,6 +431,67 @@ def provider_public_url_status(
         schema_id=PROVIDER_PUBLIC_URL_STATUS_SCHEMA_ID,
         request_id=f"provider-public-url-status:{provider_public_url_receipt_id}",
         status="ok",
+        receipt=receipt,
+        authority=authority,
+        audit=audit,
+        now_epoch=effective_now,
+    )
+
+
+def provider_public_url_revoke(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    blocked = _blocked_fields(payload, allowed_fields=PROVIDER_PUBLIC_URL_REVOKE_ALLOWED_FIELDS)
+    if blocked:
+        raise Layer3WorkbenchError(
+            "provider_public_url_revoke_scope_not_admitted",
+            "Provider-public URL revoke includes non-admitted fields.",
+            status="invalid",
+            blocked_fields=blocked,
+            next_allowed_actions=["submit_bounded_provider_public_url_revoke_request"],
+        )
+    missing = _missing_fields(payload, required_fields=PROVIDER_PUBLIC_URL_REVOKE_REQUIRED_FIELDS)
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_provider_public_url_revoke_fields",
+            f"Provider-public URL revoke request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_provider_public_url_revoke_request"],
+        )
+    _require_revoke_fixed_values(payload)
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    try:
+        state = revoke_provider_public_url_receipt(
+            db,
+            provider_public_url_receipt_id=_text(payload, "provider_public_url_receipt_id"),
+            idempotency_key=_text(payload, "idempotency_key"),
+            revoked_by=_text(payload, "revoked_by"),
+            revocation_reason=_text(payload, "revocation_reason"),
+            now_epoch=effective_now,
+            request_id=_text(payload, "client_request_id"),
+        )
+    except ProviderPublicUrlStateError as exc:
+        raise _state_error_to_workbench(exc) from exc
+
+    receipt = db.get(L3ProviderPublicUrlReceipt, state.provider_public_url_receipt_id)
+    authority = db.get(L3ProviderPublicUrlObjectAuthority, state.provider_public_url_object_authority_id)
+    audit = db.get(L3ProviderPublicUrlAuditEvent, state.provider_public_url_audit_event_id)
+    if receipt is None or authority is None:
+        raise Layer3WorkbenchError(
+            "provider_public_url_state_missing_after_revoke",
+            "Provider-public URL durable state was not readable after revoke.",
+            status="conflict",
+            blocked_fields=["provider_public_url_receipt_id"],
+            next_allowed_actions=["inspect_provider_public_url_status"],
+        )
+    return _receipt_response(
+        schema_id=PROVIDER_PUBLIC_URL_REVOKE_SCHEMA_ID,
+        request_id=_text(payload, "client_request_id"),
+        status="revoked",
         receipt=receipt,
         authority=authority,
         audit=audit,
