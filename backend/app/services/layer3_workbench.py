@@ -385,6 +385,7 @@ PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.package_review_preview.v1"
+SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.source_intake_package_review_preview.v1"
 QUAL_APS_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.qual_aps_package_review_preview.v1"
 PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.package_construction_commit.v1"
 QUAL_APS_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.qual_aps_package_construction_commit.v1"
@@ -484,6 +485,7 @@ QUAL_APS_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "connector_dispatch",
     "provider_public_url",
 )
+SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = QUAL_APS_PREVIEW_DOWNSTREAM_UNAVAILABLE
 QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
     "handoff",
@@ -2703,6 +2705,35 @@ def _source_intake_result_review_source_admitted(
         and bool(str(output_metadata_summary.get("output_hash") or "").strip())
         and isinstance(storage_pointer, dict)
         and storage_pointer.get("absolute_path_exposed") is False
+    )
+
+
+def _source_intake_package_review_preview_hash(
+    *,
+    session_id: str,
+    analysis_plan_id: str,
+    pass_run_id: str,
+    preview_id: str,
+    preview_hash: str,
+    result_review_record_ref: str | None,
+    output_metadata_summary: dict[str, Any],
+) -> str:
+    return _stable_id(
+        "l3-source-intake-package-preview",
+        {
+            "schema_id": "layer3.source_intake_package_review_preview_hash.v1",
+            "session_id": session_id,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_id,
+            "preview_hash": preview_hash,
+            "result_review_record_ref": result_review_record_ref,
+            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+            "output_hash": output_metadata_summary.get("output_hash"),
+            "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+            "candidate_id": output_metadata_summary.get("candidate_id"),
+            "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        },
     )
 
 
@@ -5042,11 +5073,19 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
-    _raise_if_source_intake_downstream_not_admitted(
+    source_intake_preview = _source_intake_result_review_source_admitted(
         status_body=status_body,
-        action_label="Package-review preview",
-        error_code="source_intake_package_review_preview_not_admitted",
+        output_metadata_summary=output_metadata_summary,
     )
+    if status_body.get("engine_family") == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW and not source_intake_preview:
+        raise Layer3WorkbenchError(
+            "source_intake_package_review_preview_not_admitted",
+            "Source-intake package-review preview requires exact admitted source-intake result/status output.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+            next_allowed_actions=["inspect_execution_result_status"],
+        )
     session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).first()
     if session is None or pass_run is None:
@@ -5147,6 +5186,99 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             next_allowed_actions=["inspect_existing_package_state"],
         )
+
+    if source_intake_preview:
+        downstream_unavailable = SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
+        package_review_preview_hash = _source_intake_package_review_preview_hash(
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            preview_id=preview_id,
+            preview_hash=preview_hash,
+            result_review_record_ref=str(review_state.get("review_record_ref") or "") or None,
+            output_metadata_summary=output_metadata_summary,
+        )
+        return {
+            **_base_response(
+                SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID,
+                request_id=request_id,
+                status="available",
+            ),
+            "session_id": session_id,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
+            "package_review_preview_hash": package_review_preview_hash,
+            "analysis_run_id": None,
+            "result_status_available": True,
+            "result_review_state": review_state.get("review_state"),
+            "result_review_record_ref": review_state.get("review_record_ref"),
+            "package_review_preview_enabled": True,
+            "package_commit_enabled": False,
+            "package_review_enabled": False,
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "aps_handoff_enabled": False,
+            "external_export_download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_url_enabled": False,
+            "candidate_package_kinds": package_review_candidate_projection(
+                package_commit_enabled=False,
+                readiness_reason="source-intake package construction requires a later boundary",
+            ),
+            "package_owner_compatibility": {
+                "schema_id": "layer3.source_intake_package_owner_compatibility.v1",
+                "owner_service": "source_intake_package_construction_not_admitted",
+                "assessment_basis": [
+                    "approved_source_intake_execution_result_review",
+                    "read_only_source_intake_output_metadata",
+                    "operator_uploaded_single_source_identity",
+                ],
+                "materialize_package_entry_callable": False,
+                "workbench_package_commit_callable": False,
+                "preview_candidate_projection_compatible": True,
+                "construction_compatible_with_current_workbench_state": False,
+                "missing_owner_service_inputs": ["source_intake_package_construction_boundary"],
+                "selected_pass_status": pass_run.status,
+                "pass_type": pass_run.pass_type,
+                "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+                "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+                "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+                "status": "source_intake_package_construction_not_admitted",
+                "reason": "Source-intake package-review preview is read-only until package construction is separately frozen.",
+            },
+            "blocked_reasons": [],
+            "downstream_unavailable": list(downstream_unavailable),
+            "next_state": PACKAGE_REVIEW_PREVIEW_READY_STATE,
+            "output_metadata_summary": output_metadata_summary,
+            "trace_summary": review_state.get("trace_summary"),
+            "reviewed_output_item_summary": {
+                "reviewed_item_count": len(review_state.get("reviewed_output_items") or []),
+                "unresolved_trace_count": int(review_state.get("unresolved_trace_count") or 0),
+            },
+            "unresolved_trace_count": int(review_state.get("unresolved_trace_count") or 0),
+            "pass_type": pass_run.pass_type,
+            "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
+            "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
+            "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
+            "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
+            "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
+            "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+            "source_dataset_version_ids": [],
+            "cohort_shape": None,
+            "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+            "candidate_id": output_metadata_summary.get("candidate_id"),
+            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+            "output_payload_hash": output_metadata_summary.get("output_hash"),
+            "authority_rail": _authority_rail(
+                session_id=session_id,
+                current_gate="package",
+                persistence_mode="read_only_source_intake_package_review_preview",
+                downstream_unavailable=downstream_unavailable,
+                execution_enabled=False,
+                package_review_enabled=False,
+            ),
+        }
 
     if status_body.get("engine_family") == ENGINE_FAMILY_QUAL_APS_DOCUMENT:
         qualitative_basis = _require_qualitative_aps_package_review_authority(
