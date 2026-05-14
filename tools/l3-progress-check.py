@@ -759,6 +759,9 @@ LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE = (
 LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "410_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT = (
+    PLANNING_DOCS / "411_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -32318,6 +32321,95 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing next-runtime-tranche authority matrix freeze sync term: {term}"
+                )
+
+    next_runtime_tranche_authority_matrix_audit_text = _read_required_text(
+        LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `conduct_layer3_next_runtime_tranche_authority_matrix_contract_audit`.",
+        "411_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT.md",
+        "410_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC.md",
+        "4c00c3ba54dffcb28f314f47162ed2132a803f05",
+        "layer3_next_runtime_tranche_authority_matrix_contract_without_mutation_or_dispatch",
+        "Result: `no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent`.",
+        "STATE_ACTION_CONTRACT_SCHEMA_ID = \"layer3.state_action_contract.v1\"",
+        "state_action_matrix",
+        "admitted_capabilities",
+        "deferred_capabilities",
+        "backend/app/services/layer3_workbench.py",
+        "backend/app/api/layer3.py",
+        "backend/app/review_ui/static/layer3.js",
+        "backend/tests/test_layer3_api.py",
+        "backend/tests/test_layer3_workbench.py",
+        "no exact `layer3_next_runtime_tranche_authority_matrix_contract` service",
+        "no exact route or API response DTO",
+        "no exact row and column vocabulary",
+        "no exact admission result vocabulary",
+        "no rendered operator panel",
+        "no behavior-specific negative-test matrix",
+        "Entry decision: `no_runtime_now`.",
+        "Runtime status: `not_implemented`.",
+        "No runtime behavior",
+        "current_main_sync_layer3_next_runtime_tranche_authority_matrix_contract_audit_after_merge",
+    ):
+        if term not in next_runtime_tranche_authority_matrix_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT)} missing next-runtime-tranche authority matrix audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Next Runtime Tranche Authority Matrix Contract Audit",
+            "411_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT.md",
+            "conduct_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            "STATE_ACTION_CONTRACT_SCHEMA_ID = \"layer3.state_action_contract.v1\"",
+            "no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent",
+            "not an exact next-runtime-tranche authority matrix contract",
+            "current_main_sync_layer3_next_runtime_tranche_authority_matrix_contract_audit_after_merge",
+        ),
+        MANIFEST: (
+            "layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            "planning_control_audit",
+            "codex/l3-authority-matrix-contract-audit",
+            "411_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT.md",
+            "4c00c3ba54dffcb28f314f47162ed2132a803f05",
+            "conduct_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            "layer3_next_runtime_tranche_authority_matrix_contract_without_mutation_or_dispatch",
+            '"entry_decision": "no_runtime_now"',
+            '"runtime_status": "not_implemented"',
+            "no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent",
+            '"backend_route_behavior_change": false',
+            '"service_behavior_change": false',
+            '"schema_shape_change": false',
+            "current_main_sync_layer3_next_runtime_tranche_authority_matrix_contract_audit_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_next_runtime_tranche_authority_matrix_contract_audit_proof",
+            "planning_control_audit",
+            "411_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT.md",
+            "layer3_next_runtime_tranche_authority_matrix_contract_without_mutation_or_dispatch",
+            "conduct_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            "no_runtime_now",
+            "not_implemented",
+            "no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent",
+            "no exact layer3_next_runtime_tranche_authority_matrix_contract service",
+            "no exact route or API response DTO",
+            "no exact admission result vocabulary",
+            "no behavior-specific negative-test matrix",
+            "no backend route behavior",
+            "no service behavior",
+            "no schema shape",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_next_runtime_tranche_authority_matrix_contract_audit_after_merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing next-runtime-tranche authority matrix audit term: {term}"
                 )
 
 def main() -> int:
