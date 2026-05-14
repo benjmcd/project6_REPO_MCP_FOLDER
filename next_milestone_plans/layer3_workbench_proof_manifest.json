@@ -18001,5 +18001,34 @@
   },
   "latest_layer3_next_runtime_tranche_authority_matrix_contract_audit_current_main_sync_branch": "codex/l3-authority-matrix-contract-audit-sync",
   "latest_layer3_next_runtime_tranche_authority_matrix_contract_audit_current_main_sync_live_behavior_change": false,
-  "latest_layer3_next_runtime_tranche_authority_matrix_contract_audit_current_main_sync_summary": "Doc 412 proof entry records current-main sync for PR #1007 merge commit 8e046ceb613f52f91c062440253ced3cba525a51; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next posture is await_next_exact_layer3_authority_contract_requirement_after_authority_matrix_no_runtime_sync."
+  "latest_layer3_next_runtime_tranche_authority_matrix_contract_audit_current_main_sync_summary": "Doc 412 proof entry records current-main sync for PR #1007 merge commit 8e046ceb613f52f91c062440253ced3cba525a51; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next posture is await_next_exact_layer3_authority_contract_requirement_after_authority_matrix_no_runtime_sync.",
+  "layer3_authority_contract_requirement_freeze_proof": {
+    "proof_kind": "layer3_authority_contract_requirement_freeze",
+    "status": "planning_control_freeze",
+    "branch": "codex/l3-authority-contract-requirement-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/413_LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_FREEZE.md",
+    "current_main_preflight_commit": "9836a10eb9bceb44f056043b4984628bbe0bea25",
+    "proof_terms": [
+      "await_next_exact_layer3_authority_contract_requirement_after_authority_matrix_no_runtime_sync",
+      "select_next_layer3_authority_contract_requirement_after_authority_matrix_no_runtime_sync",
+      "layer3_next_runtime_tranche_authority_matrix_contract_requirement_definition_without_runtime_exposure_or_dispatch",
+      "layer3_authority_contract_requirement_freeze",
+      "freeze_only",
+      "not_implemented",
+      "conduct_layer3_authority_contract_requirement_audit",
+      "no_runtime_now_layer3_authority_contract_requirement_absent",
+      "current_main_sync_layer3_authority_contract_requirement_freeze_after_merge",
+      "no runtime behavior",
+      "no backend route behavior",
+      "no service behavior",
+      "no schema shape",
+      "no model change",
+      "no migration change",
+      "no frontend-only durable authority"
+    ],
+    "next_required_action_after_merge": "current_main_sync_layer3_authority_contract_requirement_freeze_after_merge"
+  },
+  "latest_layer3_authority_contract_requirement_freeze_branch": "codex/l3-authority-contract-requirement-freeze",
+  "latest_layer3_authority_contract_requirement_freeze_live_behavior_change": false,
+  "latest_layer3_authority_contract_requirement_freeze_summary": "Doc 413 proof entry records the Layer 3 authority contract requirement freeze. It is planning/control only and requires current-main sync after merge before the authority contract requirement audit."
 }
