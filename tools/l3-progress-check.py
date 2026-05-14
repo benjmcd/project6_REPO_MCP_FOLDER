@@ -1092,6 +1092,10 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SO
     PLANNING_DOCS
     / "497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "498_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -39818,6 +39822,92 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing provider-public delivery/use no-runtime authority audit term: {term}"
+                )
+
+    provider_public_delivery_use_no_runtime_audit_sync_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync`.",
+        "498_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+        "497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+        "#1093",
+        "d283ec039dfb8796d6062eee402a2b6a67fb1d51",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement",
+        "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime",
+        "Entry decision remains `read_only_current_main_control_surface_only`.",
+        "Selected implementation action remains `none`.",
+        "Runtime status remains `not_implemented`.",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in provider_public_delivery_use_no_runtime_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC)} missing provider-public delivery/use no-runtime authority audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Provider-Public Delivery/Use No-Runtime Boundary Authority Audit Current-Main Sync",
+            "498_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1093",
+            "d283ec039dfb8796d6062eee402a2b6a67fb1d51",
+            "reviewThreads totalCount was `0`",
+            "current_main_synced_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement",
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime",
+            "selected implementation action remains `none`",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_current_main_sync",
+            "current_main_synced_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement",
+            "codex/l3-provider-public-no-runtime-boundary-authority-audit-sync",
+            "498_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1093",
+            "d283ec039dfb8796d6062eee402a2b6a67fb1d51",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"selected_implementation_action": "none"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_current_main_sync_proof",
+            "current_main_synced_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement",
+            "codex/l3-provider-public-no-runtime-boundary-authority-audit-sync",
+            "498_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1093",
+            "d283ec039dfb8796d6062eee402a2b6a67fb1d51",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "selected implementation action none",
+            "no implementation",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public delivery/use no-runtime authority audit sync term: {term}"
                 )
 
 def main() -> int:
