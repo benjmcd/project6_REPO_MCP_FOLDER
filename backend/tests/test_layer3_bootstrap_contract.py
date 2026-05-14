@@ -18,6 +18,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
         active_gate_labels=layer3_workbench.ACTIVE_GATES,
         unavailable_gate_labels=layer3_workbench.DOWNSTREAM_UNAVAILABLE,
         state_action_contract=workbench_body["state_action_contract"],
+        authority_matrix_contract=workbench_body["authority_matrix_contract"],
         authority_rail=workbench_body["authority_rail"],
     )
     direct_body["request_id"] = workbench_body["request_id"]
@@ -25,6 +26,10 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
 
     assert direct_body == workbench_body
     assert direct_body["schema_id"] == BOOTSTRAP_SCHEMA_ID
+    assert (
+        direct_body["authority_matrix_contract"]
+        == workbench_body["authority_matrix_contract"]
+    )
     assert direct_body["features"] == dict(BOOTSTRAP_FEATURE_FLAGS)
     assert direct_body["features"]["single_aps_doc_qualitative_execution"] is True
     assert direct_body["features"]["plan_revision_recovery"] is True

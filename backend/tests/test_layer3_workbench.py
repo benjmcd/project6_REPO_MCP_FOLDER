@@ -50,6 +50,14 @@ from app.models.models import (
 from app.services import layer3_provider_private_signed_url, layer3_workbench
 from app.services.layer3_workbench import Layer3WorkbenchError
 from app.services.layer3_state_action_contract import STATE_ACTION_CONTRACT_SCHEMA_ID
+from app.services.layer3_authority_matrix_contract import (
+    AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID,
+    AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT,
+    AUTHORITY_MATRIX_FAIL_CLOSED_RESULT,
+    AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT,
+    AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT,
+    AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT,
+)
 
 
 @pytest.fixture()
@@ -1447,6 +1455,34 @@ def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
     assert "gate_b_decision" in contract["action_ids"]
     assert "external_export_download_deliver" in contract["action_ids"]
     assert "rag_vector_retrieval" not in contract["action_ids"]
+    authority_matrix = result["authority_matrix_contract"]
+    assert authority_matrix["schema_id"] == AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID
+    assert authority_matrix["exposure_context"] == AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT
+    assert authority_matrix["fail_closed_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
+    assert authority_matrix["source_contract_ids"] == [
+        STATE_ACTION_CONTRACT_SCHEMA_ID,
+        contract["state_model_schema_id"],
+    ]
+    assert {
+        "route_api_posture",
+        "response_dto_posture",
+        "rendered_review_posture",
+        "side_effect_policy",
+    } <= {row["row"] for row in authority_matrix["authority_matrix"]}
+    authority_rows = {row["row"]: row for row in authority_matrix["authority_matrix"]}
+    assert (
+        authority_rows["workbench_exposure_substrate"]["admission_result"]
+        == AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT
+    )
+    assert (
+        authority_rows["route_api_posture"]["admission_result"]
+        == AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT
+    )
+    assert authority_rows["route_api_posture"]["blocked_scope"] == ["separate_authority_matrix_route"]
+    assert (
+        authority_rows["response_dto_posture"]["admission_result"]
+        == AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT
+    )
     assert result["authority_rail"]["browser_only_state"] == [
         "expanded_rows",
         "hidden_uncommitted_candidates",
@@ -1458,6 +1494,7 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
     readiness = layer3_workbench.readiness_contract()
     state_model = readiness["state_model"]
     contract = readiness["state_action_contract"]
+    authority_matrix = readiness["authority_matrix_contract"]
 
     assert contract["state_model_schema_id"] == state_model["schema_id"]
     assert contract["authority_order"] == state_model["authority_order"]
@@ -1482,6 +1519,19 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
         "record_replacement_package_set_authority"
     ]
     assert contract["decision_sets"]["package_supersession_commit"] == ["commit_package_supersession"]
+    assert authority_matrix["schema_id"] == AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID
+    assert authority_matrix["source_contract_ids"] == [STATE_ACTION_CONTRACT_SCHEMA_ID, state_model["schema_id"]]
+    assert authority_matrix["fail_closed_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
+    blocked_rows = {row["row"]: row for row in authority_matrix["authority_matrix"]}
+    assert blocked_rows["route_api_posture"]["admission_result"] == AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT
+    assert blocked_rows["route_api_posture"]["blocked_scope"] == ["separate_authority_matrix_route"]
+    assert blocked_rows["response_dto_posture"]["admission_result"] == AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT
+    assert set(blocked_rows["response_dto_posture"]["blocked_scope"]) == {
+        "schema_model_migration_change",
+        "separate_response_dto_module_change",
+    }
+    assert blocked_rows["rendered_review_posture"]["admission_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
+    assert "runtime_behavior" in blocked_rows["side_effect_policy"]["blocked_scope"]
 
     admitted_capabilities = {item["capability"]: item for item in contract["admitted_capabilities"]}
     assert admitted_capabilities["single_aps_doc_qualitative_execution"]["admitted"] is True

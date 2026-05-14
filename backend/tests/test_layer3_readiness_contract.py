@@ -13,11 +13,13 @@ from app.services.layer3_readiness_contract import (
 def test_layer3_readiness_contract_is_shared() -> None:
     state_model = layer3_workbench._workbench_state_model()
     state_action_contract = layer3_workbench._workbench_state_action_contract()
+    authority_matrix_contract = layer3_workbench._workbench_authority_matrix_contract()
 
     direct = build_readiness_contract(
         api_root=layer3_workbench.API_ROOT,
         state_model=state_model,
         state_action_contract=state_action_contract,
+        authority_matrix_contract=authority_matrix_contract,
     )
     workbench = layer3_workbench.readiness_contract()
 
@@ -34,6 +36,7 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["deferred_gates"] == list(READINESS_DEFERRED_GATES)
     assert direct["state_model"] == state_model
     assert direct["state_action_contract"] == state_action_contract
+    assert direct["authority_matrix_contract"] == authority_matrix_contract
     assert direct["execution_enabled"] is False
     assert direct["dispatch_admitted"] is False
     assert direct["plan_revision_recovery_admitted"] is True

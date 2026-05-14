@@ -68,6 +68,7 @@ def build_readiness_contract(
     api_root: str,
     state_model: dict[str, Any],
     state_action_contract: dict[str, Any],
+    authority_matrix_contract: dict[str, Any],
 ) -> dict[str, Any]:
     return {
         **base_response(EXECUTION_READINESS_SCHEMA_ID),
@@ -123,6 +124,7 @@ def build_readiness_contract(
         "deferred_gates": list(READINESS_DEFERRED_GATES),
         "state_model": state_model,
         "state_action_contract": state_action_contract,
+        "authority_matrix_contract": authority_matrix_contract,
         "preview_hash_contract": plan_preview_hash_contract(),
         "material_preview_hash_contract": material_preview_hash_contract(),
         "idempotency_contract": {
