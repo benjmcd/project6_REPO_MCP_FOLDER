@@ -17448,9 +17448,35 @@
       "no connector/destination/provider-public/raw URL/package mutation/source expansion/RAG/auth/frontend-only durable authority admitted",
       "current_main_sync_layer3_end_to_end_governance_lifecycle_freeze_after_merge"
     ],
-    "next_required_decision": "current_main_sync_layer3_end_to_end_governance_lifecycle_freeze_after_merge"
+    "next_required_decision": "current_main_synced_by_396"
   },
   "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_branch": "codex/l3-e2e-governance-lifecycle-freeze",
   "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_live_behavior_change": false,
-  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_summary": "Doc 395 proof entry records the selected end-to-end governance lifecycle read-only dashboard use case operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch; it is planning/control only and preserves all mutation, dispatch, provider-public, raw URL, backend runtime, and frontend-only durable no-go boundaries before implementation."
+  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_summary": "Doc 395 proof entry records the selected end-to-end governance lifecycle read-only dashboard use case operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch; it is planning/control only and preserves all mutation, dispatch, provider-public, raw URL, backend runtime, and frontend-only durable no-go boundaries before implementation.",
+  "layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_current_main_sync_proof": {
+    "proof_kind": "layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_current_main_sync",
+    "status": "current_main_synced_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze",
+    "sync_branch": "codex/l3-e2e-governance-lifecycle-freeze-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/396_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_pr": "#991",
+    "freeze_merge_commit": "ac9e7b35e77951c2d09df26802144536aa74aa78",
+    "current_main_after_merge": "ac9e7b35e77951c2d09df26802144536aa74aa78",
+    "proof_terms": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "PR comments empty",
+      "PR reviews empty",
+      "PR reviewThreads totalCount 0",
+      "PR unresolved reviewThreads 0",
+      "l3-progress-check.py PASS",
+      "current_main_synced_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze",
+      "implement_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+      "stop_and_write_layer3_end_to_end_lifecycle_response_authority_freeze"
+    ],
+    "next_allowed_action": "implement_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+    "source_audit_stop_action": "stop_and_write_layer3_end_to_end_lifecycle_response_authority_freeze"
+  },
+  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_current_main_sync_branch": "codex/l3-e2e-governance-lifecycle-freeze-sync",
+  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_current_main_sync_live_behavior_change": false,
+  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_current_main_sync_summary": "Doc 396 proof entry records current-main sync for PR #991 merge commit ac9e7b35e77951c2d09df26802144536aa74aa78; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next action is implement_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard after source audit or stop_and_write_layer3_end_to_end_lifecycle_response_authority_freeze if authority is insufficient."
 }
