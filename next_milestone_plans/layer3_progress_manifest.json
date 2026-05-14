@@ -11710,5 +11710,41 @@
       "auth_security_behavior",
       "frontend_only_durable_authority"
     ]
-  }
+  },
+  "package_mutation_named_action_revalidation_current_main_sync": {
+    "status": "completed_current_main_sync_pr_950",
+    "branch": "codex/l3-package-action-revalidation-packet-sync-950",
+    "merged_pr": "#950",
+    "merge_commit": "87729b2a1693227c4cbe928bd64872491d70eaf7",
+    "head_commit": "0fa1cfa8c200759199fbe9faccc0ec757a1960e6",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/361_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC.md",
+    "packet_doc": "next_milestone_plans/Layer3_planning_docs/360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md",
+    "synced_boundary": "package_mutation_named_action_revalidation_packet",
+    "sync_result": "current_main_synced_package_mutation_named_action_revalidation_packet",
+    "entry_decision": "no_runtime_now_named_rendered_package_action_absent",
+    "repo_confirmed_runtime_boundary": "package_supersession_preview_only",
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": [],
+      "reviews": [],
+      "reviewThreads": [],
+      "mergeStateStatus": "CLEAN",
+      "mergeable": "MERGEABLE"
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py -> PASS",
+      "git status --short -> only ?? .codesight/"
+    ],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "package_mutation_runtime_selected": false,
+    "next_required_action": "next_deferred_server_authoritative_runtime_lane_freeze_after_package_action_no_runtime"
+  },
+  "latest_package_mutation_named_action_revalidation_current_main_sync_branch": "codex/l3-package-action-revalidation-packet-sync-950",
+  "latest_package_mutation_named_action_revalidation_current_main_sync_pr": "#950",
+  "latest_package_mutation_named_action_revalidation_current_main_sync_merge_commit": "87729b2a1693227c4cbe928bd64872491d70eaf7",
+  "latest_package_mutation_named_action_revalidation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/361_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC.md",
+  "latest_package_mutation_named_action_revalidation_current_main_sync_live_behavior_change": false,
+  "latest_package_mutation_named_action_revalidation_current_main_sync_summary": "PR #950 merged the package mutation named-action revalidation packet to current main at 87729b2a1693227c4cbe928bd64872491d70eaf7. GitHub backend-layer3-api and test checks passed, comments/reviews/reviewThreads were empty, merge state was CLEAN, and post-merge l3-progress-check passed. Package mutation runtime remains blocked as no_runtime_now_named_rendered_package_action_absent; the next whole-project decision is next_deferred_server_authoritative_runtime_lane_freeze_after_package_action_no_runtime."
 }
