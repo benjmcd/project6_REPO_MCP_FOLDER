@@ -881,6 +881,9 @@ LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "444_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT = (
+    PLANNING_DOCS / "445_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -35248,6 +35251,99 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing post authority matrix runtime selection freeze sync term: {term}"
+                )
+
+    post_authority_matrix_runtime_selection_audit_text = _read_required_text(
+        LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `layer3_post_authority_matrix_runtime_selection_audit`.",
+        "445_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT.md",
+        "444_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "31fe81cc71f174c7db8e6a9ddea8fb7b3ce30075",
+        "layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_admitted",
+        "No code-bearing runtime tranche is selected by this audit.",
+        "freeze_layer3_authority_matrix_rendered_review_posture_reconciliation_before_contract_update",
+        "#authority-matrix-review-panel",
+        'data-rendered-mode="rendered_authority_matrix_read_only_review_surface"',
+        "`State.bootstrap.authority_matrix_contract`",
+        "`rendered_review_posture` | `blocked_no_runtime_authority`",
+        "`freeze_rendered_review_before_ui_work`",
+        "The selected runtime action is `none`.",
+        "authority_matrix_rendered_review_posture_reconciliation",
+        "No runtime behavior",
+        "No closed or blocked lane is reopened by implication.",
+        "current_main_sync_layer3_post_authority_matrix_runtime_selection_audit_after_merge",
+        "await_layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_after_audit_sync",
+    ):
+        if term not in post_authority_matrix_runtime_selection_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT)} missing post authority matrix runtime selection audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Post Authority Matrix Runtime Selection Audit",
+            "445_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT.md",
+            "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_admitted",
+            "#authority-matrix-review-panel",
+            "`State.bootstrap.authority_matrix_contract`",
+            "`rendered_review_posture`",
+            "`freeze_rendered_review_before_ui_work`",
+            "authority_matrix_rendered_review_posture_reconciliation",
+            "freeze_layer3_authority_matrix_rendered_review_posture_reconciliation_before_contract_update",
+            "current_main_sync_layer3_post_authority_matrix_runtime_selection_audit_after_merge",
+            "await_layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_after_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_post_authority_matrix_runtime_selection_audit",
+            "branch_local_planning_control_audit",
+            "codex/l3-post-authority-matrix-runtime-selection-audit",
+            "445_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT.md",
+            "31fe81cc71f174c7db8e6a9ddea8fb7b3ce30075",
+            "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_admitted",
+            '"selected_runtime_action": "none"',
+            "authority_matrix_rendered_review_posture_reconciliation",
+            "freeze_layer3_authority_matrix_rendered_review_posture_reconciliation_before_contract_update",
+            "authority-matrix-review-panel",
+            "rendered_authority_matrix_read_only_review_surface",
+            "State.bootstrap.authority_matrix_contract",
+            "rendered_review_posture",
+            "blocked_no_runtime_authority",
+            "freeze_rendered_review_before_ui_work",
+            '"runtime_behavior_change": false',
+            '"rendered_ui_behavior_change": false',
+            "await_layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_after_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_post_authority_matrix_runtime_selection_audit_proof",
+            "branch_local_planning_control_audit",
+            "codex/l3-post-authority-matrix-runtime-selection-audit",
+            "445_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT.md",
+            "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_admitted",
+            "selected runtime action none",
+            "authority_matrix_rendered_review_posture_reconciliation",
+            "freeze_layer3_authority_matrix_rendered_review_posture_reconciliation_before_contract_update",
+            "authority-matrix-review-panel",
+            "rendered_authority_matrix_read_only_review_surface",
+            "State.bootstrap.authority_matrix_contract",
+            "rendered_review_posture",
+            "blocked_no_runtime_authority",
+            "freeze_rendered_review_before_ui_work",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_after_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post authority matrix runtime selection audit term: {term}"
                 )
 
 def main() -> int:
