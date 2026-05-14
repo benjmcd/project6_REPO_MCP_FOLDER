@@ -1834,3 +1834,9 @@ The freeze does not admit connector runtime. It selects a revalidation packet on
 Current-main proof/control sync: PR `#944` merged `354_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE.md` at merge commit `531c57f836a4b47fcaae96922f93ff239a945f2b`.
 
 The sync doc `355_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Connector/destination runtime remains blocked; the next required action is `connector_destination_named_target_revalidation_packet` in doc `356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md`.
+
+## Connector Destination Named Target Revalidation Packet
+
+Branch-local planning/control packet: `356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md` revalidates connector/destination after the provider-public lane and next-deferred-lane freeze.
+
+The result is `no_runtime_now_named_connector_or_destination_absent`. Current repo authority still admits only `internal_dispatch_record_only` through `/api/v1/layer3/handoff/connector/record`; external connector invocation, destination writes, connector-run creation, generic downstream dispatch, rendered connector/destination controls, provider-public delivery/use, package mutation, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
