@@ -705,6 +705,9 @@ DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE = (
 DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "392_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF = (
+    PLANNING_DOCS / "393_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -1412,21 +1415,10 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         errors.append("layer3_workbench_current_decision.next_required_decision must be a non-empty string")
     else:
         required_terms = [
-            "Current main now includes the live `layer3_mockup_workbench_theme` shell/fixture projection",
-            "rendered PDF-location session-summary projection",
-            "State.sessionSummary.pdf_location_projection",
-            "pixel-faithful mockup-theme continuation",
-            "mockup frame mapping",
-            "user-flow/PDF-location",
-            "Sublayer 3A/3B",
-            "390 px responsive no-horizontal-overflow proof",
-            "frame-to-rendered-projection contract proof",
-            "visual parity",
-            "headed/headless theme coverage",
-            "exactly one named server-authoritative runtime/use-case freeze",
+            "current_main_sync_downstream_access_lifecycle_dashboard_after_merge",
         ]
         for term in required_terms:
-            if term not in next_required:
+            if next_required != term and term not in next_required:
                 errors.append(f"next_required_decision missing local near-term direction term: {term}")
         stale_terms = [
             "After direct owner-service proof hardening",
@@ -1443,8 +1435,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         return
     allowed_text = "\n".join(str(item) for item in allowed_actions)
     required_allowed = [
-        "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
-        "stop_and_write_downstream_access_response_authority_freeze",
+        "current_main_sync_downstream_access_lifecycle_dashboard_after_merge",
+        "settle_comments_reviews_and_reviewThreads_before_merge",
         "progress/proof/state drift checker",
     ]
     for term in required_allowed:
@@ -1469,6 +1461,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         "mockup-theme pixel-faithful acceptance work limited",
         "implement_rendered_package_lifecycle_read_only_dashboard only after source audit proves current server responses",
         "stop_and_write_package_lifecycle_response_authority_freeze if source audit finds current server responses",
+        "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
+        "stop_and_write_downstream_access_response_authority_freeze",
     ]
     for term in stale_allowed:
         if term in allowed_text:
@@ -30986,6 +30980,90 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing downstream access lifecycle dashboard current-main sync term: {term}"
+                )
+
+    downstream_access_lifecycle_proof_text = _read_required_text(
+        DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `rendered_downstream_access_lifecycle_read_only_dashboard`.",
+        "source audit proved current server/UI responses already expose sufficient response-safe downstream access lifecycle state",
+        "downstream-access-lifecycle-dashboard-panel",
+        "renderDownstreamAccessLifecycleDashboardPanel",
+        "expectRenderedDownstreamAccessLifecycleDashboard",
+        "existing_server_response_authority",
+        "operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use",
+        "No backend route, DTO, model, migration, service behavior, schema shape",
+        "Focused headless Chromium proof",
+        "Focused headed Chromium proof",
+        "current-main sync doc required after merge",
+    ):
+        if term not in downstream_access_lifecycle_proof_text:
+            errors.append(
+                f"{_rel(DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF)} missing downstream access lifecycle dashboard proof term: {term}"
+            )
+
+    for path, terms in {
+        LAYER3_HTML: (
+            "downstream-access-lifecycle-dashboard-panel",
+            'data-rendered-mode="rendered_downstream_access_lifecycle_read_only_dashboard"',
+            'aria-label="Downstream access lifecycle dashboard"',
+        ),
+        LAYER3_JS: (
+            "DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE = 'rendered_downstream_access_lifecycle_read_only_dashboard'",
+            "DOWNSTREAM_ACCESS_LIFECYCLE_USE_CASE = 'operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use'",
+            "DOWNSTREAM_ACCESS_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority'",
+            "downstreamAccessLifecycleRows",
+            "downstreamAccessLifecycleDashboardState",
+            "renderDownstreamAccessLifecycleDashboardPanel",
+            "raw_public_url_display_use_blocked",
+            "redacted_receipt_only",
+            "renderDownstreamAccessLifecycleDashboardPanel();",
+        ),
+        LAYER3_CSS: (
+            "downstream-access-lifecycle-dashboard-panel",
+            "downstream-access-lifecycle-grid",
+            "downstream-access-lifecycle-rows",
+        ),
+        LAYER3_PAGE_TEST: (
+            "downstream-access-lifecycle-dashboard-panel",
+            "rendered_downstream_access_lifecycle_read_only_dashboard",
+            "provider_public_url_redacted ? 'redacted_receipt_only'",
+        ),
+        LAYER3_HANDOFF_E2E: (
+            "expectRenderedDownstreamAccessLifecycleDashboard",
+            "downstream-access-lifecycle-dashboard-panel",
+            "button,input,select,textarea",
+            "aps_handoff_ready",
+            "external_export_download_prepared",
+            "external_export_download_delivery_submitted",
+        ),
+        BOARD: (
+            "## Downstream Access Lifecycle Read-Only Dashboard Proof",
+            "393_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF.md",
+            "existing_server_response_authority",
+            "focused headed Chromium",
+        ),
+        MANIFEST: (
+            "downstream_access_lifecycle_read_only_dashboard_proof",
+            "implemented_read_only_dashboard_over_existing_response_authority",
+            "focused_headed_and_headless_playwright_passed",
+            "current_main_sync_downstream_access_lifecycle_dashboard_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "downstream_access_lifecycle_read_only_dashboard_proof",
+            "implemented_read_only_dashboard_over_existing_response_authority",
+            "headless Chromium handoff flow PASS",
+            "headed Chromium handoff flow PASS",
+            "current-main sync doc required after implementation merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing downstream access lifecycle dashboard implementation term: {term}"
                 )
 
 def main() -> int:

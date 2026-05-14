@@ -3514,7 +3514,16 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     border-top: 1px solid var(--border-color);
 }
 
+.downstream-access-lifecycle-dashboard-panel {
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+}
+
 .package-lifecycle-grid {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.downstream-access-lifecycle-grid {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
@@ -3522,8 +3531,13 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     grid-column: span 2;
 }
 
+.downstream-access-lifecycle-rows {
+    grid-column: span 2;
+}
+
 @media (max-width: 760px) {
-    .package-lifecycle-rows {
+    .package-lifecycle-rows,
+    .downstream-access-lifecycle-rows {
         grid-column: span 1;
     }
 }
