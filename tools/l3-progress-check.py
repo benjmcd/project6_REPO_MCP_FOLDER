@@ -750,6 +750,9 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC = (
 LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT = (
     PLANNING_DOCS / "407_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT.md"
 )
+LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "408_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -32073,6 +32076,87 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing product/use-case behavior authority audit term: {term}"
+                )
+
+    product_use_case_behavior_authority_audit_sync_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_product_use_case_behavior_authority_audit`.",
+        "408_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+        "407_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT.md",
+        "PR `#1003`",
+        "152b41d8443250ef20e319fc3a84d5ccd3e41ec1",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: one automated Codex `COMMENTED` review.",
+        "PR reviewThreads totalCount: `1`.",
+        "PR unresolved reviewThreads: `0`.",
+        "PR outdated reviewThreads: `1`.",
+        "PR resolved reviewThreads: `1`.",
+        "That fix is present in the squash merge commit `152b41d8443250ef20e319fc3a84d5ccd3e41ec1`",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_layer3_product_use_case_behavior_authority_audit",
+        "entry_decision: no_runtime_now",
+        "audit_result: no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+        "runtime_status: not_implemented",
+        "operator_reviews_layer3_server_authority_matrix_for_next_runtime_tranche_without_mutation_or_dispatch",
+        "await_next_exact_layer3_authority_substrate_freeze_after_behavior_authority_no_runtime_sync",
+        "No runtime behavior",
+    ):
+        if term not in product_use_case_behavior_authority_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC)} missing product/use-case behavior authority audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Behavior Authority Audit Current-Main Sync",
+            "408_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "PR `#1003`",
+            "152b41d8443250ef20e319fc3a84d5ccd3e41ec1",
+            "The review comment about an EOF blank line was addressed before merge and is present in squash merge commit `152b41d8443250ef20e319fc3a84d5ccd3e41ec1`",
+            "current_main_synced_layer3_product_use_case_behavior_authority_audit",
+            "no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+            "await_next_exact_layer3_authority_substrate_freeze_after_behavior_authority_no_runtime_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_behavior_authority_audit_current_main_sync",
+            "current_main_synced_layer3_product_use_case_behavior_authority_audit",
+            '"audit_pr": "#1003"',
+            "152b41d8443250ef20e319fc3a84d5ccd3e41ec1",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 1',
+            '"unresolved_reviewThreads": 0',
+            '"resolved_reviewThreads": 1',
+            '"outdated_reviewThreads": 1',
+            "review_fix_included_in_merge_commit",
+            '"entry_decision": "no_runtime_now"',
+            '"runtime_status": "not_implemented"',
+            "no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+            "await_next_exact_layer3_authority_substrate_freeze_after_behavior_authority_no_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_behavior_authority_audit_current_main_sync_proof",
+            "current_main_synced_layer3_product_use_case_behavior_authority_audit",
+            '"audit_pr": "#1003"',
+            "152b41d8443250ef20e319fc3a84d5ccd3e41ec1",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads resolved 1",
+            "PR reviewThreads unresolved 0",
+            "l3-progress-check.py PASS",
+            "no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+            "await_next_exact_layer3_authority_substrate_freeze_after_behavior_authority_no_runtime_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing product/use-case behavior authority audit sync term: {term}"
                 )
 
 def main() -> int:
