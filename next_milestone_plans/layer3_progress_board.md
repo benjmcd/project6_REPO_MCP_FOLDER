@@ -1858,3 +1858,9 @@ The freeze admits no package mutation runtime. It selects a revalidation packet 
 Current-main proof/control sync: PR `#948` merged `358_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_FREEZE.md` at merge commit `a25b272c0e601888a1d253bef363b10fd677c3d9`.
 
 The sync doc `359_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Package mutation runtime remains blocked; the next required action is `package_mutation_named_action_revalidation_packet` in doc `360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md`.
+
+## Package Mutation Named Action Revalidation Packet
+
+Branch-local planning/control packet: `360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md` revalidates package mutation after connector/destination no-runtime sync and the package-action lane freeze.
+
+The result is `no_runtime_now_named_rendered_package_action_absent`. Current repo authority admits bounded backend package lifecycle metadata and read-only package supersession preview, but still lacks a named rendered operator package-revision action. Package mutation/reconstruction, package payload rewrite/write, package row mutation, rendered package mutation controls, connector/destination dispatch, provider-public delivery/use, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
