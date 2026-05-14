@@ -693,6 +693,9 @@ RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF = (
 RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "388_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md"
 )
+RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX = (
+    PLANNING_DOCS / "389_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30735,6 +30738,69 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing rendered package lifecycle dashboard current-main sync term: {term}"
+                )
+
+    review_fix_text = _read_required_text(
+        RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX,
+        errors,
+    )
+    for term in (
+        "Status: branch-local review fix for `rendered_package_lifecycle_read_only_dashboard`.",
+        "PRRT_kwDORzuv8M6B-1Ee",
+        "PRRT_kwDORzuv8M6B-1Ei",
+        "PRRT_kwDORzuv8M6B-1En",
+        "prioritize submit errors before ready state",
+        "prioritize construction errors before preview state",
+        "preserve non-approved submit states after refresh",
+        "packageReviewSubmitState` also prefers a recorded `State.sessionSummary.package_review_submit`",
+        "Layer 3 package lifecycle dashboard prioritizes recorded and error states",
+        "merge, pass post-merge `project6-origin/main` progress validation, and then be current-main synced",
+    ):
+        if term not in review_fix_text:
+            errors.append(
+                f"{_rel(RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX)} missing rendered package lifecycle dashboard review-fix term: {term}"
+            )
+
+    for path, terms in {
+        LAYER3_JS: (
+            "const summarySubmit = State.sessionSummary?.package_review_submit",
+            "summarySubmit?.package_review_state || summarySubmit?.submit_record_ref",
+            "const submitState = submit.package_review_state || submit.state",
+            "const submitRecorded = Boolean(",
+            "submit.submit_record_ref",
+            "State.packageReviewSubmitError || State.packageConstructionError || State.packageReviewPreviewError",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 package lifecycle dashboard prioritizes recorded and error states",
+            "package_construction_commit_scope_not_admitted",
+            "package_review_submit_scope_not_admitted",
+            "package_review_changes_requested",
+            "State.sessionSummary.package_review_submit",
+        ),
+        BOARD: (
+            "## Rendered Package Lifecycle Dashboard Review Fix",
+            "389_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX.md",
+            "PRRT_kwDORzuv8M6B-1Ee",
+            "PRRT_kwDORzuv8M6B-1Ei",
+            "PRRT_kwDORzuv8M6B-1En",
+        ),
+        MANIFEST: (
+            "rendered_package_lifecycle_dashboard_review_fix",
+            "branch_local_review_fix_for_rendered_package_lifecycle_dashboard",
+            "prioritize submit errors before ready state",
+            "preserve non-approved submit states after refresh",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_package_lifecycle_dashboard_review_fix_proof",
+            "branch_local_review_fix_for_rendered_package_lifecycle_dashboard",
+            "Layer 3 package lifecycle dashboard prioritizes recorded and error states",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing rendered package lifecycle dashboard review-fix implementation term: {term}"
                 )
 
 def main() -> int:

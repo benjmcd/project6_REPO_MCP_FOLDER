@@ -12739,5 +12739,33 @@
   "latest_rendered_package_lifecycle_read_only_dashboard_current_main_sync_branch": "codex/l3-package-lifecycle-dashboard-sync",
   "latest_rendered_package_lifecycle_read_only_dashboard_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/388_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md",
   "latest_rendered_package_lifecycle_read_only_dashboard_current_main_sync_live_behavior_change": false,
-  "latest_rendered_package_lifecycle_read_only_dashboard_current_main_sync_summary": "Doc 388 syncs the PR #983 rendered package lifecycle read-only dashboard merge commit c8e020af40efbefcf078d4b80715b7e3920400d7 to current main. GitHub backend-layer3-api/test passed, comments/reviews/reviewThreads were empty, post-merge progress check passed, and next posture is await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_sync."
+  "latest_rendered_package_lifecycle_read_only_dashboard_current_main_sync_summary": "Doc 388 syncs the PR #983 rendered package lifecycle read-only dashboard merge commit c8e020af40efbefcf078d4b80715b7e3920400d7 to current main. GitHub backend-layer3-api/test passed, comments/reviews/reviewThreads were empty, post-merge progress check passed, and next posture is await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_sync.",
+  "rendered_package_lifecycle_dashboard_review_fix": {
+    "status": "branch_local_review_fix_for_rendered_package_lifecycle_dashboard",
+    "fix_branch": "codex/l3-package-lifecycle-dashboard-review-fix",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/389_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX.md",
+    "addressed_review_threads": [
+      "PRRT_kwDORzuv8M6B-1Ee",
+      "PRRT_kwDORzuv8M6B-1Ei",
+      "PRRT_kwDORzuv8M6B-1En"
+    ],
+    "fixed_behavior": [
+      "prioritize submit errors before ready state",
+      "prioritize construction errors before preview state",
+      "preserve non-approved submit states after refresh",
+      "prefer recorded sessionSummary.package_review_submit before synthetic construction-ready state"
+    ],
+    "focused_e2e": "Layer 3 package lifecycle dashboard prioritizes recorded and error states",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": true,
+    "backend_route_behavior_change": false,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "service_behavior_change": false,
+    "next_required_decision": "merge_review_fix_then_current_main_sync"
+  },
+  "latest_rendered_package_lifecycle_dashboard_review_fix_branch": "codex/l3-package-lifecycle-dashboard-review-fix",
+  "latest_rendered_package_lifecycle_dashboard_review_fix_doc": "next_milestone_plans/Layer3_planning_docs/389_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX.md",
+  "latest_rendered_package_lifecycle_dashboard_review_fix_live_behavior_change": true,
+  "latest_rendered_package_lifecycle_dashboard_review_fix_summary": "Doc 389 addresses PR #983 and PR #985 review threads for package lifecycle dashboard state precedence: submit errors before ready state, construction errors before preview state, non-approved submit states preserved after refresh, and recorded sessionSummary.package_review_submit preferred before synthetic construction-ready state."
 }

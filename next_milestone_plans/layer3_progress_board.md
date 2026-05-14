@@ -2032,3 +2032,9 @@ The implementation adds `package-lifecycle-dashboard-panel` as read-only `/revie
 Current-main proof/control sync: PR `#983` merged `387_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF.md` and the read-only package lifecycle dashboard at merge commit `c8e020af40efbefcf078d4b80715b7e3920400d7`.
 
 The sync doc `388_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, mergeability was `MERGEABLE`, and post-merge `project6-origin/main` progress check passed. The dashboard is now current-main rendered inspection behavior only; package mutation, payload rewrite, connector dispatch, provider-public delivery/use, frontend-only durable authority, and backend route/DTO/model/migration/service behavior remain blocked. The next whole-project posture is `await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_sync`.
+
+## Rendered Package Lifecycle Dashboard Review Fix
+
+Branch-local review fix: `389_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX.md` addresses PR `#983` review threads `PRRT_kwDORzuv8M6B-1Ee`, `PRRT_kwDORzuv8M6B-1Ei`, and `PRRT_kwDORzuv8M6B-1En`.
+
+The fix makes `packageLifecycleDashboardState` preserve recorded non-approved submit states and prioritize construction/submit errors before ready-state fallbacks. Focused E2E proof is `Layer 3 package lifecycle dashboard prioritizes recorded and error states`. No backend route, DTO, model, migration, service behavior, package mutation authority, provider-public delivery/use, connector/destination dispatch, or frontend-only durable authority is admitted.

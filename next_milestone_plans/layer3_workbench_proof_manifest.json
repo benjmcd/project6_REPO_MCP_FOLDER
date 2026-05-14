@@ -17227,5 +17227,27 @@
   },
   "latest_rendered_package_lifecycle_read_only_dashboard_current_main_sync_branch": "codex/l3-package-lifecycle-dashboard-sync",
   "latest_rendered_package_lifecycle_read_only_dashboard_current_main_sync_live_behavior_change": false,
-  "latest_rendered_package_lifecycle_read_only_dashboard_current_main_sync_summary": "Doc 388 records current-main sync for PR #983 merge commit c8e020af40efbefcf078d4b80715b7e3920400d7 with checks passed, comments/reviews/reviewThreads empty, post-merge progress check PASS, and next whole-project posture awaiting the next exact named Layer 3 product/use-case requirement."
+  "latest_rendered_package_lifecycle_read_only_dashboard_current_main_sync_summary": "Doc 388 records current-main sync for PR #983 merge commit c8e020af40efbefcf078d4b80715b7e3920400d7 with checks passed, comments/reviews/reviewThreads empty, post-merge progress check PASS, and next whole-project posture awaiting the next exact named Layer 3 product/use-case requirement.",
+  "rendered_package_lifecycle_dashboard_review_fix_proof": {
+    "proof_kind": "rendered_package_lifecycle_dashboard_review_fix",
+    "status": "branch_local_review_fix_for_rendered_package_lifecycle_dashboard",
+    "fix_branch": "codex/l3-package-lifecycle-dashboard-review-fix",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/389_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX.md",
+    "addressed_review_threads": [
+      "PRRT_kwDORzuv8M6B-1Ee",
+      "PRRT_kwDORzuv8M6B-1Ei",
+      "PRRT_kwDORzuv8M6B-1En"
+    ],
+    "fixed_behavior": [
+      "prioritize submit errors before ready state",
+      "prioritize construction errors before preview state",
+      "preserve non-approved submit states after refresh",
+      "prefer recorded sessionSummary.package_review_submit before synthetic construction-ready state"
+    ],
+    "focused_e2e": "Layer 3 package lifecycle dashboard prioritizes recorded and error states",
+    "remaining_gate": "merge_review_fix_then_current_main_sync"
+  },
+  "latest_rendered_package_lifecycle_dashboard_review_fix_branch": "codex/l3-package-lifecycle-dashboard-review-fix",
+  "latest_rendered_package_lifecycle_dashboard_review_fix_live_behavior_change": true,
+  "latest_rendered_package_lifecycle_dashboard_review_fix_summary": "Doc 389 proof entry records the package lifecycle dashboard review fix for PR #983 threads PRRT_kwDORzuv8M6B-1Ee, PRRT_kwDORzuv8M6B-1Ei, and PRRT_kwDORzuv8M6B-1En, plus the PR #985 recorded session-summary precedence thread."
 }

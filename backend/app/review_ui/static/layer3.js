@@ -1528,6 +1528,10 @@ function packageReviewSubmitState() {
     if (State.packageReviewSubmit) {
         return State.packageReviewSubmit;
     }
+    const summarySubmit = State.sessionSummary?.package_review_submit;
+    if (summarySubmit?.package_review_state || summarySubmit?.submit_record_ref) {
+        return summarySubmit;
+    }
     const construction = State.packageConstruction;
     if (construction?.package_review_submit_enabled === true) {
         const outputPackageIds = Array.isArray(construction.output_package_ids)
@@ -1559,8 +1563,8 @@ function packageReviewSubmitState() {
             downstream_unavailable: construction.downstream_unavailable,
         };
     }
-    if (State.sessionSummary?.package_review_submit) {
-        return State.sessionSummary.package_review_submit;
+    if (summarySubmit) {
+        return summarySubmit;
     }
     return null;
 }
@@ -1705,8 +1709,19 @@ function packageLifecycleDashboardState(preview, construction, submit) {
     if (State.packageReviewSubmitPending) return { label: 'package_lifecycle_submit_recording', pill: 'preview' };
     if (State.packageConstructionPending) return { label: 'package_lifecycle_construction_committing', pill: 'preview' };
     if (State.packageReviewPreviewPending) return { label: 'package_lifecycle_preview_inspecting', pill: 'preview' };
-    if (submit.package_review_state || submit.state === 'package_review_approved') {
-        return { label: submit.package_review_state || submit.state, pill: 'ok' };
+    const submitState = submit.package_review_state || submit.state;
+    const submitRecorded = Boolean(
+        submit.package_review_state
+        || submit.submit_record_ref
+    );
+    if (submitRecorded) {
+        return {
+            label: submitState || 'package_review_recorded',
+            pill: submitState === 'package_review_approved' ? 'ok' : 'blocked',
+        };
+    }
+    if (State.packageReviewSubmitError || State.packageConstructionError || State.packageReviewPreviewError) {
+        return { label: 'package_lifecycle_blocked', pill: 'blocked' };
     }
     if (submit.package_review_submit_enabled === true) {
         return { label: submit.state || 'package_review_submit_ready', pill: 'ok' };
@@ -1716,9 +1731,6 @@ function packageLifecycleDashboardState(preview, construction, submit) {
     }
     if (preview.package_review_preview_enabled === true) {
         return { label: preview.next_state || 'package_lifecycle_preview_ready', pill: 'preview' };
-    }
-    if (State.packageReviewSubmitError || State.packageConstructionError || State.packageReviewPreviewError) {
-        return { label: 'package_lifecycle_blocked', pill: 'blocked' };
     }
     return { label: 'package_lifecycle_waiting_for_server_state', pill: 'blocked' };
 }
