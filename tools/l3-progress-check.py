@@ -623,6 +623,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAI
 BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET = (
     PLANNING_DOCS / "364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md"
 )
+BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "365_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29504,6 +29507,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing broad qualitative hybrid RAG packet term: {term}")
+
+    broad_qual_rag_sync_text = _read_required_text(BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for broad qualitative hybrid RAG named-mode revalidation packet; no runtime behavior admitted.",
+        "PR `#954`",
+        "ecd2ec8eec55de6919dde85647af84da8a068415",
+        "current_main_synced_broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+        "no_runtime_now_broad_qualitative_hybrid_rag_named_mode_absent",
+        "next_deferred_server_authoritative_runtime_lane_freeze_after_broad_qualitative_hybrid_rag_no_runtime",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads",
+    ):
+        if term not in broad_qual_rag_sync_text:
+            errors.append(f"{_rel(BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_CURRENT_MAIN_SYNC)} missing broad qualitative hybrid RAG current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Broad Qualitative Hybrid RAG Named Mode Revalidation Current-Main Sync",
+            "365_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_CURRENT_MAIN_SYNC.md",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_broad_qualitative_hybrid_rag_no_runtime",
+        ),
+        MANIFEST: (
+            "broad_qualitative_hybrid_rag_named_mode_revalidation_current_main_sync",
+            "current_main_synced_broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_broad_qualitative_hybrid_rag_no_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "broad_qualitative_hybrid_rag_named_mode_revalidation_current_main_sync_proof",
+            "current_main_synced_broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+            "reviewThreads",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing broad qualitative hybrid RAG current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
