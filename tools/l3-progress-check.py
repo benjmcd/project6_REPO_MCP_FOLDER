@@ -952,6 +952,10 @@ LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "462_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE = (
+    PLANNING_DOCS
+    / "463_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -36917,6 +36921,89 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing separate authority matrix route implementation sync term: {term}"
+                )
+
+    post_authority_matrix_route_requirement_selection_freeze_text = _read_required_text(
+        LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync`.",
+        "463_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE.md",
+        "462_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+        "31e62e3e1c38a59acb0cb62c49cd10befbb55fb0",
+        "freeze_layer3_next_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+        "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+        "GET /api/v1/layer3/authority-matrix",
+        "admitted_for_read_only_authority_matrix_route",
+        "sync_separate_route_before_next_runtime_freeze",
+        "schema_model_migration_change",
+        "separate_response_dto_module_change",
+        "frontend_only_durable_authority",
+        "runtime_behavior",
+        "connector_provider_behavior",
+        "package_mutation",
+        "source_expansion",
+        "rag_vector_behavior",
+        "blocked_no_runtime_authority",
+        "Entry decision: `freeze_only`.",
+        "current_main_sync_layer3_post_authority_matrix_route_requirement_selection_freeze_after_merge",
+        "await_layer3_post_authority_matrix_route_requirement_selection_audit_after_freeze_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in post_authority_matrix_route_requirement_selection_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE)} missing post authority matrix route requirement selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Post Authority Matrix Route Requirement Selection Freeze",
+            "463_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE.md",
+            "freeze_layer3_next_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+            "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+            "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+            "route_api_posture` is `admitted_for_read_only_authority_matrix_route",
+            "current_main_sync_layer3_post_authority_matrix_route_requirement_selection_freeze_after_merge",
+            "await_layer3_post_authority_matrix_route_requirement_selection_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_post_authority_matrix_route_requirement_selection_freeze",
+            "planning_control_freeze",
+            "codex/l3-post-authority-route-requirement-selection-freeze",
+            "463_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE.md",
+            "31e62e3e1c38a59acb0cb62c49cd10befbb55fb0",
+            "freeze_layer3_next_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+            "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+            "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+            '"entry_decision": "freeze_only"',
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_layer3_post_authority_matrix_route_requirement_selection_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_post_authority_matrix_route_requirement_selection_freeze_proof",
+            "planning_control_freeze",
+            "codex/l3-post-authority-route-requirement-selection-freeze",
+            "463_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE.md",
+            "31e62e3e1c38a59acb0cb62c49cd10befbb55fb0",
+            "freeze_layer3_next_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+            "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+            "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+            "admitted_for_read_only_authority_matrix_route",
+            "blocked_no_runtime_authority",
+            "no runtime behavior",
+            "no rendered UI behavior",
+            "await_layer3_post_authority_matrix_route_requirement_selection_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post authority matrix route requirement selection freeze term: {term}"
                 )
 
 def main() -> int:
