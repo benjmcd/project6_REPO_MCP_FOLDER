@@ -1060,6 +1060,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_RE
     PLANNING_DOCS
     / "489_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "490_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -39137,6 +39141,85 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing lifecycle requirement product/use-case behavior freeze term: {term}"
+                )
+
+    product_use_case_behavior_freeze_after_lifecycle_requirement_sync_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_product_use_case_behavior_freeze_after_end_to_end_governance_lifecycle_requirement_sync`.",
+        "490_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "489_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_SYNC.md",
+        "#1085",
+        "b17f5b96cf11b5d6c0a70d5a51110bba4a28f106",
+        "backend-layer3-api",
+        "SUCCESS",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_product_use_case_behavior_freeze_after_end_to_end_governance_lifecycle_requirement",
+        "freeze_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_behavior_after_end_to_end_governance_lifecycle_requirement_sync",
+        "operator_reviews_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_after_lifecycle_requirement_selection_without_mutation_or_dispatch",
+        "await_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_lifecycle_requirement_selection_freeze_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in product_use_case_behavior_freeze_after_lifecycle_requirement_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_CURRENT_MAIN_SYNC)} missing lifecycle requirement product/use-case behavior freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Behavior Freeze After End-to-End Governance Lifecycle Requirement Current-Main Sync",
+            "490_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1085",
+            "b17f5b96cf11b5d6c0a70d5a51110bba4a28f106",
+            "reviewThreads totalCount was `0`",
+            "merge state was `CLEAN`",
+            "current_main_synced_layer3_product_use_case_behavior_freeze_after_end_to_end_governance_lifecycle_requirement",
+            "freeze_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_behavior_after_end_to_end_governance_lifecycle_requirement_sync",
+            "operator_reviews_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_after_lifecycle_requirement_selection_without_mutation_or_dispatch",
+            "await_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_lifecycle_requirement_selection_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_end_to_end_governance_lifecycle_requirement_current_main_sync",
+            "current_main_synced_layer3_product_use_case_behavior_freeze_after_end_to_end_governance_lifecycle_requirement",
+            "codex/l3-product-behavior-freeze-after-lifecycle-requirement-sync-sync",
+            "490_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1085",
+            "b17f5b96cf11b5d6c0a70d5a51110bba4a28f106",
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"merge_state_before_merge": "CLEAN"',
+            '"selected_exact_milestone": "freeze_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_behavior_after_end_to_end_governance_lifecycle_requirement_sync"',
+            '"selected_exact_named_product_use_case_behavior": "operator_reviews_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_after_lifecycle_requirement_selection_without_mutation_or_dispatch"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_lifecycle_requirement_selection_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_end_to_end_governance_lifecycle_requirement_current_main_sync_proof",
+            "current_main_synced_layer3_product_use_case_behavior_freeze_after_end_to_end_governance_lifecycle_requirement",
+            "codex/l3-product-behavior-freeze-after-lifecycle-requirement-sync-sync",
+            "490_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1085",
+            "b17f5b96cf11b5d6c0a70d5a51110bba4a28f106",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "merge_state_before_merge CLEAN",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "no implementation",
+            "no runtime behavior",
+            "await_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_lifecycle_requirement_selection_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing lifecycle requirement product/use-case behavior freeze sync term: {term}"
                 )
 
 def main() -> int:
