@@ -842,6 +842,10 @@ LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "434_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT = (
+    PLANNING_DOCS
+    / "435_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -34381,6 +34385,85 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing next governed runtime tranche selection freeze sync term: {term}"
+                )
+
+    next_governed_runtime_tranche_audit_text = _read_required_text(
+        LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `await_layer3_next_governed_runtime_tranche_selection_audit_after_freeze_sync`.",
+        "435_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT.md",
+        "434_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "6d4b2618a7d238adba30f94f9a7be6784dd5a8aa",
+        "Audit result: `no_runtime_now_layer3_next_governed_runtime_tranche_authority_absent`.",
+        "No code-bearing runtime tranche is selected by this audit.",
+        "source-intake provider-public delivery/use reopening",
+        "connector/destination named target revalidation",
+        "package mutation named action revalidation",
+        "source expansion named source-family revalidation",
+        "broad qualitative/hybrid/RAG named mode revalidation",
+        "full mockup activation named runtime target revalidation",
+        "auth/security named behavior revalidation",
+        "rendered authority-matrix review surface",
+        "The selected code-bearing action is `none`.",
+        "No closed or blocked lane is reopened by implication.",
+        "current_main_sync_layer3_next_governed_runtime_tranche_selection_audit_after_merge",
+        "await_new_exact_named_layer3_runtime_authority_input_after_next_governed_runtime_tranche_no_runtime_sync",
+    ):
+        if term not in next_governed_runtime_tranche_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT)} missing next governed runtime tranche selection audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Next Governed Runtime Tranche Selection Audit",
+            "435_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT.md",
+            "conduct_layer3_next_governed_runtime_tranche_selection_audit_after_authority_matrix_exposure_sync",
+            "no_runtime_now_layer3_next_governed_runtime_tranche_authority_absent",
+            "source-intake provider-public delivery/use reopening",
+            "rendered authority-matrix review surface",
+            "selected code-bearing action is `none`",
+            "current_main_sync_layer3_next_governed_runtime_tranche_selection_audit_after_merge",
+            "await_new_exact_named_layer3_runtime_authority_input_after_next_governed_runtime_tranche_no_runtime_sync",
+        ),
+        MANIFEST: (
+            "layer3_next_governed_runtime_tranche_selection_audit",
+            "branch_local_planning_control_audit",
+            "codex/l3-next-governed-runtime-tranche-audit",
+            "435_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT.md",
+            "6d4b2618a7d238adba30f94f9a7be6784dd5a8aa",
+            "conduct_layer3_next_governed_runtime_tranche_selection_audit_after_authority_matrix_exposure_sync",
+            "no_runtime_now_layer3_next_governed_runtime_tranche_authority_absent",
+            '"selected_code_bearing_action": "none"',
+            '"entry_decision": "audit_no_runtime_authority_absent"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            "source_intake_provider_public_url_delivery_use_reopening",
+            "rendered_authority_matrix_review_surface",
+            "current_main_sync_layer3_next_governed_runtime_tranche_selection_audit_after_merge",
+            "await_new_exact_named_layer3_runtime_authority_input_after_next_governed_runtime_tranche_no_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_next_governed_runtime_tranche_selection_audit_proof",
+            "branch_local_planning_control_audit",
+            "435_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT.md",
+            "no_runtime_now_layer3_next_governed_runtime_tranche_authority_absent",
+            "selected code-bearing action none",
+            "source_intake_provider_public_url_delivery_use_reopening not admitted",
+            "connector_destination_named_target_revalidation not admitted",
+            "rendered_authority_matrix_review_surface not admitted",
+            "blocked_no_runtime_authority",
+            "current_main_sync_layer3_next_governed_runtime_tranche_selection_audit_after_merge",
+            "await_new_exact_named_layer3_runtime_authority_input_after_next_governed_runtime_tranche_no_runtime_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing next governed runtime tranche selection audit term: {term}"
                 )
 
 def main() -> int:
