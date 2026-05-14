@@ -1040,6 +1040,10 @@ LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "484_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC = (
+    PLANNING_DOCS
+    / "485_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -38724,6 +38728,89 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing e2e governance lifecycle behavior freeze sync term: {term}"
+                )
+
+    e2e_governance_lifecycle_behavior_authority_audit_text = _read_required_text(
+        LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `conduct_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_sync`.",
+        "485_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC.md",
+        "fc1538fdd728dec98f6a8672901a2290235b7170",
+        "484_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC.md",
+        "operator_reviews_layer3_end_to_end_governance_lifecycle_after_requirement_selection_without_mutation_or_dispatch",
+        "layer3_end_to_end_governance_lifecycle_behavior_authority_read_only_current_main_satisfied_no_runtime",
+        "Entry decision: `read_only_current_main_control_surface_only`.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: `none`.",
+        "#layer3-e2e-governance-lifecycle-dashboard-panel",
+        "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+        "operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch",
+        "renderLayer3E2EGovernanceLifecycleDashboardPanel",
+        "GET /api/v1/layer3/bootstrap",
+        "GET /api/v1/layer3/session/{session_id}",
+        "current_main_sync_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_merge",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in e2e_governance_lifecycle_behavior_authority_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC)} missing e2e governance lifecycle behavior authority audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 End-to-End Governance Lifecycle Behavior Authority Audit After Requirement Selection Freeze Sync",
+            "485_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC.md",
+            "fc1538fdd728dec98f6a8672901a2290235b7170",
+            "operator_reviews_layer3_end_to_end_governance_lifecycle_after_requirement_selection_without_mutation_or_dispatch",
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_read_only_current_main_satisfied_no_runtime",
+            "#layer3-e2e-governance-lifecycle-dashboard-panel",
+            "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            "operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch",
+            "renderLayer3E2EGovernanceLifecycleDashboardPanel",
+            "implementation action is `none`",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_merge",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_freeze_sync",
+            "planning_control_audit",
+            "codex/l3-e2e-governance-lifecycle-behavior-authority-audit",
+            "485_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC.md",
+            "fc1538fdd728dec98f6a8672901a2290235b7170",
+            "operator_reviews_layer3_end_to_end_governance_lifecycle_after_requirement_selection_without_mutation_or_dispatch",
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_read_only_current_main_satisfied_no_runtime",
+            '"entry_decision": "read_only_current_main_control_surface_only"',
+            '"runtime_status": "not_implemented"',
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_freeze_sync_proof",
+            "planning_control_audit",
+            "codex/l3-e2e-governance-lifecycle-behavior-authority-audit",
+            "485_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC.md",
+            "fc1538fdd728dec98f6a8672901a2290235b7170",
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_read_only_current_main_satisfied_no_runtime",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action none",
+            "#layer3-e2e-governance-lifecycle-dashboard-panel",
+            "renderLayer3E2EGovernanceLifecycleDashboardPanel",
+            "GET /api/v1/layer3/session/{session_id}",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing e2e governance lifecycle behavior authority audit term: {term}"
                 )
 
 def main() -> int:
