@@ -699,6 +699,9 @@ RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX = (
 RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "390_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX_CURRENT_MAIN_SYNC.md"
 )
+DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE = (
+    PLANNING_DOCS / "391_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -1437,9 +1440,9 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         return
     allowed_text = "\n".join(str(item) for item in allowed_actions)
     required_allowed = [
-        "await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_review_fix_sync",
-        "write a new exact named freeze before any further Layer 3 implementation",
-        "review-thread/proof metadata settlement",
+        "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
+        "stop_and_write_downstream_access_response_authority_freeze",
+        "current_main_sync_downstream_access_lifecycle_read_only_dashboard_freeze_after_merge",
         "progress/proof/state drift checker",
     ]
     for term in required_allowed:
@@ -30863,7 +30866,67 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(
-                    f"{_rel(path)} missing rendered package lifecycle dashboard review-fix current-main sync term: {term}"
+                f"{_rel(path)} missing rendered package lifecycle dashboard review-fix current-main sync term: {term}"
+            )
+
+    downstream_access_lifecycle_freeze_text = _read_required_text(
+        DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `rendered_downstream_access_lifecycle_read_only_dashboard`; no runtime implementation begins in this pass.",
+        "391_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md",
+        "operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use",
+        "rendered_downstream_access_lifecycle_read_only_dashboard",
+        "handoff/export prepare",
+        "APS handoff dispatch",
+        "external export/download prepare and same-origin delivery",
+        "signed-reference generate/use with configured-secret fail-closed behavior",
+        "provider-private signed URL prepare/status/revoke",
+        "provider-public redacted prepare/status/revoke",
+        "internal connector dispatch record-only behavior",
+        "If current server responses do not expose enough response-safe downstream access lifecycle fields for a read-only dashboard",
+        "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
+        "stop_and_write_downstream_access_response_authority_freeze",
+        "No external connector invocation is admitted.",
+        "No provider-public delivery/use, raw public URL display/use, raw public URL persistence, public proxy runtime, or provider network/object-store write is admitted.",
+        "No backend route, DTO, model, migration, or service behavior is admitted by this freeze.",
+    ):
+        if term not in downstream_access_lifecycle_freeze_text:
+            errors.append(
+                f"{_rel(DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE)} missing downstream access lifecycle dashboard freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Access Lifecycle Read-Only Dashboard Freeze",
+            "391_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md",
+            "operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use",
+            "rendered_downstream_access_lifecycle_read_only_dashboard",
+            "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
+            "stop_and_write_downstream_access_response_authority_freeze",
+        ),
+        MANIFEST: (
+            "downstream_access_lifecycle_read_only_dashboard_freeze",
+            "operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use",
+            "rendered_downstream_access_lifecycle_read_only_dashboard",
+            "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
+            "stop_and_write_downstream_access_response_authority_freeze",
+            "external_connector_invocation",
+            "provider_public_delivery_use",
+        ),
+        PROOF_MANIFEST: (
+            "downstream_access_lifecycle_read_only_dashboard_freeze_proof",
+            "operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use",
+            "rendered_downstream_access_lifecycle_read_only_dashboard",
+            "implementation_entry_freeze_selected_no_runtime_implementation",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing downstream access lifecycle dashboard freeze term: {term}"
                 )
 
 def main() -> int:
