@@ -874,6 +874,9 @@ LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION_CURRENT_MAIN_SYNC
     PLANNING_DOCS
     / "442_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE = (
+    PLANNING_DOCS / "443_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -35097,6 +35100,77 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix rendered review implementation sync term: {term}"
+                )
+
+    post_authority_matrix_runtime_selection_freeze_text = _read_required_text(
+        LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_authority_matrix_rendered_review_sync`.",
+        "443_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE.md",
+        "442_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+        "7478559a8a7798f2c2faa8b7c0609ceaa97c57b3",
+        "select_layer3_next_runtime_or_review_surface_requirement_after_authority_matrix_rendered_review_sync",
+        "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+        "layer3_post_authority_matrix_runtime_selection_freeze",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "Rendered UI status: `not_implemented`.",
+        "current rendered authority-matrix panel content and fail-closed state",
+        "exactly one next runtime or review-surface requirement",
+        "no_runtime_now_layer3_post_authority_matrix_runtime_requirement_not_admitted",
+        "This freeze admits no runtime behavior",
+        "No implementation begins in this pass.",
+        "current_main_sync_layer3_post_authority_matrix_runtime_selection_freeze_after_merge",
+        "await_layer3_post_authority_matrix_runtime_selection_audit_after_freeze_sync",
+    ):
+        if term not in post_authority_matrix_runtime_selection_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE)} missing post authority matrix runtime selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Post Authority Matrix Runtime Selection Freeze",
+            "443_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE.md",
+            "select_layer3_next_runtime_or_review_surface_requirement_after_authority_matrix_rendered_review_sync",
+            "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+            "no_runtime_now_layer3_post_authority_matrix_runtime_requirement_not_admitted",
+            "current_main_sync_layer3_post_authority_matrix_runtime_selection_freeze_after_merge",
+            "await_layer3_post_authority_matrix_runtime_selection_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_post_authority_matrix_runtime_selection_freeze",
+            "branch_local_planning_control_freeze",
+            "codex/l3-post-authority-matrix-runtime-selection-freeze",
+            "443_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE.md",
+            "7478559a8a7798f2c2faa8b7c0609ceaa97c57b3",
+            "select_layer3_next_runtime_or_review_surface_requirement_after_authority_matrix_rendered_review_sync",
+            "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+            "no_runtime_now_layer3_post_authority_matrix_runtime_requirement_not_admitted",
+            '"runtime_behavior_change": false',
+            "current_main_sync_layer3_post_authority_matrix_runtime_selection_freeze_after_merge",
+            "await_layer3_post_authority_matrix_runtime_selection_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_post_authority_matrix_runtime_selection_freeze_proof",
+            "branch_local_planning_control_freeze",
+            "codex/l3-post-authority-matrix-runtime-selection-freeze",
+            "443_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE.md",
+            "select_layer3_next_runtime_or_review_surface_requirement_after_authority_matrix_rendered_review_sync",
+            "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+            "no_runtime_now_layer3_post_authority_matrix_runtime_requirement_not_admitted",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_layer3_post_authority_matrix_runtime_selection_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post authority matrix runtime selection freeze term: {term}"
                 )
 
 def main() -> int:
