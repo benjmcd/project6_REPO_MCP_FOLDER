@@ -1036,6 +1036,10 @@ LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_AFTER_REQUIREMENT_SELECTI
     PLANNING_DOCS
     / "483_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_AFTER_REQUIREMENT_SELECTION_SYNC.md"
 )
+LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "484_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -38641,6 +38645,85 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing e2e governance lifecycle behavior freeze term: {term}"
+                )
+
+    e2e_governance_lifecycle_behavior_freeze_sync_text = _read_required_text(
+        LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_end_to_end_governance_lifecycle_behavior_freeze_after_requirement_selection_sync`.",
+        "484_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC.md",
+        "483_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_AFTER_REQUIREMENT_SELECTION_SYNC.md",
+        "#1079",
+        "657943fb825d8f43f51abc8cbae053683cf31fca",
+        "backend-layer3-api",
+        "SUCCESS",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_end_to_end_governance_lifecycle_behavior_freeze_after_requirement_selection",
+        "freeze_layer3_end_to_end_governance_lifecycle_behavior_authority_after_post_authority_route_behavior_no_runtime_requirement_sync",
+        "operator_reviews_layer3_end_to_end_governance_lifecycle_after_requirement_selection_without_mutation_or_dispatch",
+        "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_freeze_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in e2e_governance_lifecycle_behavior_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC)} missing e2e governance lifecycle behavior freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 End-to-End Governance Lifecycle Behavior Freeze Current-Main Sync",
+            "484_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1079",
+            "657943fb825d8f43f51abc8cbae053683cf31fca",
+            "reviewThreads totalCount was `0`",
+            "merge state was `CLEAN`",
+            "current_main_synced_layer3_end_to_end_governance_lifecycle_behavior_freeze_after_requirement_selection",
+            "freeze_layer3_end_to_end_governance_lifecycle_behavior_authority_after_post_authority_route_behavior_no_runtime_requirement_sync",
+            "operator_reviews_layer3_end_to_end_governance_lifecycle_after_requirement_selection_without_mutation_or_dispatch",
+            "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_behavior_freeze_current_main_sync",
+            "current_main_synced_layer3_end_to_end_governance_lifecycle_behavior_freeze_after_requirement_selection",
+            "codex/l3-e2e-governance-behavior-freeze-after-requirement-sync-sync",
+            "484_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1079",
+            "657943fb825d8f43f51abc8cbae053683cf31fca",
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"merge_state_before_merge": "CLEAN"',
+            '"selected_exact_milestone": "freeze_layer3_end_to_end_governance_lifecycle_behavior_authority_after_post_authority_route_behavior_no_runtime_requirement_sync"',
+            '"selected_exact_named_product_use_case_behavior": "operator_reviews_layer3_end_to_end_governance_lifecycle_after_requirement_selection_without_mutation_or_dispatch"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_behavior_freeze_current_main_sync_proof",
+            "current_main_synced_layer3_end_to_end_governance_lifecycle_behavior_freeze_after_requirement_selection",
+            "codex/l3-e2e-governance-behavior-freeze-after-requirement-sync-sync",
+            "484_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1079",
+            "657943fb825d8f43f51abc8cbae053683cf31fca",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "merge_state_before_merge CLEAN",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "no implementation",
+            "no runtime behavior",
+            "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing e2e governance lifecycle behavior freeze sync term: {term}"
                 )
 
 def main() -> int:
