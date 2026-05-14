@@ -992,6 +992,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_AFTER_POST_AUTHORITY_ROUTE_CUR
     PLANNING_DOCS
     / "472_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_AFTER_POST_AUTHORITY_ROUTE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_POST_AUTHORITY_ROUTE_FREEZE_SYNC = (
+    PLANNING_DOCS
+    / "473_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_POST_AUTHORITY_ROUTE_FREEZE_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -37735,6 +37739,87 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing post-route product/use-case behavior authority freeze sync term: {term}"
+                )
+
+    product_use_case_behavior_authority_audit_after_post_route_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_POST_AUTHORITY_ROUTE_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `conduct_layer3_product_use_case_behavior_authority_audit_after_post_authority_route_requirement_selection_sync`.",
+        "473_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_POST_AUTHORITY_ROUTE_FREEZE_SYNC.md",
+        "05eedbd5c511f0d3519e6abcd54be94e60658a08",
+        "472_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_AFTER_POST_AUTHORITY_ROUTE_CURRENT_MAIN_SYNC.md",
+        "operator_reviews_synced_layer3_authority_matrix_route_for_next_product_use_case_behavior_without_mutation_or_dispatch",
+        "no_runtime_now_layer3_product_use_case_behavior_authority_absent_after_post_authority_route_sequence",
+        "Entry decision: `no_runtime_now`.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: `none`.",
+        "Layer3AuthorityMatrixResponse",
+        "GET /api/v1/layer3/authority-matrix",
+        "layer3.authority_matrix_route.v1",
+        "build_exposed_authority_matrix_contract",
+        "side_effect_policy",
+        "auth_security_posture",
+        "current_main_sync_layer3_product_use_case_behavior_authority_audit_after_post_authority_route_merge",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_post_authority_route_behavior_no_runtime_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in product_use_case_behavior_authority_audit_after_post_route_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_POST_AUTHORITY_ROUTE_FREEZE_SYNC)} missing post-route product/use-case behavior authority audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Behavior Authority Audit After Post Authority Route Freeze Sync",
+            "473_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_POST_AUTHORITY_ROUTE_FREEZE_SYNC.md",
+            "conduct_layer3_product_use_case_behavior_authority_audit_after_post_authority_route_requirement_selection_sync",
+            "no_runtime_now_layer3_product_use_case_behavior_authority_absent_after_post_authority_route_sequence",
+            "Layer3AuthorityMatrixResponse",
+            "GET /api/v1/layer3/authority-matrix",
+            "layer3.authority_matrix_route.v1",
+            "build_exposed_authority_matrix_contract",
+            "Selected implementation action is `none`",
+            "current_main_sync_layer3_product_use_case_behavior_authority_audit_after_post_authority_route_merge",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_post_authority_route_behavior_no_runtime_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_behavior_authority_audit_after_post_authority_route_freeze_sync",
+            "branch_local_planning_control_audit",
+            "codex/l3-product-behavior-authority-audit-post-route",
+            "473_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_POST_AUTHORITY_ROUTE_FREEZE_SYNC.md",
+            "05eedbd5c511f0d3519e6abcd54be94e60658a08",
+            "operator_reviews_synced_layer3_authority_matrix_route_for_next_product_use_case_behavior_without_mutation_or_dispatch",
+            '"audit_result": "no_runtime_now_layer3_product_use_case_behavior_authority_absent_after_post_authority_route_sequence"',
+            '"entry_decision": "no_runtime_now"',
+            '"selected_implementation_action": "none"',
+            '"read_only_authority_route_present": true',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_post_authority_route_behavior_no_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_behavior_authority_audit_after_post_authority_route_freeze_sync_proof",
+            "branch_local_planning_control_audit",
+            "codex/l3-product-behavior-authority-audit-post-route",
+            "473_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_POST_AUTHORITY_ROUTE_FREEZE_SYNC.md",
+            "05eedbd5c511f0d3519e6abcd54be94e60658a08",
+            "no_runtime_now_layer3_product_use_case_behavior_authority_absent_after_post_authority_route_sequence",
+            "Layer3AuthorityMatrixResponse",
+            "GET /api/v1/layer3/authority-matrix",
+            "selected implementation action none",
+            "no runtime behavior",
+            "no response-model shape change",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_post_authority_route_behavior_no_runtime_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post-route product/use-case behavior authority audit term: {term}"
                 )
 
 def main() -> int:
