@@ -3509,6 +3509,25 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     gap: 14px;
 }
 
+.package-lifecycle-dashboard-panel {
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+}
+
+.package-lifecycle-grid {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.package-lifecycle-rows {
+    grid-column: span 2;
+}
+
+@media (max-width: 760px) {
+    .package-lifecycle-rows {
+        grid-column: span 1;
+    }
+}
+
 .plan-summary-grid,
 .plan-preview-grid,
 .result-review-grid {
