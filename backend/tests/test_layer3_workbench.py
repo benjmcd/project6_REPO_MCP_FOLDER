@@ -56,6 +56,7 @@ from app.services.layer3_authority_matrix_contract import (
     AUTHORITY_MATRIX_FAIL_CLOSED_RESULT,
     AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT,
     AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT,
+    AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT,
     AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT,
 )
 
@@ -1483,6 +1484,11 @@ def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
         authority_rows["response_dto_posture"]["admission_result"]
         == AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT
     )
+    assert (
+        authority_rows["rendered_review_posture"]["admission_result"]
+        == AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT
+    )
+    assert authority_rows["rendered_review_posture"]["blocked_scope"] == ["frontend_only_durable_authority"]
     assert result["authority_rail"]["browser_only_state"] == [
         "expanded_rows",
         "hidden_uncommitted_candidates",
@@ -1530,7 +1536,8 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
         "schema_model_migration_change",
         "separate_response_dto_module_change",
     }
-    assert blocked_rows["rendered_review_posture"]["admission_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
+    assert blocked_rows["rendered_review_posture"]["admission_result"] == AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT
+    assert blocked_rows["rendered_review_posture"]["blocked_scope"] == ["frontend_only_durable_authority"]
     assert "runtime_behavior" in blocked_rows["side_effect_policy"]["blocked_scope"]
 
     admitted_capabilities = {item["capability"]: item for item in contract["admitted_capabilities"]}

@@ -15,6 +15,7 @@ AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT = "read_only_bootstrap_readiness_res
 AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT = "admitted_for_read_only_bootstrap_readiness_exposure"
 AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT = "admitted_for_existing_bootstrap_readiness_openapi_schema"
 AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT = "admitted_for_bootstrap_readiness_response_model_shape"
+AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT = "admitted_for_existing_read_only_rendered_review_panel"
 
 AUTHORITY_MATRIX_ADMISSION_VOCABULARY = (
     "admitted_for_contract_definition_only",
@@ -185,6 +186,7 @@ def build_exposed_authority_matrix_contract(
         AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT,
         AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT,
         AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT,
+        AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT,
     ]
     rows = {row["row"]: row for row in contract["authority_matrix"]}
     rows["workbench_exposure_substrate"].update(
@@ -225,6 +227,20 @@ def build_exposed_authority_matrix_contract(
                 "prove_response_body_contains_exposure_aware_authority_matrix_contract",
             ],
             "next_allowed_action": "sync_exposure_before_schema_or_dto_module_work",
+        }
+    )
+    rows["rendered_review_posture"].update(
+        {
+            "schema_or_contract_id": AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID,
+            "source_authority": "existing_read_only_rendered_review_panel_admitted_by_439_441",
+            "admission_result": AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT,
+            "blocked_scope": ["frontend_only_durable_authority"],
+            "tests_required": [
+                "prove_existing_read_only_authority_matrix_review_panel_uses_bootstrap_contract",
+                "prove_no_rendered_ui_change_in_source_contract_update",
+                "prove_frontend_only_durable_authority_remains_blocked",
+            ],
+            "next_allowed_action": "sync_rendered_review_posture_before_next_runtime_freeze",
         }
     )
     return contract
