@@ -17574,5 +17574,34 @@
   },
   "latest_layer3_connector_destination_authority_discovery_freeze_branch": "codex/l3-connector-destination-authority-freeze",
   "latest_layer3_connector_destination_authority_discovery_freeze_live_behavior_change": false,
-  "latest_layer3_connector_destination_authority_discovery_freeze_summary": "Doc 399 proof entry records a connector/destination authority-discovery freeze only; current main has internal_dispatch_record_only, while external connector invocation, destination write, connector-run creation, and generic downstream dispatch remain blocked."
+  "latest_layer3_connector_destination_authority_discovery_freeze_summary": "Doc 399 proof entry records a connector/destination authority-discovery freeze only; current main has internal_dispatch_record_only, while external connector invocation, destination write, connector-run creation, and generic downstream dispatch remain blocked.",
+  "layer3_connector_destination_authority_discovery_freeze_current_main_sync_proof": {
+    "proof_kind": "layer3_connector_destination_authority_discovery_freeze_current_main_sync",
+    "status": "current_main_synced_connector_destination_authority_discovery_freeze",
+    "sync_branch": "codex/l3-connector-destination-authority-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/400_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_pr": "#995",
+    "freeze_merge_commit": "66982e6d30f3dba5033c72ad61982ae282f2c49f",
+    "current_main_after_merge": "66982e6d30f3dba5033c72ad61982ae282f2c49f",
+    "proof_terms": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "PR comments empty",
+      "PR reviews empty",
+      "PR reviewThreads totalCount 0",
+      "PR unresolved reviewThreads 0",
+      "l3-progress-check.py PASS",
+      "current_main_synced_connector_destination_authority_discovery_freeze",
+      "conduct_connector_destination_dispatch_authority_discovery",
+      "no_runtime_now_connector_destination_named_target_absent"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "next_allowed_action": "conduct_connector_destination_dispatch_authority_discovery",
+    "stop_condition": "no_runtime_now_connector_destination_named_target_absent"
+  },
+  "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_branch": "codex/l3-connector-destination-authority-sync",
+  "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_live_behavior_change": false,
+  "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_summary": "Doc 400 proof entry records current-main sync for PR #995 merge commit 66982e6d30f3dba5033c72ad61982ae282f2c49f; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next action is conduct_connector_destination_dispatch_authority_discovery."
 }

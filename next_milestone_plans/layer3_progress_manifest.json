@@ -13268,5 +13268,41 @@
   "latest_layer3_connector_destination_authority_discovery_freeze_branch": "codex/l3-connector-destination-authority-freeze",
   "latest_layer3_connector_destination_authority_discovery_freeze_doc": "next_milestone_plans/Layer3_planning_docs/399_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE.md",
   "latest_layer3_connector_destination_authority_discovery_freeze_live_behavior_change": false,
-  "latest_layer3_connector_destination_authority_discovery_freeze_summary": "Doc 399 selects operator_reviews_connector_destination_dispatch_authority_gap_without_external_invocation as a planning/control freeze only. Current main admits internal_dispatch_record_only through /api/v1/layer3/handoff/connector/record, but external connector invocation, destination write, connector-run creation, generic downstream dispatch, provider-public delivery/use, package mutation, source expansion, RAG/vector, auth/security, model/migration change, and frontend-only durable authority remain blocked."
+  "latest_layer3_connector_destination_authority_discovery_freeze_summary": "Doc 399 selects operator_reviews_connector_destination_dispatch_authority_gap_without_external_invocation as a planning/control freeze only. Current main admits internal_dispatch_record_only through /api/v1/layer3/handoff/connector/record, but external connector invocation, destination write, connector-run creation, generic downstream dispatch, provider-public delivery/use, package mutation, source expansion, RAG/vector, auth/security, model/migration change, and frontend-only durable authority remain blocked.",
+  "layer3_connector_destination_authority_discovery_freeze_current_main_sync": {
+    "status": "current_main_synced_connector_destination_authority_discovery_freeze",
+    "sync_branch": "codex/l3-connector-destination-authority-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/400_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_pr": "#995",
+    "freeze_merge_commit": "66982e6d30f3dba5033c72ad61982ae282f2c49f",
+    "current_main_after_merge": "66982e6d30f3dba5033c72ad61982ae282f2c49f",
+    "github_checks": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS"
+    },
+    "review_gate": {
+      "comments": "empty",
+      "reviews": "empty",
+      "reviewThreads_totalCount": 0,
+      "unresolved_reviewThreads": 0,
+      "mergeable_before_merge": "MERGEABLE"
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "backend_route_behavior_change": false,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "service_behavior_change": false,
+    "next_allowed_action": "conduct_connector_destination_dispatch_authority_discovery",
+    "stop_condition": "no_runtime_now_connector_destination_named_target_absent",
+    "next_whole_project_posture": "conduct_connector_destination_dispatch_authority_discovery_or_stop_as_no_runtime_named_target_absent"
+  },
+  "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_branch": "codex/l3-connector-destination-authority-sync",
+  "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/400_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_live_behavior_change": false,
+  "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_summary": "Doc 400 syncs PR #995 merge commit 66982e6d30f3dba5033c72ad61982ae282f2c49f to current main. GitHub backend-layer3-api/test passed, comments/reviews/reviewThreads were empty, post-merge progress check passed, and next action is conduct_connector_destination_dispatch_authority_discovery or stop as no_runtime_now_connector_destination_named_target_absent."
 }
