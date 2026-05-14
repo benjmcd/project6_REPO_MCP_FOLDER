@@ -647,6 +647,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_M
 FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET = (
     PLANNING_DOCS / "372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md"
 )
+FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "373_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29826,6 +29829,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing full mockup packet term: {term}")
+
+    full_mockup_packet_sync_text = _read_required_text(FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for full mockup activation named-target revalidation packet; no runtime behavior admitted.",
+        "PR `#962`",
+        "1268492d9a15cce22d6d8de409515f331afe5de5",
+        "current_main_synced_full_mockup_activation_named_target_revalidation_packet",
+        "no_runtime_now_full_mockup_activation_named_target_absent",
+        "next_deferred_server_authoritative_runtime_lane_freeze_after_full_mockup_no_runtime",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads",
+    ):
+        if term not in full_mockup_packet_sync_text:
+            errors.append(f"{_rel(FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC)} missing full mockup current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Full Mockup Activation Named Target Revalidation Current-Main Sync",
+            "373_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC.md",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_full_mockup_no_runtime",
+        ),
+        MANIFEST: (
+            "full_mockup_activation_named_target_revalidation_current_main_sync",
+            "current_main_synced_full_mockup_activation_named_target_revalidation_packet",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_full_mockup_no_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "full_mockup_activation_named_target_revalidation_current_main_sync_proof",
+            "current_main_synced_full_mockup_activation_named_target_revalidation_packet",
+            "reviewThreads",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing full mockup current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
