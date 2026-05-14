@@ -846,6 +846,10 @@ LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT = (
     PLANNING_DOCS
     / "435_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT.md"
 )
+LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "436_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -34464,6 +34468,82 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing next governed runtime tranche selection audit term: {term}"
+                )
+
+    next_governed_runtime_tranche_audit_sync_text = _read_required_text(
+        LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_next_governed_runtime_tranche_selection_audit`.",
+        "436_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md",
+        "435_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT.md",
+        "PR `#1031`",
+        "25b14efc58d48a612d31485019d9a6c594aa28b2",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null`: `PASS`.",
+        "`python -m py_compile .\\tools\\l3-progress-check.py`: `PASS`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`.",
+        "current_main_synced_layer3_next_governed_runtime_tranche_selection_audit",
+        "no_runtime_now_layer3_next_governed_runtime_tranche_authority_absent",
+        "selected_code_bearing_action: none",
+        "entry_decision: audit_no_runtime_authority_absent",
+        "runtime_status: not_implemented",
+        "await_new_exact_named_layer3_runtime_authority_input_after_next_governed_runtime_tranche_no_runtime_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in next_governed_runtime_tranche_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT_CURRENT_MAIN_SYNC)} missing next governed runtime tranche selection audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Next Governed Runtime Tranche Selection Audit Current-Main Sync",
+            "436_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md",
+            "PR `#1031`",
+            "25b14efc58d48a612d31485019d9a6c594aa28b2",
+            "current_main_synced_layer3_next_governed_runtime_tranche_selection_audit",
+            "no_runtime_now_layer3_next_governed_runtime_tranche_authority_absent",
+            "selected code-bearing action `none`",
+            "await_new_exact_named_layer3_runtime_authority_input_after_next_governed_runtime_tranche_no_runtime_sync",
+        ),
+        MANIFEST: (
+            "layer3_next_governed_runtime_tranche_selection_audit_current_main_sync",
+            "current_main_synced_layer3_next_governed_runtime_tranche_selection_audit",
+            '"audit_pr": "#1031"',
+            "25b14efc58d48a612d31485019d9a6c594aa28b2",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"audit_result": "no_runtime_now_layer3_next_governed_runtime_tranche_authority_absent"',
+            '"selected_code_bearing_action": "none"',
+            '"entry_decision": "audit_no_runtime_authority_absent"',
+            '"runtime_status": "not_implemented"',
+            "await_new_exact_named_layer3_runtime_authority_input_after_next_governed_runtime_tranche_no_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_next_governed_runtime_tranche_selection_audit_current_main_sync_proof",
+            "current_main_synced_layer3_next_governed_runtime_tranche_selection_audit",
+            '"audit_pr": "#1031"',
+            "25b14efc58d48a612d31485019d9a6c594aa28b2",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "selected_code_bearing_action none",
+            "await_new_exact_named_layer3_runtime_authority_input_after_next_governed_runtime_tranche_no_runtime_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing next governed runtime tranche selection audit sync term: {term}"
                 )
 
 def main() -> int:
