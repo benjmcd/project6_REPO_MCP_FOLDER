@@ -1068,6 +1068,10 @@ LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTH
     PLANNING_DOCS
     / "491_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_LIFECYCLE_REQUIREMENT_FREEZE_SYNC.md"
 )
+LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "492_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -39308,6 +39312,86 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private delivery authority audit term: {term}"
+                )
+
+    source_intake_provider_private_delivery_audit_sync_text = _read_required_text(
+        LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_lifecycle_requirement_freeze_sync`.",
+        "492_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+        "491_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_LIFECYCLE_REQUIREMENT_FREEZE_SYNC.md",
+        "#1087",
+        "1b834489261ec760fc8698511634377cb9ea5dff",
+        "backend-layer3-api",
+        "SUCCESS",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_lifecycle_requirement",
+        "layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_current_main_satisfied_no_runtime",
+        "read_only_current_main_control_surface_only",
+        "Selected implementation action remains `none`.",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in source_intake_provider_private_delivery_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC)} missing source-intake provider-private delivery authority audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Source Intake to Provider-Private Signed-Reference Delivery Boundary Authority Audit Current-Main Sync",
+            "492_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1087",
+            "1b834489261ec760fc8698511634377cb9ea5dff",
+            "reviewThreads totalCount was `0`",
+            "merge state was `CLEAN`",
+            "current_main_synced_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_lifecycle_requirement",
+            "layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_current_main_satisfied_no_runtime",
+            "selected implementation action remains `none`",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_current_main_sync",
+            "current_main_synced_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_lifecycle_requirement",
+            "codex/l3-source-intake-provider-private-delivery-authority-audit-sync",
+            "492_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1087",
+            "1b834489261ec760fc8698511634377cb9ea5dff",
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"merge_state_before_merge": "CLEAN"',
+            '"audit_result": "layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_current_main_satisfied_no_runtime"',
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_current_main_sync_proof",
+            "current_main_synced_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_lifecycle_requirement",
+            "codex/l3-source-intake-provider-private-delivery-authority-audit-sync",
+            "492_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1087",
+            "1b834489261ec760fc8698511634377cb9ea5dff",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "merge_state_before_merge CLEAN",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "no implementation",
+            "no runtime behavior",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing source-intake provider-private delivery authority audit sync term: {term}"
                 )
 
 def main() -> int:
