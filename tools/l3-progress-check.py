@@ -888,6 +888,10 @@ LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "446_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE = (
+    PLANNING_DOCS
+    / "447_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -35436,6 +35440,97 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing post authority matrix runtime selection audit sync term: {term}"
+                )
+
+    authority_matrix_rendered_review_posture_reconciliation_freeze_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_after_audit_sync`.",
+        "447_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE.md",
+        "446_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md",
+        "2928f1e4568d0970975ea02957e951beea8c5a86",
+        "freeze_layer3_authority_matrix_rendered_review_posture_reconciliation_before_contract_update",
+        "conduct_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit",
+        "layer3_authority_matrix_rendered_review_posture_reconciliation_freeze",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "Contract update status: `not_implemented`.",
+        "Rendered UI status: `not_changed`.",
+        "#authority-matrix-review-panel",
+        "`State.bootstrap.authority_matrix_contract`",
+        "`rendered_review_posture` row",
+        "`blocked_no_runtime_authority`",
+        "`freeze_rendered_review_before_ui_work`",
+        "no_contract_update_now_layer3_authority_matrix_rendered_review_posture_reconciliation_not_admitted",
+        "This freeze admits no contract update by itself.",
+        "current_main_sync_layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_after_merge",
+        "await_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit_after_freeze_sync",
+    ):
+        if term not in authority_matrix_rendered_review_posture_reconciliation_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE)} missing authority matrix rendered review posture reconciliation freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Rendered Review Posture Reconciliation Freeze",
+            "447_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE.md",
+            "freeze_layer3_authority_matrix_rendered_review_posture_reconciliation_before_contract_update",
+            "conduct_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit",
+            "`rendered_review_posture`",
+            "`backend/app/services/layer3_authority_matrix_contract.py`",
+            "#authority-matrix-review-panel",
+            "`blocked_no_runtime_authority`",
+            "current_main_sync_layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_after_merge",
+            "await_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_freeze",
+            "branch_local_planning_control_freeze",
+            "codex/l3-authority-matrix-rendered-review-posture-reconciliation-freeze",
+            "447_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE.md",
+            "2928f1e4568d0970975ea02957e951beea8c5a86",
+            "freeze_layer3_authority_matrix_rendered_review_posture_reconciliation_before_contract_update",
+            "conduct_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit",
+            "freeze_only",
+            "not_implemented",
+            "not_changed",
+            "authority-matrix-review-panel",
+            "State.bootstrap.authority_matrix_contract",
+            "rendered_review_posture",
+            "blocked_no_runtime_authority",
+            "freeze_rendered_review_before_ui_work",
+            "no_contract_update_now_layer3_authority_matrix_rendered_review_posture_reconciliation_not_admitted",
+            '"runtime_behavior_change": false',
+            '"rendered_ui_behavior_change": false',
+            "await_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_freeze_proof",
+            "branch_local_planning_control_freeze",
+            "codex/l3-authority-matrix-rendered-review-posture-reconciliation-freeze",
+            "447_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE.md",
+            "freeze_layer3_authority_matrix_rendered_review_posture_reconciliation_before_contract_update",
+            "conduct_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit",
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_freeze",
+            "authority-matrix-review-panel",
+            "State.bootstrap.authority_matrix_contract",
+            "rendered_review_posture",
+            "blocked_no_runtime_authority",
+            "freeze_rendered_review_before_ui_work",
+            "no contract update",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix rendered review posture reconciliation freeze term: {term}"
                 )
 
 def main() -> int:
