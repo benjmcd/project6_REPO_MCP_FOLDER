@@ -11794,5 +11794,40 @@
   "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_freeze_branch": "codex/l3-broad-qual-rag-revalidation-freeze",
   "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_freeze_doc": "next_milestone_plans/Layer3_planning_docs/362_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE.md",
   "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_freeze_live_behavior_change": false,
-  "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_freeze_summary": "Doc 362 selects broad_qualitative_hybrid_rag_named_mode_revalidation_packet as the next deferred lane packet only after package-action no-runtime sync. It admits no broad qualitative runtime, hybrid execution runtime, RAG/vector indexing or retrieval runtime, named analysis mode implementation, source expansion, connector/destination dispatch, provider-public delivery/use, package mutation/reconstruction, full mockup activation, auth/security behavior, route/model/migration/schema changes, or frontend-only durable authority. The next required action after merge is current_main_sync_next_deferred_runtime_lane_after_package_action_freeze."
+  "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_freeze_summary": "Doc 362 selects broad_qualitative_hybrid_rag_named_mode_revalidation_packet as the next deferred lane packet only after package-action no-runtime sync. It admits no broad qualitative runtime, hybrid execution runtime, RAG/vector indexing or retrieval runtime, named analysis mode implementation, source expansion, connector/destination dispatch, provider-public delivery/use, package mutation/reconstruction, full mockup activation, auth/security behavior, route/model/migration/schema changes, or frontend-only durable authority. The next required action after merge is current_main_sync_next_deferred_runtime_lane_after_package_action_freeze.",
+  "next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync": {
+    "status": "completed_current_main_sync_pr_952",
+    "branch": "codex/l3-broad-qual-rag-freeze-sync-952",
+    "merged_pr": "#952",
+    "merge_commit": "cc5780519eb7afcb4323d19acdc5b852b96bdc8c",
+    "head_commit": "532118e9d8aa15d5a7d8968abfa5809da9a6ecdb",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/363_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/362_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE.md",
+    "synced_boundary": "next_deferred_server_authoritative_runtime_lane_after_package_action_freeze",
+    "sync_result": "current_main_synced_next_deferred_runtime_lane_after_package_action_freeze",
+    "selected_next_lane": "broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+    "next_required_doc": "next_milestone_plans/Layer3_planning_docs/364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md",
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": [],
+      "reviews": [],
+      "reviewThreads": [],
+      "mergeStateStatus": "CLEAN",
+      "mergeable": "MERGEABLE"
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py -> PASS",
+      "git status --short -> only ?? .codesight/"
+    ],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_required_action": "broad_qualitative_hybrid_rag_named_mode_revalidation_packet"
+  },
+  "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync_branch": "codex/l3-broad-qual-rag-freeze-sync-952",
+  "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync_pr": "#952",
+  "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync_merge_commit": "cc5780519eb7afcb4323d19acdc5b852b96bdc8c",
+  "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/363_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC.md",
+  "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync_live_behavior_change": false,
+  "latest_next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync_summary": "PR #952 merged the next deferred lane after package action freeze to current main at cc5780519eb7afcb4323d19acdc5b852b96bdc8c. GitHub backend-layer3-api and test checks passed, comments/reviews/reviewThreads were empty, merge state was CLEAN, and post-merge l3-progress-check passed. The next required action is broad_qualitative_hybrid_rag_named_mode_revalidation_packet in doc 364."
 }
