@@ -1864,3 +1864,9 @@ The sync doc `359_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTO
 Branch-local planning/control packet: `360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md` revalidates package mutation after connector/destination no-runtime sync and the package-action lane freeze.
 
 The result is `no_runtime_now_named_rendered_package_action_absent`. Current repo authority admits bounded backend package lifecycle metadata and read-only package supersession preview, but still lacks a named rendered operator package-revision action. Package mutation/reconstruction, package payload rewrite/write, package row mutation, rendered package mutation controls, connector/destination dispatch, provider-public delivery/use, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
+
+## Package Mutation Named Action Revalidation Current-Main Sync
+
+Current-main proof/control sync: PR `#950` merged `360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md` at merge commit `87729b2a1693227c4cbe928bd64872491d70eaf7`.
+
+The sync doc `361_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Package mutation runtime remains blocked as `no_runtime_now_named_rendered_package_action_absent`; the next whole-project decision is `next_deferred_server_authoritative_runtime_lane_freeze_after_package_action_no_runtime`.
