@@ -16604,5 +16604,32 @@
     "runtime_behavior_change": false,
     "rendered_ui_behavior_change": false,
     "next_required_action": "next_deferred_server_authoritative_runtime_lane_freeze_after_broad_qualitative_hybrid_rag_no_runtime"
+  },
+  "next_deferred_server_authoritative_runtime_lane_after_broad_qual_rag_freeze_proof": {
+    "status": "branch_local_planning_control_proof",
+    "branch": "codex/l3-source-expansion-revalidation-freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/366_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE.md",
+    "selected_next_lane": "source_expansion_named_source_family_revalidation_packet",
+    "freeze_result": "selected_source_expansion_named_source_family_revalidation_packet_only",
+    "current_failure_boundary": "unsupported_source_family_absent",
+    "authority_files": [
+      "backend/app/services/layer3_source_boundary.py",
+      "backend/app/services/layer3_source_intake.py",
+      "backend/app/services/layer3_preflight_request_contract.py",
+      "backend/app/services/layer3_mockup_boundary.py"
+    ],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "proof_terms": [
+      "source_expansion_named_source_family_revalidation_packet",
+      "selected_source_expansion_named_source_family_revalidation_packet_only",
+      "unsupported_source_family_absent",
+      "No arbitrary local-directory source runtime is admitted.",
+      "No broad file-upload source runtime is admitted.",
+      "No web connector source runtime is admitted.",
+      "No RAG/vector source runtime is admitted.",
+      "No auth/security behavior is admitted."
+    ],
+    "next_required_action": "current_main_sync_next_deferred_runtime_lane_after_broad_qual_rag_freeze"
   }
 }
