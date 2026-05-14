@@ -17379,9 +17379,50 @@
       "frontend-only durable authority remains blocked",
       "backend route/DTO/model/migration/service behavior remains unchanged"
     ],
-    "next_required_decision": "current_main_sync_downstream_access_lifecycle_dashboard_after_merge"
+    "next_required_decision": "current_main_synced_by_394"
   },
   "latest_downstream_access_lifecycle_read_only_dashboard_branch": "codex/l3-downstream-access-dashboard-impl",
   "latest_downstream_access_lifecycle_read_only_dashboard_live_behavior_change": true,
-  "latest_downstream_access_lifecycle_read_only_dashboard_summary": "Doc 393 proof entry records the read-only downstream access lifecycle dashboard implementation over existing_server_response_authority; headless/headed Chromium handoff proof and static page tests passed, with raw URL, connector/destination, provider-public delivery/use, backend runtime, and frontend-only durable authority boundaries preserved."
+  "latest_downstream_access_lifecycle_read_only_dashboard_summary": "Doc 393 proof entry records the read-only downstream access lifecycle dashboard implementation over existing_server_response_authority; headless/headed Chromium handoff proof and static page tests passed, with raw URL, connector/destination, provider-public delivery/use, backend runtime, and frontend-only durable authority boundaries preserved.",
+  "downstream_access_lifecycle_read_only_dashboard_current_main_sync_proof": {
+    "proof_kind": "rendered_downstream_access_lifecycle_read_only_dashboard_current_main_sync",
+    "status": "current_main_synced_rendered_downstream_access_lifecycle_read_only_dashboard",
+    "sync_branch": "codex/l3-downstream-access-dashboard-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/394_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md",
+    "implementation_pr": "#989",
+    "implementation_merge_commit": "f45dcb55d9645aca29df36e177905f9496e26f25",
+    "current_main_after_merge": "f45dcb55d9645aca29df36e177905f9496e26f25",
+    "proof_terms": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "PR comments empty",
+      "PR reviews empty",
+      "PR reviewThreads totalCount 0",
+      "PR unresolved reviewThreads 0",
+      "mergeability MERGEABLE before merge",
+      "l3-progress-check.py PASS",
+      "current_main_synced_rendered_downstream_access_lifecycle_read_only_dashboard",
+      "await_next_exact_named_layer3_product_use_case_requirement_after_downstream_access_lifecycle_dashboard_sync"
+    ],
+    "remaining_runtime_boundaries": [
+      "external connector invocation remains blocked",
+      "destination write remains blocked",
+      "connector-run creation remains blocked",
+      "provider-public delivery/use remains blocked",
+      "raw public URL display/use remains blocked",
+      "public proxy runtime remains blocked",
+      "provider network/object-store write remains blocked",
+      "package mutation remains blocked",
+      "source expansion remains blocked",
+      "RAG/vector behavior remains blocked",
+      "auth/security behavior remains blocked",
+      "frontend-only durable authority remains blocked",
+      "backend route/DTO/model/migration/service behavior remains unchanged"
+    ],
+    "next_whole_project_posture": "await_next_exact_named_layer3_product_use_case_requirement_after_downstream_access_lifecycle_dashboard_sync"
+  },
+  "latest_downstream_access_lifecycle_read_only_dashboard_current_main_sync_branch": "codex/l3-downstream-access-dashboard-sync",
+  "latest_downstream_access_lifecycle_read_only_dashboard_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/394_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md",
+  "latest_downstream_access_lifecycle_read_only_dashboard_current_main_sync_live_behavior_change": false,
+  "latest_downstream_access_lifecycle_read_only_dashboard_current_main_sync_summary": "Doc 394 proof entry records current-main sync for PR #989 merge commit f45dcb55d9645aca29df36e177905f9496e26f25; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next posture is await_next_exact_named_layer3_product_use_case_requirement_after_downstream_access_lifecycle_dashboard_sync."
 }
