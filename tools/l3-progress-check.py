@@ -732,6 +732,9 @@ LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC = (
 LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT = (
     PLANNING_DOCS / "401_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md"
 )
+LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "402_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -31596,6 +31599,75 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector/destination authority closeout term: {term}"
+                )
+
+    connector_destination_closeout_sync_text = _read_required_text(
+        LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `connector_destination_dispatch_authority_discovery_closeout`.",
+        "402_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC.md",
+        "PR `#997`",
+        "b8b80698f73eff27d3b9519defa9992d19d09ce7",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_connector_destination_authority_discovery_closeout",
+        "entry_decision: no_runtime_now",
+        "selected_runtime_mode: null",
+        "runtime_status: not_implemented",
+        "insufficient_authority_for_layer3_connector_destination_runtime",
+        "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+    ):
+        if term not in connector_destination_closeout_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC)} missing connector/destination closeout sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Destination Authority Discovery Closeout Current-Main Sync",
+            "402_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC.md",
+            "PR `#997`",
+            "b8b80698f73eff27d3b9519defa9992d19d09ce7",
+            "current_main_synced_connector_destination_authority_discovery_closeout",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+        ),
+        MANIFEST: (
+            "layer3_connector_destination_authority_discovery_closeout_current_main_sync",
+            "current_main_synced_connector_destination_authority_discovery_closeout",
+            '"closeout_pr": "#997"',
+            "b8b80698f73eff27d3b9519defa9992d19d09ce7",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"entry_decision": "no_runtime_now"',
+            '"selected_runtime_mode": null',
+            '"runtime_status": "not_implemented"',
+            "insufficient_authority_for_layer3_connector_destination_runtime",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_destination_authority_discovery_closeout_current_main_sync_proof",
+            "current_main_synced_connector_destination_authority_discovery_closeout",
+            '"closeout_pr": "#997"',
+            "b8b80698f73eff27d3b9519defa9992d19d09ce7",
+            "backend-layer3-api SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "insufficient_authority_for_layer3_connector_destination_runtime",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector/destination closeout sync term: {term}"
                 )
 
 def main() -> int:
