@@ -834,6 +834,10 @@ LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "432_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE = (
+    PLANNING_DOCS
+    / "433_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -34221,6 +34225,86 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix contract exposure implementation sync term: {term}"
+                )
+
+    next_governed_runtime_tranche_freeze_text = _read_required_text(
+        LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control freeze for `await_layer3_next_governed_runtime_tranche_freeze_after_authority_matrix_exposure_sync`.",
+        "433_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE.md",
+        "432_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+        "3eebe19a92697a8fce0c0404c82402016f5ae801",
+        "Selected exact milestone: `select_layer3_next_governed_runtime_tranche_after_authority_matrix_exposure_sync`.",
+        "Selected exact audit: `conduct_layer3_next_governed_runtime_tranche_selection_audit_after_authority_matrix_exposure_sync`.",
+        "operator_reviews_exposed_authority_matrix_to_select_next_runtime_tranche_without_mutation_or_dispatch",
+        "Selected freeze mode: `layer3_next_governed_runtime_tranche_selection_freeze`.",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "source-intake provider-public delivery/use reopening",
+        "connector/destination named target revalidation",
+        "package mutation named action revalidation",
+        "auth/security named behavior revalidation",
+        "no_runtime_now_layer3_next_governed_runtime_tranche_authority_absent",
+        "No closed or blocked lane is reopened by implication.",
+        "current_main_sync_layer3_next_governed_runtime_tranche_selection_freeze_after_merge",
+        "await_layer3_next_governed_runtime_tranche_selection_audit_after_freeze_sync",
+    ):
+        if term not in next_governed_runtime_tranche_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE)} missing next governed runtime tranche selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Next Governed Runtime Tranche Selection Freeze",
+            "433_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE.md",
+            "layer3_next_governed_runtime_tranche_selection_freeze",
+            "select_layer3_next_governed_runtime_tranche_after_authority_matrix_exposure_sync",
+            "conduct_layer3_next_governed_runtime_tranche_selection_audit_after_authority_matrix_exposure_sync",
+            "operator_reviews_exposed_authority_matrix_to_select_next_runtime_tranche_without_mutation_or_dispatch",
+            "current_main_sync_layer3_next_governed_runtime_tranche_selection_freeze_after_merge",
+            "await_layer3_next_governed_runtime_tranche_selection_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_next_governed_runtime_tranche_selection_freeze",
+            "branch_local_planning_control_freeze",
+            "codex/l3-next-governed-runtime-tranche-freeze",
+            "433_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE.md",
+            "3eebe19a92697a8fce0c0404c82402016f5ae801",
+            "select_layer3_next_governed_runtime_tranche_after_authority_matrix_exposure_sync",
+            "conduct_layer3_next_governed_runtime_tranche_selection_audit_after_authority_matrix_exposure_sync",
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            '"service_behavior_change": false',
+            "source_intake_provider_public_url_delivery_use_reopening",
+            "rendered_authority_matrix_review_surface",
+            "current_main_sync_layer3_next_governed_runtime_tranche_selection_freeze_after_merge",
+            "await_layer3_next_governed_runtime_tranche_selection_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_next_governed_runtime_tranche_selection_freeze_proof",
+            "branch_local_planning_control_freeze",
+            "433_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE.md",
+            "select_layer3_next_governed_runtime_tranche_after_authority_matrix_exposure_sync",
+            "operator_reviews_exposed_authority_matrix_to_select_next_runtime_tranche_without_mutation_or_dispatch",
+            "source_intake_provider_public_url_delivery_use_reopening",
+            "connector_destination_named_target_revalidation",
+            "package_mutation_named_action_revalidation",
+            "auth_security_named_behavior_revalidation",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_next_governed_runtime_tranche_selection_freeze_after_merge",
+            "await_layer3_next_governed_runtime_tranche_selection_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing next governed runtime tranche selection freeze term: {term}"
                 )
 
 def main() -> int:
