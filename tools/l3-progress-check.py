@@ -932,6 +932,10 @@ LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE = (
     PLANNING_DOCS
     / "457_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE.md"
 )
+LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "458_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -36448,6 +36452,86 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing separate authority matrix route freeze term: {term}"
+                )
+
+    separate_authority_matrix_route_freeze_sync_text = _read_required_text(
+        LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_separate_authority_matrix_route_freeze`.",
+        "458_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC.md",
+        "457_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE.md",
+        "PR `#1053`",
+        "7c6e834125e42960c65ae9d4ce07330bb0219562",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "current_main_synced_layer3_separate_authority_matrix_route_freeze",
+        "conduct_layer3_separate_authority_matrix_route_source_audit",
+        "await_layer3_separate_authority_matrix_route_source_audit_after_freeze_sync",
+        "No implementation begins in this sync.",
+        "No route implementation",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in separate_authority_matrix_route_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC)} missing separate authority matrix route freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Separate Authority Matrix Route Freeze Current-Main Sync",
+            "458_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1053`",
+            "7c6e834125e42960c65ae9d4ce07330bb0219562",
+            "current_main_synced_layer3_separate_authority_matrix_route_freeze",
+            "conduct_layer3_separate_authority_matrix_route_source_audit",
+            "await_layer3_separate_authority_matrix_route_source_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_separate_authority_matrix_route_freeze_current_main_sync",
+            "current_main_synced_layer3_separate_authority_matrix_route_freeze",
+            "codex/l3-separate-authority-matrix-route-freeze-sync",
+            "458_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC.md",
+            '"freeze_pr": "#1053"',
+            "7c6e834125e42960c65ae9d4ce07330bb0219562",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"mergeable_before_merge": "MERGEABLE"',
+            "conduct_layer3_separate_authority_matrix_route_source_audit",
+            '"sync_live_behavior_change": false',
+            "await_layer3_separate_authority_matrix_route_source_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_separate_authority_matrix_route_freeze_current_main_sync_proof",
+            "current_main_synced_layer3_separate_authority_matrix_route_freeze",
+            "codex/l3-separate-authority-matrix-route-freeze-sync",
+            "458_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC.md",
+            '"freeze_pr": "#1053"',
+            "7c6e834125e42960c65ae9d4ce07330bb0219562",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "PR unresolved reviewThreads 0",
+            "no implementation begins in this sync",
+            "no route implementation",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_layer3_separate_authority_matrix_route_source_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing separate authority matrix route freeze sync term: {term}"
                 )
 
 def main() -> int:
