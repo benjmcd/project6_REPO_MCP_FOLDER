@@ -5182,7 +5182,7 @@ def _check_qualitative_aps_rendered_ui_freeze(errors: list[str]) -> None:
             "external_export_download_delivery_ui_unavailable",
             "external_export_download_signed_reference_ui_blocked",
             "deliveryUiStateAdmitted(deliveryUi",
-            "if (!isAssociatedCohortExternalExportDownloadState(external))",
+            "serverExternalExportDownloadDeliveryUiState(external)",
             "payload.construction_basis_hash = constructionBasisHash",
             "apsHandoffDispatchState()?.available === true",
         ),
@@ -22121,7 +22121,7 @@ def _check_source_intake_package_review_preview_boundary(errors: list[str]) -> N
         BOARD: ("## Source Intake Package Review Preview Boundary", "313_SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_BOUNDARY.md", "source_intake_package_construction_commit_boundary_freeze"),
         MANIFEST: ("source_intake_package_review_preview_boundary", "latest_source_intake_package_review_preview_boundary_branch", "layer3.source_intake_package_review_preview.v1"),
         PROOF_MANIFEST: ("source_intake_package_review_preview_boundary_proof", "source_intake_package_construction_commit_not_admitted", "22 passed"),
-        ROOT / "backend/app/services/layer3_workbench.py": ("SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID", "_source_intake_package_review_preview_hash", "read_only_source_intake_package_review_preview", "source_intake_package_construction_not_admitted"),
+        ROOT / "backend/app/services/layer3_workbench.py": ("SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID", "_source_intake_package_review_preview_hash", "read_only_source_intake_package_review_preview", "source_intake_package_construction_admitted"),
         ROOT / "backend/tests/test_layer3_workbench.py": ("source-intake-package-preview-ready", "layer3.source_intake_package_review_preview.v1", "layer3.source_intake_package_construction_commit.v1", "L3ReconciliationRecord"),
     }.items():
         surface_text = _read_required_text(path, errors)
@@ -23427,8 +23427,7 @@ def _check_source_intake_external_export_download_rendered_controls_boundary(err
             "function sourceIntakeDeliveryUiState",
             "source_intake_external_export_download_delivery_ui_ready",
             "!isSourceIntakeExternalExportDownloadState(external)",
-            "if (!isAssociatedCohortExternalExportDownloadState(external))",
-            "return false;",
+            "serverExternalExportDownloadDeliveryUiState(external)",
             "submitAttachmentForm('/handoff/export/download/deliver'",
         ),
         ROOT / "backend/tests/test_layer3_page.py": (

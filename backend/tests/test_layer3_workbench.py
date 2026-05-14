@@ -163,7 +163,16 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
         created_at=now,
         updated_at=now,
     )
-    db_session.add_all([session, plan, source_record])
+    manifest = L3SelectionManifest(
+        selection_manifest_id=session.selection_manifest_id,
+        session_id=session.session_id,
+        manifest_json={"session_id": session.session_id, "source": "pytest_source_intake"},
+        source_plane_hints_json={"source_intake_record_ids": ["src-intake-plan-001"]},
+        selection_hash="source-intake-selection-hash",
+        committed_at=now,
+        commit_reason="pytest source-intake selection manifest",
+    )
+    db_session.add_all([session, plan, source_record, manifest])
     db_session.commit()
 
     result = layer3_workbench.execution_selection(
@@ -324,13 +333,16 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert package_preview["schema_id"] == "layer3.source_intake_package_review_preview.v1"
     assert package_preview["analysis_run_id"] is None
     assert package_preview["package_review_preview_enabled"] is True
-    assert package_preview["package_commit_enabled"] is False
+    assert package_preview["package_commit_enabled"] is True
     assert package_preview["package_review_submit_enabled"] is False
     assert package_preview["source_intake_record_id"] == "src-intake-plan-001"
     assert package_preview["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
     assert package_preview["output_payload_hash"] == output_payload["output_hash"]
-    assert package_preview["package_owner_compatibility"]["workbench_package_commit_callable"] is False
-    assert "package_construction" in package_preview["downstream_unavailable"]
+    assert package_preview["package_owner_compatibility"]["workbench_package_commit_callable"] is True
+    assert "package_construction" not in package_preview["downstream_unavailable"]
+    preview_session_summary = layer3_workbench.session_summary(db_session, session.session_id)
+    assert preview_session_summary["package_review_preview"]["package_commit_enabled"] is True
+    assert preview_session_summary["package_review_preview"]["source_intake_record_id"] == "src-intake-plan-001"
     assert db_session.query(AnalysisRun).count() == 0
     assert db_session.query(L3OutputPackage).count() == 0
     assert db_session.query(L3ReconciliationRecord).count() == 0
@@ -354,8 +366,8 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert package_construction["source_intake_record_id"] == "src-intake-plan-001"
     assert package_construction["candidate_id"] == "mat-source_intake_record-src-intake-plan-001"
     assert package_construction["output_payload_hash"] == output_payload["output_hash"]
-    assert package_construction["package_review_submit_enabled"] is False
-    assert package_construction["next_allowed_actions"] == []
+    assert package_construction["package_review_submit_enabled"] is True
+    assert package_construction["next_allowed_actions"] == ["submit_package_review"]
     assert package_construction["package_construction_source_gate"] == (
         "314_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY_FREEZE"
     )
@@ -367,6 +379,14 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert db_session.query(AnalysisRun).count() == 0
     assert db_session.query(L3OutputPackage).count() == 3
     assert db_session.query(L3ReconciliationRecord).count() == 1
+    construction_session_summary = layer3_workbench.session_summary(db_session, session.session_id)
+    assert construction_session_summary["package_construction"]["package_review_submit_enabled"] is True
+    assert construction_session_summary["package_construction"]["source_intake_record_id"] == "src-intake-plan-001"
+    assert (
+        construction_session_summary["package_review_submit"]["package_review_submit_schema_id"]
+        == "layer3.source_intake_package_review_submit.v1"
+    )
+    assert construction_session_summary["package_review_submit"]["available"] is True
 
     package_construction_replay = layer3_workbench.package_construction_commit(
         db_session,
@@ -848,7 +868,16 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert external_export["connector_dispatch_enabled"] is False
     assert external_export["destination_selection_enabled"] is False
     assert external_export["generic_downstream_dispatch_enabled"] is False
+    assert external_export["delivery_ui"]["available"] is True
+    assert external_export["delivery_ui"]["state"] == "source_intake_external_export_download_delivery_ui_ready"
     assert "external_export_download_descriptor" in external_export
+    external_export_session_summary = layer3_workbench.session_summary(db_session, session.session_id)
+    assert (
+        external_export_session_summary["external_export_download"]["schema_id"]
+        == "layer3.source_intake_external_export_download_prepare.v1"
+    )
+    assert external_export_session_summary["external_export_download"]["source_intake_record_id"] == "src-intake-plan-001"
+    assert external_export_session_summary["external_export_download"]["delivery_ui"]["available"] is True
 
     from app.services import nrc_aps_evidence_bundle
 
