@@ -16675,5 +16675,23 @@
     "runtime_behavior_change": false,
     "rendered_ui_behavior_change": false,
     "next_required_action": "current_main_sync_source_expansion_named_source_family_revalidation_packet_after_merge"
+  },
+  "source_expansion_named_source_family_revalidation_current_main_sync_proof": {
+    "status": "current_main_sync_proof_complete",
+    "merged_pr": "#958",
+    "merge_commit": "ff8cbff97726b317dee4bd66f370d631d4211a7b",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/369_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_CURRENT_MAIN_SYNC.md",
+    "packet_doc": "next_milestone_plans/Layer3_planning_docs/368_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET.md",
+    "sync_result": "current_main_synced_source_expansion_named_source_family_revalidation_packet",
+    "entry_decision": "no_runtime_now_source_expansion_named_source_family_absent",
+    "reviewThreads": [],
+    "checks": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS"
+    },
+    "post_merge_validation": "python .\\tools\\l3-progress-check.py -> PASS",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_required_action": "next_deferred_server_authoritative_runtime_lane_freeze_after_source_expansion_no_runtime"
   }
 }
