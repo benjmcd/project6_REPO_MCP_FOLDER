@@ -850,6 +850,10 @@ LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "436_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE = (
+    PLANNING_DOCS
+    / "437_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -34544,6 +34548,84 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing next governed runtime tranche selection audit sync term: {term}"
+                )
+
+    authority_matrix_rendered_review_freeze_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_new_exact_named_layer3_runtime_authority_input_after_next_governed_runtime_tranche_no_runtime_sync`.",
+        "437_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE.md",
+        "436_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md",
+        "f2ebae9f292be038cf8628aeba19afad1529d42a",
+        "Selected exact milestone: `select_layer3_authority_matrix_rendered_review_surface_after_next_governed_runtime_tranche_no_runtime_sync`.",
+        "operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch",
+        "Selected freeze mode: `layer3_authority_matrix_rendered_review_surface_freeze`.",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "Rendered UI status: `not_implemented`.",
+        "conduct_layer3_authority_matrix_rendered_review_surface_source_audit",
+        "no_ui_now_layer3_authority_matrix_rendered_review_surface_authority_absent",
+        "No UI implementation begins in this pass.",
+        "No closed or blocked lane is reopened by implication.",
+        "current_main_sync_layer3_authority_matrix_rendered_review_surface_freeze_after_merge",
+        "await_layer3_authority_matrix_rendered_review_surface_source_audit_after_freeze_sync",
+    ):
+        if term not in authority_matrix_rendered_review_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE)} missing authority matrix rendered review freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Rendered Review Surface Freeze",
+            "437_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE.md",
+            "layer3_authority_matrix_rendered_review_surface_freeze",
+            "operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch",
+            "conduct_layer3_authority_matrix_rendered_review_surface_source_audit",
+            "no_ui_now_layer3_authority_matrix_rendered_review_surface_authority_absent",
+            "current_main_sync_layer3_authority_matrix_rendered_review_surface_freeze_after_merge",
+            "await_layer3_authority_matrix_rendered_review_surface_source_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_rendered_review_surface_freeze",
+            "branch_local_planning_control_freeze",
+            "codex/l3-authority-matrix-rendered-review-freeze",
+            "437_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE.md",
+            "f2ebae9f292be038cf8628aeba19afad1529d42a",
+            "select_layer3_authority_matrix_rendered_review_surface_after_next_governed_runtime_tranche_no_runtime_sync",
+            "operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch",
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"rendered_ui_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"rendered_ui_behavior_change": false',
+            "conduct_layer3_authority_matrix_rendered_review_surface_source_audit",
+            "no_ui_now_layer3_authority_matrix_rendered_review_surface_authority_absent",
+            "current_main_sync_layer3_authority_matrix_rendered_review_surface_freeze_after_merge",
+            "await_layer3_authority_matrix_rendered_review_surface_source_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_rendered_review_surface_freeze_proof",
+            "branch_local_planning_control_freeze",
+            "437_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE.md",
+            "operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch",
+            "layer3_authority_matrix_rendered_review_surface_freeze",
+            "rendered UI status not_implemented",
+            "conduct_layer3_authority_matrix_rendered_review_surface_source_audit",
+            "no_ui_now_layer3_authority_matrix_rendered_review_surface_authority_absent",
+            "no rendered UI behavior",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_authority_matrix_rendered_review_surface_freeze_after_merge",
+            "await_layer3_authority_matrix_rendered_review_surface_source_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix rendered review freeze term: {term}"
                 )
 
 def main() -> int:
