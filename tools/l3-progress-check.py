@@ -744,6 +744,9 @@ LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC = (
 LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE = (
     PLANNING_DOCS / "405_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE.md"
 )
+LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "406_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -31901,6 +31904,83 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing product/use-case behavior freeze term: {term}"
+                )
+
+    product_use_case_behavior_freeze_sync_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_product_use_case_behavior_authority_freeze`.",
+        "406_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "405_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE.md",
+        "PR `#1001`",
+        "d01c2aaae80fb5e5458e6d17aab2c087eacb0ed1",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_layer3_product_use_case_behavior_authority_freeze",
+        "entry_decision: freeze_only",
+        "selected_freeze_mode: layer3_product_use_case_behavior_authority_freeze",
+        "runtime_status: not_implemented",
+        "operator_reviews_layer3_server_authority_matrix_for_next_runtime_tranche_without_mutation_or_dispatch",
+        "conduct_layer3_product_use_case_behavior_authority_audit",
+        "no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+        "await_layer3_product_use_case_behavior_authority_audit_after_freeze_sync",
+        "No runtime behavior",
+    ):
+        if term not in product_use_case_behavior_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC)} missing product/use-case behavior freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Behavior Authority Freeze Current-Main Sync",
+            "406_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1001`",
+            "d01c2aaae80fb5e5458e6d17aab2c087eacb0ed1",
+            "current_main_synced_layer3_product_use_case_behavior_authority_freeze",
+            "conduct_layer3_product_use_case_behavior_authority_audit",
+            "await_layer3_product_use_case_behavior_authority_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_behavior_authority_freeze_current_main_sync",
+            "current_main_synced_layer3_product_use_case_behavior_authority_freeze",
+            '"freeze_pr": "#1001"',
+            "d01c2aaae80fb5e5458e6d17aab2c087eacb0ed1",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"entry_decision": "freeze_only"',
+            '"selected_freeze_mode": "layer3_product_use_case_behavior_authority_freeze"',
+            '"runtime_status": "not_implemented"',
+            "operator_reviews_layer3_server_authority_matrix_for_next_runtime_tranche_without_mutation_or_dispatch",
+            "conduct_layer3_product_use_case_behavior_authority_audit",
+            "no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+            "await_layer3_product_use_case_behavior_authority_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_behavior_authority_freeze_current_main_sync_proof",
+            "current_main_synced_layer3_product_use_case_behavior_authority_freeze",
+            '"freeze_pr": "#1001"',
+            "d01c2aaae80fb5e5458e6d17aab2c087eacb0ed1",
+            "backend-layer3-api SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "operator_reviews_layer3_server_authority_matrix_for_next_runtime_tranche_without_mutation_or_dispatch",
+            "conduct_layer3_product_use_case_behavior_authority_audit",
+            "await_layer3_product_use_case_behavior_authority_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing product/use-case behavior freeze sync term: {term}"
                 )
 
 def main() -> int:
