@@ -27,10 +27,12 @@ The response is built from the existing server-owned `build_exposed_authority_ma
 - `backend/app/services/layer3_authority_matrix_contract.py`: reconciles `route_api_posture` to `admitted_for_read_only_authority_matrix_route` and keeps runtime side-effect scopes blocked.
 - `backend/tests/test_layer3_api.py`: proves OpenAPI and response behavior for the new route.
 - `backend/tests/test_layer3_authority_matrix_contract.py`: proves the exposed authority matrix row and side-effect blocks.
+- `backend/tests/test_layer3_workbench.py`: updates broader bootstrap/readiness guardrails to the reconciled route posture.
 
 ## Validation
 
 - `python -m pytest .\backend\tests\test_layer3_authority_matrix_contract.py .\backend\tests\test_layer3_api.py -k "authority_matrix or bootstrap_readiness_openapi_contracts" -q`: `PASS` (`5 passed`, `148 deselected`).
+- `python -m pytest .\backend\tests\test_layer3_workbench.py -k "bootstrap_is_explicit_about_first_slice_limits or state_action_contract_is_derived_from_state_model_without_admitting_deferred_work" -q`: `PASS` (`2 passed`, `20 deselected`).
 
 ## Boundary
 
