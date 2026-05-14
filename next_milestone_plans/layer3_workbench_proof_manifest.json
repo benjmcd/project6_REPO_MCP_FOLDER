@@ -17658,5 +17658,34 @@
   },
   "latest_layer3_connector_destination_authority_discovery_closeout_branch": "codex/l3-connector-destination-discovery-closeout",
   "latest_layer3_connector_destination_authority_discovery_closeout_live_behavior_change": false,
-  "latest_layer3_connector_destination_authority_discovery_closeout_summary": "Doc 401 proof entry records connector/destination authority discovery closeout with no runtime now: generic source/retrieval connectors exist, but no Layer 3 named connector/destination runtime authority or side-effect contract is admitted."
+  "latest_layer3_connector_destination_authority_discovery_closeout_summary": "Doc 401 proof entry records connector/destination authority discovery closeout with no runtime now: generic source/retrieval connectors exist, but no Layer 3 named connector/destination runtime authority or side-effect contract is admitted.",
+  "layer3_connector_destination_authority_discovery_closeout_current_main_sync_proof": {
+    "proof_kind": "layer3_connector_destination_authority_discovery_closeout_current_main_sync",
+    "status": "current_main_synced_connector_destination_authority_discovery_closeout",
+    "sync_branch": "codex/l3-connector-destination-closeout-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/402_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC.md",
+    "closeout_pr": "#997",
+    "closeout_merge_commit": "b8b80698f73eff27d3b9519defa9992d19d09ce7",
+    "current_main_after_merge": "b8b80698f73eff27d3b9519defa9992d19d09ce7",
+    "proof_terms": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "PR comments empty",
+      "PR reviews empty",
+      "PR reviewThreads totalCount 0",
+      "PR unresolved reviewThreads 0",
+      "l3-progress-check.py PASS",
+      "current_main_synced_connector_destination_authority_discovery_closeout",
+      "no_runtime_now",
+      "insufficient_authority_for_layer3_connector_destination_runtime",
+      "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "next_whole_project_posture": "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout"
+  },
+  "latest_layer3_connector_destination_authority_discovery_closeout_current_main_sync_branch": "codex/l3-connector-destination-closeout-sync",
+  "latest_layer3_connector_destination_authority_discovery_closeout_current_main_sync_live_behavior_change": false,
+  "latest_layer3_connector_destination_authority_discovery_closeout_current_main_sync_summary": "Doc 402 proof entry records current-main sync for PR #997 merge commit b8b80698f73eff27d3b9519defa9992d19d09ce7; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next posture is awaiting the next exact named Layer 3 product/use-case requirement."
 }
