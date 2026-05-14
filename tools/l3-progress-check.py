@@ -626,6 +626,9 @@ BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET = (
 BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "365_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_CURRENT_MAIN_SYNC.md"
 )
+NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE = (
+    PLANNING_DOCS / "366_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29544,6 +29547,44 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing broad qualitative hybrid RAG current-main sync term: {term}")
+
+    source_expansion_freeze_text = _read_required_text(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE, errors)
+    for term in (
+        "Status: planning/control next deferred server-authoritative runtime lane freeze after broad qualitative hybrid RAG no-runtime; no runtime behavior admitted.",
+        "source_expansion_named_source_family_revalidation_packet",
+        "selected_source_expansion_named_source_family_revalidation_packet_only",
+        "unsupported_source_family_absent",
+        "current_main_sync_next_deferred_runtime_lane_after_broad_qual_rag_freeze",
+        "No arbitrary local-directory source runtime is admitted.",
+        "No broad file-upload source runtime is admitted.",
+        "No web connector source runtime is admitted.",
+        "No RAG/vector source runtime is admitted.",
+        "No auth/security behavior is admitted.",
+    ):
+        if term not in source_expansion_freeze_text:
+            errors.append(f"{_rel(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE)} missing source expansion freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Next Deferred Server-Authoritative Runtime Lane After Broad Qual RAG Freeze",
+            "366_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE.md",
+            "selected_source_expansion_named_source_family_revalidation_packet_only",
+        ),
+        MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_broad_qual_rag_freeze",
+            "source_expansion_named_source_family_revalidation_packet",
+            "current_main_sync_next_deferred_runtime_lane_after_broad_qual_rag_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_broad_qual_rag_freeze_proof",
+            "selected_source_expansion_named_source_family_revalidation_packet_only",
+            "unsupported_source_family_absent",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing source expansion freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []
