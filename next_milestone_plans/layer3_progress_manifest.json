@@ -10243,7 +10243,7 @@
     "freeze_predecessor": "source_intake_external_export_download_delivery_boundary",
     "canonical_source_of_truth": "server_owned_source_intake_external_export_download_delivery_authority_and_rendered_projection_state",
     "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-    "owner_ui": "backend/app/review_ui/static/claude.html",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
     "owner_service": "backend/app/services/layer3_workbench.py",
     "current_failure_boundary": "source_intake_external_export_download_rendered_controls_absent",
     "future_rendered_controls_semantics": {
@@ -10269,14 +10269,15 @@
       "connector_destination_controls_remain_blocked",
       "package_mutation_controls_remain_blocked",
       "source_expansion_controls_remain_blocked",
-      "rag_vector_controls_remain_blocked"
+      "rag_vector_controls_remain_blocked",
+      "existing_associated_cohort_single_aps_qualitative_aps_and_source_intake_delivery_unchanged"
     ],
     "implementation_entry_allowed_next": true,
     "live_behavior_change": false,
     "runtime_behavior_change": false,
     "rendered_ui_behavior_change": false,
     "next_boundary": "source_intake_external_export_download_rendered_controls_boundary",
-    "rendered_surface": "backend/app/review_ui/static/claude.html"
+    "rendered_surface": "backend/app/review_ui/static/layer3.html"
   },
   "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_branch": "codex/l3-source-intake-delivery-controls-freeze",
   "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
@@ -11510,9 +11511,9 @@
     "rendered_ui_behavior_change": false,
     "route_behavior_change": false,
     "repo_evidence": [
-      "backend/app/services/layer3_connector_dispatch_entry.py exposes internal_dispatch_record_only only",
+      "backend/app/services/layer3_connector_dispatch_entry.py exposes internal_dispatch_record_only only for Layer 3 workbench connector/destination authority",
       "POST /api/v1/layer3/handoff/connector/record routes to record_internal_connector_dispatch",
-      "connector/destination target fields remain forbidden or known-but-non-admitted in API schema/tests"
+      "Layer 3 connector/destination target fields remain forbidden or known-but-non-admitted in API schema/tests"
     ],
     "blocked_scope": [
       "external_connector_invocation",
