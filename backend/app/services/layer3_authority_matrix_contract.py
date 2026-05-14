@@ -16,6 +16,7 @@ AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT = "admitted_for_read_only_bootstrap_r
 AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT = "admitted_for_existing_bootstrap_readiness_openapi_schema"
 AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT = "admitted_for_bootstrap_readiness_response_model_shape"
 AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT = "admitted_for_existing_read_only_rendered_review_panel"
+AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT = "admitted_for_read_only_authority_matrix_route"
 
 AUTHORITY_MATRIX_ADMISSION_VOCABULARY = (
     "admitted_for_contract_definition_only",
@@ -187,6 +188,7 @@ def build_exposed_authority_matrix_contract(
         AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT,
         AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT,
         AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT,
+        AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT,
     ]
     rows = {row["row"]: row for row in contract["authority_matrix"]}
     rows["workbench_exposure_substrate"].update(
@@ -205,14 +207,16 @@ def build_exposed_authority_matrix_contract(
     rows["route_api_posture"].update(
         {
             "schema_or_contract_id": AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID,
-            "source_authority": "existing_bootstrap_readiness_response_model_exposure_admitted_by_429",
-            "admission_result": AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT,
-            "blocked_scope": ["separate_authority_matrix_route"],
+            "source_authority": "separate_read_only_authority_matrix_route_admitted_by_459",
+            "admission_result": AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT,
+            "blocked_scope": [],
             "tests_required": [
                 "prove_existing_bootstrap_readiness_openapi_schema_includes_authority_matrix_contract",
-                "prove_no_separate_authority_matrix_route",
+                "prove_separate_authority_matrix_route_response_schema",
+                "prove_separate_authority_matrix_route_reuses_exposed_contract",
+                "prove_no_runtime_side_effect_admission",
             ],
-            "next_allowed_action": "freeze_separate_route_before_route_work",
+            "next_allowed_action": "sync_separate_route_before_next_runtime_freeze",
         }
     )
     rows["response_dto_posture"].update(
