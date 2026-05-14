@@ -40,7 +40,7 @@ Package mutation and broad qualitative/hybrid/RAG remain blocked because their c
 
 ## Required next packet
 
-The next packet must be `355_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md`.
+The next packet must be `356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md` after the current-main sync doc for this freeze.
 
 It must answer, from current repo authority only:
 

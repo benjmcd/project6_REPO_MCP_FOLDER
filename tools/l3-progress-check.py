@@ -593,6 +593,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_S
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE = (
     PLANNING_DOCS / "354_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE.md"
 )
+NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "355_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29082,7 +29085,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         "next_deferred_server_authoritative_runtime_lane_freeze",
         "connector_destination_named_target_revalidation_packet",
         "Provider-public delivery/use did not create a connector target",
-        "The next packet must be `355_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md`.",
+        "The next packet must be `356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md` after the current-main sync doc for this freeze.",
         "No external connector invocation is admitted.",
         "No destination write is admitted.",
         "No auth/security behavior is admitted.",
@@ -29099,7 +29102,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         MANIFEST: (
             "next_deferred_server_authoritative_runtime_lane_freeze",
             "connector_destination_named_target_revalidation_packet",
-            "355_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+            "356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md",
         ),
         PROOF_MANIFEST: (
             "next_deferred_server_authoritative_runtime_lane_freeze_proof",
@@ -29111,6 +29114,41 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing next deferred runtime lane freeze term: {term}")
+
+    next_deferred_lane_sync_text = _read_required_text(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for next deferred runtime lane freeze; no runtime behavior admitted.",
+        "next_deferred_server_authoritative_runtime_lane_freeze",
+        "531c57f836a4b47fcaae96922f93ff239a945f2b",
+        "Post-merge `python .\\tools\\l3-progress-check.py`: `PASS`",
+        "Connector/destination runtime remains blocked.",
+        "356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+        "connector_destination_named_target_revalidation_packet",
+    ):
+        if term not in next_deferred_lane_sync_text:
+            errors.append(f"{_rel(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC)} missing next deferred runtime lane current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Next Deferred Server-authoritative Runtime Lane Current-main Sync",
+            "355_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC.md",
+            "356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+        ),
+        MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_current_main_sync",
+            "531c57f836a4b47fcaae96922f93ff239a945f2b",
+            "connector_destination_named_target_revalidation_packet",
+        ),
+        PROOF_MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_current_main_sync_proof",
+            "531c57f836a4b47fcaae96922f93ff239a945f2b",
+            "Connector/destination runtime remains blocked",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing next deferred runtime lane current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
