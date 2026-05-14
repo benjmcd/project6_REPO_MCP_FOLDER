@@ -738,6 +738,9 @@ LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC = (
 LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE = (
     PLANNING_DOCS / "403_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE.md"
 )
+LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "404_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -31746,6 +31749,76 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing product/use-case requirement freeze term: {term}"
+                )
+
+    product_use_case_requirement_freeze_sync_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_product_use_case_requirement_selection_freeze`.",
+        "404_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "403_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE.md",
+        "PR `#999`",
+        "6b050feb6c37c0e6667a8cc17c4440e3701e70ac",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_layer3_product_use_case_requirement_selection_freeze",
+        "entry_decision: freeze_only",
+        "selected_freeze_mode: layer3_product_use_case_requirement_selection_freeze",
+        "runtime_status: not_implemented",
+        "await_next_exact_named_layer3_product_use_case_behavior_after_requirement_selection_freeze_sync",
+        "The next implementation-facing pass must name one concrete product/use-case behavior",
+        "No runtime behavior",
+    ):
+        if term not in product_use_case_requirement_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC)} missing product/use-case requirement freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Requirement Selection Freeze Current-Main Sync",
+            "404_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#999`",
+            "6b050feb6c37c0e6667a8cc17c4440e3701e70ac",
+            "current_main_synced_layer3_product_use_case_requirement_selection_freeze",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_requirement_selection_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_current_main_sync",
+            "current_main_synced_layer3_product_use_case_requirement_selection_freeze",
+            '"freeze_pr": "#999"',
+            "6b050feb6c37c0e6667a8cc17c4440e3701e70ac",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"entry_decision": "freeze_only"',
+            '"selected_freeze_mode": "layer3_product_use_case_requirement_selection_freeze"',
+            '"runtime_status": "not_implemented"',
+            "await_next_exact_named_layer3_product_use_case_behavior_after_requirement_selection_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_current_main_sync_proof",
+            "current_main_synced_layer3_product_use_case_requirement_selection_freeze",
+            '"freeze_pr": "#999"',
+            "6b050feb6c37c0e6667a8cc17c4440e3701e70ac",
+            "backend-layer3-api SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "layer3_product_use_case_requirement_selection_freeze",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_requirement_selection_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing product/use-case requirement freeze sync term: {term}"
                 )
 
 def main() -> int:
