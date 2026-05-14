@@ -896,6 +896,10 @@ LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE_CURRENT_MA
     PLANNING_DOCS
     / "448_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_SOURCE_AUDIT = (
+    PLANNING_DOCS
+    / "449_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_SOURCE_AUDIT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -35617,6 +35621,102 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix rendered review posture reconciliation freeze sync term: {term}"
+                )
+
+    authority_matrix_rendered_review_posture_reconciliation_source_audit_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_SOURCE_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control source audit for `layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit`.",
+        "449_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_SOURCE_AUDIT.md",
+        "448_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "66ef1171d4064a5a8ea9823acf559e346aa5ad5c",
+        "layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_admitted",
+        "update_rendered_review_posture_row_for_existing_read_only_panel_only",
+        "backend/app/services/layer3_authority_matrix_contract.py",
+        "backend/tests/test_layer3_authority_matrix_contract.py",
+        "`rendered_review_posture` | `blocked_no_runtime_authority`",
+        "`rendered_operator_panel`, `frontend_only_durable_authority`",
+        "`freeze_rendered_review_before_ui_work`",
+        "#authority-matrix-review-panel",
+        'data-rendered-mode="rendered_authority_matrix_read_only_review_surface"',
+        "`State.bootstrap.authority_matrix_contract`",
+        "No contract update is made by this audit.",
+        "This audit admits no implementation by itself.",
+        "current_main_sync_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit_after_merge",
+        "await_layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_after_audit_sync",
+    ):
+        if term not in authority_matrix_rendered_review_posture_reconciliation_source_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_SOURCE_AUDIT)} missing authority matrix rendered review posture reconciliation source audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Rendered Review Posture Reconciliation Source Audit",
+            "449_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_SOURCE_AUDIT.md",
+            "conduct_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit",
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_admitted",
+            "#authority-matrix-review-panel",
+            "`State.bootstrap.authority_matrix_contract`",
+            "`rendered_review_posture`",
+            "`freeze_rendered_review_before_ui_work`",
+            "update_rendered_review_posture_row_for_existing_read_only_panel_only",
+            "current_main_sync_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit_after_merge",
+            "await_layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_after_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit",
+            "branch_local_planning_control_source_audit",
+            "codex/l3-rendered-review-posture-reconciliation-audit",
+            "449_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_SOURCE_AUDIT.md",
+            "66ef1171d4064a5a8ea9823acf559e346aa5ad5c",
+            "conduct_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit",
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_admitted",
+            "update_rendered_review_posture_row_for_existing_read_only_panel_only",
+            "later_source_contract_only_update",
+            "backend/app/services/layer3_authority_matrix_contract.py",
+            "backend/tests/test_layer3_authority_matrix_contract.py",
+            "authority-matrix-review-panel",
+            "rendered_authority_matrix_read_only_review_surface",
+            "State.bootstrap.authority_matrix_contract",
+            "rendered_review_posture",
+            "blocked_no_runtime_authority",
+            "rendered_operator_panel",
+            "frontend_only_durable_authority",
+            "freeze_rendered_review_before_ui_work",
+            '"runtime_behavior_change": false',
+            '"rendered_ui_behavior_change": false',
+            "await_layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_after_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit_proof",
+            "branch_local_planning_control_source_audit",
+            "codex/l3-rendered-review-posture-reconciliation-audit",
+            "449_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_SOURCE_AUDIT.md",
+            "conduct_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit",
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_admitted",
+            "update_rendered_review_posture_row_for_existing_read_only_panel_only",
+            "later_source_contract_only_update",
+            "backend/app/services/layer3_authority_matrix_contract.py",
+            "backend/tests/test_layer3_authority_matrix_contract.py",
+            "authority-matrix-review-panel",
+            "State.bootstrap.authority_matrix_contract",
+            "rendered_review_posture",
+            "blocked_no_runtime_authority",
+            "frontend_only_durable_authority",
+            "no runtime behavior",
+            "no rendered UI behavior",
+            "current_main_sync_layer3_authority_matrix_rendered_review_posture_reconciliation_source_audit_after_merge",
+            "await_layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_after_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix rendered review posture reconciliation source audit term: {term}"
                 )
 
 def main() -> int:
