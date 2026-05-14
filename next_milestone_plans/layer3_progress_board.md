@@ -1990,3 +1990,9 @@ The packet remediates confirmed current-main review-debt residues: corrupted JSO
 Current-main proof/control sync: PR `#970` merged `380_REVIEW_DEBT_REMEDIATION_PACKET.md` at merge commit `43ab47e31888fd9d64044da3b5b58cb3b2a24d95`.
 
 The sync doc `381_REVIEW_DEBT_REMEDIATION_CURRENT_MAIN_SYNC.md` records `review_debt_current_main_sync_packet` and `current_main_sync_review_debt_remediation_fulfilled_by_pr_970`. The sync admits no runtime behavior and preserves `no_current_deferred_server_authoritative_runtime_lane_goal_action_remaining`.
+
+## Next Layer 3 Server-Authoritative Runtime Tranche Selection Freeze
+
+Branch-local planning/control selection freeze: `382_NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE.md` follows the review-debt current-main sync and PR `#974` through PR `#976` review-hygiene closeouts.
+
+The selected next exact named freeze is `source_intake_provider_public_url_delivery_use_runtime_freeze`. This selection is based on the provider-public lane being the only closed deferred lane with current server-owned durable state, backend prepare/status/revoke APIs, rendered prepare/status/revoke controls, and an explicit delivery/use authority-proof checklist in docs `352` and `353`. The selection admits no runtime behavior: provider-public delivery/use route, raw public URL exposure, `public_url_enabled: True`, public proxy runtime, provider network/object-store writes, rendered delivery/use controls, connector/destination dispatch, package mutation, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked until that next freeze is written, proved, reviewed, merged, and current-main synced.
