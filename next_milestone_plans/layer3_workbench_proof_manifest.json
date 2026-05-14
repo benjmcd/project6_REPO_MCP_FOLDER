@@ -17603,5 +17603,60 @@
   },
   "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_branch": "codex/l3-connector-destination-authority-sync",
   "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_live_behavior_change": false,
-  "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_summary": "Doc 400 proof entry records current-main sync for PR #995 merge commit 66982e6d30f3dba5033c72ad61982ae282f2c49f; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next action is conduct_connector_destination_dispatch_authority_discovery."
+  "latest_layer3_connector_destination_authority_discovery_freeze_current_main_sync_summary": "Doc 400 proof entry records current-main sync for PR #995 merge commit 66982e6d30f3dba5033c72ad61982ae282f2c49f; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next action is conduct_connector_destination_dispatch_authority_discovery.",
+  "layer3_connector_destination_authority_discovery_closeout_proof": {
+    "proof_kind": "layer3_connector_destination_authority_discovery_closeout",
+    "status": "planning_control_closeout_no_runtime_now",
+    "branch": "codex/l3-connector-destination-discovery-closeout",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/401_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/400_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "executed_action": "conduct_connector_destination_dispatch_authority_discovery",
+    "entry_decision": "no_runtime_now",
+    "selected_runtime_mode": null,
+    "runtime_status": "not_implemented",
+    "stop_condition": "no_runtime_now_connector_destination_named_target_absent",
+    "discovery_result": "insufficient_authority_for_layer3_connector_destination_runtime",
+    "evidence_terms": [
+      "CONNECTOR_DISPATCH_RECORD_MODE = \"internal_dispatch_record_only\"",
+      "external_connector_invocation_enabled: False",
+      "destination_write_enabled: False",
+      "connector_run_created: False",
+      "POST /api/v1/layer3/handoff/connector/record",
+      "source/retrieval connector APIs are adjacent infrastructure"
+    ],
+    "adjacent_source_retrieval_connectors": [
+      "sciencebase_public",
+      "sciencebase_mcs",
+      "nrc_adams_aps",
+      "senate_lda"
+    ],
+    "missing_authority": [
+      "named_layer3_connector",
+      "named_layer3_destination",
+      "layer3_runtime_dispatch_owner_service",
+      "credential_security_model",
+      "fail_closed_side_effect_policy",
+      "receipt_audit_idempotency_replay_contract",
+      "runtime_negative_test_matrix"
+    ],
+    "negative_invariants": [
+      "no runtime connector/destination implementation",
+      "no external connector invocation",
+      "no destination write",
+      "no connector-run creation",
+      "no generic downstream dispatch",
+      "no rendered connector action controls",
+      "no provider-public delivery/use",
+      "no package mutation",
+      "no source expansion",
+      "no RAG/vector behavior",
+      "no auth/security behavior",
+      "no model or migration change",
+      "no frontend-only durable authority"
+    ],
+    "next_whole_project_posture": "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout"
+  },
+  "latest_layer3_connector_destination_authority_discovery_closeout_branch": "codex/l3-connector-destination-discovery-closeout",
+  "latest_layer3_connector_destination_authority_discovery_closeout_live_behavior_change": false,
+  "latest_layer3_connector_destination_authority_discovery_closeout_summary": "Doc 401 proof entry records connector/destination authority discovery closeout with no runtime now: generic source/retrieval connectors exist, but no Layer 3 named connector/destination runtime authority or side-effect contract is admitted."
 }
