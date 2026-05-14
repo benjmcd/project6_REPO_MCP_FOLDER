@@ -1846,3 +1846,9 @@ The result is `no_runtime_now_named_connector_or_destination_absent`. Current re
 Current-main proof/control sync: PR `#946` merged `356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md` at merge commit `4a96c514893e62cfa92358847faa807eea020309`.
 
 The sync doc `357_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Connector/destination remains settled as no-runtime-now; the next whole-project decision is `next_deferred_server_authoritative_runtime_lane_freeze_after_connector_no_runtime`.
+
+## Next Deferred Server-authoritative Runtime Lane After Connector Freeze
+
+Branch-local planning/control freeze: `358_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_FREEZE.md` selects `package_mutation_named_action_revalidation_packet` as the next deferred lane after connector/destination closed as no-runtime-now.
+
+The freeze admits no package mutation runtime. It selects a revalidation packet only, because current repo authority still lacks a named rendered operator package-revision action. Package mutation/reconstruction, package payload rewrite, package row mutation, rendered package mutation controls, connector/destination dispatch, provider-public delivery/use, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
