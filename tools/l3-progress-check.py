@@ -960,6 +960,10 @@ LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYN
     PLANNING_DOCS
     / "464_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT = (
+    PLANNING_DOCS
+    / "465_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -37084,6 +37088,89 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing post authority matrix route requirement selection freeze sync term: {term}"
+                )
+
+    post_authority_matrix_route_requirement_selection_audit_text = _read_required_text(
+        LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `layer3_post_authority_matrix_route_requirement_selection_audit`.",
+        "465_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT.md",
+        "464_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "44a6b18c6b6b187d3455e6eed5cd725d4cb7cb7a",
+        "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+        "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+        "The selected runtime action is `none`.",
+        "The selected next requirement is `none`.",
+        "fail_closed_result == \"blocked_no_runtime_authority\"",
+        "admitted_for_read_only_authority_matrix_route",
+        "schema_model_migration_change",
+        "separate_response_dto_module_change",
+        "frontend_only_durable_authority",
+        "runtime_behavior",
+        "connector_provider_behavior",
+        "package_mutation",
+        "source_expansion",
+        "rag_vector_behavior",
+        "auth_security_behavior",
+        "Future Reopening Condition",
+        "No closed or blocked lane is reopened by implication.",
+        "current_main_sync_layer3_post_authority_matrix_route_requirement_selection_audit_after_merge",
+        "await_new_layer3_runtime_or_review_surface_authority_after_post_authority_matrix_route_no_runtime_sync",
+    ):
+        if term not in post_authority_matrix_route_requirement_selection_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT)} missing post authority matrix route requirement selection audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Post Authority Matrix Route Requirement Selection Audit",
+            "465_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT.md",
+            "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+            "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+            "selected runtime action is `none`",
+            "selected next requirement is `none`",
+            "current_main_sync_layer3_post_authority_matrix_route_requirement_selection_audit_after_merge",
+            "await_new_layer3_runtime_or_review_surface_authority_after_post_authority_matrix_route_no_runtime_sync",
+        ),
+        MANIFEST: (
+            "layer3_post_authority_matrix_route_requirement_selection_audit",
+            "branch_local_planning_control_audit",
+            "codex/l3-post-authority-route-requirement-selection-audit",
+            "465_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT.md",
+            "44a6b18c6b6b187d3455e6eed5cd725d4cb7cb7a",
+            "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+            "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+            '"selected_runtime_action": "none"',
+            '"selected_next_requirement": "none"',
+            '"future_reopening_requires_named_requirement": true',
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            "await_new_layer3_runtime_or_review_surface_authority_after_post_authority_matrix_route_no_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_post_authority_matrix_route_requirement_selection_audit_proof",
+            "branch_local_planning_control_audit",
+            "codex/l3-post-authority-route-requirement-selection-audit",
+            "465_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT.md",
+            "44a6b18c6b6b187d3455e6eed5cd725d4cb7cb7a",
+            "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+            "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+            "selected_runtime_action none",
+            "selected_next_requirement none",
+            "future_reopening_requires_named_requirement",
+            "no implementation",
+            "no runtime behavior",
+            "await_new_layer3_runtime_or_review_surface_authority_after_post_authority_matrix_route_no_runtime_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post authority matrix route requirement selection audit term: {term}"
                 )
 
 def main() -> int:
