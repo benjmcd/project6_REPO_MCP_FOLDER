@@ -1978,3 +1978,9 @@ The audit selects no additional runtime lane. Provider-public delivery/use, conn
 Branch-local planning/control closeout: `379_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT.md` follows the merged completion audit and records `layer3_deferred_lane_chain_closed_after_completion_audit`.
 
 No additional runtime lane is selected. The deferred server-authoritative runtime lane chain is closed under current authority; future Layer 3 implementation must begin from a new exact named product/use-case requirement with its own freeze, contract, tests, review-thread gate, and current-main sync. The next action is `no_current_deferred_server_authoritative_runtime_lane_goal_action_remaining`.
+
+## Review Debt Remediation Packet
+
+Branch-local review-debt remediation packet: `380_REVIEW_DEBT_REMEDIATION_PACKET.md` follows the final deferred-lane chain closeout and selects `review_debt_remediation_packet` only.
+
+The packet remediates confirmed current-main review-debt residues: corrupted JSON validation command strings from PR `#905`, duplicate Alembic heads from PR `#929`, stale package preview route authority from PR `#950`, stale final closeout decision mirrors, and missing `l3-progress-check.py` guards for those cases. It admits no runtime behavior, rendered UI behavior, provider-public delivery/use, connector/destination dispatch, package mutation runtime, broad qualitative/hybrid/RAG runtime, source expansion, full mockup activation, auth/security hardening, or frontend-only durable authority. The next required action is `current_main_sync_review_debt_remediation_after_merge`.
