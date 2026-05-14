@@ -729,6 +729,9 @@ LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE = (
 LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "400_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT = (
+    PLANNING_DOCS / "401_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -31517,6 +31520,82 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector/destination authority sync term: {term}"
+                )
+
+    connector_destination_closeout_text = _read_required_text(
+        LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT,
+        errors,
+    )
+    for term in (
+        "Status: planning/control closeout for `connector_destination_dispatch_authority_discovery`; `entry_decision: no_runtime_now`.",
+        "401_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+        "operator_reviews_connector_destination_dispatch_authority_gap_without_external_invocation",
+        "conduct_connector_destination_dispatch_authority_discovery",
+        "selected runtime mode is `null`",
+        "runtime status is `not_implemented`",
+        "no_runtime_now_connector_destination_named_target_absent",
+        "insufficient_authority_for_layer3_connector_destination_runtime",
+        "CONNECTOR_DISPATCH_RECORD_MODE = \"internal_dispatch_record_only\"",
+        "external_connector_invocation_enabled: False",
+        "destination_write_enabled: False",
+        "connector_run_created: False",
+        "sciencebase_public",
+        "sciencebase_mcs",
+        "nrc_adams_aps",
+        "senate_lda",
+        "source/retrieval APIs remain adjacent infrastructure",
+        "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+    ):
+        if term not in connector_destination_closeout_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT)} missing connector/destination authority closeout term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Destination Authority Discovery Closeout",
+            "401_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "conduct_connector_destination_dispatch_authority_discovery",
+            "no_runtime_now_connector_destination_named_target_absent",
+            "insufficient_authority_for_layer3_connector_destination_runtime",
+            "source/retrieval connector APIs",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+        ),
+        MANIFEST: (
+            "layer3_connector_destination_authority_discovery_closeout",
+            "planning_control_closeout_no_runtime_now",
+            "codex/l3-connector-destination-discovery-closeout",
+            "401_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "conduct_connector_destination_dispatch_authority_discovery",
+            '"entry_decision": "no_runtime_now"',
+            '"selected_runtime_mode": null',
+            '"runtime_status": "not_implemented"',
+            "insufficient_authority_for_layer3_connector_destination_runtime",
+            "source_retrieval_infrastructure_not_layer3_downstream_delivery_authority",
+            "named_layer3_connector",
+            "named_layer3_destination",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_destination_authority_discovery_closeout_proof",
+            "planning_control_closeout_no_runtime_now",
+            "401_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT.md",
+            "conduct_connector_destination_dispatch_authority_discovery",
+            '"entry_decision": "no_runtime_now"',
+            '"selected_runtime_mode": null',
+            '"runtime_status": "not_implemented"',
+            "insufficient_authority_for_layer3_connector_destination_runtime",
+            "source/retrieval connector APIs are adjacent infrastructure",
+            "no runtime connector/destination implementation",
+            "no external connector invocation",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector/destination authority closeout term: {term}"
                 )
 
 def main() -> int:
