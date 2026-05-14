@@ -720,6 +720,9 @@ LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_S
 LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF = (
     PLANNING_DOCS / "397_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF.md"
 )
+LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "398_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -31329,6 +31332,64 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing Layer 3 end-to-end lifecycle dashboard implementation term: {term}"
+                )
+
+    layer3_e2e_lifecycle_dashboard_sync_text = _read_required_text(
+        LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard`.",
+        "PR `#993`",
+        "b7a1f59b3b8aaf5cc234e020e67d9b7697a14c41",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+        "await_next_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_dashboard_sync",
+    ):
+        if term not in layer3_e2e_lifecycle_dashboard_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC)} missing Layer 3 end-to-end lifecycle dashboard sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 End-To-End Governance Lifecycle Read-Only Dashboard Current-Main Sync",
+            "398_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md",
+            "PR `#993`",
+            "b7a1f59b3b8aaf5cc234e020e67d9b7697a14c41",
+            "current_main_synced_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_dashboard_sync",
+        ),
+        MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_read_only_dashboard_current_main_sync",
+            "current_main_synced_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            '"implementation_pr": "#993"',
+            "b7a1f59b3b8aaf5cc234e020e67d9b7697a14c41",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            "await_next_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_dashboard_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_read_only_dashboard_current_main_sync_proof",
+            "current_main_synced_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            '"implementation_pr": "#993"',
+            "backend-layer3-api SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_dashboard_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing Layer 3 end-to-end lifecycle dashboard sync term: {term}"
                 )
 
 def main() -> int:
