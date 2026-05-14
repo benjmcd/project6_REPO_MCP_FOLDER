@@ -668,6 +668,7 @@ DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_COMPLETION_AUDIT = (
 DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT = (
     PLANNING_DOCS / "379_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT.md"
 )
+REVIEW_DEBT_REMEDIATION_PACKET = PLANNING_DOCS / "380_REVIEW_DEBT_REMEDIATION_PACKET.md"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -676,6 +677,10 @@ PROVIDER_PUBLIC_URL_FAKE_PROVIDER_SERVICE = (
 )
 PROVIDER_PUBLIC_URL_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_provider_public_url_state.py"
 PROVIDER_PUBLIC_URL_STATE_MIGRATION = ROOT / "backend" / "alembic" / "versions" / "0024_layer3_provider_public_url_state.py"
+SOURCE_INTAKE_RECORD_MIGRATION = ROOT / "backend" / "alembic" / "versions" / "0024_layer3_source_intake_record.py"
+LAYER3_PROVIDER_PUBLIC_URL_HEAD_MERGE_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0025_layer3_merge_source_intake_provider_public_url_heads.py"
+)
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
@@ -30105,6 +30110,106 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing deferred lane chain closeout term: {term}")
+
+    review_debt_remediation_text = _read_required_text(REVIEW_DEBT_REMEDIATION_PACKET, errors)
+    for term in (
+        "Status: branch-local review-debt remediation packet only; no runtime behavior admitted.",
+        "review_debt_remediation_packet",
+        "confirmed_review_debt_remediation_packet_selected",
+        "0025_layer3_merge_source_intake_provider_public_url_heads",
+        "current_main_sync_review_debt_remediation_after_merge",
+        "No frontend-only durable authority is admitted.",
+    ):
+        if term not in review_debt_remediation_text:
+            errors.append(f"{_rel(REVIEW_DEBT_REMEDIATION_PACKET)} missing review-debt remediation term: {term}")
+
+    provider_public_head_merge_text = _read_required_text(LAYER3_PROVIDER_PUBLIC_URL_HEAD_MERGE_MIGRATION, errors)
+    for term in (
+        'revision = "0025_layer3_merge_source_intake_provider_public_url_heads"',
+        '"0024_layer3_source_intake_record"',
+        '"0024_layer3_provider_public_url_state"',
+        "def upgrade() -> None:",
+        "def downgrade() -> None:",
+    ):
+        if term not in provider_public_head_merge_text:
+            errors.append(f"{_rel(LAYER3_PROVIDER_PUBLIC_URL_HEAD_MERGE_MIGRATION)} missing Alembic merge-head term: {term}")
+
+    for migration_path, revision_term in (
+        (SOURCE_INTAKE_RECORD_MIGRATION, 'revision = "0024_layer3_source_intake_record"'),
+        (PROVIDER_PUBLIC_URL_STATE_MIGRATION, 'revision = "0024_layer3_provider_public_url_state"'),
+    ):
+        migration_text = _read_required_text(migration_path, errors)
+        if revision_term not in migration_text:
+            errors.append(f"{_rel(migration_path)} missing expected retained migration revision: {revision_term}")
+
+    package_action_revalidation_text = _read_required_text(PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET, errors)
+    if "/api/v1/layer3/package/mutation/preview" not in package_action_revalidation_text:
+        errors.append(f"{_rel(PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET)} missing live package mutation preview route")
+    if "/api/v1/layer3/package/supersession/preview" in package_action_revalidation_text:
+        errors.append(f"{_rel(PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET)} still names stale supersession preview route")
+
+    def _walk_strings(value: Any, path: str) -> list[tuple[str, str]]:
+        if isinstance(value, dict):
+            found: list[tuple[str, str]] = []
+            for key, nested in value.items():
+                found.extend(_walk_strings(nested, f"{path}.{key}"))
+            return found
+        if isinstance(value, list):
+            found = []
+            for index, nested in enumerate(value):
+                found.extend(_walk_strings(nested, f"{path}[{index}]"))
+            return found
+        if isinstance(value, str):
+            return [(path, value)]
+        return []
+
+    for json_path in (MANIFEST, PROOF_MANIFEST):
+        payload = _load_json(json_path, errors)
+        for value_path, value in _walk_strings(payload, "$"):
+            if "\b" in value or "\t" in value:
+                errors.append(f"{_rel(json_path)} contains JSON control character in string at {value_path}")
+
+    manifest_payload = _load_json(MANIFEST, errors)
+    proof_payload = _load_json(PROOF_MANIFEST, errors)
+    for value_path, value in (
+        ("$.next_required_decision", manifest_payload.get("next_required_decision", "")),
+        ("$.current_status.next_required_decision", manifest_payload.get("current_status", {}).get("next_required_decision", "")),
+        (
+            "$.layer3_workbench_current_decision.next_required_decision",
+            manifest_payload.get("layer3_workbench_current_decision", {}).get("next_required_decision", ""),
+        ),
+        ("$.next_required_decision", proof_payload.get("next_required_decision", "")),
+        ("$.current_status.next_required_decision", proof_payload.get("current_status", {}).get("next_required_decision", "")),
+    ):
+        if "no_current_deferred_server_authoritative_runtime_lane_goal_action_remaining" not in value:
+            errors.append(f"current decision mirror {value_path} missing deferred-lane closeout result")
+        if "review_debt_remediation_packet" not in value:
+            errors.append(f"current decision mirror {value_path} missing review-debt remediation packet")
+
+    for path, terms in {
+        BOARD: (
+            "## Review Debt Remediation Packet",
+            "380_REVIEW_DEBT_REMEDIATION_PACKET.md",
+            "review_debt_remediation_packet",
+            "current_main_sync_review_debt_remediation_after_merge",
+        ),
+        MANIFEST: (
+            "review_debt_remediation_packet",
+            "confirmed_review_debt_remediation_packet_selected",
+            "0025_layer3_merge_source_intake_provider_public_url_heads",
+            "pytest ./backend/tests/test_layer3_workbench.py",
+        ),
+        PROOF_MANIFEST: (
+            "review_debt_remediation_packet_proof",
+            "confirmed_review_debt_remediation_packet_selected",
+            "0025_layer3_merge_source_intake_provider_public_url_heads",
+            "pytest ./backend/tests/test_layer3_workbench.py",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing review-debt remediation packet term: {term}")
 
 def main() -> int:
     errors: list[str] = []
