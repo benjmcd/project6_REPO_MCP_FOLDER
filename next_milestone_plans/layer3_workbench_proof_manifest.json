@@ -17512,5 +17512,32 @@
   },
   "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_branch": "codex/l3-e2e-governance-lifecycle-dashboard-impl",
   "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_live_behavior_change": true,
-  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_summary": "Doc 397 proof entry records the read-only end-to-end governance lifecycle dashboard implementation over existing_server_response_authority; focused static and headed/headless browser proof passed before merge."
+  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_summary": "Doc 397 proof entry records the read-only end-to-end governance lifecycle dashboard implementation over existing_server_response_authority; focused static and headed/headless browser proof passed before merge.",
+  "layer3_end_to_end_governance_lifecycle_read_only_dashboard_current_main_sync_proof": {
+    "proof_kind": "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard_current_main_sync",
+    "status": "current_main_synced_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+    "sync_branch": "codex/l3-e2e-governance-lifecycle-dashboard-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/398_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md",
+    "implementation_pr": "#993",
+    "implementation_merge_commit": "b7a1f59b3b8aaf5cc234e020e67d9b7697a14c41",
+    "current_main_after_merge": "b7a1f59b3b8aaf5cc234e020e67d9b7697a14c41",
+    "proof_terms": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "PR comments empty",
+      "PR reviews empty",
+      "PR reviewThreads totalCount 0",
+      "PR unresolved reviewThreads 0",
+      "l3-progress-check.py PASS",
+      "current_main_synced_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+      "await_next_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_dashboard_sync"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "next_required_decision": "await_next_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_dashboard_sync"
+  },
+  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_current_main_sync_branch": "codex/l3-e2e-governance-lifecycle-dashboard-sync",
+  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_current_main_sync_live_behavior_change": false,
+  "latest_layer3_end_to_end_governance_lifecycle_read_only_dashboard_current_main_sync_summary": "Doc 398 proof entry records current-main sync for PR #993 merge commit b7a1f59b3b8aaf5cc234e020e67d9b7697a14c41; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next posture is await_next_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_dashboard_sync."
 }
