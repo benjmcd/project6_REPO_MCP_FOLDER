@@ -52,12 +52,12 @@ from app.services.layer3_workbench import Layer3WorkbenchError
 from app.services.layer3_state_action_contract import STATE_ACTION_CONTRACT_SCHEMA_ID
 from app.services.layer3_authority_matrix_contract import (
     AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID,
-    AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT,
     AUTHORITY_MATRIX_FAIL_CLOSED_RESULT,
     AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT,
     AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT,
     AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT,
     AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT,
+    AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT,
 )
 
 
@@ -1477,9 +1477,10 @@ def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
     )
     assert (
         authority_rows["route_api_posture"]["admission_result"]
-        == AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT
+        == AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT
     )
-    assert authority_rows["route_api_posture"]["blocked_scope"] == ["separate_authority_matrix_route"]
+    assert AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT == "admitted_for_read_only_authority_matrix_route"
+    assert authority_rows["route_api_posture"]["blocked_scope"] == []
     assert (
         authority_rows["response_dto_posture"]["admission_result"]
         == AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT
@@ -1529,8 +1530,8 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
     assert authority_matrix["source_contract_ids"] == [STATE_ACTION_CONTRACT_SCHEMA_ID, state_model["schema_id"]]
     assert authority_matrix["fail_closed_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
     blocked_rows = {row["row"]: row for row in authority_matrix["authority_matrix"]}
-    assert blocked_rows["route_api_posture"]["admission_result"] == AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT
-    assert blocked_rows["route_api_posture"]["blocked_scope"] == ["separate_authority_matrix_route"]
+    assert blocked_rows["route_api_posture"]["admission_result"] == AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT
+    assert blocked_rows["route_api_posture"]["blocked_scope"] == []
     assert blocked_rows["response_dto_posture"]["admission_result"] == AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT
     assert set(blocked_rows["response_dto_posture"]["blocked_scope"]) == {
         "schema_model_migration_change",

@@ -19622,5 +19622,41 @@
   },
   "latest_layer3_separate_authority_matrix_route_source_audit_current_main_sync_branch": "codex/l3-separate-authority-matrix-route-source-audit-sync",
   "latest_layer3_separate_authority_matrix_route_source_audit_current_main_sync_live_behavior_change": false,
-  "latest_layer3_separate_authority_matrix_route_source_audit_current_main_sync_summary": "Doc 460 proof entry records current-main sync for PR #1055 merge commit f81f710083f5b24aa6f5da6cb14774a864350041 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_layer3_separate_authority_matrix_route_implementation_after_audit_sync."
+  "latest_layer3_separate_authority_matrix_route_source_audit_current_main_sync_summary": "Doc 460 proof entry records current-main sync for PR #1055 merge commit f81f710083f5b24aa6f5da6cb14774a864350041 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_layer3_separate_authority_matrix_route_implementation_after_audit_sync.",
+  "layer3_separate_authority_matrix_route_implementation_proof": {
+    "proof_kind": "layer3_separate_authority_matrix_route_implementation",
+    "status": "branch_local_bounded_implementation",
+    "branch": "codex/l3-separate-authority-matrix-route-implementation",
+    "implementation_doc": "next_milestone_plans/Layer3_planning_docs/461_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION.md",
+    "current_main_preflight_commit": "93f54a1c8857639ccca21dd05c28ff6cbc6d4ffe",
+    "proof_terms": [
+      "add_read_only_authority_matrix_route_over_existing_exposed_contract_only",
+      "layer3_separate_authority_matrix_route_implemented_for_read_only_exposed_contract",
+      "GET /api/v1/layer3/authority-matrix",
+      "layer3.authority_matrix_route.v1",
+      "Layer3AuthorityMatrixResponse",
+      "authority_matrix_contract()",
+      "build_exposed_authority_matrix_contract()",
+      "admitted_for_read_only_authority_matrix_route",
+      "sync_separate_route_before_next_runtime_freeze",
+      "backend/app/api/layer3.py",
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/services/layer3_authority_matrix_contract.py",
+      "backend/tests/test_layer3_api.py",
+      "backend/tests/test_layer3_authority_matrix_contract.py",
+      "backend/tests/test_layer3_workbench.py",
+      "5 passed",
+      "2 passed",
+      "no runtime behavior",
+      "no rendered UI behavior",
+      "no frontend-only durable authority",
+      "current_main_sync_layer3_separate_authority_matrix_route_implementation_after_merge",
+      "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync"
+    ],
+    "next_required_action_after_merge": "current_main_sync_layer3_separate_authority_matrix_route_implementation_after_merge",
+    "next_whole_project_posture_after_sync": "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync"
+  },
+  "latest_layer3_separate_authority_matrix_route_implementation_branch": "codex/l3-separate-authority-matrix-route-implementation",
+  "latest_layer3_separate_authority_matrix_route_implementation_live_behavior_change": true,
+  "latest_layer3_separate_authority_matrix_route_implementation_summary": "Doc 461 proof entry records the bounded read-only authority-matrix route implementation and its focused test proof while preserving runtime and downstream blocks."
 }

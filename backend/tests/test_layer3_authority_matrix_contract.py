@@ -4,12 +4,12 @@ from app.services.layer3_authority_matrix_contract import (
     AUTHORITY_MATRIX_CONTRACT_DEFINITION_ID,
     AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID,
     AUTHORITY_MATRIX_CONTRACT_SCOPE,
-    AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT,
     AUTHORITY_MATRIX_FAIL_CLOSED_RESULT,
     AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT,
     AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT,
     AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT,
     AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT,
+    AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT,
     build_authority_matrix_contract,
     build_exposed_authority_matrix_contract,
 )
@@ -86,10 +86,13 @@ def test_exposed_authority_matrix_contract_marks_read_only_response_exposure() -
     assert contract["schema_id"] == AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID
     assert contract["exposure_context"] == AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT
     assert AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT in contract["admission_vocabulary"]
+    assert AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT == "admitted_for_read_only_authority_matrix_route"
+    assert AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT in contract["admission_vocabulary"]
     assert rows["workbench_exposure_substrate"]["admission_result"] == AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT
     assert rows["workbench_exposure_substrate"]["blocked_scope"] == []
-    assert rows["route_api_posture"]["admission_result"] == AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT
-    assert rows["route_api_posture"]["blocked_scope"] == ["separate_authority_matrix_route"]
+    assert rows["route_api_posture"]["admission_result"] == AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT
+    assert rows["route_api_posture"]["blocked_scope"] == []
+    assert rows["route_api_posture"]["next_allowed_action"] == "sync_separate_route_before_next_runtime_freeze"
     assert rows["response_dto_posture"]["admission_result"] == AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT
     assert set(rows["response_dto_posture"]["blocked_scope"]) == {
         "schema_model_migration_change",
@@ -112,5 +115,4 @@ def test_exposed_authority_matrix_contract_marks_read_only_response_exposure() -
         "source_expansion",
         "rag_vector_behavior",
     } <= set(rows["side_effect_policy"]["blocked_scope"])
-    assert rows["route_api_posture"]["blocked_scope"] == ["separate_authority_matrix_route"]
     assert contract["fail_closed_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
