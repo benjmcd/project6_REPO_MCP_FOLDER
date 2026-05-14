@@ -711,6 +711,9 @@ DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF = (
 DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "394_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE = (
+    PLANNING_DOCS / "395_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -1418,8 +1421,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         errors.append("layer3_workbench_current_decision.next_required_decision must be a non-empty string")
     else:
         required_terms = [
-            "current_main_synced_rendered_downstream_access_lifecycle_read_only_dashboard",
-            "await_next_exact_named_layer3_product_use_case_requirement_after_downstream_access_lifecycle_dashboard_sync",
+            "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_freeze_after_merge",
         ]
         for term in required_terms:
             if next_required != term and term not in next_required:
@@ -1439,8 +1442,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         return
     allowed_text = "\n".join(str(item) for item in allowed_actions)
     required_allowed = [
-        "await_next_exact_named_layer3_product_use_case_requirement_after_downstream_access_lifecycle_dashboard_sync",
-        "exact_named_server_authoritative_runtime_use_case_freeze_before_any_new_functional_slice",
+        "current_main_sync_layer3_end_to_end_governance_lifecycle_freeze_after_merge",
+        "settle_comments_reviews_and_reviewThreads_before_merge",
         "progress/proof/state drift checker",
     ]
     for term in required_allowed:
@@ -1467,6 +1470,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         "stop_and_write_package_lifecycle_response_authority_freeze if source audit finds current server responses",
         "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
         "stop_and_write_downstream_access_response_authority_freeze",
+        "await_next_exact_named_layer3_product_use_case_requirement_after_downstream_access_lifecycle_dashboard_sync",
+        "exact_named_server_authoritative_runtime_use_case_freeze_before_any_new_functional_slice",
     ]
     for term in stale_allowed:
         if term in allowed_text:
@@ -31124,6 +31129,60 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing downstream access lifecycle dashboard current-main settled term: {term}"
+                )
+
+    layer3_e2e_lifecycle_freeze_text = _read_required_text(
+        LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard`; no runtime implementation begins in this pass.",
+        "395_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md",
+        "operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch",
+        "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+        "source intake, Gate B material admission, Gate C typing, plan preview/approval",
+        "Current main already admits bounded server-authoritative state along the chain",
+        "The later implementation must read actual source before editing.",
+        "implement_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+        "stop_and_write_layer3_end_to_end_lifecycle_response_authority_freeze",
+        "No backend route, DTO, model, migration, or service behavior is admitted by this freeze.",
+    ):
+        if term not in layer3_e2e_lifecycle_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE)} missing Layer 3 end-to-end lifecycle freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 End-To-End Governance Lifecycle Read-Only Dashboard Freeze",
+            "395_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md",
+            "operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch",
+            "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            "implement_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            "stop_and_write_layer3_end_to_end_lifecycle_response_authority_freeze",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_freeze_after_merge",
+        ),
+        MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze",
+            "operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch",
+            "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            "implement_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            "stop_and_write_layer3_end_to_end_lifecycle_response_authority_freeze",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_freeze_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze_proof",
+            "operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch",
+            "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            "implementation_entry_freeze_selected_no_runtime_implementation",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_freeze_after_merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing Layer 3 end-to-end lifecycle freeze term: {term}"
                 )
 
 def main() -> int:
