@@ -16693,5 +16693,28 @@
     "runtime_behavior_change": false,
     "rendered_ui_behavior_change": false,
     "next_required_action": "next_deferred_server_authoritative_runtime_lane_freeze_after_source_expansion_no_runtime"
+  },
+  "next_deferred_server_authoritative_runtime_lane_after_source_expansion_freeze_proof": {
+    "status": "branch_local_planning_control_proof",
+    "branch": "codex/l3-full-mockup-revalidation-freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/370_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_FREEZE.md",
+    "selected_next_lane": "full_mockup_activation_named_target_revalidation_packet",
+    "freeze_result": "selected_full_mockup_activation_named_target_revalidation_packet_only",
+    "current_failure_boundary": "mockups_target_state_only",
+    "authority_files": [
+      "backend/app/services/layer3_mockup_boundary.py"
+    ],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "proof_terms": [
+      "full_mockup_activation_named_target_revalidation_packet",
+      "selected_full_mockup_activation_named_target_revalidation_packet_only",
+      "mockups_target_state_only",
+      "No full mockup activation runtime is admitted.",
+      "No frontend-only durable state is admitted.",
+      "No mockup-driven runtime mutation is admitted.",
+      "No auth/security behavior is admitted."
+    ],
+    "next_required_action": "current_main_sync_next_deferred_runtime_lane_after_source_expansion_freeze"
   }
 }
