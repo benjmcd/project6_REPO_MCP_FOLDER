@@ -774,6 +774,9 @@ LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_FREEZE_CURRENT_MAIN_SYNC = (
 LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT = (
     PLANNING_DOCS / "415_LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT.md"
 )
+LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "416_LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -32737,6 +32740,80 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority contract requirement audit term: {term}"
+                )
+
+    authority_contract_requirement_audit_sync_text = _read_required_text(
+        LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_authority_contract_requirement_audit`.",
+        "416_LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT_CURRENT_MAIN_SYNC.md",
+        "415_LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT.md",
+        "PR `#1011`",
+        "119feb3666e851f312030bdc8fee8a61eb25e441",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_layer3_authority_contract_requirement_audit",
+        "entry_decision: planning_control_requirement_definition_admitted",
+        "audit_result: layer3_authority_contract_requirement_definition_admitted_for_planning_control_only",
+        "runtime_status: not_implemented",
+        "backend/app/services/layer3_authority_matrix_contract.py",
+        "layer3.authority_matrix_contract.v1",
+        "server_authoritative_next_runtime_tranche_authority_matrix",
+        "await_layer3_authority_matrix_contract_definition_freeze_after_requirement_audit_sync",
+        "No runtime behavior",
+    ):
+        if term not in authority_contract_requirement_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT_CURRENT_MAIN_SYNC)} missing authority contract requirement audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Contract Requirement Audit Current-Main Sync",
+            "416_LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT_CURRENT_MAIN_SYNC.md",
+            "PR `#1011`",
+            "119feb3666e851f312030bdc8fee8a61eb25e441",
+            "current_main_synced_layer3_authority_contract_requirement_audit",
+            "layer3_authority_contract_requirement_definition_admitted_for_planning_control_only",
+            "await_layer3_authority_matrix_contract_definition_freeze_after_requirement_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_contract_requirement_audit_current_main_sync",
+            "current_main_synced_layer3_authority_contract_requirement_audit",
+            '"audit_pr": "#1011"',
+            "119feb3666e851f312030bdc8fee8a61eb25e441",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"entry_decision": "planning_control_requirement_definition_admitted"',
+            '"runtime_status": "not_implemented"',
+            "layer3_authority_contract_requirement_definition_admitted_for_planning_control_only",
+            "await_layer3_authority_matrix_contract_definition_freeze_after_requirement_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_contract_requirement_audit_current_main_sync_proof",
+            "current_main_synced_layer3_authority_contract_requirement_audit",
+            '"audit_pr": "#1011"',
+            "119feb3666e851f312030bdc8fee8a61eb25e441",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "layer3_authority_contract_requirement_definition_admitted_for_planning_control_only",
+            "await_layer3_authority_matrix_contract_definition_freeze_after_requirement_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority contract requirement audit sync term: {term}"
                 )
 
 def main() -> int:
