@@ -20599,5 +20599,34 @@
   },
   "latest_layer3_product_use_case_behavior_freeze_after_source_intake_provider_private_audit_requirement_current_main_sync_branch": "codex/l3-provider-public-no-runtime-behavior-freeze-sync",
   "latest_layer3_product_use_case_behavior_freeze_after_source_intake_provider_private_audit_requirement_current_main_sync_live_behavior_change": false,
-  "latest_layer3_product_use_case_behavior_freeze_after_source_intake_provider_private_audit_requirement_current_main_sync_summary": "Doc 496 proof entry records current-main sync for PR #1091 merge commit c4b92fe24f67bc8fdfeba996dd9caa5fb80e25d7 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_selection_freeze_sync."
+  "latest_layer3_product_use_case_behavior_freeze_after_source_intake_provider_private_audit_requirement_current_main_sync_summary": "Doc 496 proof entry records current-main sync for PR #1091 merge commit c4b92fe24f67bc8fdfeba996dd9caa5fb80e25d7 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_selection_freeze_sync.",
+  "layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync_proof": {
+    "proof_kind": "layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync",
+    "status": "planning_control_audit",
+    "branch": "codex/l3-provider-public-no-runtime-boundary-authority-audit",
+    "audit_doc": "next_milestone_plans/Layer3_planning_docs/497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+    "current_main_preflight_commit": "15f01e927ac8023425415eaa4d9e34ff094d4d99",
+    "proof_terms": [
+      "operator_reviews_layer3_provider_public_delivery_use_no_runtime_boundary_after_source_intake_provider_private_signed_reference_audit_requirement_selection_without_raw_public_url_exposure_or_dispatch",
+      "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime",
+      "read_only_current_main_control_surface_only",
+      "selected implementation action none",
+      "backend/app/api/layer3.py",
+      "backend/app/services/layer3_provider_public_url.py",
+      "backend/app/services/layer3_provider_public_url_state.py",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "test_layer3_api.py::test_layer3_api_provider_public_url_openapi_prepare_status_schema PASS",
+      "test_layer3_api.py::test_layer3_api_provider_public_url_prepare_status_idempotent_and_fail_closed PASS",
+      "test_layer3_api.py::test_layer3_api_provider_public_url_revoke_success_idempotency_and_fail_closed PASS",
+      "test_layer3_provider_public_url_state.py PASS",
+      "no runtime behavior",
+      "no frontend-only durable authority",
+      "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync"
+    ],
+    "next_whole_project_posture_after_sync": "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync"
+  },
+  "latest_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync_branch": "codex/l3-provider-public-no-runtime-boundary-authority-audit",
+  "latest_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync_live_behavior_change": false,
+  "latest_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync_summary": "Doc 497 proof entry records a current-main-satisfied no-runtime authority audit for provider-public delivery/use boundary review, with selected implementation action none and no runtime behavior admitted."
 }

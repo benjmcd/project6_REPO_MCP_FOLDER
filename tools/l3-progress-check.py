@@ -1088,6 +1088,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUD
     PLANNING_DOCS
     / "496_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC = (
+    PLANNING_DOCS
+    / "497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -39732,6 +39736,88 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private audit product/use-case behavior freeze sync term: {term}"
+                )
+
+    provider_public_delivery_use_no_runtime_audit_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control audit for `conduct_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_selection_sync`.",
+        "497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+        "15f01e927ac8023425415eaa4d9e34ff094d4d99",
+        "496_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "operator_reviews_layer3_provider_public_delivery_use_no_runtime_boundary_after_source_intake_provider_private_signed_reference_audit_requirement_selection_without_raw_public_url_exposure_or_dispatch",
+        "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime",
+        "Entry decision: `read_only_current_main_control_surface_only`.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: `none`.",
+        "350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md",
+        "353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "385_LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME.md",
+        "backend/app/services/layer3_provider_public_url.py",
+        "backend/app/services/layer3_provider_public_url_state.py",
+        "test_layer3_api.py::test_layer3_api_provider_public_url_openapi_prepare_status_schema",
+        "test_layer3_provider_public_url_state.py",
+        "current_main_sync_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_merge",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in provider_public_delivery_use_no_runtime_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC)} missing provider-public delivery/use no-runtime authority audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Provider-Public Delivery/Use No-Runtime Boundary Authority Audit After Source Intake Provider-Private Audit Requirement Freeze Sync",
+            "497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+            "15f01e927ac8023425415eaa4d9e34ff094d4d99",
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action is `none`",
+            "backend/app/services/layer3_provider_public_url.py",
+            "backend/app/services/layer3_provider_public_url_state.py",
+            "current_main_sync_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_merge",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync",
+            "planning_control_audit",
+            "codex/l3-provider-public-no-runtime-boundary-authority-audit",
+            "497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+            "15f01e927ac8023425415eaa4d9e34ff094d4d99",
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime",
+            '"entry_decision": "read_only_current_main_control_surface_only"',
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "backend/app/services/layer3_provider_public_url.py",
+            "backend/app/services/layer3_provider_public_url_state.py",
+            "python -m pytest .\\\\backend\\\\tests\\\\test_layer3_provider_public_url_state.py -q PASS",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync_proof",
+            "planning_control_audit",
+            "codex/l3-provider-public-no-runtime-boundary-authority-audit",
+            "497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+            "15f01e927ac8023425415eaa4d9e34ff094d4d99",
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action none",
+            "test_layer3_api.py::test_layer3_api_provider_public_url_openapi_prepare_status_schema PASS",
+            "test_layer3_provider_public_url_state.py PASS",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public delivery/use no-runtime authority audit term: {term}"
                 )
 
 def main() -> int:
