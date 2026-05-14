@@ -747,6 +747,9 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE = (
 LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "406_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT = (
+    PLANNING_DOCS / "407_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -31981,6 +31984,95 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing product/use-case behavior freeze sync term: {term}"
+                )
+
+    product_use_case_behavior_authority_audit_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `conduct_layer3_product_use_case_behavior_authority_audit`.",
+        "407_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT.md",
+        "406_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "cc0c208c6725f161f09bda7190ff29aa8c311cca",
+        "operator_reviews_layer3_server_authority_matrix_for_next_runtime_tranche_without_mutation_or_dispatch",
+        "no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+        "state_action_matrix",
+        "server_authoritative_workbench_states_and_actions",
+        "internal_dispatch_record_only",
+        "external_connector_invocation_enabled: False",
+        "destination_write_enabled: False",
+        "connector_run_created: False",
+        "no exact named API route",
+        "no exact response contract",
+        "no owner service",
+        "no rendered operator panel",
+        "no behavior-specific negative-test matrix",
+        "Entry decision: `no_runtime_now`.",
+        "Runtime status: `not_implemented`.",
+        "current_main_sync_layer3_product_use_case_behavior_authority_audit_after_merge",
+        "No runtime behavior",
+    ):
+        if term not in product_use_case_behavior_authority_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT)} missing product/use-case behavior authority audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Behavior Authority Audit",
+            "407_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT.md",
+            "conduct_layer3_product_use_case_behavior_authority_audit",
+            "operator_reviews_layer3_server_authority_matrix_for_next_runtime_tranche_without_mutation_or_dispatch",
+            "state_action_matrix",
+            "server_authoritative_workbench_states_and_actions",
+            "internal_dispatch_record_only",
+            "no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+            "current_main_sync_layer3_product_use_case_behavior_authority_audit_after_merge",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_behavior_authority_audit",
+            "planning_control_audit",
+            "codex/l3-product-use-case-behavior-authority-audit",
+            "407_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT.md",
+            "cc0c208c6725f161f09bda7190ff29aa8c311cca",
+            "conduct_layer3_product_use_case_behavior_authority_audit",
+            "operator_reviews_layer3_server_authority_matrix_for_next_runtime_tranche_without_mutation_or_dispatch",
+            '"entry_decision": "no_runtime_now"',
+            '"runtime_status": "not_implemented"',
+            "no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+            "state_action_matrix",
+            "server_authoritative_workbench_states_and_actions",
+            "internal_dispatch_record_only",
+            '"backend_route_behavior_change": false',
+            '"service_behavior_change": false',
+            '"schema_shape_change": false',
+            "current_main_sync_layer3_product_use_case_behavior_authority_audit_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_behavior_authority_audit_proof",
+            "planning_control_audit",
+            "407_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT.md",
+            "conduct_layer3_product_use_case_behavior_authority_audit",
+            "operator_reviews_layer3_server_authority_matrix_for_next_runtime_tranche_without_mutation_or_dispatch",
+            "no_runtime_now_layer3_product_use_case_behavior_authority_absent",
+            "state_action_matrix",
+            "server_authoritative_workbench_states_and_actions",
+            "internal_dispatch_record_only",
+            "no exact named API route",
+            "no behavior-specific negative-test matrix",
+            "no backend route behavior",
+            "no service behavior",
+            "no schema shape",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_product_use_case_behavior_authority_audit_after_merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing product/use-case behavior authority audit term: {term}"
                 )
 
 def main() -> int:
