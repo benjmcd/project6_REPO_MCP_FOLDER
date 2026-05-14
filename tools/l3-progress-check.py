@@ -1425,13 +1425,12 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         return
     allowed_text = "\n".join(str(item) for item in allowed_actions)
     required_allowed = [
-        "mockup-theme pixel-faithful acceptance",
-        "mockup frame mapping",
-        "visual-diff/headed/headless proof",
-        "pixel-refinement",
+        "implement_rendered_package_lifecycle_read_only_dashboard",
+        "source audit proves current server responses",
+        "stop_and_write_package_lifecycle_response_authority_freeze",
+        "current server responses are insufficient",
         "review-thread/proof metadata settlement",
         "progress/proof/state drift checker",
-        "exactly one named server-authoritative runtime/use-case freeze",
     ]
     for term in required_allowed:
         if term not in allowed_text:
@@ -1450,10 +1449,25 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
             errors.append(f"next_allowed_actions still includes blocked near-term option: {term}")
     stale_allowed = [
         "future runtime implementation for exactly approved_plan_cancel_without_replacement",
+        "exactly one named server-authoritative runtime/use-case freeze only if live repo/product authority proves it outranks",
+        "continue_bounded_mockup_pixel_refinement_against_visual_diff_metrics for bounded UI-only visual refinement",
+        "mockup-theme pixel-faithful acceptance work limited",
     ]
     for term in stale_allowed:
         if term in allowed_text:
-            errors.append(f"next_allowed_actions still treats approved-plan cancel runtime as future: {term}")
+            errors.append(f"next_allowed_actions still contains stale future-action guidance: {term}")
+
+    root_allowed_actions = manifest.get("next_allowed_actions")
+    if not isinstance(root_allowed_actions, list) or not root_allowed_actions:
+        errors.append("next_allowed_actions must be a non-empty list")
+        return
+    root_allowed_text = "\n".join(str(item) for item in root_allowed_actions)
+    for term in required_allowed:
+        if term not in root_allowed_text:
+            errors.append(f"top-level next_allowed_actions missing selected package lifecycle option: {term}")
+    for term in stale_allowed:
+        if term in root_allowed_text:
+            errors.append(f"top-level next_allowed_actions still contains stale future-action guidance: {term}")
 
 
 def _check_plan_revision_recovery_freeze(manifest: dict[str, Any], errors: list[str]) -> None:
