@@ -675,6 +675,9 @@ REVIEW_DEBT_CURRENT_MAIN_SYNC_PACKET = (
 NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE = (
     PLANNING_DOCS / "382_NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE = (
+    PLANNING_DOCS / "383_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30255,6 +30258,10 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             errors.append(f"current decision mirror {value_path} missing next-runtime selection freeze")
         if "source_intake_provider_public_url_delivery_use_runtime_freeze" not in value:
             errors.append(f"current decision mirror {value_path} missing selected provider-public delivery/use runtime freeze")
+        if "no_runtime_now_provider_public_delivery_use_raw_url_authority_absent" not in value:
+            errors.append(f"current decision mirror {value_path} missing provider-public delivery/use no-runtime result")
+        if "current_main_sync_source_intake_provider_public_url_delivery_use_runtime_freeze_after_merge" not in value:
+            errors.append(f"current decision mirror {value_path} missing provider-public delivery/use current-main sync action")
 
     for path, terms in {
         BOARD: (
@@ -30331,6 +30338,49 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing next-runtime selection freeze term: {term}")
+
+    provider_public_delivery_use_freeze_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE, errors)
+    for term in (
+        "Status: planning/control freeze for `source_intake_provider_public_url_delivery_use_runtime_freeze`; no provider-public delivery/use runtime behavior admitted.",
+        "no_runtime_now_provider_public_delivery_use_raw_url_authority_absent",
+        "No code-bearing provider-public delivery/use implementation is selected by this freeze.",
+        "L3ProviderPublicUrlReceipt` stores `provider_public_url_hash` and `provider_public_url_prefix`, not the raw public URL.",
+        "/api/v1/layer3/handoff/export/download/provider-public-url/use",
+        "The selected code-bearing action is `none`.",
+        "current_main_sync_source_intake_provider_public_url_delivery_use_runtime_freeze_after_merge",
+    ):
+        if term not in provider_public_delivery_use_freeze_text:
+            errors.append(f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE)} missing provider-public delivery/use freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Delivery/Use Runtime Freeze",
+            "383_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE.md",
+            "no_runtime_now_provider_public_delivery_use_raw_url_authority_absent",
+            "hash/prefix only",
+            "current_main_sync_source_intake_provider_public_url_delivery_use_runtime_freeze_after_merge",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_runtime_freeze",
+            "no_runtime_now_provider_public_delivery_use_raw_url_authority_absent",
+            '"selected_code_bearing_action": "none"',
+            '"raw_public_url_persisted": false',
+            '"openapi_provider_public_use_route_present": false',
+            "current_main_sync_source_intake_provider_public_url_delivery_use_runtime_freeze_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_runtime_freeze_proof",
+            "no_runtime_now_provider_public_delivery_use_raw_url_authority_absent",
+            '"selected_code_bearing_action": "none"',
+            "L3ProviderPublicUrlReceipt stores provider_public_url_hash and provider_public_url_prefix only",
+            "test_layer3_api.py asserts provider-public /use and /deliver routes are absent",
+            "current_main_sync_source_intake_provider_public_url_delivery_use_runtime_freeze_after_merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public delivery/use freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []
