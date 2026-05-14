@@ -936,6 +936,10 @@ LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "458_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT = (
+    PLANNING_DOCS
+    / "459_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -36532,6 +36536,88 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing separate authority matrix route freeze sync term: {term}"
+                )
+
+    separate_authority_matrix_route_source_audit_text = _read_required_text(
+        LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control source audit for `layer3_separate_authority_matrix_route_source_audit`.",
+        "459_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT.md",
+        "458_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_FREEZE_CURRENT_MAIN_SYNC.md",
+        "ec05f83ae53d7d7dcb489e6887a3997625267a75",
+        "conduct_layer3_separate_authority_matrix_route_source_audit",
+        "layer3_separate_authority_matrix_route_admitted_for_read_only_route_implementation",
+        "add_read_only_authority_matrix_route_over_existing_exposed_contract_only",
+        "later_route_api_only_read_only_implementation",
+        "build_exposed_authority_matrix_contract()",
+        "GET /api/v1/layer3/authority-matrix",
+        "backend/app/api/layer3.py",
+        "backend/app/services/layer3_workbench.py",
+        "backend/tests/test_layer3_api.py",
+        "backend/tests/test_layer3_authority_matrix_contract.py",
+        "No route implementation begins in this audit.",
+        "current_main_sync_layer3_separate_authority_matrix_route_source_audit_after_merge",
+        "await_layer3_separate_authority_matrix_route_implementation_after_audit_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in separate_authority_matrix_route_source_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT)} missing separate authority matrix route source audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Separate Authority Matrix Route Source Audit",
+            "459_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT.md",
+            "conduct_layer3_separate_authority_matrix_route_source_audit",
+            "layer3_separate_authority_matrix_route_admitted_for_read_only_route_implementation",
+            "GET /api/v1/layer3/authority-matrix",
+            "build_exposed_authority_matrix_contract()",
+            "current_main_sync_layer3_separate_authority_matrix_route_source_audit_after_merge",
+            "await_layer3_separate_authority_matrix_route_implementation_after_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_separate_authority_matrix_route_source_audit",
+            "branch_local_planning_control_source_audit",
+            "codex/l3-separate-authority-matrix-route-source-audit",
+            "459_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT.md",
+            "ec05f83ae53d7d7dcb489e6887a3997625267a75",
+            "conduct_layer3_separate_authority_matrix_route_source_audit",
+            "layer3_separate_authority_matrix_route_admitted_for_read_only_route_implementation",
+            "add_read_only_authority_matrix_route_over_existing_exposed_contract_only",
+            "later_route_api_only_read_only_implementation",
+            "GET /api/v1/layer3/authority-matrix",
+            "build_exposed_authority_matrix_contract()",
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            '"schema_shape_change": false',
+            "current_main_sync_layer3_separate_authority_matrix_route_source_audit_after_merge",
+            "await_layer3_separate_authority_matrix_route_implementation_after_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_separate_authority_matrix_route_source_audit_proof",
+            "branch_local_planning_control_source_audit",
+            "codex/l3-separate-authority-matrix-route-source-audit",
+            "459_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT.md",
+            "conduct_layer3_separate_authority_matrix_route_source_audit",
+            "layer3_separate_authority_matrix_route_admitted_for_read_only_route_implementation",
+            "add_read_only_authority_matrix_route_over_existing_exposed_contract_only",
+            "GET /api/v1/layer3/authority-matrix",
+            "build_exposed_authority_matrix_contract()",
+            "no route implementation begins in this audit",
+            "no runtime behavior",
+            "no rendered UI behavior",
+            "no frontend-only durable authority",
+            "await_layer3_separate_authority_matrix_route_implementation_after_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing separate authority matrix route source audit term: {term}"
                 )
 
 def main() -> int:
