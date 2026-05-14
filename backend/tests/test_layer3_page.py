@@ -122,6 +122,8 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="aps-handoff-dispatch-form"' in response.text
     assert 'id="aps-handoff-dispatch-panel"' in response.text
     assert 'id="aps-handoff-dispatch-submit"' in response.text
+    assert 'id="authority-matrix-review-panel"' in response.text
+    assert 'data-rendered-mode="rendered_authority_matrix_read_only_review_surface"' in response.text
     assert 'id="layer3-e2e-governance-lifecycle-dashboard-panel"' in response.text
     assert 'data-rendered-mode="rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard"' in response.text
     assert 'id="downstream-access-lifecycle-dashboard-panel"' in response.text
@@ -258,6 +260,18 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "raw_public_url_exposed" in js.text
     assert "public_url_enabled" in js.text
     assert "browser_durable_authority: 'blocked_not_persisted'" in js.text
+    assert "AUTHORITY_MATRIX_REVIEW_RENDERED_MODE = 'rendered_authority_matrix_read_only_review_surface'" in js.text
+    assert "AUTHORITY_MATRIX_REVIEW_USE_CASE = 'operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch'" in js.text
+    assert "AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_matrix_contract'" in js.text
+    assert "function authorityMatrixContract" in js.text
+    assert "function authorityMatrixReviewState" in js.text
+    assert "function renderAuthorityMatrixReviewPanel" in js.text
+    assert "renderAuthorityMatrixReviewPanel()" in js.text
+    assert "State.bootstrap?.authority_matrix_contract" in js.text
+    assert "authority_matrix_bootstrap_contract_unavailable" in js.text
+    assert "authority_matrix_fail_closed_read_only" in js.text
+    assert "additional matrix route" in js.text
+    assert "/authority-matrix" not in js.text
     assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard'" in js.text
     assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_USE_CASE = 'operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch'" in js.text
     assert "function layer3E2EGovernanceLifecycleRows" in js.text
@@ -270,6 +284,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "renderDownstreamAccessLifecycleDashboardPanel()" in js.text
     assert "provider_public_url_redacted ? 'redacted_receipt_only'" in js.text
     assert "raw public URL display/use" in js.text
+    assert ".authority-matrix-review-panel" in css.text
+    assert ".authority-matrix-review-grid" in css.text
+    assert ".authority-matrix-review-rows" in css.text
     assert ".layer3-e2e-governance-lifecycle-panel" in css.text
     assert ".layer3-e2e-governance-lifecycle-rows" in css.text
     assert ".downstream-access-lifecycle-dashboard-panel" in css.text
