@@ -976,6 +976,10 @@ LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT_CURRENT_MAIN_SYNC =
     PLANNING_DOCS
     / "468_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_POST_AUTHORITY_ROUTE_SEQUENCE = (
+    PLANNING_DOCS
+    / "469_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_POST_AUTHORITY_ROUTE_SEQUENCE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -37406,6 +37410,79 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing post authority matrix route sequence completion audit sync term: {term}"
+                )
+
+    product_use_case_requirement_selection_freeze_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_POST_AUTHORITY_ROUTE_SEQUENCE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_new_exact_named_layer3_product_use_case_requirement`.",
+        "469_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_POST_AUTHORITY_ROUTE_SEQUENCE.md",
+        "48d0110efaa2e7e13e80721404dbcf3aff1a369b",
+        "468_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT_CURRENT_MAIN_SYNC.md",
+        "select_next_layer3_product_use_case_requirement_after_post_authority_matrix_route_sequence_completion",
+        "operator_selects_next_layer3_product_use_case_requirement_without_runtime_expansion",
+        "layer3_product_use_case_requirement_selection_freeze",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_post_authority_route_sequence_merge",
+        "await_next_exact_named_layer3_product_use_case_behavior_after_post_authority_route_requirement_selection_freeze_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in product_use_case_requirement_selection_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_POST_AUTHORITY_ROUTE_SEQUENCE)} missing product use-case requirement selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Requirement Selection Freeze After Post Authority Route Sequence",
+            "469_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_POST_AUTHORITY_ROUTE_SEQUENCE.md",
+            "select_next_layer3_product_use_case_requirement_after_post_authority_matrix_route_sequence_completion",
+            "operator_selects_next_layer3_product_use_case_requirement_without_runtime_expansion",
+            "layer3_product_use_case_requirement_selection_freeze",
+            "`freeze_only`",
+            "`not_implemented`",
+            "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_post_authority_route_sequence_merge",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_post_authority_route_requirement_selection_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_post_authority_route_sequence",
+            "planning_control_freeze",
+            "codex/l3-product-requirement-freeze-post-authority",
+            "469_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_POST_AUTHORITY_ROUTE_SEQUENCE.md",
+            "48d0110efaa2e7e13e80721404dbcf3aff1a369b",
+            "select_next_layer3_product_use_case_requirement_after_post_authority_matrix_route_sequence_completion",
+            "operator_selects_next_layer3_product_use_case_requirement_without_runtime_expansion",
+            "layer3_product_use_case_requirement_selection_freeze",
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_next_exact_named_layer3_product_use_case_behavior_after_post_authority_route_requirement_selection_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_post_authority_route_sequence_proof",
+            "planning_control_freeze",
+            "codex/l3-product-requirement-freeze-post-authority",
+            "469_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_POST_AUTHORITY_ROUTE_SEQUENCE.md",
+            "48d0110efaa2e7e13e80721404dbcf3aff1a369b",
+            "operator_selects_next_layer3_product_use_case_requirement_without_runtime_expansion",
+            "freeze_only",
+            "not_implemented",
+            "no runtime behavior",
+            "no response-model shape change",
+            "no frontend-only durable authority",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_post_authority_route_requirement_selection_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing product use-case requirement selection freeze term: {term}"
                 )
 
 def main() -> int:
