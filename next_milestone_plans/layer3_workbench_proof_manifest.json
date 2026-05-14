@@ -18220,5 +18220,38 @@
   },
   "latest_layer3_authority_matrix_contract_definition_audit_branch": "codex/l3-authority-matrix-contract-definition-audit",
   "latest_layer3_authority_matrix_contract_definition_audit_live_behavior_change": false,
-  "latest_layer3_authority_matrix_contract_definition_audit_summary": "Doc 419 proof entry records the authority matrix contract definition audit as planning/control only. The contract definition is admitted, but backend service, route, DTO, schema, model, migration, and frontend-only durable authority remain blocked."
+  "latest_layer3_authority_matrix_contract_definition_audit_summary": "Doc 419 proof entry records the authority matrix contract definition audit as planning/control only. The contract definition is admitted, but backend service, route, DTO, schema, model, migration, and frontend-only durable authority remain blocked.",
+  "layer3_authority_matrix_contract_definition_audit_current_main_sync_proof": {
+    "proof_kind": "layer3_authority_matrix_contract_definition_audit_current_main_sync",
+    "status": "current_main_synced_layer3_authority_matrix_contract_definition_audit",
+    "sync_branch": "codex/l3-authority-matrix-contract-definition-audit-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/420_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_AUDIT_CURRENT_MAIN_SYNC.md",
+    "audit_pr": "#1015",
+    "audit_merge_commit": "e1b9cab42aed04ab6d5713e8deb358db0f08eddf",
+    "current_main_after_merge": "e1b9cab42aed04ab6d5713e8deb358db0f08eddf",
+    "proof_terms": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "PR comments empty",
+      "PR reviews empty",
+      "PR reviewThreads totalCount 0",
+      "PR unresolved reviewThreads 0",
+      "l3-progress-check.py PASS",
+      "current_main_synced_layer3_authority_matrix_contract_definition_audit",
+      "planning_control_contract_definition_admitted",
+      "not_implemented",
+      "layer3_authority_matrix_contract_definition_admitted_for_planning_control_only",
+      "layer3_authority_matrix_contract_definition_v1",
+      "backend/app/services/layer3_authority_matrix_contract.py",
+      "layer3.authority_matrix_contract.v1",
+      "await_layer3_authority_matrix_pure_contract_source_freeze_after_definition_audit_sync"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "next_whole_project_posture": "await_layer3_authority_matrix_pure_contract_source_freeze_after_definition_audit_sync"
+  },
+  "latest_layer3_authority_matrix_contract_definition_audit_current_main_sync_branch": "codex/l3-authority-matrix-contract-definition-audit-sync",
+  "latest_layer3_authority_matrix_contract_definition_audit_current_main_sync_live_behavior_change": false,
+  "latest_layer3_authority_matrix_contract_definition_audit_current_main_sync_summary": "Doc 420 proof entry records current-main sync for PR #1015 merge commit e1b9cab42aed04ab6d5713e8deb358db0f08eddf; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next posture is pure contract source freeze."
 }
