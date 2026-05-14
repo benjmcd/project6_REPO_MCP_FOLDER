@@ -1076,6 +1076,10 @@ LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDE
     PLANNING_DOCS
     / "493_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "494_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -39468,6 +39472,91 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private audit product/use-case requirement selection freeze term: {term}"
+                )
+
+    product_use_case_requirement_freeze_after_source_intake_provider_private_audit_sync_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_product_use_case_requirement_selection_freeze_after_source_intake_provider_private_audit_sync`.",
+        "494_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_CURRENT_MAIN_SYNC.md",
+        "493_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_SYNC.md",
+        "#1089",
+        "e6565c43390b38517b0fe6d68383dfc9514c4dce",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_source_intake_provider_private_audit",
+        "select_next_layer3_product_use_case_requirement_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_sync",
+        "operator_selects_next_layer3_product_use_case_requirement_after_read_only_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_without_runtime_expansion",
+        "Entry decision remains `freeze_only`.",
+        "Runtime status remains `not_implemented`.",
+        "await_next_exact_named_layer3_product_use_case_behavior_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_requirement_selection_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in product_use_case_requirement_freeze_after_source_intake_provider_private_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_CURRENT_MAIN_SYNC)} missing source-intake provider-private audit product/use-case requirement selection sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Requirement Selection Freeze After Source Intake Provider-Private Audit Current-Main Sync",
+            "494_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1089",
+            "e6565c43390b38517b0fe6d68383dfc9514c4dce",
+            "reviewThreads totalCount was `0`",
+            "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_source_intake_provider_private_audit",
+            "select_next_layer3_product_use_case_requirement_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_sync",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_without_runtime_expansion",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_requirement_selection_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_source_intake_provider_private_audit_current_main_sync",
+            "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_source_intake_provider_private_audit",
+            "codex/l3-product-requirement-freeze-after-source-intake-provider-private-audit-sync",
+            "494_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1089",
+            "e6565c43390b38517b0fe6d68383dfc9514c4dce",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_next_exact_named_layer3_product_use_case_behavior_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_requirement_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_source_intake_provider_private_audit_current_main_sync_proof",
+            "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_source_intake_provider_private_audit",
+            "codex/l3-product-requirement-freeze-after-source-intake-provider-private-audit-sync",
+            "494_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1089",
+            "e6565c43390b38517b0fe6d68383dfc9514c4dce",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "no implementation",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_requirement_selection_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing source-intake provider-private audit product/use-case requirement selection sync term: {term}"
                 )
 
 def main() -> int:
