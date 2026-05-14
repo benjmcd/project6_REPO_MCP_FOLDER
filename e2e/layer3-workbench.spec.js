@@ -4457,6 +4457,45 @@ test('Layer 3 workbench submits qualitative APS package review without analysis-
   await expectRenderedPackageLifecycleDashboard(page, 'package_review_approved');
 });
 
+test('Layer 3 package lifecycle dashboard prioritizes recorded and error states', async ({ page }) => {
+  const fixture = qualitativeApsPackageSubmitUiFixture();
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await seedQualitativeApsPackageSubmitUiState(page, fixture);
+
+  await expectRenderedPackageLifecycleDashboard(page, 'package_review_submit_ready');
+
+  await page.evaluate(() => {
+    State.packageConstructionError = {
+      detail: 'package_construction_commit_scope_not_admitted',
+    };
+    renderAll();
+  });
+  await expectRenderedPackageLifecycleDashboard(page, 'package_lifecycle_blocked');
+
+  await page.evaluate(() => {
+    State.packageConstructionError = null;
+    State.packageReviewSubmitError = {
+      detail: 'package_review_submit_scope_not_admitted',
+    };
+    renderAll();
+  });
+  await expectRenderedPackageLifecycleDashboard(page, 'package_lifecycle_blocked');
+
+  await page.evaluate(() => {
+    State.packageReviewSubmitError = null;
+    State.packageReviewSubmit = null;
+    State.sessionSummary.package_review_submit = {
+      ...State.sessionSummary.package_construction,
+      schema_id: 'layer3.package_review_submit_state.v1',
+      state: 'package_review_changes_requested',
+      submit_record_ref: 'submit-review-changes-requested-ui',
+      package_review_submit_enabled: false,
+    };
+    renderAll();
+  });
+  await expectRenderedPackageLifecycleDashboard(page, 'package_review_changes_requested');
+});
+
 test('Layer 3 workbench applies mockup-informed Workbench visual boundaries without degrading shared themes', async ({ page }) => {
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await page.locator('#theme-selector').selectOption('workbench');
