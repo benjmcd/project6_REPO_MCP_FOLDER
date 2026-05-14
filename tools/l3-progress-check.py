@@ -948,6 +948,10 @@ LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION = (
     PLANNING_DOCS
     / "461_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION.md"
 )
+LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "462_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -36833,6 +36837,86 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing separate authority matrix route implementation term: {term}"
+                )
+
+    separate_authority_matrix_route_implementation_sync_text = _read_required_text(
+        LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_separate_authority_matrix_route_implementation`.",
+        "462_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+        "461_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION.md",
+        "#1057",
+        "51e6474b09d39efbfa46a1f765135ab9b866d146",
+        "backend-layer3-api",
+        "SUCCESS",
+        "PR reviewThreads totalCount: `1`.",
+        "PR unresolved reviewThreads: `0`.",
+        "workbench guardrail expectations were updated",
+        "current_main_synced_layer3_separate_authority_matrix_route_implementation",
+        "layer3_separate_authority_matrix_route_implemented_for_read_only_exposed_contract",
+        "GET /api/v1/layer3/authority-matrix",
+        "build_exposed_authority_matrix_contract()",
+        "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        "No new implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in separate_authority_matrix_route_implementation_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC)} missing separate authority matrix route implementation sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Separate Authority Matrix Route Implementation Current-Main Sync",
+            "462_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+            "#1057",
+            "51e6474b09d39efbfa46a1f765135ab9b866d146",
+            "reviewThreads totalCount was `1`",
+            "unresolved reviewThreads were `0`",
+            "current_main_synced_layer3_separate_authority_matrix_route_implementation",
+            "layer3_separate_authority_matrix_route_implemented_for_read_only_exposed_contract",
+            "GET /api/v1/layer3/authority-matrix",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        ),
+        MANIFEST: (
+            "layer3_separate_authority_matrix_route_implementation_current_main_sync",
+            "current_main_synced_layer3_separate_authority_matrix_route_implementation",
+            "codex/l3-separate-authority-matrix-route-implementation-sync",
+            "462_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+            "#1057",
+            "51e6474b09d39efbfa46a1f765135ab9b866d146",
+            '"reviewThreads_totalCount": 1',
+            '"unresolved_reviewThreads": 0',
+            "workbench_guardrail_expectations_updated_ci_green_thread_resolved",
+            '"backend_route_behavior_change": false',
+            '"response_model_shape_change": false',
+            "GET /api/v1/layer3/authority-matrix",
+            "build_exposed_authority_matrix_contract()",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_separate_authority_matrix_route_implementation_current_main_sync_proof",
+            "current_main_synced_layer3_separate_authority_matrix_route_implementation",
+            "codex/l3-separate-authority-matrix-route-implementation-sync",
+            "462_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+            "#1057",
+            "51e6474b09d39efbfa46a1f765135ab9b866d146",
+            "reviewThreads_totalCount 1",
+            "unresolved_reviewThreads 0",
+            "workbench_guardrail_expectations_updated_ci_green_thread_resolved",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "no new implementation",
+            "no runtime behavior",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing separate authority matrix route implementation sync term: {term}"
                 )
 
 def main() -> int:
