@@ -669,6 +669,9 @@ DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT = (
     PLANNING_DOCS / "379_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT.md"
 )
 REVIEW_DEBT_REMEDIATION_PACKET = PLANNING_DOCS / "380_REVIEW_DEBT_REMEDIATION_PACKET.md"
+REVIEW_DEBT_CURRENT_MAIN_SYNC_PACKET = (
+    PLANNING_DOCS / "381_REVIEW_DEBT_REMEDIATION_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30123,6 +30126,18 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         if term not in review_debt_remediation_text:
             errors.append(f"{_rel(REVIEW_DEBT_REMEDIATION_PACKET)} missing review-debt remediation term: {term}")
 
+    review_debt_current_main_sync_text = _read_required_text(REVIEW_DEBT_CURRENT_MAIN_SYNC_PACKET, errors)
+    for term in (
+        "Status: current-main review-debt remediation sync; no runtime behavior admitted.",
+        "review_debt_current_main_sync_packet",
+        "current_main_sync_review_debt_remediation_fulfilled_by_pr_970",
+        "PR `#970`",
+        "43ab47e31888fd9d64044da3b5b58cb3b2a24d95",
+        "no_current_deferred_server_authoritative_runtime_lane_goal_action_remaining",
+    ):
+        if term not in review_debt_current_main_sync_text:
+            errors.append(f"{_rel(REVIEW_DEBT_CURRENT_MAIN_SYNC_PACKET)} missing review-debt current-main sync term: {term}")
+
     provider_public_head_merge_text = _read_required_text(LAYER3_PROVIDER_PUBLIC_URL_HEAD_MERGE_MIGRATION, errors)
     for term in (
         'revision = "0025_layer3_merge_source_intake_provider_public_url_heads"',
@@ -30185,6 +30200,10 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             errors.append(f"current decision mirror {value_path} missing deferred-lane closeout result")
         if "review_debt_remediation_packet" not in value:
             errors.append(f"current decision mirror {value_path} missing review-debt remediation packet")
+        if "review_debt_current_main_sync_packet" not in value:
+            errors.append(f"current decision mirror {value_path} missing review-debt current-main sync packet")
+        if "current_main_sync_review_debt_remediation_fulfilled_by_pr_970" not in value:
+            errors.append(f"current decision mirror {value_path} missing review-debt current-main sync fulfillment")
 
     for path, terms in {
         BOARD: (
@@ -30192,16 +30211,24 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             "380_REVIEW_DEBT_REMEDIATION_PACKET.md",
             "review_debt_remediation_packet",
             "current_main_sync_review_debt_remediation_after_merge",
+            "## Review Debt Remediation Current-Main Sync",
+            "381_REVIEW_DEBT_REMEDIATION_CURRENT_MAIN_SYNC.md",
+            "review_debt_current_main_sync_packet",
+            "current_main_sync_review_debt_remediation_fulfilled_by_pr_970",
         ),
         MANIFEST: (
             "review_debt_remediation_packet",
             "confirmed_review_debt_remediation_packet_selected",
+            "review_debt_current_main_sync_packet",
+            "current_main_sync_review_debt_remediation_fulfilled_by_pr_970",
             "0025_layer3_merge_source_intake_provider_public_url_heads",
             "pytest ./backend/tests/test_layer3_workbench.py",
         ),
         PROOF_MANIFEST: (
             "review_debt_remediation_packet_proof",
             "confirmed_review_debt_remediation_packet_selected",
+            "review_debt_current_main_sync_packet_proof",
+            "current_main_sync_review_debt_remediation_fulfilled_by_pr_970",
             "0025_layer3_merge_source_intake_provider_public_url_heads",
             "pytest ./backend/tests/test_layer3_workbench.py",
         ),
