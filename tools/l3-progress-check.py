@@ -968,6 +968,10 @@ LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT_CURRENT_MAIN_SYNC
     PLANNING_DOCS
     / "466_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT = (
+    PLANNING_DOCS
+    / "467_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -37253,6 +37257,76 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing post authority matrix route requirement selection audit sync term: {term}"
+                )
+
+    post_authority_matrix_route_sequence_completion_audit_text = _read_required_text(
+        LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: current-main completion audit for the post-authority-matrix-route requirement-selection sequence; no runtime behavior admitted.",
+        "467_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT.md",
+        "466_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md",
+        "02faab83363cdb14c2c8182892a373be6b2f9ad7",
+        "layer3_post_authority_matrix_route_sequence_completed_no_runtime_now",
+        "463_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE.md",
+        "466_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_AUDIT_CURRENT_MAIN_SYNC.md",
+        "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+        "no_current_layer3_post_authority_matrix_route_sequence_goal_action_remaining_under_current_authority",
+        "Future Layer 3 implementation may proceed only from a new exact named product/use-case requirement",
+        "No closed or blocked deferred lane may be reopened by implication.",
+        "await_new_exact_named_layer3_product_use_case_requirement",
+    ):
+        if term not in post_authority_matrix_route_sequence_completion_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT)} missing post authority matrix route sequence completion audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Post Authority Matrix Route Sequence Completion Audit",
+            "467_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT.md",
+            "layer3_post_authority_matrix_route_sequence_completed_no_runtime_now",
+            "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+            "selected runtime action remains `none`",
+            "selected next requirement remains `none`",
+            "no_current_layer3_post_authority_matrix_route_sequence_goal_action_remaining_under_current_authority",
+            "await_new_exact_named_layer3_product_use_case_requirement",
+        ),
+        MANIFEST: (
+            "layer3_post_authority_matrix_route_sequence_completion_audit",
+            "current_main_completion_audit",
+            "codex/l3-post-authority-route-sequence-completion-audit",
+            "467_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT.md",
+            "02faab83363cdb14c2c8182892a373be6b2f9ad7",
+            "layer3_post_authority_matrix_route_sequence_completed_no_runtime_now",
+            "no_current_layer3_post_authority_matrix_route_sequence_goal_action_remaining_under_current_authority",
+            "new_exact_named_product_use_case_requirement_required",
+            '"selected_runtime_action": "none"',
+            '"selected_next_requirement": "none"',
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_post_authority_matrix_route_sequence_completion_audit_proof",
+            "current_main_completion_audit",
+            "codex/l3-post-authority-route-sequence-completion-audit",
+            "467_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_SEQUENCE_COMPLETION_AUDIT.md",
+            "02faab83363cdb14c2c8182892a373be6b2f9ad7",
+            "layer3_post_authority_matrix_route_sequence_completed_no_runtime_now",
+            "no_current_layer3_post_authority_matrix_route_sequence_goal_action_remaining_under_current_authority",
+            "new_exact_named_product_use_case_requirement_required",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post authority matrix route sequence completion audit term: {term}"
                 )
 
 def main() -> int:
