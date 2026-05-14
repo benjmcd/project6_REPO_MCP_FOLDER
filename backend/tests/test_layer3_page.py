@@ -363,8 +363,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function externalExportDownloadDeliveryUiAdmitted" in js.text
     assert "function isQualitativeApsExternalExportDownloadState" in js.text
     assert "if (isAssociatedCohortExternalExportDownloadState(external)) return false;" in js.text
-    assert "external.export_download_target || summary.export_download_target" in js.text
-    assert "external.aps_schema_id || summary.aps_schema_id" in js.text
+    assert "external.package_construction_source_gate === QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE" in js.text
+    assert "serverExternalExportDownloadDeliveryUiState(external)" in js.text
     assert "function qualitativeApsDeliveryUiState" in js.text
     assert "qualitativeApsDeliveryUiState(external)" in js.text
     assert "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_intake_external_export_download_prepare.v1'" in js.text
@@ -389,7 +389,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "State.externalExportDownloadSignedReferenceUse" in provider_signed_url_gate
     assert "signedReferenceReceiptId: res.headers.get('x-layer3-signed-reference-receipt-id')" in js.text
     assert "signed_reference_receipt_id: State.externalExportDownloadSignedReferenceUse?.signedReferenceReceiptId" in js.text
-    assert "if (!isAssociatedCohortExternalExportDownloadState(external))" in js.text
+    assert "serverExternalExportDownloadDeliveryUiState(external)" in js.text
     assert "return false;" in js.text
     assert "if (isQualitativeApsExternalExportDownloadState(external))" in js.text
     assert "function deliveryUiStateAdmitted" in js.text
@@ -397,7 +397,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "'associated_cohort_external_export_download_delivery_ui_ready'" in js.text
     assert "external_export_download_delivery_ui_unavailable" in js.text
     assert "external_export_download_signed_reference_ui_blocked" in js.text
-    assert "if (!isAssociatedCohortExternalExportDownloadState(external))" in js.text
+    assert "serverExternalExportDownloadDeliveryUiState(external)" in js.text
     assert "source_artifact_size_bytes ?? summary.source_artifact_size_bytes" not in js.text
     assert "deliveryUi.browser_managed_same_origin_attachment_enabled === true" in js.text
     assert "deliveryUi.public_url_enabled === false" in js.text
