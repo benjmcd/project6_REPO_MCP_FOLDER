@@ -1048,6 +1048,10 @@ LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYN
     PLANNING_DOCS
     / "486_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_SYNC = (
+    PLANNING_DOCS
+    / "487_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -38895,6 +38899,78 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing e2e governance lifecycle behavior authority audit sync term: {term}"
+                )
+
+    product_use_case_requirement_freeze_after_lifecycle_audit_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync`.",
+        "487_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_SYNC.md",
+        "f0c5ac9e7d64c9e9061e993e72cada3510afd777",
+        "486_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+        "select_next_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+        "operator_selects_next_layer3_product_use_case_requirement_after_read_only_end_to_end_governance_lifecycle_behavior_authority_audit_without_runtime_expansion",
+        "layer3_product_use_case_requirement_selection_freeze",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_merge",
+        "await_next_exact_named_layer3_product_use_case_behavior_after_end_to_end_governance_lifecycle_behavior_audit_requirement_selection_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in product_use_case_requirement_freeze_after_lifecycle_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_SYNC)} missing lifecycle behavior audit product/use-case requirement selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Requirement Selection Freeze After End-to-End Governance Lifecycle Behavior Audit Sync",
+            "487_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_SYNC.md",
+            "select_next_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_end_to_end_governance_lifecycle_behavior_authority_audit_without_runtime_expansion",
+            "layer3_product_use_case_requirement_selection_freeze",
+            "`freeze_only`",
+            "`not_implemented`",
+            "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_merge",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_end_to_end_governance_lifecycle_behavior_audit_requirement_selection_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+            "planning_control_freeze",
+            "codex/l3-product-requirement-freeze-after-lifecycle-audit",
+            "487_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_SYNC.md",
+            "f0c5ac9e7d64c9e9061e993e72cada3510afd777",
+            "select_next_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_end_to_end_governance_lifecycle_behavior_authority_audit_without_runtime_expansion",
+            '"selected_freeze_mode": "layer3_product_use_case_requirement_selection_freeze"',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_next_exact_named_layer3_product_use_case_behavior_after_end_to_end_governance_lifecycle_behavior_audit_requirement_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_sync_proof",
+            "planning_control_freeze",
+            "codex/l3-product-requirement-freeze-after-lifecycle-audit",
+            "487_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_SYNC.md",
+            "f0c5ac9e7d64c9e9061e993e72cada3510afd777",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_end_to_end_governance_lifecycle_behavior_authority_audit_without_runtime_expansion",
+            "freeze_only",
+            "not_implemented",
+            "no runtime behavior",
+            "no response-model shape change",
+            "no frontend-only durable authority",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_end_to_end_governance_lifecycle_behavior_audit_requirement_selection_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing lifecycle behavior audit product/use-case requirement selection freeze term: {term}"
                 )
 
 def main() -> int:
