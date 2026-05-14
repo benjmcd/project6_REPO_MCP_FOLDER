@@ -696,6 +696,9 @@ RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC = (
 RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX = (
     PLANNING_DOCS / "389_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX.md"
 )
+RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "390_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -1434,7 +1437,7 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         return
     allowed_text = "\n".join(str(item) for item in allowed_actions)
     required_allowed = [
-        "await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_sync",
+        "await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_review_fix_sync",
         "write a new exact named freeze before any further Layer 3 implementation",
         "review-thread/proof metadata settlement",
         "progress/proof/state drift checker",
@@ -30801,6 +30804,66 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing rendered package lifecycle dashboard review-fix implementation term: {term}"
+                )
+
+    review_fix_sync_text = _read_required_text(
+        RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `rendered_package_lifecycle_dashboard_review_fix`.",
+        "PR `#985`",
+        "64cd70d592703a24021995e6adcc2d8e3a0810f2",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: `COMMENTED`",
+        "PR reviewThreads totalCount: `1`.",
+        "PR reviewThread `PRRT_kwDORzuv8M6B_FCv`: resolved.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_rendered_package_lifecycle_dashboard_review_fix",
+        "await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_review_fix_sync",
+    ):
+        if term not in review_fix_sync_text:
+            errors.append(
+                f"{_rel(RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX_CURRENT_MAIN_SYNC)} missing rendered package lifecycle dashboard review-fix sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Package Lifecycle Dashboard Review Fix Current-Main Sync",
+            "390_RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX_CURRENT_MAIN_SYNC.md",
+            "PR `#985`",
+            "64cd70d592703a24021995e6adcc2d8e3a0810f2",
+            "reviewThread `PRRT_kwDORzuv8M6B_FCv` was resolved",
+            "unresolved reviewThreads were `0`",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_review_fix_sync",
+        ),
+        MANIFEST: (
+            "rendered_package_lifecycle_dashboard_review_fix_current_main_sync",
+            "current_main_synced_rendered_package_lifecycle_dashboard_review_fix",
+            "64cd70d592703a24021995e6adcc2d8e3a0810f2",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 1',
+            '"unresolved_reviewThreads": []',
+            "await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_review_fix_sync",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_package_lifecycle_dashboard_review_fix_current_main_sync_proof",
+            "current_main_synced_rendered_package_lifecycle_dashboard_review_fix",
+            "backend-layer3-api SUCCESS",
+            "PRRT_kwDORzuv8M6B_FCv resolved",
+            "unresolved reviewThreads 0",
+            "l3-progress-check.py PASS",
+            "await_next_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_dashboard_review_fix_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing rendered package lifecycle dashboard review-fix current-main sync term: {term}"
                 )
 
 def main() -> int:
