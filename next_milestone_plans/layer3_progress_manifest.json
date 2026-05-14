@@ -17939,5 +17939,49 @@
   "latest_layer3_product_use_case_behavior_freeze_after_source_intake_provider_private_audit_requirement_current_main_sync_branch": "codex/l3-provider-public-no-runtime-behavior-freeze-sync",
   "latest_layer3_product_use_case_behavior_freeze_after_source_intake_provider_private_audit_requirement_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/496_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md",
   "latest_layer3_product_use_case_behavior_freeze_after_source_intake_provider_private_audit_requirement_current_main_sync_live_behavior_change": false,
-  "latest_layer3_product_use_case_behavior_freeze_after_source_intake_provider_private_audit_requirement_current_main_sync_summary": "Doc 496 syncs PR #1091 merge commit c4b92fe24f67bc8fdfeba996dd9caa5fb80e25d7 to current main. GitHub backend-layer3-api/test passed, comments/reviews/reviewThreads were empty, post-merge JSON/progress validation passed, and next posture is await_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_selection_freeze_sync."
+  "latest_layer3_product_use_case_behavior_freeze_after_source_intake_provider_private_audit_requirement_current_main_sync_summary": "Doc 496 syncs PR #1091 merge commit c4b92fe24f67bc8fdfeba996dd9caa5fb80e25d7 to current main. GitHub backend-layer3-api/test passed, comments/reviews/reviewThreads were empty, post-merge JSON/progress validation passed, and next posture is await_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_selection_freeze_sync.",
+  "layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync": {
+    "status": "planning_control_audit",
+    "branch": "codex/l3-provider-public-no-runtime-boundary-authority-audit",
+    "audit_doc": "next_milestone_plans/Layer3_planning_docs/497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+    "current_main_preflight_commit": "15f01e927ac8023425415eaa4d9e34ff094d4d99",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/496_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+    "audited_exact_named_product_use_case_behavior": "operator_reviews_layer3_provider_public_delivery_use_no_runtime_boundary_after_source_intake_provider_private_signed_reference_audit_requirement_selection_without_raw_public_url_exposure_or_dispatch",
+    "audit_result": "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime",
+    "entry_decision": "read_only_current_main_control_surface_only",
+    "runtime_status": "not_implemented",
+    "selected_implementation_action": "none",
+    "authority_evidence": [
+      "350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md",
+      "353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+      "385_LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME.md",
+      "backend/app/api/layer3.py",
+      "backend/app/services/layer3_provider_public_url.py",
+      "backend/app/services/layer3_provider_public_url_state.py",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_api.py",
+      "backend/tests/test_layer3_provider_public_url_state.py"
+    ],
+    "validation": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_provider_public_url_openapi_prepare_status_schema -q PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_provider_public_url_prepare_status_idempotent_and_fail_closed -q PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_provider_public_url_revoke_success_idempotency_and_fail_closed -q PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_provider_public_url_state.py -q PASS"
+    ],
+    "required_next_action_after_merge": "current_main_sync_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_merge",
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "backend_route_behavior_change": false,
+    "service_runtime_behavior_change": false,
+    "response_model_shape_change": false,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "next_whole_project_posture_after_sync": "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync"
+  },
+  "latest_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync_branch": "codex/l3-provider-public-no-runtime-boundary-authority-audit",
+  "latest_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync_doc": "next_milestone_plans/Layer3_planning_docs/497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+  "latest_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync_live_behavior_change": false,
+  "latest_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_requirement_freeze_sync_summary": "Doc 497 records a current-main-satisfied no-runtime authority audit for provider-public delivery/use boundary review after source-intake provider-private audit requirement sync. It selects implementation action none, admits no runtime behavior, and requires current-main sync before a new product/use-case requirement can be selected."
 }
