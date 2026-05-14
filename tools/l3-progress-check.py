@@ -681,6 +681,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "384_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME = (
+    PLANNING_DOCS / "385_LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30271,6 +30274,12 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             errors.append(f"current decision mirror {value_path} missing provider-public delivery/use synced result")
         if "select_next_bounded_layer3_runtime_tranche_via_later_exact_named_freeze_only" not in value:
             errors.append(f"current decision mirror {value_path} missing next bounded runtime freeze decision")
+        if "layer3_runtime_freeze_sequence_completed_after_provider_public_no_runtime" not in value:
+            errors.append(f"current decision mirror {value_path} missing runtime freeze sequence completion audit")
+        if "no_current_layer3_runtime_freeze_sequence_goal_action_remaining_under_current_authority" not in value:
+            errors.append(f"current decision mirror {value_path} missing no-current-runtime-freeze-goal-action result")
+        if "await_new_exact_named_layer3_product_use_case_requirement" not in value:
+            errors.append(f"current decision mirror {value_path} missing next whole-project posture")
 
     for path, terms in {
         BOARD: (
@@ -30444,6 +30453,60 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public delivery/use sync term: {term}")
+
+    runtime_freeze_sequence_completion_text = _read_required_text(
+        LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME,
+        errors,
+    )
+    for term in (
+        "Status: current-main completion audit for the selected Layer 3 runtime-freeze sequence after provider-public delivery/use stopped as no-runtime; no runtime behavior admitted.",
+        "PR `#979`",
+        "6ee362bee60c4818e726c379b44ec745b8672d1a",
+        "layer3_runtime_freeze_sequence_completed_after_provider_public_no_runtime",
+        "no_current_layer3_runtime_freeze_sequence_goal_action_remaining_under_current_authority",
+        "await_new_exact_named_layer3_product_use_case_requirement",
+        "382_NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE.md",
+        "383_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE.md",
+        "384_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC.md",
+        "connector/destination remains blocked because no named connector or destination target is present",
+        "package mutation remains blocked because no named rendered operator package action is present",
+        "broad qualitative/hybrid/RAG remains blocked because no named broad analysis mode is present",
+        "source expansion remains blocked because no named unsupported source family is present",
+        "full mockup activation remains blocked because no runtime target distinct from target-state mockups is present",
+        "auth/security hardening remains blocked because no named behavior, protected surface, threat model, or policy owner is present",
+    ):
+        if term not in runtime_freeze_sequence_completion_text:
+            errors.append(
+                f"{_rel(LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME)} missing runtime freeze sequence completion term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Runtime Freeze Sequence Completion Audit After Provider-Public No-Runtime",
+            "385_LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME.md",
+            "layer3_runtime_freeze_sequence_completed_after_provider_public_no_runtime",
+            "6ee362bee60c4818e726c379b44ec745b8672d1a",
+            "await_new_exact_named_layer3_product_use_case_requirement",
+        ),
+        MANIFEST: (
+            "layer3_runtime_freeze_sequence_completion_audit_after_provider_public_no_runtime",
+            "layer3_runtime_freeze_sequence_completed_after_provider_public_no_runtime",
+            "no_current_layer3_runtime_freeze_sequence_goal_action_remaining_under_current_authority",
+            "6ee362bee60c4818e726c379b44ec745b8672d1a",
+            "await_new_exact_named_layer3_product_use_case_requirement",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_runtime_freeze_sequence_completion_audit_after_provider_public_no_runtime_proof",
+            "layer3_runtime_freeze_sequence_completed_after_provider_public_no_runtime",
+            "no_current_layer3_runtime_freeze_sequence_goal_action_remaining_under_current_authority",
+            "post-PR979 progress check PASS",
+            "await_new_exact_named_layer3_product_use_case_requirement",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing runtime freeze sequence completion term: {term}")
 
 def main() -> int:
     errors: list[str] = []
