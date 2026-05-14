@@ -611,6 +611,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYN
 PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET = (
     PLANNING_DOCS / "360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md"
 )
+PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "361_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29343,6 +29346,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing package action revalidation term: {term}")
+
+    package_action_sync_text = _read_required_text(PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for package mutation named-action revalidation packet; no runtime behavior admitted.",
+        "PR `#950`",
+        "87729b2a1693227c4cbe928bd64872491d70eaf7",
+        "current_main_synced_package_mutation_named_action_revalidation_packet",
+        "no_runtime_now_named_rendered_package_action_absent",
+        "next_deferred_server_authoritative_runtime_lane_freeze_after_package_action_no_runtime",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads",
+    ):
+        if term not in package_action_sync_text:
+            errors.append(f"{_rel(PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC)} missing package action current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Package Mutation Named Action Revalidation Current-Main Sync",
+            "361_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC.md",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_package_action_no_runtime",
+        ),
+        MANIFEST: (
+            "package_mutation_named_action_revalidation_current_main_sync",
+            "current_main_synced_package_mutation_named_action_revalidation_packet",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_package_action_no_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "package_mutation_named_action_revalidation_current_main_sync_proof",
+            "current_main_synced_package_mutation_named_action_revalidation_packet",
+            "reviewThreads",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing package action current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
