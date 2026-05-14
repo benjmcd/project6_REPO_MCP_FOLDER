@@ -12,6 +12,21 @@ import {
   attachSessionToWorkbench,
 } from './layer3-helpers.js';
 
+async function expectRenderedDownstreamAccessLifecycleDashboard(page, stateLabel, expectedTexts = []) {
+  const dashboard = page.locator('#downstream-access-lifecycle-dashboard-panel');
+  await expect(dashboard).toBeVisible();
+  await expect(dashboard).toHaveAttribute('data-rendered-mode', 'rendered_downstream_access_lifecycle_read_only_dashboard');
+  await expect(dashboard).toHaveAttribute('data-lifecycle-state', stateLabel);
+  await expect(dashboard).toContainText('operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use');
+  await expect(dashboard).toContainText('existing_server_response_authority');
+  await expect(dashboard).toContainText('connector invocation');
+  await expect(dashboard).toContainText('raw public URL display/use');
+  await expect(dashboard.locator('button,input,select,textarea')).toHaveCount(0);
+  for (const text of expectedTexts) {
+    await expect(dashboard).toContainText(text);
+  }
+}
+
 test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff after approved package review', async ({ page, request }) => {
   const setup = await prepareExecutedLayer3Session(request, '/__test/layer3/seed-aps-handoff');
 
@@ -296,6 +311,11 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   await expect(page.locator('#handoff-export-prepare-panel')).toContainText('aps handoff');
   await expect(page.locator('#handoff-export-prepare-panel')).toContainText('external export');
   await expect(page.locator('#handoff-export-prepare-panel')).toContainText('downstream dispatch');
+  await expectRenderedDownstreamAccessLifecycleDashboard(page, 'aps_handoff_ready', [
+    'handoff/export prepare',
+    'prepare_only',
+    prepare.prepare_record_ref,
+  ]);
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('aps_handoff_ready');
   await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('aps_evidence_bundle');
@@ -580,6 +600,11 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   await expect(page.locator('#external-export-download-prepare-panel')).toContainText('connector dispatch');
   await expect(page.locator('#external-export-download-prepare-panel')).toContainText('destination selection');
   await expect(page.locator('#external-export-download-prepare-panel')).toContainText('generic downstream dispatch');
+  await expectRenderedDownstreamAccessLifecycleDashboard(page, 'external_export_download_prepared', [
+    'external export/download readiness',
+    external.external_export_download_record_ref,
+    'reference_only_prepare',
+  ]);
   await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText('external_export_download_delivery_ui_ready');
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText(external.external_export_download_record_ref);
@@ -672,6 +697,11 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
 
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText('external_export_download_delivery_submitted');
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText(deliveryHeaders['x-layer3-source-artifact-hash']);
+  await expectRenderedDownstreamAccessLifecycleDashboard(page, 'external_export_download_delivery_submitted', [
+    'same-origin delivery',
+    'same_origin_artifact_stream',
+    external.external_export_download_record_ref,
+  ]);
   await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Create Package' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
