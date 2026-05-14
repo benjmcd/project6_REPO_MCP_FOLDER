@@ -1960,3 +1960,9 @@ The sync doc `375_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOC
 Branch-local planning/control packet: `376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md` revalidates the selected auth/security hardening named-behavior packet after the current-main auth/security lane sync.
 
 The result is `no_runtime_now_auth_security_hardening_named_behavior_absent`. Current repo authority treats auth/security hardening as forbidden/deferred request scope and does not name one concrete security behavior or protected runtime surface. Auth/security behavior, auth/security hardening runtime, auth/security override, authorization model changes, authentication flow changes, permission model changes, route/model/migration/schema changes, and frontend-only durable authority remain blocked.
+
+## Auth Security Hardening Named Behavior Revalidation Current-Main Sync
+
+Current-main proof/control sync: PR `#966` merged `376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md` at merge commit `92b7e93db6827a720881acdcc4370dc4c725a632`.
+
+The sync doc `377_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Auth/security hardening remains no-runtime-now as `no_runtime_now_auth_security_hardening_named_behavior_absent`; the next whole-project action is `current_main_deferred_lane_completion_audit_after_auth_security_no_runtime`.
