@@ -920,6 +920,10 @@ LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE_
     PLANNING_DOCS
     / "454_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_AUDIT = (
+    PLANNING_DOCS
+    / "455_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_AUDIT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -36182,6 +36186,89 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing post rendered review posture requirement selection freeze sync term: {term}"
+                )
+
+    post_rendered_review_posture_requirement_selection_audit_text = _read_required_text(
+        LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit`.",
+        "455_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_AUDIT.md",
+        "454_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "e4c0de0bce995f2e0a59be707ee80d9c81bb102e",
+        "layer3_separate_authority_matrix_route_freeze_admitted",
+        "The selected runtime action is `none`.",
+        "separate_authority_matrix_route",
+        "freeze_layer3_separate_authority_matrix_route_before_route_work",
+        "route_api_posture",
+        "admitted_for_existing_bootstrap_readiness_openapi_schema",
+        "`separate_authority_matrix_route` | `freeze_separate_route_before_route_work`",
+        "planning/control freeze",
+        "No runtime behavior",
+        "No closed or blocked lane is reopened by implication.",
+        "current_main_sync_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit_after_merge",
+        "await_layer3_separate_authority_matrix_route_freeze_after_requirement_selection_audit_sync",
+    ):
+        if term not in post_rendered_review_posture_requirement_selection_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_AUDIT)} missing post rendered review posture requirement selection audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Post Rendered Review Posture Reconciliation Requirement Selection Audit",
+            "455_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_AUDIT.md",
+            "conduct_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit",
+            "layer3_separate_authority_matrix_route_freeze_admitted",
+            "selected runtime action is `none`",
+            "separate_authority_matrix_route",
+            "freeze_layer3_separate_authority_matrix_route_before_route_work",
+            "current_main_sync_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit_after_merge",
+            "await_layer3_separate_authority_matrix_route_freeze_after_requirement_selection_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit",
+            "branch_local_planning_control_audit",
+            "codex/l3-post-rendered-review-posture-requirement-selection-audit",
+            "455_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_AUDIT.md",
+            "e4c0de0bce995f2e0a59be707ee80d9c81bb102e",
+            "conduct_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit",
+            "layer3_separate_authority_matrix_route_freeze_admitted",
+            '"selected_runtime_action": "none"',
+            "separate_authority_matrix_route",
+            "freeze_layer3_separate_authority_matrix_route_before_route_work",
+            "route_api_posture",
+            "admitted_for_existing_bootstrap_readiness_openapi_schema",
+            "freeze_separate_route_before_route_work",
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            "current_main_sync_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit_after_merge",
+            "await_layer3_separate_authority_matrix_route_freeze_after_requirement_selection_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit_proof",
+            "branch_local_planning_control_audit",
+            "codex/l3-post-rendered-review-posture-requirement-selection-audit",
+            "455_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_AUDIT.md",
+            "conduct_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit",
+            "layer3_separate_authority_matrix_route_freeze_admitted",
+            "selected runtime action none",
+            "separate_authority_matrix_route",
+            "freeze_layer3_separate_authority_matrix_route_before_route_work",
+            "route_api_posture",
+            "no runtime behavior",
+            "no backend route behavior",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit_after_merge",
+            "await_layer3_separate_authority_matrix_route_freeze_after_requirement_selection_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post rendered review posture requirement selection audit term: {term}"
                 )
 
 def main() -> int:
