@@ -1912,3 +1912,9 @@ The sync doc `367_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QU
 Branch-local planning/control packet: `368_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET.md` revalidates the selected source-expansion named-source-family packet after the current-main after-broad-qual/RAG lane sync.
 
 The result is `no_runtime_now_source_expansion_named_source_family_absent`. Current repo authority admits only `dataset_version`, `aps_content_document`, and bounded `operator_uploaded_single_source` source-intake/Gate B material admission. Arbitrary local-directory source runtime, broad file-upload source runtime, web connector source runtime, RAG/vector source runtime, unbounded runtime DB source expansion, generic source upload beyond bounded source-intake, source expansion route/model/migration, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
+
+## Source Expansion Named Source Family Revalidation Current-Main Sync
+
+Current-main proof/control sync: PR `#958` merged `368_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET.md` at merge commit `ff8cbff97726b317dee4bd66f370d631d4211a7b`.
+
+The sync doc `369_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Source expansion remains no-runtime-now as `no_runtime_now_source_expansion_named_source_family_absent`; the next whole-project decision is `next_deferred_server_authoritative_runtime_lane_freeze_after_source_expansion_no_runtime`.

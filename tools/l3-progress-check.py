@@ -635,6 +635,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_CURRENT_MAI
 SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET = (
     PLANNING_DOCS / "368_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET.md"
 )
+SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "369_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29666,6 +29669,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing source expansion packet term: {term}")
+
+    source_expansion_current_main_sync_text = _read_required_text(SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for source expansion named-source-family revalidation packet; no runtime behavior admitted.",
+        "PR `#958`",
+        "ff8cbff97726b317dee4bd66f370d631d4211a7b",
+        "current_main_synced_source_expansion_named_source_family_revalidation_packet",
+        "no_runtime_now_source_expansion_named_source_family_absent",
+        "next_deferred_server_authoritative_runtime_lane_freeze_after_source_expansion_no_runtime",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads",
+    ):
+        if term not in source_expansion_current_main_sync_text:
+            errors.append(f"{_rel(SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_CURRENT_MAIN_SYNC)} missing source expansion current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Expansion Named Source Family Revalidation Current-Main Sync",
+            "369_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_CURRENT_MAIN_SYNC.md",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_source_expansion_no_runtime",
+        ),
+        MANIFEST: (
+            "source_expansion_named_source_family_revalidation_current_main_sync",
+            "current_main_synced_source_expansion_named_source_family_revalidation_packet",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_source_expansion_no_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_expansion_named_source_family_revalidation_current_main_sync_proof",
+            "current_main_synced_source_expansion_named_source_family_revalidation_packet",
+            "reviewThreads",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing source expansion current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
