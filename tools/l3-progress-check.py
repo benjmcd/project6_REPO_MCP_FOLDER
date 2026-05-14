@@ -702,6 +702,9 @@ RENDERED_PACKAGE_LIFECYCLE_DASHBOARD_REVIEW_FIX_CURRENT_MAIN_SYNC = (
 DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE = (
     PLANNING_DOCS / "391_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md"
 )
+DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "392_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -1442,7 +1445,6 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
     required_allowed = [
         "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
         "stop_and_write_downstream_access_response_authority_freeze",
-        "current_main_sync_downstream_access_lifecycle_read_only_dashboard_freeze_after_merge",
         "progress/proof/state drift checker",
     ]
     for term in required_allowed:
@@ -30926,7 +30928,64 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(
-                    f"{_rel(path)} missing downstream access lifecycle dashboard freeze term: {term}"
+                f"{_rel(path)} missing downstream access lifecycle dashboard freeze term: {term}"
+            )
+
+    downstream_access_lifecycle_sync_text = _read_required_text(
+        DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `downstream_access_lifecycle_read_only_dashboard_freeze`.",
+        "PR `#987`",
+        "3ec3bb7f9644cba2cba26c2044e571058d19bdf8",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_downstream_access_lifecycle_read_only_dashboard_freeze",
+        "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
+        "stop_and_write_downstream_access_response_authority_freeze",
+    ):
+        if term not in downstream_access_lifecycle_sync_text:
+            errors.append(
+                f"{_rel(DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC)} missing downstream access lifecycle dashboard sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Access Lifecycle Read-Only Dashboard Freeze Current-Main Sync",
+            "392_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#987`",
+            "3ec3bb7f9644cba2cba26c2044e571058d19bdf8",
+            "current_main_synced_downstream_access_lifecycle_read_only_dashboard_freeze",
+            "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
+            "stop_and_write_downstream_access_response_authority_freeze",
+        ),
+        MANIFEST: (
+            "downstream_access_lifecycle_read_only_dashboard_freeze_current_main_sync",
+            "current_main_synced_downstream_access_lifecycle_read_only_dashboard_freeze",
+            "3ec3bb7f9644cba2cba26c2044e571058d19bdf8",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
+        ),
+        PROOF_MANIFEST: (
+            "downstream_access_lifecycle_read_only_dashboard_freeze_current_main_sync_proof",
+            "current_main_synced_downstream_access_lifecycle_read_only_dashboard_freeze",
+            "backend-layer3-api SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "implement_rendered_downstream_access_lifecycle_read_only_dashboard",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing downstream access lifecycle dashboard current-main sync term: {term}"
                 )
 
 def main() -> int:
