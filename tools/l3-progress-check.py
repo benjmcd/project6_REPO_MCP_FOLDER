@@ -726,6 +726,9 @@ LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC = (
 LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE = (
     PLANNING_DOCS / "399_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE.md"
 )
+LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "400_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -31452,6 +31455,68 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector/destination authority freeze term: {term}"
+                )
+
+    connector_destination_sync_text = _read_required_text(
+        LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `connector_destination_dispatch_authority_discovery_freeze`.",
+        "PR `#995`",
+        "66982e6d30f3dba5033c72ad61982ae282f2c49f",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_connector_destination_authority_discovery_freeze",
+        "conduct_connector_destination_dispatch_authority_discovery",
+        "no_runtime_now_connector_destination_named_target_absent",
+    ):
+        if term not in connector_destination_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC)} missing connector/destination authority sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Destination Authority Discovery Freeze Current-Main Sync",
+            "400_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#995`",
+            "66982e6d30f3dba5033c72ad61982ae282f2c49f",
+            "current_main_synced_connector_destination_authority_discovery_freeze",
+            "conduct_connector_destination_dispatch_authority_discovery",
+            "no_runtime_now_connector_destination_named_target_absent",
+        ),
+        MANIFEST: (
+            "layer3_connector_destination_authority_discovery_freeze_current_main_sync",
+            "current_main_synced_connector_destination_authority_discovery_freeze",
+            '"freeze_pr": "#995"',
+            "66982e6d30f3dba5033c72ad61982ae282f2c49f",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            "conduct_connector_destination_dispatch_authority_discovery",
+            "no_runtime_now_connector_destination_named_target_absent",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_destination_authority_discovery_freeze_current_main_sync_proof",
+            "current_main_synced_connector_destination_authority_discovery_freeze",
+            '"freeze_pr": "#995"',
+            "backend-layer3-api SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "conduct_connector_destination_dispatch_authority_discovery",
+            "no_runtime_now_connector_destination_named_target_absent",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector/destination authority sync term: {term}"
                 )
 
 def main() -> int:
