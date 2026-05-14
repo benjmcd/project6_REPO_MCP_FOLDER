@@ -684,6 +684,9 @@ SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC 
 LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME = (
     PLANNING_DOCS / "385_LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME.md"
 )
+RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE = (
+    PLANNING_DOCS / "386_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30280,6 +30283,16 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             errors.append(f"current decision mirror {value_path} missing no-current-runtime-freeze-goal-action result")
         if "await_new_exact_named_layer3_product_use_case_requirement" not in value:
             errors.append(f"current decision mirror {value_path} missing next whole-project posture")
+        if "rendered_package_lifecycle_read_only_dashboard_freeze" not in value:
+            errors.append(f"current decision mirror {value_path} missing rendered package lifecycle read-only dashboard freeze")
+        if "operator_inspects_package_lifecycle_without_mutation" not in value:
+            errors.append(f"current decision mirror {value_path} missing selected package lifecycle inspection use case")
+        if "rendered_package_lifecycle_read_only_dashboard" not in value:
+            errors.append(f"current decision mirror {value_path} missing selected package lifecycle dashboard mode")
+        if "implement_rendered_package_lifecycle_read_only_dashboard" not in value:
+            errors.append(f"current decision mirror {value_path} missing rendered package lifecycle implementation entry action")
+        if "stop_and_write_package_lifecycle_response_authority_freeze" not in value:
+            errors.append(f"current decision mirror {value_path} missing package lifecycle response authority stop action")
 
     for path, terms in {
         BOARD: (
@@ -30507,6 +30520,59 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing runtime freeze sequence completion term: {term}")
+
+    rendered_package_lifecycle_dashboard_text = _read_required_text(
+        RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `rendered_package_lifecycle_read_only_dashboard`; no runtime implementation begins in this pass.",
+        "operator_inspects_package_lifecycle_without_mutation",
+        "rendered_package_lifecycle_read_only_dashboard",
+        "1e51a3ceea91e9ea5cbb161a603bf586c8db533e",
+        "386_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md",
+        "backend/app/services/layer3_package_mutation_entry.py",
+        "backend/app/services/layer3_replacement_package_namespace.py",
+        "backend/app/review_ui/static/layer3.js",
+        "If current server responses do not expose enough response-safe package lifecycle fields for a read-only dashboard, implementation must stop and return to a narrower API/contract freeze.",
+        "implement_rendered_package_lifecycle_read_only_dashboard",
+        "stop_and_write_package_lifecycle_response_authority_freeze",
+        "No backend route, DTO, model, migration, or service behavior is admitted by this freeze.",
+    ):
+        if term not in rendered_package_lifecycle_dashboard_text:
+            errors.append(
+                f"{_rel(RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE)} missing rendered package lifecycle dashboard freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Package Lifecycle Read-Only Dashboard Freeze",
+            "386_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md",
+            "operator_inspects_package_lifecycle_without_mutation",
+            "rendered_package_lifecycle_read_only_dashboard",
+            "stop_and_write_package_lifecycle_response_authority_freeze",
+        ),
+        MANIFEST: (
+            "rendered_package_lifecycle_read_only_dashboard_freeze",
+            "implementation_entry_freeze_selected_no_runtime_implementation",
+            "operator_inspects_package_lifecycle_without_mutation",
+            "rendered_package_lifecycle_read_only_dashboard",
+            "stop_and_write_package_lifecycle_response_authority_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_package_lifecycle_read_only_dashboard_freeze_proof",
+            "implementation_entry_freeze_selected_no_runtime_implementation",
+            "operator_inspects_package_lifecycle_without_mutation",
+            "rendered_package_lifecycle_read_only_dashboard",
+            "stop_and_write_package_lifecycle_response_authority_freeze",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing rendered package lifecycle dashboard freeze term: {term}"
+                )
 
 def main() -> int:
     errors: list[str] = []
