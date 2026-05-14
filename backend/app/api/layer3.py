@@ -1336,6 +1336,12 @@ class Layer3ProviderPublicUrlPrepareRequest(BaseModel):
     provider_credentials: Any | None = None
     provider_secret: Any | None = None
     provider_token: Any | None = None
+    provider_bucket: Any | None = None
+    provider_container: Any | None = None
+    provider_object_key: Any | None = None
+    provider_object_identity: Any | None = None
+    raw_provider_signature: Any | None = None
+    raw_provider_object_key: Any | None = None
     connector_dispatch: Any | None = None
     connector_run_id: Any | None = None
     destination_id: Any | None = None
@@ -1369,6 +1375,12 @@ class Layer3ProviderPublicUrlRevokeRequest(BaseModel):
     provider_credentials: Any | None = None
     provider_secret: Any | None = None
     provider_token: Any | None = None
+    provider_bucket: Any | None = None
+    provider_container: Any | None = None
+    provider_object_key: Any | None = None
+    provider_object_identity: Any | None = None
+    raw_provider_signature: Any | None = None
+    raw_provider_object_key: Any | None = None
     connector_dispatch: Any | None = None
     connector_run_id: Any | None = None
     destination_id: Any | None = None
@@ -2720,6 +2732,12 @@ PROVIDER_PUBLIC_URL_FORBIDDEN_REQUEST_FIELDS = (
     "provider_credentials",
     "provider_secret",
     "provider_token",
+    "provider_bucket",
+    "provider_container",
+    "provider_object_key",
+    "provider_object_identity",
+    "raw_provider_signature",
+    "raw_provider_object_key",
     "connector_dispatch",
     "connector_run_id",
     "destination_id",
