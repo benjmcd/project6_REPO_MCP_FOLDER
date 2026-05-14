@@ -16512,5 +16512,32 @@
     "runtime_behavior_change": false,
     "rendered_ui_behavior_change": false,
     "next_required_action": "next_deferred_server_authoritative_runtime_lane_freeze_after_package_action_no_runtime"
+  },
+  "next_deferred_server_authoritative_runtime_lane_after_package_action_freeze_proof": {
+    "status": "branch_local_planning_control_proof",
+    "branch": "codex/l3-broad-qual-rag-revalidation-freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/362_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE.md",
+    "selected_next_lane": "broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+    "freeze_result": "selected_broad_qualitative_hybrid_rag_named_mode_revalidation_packet_only",
+    "current_failure_boundary": "blocked_named_analysis_mode_absent",
+    "authority_files": [
+      "backend/app/services/layer3_bootstrap_contract.py",
+      "backend/app/services/layer3_state_action_contract.py",
+      "backend/app/services/layer3_execution_request_contract.py",
+      "backend/app/services/layer3_qual_aps_execution.py",
+      "backend/app/services/layer3_source_intake.py"
+    ],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "proof_terms": [
+      "broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+      "selected_broad_qualitative_hybrid_rag_named_mode_revalidation_packet_only",
+      "blocked_named_analysis_mode_absent",
+      "No broad qualitative runtime is admitted.",
+      "No hybrid execution runtime is admitted.",
+      "No RAG/vector indexing or retrieval runtime is admitted.",
+      "No auth/security behavior is admitted."
+    ],
+    "next_required_action": "current_main_sync_next_deferred_runtime_lane_after_package_action_freeze"
   }
 }
