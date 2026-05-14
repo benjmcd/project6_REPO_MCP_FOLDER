@@ -838,6 +838,10 @@ LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE = (
     PLANNING_DOCS
     / "433_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE.md"
 )
+LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "434_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -34305,6 +34309,78 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing next governed runtime tranche selection freeze term: {term}"
+                )
+
+    next_governed_runtime_tranche_freeze_sync_text = _read_required_text(
+        LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_next_governed_runtime_tranche_selection_freeze`.",
+        "434_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "433_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE.md",
+        "PR `#1029`",
+        "0ae8e1f91bb09596d175931b5f3e6f5149f1c3ee",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null`: `PASS`.",
+        "`python -m py_compile .\\tools\\l3-progress-check.py`: `PASS`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`.",
+        "current_main_synced_layer3_next_governed_runtime_tranche_selection_freeze",
+        "conduct_layer3_next_governed_runtime_tranche_selection_audit_after_authority_matrix_exposure_sync",
+        "entry_decision: freeze_only",
+        "runtime_status: not_implemented",
+        "await_layer3_next_governed_runtime_tranche_selection_audit_after_freeze_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in next_governed_runtime_tranche_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE_CURRENT_MAIN_SYNC)} missing next governed runtime tranche selection freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Next Governed Runtime Tranche Selection Freeze Current-Main Sync",
+            "434_LAYER3_NEXT_GOVERNED_RUNTIME_TRANCHE_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1029`",
+            "0ae8e1f91bb09596d175931b5f3e6f5149f1c3ee",
+            "current_main_synced_layer3_next_governed_runtime_tranche_selection_freeze",
+            "conduct_layer3_next_governed_runtime_tranche_selection_audit_after_authority_matrix_exposure_sync",
+            "await_layer3_next_governed_runtime_tranche_selection_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_next_governed_runtime_tranche_selection_freeze_current_main_sync",
+            "current_main_synced_layer3_next_governed_runtime_tranche_selection_freeze",
+            '"freeze_pr": "#1029"',
+            "0ae8e1f91bb09596d175931b5f3e6f5149f1c3ee",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"selected_exact_audit": "conduct_layer3_next_governed_runtime_tranche_selection_audit_after_authority_matrix_exposure_sync"',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            "await_layer3_next_governed_runtime_tranche_selection_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_next_governed_runtime_tranche_selection_freeze_current_main_sync_proof",
+            "current_main_synced_layer3_next_governed_runtime_tranche_selection_freeze",
+            '"freeze_pr": "#1029"',
+            "0ae8e1f91bb09596d175931b5f3e6f5149f1c3ee",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "await_layer3_next_governed_runtime_tranche_selection_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing next governed runtime tranche selection freeze sync term: {term}"
                 )
 
 def main() -> int:
