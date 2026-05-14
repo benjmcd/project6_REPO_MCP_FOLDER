@@ -1906,3 +1906,9 @@ The freeze result is `selected_source_expansion_named_source_family_revalidation
 Current-main proof/control sync: PR `#956` merged `366_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE.md` at merge commit `b93d114864bbef2a6c90dc4a8f9130f680865936`.
 
 The sync doc `367_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The next required action is `source_expansion_named_source_family_revalidation_packet` in doc `368_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET.md`; source expansion runtime and adjacent deferred surfaces remain blocked until that packet is completed.
+
+## Source Expansion Named Source Family Revalidation Packet
+
+Branch-local planning/control packet: `368_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET.md` revalidates the selected source-expansion named-source-family packet after the current-main after-broad-qual/RAG lane sync.
+
+The result is `no_runtime_now_source_expansion_named_source_family_absent`. Current repo authority admits only `dataset_version`, `aps_content_document`, and bounded `operator_uploaded_single_source` source-intake/Gate B material admission. Arbitrary local-directory source runtime, broad file-upload source runtime, web connector source runtime, RAG/vector source runtime, unbounded runtime DB source expansion, generic source upload beyond bounded source-intake, source expansion route/model/migration, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.

@@ -632,6 +632,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE = (
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "367_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_CURRENT_MAIN_SYNC.md"
 )
+SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET = (
+    PLANNING_DOCS / "368_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29625,6 +29628,44 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing source expansion current-main sync term: {term}")
+
+    source_expansion_packet_text = _read_required_text(SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET, errors)
+    for term in (
+        "Status: planning/control source expansion named-source-family revalidation packet only; no runtime behavior admitted.",
+        "source_expansion_named_source_family_revalidation_packet",
+        "no_runtime_now_source_expansion_named_source_family_absent",
+        "supported_source_classes_plus_operator_source_intake",
+        "current_main_sync_source_expansion_named_source_family_revalidation_packet_after_merge",
+        "No arbitrary local-directory source runtime is admitted.",
+        "No broad file-upload source runtime is admitted.",
+        "No web connector source runtime is admitted.",
+        "No RAG/vector source runtime is admitted.",
+        "No auth/security behavior is admitted.",
+    ):
+        if term not in source_expansion_packet_text:
+            errors.append(f"{_rel(SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET)} missing source expansion packet term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source Expansion Named Source Family Revalidation Packet",
+            "368_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET.md",
+            "no_runtime_now_source_expansion_named_source_family_absent",
+        ),
+        MANIFEST: (
+            "source_expansion_named_source_family_revalidation_packet",
+            "no_runtime_now_source_expansion_named_source_family_absent",
+            "current_main_sync_source_expansion_named_source_family_revalidation_packet_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "source_expansion_named_source_family_revalidation_packet_proof",
+            "no_runtime_now_source_expansion_named_source_family_absent",
+            "supported_source_classes_plus_operator_source_intake",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing source expansion packet term: {term}")
 
 def main() -> int:
     errors: list[str] = []
