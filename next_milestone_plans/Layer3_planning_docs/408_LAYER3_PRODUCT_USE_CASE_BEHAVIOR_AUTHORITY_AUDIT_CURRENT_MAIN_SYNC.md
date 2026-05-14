@@ -22,7 +22,7 @@ PR `#1003` merged the Layer 3 product/use-case behavior authority audit at merge
 - PR resolved reviewThreads: `1`.
 - Mergeability before merge: `MERGEABLE`.
 
-The automated review comment identified an extra EOF blank line in `407_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT.md`; commit `ad29e2d44304315d5633501d52b7a4e70c4fd01f` removed it. After that fix, `git diff --check HEAD` returned clean aside from the repository line-ending warning, and the review thread was resolved.
+The automated review comment identified an extra EOF blank line in `407_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT.md`. That fix is present in the squash merge commit `152b41d8443250ef20e319fc3a84d5ccd3e41ec1`; after the fix, `git diff --check HEAD` returned clean aside from the repository line-ending warning, and the review thread was resolved.
 
 ## Post-Merge Validation
 

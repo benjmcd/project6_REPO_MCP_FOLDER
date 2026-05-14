@@ -17847,7 +17847,6 @@
     "sync_doc": "next_milestone_plans/Layer3_planning_docs/408_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
     "audit_pr": "#1003",
     "audit_merge_commit": "152b41d8443250ef20e319fc3a84d5ccd3e41ec1",
-    "audit_fix_commit": "ad29e2d44304315d5633501d52b7a4e70c4fd01f",
     "current_main_after_merge": "152b41d8443250ef20e319fc3a84d5ccd3e41ec1",
     "proof_terms": [
       "backend-layer3-api SUCCESS",
@@ -17858,7 +17857,7 @@
       "PR reviewThreads resolved 1",
       "PR reviewThreads unresolved 0",
       "PR reviewThreads outdated 1",
-      "Codex EOF review fixed by ad29e2d44304315d5633501d52b7a4e70c4fd01f",
+      "review_fix_included_in_merge_commit 152b41d8443250ef20e319fc3a84d5ccd3e41ec1",
       "l3-progress-check.py PASS",
       "current_main_synced_layer3_product_use_case_behavior_authority_audit",
       "no_runtime_now",
@@ -17870,9 +17869,10 @@
     "post_merge_validation": [
       "python .\\tools\\l3-progress-check.py PASS"
     ],
-    "next_whole_project_posture": "await_next_exact_layer3_authority_substrate_freeze_after_behavior_authority_no_runtime_sync"
+    "next_whole_project_posture": "await_next_exact_layer3_authority_substrate_freeze_after_behavior_authority_no_runtime_sync",
+    "review_fix_included_in_merge_commit": "152b41d8443250ef20e319fc3a84d5ccd3e41ec1"
   },
   "latest_layer3_product_use_case_behavior_authority_audit_current_main_sync_branch": "codex/l3-product-use-case-behavior-authority-audit-sync",
   "latest_layer3_product_use_case_behavior_authority_audit_current_main_sync_live_behavior_change": false,
-  "latest_layer3_product_use_case_behavior_authority_audit_current_main_sync_summary": "Doc 408 proof entry records current-main sync for PR #1003 merge commit 152b41d8443250ef20e319fc3a84d5ccd3e41ec1; checks passed, the Codex EOF review thread was resolved/outdated, post-merge l3-progress-check.py PASS, and next posture is awaiting an exact authority substrate freeze."
+  "latest_layer3_product_use_case_behavior_authority_audit_current_main_sync_summary": "Doc 408 proof entry records current-main sync for PR #1003 merge commit 152b41d8443250ef20e319fc3a84d5ccd3e41ec1; checks passed, the Codex EOF review thread was resolved/outdated and the fix is present in the squash merge commit, post-merge l3-progress-check.py PASS, and next posture is awaiting an exact authority substrate freeze."
 }
