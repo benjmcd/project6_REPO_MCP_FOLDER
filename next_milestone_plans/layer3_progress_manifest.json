@@ -10245,7 +10245,7 @@
     "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
     "owner_ui": "backend/app/review_ui/static/claude.html",
     "owner_service": "backend/app/services/layer3_workbench.py",
-    "current_failure_boundary": "source_intake_external_export_download_rendered_controls_absent",
+    "current_failure_boundary": "historical_source_intake_external_export_download_rendered_controls_absent_before_doc_327",
     "future_rendered_controls_semantics": {
       "required_delivery_schema_id": "layer3.source_intake_external_export_download_delivery.v1",
       "required_prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
@@ -10283,7 +10283,7 @@
   },
   "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_branch": "codex/l3-source-intake-delivery-controls-freeze",
   "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-  "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_summary": "Doc 326 freezes source-intake external export/download rendered controls as the next boundary after source-intake same-origin delivery. It records source_intake_external_export_download_rendered_controls_absent as the rendered failure boundary, admits no rendered UI or runtime behavior, and requires any future UI slice to project server-owned delivery authority only.",
+  "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_summary": "Doc 326 freezes source-intake external export/download rendered controls as the next boundary after source-intake same-origin delivery. It records the historical pre-doc-327 rendered absence boundary, admits no rendered UI or runtime behavior in the freeze itself, and requires any future UI slice to project server-owned delivery authority only.",
   "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_live_behavior_change": false,
   "source_intake_external_export_download_rendered_controls_boundary": {
     "status": "branch_local_implemented_targeted_tests_passed",

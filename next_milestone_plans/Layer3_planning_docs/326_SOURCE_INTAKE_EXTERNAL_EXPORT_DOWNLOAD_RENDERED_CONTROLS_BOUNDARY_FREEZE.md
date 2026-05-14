@@ -9,7 +9,7 @@ Owner UI absence surface: `backend/app/review_ui/static/claude.html`
 Future implementation owner UI: `backend/app/review_ui/static/layer3.js`
 Future implementation rendered shell: `backend/app/review_ui/static/layer3.html`
 Owner service: `backend/app/services/layer3_workbench.py`
-Current rendered failure boundary: no source-intake external export/download delivery controls are rendered.
+Historical rendered freeze boundary: before doc 327, source-intake external export/download delivery controls were not rendered; current-main live rendered behavior is governed by the later implementation proof.
 
 ## Canonical source of truth
 

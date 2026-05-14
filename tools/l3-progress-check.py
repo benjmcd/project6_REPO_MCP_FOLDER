@@ -23296,18 +23296,18 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "## Source Intake External Export Download Rendered Controls Boundary Freeze",
             "326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
             "source_intake_external_export_download_rendered_controls_boundary",
-            "Current rendered UI authority has no source-intake external export/download delivery controls",
+            "historical pre-doc-327 rendered absence boundary",
         ),
         MANIFEST: (
             "source_intake_external_export_download_rendered_controls_boundary_freeze",
             "latest_source_intake_external_export_download_rendered_controls_boundary_freeze_branch",
-            "source_intake_external_export_download_rendered_controls_absent",
+            "historical_source_intake_external_export_download_rendered_controls_absent_before_doc_327",
             "layer3.source_intake_external_export_download_delivery.v1",
         ),
         PROOF_MANIFEST: (
             "source_intake_external_export_download_rendered_controls_boundary_freeze_proof",
             "326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-            "rendered UI has no source-intake external export/download delivery controls",
+            "historical pre-implementation rendered UI absence before doc 327",
             "server_authority_only_rendered_projection",
         ),
     }.items():
@@ -23334,7 +23334,7 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "rendered_surface": "backend/app/review_ui/static/claude.html",
             "future_owner_ui": "backend/app/review_ui/static/layer3.js",
             "future_rendered_shell": "backend/app/review_ui/static/layer3.html",
-            "current_failure_boundary": "source_intake_external_export_download_rendered_controls_absent",
+            "current_failure_boundary": "historical_source_intake_external_export_download_rendered_controls_absent_before_doc_327",
             "implementation_entry_allowed_next": True,
             "live_behavior_change": False,
             "runtime_behavior_change": False,
@@ -23414,14 +23414,6 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
         ):
             if required not in frozen_future_scope:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_external_export_download_rendered_controls_boundary_freeze_proof frozen_future_scope missing {required}")
-    ui_text = _read_required_text(ROOT / "backend/app/review_ui/static/claude.html", errors)
-    for forbidden in (
-        "source_intake_external_export_download_delivery",
-        "source-intake-external-export-download-delivery",
-    ):
-        if forbidden in ui_text:
-            errors.append(f"backend/app/review_ui/static/claude.html unexpectedly contains source-intake delivery rendered control term: {forbidden}")
-
 
 def _check_source_intake_external_export_download_rendered_controls_boundary(errors: list[str]) -> None:
     doc_text = _read_required_text(SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY, errors)
