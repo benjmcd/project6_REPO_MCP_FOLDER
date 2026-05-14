@@ -3519,6 +3519,12 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     border-top: 1px solid var(--border-color);
 }
 
+.authority-matrix-review-panel {
+    border: 1px solid var(--border-color);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .layer3-e2e-governance-lifecycle-panel {
     border: 1px solid var(--border-color);
 }
@@ -3528,6 +3534,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 }
 
 .downstream-access-lifecycle-grid {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.authority-matrix-review-grid {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
@@ -3543,6 +3553,16 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     grid-column: span 2;
 }
 
+.authority-matrix-review-rows {
+    grid-column: span 2;
+}
+
+.authority-matrix-review-rows li {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
 .layer3-e2e-governance-lifecycle-rows {
     grid-column: span 2;
 }
@@ -3550,8 +3570,13 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 @media (max-width: 760px) {
     .package-lifecycle-rows,
     .downstream-access-lifecycle-rows,
+    .authority-matrix-review-rows,
     .layer3-e2e-governance-lifecycle-rows {
         grid-column: span 1;
+    }
+
+    .authority-matrix-review-grid {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 

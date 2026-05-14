@@ -50,6 +50,9 @@ const DOWNSTREAM_ACCESS_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response
 const LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard';
 const LAYER3_E2E_GOVERNANCE_LIFECYCLE_USE_CASE = 'operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch';
 const LAYER3_E2E_GOVERNANCE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
+const AUTHORITY_MATRIX_REVIEW_RENDERED_MODE = 'rendered_authority_matrix_read_only_review_surface';
+const AUTHORITY_MATRIX_REVIEW_USE_CASE = 'operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch';
+const AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_matrix_contract';
 
 const State = {
     bootstrap: null,
@@ -132,6 +135,7 @@ const State = {
 const elements = {
     themeSelector: document.getElementById('theme-selector'),
     authorityRail: document.getElementById('authority-rail'),
+    authorityMatrixReviewPanel: document.getElementById('authority-matrix-review-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
     intentForm: document.getElementById('intent-form'),
@@ -937,6 +941,36 @@ function stateActionContractSignature(source = null) {
         state_model_schema_id: contract.state_model_schema_id || null,
         states: sortedStringList(contract.states),
     });
+}
+
+function authorityMatrixContract() {
+    const contract = State.bootstrap?.authority_matrix_contract;
+    if (!contract || typeof contract !== 'object') return null;
+    if (contract.schema_id !== 'layer3.authority_matrix_contract.v1') return null;
+    if (!Array.isArray(contract.authority_matrix)) return null;
+    return contract;
+}
+
+function authorityMatrixReviewState(contract) {
+    if (!State.bootstrap) return { label: 'authority_matrix_bootstrap_pending', pill: 'preview' };
+    if (!contract) return { label: 'authority_matrix_bootstrap_contract_unavailable', pill: 'blocked' };
+    if (contract.fail_closed_result === 'blocked_no_runtime_authority') {
+        return { label: 'authority_matrix_fail_closed_read_only', pill: 'ok' };
+    }
+    return { label: 'authority_matrix_read_only_contract_loaded', pill: 'preview' };
+}
+
+function authorityMatrixRowCards(rows) {
+    return rows.length
+        ? rows.map((row) => `
+            <li>
+                <code>${escapeHtml(row.row || 'unknown_authority_row')}</code>
+                ${row.admission_result ? `<span>${escapeHtml(row.admission_result)}</span>` : ''}
+                ${row.next_allowed_action ? `<span>${escapeHtml(row.next_allowed_action)}</span>` : ''}
+                ${Array.isArray(row.blocked_scope) && row.blocked_scope.length ? `<span>${escapeHtml(row.blocked_scope.join(', '))}</span>` : ''}
+            </li>
+        `).join('')
+        : '<li>No authority matrix rows are exposed by bootstrap.</li>';
 }
 
 function sameStringList(left, right) {
@@ -4517,6 +4551,93 @@ function renderPackageLifecycleDashboardPanel() {
     `;
 }
 
+function renderAuthorityMatrixReviewPanel() {
+    const contract = authorityMatrixContract();
+    const panelState = authorityMatrixReviewState(contract);
+    const rows = contract?.authority_matrix || [];
+    const blockedScope = [
+        'runtime_behavior_blocked',
+        'backend_route_behavior_blocked',
+        'mutation_dispatch_blocked',
+        'provider_public_delivery_use_blocked',
+        'raw_public_url_display_use_blocked',
+        'frontend_durable_authority_blocked',
+    ];
+    elements.authorityMatrixReviewPanel.dataset.reviewState = panelState.label;
+
+    if (!contract) {
+        elements.authorityMatrixReviewPanel.innerHTML = `
+            <div class="result-review-status">
+                <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+                <span class="rail-label">${escapeHtml(AUTHORITY_MATRIX_REVIEW_RENDERED_MODE)}</span>
+            </div>
+            <div class="result-review-grid authority-matrix-review-grid">
+                <section class="result-review-card">
+                    <strong>Bootstrap Contract</strong>
+                    <ul>
+                        ${fieldItem('response authority', AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY, { code: true })}
+                        ${fieldItem('schema id', State.bootstrap?.authority_matrix_contract?.schema_id, { code: true })}
+                        ${fieldItem('fail closed', 'blocked_no_runtime_authority', { code: true })}
+                    </ul>
+                </section>
+                <section class="result-review-card">
+                    <strong>Unavailable Boundary</strong>
+                    <div class="downstream-locks">${renderDownstreamLocks(blockedScope)}</div>
+                </section>
+            </div>
+        `;
+        return;
+    }
+
+    elements.authorityMatrixReviewPanel.innerHTML = `
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Authority matrix</p>
+                <h2>Rendered read-only authority review</h2>
+            </div>
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+        </div>
+        <div class="result-review-grid authority-matrix-review-grid">
+            <section class="result-review-card">
+                <strong>Review Authority</strong>
+                <ul>
+                    ${fieldItem('use case', AUTHORITY_MATRIX_REVIEW_USE_CASE, { code: true })}
+                    ${fieldItem('rendered mode', AUTHORITY_MATRIX_REVIEW_RENDERED_MODE, { code: true })}
+                    ${fieldItem('response authority', AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('exposure context', contract.exposure_context, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Contract Identity</strong>
+                <ul>
+                    ${fieldItem('schema id', contract.schema_id, { code: true })}
+                    ${fieldItem('definition id', contract.contract_definition_id, { code: true })}
+                    ${fieldItem('scope', contract.scope, { code: true })}
+                    ${fieldItem('fail closed', contract.fail_closed_result, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Boundaries</strong>
+                <ul>
+                    ${fieldItem('mutation or dispatch', false)}
+                    ${fieldItem('additional matrix route', false)}
+                    ${fieldItem('provider-public delivery/use', false)}
+                    ${fieldItem('raw public URL display/use', false)}
+                    ${fieldItem('frontend durable authority', false)}
+                </ul>
+            </section>
+            <section class="result-review-card authority-matrix-review-rows">
+                <strong>Authority Matrix Rows</strong>
+                <ul>${authorityMatrixRowCards(rows)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Deferred Capabilities</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(blockedScope)}</div>
+            </section>
+        </div>
+    `;
+}
+
 function renderDownstreamAccessLifecycleDashboardPanel() {
     const rows = downstreamAccessLifecycleRows();
     const dashboardState = downstreamAccessLifecycleDashboardState(rows);
@@ -5683,6 +5804,7 @@ function renderAll() {
     renderUnavailable(currentDownstreamUnavailable());
     renderContext();
     renderMaterialLedger();
+    renderAuthorityMatrixReviewPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
     renderPlanPanel();

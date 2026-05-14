@@ -5044,6 +5044,36 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   expect(mobileFit).toBe(true);
 });
 
+test('Layer 3 workbench renders authority matrix as a read-only bootstrap review surface', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const bootstrap = await expectJson(await bootstrapResponsePromise);
+
+  expect(bootstrap.authority_matrix_contract?.schema_id).toBe('layer3.authority_matrix_contract.v1');
+  expect(bootstrap.authority_matrix_contract?.authority_matrix.length).toBeGreaterThan(0);
+  const panel = page.locator('#authority-matrix-review-panel');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_authority_matrix_read_only_review_surface');
+  await expect(panel).toHaveAttribute('data-review-state', 'authority_matrix_fail_closed_read_only');
+  await expect(panel).toContainText(
+    'operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch',
+  );
+  await expect(panel).toContainText('State.bootstrap.authority_matrix_contract');
+  await expect(panel).toContainText('layer3.authority_matrix_contract.v1');
+  await expect(panel).toContainText('blocked_no_runtime_authority');
+  await expect(panel).toContainText('additional matrix route');
+  await expect(panel).toContainText('provider public delivery use blocked');
+  await expect(panel.locator('button,input,select,textarea')).toHaveCount(0);
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    '/authority-matrix',
+    'package/mutation',
+    'handoff/connector',
+    'provider-private-signed-url/prepare',
+    'provider-public-url/use',
+  ]);
+});
+
 test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });

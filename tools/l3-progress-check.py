@@ -866,6 +866,10 @@ LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT_CURRENT_MAIN_SYNC =
     PLANNING_DOCS
     / "440_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION = (
+    PLANNING_DOCS
+    / "441_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -34875,6 +34879,147 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix rendered review source audit sync term: {term}"
+                )
+
+    authority_matrix_rendered_review_implementation_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local rendered UI implementation for `layer3_authority_matrix_rendered_review_surface_implementation`.",
+        "441_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION.md",
+        "440_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT_CURRENT_MAIN_SYNC.md",
+        "89ddbe987d31603e4671b294eba8ea0757dabf4e",
+        "layer3_authority_matrix_rendered_review_surface_implemented_for_read_only_bootstrap_panel",
+        "#authority-matrix-review-panel",
+        'data-rendered-mode="rendered_authority_matrix_read_only_review_surface"',
+        "State.bootstrap.authority_matrix_contract",
+        "authority_matrix_bootstrap_contract_unavailable",
+        "authority_matrix_fail_closed_read_only",
+        "additional authority-matrix route fetches absent",
+        "`python -m pytest .\\backend\\tests\\test_layer3_page.py -q`: `PASS`.",
+        "`npx playwright test e2e/layer3-workbench.spec.js --project=chromium -g \"authority matrix\"`: `PASS`.",
+        "`npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -g \"authority matrix\"`: `PASS`.",
+        "`npx playwright test e2e/layer3-workbench.spec.js --project=chromium`: `PASS`.",
+        "This implementation admits rendered UI behavior only",
+        "frontend-only durable authority",
+        "current_main_sync_layer3_authority_matrix_rendered_review_surface_implementation_after_merge",
+        "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_authority_matrix_rendered_review_sync",
+    ):
+        if term not in authority_matrix_rendered_review_implementation_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION)} missing authority matrix rendered review implementation term: {term}"
+            )
+
+    html_text = _read_required_text(LAYER3_HTML, errors)
+    js_text = _read_required_text(LAYER3_JS, errors)
+    css_text = _read_required_text(LAYER3_CSS, errors)
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    for path, terms in {
+        LAYER3_HTML: (
+            'id="authority-matrix-review-panel"',
+            'data-rendered-mode="rendered_authority_matrix_read_only_review_surface"',
+            "Layer 3 authority matrix read-only review surface",
+        ),
+        LAYER3_JS: (
+            "AUTHORITY_MATRIX_REVIEW_RENDERED_MODE = 'rendered_authority_matrix_read_only_review_surface'",
+            "AUTHORITY_MATRIX_REVIEW_USE_CASE = 'operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch'",
+            "AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_matrix_contract'",
+            "authorityMatrixContract",
+            "renderAuthorityMatrixReviewPanel",
+            "State.bootstrap?.authority_matrix_contract",
+            "authority_matrix_bootstrap_contract_unavailable",
+            "authority_matrix_fail_closed_read_only",
+            "additional matrix route",
+            "renderAuthorityMatrixReviewPanel()",
+        ),
+        LAYER3_CSS: (
+            ".authority-matrix-review-panel",
+            ".authority-matrix-review-grid",
+            ".authority-matrix-review-rows",
+        ),
+        LAYER3_PAGE_TEST: (
+            'id="authority-matrix-review-panel"',
+            'data-rendered-mode="rendered_authority_matrix_read_only_review_surface"',
+            "AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_matrix_contract'",
+            "function renderAuthorityMatrixReviewPanel",
+            "State.bootstrap?.authority_matrix_contract",
+            "authority_matrix_bootstrap_contract_unavailable",
+            '"/authority-matrix" not in js.text',
+            ".authority-matrix-review-panel",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench renders authority matrix as a read-only bootstrap review surface",
+            "State.bootstrap.authority_matrix_contract",
+            "authority_matrix_fail_closed_read_only",
+            "expectNoRequestsToLayer3Paths(apiRequests, [",
+            "'/authority-matrix'",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix rendered review implementation surface term: {term}"
+                )
+    if "/authority-matrix" in js_text:
+        errors.append(f"{_rel(LAYER3_JS)} must not fetch or reference a separate authority-matrix route")
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Rendered Review Surface Implementation",
+            "441_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION.md",
+            "layer3_authority_matrix_rendered_review_surface_implemented_for_read_only_bootstrap_panel",
+            "#authority-matrix-review-panel",
+            "`State.bootstrap.authority_matrix_contract`",
+            "`python -m pytest .\\backend\\tests\\test_layer3_page.py -q`",
+            'npx playwright test e2e/layer3-workbench.spec.js --project=chromium -g "authority matrix"',
+            'npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -g "authority matrix"',
+            "npx playwright test e2e/layer3-workbench.spec.js --project=chromium",
+            "current_main_sync_layer3_authority_matrix_rendered_review_surface_implementation_after_merge",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_authority_matrix_rendered_review_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_rendered_review_surface_implementation",
+            "branch_local_rendered_ui_implementation",
+            "codex/l3-authority-matrix-rendered-review-impl",
+            "441_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION.md",
+            "89ddbe987d31603e4671b294eba8ea0757dabf4e",
+            "layer3_authority_matrix_rendered_review_surface_implemented_for_read_only_bootstrap_panel",
+            "rendered_authority_matrix_read_only_review_surface",
+            "State.bootstrap.authority_matrix_contract",
+            "authority_matrix_bootstrap_contract_unavailable_fail_closed_state",
+            "no_authority_matrix_route_fetch",
+            "python -m pytest .\\\\backend\\\\tests\\\\test_layer3_page.py -q PASS",
+            'npx playwright test e2e/layer3-workbench.spec.js --project=chromium -g \\"authority matrix\\" PASS',
+            'npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -g \\"authority matrix\\" PASS',
+            "npx playwright test e2e/layer3-workbench.spec.js --project=chromium PASS",
+            "current_main_sync_layer3_authority_matrix_rendered_review_surface_implementation_after_merge",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_authority_matrix_rendered_review_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_rendered_review_surface_implementation_proof",
+            "branch_local_rendered_ui_implementation",
+            "codex/l3-authority-matrix-rendered-review-impl",
+            "441_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION.md",
+            "layer3_authority_matrix_rendered_review_surface_implemented_for_read_only_bootstrap_panel",
+            "authority-matrix-review-panel",
+            "State.bootstrap.authority_matrix_contract",
+            "authority_matrix_bootstrap_contract_unavailable",
+            "authority_matrix_fail_closed_read_only",
+            "no additional authority-matrix route fetch",
+            'npx playwright test e2e/layer3-workbench.spec.js --project=chromium -g \\"authority matrix\\" PASS',
+            'npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -g \\"authority matrix\\" PASS',
+            "npx playwright test e2e/layer3-workbench.spec.js --project=chromium PASS",
+            "no frontend-only durable authority",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_authority_matrix_rendered_review_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix rendered review implementation term: {term}"
                 )
 
 def main() -> int:
