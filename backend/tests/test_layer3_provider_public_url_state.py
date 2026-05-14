@@ -24,6 +24,7 @@ from app.models.models import (
 from app.services.layer3_provider_public_url_fake_provider import ProviderPublicUrlFakeReceipt
 from app.services.layer3_provider_public_url_state import (
     PROVIDER_PUBLIC_URL_REDACTED_MARKER,
+    PROVIDER_PUBLIC_URL_STATE_EXPIRED,
     PROVIDER_PUBLIC_URL_STATE_REVOKED,
     ProviderPublicUrlStateError,
     record_prepared_provider_public_url_receipt,
@@ -151,6 +152,44 @@ def test_prepare_conflict_rejects_changed_authority_for_same_client_request_id(s
                 provider_public_url=PUBLIC_URL,
             )
         assert conflict.value.error_code == "provider_public_url_state_idempotency_conflict"
+    finally:
+        db.close()
+
+
+def test_prepare_reuse_after_expiry_marks_existing_receipt_expired(session_factory) -> None:
+    db = session_factory()
+    try:
+        state = record_prepared_provider_public_url_receipt(
+            db,
+            request_id="prepare-public-expiry-1",
+            client_request_id="client-request-provider-public-expiry",
+            authority_basis=_authority_basis(),
+            recipient_scope=RECIPIENT_SCOPE,
+            requested_ttl_seconds=1,
+            now_epoch=NOW_EPOCH,
+            provider_public_url=PUBLIC_URL,
+        )
+    finally:
+        db.close()
+
+    db = session_factory()
+    try:
+        expired = record_prepared_provider_public_url_receipt(
+            db,
+            request_id="prepare-public-expiry-2",
+            client_request_id="client-request-provider-public-expiry",
+            authority_basis=_authority_basis(),
+            recipient_scope=RECIPIENT_SCOPE,
+            requested_ttl_seconds=1,
+            now_epoch=NOW_EPOCH + 2,
+            provider_public_url=PUBLIC_URL,
+        )
+        receipt = db.query(L3ProviderPublicUrlReceipt).filter_by(
+            provider_public_url_receipt_id=state.provider_public_url_receipt_id
+        ).one()
+        assert expired.provider_public_url_receipt_id == state.provider_public_url_receipt_id
+        assert expired.provider_public_url_state == PROVIDER_PUBLIC_URL_STATE_EXPIRED
+        assert receipt.provider_public_url_state == PROVIDER_PUBLIC_URL_STATE_EXPIRED
     finally:
         db.close()
 

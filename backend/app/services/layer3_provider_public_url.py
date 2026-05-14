@@ -36,6 +36,7 @@ PROVIDER_PUBLIC_URL_OPERATOR_DECISION = "prepare_provider_public_url"
 PROVIDER_PUBLIC_URL_REVOKE_OPERATOR_DECISION = "revoke_provider_public_url"
 PROVIDER_PUBLIC_URL_DEFAULT_TTL_SECONDS = 300
 PROVIDER_PUBLIC_URL_FAKE_PROVIDER_AUTHORITY = "layer3_provider_public_url_fake_provider"
+PROVIDER_PRIVATE_SIGNED_URL_STATE_PREPARED = "provider_private_signed_url_prepared"
 
 PROVIDER_PUBLIC_URL_PREPARE_ALLOWED_FIELDS = frozenset(
     {
@@ -90,6 +91,12 @@ PROVIDER_PUBLIC_URL_FORBIDDEN_FIELDS = frozenset(
         "provider_credentials",
         "provider_secret",
         "provider_token",
+        "provider_bucket",
+        "provider_container",
+        "provider_object_key",
+        "provider_object_identity",
+        "raw_provider_signature",
+        "raw_provider_object_key",
         "connector_dispatch",
         "connector_run_id",
         "destination_id",
@@ -111,7 +118,7 @@ def _text(payload: dict[str, Any], key: str) -> str:
 
 
 def _blocked_fields(payload: dict[str, Any], *, allowed_fields: frozenset[str]) -> list[str]:
-    return sorted(field for field, value in payload.items() if field not in allowed_fields and value is not None)
+    return sorted(field for field in payload if field not in allowed_fields)
 
 
 def _missing_fields(payload: dict[str, Any], *, required_fields: frozenset[str]) -> list[str]:
@@ -187,7 +194,53 @@ def _status_from_receipt(receipt: L3ProviderPublicUrlReceipt, *, now_epoch: int)
     return receipt.provider_public_url_state
 
 
-def _private_authority_basis(db: Session, *, provider_private_signed_url_receipt_id: str) -> dict[str, Any]:
+def _require_private_receipt_prepared(receipt: L3ProviderPrivateSignedUrlReceipt, *, now_epoch: int) -> None:
+    if receipt.provider_private_signed_url_state != PROVIDER_PRIVATE_SIGNED_URL_STATE_PREPARED:
+        raise Layer3WorkbenchError(
+            "provider_public_url_private_receipt_not_prepared",
+            "Provider-public URL prepare requires a prepared provider-private signed URL receipt.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["provider_private_signed_url_receipt_id"],
+            next_allowed_actions=["prepare_new_provider_private_signed_url"],
+        )
+    if now_epoch >= _datetime_epoch(receipt.provider_private_signed_url_expires_at):
+        raise Layer3WorkbenchError(
+            "provider_public_url_private_receipt_expired",
+            "Provider-private signed URL receipt has expired and cannot authorize provider-public URL state.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["provider_private_signed_url_receipt_id"],
+            next_allowed_actions=["prepare_new_provider_private_signed_url"],
+        )
+    if receipt.provider_private_signed_url_use_count >= receipt.provider_private_signed_url_max_use_count:
+        raise Layer3WorkbenchError(
+            "provider_public_url_private_receipt_consumed",
+            "Provider-private signed URL receipt has already reached its replay limit.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["provider_private_signed_url_receipt_id"],
+            next_allowed_actions=["prepare_new_provider_private_signed_url"],
+        )
+
+
+def _public_authority_basis(authority: L3ProviderPublicUrlObjectAuthority) -> dict[str, Any]:
+    return {
+        "session_id": authority.session_id,
+        "provider_private_signed_url_receipt_id": authority.provider_private_signed_url_receipt_id,
+        "external_export_download_record_ref": authority.external_export_download_record_ref,
+        "export_download_descriptor_ref": authority.export_download_descriptor_ref,
+        "source_artifact_hash": authority.source_artifact_hash,
+        "source_artifact_size_bytes": authority.source_artifact_size_bytes,
+    }
+
+
+def _private_authority_basis(
+    db: Session,
+    *,
+    provider_private_signed_url_receipt_id: str,
+    now_epoch: int,
+) -> dict[str, Any]:
     receipt = db.get(L3ProviderPrivateSignedUrlReceipt, provider_private_signed_url_receipt_id)
     if receipt is None:
         raise Layer3WorkbenchError(
@@ -198,14 +251,7 @@ def _private_authority_basis(db: Session, *, provider_private_signed_url_receipt
             blocked_fields=["provider_private_signed_url_receipt_id"],
             next_allowed_actions=["prepare_provider_private_signed_url"],
         )
-    if receipt.provider_private_signed_url_state == "provider_private_signed_url_revoked":
-        raise Layer3WorkbenchError(
-            "provider_public_url_private_receipt_revoked",
-            "Provider-private signed URL receipt has been revoked and cannot authorize provider-public URL state.",
-            status="conflict",
-            blocked_fields=["provider_private_signed_url_receipt_id"],
-            next_allowed_actions=["prepare_new_provider_private_signed_url"],
-        )
+    _require_private_receipt_prepared(receipt, now_epoch=now_epoch)
     authority = db.get(
         L3ProviderPrivateSignedUrlObjectAuthority,
         receipt.provider_private_signed_url_object_authority_id,
@@ -226,6 +272,43 @@ def _private_authority_basis(db: Session, *, provider_private_signed_url_receipt
         "source_artifact_hash": authority.source_artifact_hash,
         "source_artifact_size_bytes": authority.source_artifact_size_bytes,
     }
+
+
+def _revoke_authority_basis(db: Session, *, provider_public_url_receipt_id: str) -> dict[str, Any] | None:
+    receipt = db.get(L3ProviderPublicUrlReceipt, provider_public_url_receipt_id)
+    if receipt is None:
+        return None
+    authority = db.get(L3ProviderPublicUrlObjectAuthority, receipt.provider_public_url_object_authority_id)
+    if authority is None:
+        raise Layer3WorkbenchError(
+            "provider_public_url_revoke_authority_missing",
+            "Provider-public URL revoke requires durable provider-public authority.",
+            status="conflict",
+            blocked_fields=["provider_public_url_receipt_id"],
+            next_allowed_actions=["inspect_provider_public_url_status"],
+        )
+    private_receipt = db.get(L3ProviderPrivateSignedUrlReceipt, authority.provider_private_signed_url_receipt_id)
+    if private_receipt is None:
+        raise Layer3WorkbenchError(
+            "provider_public_url_revoke_private_receipt_missing",
+            "Provider-public URL revoke could not reload provider-private signed URL authority.",
+            status="conflict",
+            blocked_fields=["provider_public_url_receipt_id"],
+            next_allowed_actions=["prepare_new_provider_public_url"],
+        )
+    private_authority = db.get(
+        L3ProviderPrivateSignedUrlObjectAuthority,
+        private_receipt.provider_private_signed_url_object_authority_id,
+    )
+    if private_authority is None:
+        raise Layer3WorkbenchError(
+            "provider_public_url_revoke_private_authority_missing",
+            "Provider-public URL revoke could not reload provider-private object authority.",
+            status="conflict",
+            blocked_fields=["provider_public_url_receipt_id"],
+            next_allowed_actions=["prepare_new_provider_public_url"],
+        )
+    return _public_authority_basis(authority)
 
 
 def _fake_public_url(*, authority_basis: dict[str, Any], client_request_id: str) -> str:
@@ -288,7 +371,7 @@ def _receipt_response(
         "provider_public_url_redacted": PROVIDER_PUBLIC_URL_REDACTED_MARKER,
         "provider_public_url_expires_at": _epoch_iso(expires_at_epoch),
         "provider_public_url_replay_policy": receipt.provider_public_url_replay_policy,
-        "provider_public_url_revocation_supported": False,
+        "provider_public_url_revocation_supported": True,
         "provider_public_url_revoked": receipt.provider_public_url_state == PROVIDER_PUBLIC_URL_STATE_REVOKED,
         "source_artifact_hash": authority.source_artifact_hash,
         "source_artifact_size_bytes": authority.source_artifact_size_bytes,
@@ -355,6 +438,7 @@ def provider_public_url_prepare(
     authority_basis = _private_authority_basis(
         db,
         provider_private_signed_url_receipt_id=_text(payload, "provider_private_signed_url_receipt_id"),
+        now_epoch=effective_now,
     )
     try:
         state = record_prepared_provider_public_url_receipt(
@@ -464,6 +548,10 @@ def provider_public_url_revoke(
         )
     _require_revoke_fixed_values(payload)
     effective_now = int(time.time() if now_epoch is None else now_epoch)
+    authority_basis = _revoke_authority_basis(
+        db,
+        provider_public_url_receipt_id=_text(payload, "provider_public_url_receipt_id"),
+    )
     try:
         state = revoke_provider_public_url_receipt(
             db,
@@ -472,6 +560,7 @@ def provider_public_url_revoke(
             revoked_by=_text(payload, "revoked_by"),
             revocation_reason=_text(payload, "revocation_reason"),
             now_epoch=effective_now,
+            authority_basis=authority_basis,
             request_id=_text(payload, "client_request_id"),
         )
     except ProviderPublicUrlStateError as exc:
