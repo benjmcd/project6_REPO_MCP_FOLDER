@@ -8,6 +8,7 @@ from app.services.layer3_authority_matrix_contract import (
     AUTHORITY_MATRIX_FAIL_CLOSED_RESULT,
     AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT,
     AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT,
+    AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT,
     AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT,
     build_authority_matrix_contract,
     build_exposed_authority_matrix_contract,
@@ -94,5 +95,22 @@ def test_exposed_authority_matrix_contract_marks_read_only_response_exposure() -
         "schema_model_migration_change",
         "separate_response_dto_module_change",
     }
+    assert rows["rendered_review_posture"]["admission_result"] == AUTHORITY_MATRIX_RENDERED_REVIEW_RESULT
+    assert rows["rendered_review_posture"]["source_authority"] == (
+        "existing_read_only_rendered_review_panel_admitted_by_439_441"
+    )
+    assert rows["rendered_review_posture"]["blocked_scope"] == ["frontend_only_durable_authority"]
+    assert rows["rendered_review_posture"]["next_allowed_action"] == (
+        "sync_rendered_review_posture_before_next_runtime_freeze"
+    )
     assert rows["side_effect_policy"]["admission_result"] == "admitted_for_contract_definition_only"
-    assert "runtime_behavior" in rows["side_effect_policy"]["blocked_scope"]
+    assert {
+        "runtime_behavior",
+        "connector_provider_behavior",
+        "dispatch",
+        "package_mutation",
+        "source_expansion",
+        "rag_vector_behavior",
+    } <= set(rows["side_effect_policy"]["blocked_scope"])
+    assert rows["route_api_posture"]["blocked_scope"] == ["separate_authority_matrix_route"]
+    assert contract["fail_closed_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
