@@ -1900,3 +1900,9 @@ The sync doc `365_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_CURRENT_M
 Branch-local planning/control freeze: `366_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE.md` follows the current-main broad qualitative/hybrid/RAG no-runtime sync and selects `source_expansion_named_source_family_revalidation_packet` as the next packet only.
 
 The freeze result is `selected_source_expansion_named_source_family_revalidation_packet_only`. Arbitrary local-directory source runtime, broad file-upload source runtime, web connector source runtime, RAG/vector source runtime, unbounded runtime DB source expansion, generic source upload beyond bounded source-intake, broad qualitative/hybrid runtime, connector/destination dispatch, provider-public delivery/use, package mutation/reconstruction, full mockup activation, auth/security behavior, route/model/migration/schema changes, and frontend-only durable authority remain blocked. After merge, the immediate next action is `current_main_sync_next_deferred_runtime_lane_after_broad_qual_rag_freeze` before the selected packet proceeds.
+
+## Next Deferred Runtime Lane After Broad Qual RAG Current-Main Sync
+
+Current-main proof/control sync: PR `#956` merged `366_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE.md` at merge commit `b93d114864bbef2a6c90dc4a8f9130f680865936`.
+
+The sync doc `367_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The next required action is `source_expansion_named_source_family_revalidation_packet` in doc `368_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_PACKET.md`; source expansion runtime and adjacent deferred surfaces remain blocked until that packet is completed.
