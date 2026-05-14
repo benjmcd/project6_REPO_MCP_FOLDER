@@ -122,6 +122,8 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="aps-handoff-dispatch-form"' in response.text
     assert 'id="aps-handoff-dispatch-panel"' in response.text
     assert 'id="aps-handoff-dispatch-submit"' in response.text
+    assert 'id="layer3-e2e-governance-lifecycle-dashboard-panel"' in response.text
+    assert 'data-rendered-mode="rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard"' in response.text
     assert 'id="downstream-access-lifecycle-dashboard-panel"' in response.text
     assert 'data-rendered-mode="rendered_downstream_access_lifecycle_read_only_dashboard"' in response.text
     assert 'id="external-export-download-prepare-form"' in response.text
@@ -256,6 +258,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "raw_public_url_exposed" in js.text
     assert "public_url_enabled" in js.text
     assert "browser_durable_authority: 'blocked_not_persisted'" in js.text
+    assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard'" in js.text
+    assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_USE_CASE = 'operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch'" in js.text
+    assert "function layer3E2EGovernanceLifecycleRows" in js.text
+    assert "function renderLayer3E2EGovernanceLifecycleDashboardPanel" in js.text
+    assert "renderLayer3E2EGovernanceLifecycleDashboardPanel()" in js.text
     assert "DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE = 'rendered_downstream_access_lifecycle_read_only_dashboard'" in js.text
     assert "DOWNSTREAM_ACCESS_LIFECYCLE_USE_CASE = 'operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use'" in js.text
     assert "function downstreamAccessLifecycleRows" in js.text
@@ -263,6 +270,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "renderDownstreamAccessLifecycleDashboardPanel()" in js.text
     assert "provider_public_url_redacted ? 'redacted_receipt_only'" in js.text
     assert "raw public URL display/use" in js.text
+    assert ".layer3-e2e-governance-lifecycle-panel" in css.text
+    assert ".layer3-e2e-governance-lifecycle-rows" in css.text
     assert ".downstream-access-lifecycle-dashboard-panel" in css.text
     assert ".downstream-access-lifecycle-rows" in css.text
     assert "/handoff/export/download/provider-public-url/prepare" in js.text
