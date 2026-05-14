@@ -912,6 +912,10 @@ LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_C
     PLANNING_DOCS
     / "452_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE = (
+    PLANNING_DOCS
+    / "453_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -36012,6 +36016,85 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix rendered review posture reconciliation contract update sync term: {term}"
+                )
+
+    post_rendered_review_posture_requirement_selection_freeze_text = _read_required_text(
+        LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_rendered_review_posture_reconciliation_sync`.",
+        "453_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE.md",
+        "452_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC.md",
+        "bf96db1079837589ff36e0c6bbc25b1e23362e0f",
+        "freeze_layer3_next_runtime_or_review_surface_requirement_after_rendered_review_posture_reconciliation_sync",
+        "conduct_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit",
+        "no_runtime_now_layer3_post_rendered_review_posture_requirement_not_admitted",
+        "current_main_synced_layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update",
+        "blocked_no_runtime_authority",
+        "admitted_for_existing_read_only_rendered_review_panel",
+        "frontend_only_durable_authority",
+        "sync_rendered_review_posture_before_next_runtime_freeze",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "Rendered UI status: `not_changed`.",
+        "current_main_sync_layer3_post_rendered_review_posture_reconciliation_requirement_selection_freeze_after_merge",
+        "await_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit_after_freeze_sync",
+        "This freeze admits no runtime behavior",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in post_rendered_review_posture_requirement_selection_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE)} missing post rendered review posture requirement selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Post Rendered Review Posture Reconciliation Requirement Selection Freeze",
+            "453_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE.md",
+            "freeze_layer3_next_runtime_or_review_surface_requirement_after_rendered_review_posture_reconciliation_sync",
+            "conduct_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit",
+            "no_runtime_now_layer3_post_rendered_review_posture_requirement_not_admitted",
+            "current_main_sync_layer3_post_rendered_review_posture_reconciliation_requirement_selection_freeze_after_merge",
+            "await_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_post_rendered_review_posture_reconciliation_requirement_selection_freeze",
+            "branch_local_planning_control_freeze",
+            "codex/l3-post-rendered-review-posture-requirement-selection-freeze",
+            "453_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE.md",
+            "bf96db1079837589ff36e0c6bbc25b1e23362e0f",
+            "freeze_layer3_next_runtime_or_review_surface_requirement_after_rendered_review_posture_reconciliation_sync",
+            "conduct_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit",
+            "no_runtime_now_layer3_post_rendered_review_posture_requirement_not_admitted",
+            "freeze_only",
+            "not_implemented",
+            "not_changed",
+            "admitted_for_existing_read_only_rendered_review_panel",
+            '"runtime_behavior_change": false',
+            '"rendered_ui_behavior_change": false',
+            "current_main_sync_layer3_post_rendered_review_posture_reconciliation_requirement_selection_freeze_after_merge",
+            "await_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_post_rendered_review_posture_reconciliation_requirement_selection_freeze_proof",
+            "branch_local_planning_control_freeze",
+            "codex/l3-post-rendered-review-posture-requirement-selection-freeze",
+            "453_LAYER3_POST_RENDERED_REVIEW_POSTURE_RECONCILIATION_REQUIREMENT_SELECTION_FREEZE.md",
+            "freeze_layer3_next_runtime_or_review_surface_requirement_after_rendered_review_posture_reconciliation_sync",
+            "conduct_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit",
+            "no_runtime_now_layer3_post_rendered_review_posture_requirement_not_admitted",
+            "no runtime behavior",
+            "no rendered UI behavior",
+            "no frontend-only durable authority",
+            "await_layer3_post_rendered_review_posture_reconciliation_requirement_selection_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post rendered review posture requirement selection freeze term: {term}"
                 )
 
 def main() -> int:
