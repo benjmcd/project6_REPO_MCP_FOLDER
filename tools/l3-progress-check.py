@@ -605,6 +605,9 @@ CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC = (
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_FREEZE = (
     PLANNING_DOCS / "358_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_FREEZE.md"
 )
+NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "359_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29235,7 +29238,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
     for term in (
         "Status: planning/control next deferred runtime lane freeze after connector no-runtime only; no runtime behavior admitted.",
         "package_mutation_named_action_revalidation_packet",
-        "359_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md",
+        "360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md",
         "current repo authority still lacks a named rendered operator package-revision action",
         "No package mutation or reconstruction is admitted.",
         "No package payload rewrite is admitted.",
@@ -29253,7 +29256,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         MANIFEST: (
             "next_deferred_server_authoritative_runtime_lane_after_connector_freeze",
             "package_mutation_named_action_revalidation_packet",
-            "359_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md",
+            "360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md",
         ),
         PROOF_MANIFEST: (
             "next_deferred_server_authoritative_runtime_lane_after_connector_freeze_proof",
@@ -29265,6 +29268,41 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing next deferred lane after connector freeze term: {term}")
+
+    after_connector_sync_text = _read_required_text(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for next deferred runtime lane after connector; no runtime behavior admitted.",
+        "next_deferred_server_authoritative_runtime_lane_after_connector_freeze",
+        "a25b272c0e601888a1d253bef363b10fd677c3d9",
+        "Post-merge `python .\\tools\\l3-progress-check.py`: `PASS`",
+        "Package mutation runtime remains blocked.",
+        "360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md",
+        "package_mutation_named_action_revalidation_packet",
+    ):
+        if term not in after_connector_sync_text:
+            errors.append(f"{_rel(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYNC)} missing next deferred lane after connector current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Next Deferred Server-authoritative Runtime Lane After Connector Current-main Sync",
+            "359_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYNC.md",
+            "360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md",
+        ),
+        MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_connector_current_main_sync",
+            "a25b272c0e601888a1d253bef363b10fd677c3d9",
+            "package_mutation_named_action_revalidation_packet",
+        ),
+        PROOF_MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_connector_current_main_sync_proof",
+            "a25b272c0e601888a1d253bef363b10fd677c3d9",
+            "Package mutation runtime remains blocked",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing next deferred lane after connector current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []

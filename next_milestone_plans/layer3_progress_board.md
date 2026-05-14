@@ -1852,3 +1852,9 @@ The sync doc `357_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_S
 Branch-local planning/control freeze: `358_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_FREEZE.md` selects `package_mutation_named_action_revalidation_packet` as the next deferred lane after connector/destination closed as no-runtime-now.
 
 The freeze admits no package mutation runtime. It selects a revalidation packet only, because current repo authority still lacks a named rendered operator package-revision action. Package mutation/reconstruction, package payload rewrite, package row mutation, rendered package mutation controls, connector/destination dispatch, provider-public delivery/use, source expansion, RAG/vector behavior, broad qualitative behavior, full mockup activation, auth/security behavior, and frontend-only durable authority remain blocked.
+
+## Next Deferred Server-authoritative Runtime Lane After Connector Current-main Sync
+
+Current-main proof/control sync: PR `#948` merged `358_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_FREEZE.md` at merge commit `a25b272c0e601888a1d253bef363b10fd677c3d9`.
+
+The sync doc `359_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Package mutation runtime remains blocked; the next required action is `package_mutation_named_action_revalidation_packet` in doc `360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md`.
