@@ -1984,3 +1984,9 @@ No additional runtime lane is selected. The deferred server-authoritative runtim
 Branch-local review-debt remediation packet: `380_REVIEW_DEBT_REMEDIATION_PACKET.md` follows the final deferred-lane chain closeout and selects `review_debt_remediation_packet` only.
 
 The packet remediates confirmed current-main review-debt residues: corrupted JSON validation command strings from PR `#905`, duplicate Alembic heads from PR `#929`, stale package preview route authority from PR `#950`, stale final closeout decision mirrors, and missing `l3-progress-check.py` guards for those cases. It admits no runtime behavior, rendered UI behavior, provider-public delivery/use, connector/destination dispatch, package mutation runtime, broad qualitative/hybrid/RAG runtime, source expansion, full mockup activation, auth/security hardening, or frontend-only durable authority. The next required action is `current_main_sync_review_debt_remediation_after_merge`.
+
+## Review Debt Remediation Current-Main Sync
+
+Current-main proof/control sync: PR `#970` merged `380_REVIEW_DEBT_REMEDIATION_PACKET.md` at merge commit `43ab47e31888fd9d64044da3b5b58cb3b2a24d95`.
+
+The sync doc `381_REVIEW_DEBT_REMEDIATION_CURRENT_MAIN_SYNC.md` records `review_debt_current_main_sync_packet` and `current_main_sync_review_debt_remediation_fulfilled_by_pr_970`. The sync admits no runtime behavior and preserves `no_current_deferred_server_authoritative_runtime_lane_goal_action_remaining`.
