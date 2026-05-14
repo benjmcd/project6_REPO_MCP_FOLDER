@@ -956,6 +956,10 @@ LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE = (
     PLANNING_DOCS
     / "463_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE.md"
 )
+LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "464_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -37004,6 +37008,82 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing post authority matrix route requirement selection freeze term: {term}"
+                )
+
+    post_authority_matrix_route_requirement_selection_freeze_sync_text = _read_required_text(
+        LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_post_authority_matrix_route_requirement_selection_freeze`.",
+        "464_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "463_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE.md",
+        "#1059",
+        "0b33fa8d8d6679441dcb8104ffcff50b68b26c29",
+        "backend-layer3-api",
+        "SUCCESS",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "current_main_synced_layer3_post_authority_matrix_route_requirement_selection_freeze",
+        "freeze_layer3_next_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+        "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+        "await_layer3_post_authority_matrix_route_requirement_selection_audit_after_freeze_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in post_authority_matrix_route_requirement_selection_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC)} missing post authority matrix route requirement selection freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Post Authority Matrix Route Requirement Selection Freeze Current-Main Sync",
+            "464_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1059",
+            "0b33fa8d8d6679441dcb8104ffcff50b68b26c29",
+            "reviewThreads totalCount was `0`",
+            "current_main_synced_layer3_post_authority_matrix_route_requirement_selection_freeze",
+            "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+            "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+            "await_layer3_post_authority_matrix_route_requirement_selection_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_post_authority_matrix_route_requirement_selection_freeze_current_main_sync",
+            "current_main_synced_layer3_post_authority_matrix_route_requirement_selection_freeze",
+            "codex/l3-post-authority-route-requirement-selection-freeze-sync",
+            "464_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1059",
+            "0b33fa8d8d6679441dcb8104ffcff50b68b26c29",
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"backend_route_behavior_change": false',
+            '"response_model_shape_change": false',
+            "conduct_layer3_post_separate_authority_matrix_route_requirement_selection_audit",
+            "no_runtime_now_layer3_post_separate_authority_matrix_route_requirement_not_admitted",
+            "await_layer3_post_authority_matrix_route_requirement_selection_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_post_authority_matrix_route_requirement_selection_freeze_current_main_sync_proof",
+            "current_main_synced_layer3_post_authority_matrix_route_requirement_selection_freeze",
+            "codex/l3-post-authority-route-requirement-selection-freeze-sync",
+            "464_LAYER3_POST_AUTHORITY_MATRIX_ROUTE_REQUIREMENT_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1059",
+            "0b33fa8d8d6679441dcb8104ffcff50b68b26c29",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "no implementation",
+            "no runtime behavior",
+            "await_layer3_post_authority_matrix_route_requirement_selection_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post authority matrix route requirement selection freeze sync term: {term}"
                 )
 
 def main() -> int:
