@@ -659,6 +659,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_CURRENT_MAIN_S
 AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET = (
     PLANNING_DOCS / "376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md"
 )
+AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "377_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29984,6 +29987,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing auth/security packet term: {term}")
+
+    auth_security_packet_sync_text = _read_required_text(AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for auth security hardening named-behavior revalidation packet; no runtime behavior admitted.",
+        "PR `#966`",
+        "92b7e93db6827a720881acdcc4370dc4c725a632",
+        "current_main_synced_auth_security_hardening_named_behavior_revalidation_packet",
+        "no_runtime_now_auth_security_hardening_named_behavior_absent",
+        "current_main_deferred_lane_completion_audit_after_auth_security_no_runtime",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads",
+    ):
+        if term not in auth_security_packet_sync_text:
+            errors.append(f"{_rel(AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC)} missing auth/security packet current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Auth Security Hardening Named Behavior Revalidation Current-Main Sync",
+            "377_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC.md",
+            "current_main_deferred_lane_completion_audit_after_auth_security_no_runtime",
+        ),
+        MANIFEST: (
+            "auth_security_hardening_named_behavior_revalidation_current_main_sync",
+            "current_main_synced_auth_security_hardening_named_behavior_revalidation_packet",
+            "current_main_deferred_lane_completion_audit_after_auth_security_no_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "auth_security_hardening_named_behavior_revalidation_current_main_sync_proof",
+            "current_main_synced_auth_security_hardening_named_behavior_revalidation_packet",
+            "reviewThreads",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing auth/security packet current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []

@@ -16840,5 +16840,24 @@
     "runtime_behavior_change": false,
     "rendered_ui_behavior_change": false,
     "next_required_action": "current_main_sync_auth_security_hardening_named_behavior_revalidation_packet_after_merge"
+  },
+  "auth_security_hardening_named_behavior_revalidation_current_main_sync_proof": {
+    "status": "completed_current_main_sync_proof",
+    "planning_branch": "codex/l3-auth-security-packet-sync-966",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/377_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC.md",
+    "packet_doc": "next_milestone_plans/Layer3_planning_docs/376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md",
+    "merged_pr": "#966",
+    "merge_commit": "92b7e93db6827a720881acdcc4370dc4c725a632",
+    "sync_result": "current_main_synced_auth_security_hardening_named_behavior_revalidation_packet",
+    "packet_decision": "no_runtime_now_auth_security_hardening_named_behavior_absent",
+    "proof_terms": [
+      "backend-layer3-api",
+      "test",
+      "reviewThreads",
+      "current_main_deferred_lane_completion_audit_after_auth_security_no_runtime"
+    ],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_required_action": "current_main_deferred_lane_completion_audit_after_auth_security_no_runtime"
   }
 }
