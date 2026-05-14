@@ -16539,5 +16539,24 @@
       "No auth/security behavior is admitted."
     ],
     "next_required_action": "current_main_sync_next_deferred_runtime_lane_after_package_action_freeze"
+  },
+  "next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync_proof": {
+    "status": "current_main_sync_proof_complete",
+    "merged_pr": "#952",
+    "merge_commit": "cc5780519eb7afcb4323d19acdc5b852b96bdc8c",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/363_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/362_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE.md",
+    "sync_result": "current_main_synced_next_deferred_runtime_lane_after_package_action_freeze",
+    "selected_next_lane": "broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+    "next_required_doc": "next_milestone_plans/Layer3_planning_docs/364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md",
+    "reviewThreads": [],
+    "checks": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS"
+    },
+    "post_merge_validation": "python .\\tools\\l3-progress-check.py -> PASS",
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_required_action": "broad_qualitative_hybrid_rag_named_mode_revalidation_packet"
   }
 }

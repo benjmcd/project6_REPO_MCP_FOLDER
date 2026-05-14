@@ -617,6 +617,9 @@ PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC = (
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE = (
     PLANNING_DOCS / "362_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE.md"
 )
+NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "363_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29423,6 +29426,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing after-package freeze term: {term}")
+
+    after_package_sync_text = _read_required_text(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for next deferred server-authoritative runtime lane after package action freeze; no runtime behavior admitted.",
+        "PR `#952`",
+        "cc5780519eb7afcb4323d19acdc5b852b96bdc8c",
+        "current_main_synced_next_deferred_runtime_lane_after_package_action_freeze",
+        "broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+        "364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads",
+    ):
+        if term not in after_package_sync_text:
+            errors.append(f"{_rel(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC)} missing after-package current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Next Deferred Runtime Lane After Package Action Current-Main Sync",
+            "363_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC.md",
+            "364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md",
+        ),
+        MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync",
+            "current_main_synced_next_deferred_runtime_lane_after_package_action_freeze",
+            "364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md",
+        ),
+        PROOF_MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_package_action_current_main_sync_proof",
+            "current_main_synced_next_deferred_runtime_lane_after_package_action_freeze",
+            "reviewThreads",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing after-package current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
