@@ -1942,3 +1942,9 @@ The result is `no_runtime_now_full_mockup_activation_named_target_absent`. Curre
 Current-main proof/control sync: PR `#962` merged `372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md` at merge commit `1268492d9a15cce22d6d8de409515f331afe5de5`.
 
 The sync doc `373_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Full mockup activation remains no-runtime-now as `no_runtime_now_full_mockup_activation_named_target_absent`; the next whole-project decision is `next_deferred_server_authoritative_runtime_lane_freeze_after_full_mockup_no_runtime`.
+
+## Next Deferred Server-Authoritative Runtime Lane After Full Mockup Freeze
+
+Branch-local planning/control freeze: `374_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_FREEZE.md` follows the current-main full-mockup no-runtime sync and selects `auth_security_hardening_named_behavior_revalidation_packet` as the next packet only.
+
+The freeze result is `selected_auth_security_hardening_named_behavior_revalidation_packet_only`. Auth/security behavior, auth/security hardening runtime, auth/security override, authorization model changes, authentication flow changes, route/model/migration/schema changes, frontend-only durable state, and frontend-only durable authority remain blocked. After merge, the immediate next action is `current_main_sync_next_deferred_runtime_lane_after_full_mockup_freeze`.

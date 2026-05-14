@@ -650,6 +650,9 @@ FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET = (
 FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "373_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC.md"
 )
+NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_FREEZE = (
+    PLANNING_DOCS / "374_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29866,6 +29869,42 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing full mockup current-main sync term: {term}")
+
+    auth_security_freeze_text = _read_required_text(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_FREEZE, errors)
+    for term in (
+        "Status: planning/control next deferred server-authoritative runtime lane freeze after full mockup no-runtime; no runtime behavior admitted.",
+        "auth_security_hardening_named_behavior_revalidation_packet",
+        "selected_auth_security_hardening_named_behavior_revalidation_packet_only",
+        "auth_security_hardening_deferred_by_operator_instruction",
+        "current_main_sync_next_deferred_runtime_lane_after_full_mockup_freeze",
+        "No auth/security behavior is admitted.",
+        "No auth/security hardening runtime is admitted.",
+        "No authorization model change is admitted.",
+    ):
+        if term not in auth_security_freeze_text:
+            errors.append(f"{_rel(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_FREEZE)} missing auth/security freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Next Deferred Server-Authoritative Runtime Lane After Full Mockup Freeze",
+            "374_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_FREEZE.md",
+            "selected_auth_security_hardening_named_behavior_revalidation_packet_only",
+        ),
+        MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_full_mockup_freeze",
+            "auth_security_hardening_named_behavior_revalidation_packet",
+            "current_main_sync_next_deferred_runtime_lane_after_full_mockup_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_full_mockup_freeze_proof",
+            "selected_auth_security_hardening_named_behavior_revalidation_packet_only",
+            "auth_security_hardening_deferred_by_operator_instruction",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing auth/security freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []
