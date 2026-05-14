@@ -762,6 +762,9 @@ LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC =
 LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT = (
     PLANNING_DOCS / "411_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT.md"
 )
+LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "412_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -32410,6 +32413,78 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing next-runtime-tranche authority matrix audit term: {term}"
+                )
+
+    next_runtime_tranche_authority_matrix_audit_sync_text = _read_required_text(
+        LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_next_runtime_tranche_authority_matrix_contract_audit`.",
+        "412_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT_CURRENT_MAIN_SYNC.md",
+        "411_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT.md",
+        "PR `#1007`",
+        "8e046ceb613f52f91c062440253ced3cba525a51",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+        "entry_decision: no_runtime_now",
+        "audit_result: no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent",
+        "runtime_status: not_implemented",
+        "layer3_next_runtime_tranche_authority_matrix_contract",
+        "await_next_exact_layer3_authority_contract_requirement_after_authority_matrix_no_runtime_sync",
+        "No runtime behavior",
+    ):
+        if term not in next_runtime_tranche_authority_matrix_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT_CURRENT_MAIN_SYNC)} missing next-runtime-tranche authority matrix audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Next Runtime Tranche Authority Matrix Contract Audit Current-Main Sync",
+            "412_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_AUDIT_CURRENT_MAIN_SYNC.md",
+            "PR `#1007`",
+            "8e046ceb613f52f91c062440253ced3cba525a51",
+            "current_main_synced_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            "no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent",
+            "await_next_exact_layer3_authority_contract_requirement_after_authority_matrix_no_runtime_sync",
+        ),
+        MANIFEST: (
+            "layer3_next_runtime_tranche_authority_matrix_contract_audit_current_main_sync",
+            "current_main_synced_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            '"audit_pr": "#1007"',
+            "8e046ceb613f52f91c062440253ced3cba525a51",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"entry_decision": "no_runtime_now"',
+            '"runtime_status": "not_implemented"',
+            "no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent",
+            "await_next_exact_layer3_authority_contract_requirement_after_authority_matrix_no_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_next_runtime_tranche_authority_matrix_contract_audit_current_main_sync_proof",
+            "current_main_synced_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            '"audit_pr": "#1007"',
+            "8e046ceb613f52f91c062440253ced3cba525a51",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent",
+            "await_next_exact_layer3_authority_contract_requirement_after_authority_matrix_no_runtime_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing next-runtime-tranche authority matrix audit sync term: {term}"
                 )
 
 def main() -> int:
