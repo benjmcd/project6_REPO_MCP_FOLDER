@@ -11,6 +11,10 @@ AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID = "layer3.authority_matrix_contract.v1"
 AUTHORITY_MATRIX_CONTRACT_DEFINITION_ID = "layer3_authority_matrix_contract_definition_v1"
 AUTHORITY_MATRIX_CONTRACT_SCOPE = "server_authoritative_next_runtime_tranche_authority_matrix"
 AUTHORITY_MATRIX_FAIL_CLOSED_RESULT = "blocked_no_runtime_authority"
+AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT = "read_only_bootstrap_readiness_response_paths"
+AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT = "admitted_for_read_only_bootstrap_readiness_exposure"
+AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT = "admitted_for_existing_bootstrap_readiness_openapi_schema"
+AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT = "admitted_for_bootstrap_readiness_response_model_shape"
 
 AUTHORITY_MATRIX_ADMISSION_VOCABULARY = (
     "admitted_for_contract_definition_only",
@@ -166,3 +170,61 @@ def build_authority_matrix_contract(*, schema_version: int = 1) -> dict[str, Any
             "post_merge_current_main_sync",
         ],
     }
+
+
+def build_exposed_authority_matrix_contract(
+    *,
+    schema_version: int = 1,
+    exposure_context: str = AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_CONTEXT,
+) -> dict[str, Any]:
+    contract = build_authority_matrix_contract(schema_version=schema_version)
+    contract["exposure_context"] = exposure_context
+    contract["source_contract_variant"] = "exposure_aware_read_only_bootstrap_readiness"
+    contract["admission_vocabulary"] = [
+        *contract["admission_vocabulary"],
+        AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT,
+        AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT,
+        AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT,
+    ]
+    rows = {row["row"]: row for row in contract["authority_matrix"]}
+    rows["workbench_exposure_substrate"].update(
+        {
+            "schema_or_contract_id": AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID,
+            "source_authority": "existing_workbench_bootstrap_readiness_wiring_admitted_by_429",
+            "admission_result": AUTHORITY_MATRIX_READ_ONLY_EXPOSURE_RESULT,
+            "blocked_scope": [],
+            "tests_required": [
+                "prove_bootstrap_readiness_body_includes_authority_matrix_contract",
+                "prove_builder_parity_includes_authority_matrix_contract",
+            ],
+            "next_allowed_action": "sync_exposure_before_next_runtime_freeze",
+        }
+    )
+    rows["route_api_posture"].update(
+        {
+            "schema_or_contract_id": AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID,
+            "source_authority": "existing_bootstrap_readiness_response_model_exposure_admitted_by_429",
+            "admission_result": AUTHORITY_MATRIX_EXISTING_ROUTE_RESPONSE_RESULT,
+            "blocked_scope": ["separate_authority_matrix_route"],
+            "tests_required": [
+                "prove_existing_bootstrap_readiness_openapi_schema_includes_authority_matrix_contract",
+                "prove_no_separate_authority_matrix_route",
+            ],
+            "next_allowed_action": "freeze_separate_route_before_route_work",
+        }
+    )
+    rows["response_dto_posture"].update(
+        {
+            "canonical_owner": "backend/app/api/layer3.py",
+            "schema_or_contract_id": AUTHORITY_MATRIX_CONTRACT_SCHEMA_ID,
+            "source_authority": "explicit_bootstrap_readiness_response_model_fields_admitted_by_429",
+            "admission_result": AUTHORITY_MATRIX_RESPONSE_MODEL_RESULT,
+            "blocked_scope": ["schema_model_migration_change", "separate_response_dto_module_change"],
+            "tests_required": [
+                "prove_bootstrap_readiness_response_models_include_authority_matrix_contract",
+                "prove_response_body_contains_exposure_aware_authority_matrix_contract",
+            ],
+            "next_allowed_action": "sync_exposure_before_schema_or_dto_module_work",
+        }
+    )
+    return contract

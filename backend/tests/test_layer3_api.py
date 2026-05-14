@@ -429,9 +429,11 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
         "features",
         "execution_readiness",
         "state_action_contract",
+        "authority_matrix_contract",
         "authority_rail",
     } <= set(bootstrap_schema["required"])
     assert bootstrap_schema["properties"]["features"]["additionalProperties"]["type"] == "boolean"
+    assert bootstrap_schema["properties"]["authority_matrix_contract"]["additionalProperties"] is True
 
     readiness_schema = _openapi_response_schema(spec, "/api/v1/layer3/readiness", "get")
     assert readiness_schema["title"] == "Layer3ExecutionReadinessResponse"
@@ -445,12 +447,45 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
         "execution_enabled",
         "state_model",
         "state_action_contract",
+        "authority_matrix_contract",
         "preview_hash_contract",
         "material_preview_hash_contract",
         "idempotency_contract",
         "concurrency_contract",
         "deferred_decisions",
     } <= set(readiness_schema["required"])
+    assert readiness_schema["properties"]["authority_matrix_contract"]["additionalProperties"] is True
+
+    bootstrap_body = client.get("/api/v1/layer3/bootstrap").json()
+    readiness_body = client.get("/api/v1/layer3/readiness").json()
+    assert bootstrap_body["authority_matrix_contract"]["schema_id"] == "layer3.authority_matrix_contract.v1"
+    assert readiness_body["authority_matrix_contract"]["schema_id"] == "layer3.authority_matrix_contract.v1"
+    assert (
+        readiness_body["authority_matrix_contract"]["fail_closed_result"]
+        == "blocked_no_runtime_authority"
+    )
+    authority_rows = {
+        row["row"]: row for row in readiness_body["authority_matrix_contract"]["authority_matrix"]
+    }
+    assert (
+        readiness_body["authority_matrix_contract"]["exposure_context"]
+        == "read_only_bootstrap_readiness_response_paths"
+    )
+    assert (
+        authority_rows["workbench_exposure_substrate"]["admission_result"]
+        == "admitted_for_read_only_bootstrap_readiness_exposure"
+    )
+    assert (
+        authority_rows["route_api_posture"]["admission_result"]
+        == "admitted_for_existing_bootstrap_readiness_openapi_schema"
+    )
+    assert authority_rows["route_api_posture"]["blocked_scope"] == ["separate_authority_matrix_route"]
+    assert (
+        authority_rows["response_dto_posture"]["admission_result"]
+        == "admitted_for_bootstrap_readiness_response_model_shape"
+    )
+    assert "runtime_behavior" in authority_rows["side_effect_policy"]["blocked_scope"]
+    assert "/api/v1/layer3/authority-matrix" not in spec["paths"]
 
 
 def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> None:
