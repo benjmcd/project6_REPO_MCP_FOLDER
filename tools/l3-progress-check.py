@@ -908,6 +908,10 @@ LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE =
     PLANNING_DOCS
     / "451_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE.md"
 )
+LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "452_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -35924,6 +35928,90 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix rendered review posture reconciliation contract update term: {term}"
+                )
+
+    authority_matrix_rendered_review_posture_reconciliation_contract_update_sync_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update`.",
+        "452_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC.md",
+        "451_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE.md",
+        "PR `#1047`",
+        "bbea9130f2c570939d99240285e61f85d7212788",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Post-merge contract inspection",
+        "current_main_synced_layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update",
+        "layer3_authority_matrix_rendered_review_posture_reconciled_for_existing_read_only_panel",
+        "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_rendered_review_posture_reconciliation_sync",
+        "No new implementation begins in this sync.",
+        "No runtime behavior",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in authority_matrix_rendered_review_posture_reconciliation_contract_update_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC)} missing authority matrix rendered review posture reconciliation contract update sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Rendered Review Posture Reconciliation Contract Update Current-Main Sync",
+            "452_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC.md",
+            "PR `#1047`",
+            "bbea9130f2c570939d99240285e61f85d7212788",
+            "current_main_synced_layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update",
+            "layer3_authority_matrix_rendered_review_posture_reconciled_for_existing_read_only_panel",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_rendered_review_posture_reconciliation_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_current_main_sync",
+            "current_main_synced_layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update",
+            "codex/l3-rendered-review-posture-contract-update-sync",
+            "452_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC.md",
+            '"implementation_pr": "#1047"',
+            "bbea9130f2c570939d99240285e61f85d7212788",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"mergeable_before_merge": "MERGEABLE"',
+            "layer3_authority_matrix_rendered_review_posture_reconciled_for_existing_read_only_panel",
+            "admitted_for_existing_read_only_rendered_review_panel",
+            "sync_rendered_review_posture_before_next_runtime_freeze",
+            '"sync_live_behavior_change": false',
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_rendered_review_posture_reconciliation_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update_current_main_sync_proof",
+            "current_main_synced_layer3_authority_matrix_rendered_review_posture_reconciliation_contract_update",
+            "codex/l3-rendered-review-posture-contract-update-sync",
+            "452_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_POSTURE_RECONCILIATION_CONTRACT_UPDATE_CURRENT_MAIN_SYNC.md",
+            '"implementation_pr": "#1047"',
+            "bbea9130f2c570939d99240285e61f85d7212788",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "PR unresolved reviewThreads 0",
+            "mergeability MERGEABLE",
+            "post-merge contract inspection PASS",
+            "no implementation begins in this sync",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_rendered_review_posture_reconciliation_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix rendered review posture reconciliation contract update sync term: {term}"
                 )
 
 def main() -> int:
