@@ -1954,3 +1954,9 @@ The freeze result is `selected_auth_security_hardening_named_behavior_revalidati
 Current-main proof/control sync: PR `#964` merged `374_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_FREEZE.md` at merge commit `1de305b1684db152f75f00b77eafb35017a09419`.
 
 The sync doc `375_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The next required action is `auth_security_hardening_named_behavior_revalidation_packet` in doc `376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md`; auth/security runtime behavior remains blocked until that packet is completed.
+
+## Auth Security Hardening Named Behavior Revalidation Packet
+
+Branch-local planning/control packet: `376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md` revalidates the selected auth/security hardening named-behavior packet after the current-main auth/security lane sync.
+
+The result is `no_runtime_now_auth_security_hardening_named_behavior_absent`. Current repo authority treats auth/security hardening as forbidden/deferred request scope and does not name one concrete security behavior or protected runtime surface. Auth/security behavior, auth/security hardening runtime, auth/security override, authorization model changes, authentication flow changes, permission model changes, route/model/migration/schema changes, and frontend-only durable authority remain blocked.
