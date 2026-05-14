@@ -620,6 +620,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE = (
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "363_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC.md"
 )
+BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET = (
+    PLANNING_DOCS / "364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29463,6 +29466,44 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing after-package current-main sync term: {term}")
+
+    broad_qual_rag_packet_text = _read_required_text(BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET, errors)
+    for term in (
+        "Status: planning/control broad qualitative hybrid RAG named-mode revalidation packet only; no runtime behavior admitted.",
+        "broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+        "no_runtime_now_broad_qualitative_hybrid_rag_named_mode_absent",
+        "single_aps_doc_qualitative_pass_only",
+        "current_main_sync_broad_qualitative_hybrid_rag_named_mode_revalidation_packet_after_merge",
+        "No broad qualitative runtime is admitted.",
+        "No hybrid execution runtime is admitted.",
+        "No RAG/vector indexing or retrieval runtime is admitted.",
+        "No hidden LLM planning is admitted.",
+        "No auth/security behavior is admitted.",
+    ):
+        if term not in broad_qual_rag_packet_text:
+            errors.append(f"{_rel(BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET)} missing broad qualitative hybrid RAG packet term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Broad Qualitative Hybrid RAG Named Mode Revalidation Packet",
+            "364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md",
+            "no_runtime_now_broad_qualitative_hybrid_rag_named_mode_absent",
+        ),
+        MANIFEST: (
+            "broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+            "no_runtime_now_broad_qualitative_hybrid_rag_named_mode_absent",
+            "current_main_sync_broad_qualitative_hybrid_rag_named_mode_revalidation_packet_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "broad_qualitative_hybrid_rag_named_mode_revalidation_packet_proof",
+            "no_runtime_now_broad_qualitative_hybrid_rag_named_mode_absent",
+            "single_aps_doc_qualitative_pass_only",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing broad qualitative hybrid RAG packet term: {term}")
 
 def main() -> int:
     errors: list[str] = []
