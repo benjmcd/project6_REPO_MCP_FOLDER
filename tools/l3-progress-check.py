@@ -656,6 +656,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_FREEZE = (
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "375_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_CURRENT_MAIN_SYNC.md"
 )
+AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET = (
+    PLANNING_DOCS / "376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29945,6 +29948,42 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing auth/security current-main sync term: {term}")
+
+    auth_security_packet_text = _read_required_text(AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET, errors)
+    for term in (
+        "Status: planning/control auth security hardening named-behavior revalidation packet only; no runtime behavior admitted.",
+        "auth_security_hardening_named_behavior_revalidation_packet",
+        "no_runtime_now_auth_security_hardening_named_behavior_absent",
+        "current_main_sync_auth_security_hardening_named_behavior_revalidation_packet_after_merge",
+        "No auth/security behavior is admitted.",
+        "No auth/security hardening runtime is admitted.",
+        "No authorization model change is admitted.",
+        "No authentication flow change is admitted.",
+    ):
+        if term not in auth_security_packet_text:
+            errors.append(f"{_rel(AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET)} missing auth/security packet term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Auth Security Hardening Named Behavior Revalidation Packet",
+            "376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md",
+            "no_runtime_now_auth_security_hardening_named_behavior_absent",
+        ),
+        MANIFEST: (
+            "auth_security_hardening_named_behavior_revalidation_packet",
+            "no_runtime_now_auth_security_hardening_named_behavior_absent",
+            "current_main_sync_auth_security_hardening_named_behavior_revalidation_packet_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "auth_security_hardening_named_behavior_revalidation_packet_proof",
+            "no_runtime_now_auth_security_hardening_named_behavior_absent",
+            "deferred_by_operator_instruction",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing auth/security packet term: {term}")
 
 def main() -> int:
     errors: list[str] = []
