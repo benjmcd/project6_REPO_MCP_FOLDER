@@ -777,6 +777,9 @@ LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT = (
 LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "416_LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE = (
+    PLANNING_DOCS / "417_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -32814,6 +32817,84 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority contract requirement audit sync term: {term}"
+                )
+
+    authority_matrix_contract_definition_freeze_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_layer3_authority_matrix_contract_definition_freeze_after_requirement_audit_sync`.",
+        "417_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE.md",
+        "416_LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_AUDIT_CURRENT_MAIN_SYNC.md",
+        "ee44d019d178007686057ce266861d4414e792a4",
+        "select_layer3_authority_matrix_contract_definition_after_requirement_audit_sync",
+        "layer3_authority_matrix_contract_definition_without_service_route_schema_or_ui_implementation",
+        "layer3_authority_matrix_contract_definition_freeze",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "conduct_layer3_authority_matrix_contract_definition_audit",
+        "no_runtime_now_layer3_authority_matrix_contract_definition_absent",
+        "current_main_sync_layer3_authority_matrix_contract_definition_freeze_after_merge",
+        "layer3.authority_matrix_contract.v1",
+        "state_action_contract",
+        "workbench_state_model",
+        "No backend service file",
+    ):
+        if term not in authority_matrix_contract_definition_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE)} missing authority matrix contract definition freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Contract Definition Freeze",
+            "417_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE.md",
+            "layer3_authority_matrix_contract_definition_without_service_route_schema_or_ui_implementation",
+            "layer3_authority_matrix_contract_definition_freeze",
+            "conduct_layer3_authority_matrix_contract_definition_audit",
+            "no_runtime_now_layer3_authority_matrix_contract_definition_absent",
+            "current_main_sync_layer3_authority_matrix_contract_definition_freeze_after_merge",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_contract_definition_freeze",
+            "planning_control_freeze",
+            "codex/l3-authority-matrix-contract-definition-freeze",
+            "417_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE.md",
+            "ee44d019d178007686057ce266861d4414e792a4",
+            "select_layer3_authority_matrix_contract_definition_after_requirement_audit_sync",
+            "layer3_authority_matrix_contract_definition_without_service_route_schema_or_ui_implementation",
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            "conduct_layer3_authority_matrix_contract_definition_audit",
+            "no_runtime_now_layer3_authority_matrix_contract_definition_absent",
+            '"backend_route_behavior_change": false',
+            '"service_behavior_change": false',
+            '"schema_shape_change": false',
+            "current_main_sync_layer3_authority_matrix_contract_definition_freeze_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_contract_definition_freeze_proof",
+            "planning_control_freeze",
+            "417_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE.md",
+            "layer3_authority_matrix_contract_definition_without_service_route_schema_or_ui_implementation",
+            "layer3_authority_matrix_contract_definition_freeze",
+            "freeze_only",
+            "not_implemented",
+            "conduct_layer3_authority_matrix_contract_definition_audit",
+            "no_runtime_now_layer3_authority_matrix_contract_definition_absent",
+            "no backend route behavior",
+            "no service behavior",
+            "no schema shape",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_authority_matrix_contract_definition_freeze_after_merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix contract definition freeze term: {term}"
                 )
 
 def main() -> int:
