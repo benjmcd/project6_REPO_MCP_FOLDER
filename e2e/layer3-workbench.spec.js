@@ -187,6 +187,18 @@ async function expectNoDeferredRawMixedControls(page) {
   })).toHaveCount(0);
 }
 
+async function expectRenderedPackageLifecycleDashboard(page, stateLabel) {
+  const dashboard = page.locator('#package-lifecycle-dashboard-panel');
+  await expect(dashboard).toBeVisible();
+  await expect(dashboard).toHaveAttribute('data-rendered-mode', 'rendered_package_lifecycle_read_only_dashboard');
+  await expect(dashboard).toHaveAttribute('data-lifecycle-state', stateLabel);
+  await expect(dashboard).toContainText('operator_inspects_package_lifecycle_without_mutation');
+  await expect(dashboard).toContainText('existing_server_response_authority');
+  await expect(dashboard).toContainText('package mutation controls blocked');
+  await expect(dashboard).toContainText('provider public delivery use blocked');
+  await expect(dashboard.locator('button,input,select,textarea')).toHaveCount(0);
+}
+
 async function selectSeededSources(page, seed) {
   for (const datasetVersionId of seed.dataset_version_ids) {
     const input = page.locator(`input[name="dataset-version-candidate"][value="${datasetVersionId}"]`);
@@ -286,6 +298,7 @@ async function expectLiveThemeParityCheckpoint(page, checkpointLabel, visibleSur
     await expect(page.locator('#gate-c-panel')).toHaveCount(1);
     await expect(page.locator('#external-export-download-band')).toHaveCount(1);
     await expect(page.locator('#external-export-download-signed-reference-panel')).toHaveCount(1);
+    await expect(page.locator('#package-lifecycle-dashboard-panel')).toHaveCount(1);
     await expect(page.locator('#provider-private-signed-url-panel')).toHaveCount(1);
     await expect(page.locator('#provider-public-url-panel')).toHaveCount(1);
     await expect(page.locator('#provider-private-signed-url-use')).toHaveCount(0);
@@ -922,6 +935,7 @@ async function inspectRenderedPackagePreview(page, sessionId, approval, planPrev
   await page.locator('#theme-selector').selectOption('light');
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_preview_available');
+  await expectRenderedPackageLifecycleDashboard(page, 'package_lifecycle_waiting_for_server_state');
   await expect(page.locator('#package-review-preview-inspect')).toBeEnabled();
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
@@ -986,6 +1000,7 @@ async function inspectRenderedPackagePreview(page, sessionId, approval, planPrev
   expect(packagePreview.selected_method_name).toBe('descriptive_summary');
 
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_preview_ready');
+  await expectRenderedPackageLifecycleDashboard(page, 'package_review_preview_ready');
   await expect(page.locator('#package-construction-commit')).toBeEnabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expectNoDeferredRawMixedControls(page);
@@ -1064,6 +1079,7 @@ async function commitRenderedPackageConstruction(page, sessionId, approval, plan
   expect(commit.downstream_unavailable).toEqual(expect.arrayContaining(['handoff', 'export']));
 
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_ready');
+  await expectRenderedPackageLifecycleDashboard(page, 'package_review_submit_ready');
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeEnabled();
   await expectNoDeferredRawMixedControls(page);
@@ -1168,6 +1184,7 @@ async function submitRenderedPackageReview(page, sessionId, approval, planPrevie
   expect(packageSubmit.downstream_unavailable).toEqual(expect.arrayContaining(['handoff', 'export']));
 
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
+  await expectRenderedPackageLifecycleDashboard(page, 'package_review_approved');
   await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expectNoDeferredRawMixedControls(page);
   return packageSubmit;
@@ -4374,6 +4391,7 @@ test('Layer 3 workbench submits qualitative APS package review without analysis-
   await expectNoDeferredRawMixedControls(page);
   await expect(page.locator('#package-review-submit')).toBeEnabled();
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_ready');
+  await expectRenderedPackageLifecycleDashboard(page, 'package_review_submit_ready');
 
   const responsePromise = page.waitForResponse((response) => (
     response.url().includes('/api/v1/layer3/package/review/submit')
@@ -4436,6 +4454,7 @@ test('Layer 3 workbench submits qualitative APS package review without analysis-
     expect(packageSubmitPayload).not.toHaveProperty(forbiddenKey);
   }
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
+  await expectRenderedPackageLifecycleDashboard(page, 'package_review_approved');
 });
 
 test('Layer 3 workbench applies mockup-informed Workbench visual boundaries without degrading shared themes', async ({ page }) => {

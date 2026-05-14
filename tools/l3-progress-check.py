@@ -687,6 +687,9 @@ LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME
 RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE = (
     PLANNING_DOCS / "386_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md"
 )
+RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF = (
+    PLANNING_DOCS / "387_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30586,6 +30589,86 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing rendered package lifecycle dashboard freeze term: {term}"
+                )
+
+    rendered_package_lifecycle_dashboard_proof_text = _read_required_text(
+        RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `rendered_package_lifecycle_read_only_dashboard`.",
+        "source audit proved current server responses expose sufficient response-safe package lifecycle fields",
+        "package-lifecycle-dashboard-panel",
+        "renderPackageLifecycleDashboardPanel",
+        "expectRenderedPackageLifecycleDashboard",
+        "existing_server_response_authority",
+        "operator_inspects_package_lifecycle_without_mutation",
+        "No backend route, DTO, model, migration, or service behavior changed",
+        "Headed Chromium",
+        "Headless Chromium",
+        "current-main sync doc required after merge",
+    ):
+        if term not in rendered_package_lifecycle_dashboard_proof_text:
+            errors.append(
+                f"{_rel(RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF)} missing rendered package lifecycle dashboard proof term: {term}"
+            )
+
+    for path, terms in {
+        LAYER3_HTML: (
+            "package-lifecycle-dashboard-panel",
+            'data-rendered-mode="rendered_package_lifecycle_read_only_dashboard"',
+            'aria-label="Package lifecycle dashboard"',
+        ),
+        LAYER3_JS: (
+            "PACKAGE_LIFECYCLE_DASHBOARD_MODE = 'rendered_package_lifecycle_read_only_dashboard'",
+            "PACKAGE_LIFECYCLE_USE_CASE = 'operator_inspects_package_lifecycle_without_mutation'",
+            "PACKAGE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority'",
+            "packageLifecycleOutputRows",
+            "packageLifecycleDashboardState",
+            "renderPackageLifecycleDashboardPanel",
+            "package_mutation_controls_blocked",
+            "provider_public_delivery_use_blocked",
+            "renderPackageLifecycleDashboardPanel();",
+        ),
+        LAYER3_CSS: (
+            "package-lifecycle-dashboard-panel",
+            "package-lifecycle-grid",
+            "package-lifecycle-rows",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "expectRenderedPackageLifecycleDashboard",
+            "package-lifecycle-dashboard-panel",
+            "button,input,select,textarea",
+            "package_lifecycle_waiting_for_server_state",
+            "package_review_preview_ready",
+            "package_review_submit_ready",
+            "package_review_approved",
+        ),
+        BOARD: (
+            "## Rendered Package Lifecycle Read-Only Dashboard Proof",
+            "387_RENDERED_PACKAGE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF.md",
+            "existing_server_response_authority",
+            "headed/headless Chromium proof passed",
+        ),
+        MANIFEST: (
+            "rendered_package_lifecycle_read_only_dashboard_proof",
+            "implemented_read_only_dashboard_over_existing_response_authority",
+            "existing_server_response_authority",
+            "focused_headed_and_headless_playwright_passed",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_package_lifecycle_read_only_dashboard_proof",
+            "implemented_read_only_dashboard_over_existing_response_authority",
+            "headless Chromium package-review flow PASS",
+            "headed Chromium package-review flow PASS",
+            "current-main sync doc required after implementation merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing rendered package lifecycle dashboard implementation term: {term}"
                 )
 
 def main() -> int:
