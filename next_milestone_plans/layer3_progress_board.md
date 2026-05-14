@@ -1924,3 +1924,9 @@ The sync doc `369_SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_CURRENT_MAIN
 Branch-local planning/control freeze: `370_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_FREEZE.md` follows the current-main source-expansion no-runtime sync and selects `full_mockup_activation_named_target_revalidation_packet` as the next packet only.
 
 The freeze result is `selected_full_mockup_activation_named_target_revalidation_packet_only`. Full mockup activation runtime, frontend-only durable state, mockup-driven runtime mutation, browser-local persistence, source expansion, connector/destination dispatch, provider-public delivery/use, package mutation/reconstruction, broad qualitative/hybrid/RAG runtime, auth/security behavior, route/model/migration/schema changes, and frontend-only durable authority remain blocked. After merge, the immediate next action is `current_main_sync_next_deferred_runtime_lane_after_source_expansion_freeze`.
+
+## Next Deferred Runtime Lane After Source Expansion Current-Main Sync
+
+Current-main proof/control sync: PR `#960` merged `370_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_FREEZE.md` at merge commit `fa8e8b7f557c541a56e63b27a23697b2f04af9cb`.
+
+The sync doc `371_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The next required action is `full_mockup_activation_named_target_revalidation_packet` in doc `372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md`; full mockup activation runtime and adjacent deferred surfaces remain blocked until that packet is completed.
