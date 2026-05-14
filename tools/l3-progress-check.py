@@ -944,6 +944,10 @@ LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "460_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION = (
+    PLANNING_DOCS
+    / "461_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -34163,8 +34167,8 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         LAYER3_API_TEST: (
             "authority_matrix_contract",
             "test_layer3_bootstrap_readiness_openapi_contracts",
-            "admitted_for_existing_bootstrap_readiness_openapi_schema",
-            "\"/api/v1/layer3/authority-matrix\" not in spec[\"paths\"]",
+            "admitted_for_read_only_authority_matrix_route",
+            "_openapi_response_schema(spec, \"/api/v1/layer3/authority-matrix\", \"get\")",
         ),
         ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py": (
             "authority_matrix_contract=workbench_body[\"authority_matrix_contract\"]",
@@ -36705,6 +36709,121 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing separate authority matrix route source audit sync term: {term}"
+                )
+
+    separate_authority_matrix_route_implementation_text = _read_required_text(
+        LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local bounded implementation for `add_read_only_authority_matrix_route_over_existing_exposed_contract_only`.",
+        "461_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION.md",
+        "460_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_SOURCE_AUDIT_CURRENT_MAIN_SYNC.md",
+        "93f54a1c8857639ccca21dd05c28ff6cbc6d4ffe",
+        "layer3_separate_authority_matrix_route_implemented_for_read_only_exposed_contract",
+        "GET /api/v1/layer3/authority-matrix",
+        "layer3.authority_matrix_route.v1",
+        "build_exposed_authority_matrix_contract()",
+        "Layer3AuthorityMatrixResponse",
+        "admitted_for_read_only_authority_matrix_route",
+        "5 passed",
+        "Backend route behavior changed only for the read-only authority-matrix route.",
+        "Response-model shape changed only by adding `Layer3AuthorityMatrixResponse`.",
+        "current_main_sync_layer3_separate_authority_matrix_route_implementation_after_merge",
+        "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in separate_authority_matrix_route_implementation_text:
+            errors.append(
+                f"{_rel(LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION)} missing separate authority matrix route implementation term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Separate Authority Matrix Route Implementation",
+            "461_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION.md",
+            "add_read_only_authority_matrix_route_over_existing_exposed_contract_only",
+            "layer3_separate_authority_matrix_route_implemented_for_read_only_exposed_contract",
+            "GET /api/v1/layer3/authority-matrix",
+            "Layer3AuthorityMatrixResponse",
+            "build_exposed_authority_matrix_contract()",
+            "admitted_for_read_only_authority_matrix_route",
+            "current_main_sync_layer3_separate_authority_matrix_route_implementation_after_merge",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        ),
+        MANIFEST: (
+            "layer3_separate_authority_matrix_route_implementation",
+            "branch_local_bounded_implementation",
+            "codex/l3-separate-authority-matrix-route-implementation",
+            "461_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION.md",
+            "93f54a1c8857639ccca21dd05c28ff6cbc6d4ffe",
+            "add_read_only_authority_matrix_route_over_existing_exposed_contract_only",
+            "layer3_separate_authority_matrix_route_implemented_for_read_only_exposed_contract",
+            "GET /api/v1/layer3/authority-matrix",
+            "layer3.authority_matrix_route.v1",
+            "build_exposed_authority_matrix_contract()",
+            '"backend_route_behavior_change": true',
+            '"response_model_shape_change": true',
+            '"runtime_behavior_change": false',
+            '"schema_shape_change": false',
+            "current_main_sync_layer3_separate_authority_matrix_route_implementation_after_merge",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_separate_authority_matrix_route_implementation_proof",
+            "branch_local_bounded_implementation",
+            "codex/l3-separate-authority-matrix-route-implementation",
+            "461_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION.md",
+            "layer3_separate_authority_matrix_route_implemented_for_read_only_exposed_contract",
+            "GET /api/v1/layer3/authority-matrix",
+            "layer3.authority_matrix_route.v1",
+            "Layer3AuthorityMatrixResponse",
+            "authority_matrix_contract()",
+            "build_exposed_authority_matrix_contract()",
+            "admitted_for_read_only_authority_matrix_route",
+            "5 passed",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync",
+        ),
+        AUTHORITY_MATRIX_CONTRACT_SERVICE: (
+            "AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT",
+            "admitted_for_read_only_authority_matrix_route",
+            "separate_read_only_authority_matrix_route_admitted_by_459",
+            "sync_separate_route_before_next_runtime_freeze",
+            "prove_no_runtime_side_effect_admission",
+        ),
+        LAYER3_API: (
+            "class Layer3AuthorityMatrixResponse",
+            '@router.get("/authority-matrix", response_model=Layer3AuthorityMatrixResponse)',
+            "def get_authority_matrix()",
+            "layer3_workbench.authority_matrix_contract()",
+        ),
+        WORKBENCH_SERVICE: (
+            "def authority_matrix_contract()",
+            "layer3.authority_matrix_route.v1",
+            "authority_matrix_contract",
+            "_workbench_authority_matrix_contract()",
+        ),
+        LAYER3_API_TEST: (
+            "/api/v1/layer3/authority-matrix",
+            "Layer3AuthorityMatrixResponse",
+            "layer3.authority_matrix_route.v1",
+            "admitted_for_read_only_authority_matrix_route",
+            "runtime_behavior",
+        ),
+        LAYER3_AUTHORITY_MATRIX_CONTRACT_TEST: (
+            "AUTHORITY_MATRIX_SEPARATE_ROUTE_RESULT",
+            "admitted_for_read_only_authority_matrix_route",
+            "sync_separate_route_before_next_runtime_freeze",
+            "runtime_behavior",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing separate authority matrix route implementation term: {term}"
                 )
 
 def main() -> int:
