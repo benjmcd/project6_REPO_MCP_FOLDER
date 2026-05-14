@@ -735,6 +735,9 @@ LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT = (
 LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "402_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE = (
+    PLANNING_DOCS / "403_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -31668,6 +31671,81 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector/destination closeout sync term: {term}"
+                )
+
+    product_use_case_requirement_freeze_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_next_exact_named_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout`.",
+        "403_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE.md",
+        "b8a2e08a3218d6d6f9c344a2a2949b3650f103cc",
+        "402_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_CLOSEOUT_CURRENT_MAIN_SYNC.md",
+        "select_next_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+        "operator_selects_next_layer3_product_use_case_requirement_without_runtime_expansion",
+        "layer3_product_use_case_requirement_selection_freeze",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "This pass admits only a planning/control selection gate",
+        "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_merge",
+        "canonical source of truth",
+        "server-authoritative state owner",
+        "fail-closed side-effect policy",
+        "receipt, audit, idempotency, and replay contract",
+        "No runtime behavior",
+        "No runtime behavior, external connector invocation, destination write",
+    ):
+        if term not in product_use_case_requirement_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE)} missing product/use-case requirement freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Requirement Selection Freeze",
+            "403_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE.md",
+            "select_next_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+            "operator_selects_next_layer3_product_use_case_requirement_without_runtime_expansion",
+            "layer3_product_use_case_requirement_selection_freeze",
+            "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_merge",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze",
+            "planning_control_freeze",
+            "codex/l3-product-use-case-requirement-freeze",
+            "403_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE.md",
+            "b8a2e08a3218d6d6f9c344a2a2949b3650f103cc",
+            "select_next_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+            "operator_selects_next_layer3_product_use_case_requirement_without_runtime_expansion",
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"backend_route_behavior_change": false',
+            '"service_behavior_change": false',
+            '"schema_shape_change": false',
+            "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_proof",
+            "planning_control_freeze",
+            "403_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE.md",
+            "select_next_layer3_product_use_case_requirement_after_connector_destination_no_runtime_closeout",
+            "operator_selects_next_layer3_product_use_case_requirement_without_runtime_expansion",
+            "layer3_product_use_case_requirement_selection_freeze",
+            "freeze_only",
+            "not_implemented",
+            "no backend route behavior",
+            "no service behavior",
+            "no schema shape",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing product/use-case requirement freeze term: {term}"
                 )
 
 def main() -> int:
