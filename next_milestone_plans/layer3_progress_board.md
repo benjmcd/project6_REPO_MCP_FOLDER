@@ -1894,3 +1894,9 @@ The result is `no_runtime_now_broad_qualitative_hybrid_rag_named_mode_absent`. C
 Current-main proof/control sync: PR `#954` merged `364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md` at merge commit `ecd2ec8eec55de6919dde85647af84da8a068415`.
 
 The sync doc `365_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Broad qualitative/hybrid/RAG remains no-runtime-now as `no_runtime_now_broad_qualitative_hybrid_rag_named_mode_absent`; the next whole-project decision is `next_deferred_server_authoritative_runtime_lane_freeze_after_broad_qualitative_hybrid_rag_no_runtime`.
+
+## Next Deferred Server-Authoritative Runtime Lane After Broad Qual RAG Freeze
+
+Branch-local planning/control freeze: `366_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_BROAD_QUAL_RAG_FREEZE.md` follows the current-main broad qualitative/hybrid/RAG no-runtime sync and selects `source_expansion_named_source_family_revalidation_packet` as the next packet only.
+
+The freeze result is `selected_source_expansion_named_source_family_revalidation_packet_only`. Arbitrary local-directory source runtime, broad file-upload source runtime, web connector source runtime, RAG/vector source runtime, unbounded runtime DB source expansion, generic source upload beyond bounded source-intake, broad qualitative/hybrid runtime, connector/destination dispatch, provider-public delivery/use, package mutation/reconstruction, full mockup activation, auth/security behavior, route/model/migration/schema changes, and frontend-only durable authority remain blocked. After merge, the immediate next action is `current_main_sync_next_deferred_runtime_lane_after_broad_qual_rag_freeze` before the selected packet proceeds.
