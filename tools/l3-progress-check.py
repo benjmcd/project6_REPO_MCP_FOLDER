@@ -608,6 +608,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_FREEZE = (
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "359_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_CONNECTOR_CURRENT_MAIN_SYNC.md"
 )
+PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET = (
+    PLANNING_DOCS / "360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29303,6 +29306,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing next deferred lane after connector current-main sync term: {term}")
+
+    package_action_revalidation_text = _read_required_text(PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET, errors)
+    for term in (
+        "Status: planning/control package mutation named-action revalidation packet only; no runtime behavior admitted.",
+        "package_mutation_named_action_revalidation_packet",
+        "no_runtime_now_named_rendered_package_action_absent",
+        "current_main_sync_package_mutation_named_action_revalidation_packet_after_merge",
+        "package_supersession_preview_only",
+        "No package mutation or reconstruction is admitted.",
+        "No package payload rewrite is admitted.",
+        "No package row mutation is admitted.",
+        "No auth/security behavior is admitted.",
+    ):
+        if term not in package_action_revalidation_text:
+            errors.append(f"{_rel(PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET)} missing package action revalidation term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Package Mutation Named Action Revalidation Packet",
+            "360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md",
+            "no_runtime_now_named_rendered_package_action_absent",
+        ),
+        MANIFEST: (
+            "package_mutation_named_action_revalidation_packet",
+            "no_runtime_now_named_rendered_package_action_absent",
+            "current_main_sync_package_mutation_named_action_revalidation_packet_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "package_mutation_named_action_revalidation_packet_proof",
+            "no_runtime_now_named_rendered_package_action_absent",
+            "package_supersession_preview_only",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing package action revalidation term: {term}")
 
 def main() -> int:
     errors: list[str] = []
