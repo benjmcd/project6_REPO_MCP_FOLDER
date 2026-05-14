@@ -819,6 +819,9 @@ LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "428_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_AUDIT = (
+    PLANNING_DOCS / "429_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_AUDIT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -33828,6 +33831,88 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix contract exposure freeze sync term: {term}"
+                )
+
+    authority_matrix_contract_exposure_audit_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `conduct_layer3_authority_matrix_contract_exposure_audit`.",
+        "429_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_AUDIT.md",
+        "428_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_FREEZE_CURRENT_MAIN_SYNC.md",
+        "bf01a0da64cc5923c886a044c8631856cfa9a9f5",
+        "Result: `layer3_authority_matrix_contract_exposure_admitted_for_read_only_bootstrap_readiness_implementation`.",
+        "read-only exposure implementation",
+        "bootstrap and readiness response paths",
+        "authority_matrix_contract: dict[str, Any]",
+        "backend/app/services/layer3_workbench.py",
+        "backend/app/services/layer3_bootstrap_contract.py",
+        "backend/app/services/layer3_readiness_contract.py",
+        "backend/app/api/layer3.py",
+        "backend/tests/test_layer3_workbench.py",
+        "backend/tests/test_layer3_api.py",
+        "Entry decision: `read_only_bootstrap_readiness_exposure_implementation_admitted`.",
+        "Runtime status: `not_implemented`.",
+        "No source/runtime files are changed by this audit.",
+        "current_main_sync_layer3_authority_matrix_contract_exposure_audit_after_merge",
+        "await_layer3_authority_matrix_contract_exposure_implementation_after_audit_sync",
+        "No new route",
+    ):
+        if term not in authority_matrix_contract_exposure_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_AUDIT)} missing authority matrix contract exposure audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Contract Exposure Audit",
+            "429_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_AUDIT.md",
+            "layer3_authority_matrix_contract_exposure_admitted_for_read_only_bootstrap_readiness_implementation",
+            "authority_matrix_contract",
+            "current_main_sync_layer3_authority_matrix_contract_exposure_audit_after_merge",
+            "await_layer3_authority_matrix_contract_exposure_implementation_after_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_contract_exposure_audit",
+            "planning_control_audit",
+            "codex/l3-authority-matrix-contract-exposure-audit",
+            "429_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_AUDIT.md",
+            "bf01a0da64cc5923c886a044c8631856cfa9a9f5",
+            "layer3_authority_matrix_contract_exposure_admitted_for_read_only_bootstrap_readiness_implementation",
+            '"entry_decision": "read_only_bootstrap_readiness_exposure_implementation_admitted"',
+            '"runtime_status": "not_implemented"',
+            '"new_route_behavior_change": false',
+            '"response_model_shape_change_admitted_for_next_implementation": true',
+            "authority_matrix_contract",
+            "backend/app/services/layer3_workbench.py",
+            "backend/app/services/layer3_bootstrap_contract.py",
+            "backend/app/services/layer3_readiness_contract.py",
+            "backend/app/api/layer3.py",
+            "backend/tests/test_layer3_workbench.py",
+            "backend/tests/test_layer3_api.py",
+            "current_main_sync_layer3_authority_matrix_contract_exposure_audit_after_merge",
+            "await_layer3_authority_matrix_contract_exposure_implementation_after_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_contract_exposure_audit_proof",
+            "planning_control_audit",
+            "429_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_AUDIT.md",
+            "layer3_authority_matrix_contract_exposure_admitted_for_read_only_bootstrap_readiness_implementation",
+            "read_only_bootstrap_readiness_exposure_implementation_admitted",
+            "authority_matrix_contract",
+            "no separate route",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_authority_matrix_contract_exposure_audit_after_merge",
+            "await_layer3_authority_matrix_contract_exposure_implementation_after_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix contract exposure audit term: {term}"
                 )
 
 def main() -> int:
