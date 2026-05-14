@@ -52,4 +52,3 @@ Runtime status: `not_implemented`.
 No runtime behavior, external connector invocation, destination write, connector-run creation, generic downstream dispatch, rendered connector action control, provider-public delivery/use, raw public URL display/use, public proxy runtime, package mutation, source expansion, RAG/vector behavior, auth/security behavior change, backend route behavior, service behavior, schema shape, model change, migration change, or frontend-only durable authority is admitted by this audit.
 
 The next required action after merge is `current_main_sync_layer3_product_use_case_behavior_authority_audit_after_merge`.
-
