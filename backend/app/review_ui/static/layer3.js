@@ -47,6 +47,9 @@ const PACKAGE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority
 const DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE = 'rendered_downstream_access_lifecycle_read_only_dashboard';
 const DOWNSTREAM_ACCESS_LIFECYCLE_USE_CASE = 'operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use';
 const DOWNSTREAM_ACCESS_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
+const LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard';
+const LAYER3_E2E_GOVERNANCE_LIFECYCLE_USE_CASE = 'operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch';
+const LAYER3_E2E_GOVERNANCE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
 
 const State = {
     bootstrap: null,
@@ -129,6 +132,7 @@ const State = {
 const elements = {
     themeSelector: document.getElementById('theme-selector'),
     authorityRail: document.getElementById('authority-rail'),
+    layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
     intentForm: document.getElementById('intent-form'),
     intentInput: document.getElementById('layer3-intent'),
@@ -2255,6 +2259,143 @@ function renderDownstreamAccessLifecycleRows(rows) {
             </li>
         `).join('')
         : '<li>No downstream access lifecycle rows are available.</li>';
+}
+
+function layer3E2EGovernanceLifecycleRows() {
+    const gateB = State.gateB || {};
+    const gateC = State.gateC || State.sessionSummary?.gate_c || {};
+    const planPreview = State.planPreview || State.sessionSummary?.plan_preview || {};
+    const planApproval = State.planApproval || State.sessionSummary?.plan_approval || {};
+    const selection = executionSelectionState();
+    const start = executionStartState();
+    const resultReview = recordedResultReview() || {};
+    const packageRows = packageLifecycleOutputRows();
+    const preview = State.packageReviewPreview || {};
+    const construction = packageConstructionState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const packageState = packageLifecycleDashboardState(preview, construction, submit);
+    const handoff = handoffExportPrepareState() || {};
+    const downstreamRows = downstreamAccessLifecycleRows();
+    const downstreamState = downstreamAccessLifecycleDashboardState(downstreamRows);
+    const latestDownstreamRow = [...downstreamRows].reverse().find((row) => row.state || row.record_ref || row.access_mode) || {};
+    const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
+    const providerPublic = State.providerPublicUrlRevoke || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
+    return [
+        {
+            key: 'source_intake_gate_b',
+            stage: 'source intake / Gate B',
+            state: gateB.state || gateB.material_state || gateB.next_state,
+            ref: gateB.source_intake_record_id || gateB.material_preview_id || gateB.session_id,
+            authority: gateB.schema_id || 'gate_b_response_state',
+        },
+        {
+            key: 'gate_c_typing',
+            stage: 'Gate C typing',
+            state: gateC.state || gateC.gate_c_state || gateC.next_state,
+            ref: gateC.typing_record_ref || gateC.session_id || gateC.analysis_set_id,
+            authority: gateC.schema_id || 'gate_c_response_state',
+        },
+        {
+            key: 'plan_preview_approval',
+            stage: 'plan preview / approval',
+            state: planApproval.plan_approval_state || planApproval.state || planPreview.plan_preview_state || planPreview.state,
+            ref: planApproval.analysis_plan_id || planPreview.preview_id,
+            authority: planApproval.schema_id || planPreview.schema_id || 'plan_flow_response_state',
+        },
+        {
+            key: 'execution_result_review',
+            stage: 'execution / result review',
+            state: resultReview.review_state || start.pass_run_status || start.state || selection.state,
+            ref: selectedResultAuthority().passRunId || resultReview.review_record_ref || selection.analysis_plan_id,
+            authority: resultReview.schema_id || start.schema_id || selection.schema_id || 'execution_response_state',
+        },
+        {
+            key: 'package_lifecycle',
+            stage: 'package lifecycle',
+            state: packageState.label,
+            ref: submit.submit_record_ref || construction.reconciliation_record_id || packageRows[0]?.output_package_id,
+            authority: PACKAGE_LIFECYCLE_DASHBOARD_MODE,
+        },
+        {
+            key: 'handoff_export',
+            stage: 'handoff/export',
+            state: handoff.handoff_export_state || handoff.next_state || handoff.state,
+            ref: handoff.prepare_record_ref || handoffExportEnvelopeRef(handoff),
+            authority: handoff.schema_id || 'handoff_export_response_state',
+        },
+        {
+            key: 'downstream_access',
+            stage: latestDownstreamRow.stage ? `downstream access / ${latestDownstreamRow.stage}` : 'downstream access',
+            state: downstreamState.label,
+            ref: latestDownstreamRow.record_ref,
+            authority: DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE,
+            access_mode: latestDownstreamRow.access_mode,
+        },
+        {
+            key: 'provider_connector_boundaries',
+            stage: 'provider / connector boundaries',
+            state: providerPublic.provider_public_url_state || providerPrivate.provider_signed_url_state,
+            ref: providerPublic.provider_public_url_receipt_id || providerPrivate.provider_signed_url_receipt_id,
+            authority: 'provider_receipt_and_connector_record_only_state',
+        },
+    ].filter((row) => row.state || row.ref);
+}
+
+function layer3E2EGovernanceLifecycleDashboardState(rows) {
+    if (
+        State.executionSelectionPending
+        || State.executionStartPending
+        || State.resultReviewPending
+        || State.packageReviewPreviewPending
+        || State.packageConstructionPending
+        || State.packageReviewSubmitPending
+        || State.handoffExportPreparePending
+        || State.apsHandoffDispatchPending
+        || State.externalExportDownloadPreparePending
+        || State.externalExportDownloadDeliveryPending
+        || State.externalExportDownloadSignedReferencePending
+        || State.externalExportDownloadSignedReferenceUsePending
+        || State.providerPrivateSignedUrlPending
+        || State.providerPublicUrlPending
+    ) {
+        return { label: 'layer3_e2e_governance_lifecycle_refreshing', pill: 'preview' };
+    }
+    const error = State.executionSelectionError
+        || State.executionStartError
+        || State.resultReviewError
+        || State.packageReviewPreviewError
+        || State.packageConstructionError
+        || State.packageReviewSubmitError
+        || State.handoffExportPrepareError
+        || State.apsHandoffDispatchError
+        || State.externalExportDownloadPrepareError
+        || State.externalExportDownloadDeliveryError
+        || State.externalExportDownloadSignedReferenceError
+        || State.providerPrivateSignedUrlError
+        || State.providerPublicUrlError;
+    if (error) {
+        return { label: error.error_code || 'layer3_e2e_governance_lifecycle_blocked', pill: 'blocked' };
+    }
+    const furthest = [...rows].reverse().find((row) => row.state || row.ref);
+    if (furthest) {
+        const stateKey = furthest.key || furthest.stage.replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+        return { label: `layer3_e2e_latest_${stateKey}`, pill: 'ready' };
+    }
+    return { label: 'layer3_e2e_governance_lifecycle_waiting_for_server_state', pill: 'blocked' };
+}
+
+function renderLayer3E2EGovernanceLifecycleRows(rows) {
+    return rows.length
+        ? rows.map((row) => `
+            <li>
+                <code>${escapeHtml(row.stage)}</code>
+                ${row.state ? `<span>${escapeHtml(row.state)}</span>` : ''}
+                ${row.ref ? `<code>${escapeHtml(row.ref)}</code>` : ''}
+                ${row.authority ? `<span>${escapeHtml(row.authority)}</span>` : ''}
+                ${row.access_mode ? `<span>${escapeHtml(row.access_mode)}</span>` : ''}
+            </li>
+        `).join('')
+        : '<li>No Layer 3 governance lifecycle rows are available.</li>';
 }
 
 function handoffExportEnvelopeRef(handoff = handoffExportPrepareState() || State.sessionSummary?.handoff_export_prepare || {}) {
@@ -4425,6 +4566,61 @@ function renderDownstreamAccessLifecycleDashboardPanel() {
     `;
 }
 
+function renderLayer3E2EGovernanceLifecycleDashboardPanel() {
+    const rows = layer3E2EGovernanceLifecycleRows();
+    const dashboardState = layer3E2EGovernanceLifecycleDashboardState(rows);
+    const downstream = [
+        'package_mutation_blocked',
+        'external_connector_invocation_blocked',
+        'destination_write_blocked',
+        'provider_public_delivery_use_blocked',
+        'raw_public_url_display_use_blocked',
+        'source_expansion_blocked',
+        'rag_vector_behavior_blocked',
+        'auth_security_behavior_blocked',
+        'frontend_durable_authority_blocked',
+    ];
+    elements.layer3E2EGovernanceLifecycleDashboardPanel.dataset.lifecycleState = dashboardState.label;
+    elements.layer3E2EGovernanceLifecycleDashboardPanel.innerHTML = `
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">End-to-end governance lifecycle</p>
+                <h2>Layer 3 server-authoritative lifecycle</h2>
+            </div>
+            <span class="status-pill ${escapeHtml(dashboardState.pill)}">${escapeHtml(dashboardState.label)}</span>
+        </div>
+        <div class="result-review-grid layer3-e2e-governance-lifecycle-grid">
+            <section class="result-review-card">
+                <strong>Lifecycle Authority</strong>
+                <ul>
+                    ${fieldItem('use case', LAYER3_E2E_GOVERNANCE_LIFECYCLE_USE_CASE, { code: true })}
+                    ${fieldItem('rendered mode', LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE, { code: true })}
+                    ${fieldItem('response authority', LAYER3_E2E_GOVERNANCE_LIFECYCLE_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('session', currentSessionId(), { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Boundaries</strong>
+                <ul>
+                    ${fieldItem('package mutation', false)}
+                    ${fieldItem('connector/destination dispatch', false)}
+                    ${fieldItem('provider-public delivery/use', false)}
+                    ${fieldItem('raw public URL display/use', false)}
+                    ${fieldItem('frontend durable authority', false)}
+                </ul>
+            </section>
+            <section class="result-review-card layer3-e2e-governance-lifecycle-rows">
+                <strong>Lifecycle Rows</strong>
+                <ul>${renderLayer3E2EGovernanceLifecycleRows(rows)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Deferred Capabilities</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+        </div>
+    `;
+}
+
 function handoffExportPanelState() {
     const handoff = handoffExportPrepareState() || {};
     const submit = packageReviewSubmitState() || {};
@@ -5487,6 +5683,7 @@ function renderAll() {
     renderUnavailable(currentDownstreamUnavailable());
     renderContext();
     renderMaterialLedger();
+    renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
     renderPlanPanel();
     renderExecutionSelectionStartPanel();
