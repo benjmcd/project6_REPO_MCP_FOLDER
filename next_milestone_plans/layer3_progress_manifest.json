@@ -12248,5 +12248,34 @@
       "route_model_migration_schema_changes",
       "frontend_only_durable_authority"
     ]
+  },
+  "auth_security_hardening_named_behavior_revalidation_current_main_sync": {
+    "status": "completed_current_main_sync_pr_966",
+    "branch": "codex/l3-auth-security-packet-sync-966",
+    "merged_pr": "#966",
+    "merge_commit": "92b7e93db6827a720881acdcc4370dc4c725a632",
+    "head_commit": "75b3d8348f75d1ca6515284f09c32a02a1467c72",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/377_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC.md",
+    "packet_doc": "next_milestone_plans/Layer3_planning_docs/376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md",
+    "synced_boundary": "auth_security_hardening_named_behavior_revalidation_packet",
+    "sync_result": "current_main_synced_auth_security_hardening_named_behavior_revalidation_packet",
+    "packet_decision": "no_runtime_now_auth_security_hardening_named_behavior_absent",
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": [],
+      "reviews": [],
+      "latestReviews": [],
+      "reviewThreads": [],
+      "mergeStateStatus": "CLEAN",
+      "mergeable": "MERGEABLE"
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py -> PASS",
+      "git status --short -> only ?? .codesight/"
+    ],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_required_action": "current_main_deferred_lane_completion_audit_after_auth_security_no_runtime"
   }
 }
