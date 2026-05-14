@@ -665,6 +665,9 @@ AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC = (
 DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_COMPLETION_AUDIT = (
     PLANNING_DOCS / "378_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_COMPLETION_AUDIT.md"
 )
+DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT = (
+    PLANNING_DOCS / "379_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30065,6 +30068,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing deferred lane completion audit term: {term}")
+
+    deferred_lane_chain_closeout_text = _read_required_text(DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT, errors)
+    for term in (
+        "Status: current-main closeout for deferred server-authoritative runtime lane chain after completion audit; no runtime behavior admitted.",
+        "PR `#968`",
+        "a7c41c1979b822b0180d18551a1991b4f10e04bd",
+        "layer3_deferred_lane_chain_closed_after_completion_audit",
+        "no_current_deferred_server_authoritative_runtime_lane_goal_action_remaining",
+        "new exact named product/use-case requirement",
+        "Frontend-only durable authority remains a no-go invariant, not a server-authoritative runtime lane.",
+    ):
+        if term not in deferred_lane_chain_closeout_text:
+            errors.append(f"{_rel(DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT)} missing deferred lane chain closeout term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Deferred Server-Authoritative Runtime Lane Chain Closeout",
+            "379_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CHAIN_CLOSEOUT.md",
+            "layer3_deferred_lane_chain_closed_after_completion_audit",
+            "no_current_deferred_server_authoritative_runtime_lane_goal_action_remaining",
+        ),
+        MANIFEST: (
+            "deferred_server_authoritative_runtime_lane_chain_closeout",
+            "layer3_deferred_lane_chain_closed_after_completion_audit",
+            "new_exact_named_product_or_use_case_requirement_required",
+            "no_current_deferred_server_authoritative_runtime_lane_goal_action_remaining",
+        ),
+        PROOF_MANIFEST: (
+            "deferred_server_authoritative_runtime_lane_chain_closeout_proof",
+            "layer3_deferred_lane_chain_closed_after_completion_audit",
+            "no_current_deferred_server_authoritative_runtime_lane_goal_action_remaining",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing deferred lane chain closeout term: {term}")
 
 def main() -> int:
     errors: list[str] = []
