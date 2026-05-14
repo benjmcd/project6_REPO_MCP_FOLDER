@@ -662,6 +662,9 @@ AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET = (
 AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "377_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC.md"
 )
+DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_COMPLETION_AUDIT = (
+    PLANNING_DOCS / "378_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_COMPLETION_AUDIT.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30024,6 +30027,44 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing auth/security packet current-main sync term: {term}")
+
+    deferred_lane_completion_audit_text = _read_required_text(DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_COMPLETION_AUDIT, errors)
+    for term in (
+        "Status: current-main deferred server-authoritative runtime lane completion audit after auth/security no-runtime; no runtime behavior admitted.",
+        "PR `#967`",
+        "3bfb36c3a5044679b49bfe5f5e3665c2d50ae0b1",
+        "current_main_deferred_server_authoritative_runtime_lanes_closed_or_blocked",
+        "no_go_invariant_not_server_authoritative_runtime_lane",
+        "layer3_deferred_lane_chain_closeout_after_completion_audit",
+        "No additional runtime lane is selected by this audit.",
+        "No route, model, migration, schema, or frontend-only durable authority is admitted by this audit.",
+    ):
+        if term not in deferred_lane_completion_audit_text:
+            errors.append(f"{_rel(DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_COMPLETION_AUDIT)} missing deferred lane completion audit term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Deferred Server-Authoritative Runtime Lane Completion Audit",
+            "378_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_COMPLETION_AUDIT.md",
+            "current_main_deferred_server_authoritative_runtime_lanes_closed_or_blocked",
+            "layer3_deferred_lane_chain_closeout_after_completion_audit",
+        ),
+        MANIFEST: (
+            "deferred_server_authoritative_runtime_lane_completion_audit",
+            "current_main_deferred_server_authoritative_runtime_lanes_closed_or_blocked",
+            "no_go_invariant_not_server_authoritative_runtime_lane",
+            "layer3_deferred_lane_chain_closeout_after_completion_audit",
+        ),
+        PROOF_MANIFEST: (
+            "deferred_server_authoritative_runtime_lane_completion_audit_proof",
+            "current_main_deferred_server_authoritative_runtime_lanes_closed_or_blocked",
+            "no_go_invariant_not_server_authoritative_runtime_lane",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing deferred lane completion audit term: {term}")
 
 def main() -> int:
     errors: list[str] = []

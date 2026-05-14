@@ -1966,3 +1966,9 @@ The result is `no_runtime_now_auth_security_hardening_named_behavior_absent`. Cu
 Current-main proof/control sync: PR `#966` merged `376_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_PACKET.md` at merge commit `92b7e93db6827a720881acdcc4370dc4c725a632`.
 
 The sync doc `377_AUTH_SECURITY_HARDENING_NAMED_BEHAVIOR_REVALIDATION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. Auth/security hardening remains no-runtime-now as `no_runtime_now_auth_security_hardening_named_behavior_absent`; the next whole-project action is `current_main_deferred_lane_completion_audit_after_auth_security_no_runtime`.
+
+## Deferred Server-Authoritative Runtime Lane Completion Audit
+
+Branch-local planning/control audit: `378_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_COMPLETION_AUDIT.md` follows the current-main auth/security sync and records `current_main_deferred_server_authoritative_runtime_lanes_closed_or_blocked`.
+
+The audit selects no additional runtime lane. Provider-public delivery/use, connector/destination, package mutation, broad qualitative/hybrid/RAG, source expansion, full mockup activation, and auth/security hardening are closed or blocked by current-main authority. Frontend-only durable authority is preserved as a no-go invariant, not treated as an unclosed server-authoritative runtime lane. The next whole-project action is `layer3_deferred_lane_chain_closeout_after_completion_audit`.
