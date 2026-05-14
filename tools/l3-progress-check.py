@@ -723,6 +723,9 @@ LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF = (
 LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "398_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE = (
+    PLANNING_DOCS / "399_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -31390,6 +31393,65 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing Layer 3 end-to-end lifecycle dashboard sync term: {term}"
+                )
+
+    connector_destination_freeze_text = _read_required_text(
+        LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `connector_destination_dispatch_authority_discovery`; no runtime connector or destination behavior admitted.",
+        "399_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE.md",
+        "operator_reviews_connector_destination_dispatch_authority_gap_without_external_invocation",
+        "connector_destination_dispatch_authority_discovery",
+        "CONNECTOR_DISPATCH_RECORD_MODE = \"internal_dispatch_record_only\"",
+        "external_connector_invocation_enabled: False",
+        "destination_write_enabled: False",
+        "connector_run_created: False",
+        "conduct_connector_destination_dispatch_authority_discovery",
+        "no_runtime_now_connector_destination_named_target_absent",
+        "current_main_sync_connector_destination_authority_discovery_freeze_after_merge",
+    ):
+        if term not in connector_destination_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE)} missing connector/destination authority freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Destination Authority Discovery Freeze",
+            "399_LAYER3_CONNECTOR_DESTINATION_AUTHORITY_DISCOVERY_FREEZE.md",
+            "operator_reviews_connector_destination_dispatch_authority_gap_without_external_invocation",
+            "connector_destination_dispatch_authority_discovery",
+            "internal_dispatch_record_only",
+            "current_main_sync_connector_destination_authority_discovery_freeze_after_merge",
+        ),
+        MANIFEST: (
+            "layer3_connector_destination_authority_discovery_freeze",
+            "planning_control_freeze_no_runtime_admitted",
+            "operator_reviews_connector_destination_dispatch_authority_gap_without_external_invocation",
+            "connector_destination_dispatch_authority_discovery",
+            '"external_connector_invocation_enabled": false',
+            '"destination_write_enabled": false',
+            '"connector_run_created": false',
+            "no_runtime_now_connector_destination_named_target_absent",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_destination_authority_discovery_freeze_proof",
+            "planning_control_freeze_no_runtime_admitted",
+            "operator_reviews_connector_destination_dispatch_authority_gap_without_external_invocation",
+            "internal_dispatch_record_only",
+            "external_connector_invocation_enabled: False",
+            "destination_write_enabled: False",
+            "connector_run_created: False",
+            "current_main_sync_connector_destination_authority_discovery_freeze_after_merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector/destination authority freeze term: {term}"
                 )
 
 def main() -> int:
