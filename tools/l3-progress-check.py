@@ -877,6 +877,10 @@ LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION_CURRENT_MAIN_SYNC
 LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE = (
     PLANNING_DOCS / "443_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE.md"
 )
+LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "444_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -35171,6 +35175,79 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing post authority matrix runtime selection freeze term: {term}"
+                )
+
+    post_authority_matrix_runtime_selection_freeze_sync_text = _read_required_text(
+        LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_post_authority_matrix_runtime_selection_freeze`.",
+        "444_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "443_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE.md",
+        "PR `#1039`",
+        "cb712c3888c0c50e7b9b14dee71a6c82f5873402",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "current_main_synced_layer3_post_authority_matrix_runtime_selection_freeze",
+        "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+        "no_runtime_now_layer3_post_authority_matrix_runtime_requirement_not_admitted",
+        "await_layer3_post_authority_matrix_runtime_selection_audit_after_freeze_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in post_authority_matrix_runtime_selection_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE_CURRENT_MAIN_SYNC)} missing post authority matrix runtime selection freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Post Authority Matrix Runtime Selection Freeze Current-Main Sync",
+            "444_LAYER3_POST_AUTHORITY_MATRIX_RUNTIME_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1039`",
+            "cb712c3888c0c50e7b9b14dee71a6c82f5873402",
+            "current_main_synced_layer3_post_authority_matrix_runtime_selection_freeze",
+            "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+            "await_layer3_post_authority_matrix_runtime_selection_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_post_authority_matrix_runtime_selection_freeze_current_main_sync",
+            "current_main_synced_layer3_post_authority_matrix_runtime_selection_freeze",
+            '"freeze_pr": "#1039"',
+            "cb712c3888c0c50e7b9b14dee71a6c82f5873402",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"mergeable_before_merge": "MERGEABLE"',
+            "conduct_layer3_post_authority_matrix_runtime_selection_audit",
+            "await_layer3_post_authority_matrix_runtime_selection_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_post_authority_matrix_runtime_selection_freeze_current_main_sync_proof",
+            "current_main_synced_layer3_post_authority_matrix_runtime_selection_freeze",
+            '"freeze_pr": "#1039"',
+            "cb712c3888c0c50e7b9b14dee71a6c82f5873402",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "PR unresolved reviewThreads 0",
+            "mergeability MERGEABLE",
+            "no implementation begins in this sync",
+            "await_layer3_post_authority_matrix_runtime_selection_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing post authority matrix runtime selection freeze sync term: {term}"
                 )
 
 def main() -> int:
