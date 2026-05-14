@@ -830,6 +830,10 @@ LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION = (
     PLANNING_DOCS
     / "431_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION.md"
 )
+LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "432_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -34129,6 +34133,94 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix contract exposure implementation term: {term}"
+                )
+
+    authority_matrix_contract_exposure_implementation_sync_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_authority_matrix_contract_exposure_implementation`.",
+        "432_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+        "431_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION.md",
+        "PR `#1027`",
+        "f5f68133257229dc5c31f9d42bb5f7ccd3fcf564",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "one automated `COMMENTED` review",
+        "PR reviewThreads totalCount: `3`.",
+        "PR unresolved reviewThreads: `0`.",
+        "PR resolved reviewThreads: `3`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "`python -m pytest .\\backend\\tests\\test_layer3_authority_matrix_contract.py`: `PASS`",
+        "`python -m pytest .\\backend\\tests\\test_layer3_api.py -k bootstrap_readiness_openapi_contracts`: `PASS`",
+        "`python -m pytest .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_readiness_contract.py`: `PASS`",
+        "`python -m pytest .\\backend\\tests\\test_layer3_workbench.py`: `PASS`",
+        "PowerShell-expanded local equivalent of `python -m pytest ./backend/tests/test_layer3_*.py -q`: `PASS` (`526 passed`).",
+        "current_main_synced_layer3_authority_matrix_contract_exposure_implementation",
+        "layer3_authority_matrix_contract_exposure_implemented_for_read_only_bootstrap_readiness",
+        "entry_decision: read_only_bootstrap_readiness_exposure_implemented",
+        "runtime_status: not_implemented",
+        "build_exposed_authority_matrix_contract()",
+        "read_only_bootstrap_readiness_response_paths",
+        "await_layer3_next_governed_runtime_tranche_freeze_after_authority_matrix_exposure_sync",
+        "No separate authority-matrix route",
+    ):
+        if term not in authority_matrix_contract_exposure_implementation_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION_CURRENT_MAIN_SYNC)} missing authority matrix contract exposure implementation sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Contract Exposure Implementation Current-Main Sync",
+            "432_LAYER3_AUTHORITY_MATRIX_CONTRACT_EXPOSURE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+            "PR `#1027`",
+            "f5f68133257229dc5c31f9d42bb5f7ccd3fcf564",
+            "PR reviewThreads totalCount was `3`",
+            "resolved reviewThreads were `3`",
+            "current_main_synced_layer3_authority_matrix_contract_exposure_implementation",
+            "layer3_authority_matrix_contract_exposure_implemented_for_read_only_bootstrap_readiness",
+            "await_layer3_next_governed_runtime_tranche_freeze_after_authority_matrix_exposure_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_contract_exposure_implementation_current_main_sync",
+            "current_main_synced_layer3_authority_matrix_contract_exposure_implementation",
+            '"implementation_pr": "#1027"',
+            "f5f68133257229dc5c31f9d42bb5f7ccd3fcf564",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 3',
+            '"unresolved_reviewThreads": 0',
+            '"resolved_reviewThreads": 3',
+            '"entry_decision": "read_only_bootstrap_readiness_exposure_implemented"',
+            '"implementation_result": "layer3_authority_matrix_contract_exposure_implemented_for_read_only_bootstrap_readiness"',
+            '"runtime_status": "not_implemented"',
+            "await_layer3_next_governed_runtime_tranche_freeze_after_authority_matrix_exposure_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_contract_exposure_implementation_current_main_sync_proof",
+            "current_main_synced_layer3_authority_matrix_contract_exposure_implementation",
+            '"implementation_pr": "#1027"',
+            "f5f68133257229dc5c31f9d42bb5f7ccd3fcf564",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 3",
+            "PR unresolved reviewThreads 0",
+            "PR resolved reviewThreads 3",
+            "l3-progress-check.py PASS",
+            "test_layer3_authority_matrix_contract.py PASS",
+            "test_layer3_api.py bootstrap_readiness_openapi_contracts PASS",
+            "backend Layer 3 guardrail PASS 526 passed",
+            "build_exposed_authority_matrix_contract",
+            "await_layer3_next_governed_runtime_tranche_freeze_after_authority_matrix_exposure_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix contract exposure implementation sync term: {term}"
                 )
 
 def main() -> int:
