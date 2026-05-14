@@ -15324,7 +15324,7 @@
     "branch": "codex/l3-source-intake-delivery-controls-freeze",
     "current_main_predecessor_commit": "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
     "repo_confirmed_failure_boundary": "rendered UI has no source-intake external export/download delivery controls",
-    "owner_ui": "backend/app/review_ui/static/layer3.js",
+    "owner_ui": "backend/app/review_ui/static/claude.html",
     "owner_service": "backend/app/services/layer3_workbench.py",
     "frozen_future_scope": [
       "layer3.source_intake_external_export_download_delivery.v1",
@@ -15353,7 +15353,9 @@
       "full_mockup_activation"
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required",
-    "rendered_shell": "backend/app/review_ui/static/layer3.html"
+    "rendered_surface": "backend/app/review_ui/static/claude.html",
+    "future_owner_ui": "backend/app/review_ui/static/layer3.js",
+    "future_rendered_shell": "backend/app/review_ui/static/layer3.html"
   },
   "source_intake_external_export_download_rendered_controls_boundary_proof": {
     "proof_kind": "source_intake_external_export_download_rendered_controls_boundary",

@@ -23278,6 +23278,7 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
         "codex/l3-source-intake-delivery-controls-freeze",
         "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
         "325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md",
+        "backend/app/review_ui/static/claude.html",
         "backend/app/review_ui/static/layer3.js",
         "backend/app/review_ui/static/layer3.html",
         "layer3.source_intake_external_export_download_delivery.v1",
@@ -23328,9 +23329,11 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "freeze_predecessor": "source_intake_external_export_download_delivery_boundary",
             "canonical_source_of_truth": "server_owned_source_intake_external_export_download_delivery_authority_and_rendered_projection_state",
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-            "owner_ui": "backend/app/review_ui/static/layer3.js",
+            "owner_ui": "backend/app/review_ui/static/claude.html",
             "owner_service": "backend/app/services/layer3_workbench.py",
-            "rendered_surface": "backend/app/review_ui/static/layer3.html",
+            "rendered_surface": "backend/app/review_ui/static/claude.html",
+            "future_owner_ui": "backend/app/review_ui/static/layer3.js",
+            "future_rendered_shell": "backend/app/review_ui/static/layer3.html",
             "current_failure_boundary": "source_intake_external_export_download_rendered_controls_absent",
             "implementation_entry_allowed_next": True,
             "live_behavior_change": False,
@@ -23389,8 +23392,10 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "branch": "codex/l3-source-intake-delivery-controls-freeze",
             "current_main_predecessor_commit": "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-            "owner_ui": "backend/app/review_ui/static/layer3.js",
-            "rendered_shell": "backend/app/review_ui/static/layer3.html",
+            "owner_ui": "backend/app/review_ui/static/claude.html",
+            "rendered_surface": "backend/app/review_ui/static/claude.html",
+            "future_owner_ui": "backend/app/review_ui/static/layer3.js",
+            "future_rendered_shell": "backend/app/review_ui/static/layer3.html",
             "owner_service": "backend/app/services/layer3_workbench.py",
             "validation_status": "planning_control_freeze_only_progress_check_required",
         }.items():
@@ -23409,13 +23414,13 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
         ):
             if required not in frozen_future_scope:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_external_export_download_rendered_controls_boundary_freeze_proof frozen_future_scope missing {required}")
-    ui_text = _read_required_text(ROOT / "backend/app/review_ui/static/layer3.html", errors)
+    ui_text = _read_required_text(ROOT / "backend/app/review_ui/static/claude.html", errors)
     for forbidden in (
         "source_intake_external_export_download_delivery",
         "source-intake-external-export-download-delivery",
     ):
         if forbidden in ui_text:
-            errors.append(f"backend/app/review_ui/static/layer3.html unexpectedly contains source-intake delivery rendered control term: {forbidden}")
+            errors.append(f"backend/app/review_ui/static/claude.html unexpectedly contains source-intake delivery rendered control term: {forbidden}")
 
 
 def _check_source_intake_external_export_download_rendered_controls_boundary(errors: list[str]) -> None:
