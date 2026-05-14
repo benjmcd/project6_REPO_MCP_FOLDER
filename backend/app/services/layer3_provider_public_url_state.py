@@ -77,6 +77,12 @@ def _epoch_to_utc(epoch_seconds: int) -> datetime:
     return datetime.fromtimestamp(epoch_seconds, timezone.utc)
 
 
+def _datetime_epoch(value: datetime) -> int:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return int(value.timestamp())
+
+
 def _normalize_authority_basis(authority_basis: dict[str, Any]) -> dict[str, Any]:
     size_raw = authority_basis.get("source_artifact_size_bytes")
     try:
@@ -310,6 +316,12 @@ def record_prepared_provider_public_url_receipt(
                     blocked_fields=("client_request_id", "recipient_scope", "requested_ttl_seconds", "source_artifact_hash"),
                     next_allowed_actions=("submit_new_client_request_id",),
                 )
+            if (
+                existing.provider_public_url_state == PROVIDER_PUBLIC_URL_STATE_PREPARED
+                and now_epoch >= _datetime_epoch(existing.provider_public_url_expires_at)
+            ):
+                existing.provider_public_url_state = PROVIDER_PUBLIC_URL_STATE_EXPIRED
+                existing.updated_at = now
             audit = L3ProviderPublicUrlAuditEvent(
                 provider_public_url_audit_event_id=uuid_str(),
                 provider_public_url_receipt_id=existing.provider_public_url_receipt_id,
@@ -380,6 +392,57 @@ def record_prepared_provider_public_url_receipt(
     except ProviderPublicUrlStateError:
         db.rollback()
         raise
+    except IntegrityError as exc:
+        db.rollback()
+        existing = (
+            db.query(L3ProviderPublicUrlReceipt)
+            .filter(L3ProviderPublicUrlReceipt.client_request_id == normalized_client_request_id)
+            .one_or_none()
+        )
+        if existing is None:
+            raise ProviderPublicUrlStateError(
+                "provider_public_url_state_prepare_persist_failed",
+                "Provider-public URL durable-state prepare could not be recorded.",
+                blocked_fields=("provider_public_url_receipt_id",),
+                next_allowed_actions=("retry_provider_public_url_prepare",),
+            ) from exc
+        if (
+            existing.authority_hash != authority_hash
+            or existing.request_basis_hash != request_basis_hash
+            or existing.provider_public_url_hash != public_url_hash
+        ):
+            raise ProviderPublicUrlStateError(
+                "provider_public_url_state_idempotency_conflict",
+                "client_request_id was already used for different provider-public URL authority.",
+                blocked_fields=("client_request_id", "recipient_scope", "requested_ttl_seconds", "source_artifact_hash"),
+                next_allowed_actions=("submit_new_client_request_id",),
+            ) from exc
+        if (
+            existing.provider_public_url_state == PROVIDER_PUBLIC_URL_STATE_PREPARED
+            and now_epoch >= _datetime_epoch(existing.provider_public_url_expires_at)
+        ):
+            existing.provider_public_url_state = PROVIDER_PUBLIC_URL_STATE_EXPIRED
+            existing.updated_at = now
+        audit = L3ProviderPublicUrlAuditEvent(
+            provider_public_url_audit_event_id=uuid_str(),
+            provider_public_url_receipt_id=existing.provider_public_url_receipt_id,
+            event_type="prepare",
+            event_status="accepted",
+            request_id=request_id,
+            authority_hash=authority_hash,
+            reason_code="idempotent_prepare_reused_after_integrity_conflict",
+            event_payload_json={
+                "provider_public_url_hash": existing.provider_public_url_hash,
+                "provider_public_url_state": existing.provider_public_url_state,
+                "raw_public_url_exposed": False,
+            },
+            created_at=now,
+        )
+        db.add(audit)
+        db.commit()
+        db.refresh(existing)
+        db.refresh(audit)
+        return _state_from_rows(existing, audit)
     except SQLAlchemyError as exc:
         db.rollback()
         raise ProviderPublicUrlStateError(

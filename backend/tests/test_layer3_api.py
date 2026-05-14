@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -4070,6 +4071,8 @@ def test_layer3_api_provider_public_url_openapi_prepare_status_schema(client: Te
         "raw_public_url",
         "public_proxy_url",
         "download_url",
+        "provider_bucket",
+        "provider_object_key",
         "connector_dispatch",
         "auth_security_override",
     ):
@@ -4098,6 +4101,9 @@ def test_layer3_api_provider_public_url_openapi_prepare_status_schema(client: Te
         "raw_public_url",
         "public_proxy_url",
         "download_url",
+        "provider_bucket",
+        "provider_object_key",
+        "raw_provider_object_key",
         "provider_credentials",
         "connector_dispatch",
         "auth_security_override",
@@ -4179,7 +4185,7 @@ def test_layer3_api_provider_public_url_prepare_status_idempotent_and_fail_close
     assert prepare_body["provider_public_url_redacted"] == "provider-public-url:redacted"
     assert 0 < prepare_body["provider_public_url_expires_in_seconds"] <= 300
     assert prepare_body["provider_public_url_replay_policy"] == "status_only"
-    assert prepare_body["provider_public_url_revocation_supported"] is False
+    assert prepare_body["provider_public_url_revocation_supported"] is True
     assert prepare_body["provider_public_url_revoked"] is False
     assert prepare_body["raw_public_url_exposed"] is False
     assert prepare_body["public_url_enabled"] is False
@@ -4223,6 +4229,45 @@ def test_layer3_api_provider_public_url_prepare_status_idempotent_and_fail_close
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "provider_public_url_prepare_scope_not_admitted"
     assert "provider-public.invalid" not in forbidden.text
+    forbidden_null = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json={**payload, "client_request_id": "api-provider-public-url-null-forbidden", "raw_public_url": None},
+    )
+    assert forbidden_null.status_code == 400
+    assert forbidden_null.json()["error_code"] == "provider_public_url_prepare_scope_not_admitted"
+    assert forbidden_null.json()["blocked_fields"] == ["raw_public_url"]
+
+    db = client.layer3_session_factory()
+    try:
+        private_receipt = db.get(L3ProviderPrivateSignedUrlReceipt, private_body["provider_signed_url_receipt_id"])
+        assert private_receipt is not None
+        private_receipt.provider_private_signed_url_expires_at = datetime.fromtimestamp(0, timezone.utc)
+        db.commit()
+    finally:
+        db.close()
+    expired_private = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json={**payload, "client_request_id": "api-provider-public-url-expired-private"},
+    )
+    assert expired_private.status_code == 409
+    assert expired_private.json()["error_code"] == "provider_public_url_private_receipt_expired"
+
+    db = client.layer3_session_factory()
+    try:
+        private_receipt = db.get(L3ProviderPrivateSignedUrlReceipt, private_body["provider_signed_url_receipt_id"])
+        assert private_receipt is not None
+        private_receipt.provider_private_signed_url_state = "provider_private_signed_url_prepared"
+        private_receipt.provider_private_signed_url_expires_at = datetime.fromtimestamp(2_000_000_000, timezone.utc)
+        private_receipt.provider_private_signed_url_use_count = private_receipt.provider_private_signed_url_max_use_count
+        db.commit()
+    finally:
+        db.close()
+    consumed_private = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json={**payload, "client_request_id": "api-provider-public-url-consumed-private"},
+    )
+    assert consumed_private.status_code == 409
+    assert consumed_private.json()["error_code"] == "provider_public_url_private_receipt_consumed"
 
     missing = client.post(
         "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
@@ -4325,6 +4370,7 @@ def test_layer3_api_provider_public_url_revoke_success_idempotency_and_fail_clos
     assert revoke_body["provider_public_url_receipt_id"] == public_body["provider_public_url_receipt_id"]
     assert revoke_body["provider_public_url_state"] == "provider_public_url_revoked"
     assert revoke_body["provider_public_url_redacted"] == "provider-public-url:redacted"
+    assert revoke_body["provider_public_url_revocation_supported"] is True
     assert revoke_body["provider_public_url_revoked"] is True
     assert revoke_body["raw_public_url_exposed"] is False
     assert revoke_body["public_url_enabled"] is False
@@ -4337,6 +4383,7 @@ def test_layer3_api_provider_public_url_revoke_success_idempotency_and_fail_clos
     assert status.status_code == 200, status.text
     assert status.json()["provider_public_url_state"] == "provider_public_url_revoked"
     assert status.json()["provider_public_url_revoked"] is True
+    assert status.json()["provider_public_url_revocation_supported"] is True
 
     retry = client.post(
         "/api/v1/layer3/handoff/export/download/provider-public-url/revoke",
@@ -4377,6 +4424,18 @@ def test_layer3_api_provider_public_url_revoke_success_idempotency_and_fail_clos
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "provider_public_url_revoke_scope_not_admitted"
     assert "provider-public.invalid" not in forbidden.text
+    forbidden_object_control = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/revoke",
+        json={
+            **revoke_payload,
+            "client_request_id": "api-provider-public-url-revoke-forbidden-object-control",
+            "idempotency_key": "api-provider-public-url-revoke-forbidden-object-control",
+            "provider_bucket": None,
+        },
+    )
+    assert forbidden_object_control.status_code == 400
+    assert forbidden_object_control.json()["error_code"] == "provider_public_url_revoke_scope_not_admitted"
+    assert forbidden_object_control.json()["blocked_fields"] == ["provider_bucket"]
 
     db = client.layer3_session_factory()
     try:
