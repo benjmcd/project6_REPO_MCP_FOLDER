@@ -18030,5 +18030,38 @@
   },
   "latest_layer3_authority_contract_requirement_freeze_branch": "codex/l3-authority-contract-requirement-freeze",
   "latest_layer3_authority_contract_requirement_freeze_live_behavior_change": false,
-  "latest_layer3_authority_contract_requirement_freeze_summary": "Doc 413 proof entry records the Layer 3 authority contract requirement freeze. It is planning/control only and requires current-main sync after merge before the authority contract requirement audit."
+  "latest_layer3_authority_contract_requirement_freeze_summary": "Doc 413 proof entry records the Layer 3 authority contract requirement freeze. It is planning/control only and requires current-main sync after merge before the authority contract requirement audit.",
+  "layer3_authority_contract_requirement_freeze_current_main_sync_proof": {
+    "proof_kind": "layer3_authority_contract_requirement_freeze_current_main_sync",
+    "status": "current_main_synced_layer3_authority_contract_requirement_freeze",
+    "sync_branch": "codex/l3-authority-contract-requirement-freeze-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/414_LAYER3_AUTHORITY_CONTRACT_REQUIREMENT_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_pr": "#1009",
+    "freeze_merge_commit": "8ed731ec6ca18a9978deba6aae89144b15d8424d",
+    "current_main_after_merge": "8ed731ec6ca18a9978deba6aae89144b15d8424d",
+    "proof_terms": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "PR comments empty",
+      "PR reviews empty",
+      "PR reviewThreads totalCount 0",
+      "PR unresolved reviewThreads 0",
+      "l3-progress-check.py PASS",
+      "current_main_synced_layer3_authority_contract_requirement_freeze",
+      "freeze_only",
+      "layer3_authority_contract_requirement_freeze",
+      "not_implemented",
+      "layer3_next_runtime_tranche_authority_matrix_contract_requirement_definition_without_runtime_exposure_or_dispatch",
+      "conduct_layer3_authority_contract_requirement_audit",
+      "no_runtime_now_layer3_authority_contract_requirement_absent",
+      "await_layer3_authority_contract_requirement_audit_after_freeze_sync"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "next_whole_project_posture": "await_layer3_authority_contract_requirement_audit_after_freeze_sync"
+  },
+  "latest_layer3_authority_contract_requirement_freeze_current_main_sync_branch": "codex/l3-authority-contract-requirement-freeze-sync",
+  "latest_layer3_authority_contract_requirement_freeze_current_main_sync_live_behavior_change": false,
+  "latest_layer3_authority_contract_requirement_freeze_current_main_sync_summary": "Doc 414 proof entry records current-main sync for PR #1009 merge commit 8ed731ec6ca18a9978deba6aae89144b15d8424d; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next posture is authority contract requirement audit."
 }
