@@ -644,6 +644,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_FREEZE = 
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "371_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_MAIN_SYNC.md"
 )
+FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET = (
+    PLANNING_DOCS / "372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29786,6 +29789,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing full mockup current-main sync term: {term}")
+
+    full_mockup_packet_text = _read_required_text(FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET, errors)
+    for term in (
+        "Status: planning/control full mockup activation named-target revalidation packet only; no runtime behavior admitted.",
+        "full_mockup_activation_named_target_revalidation_packet",
+        "no_runtime_now_full_mockup_activation_named_target_absent",
+        "mockups_target_state_only",
+        "current_main_sync_full_mockup_activation_named_target_revalidation_packet_after_merge",
+        "No full mockup activation runtime is admitted.",
+        "No frontend-only durable state is admitted.",
+        "No browser-local persistence is admitted.",
+        "No auth/security behavior is admitted.",
+    ):
+        if term not in full_mockup_packet_text:
+            errors.append(f"{_rel(FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET)} missing full mockup packet term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Full Mockup Activation Named Target Revalidation Packet",
+            "372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+            "no_runtime_now_full_mockup_activation_named_target_absent",
+        ),
+        MANIFEST: (
+            "full_mockup_activation_named_target_revalidation_packet",
+            "no_runtime_now_full_mockup_activation_named_target_absent",
+            "current_main_sync_full_mockup_activation_named_target_revalidation_packet_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "full_mockup_activation_named_target_revalidation_packet_proof",
+            "no_runtime_now_full_mockup_activation_named_target_absent",
+            "mockups_target_state_only",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing full mockup packet term: {term}")
 
 def main() -> int:
     errors: list[str] = []

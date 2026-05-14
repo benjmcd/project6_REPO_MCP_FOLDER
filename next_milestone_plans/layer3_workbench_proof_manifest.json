@@ -16735,5 +16735,27 @@
     "runtime_behavior_change": false,
     "rendered_ui_behavior_change": false,
     "next_required_action": "full_mockup_activation_named_target_revalidation_packet"
+  },
+  "full_mockup_activation_named_target_revalidation_packet_proof": {
+    "status": "branch_local_planning_control_proof",
+    "planning_branch": "codex/l3-full-mockup-revalidation-packet",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+    "entry_decision": "no_runtime_now_full_mockup_activation_named_target_absent",
+    "repo_confirmed_runtime_boundary": "mockups_target_state_only",
+    "authority_files": [
+      "backend/app/services/layer3_mockup_boundary.py"
+    ],
+    "proof_terms": [
+      "full_mockup_activation_named_target_revalidation_packet",
+      "no_runtime_now_full_mockup_activation_named_target_absent",
+      "mockups_target_state_only",
+      "No full mockup activation runtime is admitted.",
+      "No frontend-only durable state is admitted.",
+      "No browser-local persistence is admitted.",
+      "No auth/security behavior is admitted."
+    ],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_required_action": "current_main_sync_full_mockup_activation_named_target_revalidation_packet_after_merge"
   }
 }
