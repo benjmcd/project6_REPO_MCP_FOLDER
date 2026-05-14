@@ -641,6 +641,9 @@ SOURCE_EXPANSION_NAMED_SOURCE_FAMILY_REVALIDATION_CURRENT_MAIN_SYNC = (
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_FREEZE = (
     PLANNING_DOCS / "370_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_FREEZE.md"
 )
+NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "371_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29746,6 +29749,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing full mockup freeze term: {term}")
+
+    full_mockup_sync_text = _read_required_text(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for next deferred server-authoritative runtime lane after source expansion freeze; no runtime behavior admitted.",
+        "PR `#960`",
+        "fa8e8b7f557c541a56e63b27a23697b2f04af9cb",
+        "current_main_synced_next_deferred_runtime_lane_after_source_expansion_freeze",
+        "full_mockup_activation_named_target_revalidation_packet",
+        "372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads",
+    ):
+        if term not in full_mockup_sync_text:
+            errors.append(f"{_rel(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_MAIN_SYNC)} missing full mockup current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Next Deferred Runtime Lane After Source Expansion Current-Main Sync",
+            "371_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_MAIN_SYNC.md",
+            "372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+        ),
+        MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_source_expansion_current_main_sync",
+            "current_main_synced_next_deferred_runtime_lane_after_source_expansion_freeze",
+            "372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+        ),
+        PROOF_MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_source_expansion_current_main_sync_proof",
+            "current_main_synced_next_deferred_runtime_lane_after_source_expansion_freeze",
+            "reviewThreads",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing full mockup current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
