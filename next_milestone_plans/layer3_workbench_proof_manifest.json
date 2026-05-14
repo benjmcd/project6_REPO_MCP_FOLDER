@@ -15324,7 +15324,7 @@
     "branch": "codex/l3-source-intake-delivery-controls-freeze",
     "current_main_predecessor_commit": "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
     "repo_confirmed_failure_boundary": "rendered UI has no source-intake external export/download delivery controls",
-    "owner_ui": "backend/app/review_ui/static/claude.html",
+    "owner_ui": "backend/app/review_ui/static/layer3.js",
     "owner_service": "backend/app/services/layer3_workbench.py",
     "frozen_future_scope": [
       "layer3.source_intake_external_export_download_delivery.v1",
@@ -15332,7 +15332,12 @@
       "server_authority_only_rendered_projection",
       "no_provider_public_private_url_controls",
       "no_signed_reference_controls",
-      "no_connector_destination_controls"
+      "no_connector_destination_controls",
+      "source_intake_delivery_control_requires_external_export_download_prepared_state",
+      "package_mutation_controls_remain_blocked",
+      "source_expansion_controls_remain_blocked",
+      "rag_vector_controls_remain_blocked",
+      "existing_associated_cohort_single_aps_qualitative_aps_and_source_intake_delivery_unchanged"
     ],
     "blocked_scope": [
       "provider_url",
@@ -15347,7 +15352,8 @@
       "broad_qualitative_execution",
       "full_mockup_activation"
     ],
-    "validation_status": "planning_control_freeze_only_progress_check_required"
+    "validation_status": "planning_control_freeze_only_progress_check_required",
+    "rendered_shell": "backend/app/review_ui/static/layer3.html"
   },
   "source_intake_external_export_download_rendered_controls_boundary_proof": {
     "proof_kind": "source_intake_external_export_download_rendered_controls_boundary",
@@ -15919,6 +15925,7 @@
       "source_expansion",
       "rag_vector_behavior",
       "broad_qualitative_behavior",
+      "full_mockup_activation",
       "auth_security_behavior",
       "frontend_only_durable_authority"
     ]
