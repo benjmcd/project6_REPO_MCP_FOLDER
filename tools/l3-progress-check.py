@@ -1044,6 +1044,10 @@ LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMEN
     PLANNING_DOCS
     / "485_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC.md"
 )
+LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "486_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -38811,6 +38815,86 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing e2e governance lifecycle behavior authority audit term: {term}"
+                )
+
+    e2e_governance_lifecycle_behavior_authority_audit_sync_text = _read_required_text(
+        LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection_freeze_sync`.",
+        "486_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+        "485_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_REQUIREMENT_SELECTION_FREEZE_SYNC.md",
+        "#1081",
+        "1e4cae3b0e2f31f14241ab54a5e4108a635f4ee4",
+        "backend-layer3-api",
+        "SUCCESS",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection",
+        "layer3_end_to_end_governance_lifecycle_behavior_authority_read_only_current_main_satisfied_no_runtime",
+        "read_only_current_main_control_surface_only",
+        "Selected implementation action remains `none`.",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in e2e_governance_lifecycle_behavior_authority_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC)} missing e2e governance lifecycle behavior authority audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 End-to-End Governance Lifecycle Behavior Authority Audit Current-Main Sync",
+            "486_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1081",
+            "1e4cae3b0e2f31f14241ab54a5e4108a635f4ee4",
+            "reviewThreads totalCount was `0`",
+            "merge state was `CLEAN`",
+            "current_main_synced_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection",
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_read_only_current_main_satisfied_no_runtime",
+            "selected implementation action remains `none`",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_audit_current_main_sync",
+            "current_main_synced_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection",
+            "codex/l3-e2e-governance-lifecycle-behavior-authority-audit-sync",
+            "486_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1081",
+            "1e4cae3b0e2f31f14241ab54a5e4108a635f4ee4",
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"merge_state_before_merge": "CLEAN"',
+            '"audit_result": "layer3_end_to_end_governance_lifecycle_behavior_authority_read_only_current_main_satisfied_no_runtime"',
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_audit_current_main_sync_proof",
+            "current_main_synced_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_requirement_selection",
+            "codex/l3-e2e-governance-lifecycle-behavior-authority-audit-sync",
+            "486_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1081",
+            "1e4cae3b0e2f31f14241ab54a5e4108a635f4ee4",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "merge_state_before_merge CLEAN",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "no implementation",
+            "no runtime behavior",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing e2e governance lifecycle behavior authority audit sync term: {term}"
                 )
 
 def main() -> int:
