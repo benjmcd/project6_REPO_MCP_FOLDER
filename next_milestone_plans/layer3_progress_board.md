@@ -1930,3 +1930,9 @@ The freeze result is `selected_full_mockup_activation_named_target_revalidation_
 Current-main proof/control sync: PR `#960` merged `370_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_FREEZE.md` at merge commit `fa8e8b7f557c541a56e63b27a23697b2f04af9cb`.
 
 The sync doc `371_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_SOURCE_EXPANSION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The next required action is `full_mockup_activation_named_target_revalidation_packet` in doc `372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md`; full mockup activation runtime and adjacent deferred surfaces remain blocked until that packet is completed.
+
+## Full Mockup Activation Named Target Revalidation Packet
+
+Branch-local planning/control packet: `372_FULL_MOCKUP_ACTIVATION_NAMED_TARGET_REVALIDATION_PACKET.md` revalidates the selected full mockup activation named-target packet after the current-main full-mockup lane sync.
+
+The result is `no_runtime_now_full_mockup_activation_named_target_absent`. Current repo authority keeps mockups in `mockups_target_state_only` mode as target-state design specifications, not runtime authority. Full mockup activation runtime, frontend-only durable state, browser-local persistence, mockup-driven runtime mutation, auth/security behavior, route/model/migration/schema changes, and frontend-only durable authority remain blocked.
