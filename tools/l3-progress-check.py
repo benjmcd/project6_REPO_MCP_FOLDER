@@ -678,6 +678,9 @@ NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE = (
 SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE = (
     PLANNING_DOCS / "383_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE.md"
 )
+SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "384_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30262,6 +30265,12 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             errors.append(f"current decision mirror {value_path} missing provider-public delivery/use no-runtime result")
         if "current_main_sync_source_intake_provider_public_url_delivery_use_runtime_freeze_after_merge" not in value:
             errors.append(f"current decision mirror {value_path} missing provider-public delivery/use current-main sync action")
+        if "source_intake_provider_public_url_delivery_use_runtime_freeze_current_main_sync" not in value:
+            errors.append(f"current decision mirror {value_path} missing provider-public delivery/use current-main sync packet")
+        if "current_main_synced_provider_public_delivery_use_no_runtime_freeze" not in value:
+            errors.append(f"current decision mirror {value_path} missing provider-public delivery/use synced result")
+        if "select_next_bounded_layer3_runtime_tranche_via_later_exact_named_freeze_only" not in value:
+            errors.append(f"current decision mirror {value_path} missing next bounded runtime freeze decision")
 
     for path, terms in {
         BOARD: (
@@ -30381,6 +30390,60 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public delivery/use freeze term: {term}")
+
+    provider_public_delivery_use_sync_text = _read_required_text(
+        SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for provider-public delivery/use no-runtime freeze; no runtime behavior admitted.",
+        "PR `#978`",
+        "7c957834fa84fd926b194326fa89a76ee8d4e87a",
+        "source_intake_provider_public_url_delivery_use_runtime_freeze",
+        "no_runtime_now_provider_public_delivery_use_raw_url_authority_absent",
+        "backend-layer3-api",
+        "test",
+        "PR comments: empty",
+        "PR reviews: empty",
+        "PR review threads: empty",
+        "select_next_bounded_layer3_runtime_tranche_via_later_exact_named_freeze_only",
+    ):
+        if term not in provider_public_delivery_use_sync_text:
+            errors.append(
+                f"{_rel(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC)} missing provider-public delivery/use sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Intake Provider Public URL Delivery/Use Runtime Freeze Current-Main Sync",
+            "384_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#978`",
+            "7c957834fa84fd926b194326fa89a76ee8d4e87a",
+            "select_next_bounded_layer3_runtime_tranche_via_later_exact_named_freeze_only",
+        ),
+        MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_runtime_freeze_current_main_sync",
+            "current_main_synced_provider_public_delivery_use_no_runtime_freeze",
+            '"merge_pr": "#978"',
+            "7c957834fa84fd926b194326fa89a76ee8d4e87a",
+            '"backend_layer3_api": "SUCCESS"',
+            '"post_merge_progress_check": "PASS"',
+            "select_next_bounded_layer3_runtime_tranche_via_later_exact_named_freeze_only",
+        ),
+        PROOF_MANIFEST: (
+            "source_intake_provider_public_url_delivery_use_runtime_freeze_current_main_sync_proof",
+            "current_main_synced_provider_public_delivery_use_no_runtime_freeze",
+            '"merge_pr": "#978"',
+            "7c957834fa84fd926b194326fa89a76ee8d4e87a",
+            "backend-layer3-api SUCCESS",
+            "post-merge progress check PASS",
+            "select_next_bounded_layer3_runtime_tranche_via_later_exact_named_freeze_only",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing provider-public delivery/use sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
