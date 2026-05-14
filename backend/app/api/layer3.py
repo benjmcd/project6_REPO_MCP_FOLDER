@@ -116,6 +116,12 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     deferred_decisions: dict[str, Any]
 
 
+class Layer3AuthorityMatrixResponse(Layer3BaseResponse):
+    route: str
+    api_root: str
+    authority_matrix_contract: dict[str, Any]
+
+
 class Layer3PreflightRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -4517,6 +4523,11 @@ def get_bootstrap() -> dict[str, Any]:
 @router.get("/readiness", response_model=Layer3ExecutionReadinessResponse)
 def get_readiness() -> dict[str, Any]:
     return layer3_workbench.readiness_contract()
+
+
+@router.get("/authority-matrix", response_model=Layer3AuthorityMatrixResponse)
+def get_authority_matrix() -> dict[str, Any]:
+    return layer3_workbench.authority_matrix_contract()
 
 
 @router.post(

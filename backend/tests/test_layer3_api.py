@@ -477,15 +477,39 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
     )
     assert (
         authority_rows["route_api_posture"]["admission_result"]
-        == "admitted_for_existing_bootstrap_readiness_openapi_schema"
+        == "admitted_for_read_only_authority_matrix_route"
     )
-    assert authority_rows["route_api_posture"]["blocked_scope"] == ["separate_authority_matrix_route"]
+    assert authority_rows["route_api_posture"]["blocked_scope"] == []
     assert (
         authority_rows["response_dto_posture"]["admission_result"]
         == "admitted_for_bootstrap_readiness_response_model_shape"
     )
     assert "runtime_behavior" in authority_rows["side_effect_policy"]["blocked_scope"]
-    assert "/api/v1/layer3/authority-matrix" not in spec["paths"]
+    authority_schema = _openapi_response_schema(spec, "/api/v1/layer3/authority-matrix", "get")
+    assert authority_schema["title"] == "Layer3AuthorityMatrixResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "route",
+        "api_root",
+        "authority_matrix_contract",
+    } <= set(authority_schema["required"])
+    authority_body = client.get("/api/v1/layer3/authority-matrix").json()
+    assert authority_body["schema_id"] == "layer3.authority_matrix_route.v1"
+    assert authority_body["route"] == "/api/v1/layer3/authority-matrix"
+    assert authority_body["api_root"] == "/api/v1/layer3"
+    assert authority_body["authority_matrix_contract"]["schema_id"] == "layer3.authority_matrix_contract.v1"
+    route_rows = {
+        row["row"]: row for row in authority_body["authority_matrix_contract"]["authority_matrix"]
+    }
+    assert route_rows["route_api_posture"]["admission_result"] == (
+        "admitted_for_read_only_authority_matrix_route"
+    )
+    assert route_rows["route_api_posture"]["blocked_scope"] == []
+    assert "runtime_behavior" in route_rows["side_effect_policy"]["blocked_scope"]
 
 
 def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> None:

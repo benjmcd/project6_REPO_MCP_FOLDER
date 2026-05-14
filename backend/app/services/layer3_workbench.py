@@ -670,6 +670,15 @@ def _workbench_authority_matrix_contract() -> dict[str, Any]:
     return build_exposed_authority_matrix_contract(schema_version=SCHEMA_VERSION)
 
 
+def authority_matrix_contract() -> dict[str, Any]:
+    return {
+        **_base_response("layer3.authority_matrix_route.v1"),
+        "route": f"{API_ROOT}/authority-matrix",
+        "api_root": API_ROOT,
+        "authority_matrix_contract": _workbench_authority_matrix_contract(),
+    }
+
+
 def readiness_contract() -> dict[str, Any]:
     return build_readiness_contract(
         api_root=API_ROOT,
