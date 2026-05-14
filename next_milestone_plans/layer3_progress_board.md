@@ -1882,3 +1882,9 @@ The freeze result is `selected_broad_qualitative_hybrid_rag_named_mode_revalidat
 Current-main proof/control sync: PR `#952` merged `362_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE.md` at merge commit `cc5780519eb7afcb4323d19acdc5b852b96bdc8c`.
 
 The sync doc `363_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, comments/reviews/review threads were empty, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The next required action is `broad_qualitative_hybrid_rag_named_mode_revalidation_packet` in doc `364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md`; broad qualitative runtime, hybrid execution, RAG/vector behavior, and adjacent deferred surfaces remain blocked until that packet is completed.
+
+## Broad Qualitative Hybrid RAG Named Mode Revalidation Packet
+
+Branch-local planning/control packet: `364_BROAD_QUALITATIVE_HYBRID_RAG_NAMED_MODE_REVALIDATION_PACKET.md` revalidates the selected broad qualitative/hybrid/RAG named-mode packet after the current-main after-package lane sync.
+
+The result is `no_runtime_now_broad_qualitative_hybrid_rag_named_mode_absent`. Current repo authority admits `single_aps_doc_qualitative_pass` only; broad qualitative runtime, associated-cohort qualitative runtime, comparative qualitative runtime, cross-document synthesis, hybrid execution, RAG/vector indexing or retrieval, hidden LLM planning, source expansion, connector/destination dispatch, provider-public delivery/use, package mutation/reconstruction, full mockup activation, auth/security behavior, route/model/migration/schema changes, and frontend-only durable authority remain blocked.
