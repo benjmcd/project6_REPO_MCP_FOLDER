@@ -19658,5 +19658,33 @@
   },
   "latest_layer3_separate_authority_matrix_route_implementation_branch": "codex/l3-separate-authority-matrix-route-implementation",
   "latest_layer3_separate_authority_matrix_route_implementation_live_behavior_change": true,
-  "latest_layer3_separate_authority_matrix_route_implementation_summary": "Doc 461 proof entry records the bounded read-only authority-matrix route implementation and its focused test proof while preserving runtime and downstream blocks."
+  "latest_layer3_separate_authority_matrix_route_implementation_summary": "Doc 461 proof entry records the bounded read-only authority-matrix route implementation and its focused test proof while preserving runtime and downstream blocks.",
+  "layer3_separate_authority_matrix_route_implementation_current_main_sync_proof": {
+    "proof_kind": "layer3_separate_authority_matrix_route_implementation_current_main_sync",
+    "status": "current_main_synced_layer3_separate_authority_matrix_route_implementation",
+    "branch": "codex/l3-separate-authority-matrix-route-implementation-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/462_LAYER3_SEPARATE_AUTHORITY_MATRIX_ROUTE_IMPLEMENTATION_CURRENT_MAIN_SYNC.md",
+    "implementation_pr": "#1057",
+    "implementation_merge_commit": "51e6474b09d39efbfa46a1f765135ab9b866d146",
+    "proof_terms": [
+      "current_main_synced_layer3_separate_authority_matrix_route_implementation",
+      "layer3_separate_authority_matrix_route_implemented_for_read_only_exposed_contract",
+      "GET /api/v1/layer3/authority-matrix",
+      "build_exposed_authority_matrix_contract()",
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "reviewThreads_totalCount 1",
+      "unresolved_reviewThreads 0",
+      "workbench_guardrail_expectations_updated_ci_green_thread_resolved",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "no new implementation",
+      "no runtime behavior",
+      "no frontend-only durable authority",
+      "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync"
+    ],
+    "next_whole_project_posture": "await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync"
+  },
+  "latest_layer3_separate_authority_matrix_route_implementation_current_main_sync_branch": "codex/l3-separate-authority-matrix-route-implementation-sync",
+  "latest_layer3_separate_authority_matrix_route_implementation_current_main_sync_live_behavior_change": false,
+  "latest_layer3_separate_authority_matrix_route_implementation_current_main_sync_summary": "Doc 462 proof entry records current-main sync for PR #1057 merge commit 51e6474b09d39efbfa46a1f765135ab9b866d146 with green checks, addressed/resolved review thread evidence, post-merge progress validation, and next posture await_next_exact_named_layer3_runtime_or_review_surface_requirement_after_separate_authority_matrix_route_sync."
 }
