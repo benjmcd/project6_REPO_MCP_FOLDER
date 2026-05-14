@@ -800,6 +800,10 @@ LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_FREEZE_CURRENT_MAIN_SYNC = (
 LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_AUDIT = (
     PLANNING_DOCS / "423_LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_AUDIT.md"
 )
+LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "424_LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -33393,6 +33397,81 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix pure contract source audit term: {term}"
+                )
+
+    authority_matrix_pure_contract_source_audit_sync_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_authority_matrix_pure_contract_source_audit`.",
+        "424_LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_AUDIT_CURRENT_MAIN_SYNC.md",
+        "423_LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_AUDIT.md",
+        "PR `#1019`",
+        "0385a1b4dce2eea5a8aa763e3eeb3ca42aca3654",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_layer3_authority_matrix_pure_contract_source_audit",
+        "entry_decision: pure_source_contract_implementation_admitted",
+        "layer3_authority_matrix_pure_contract_source_admitted_for_pure_source_implementation",
+        "runtime_status: not_implemented",
+        "backend/app/services/layer3_authority_matrix_contract.py",
+        "layer3.authority_matrix_contract.v1",
+        "await_layer3_authority_matrix_pure_contract_source_implementation_after_audit_sync",
+        "No backend service file is created by this sync.",
+    ):
+        if term not in authority_matrix_pure_contract_source_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_AUDIT_CURRENT_MAIN_SYNC)} missing authority matrix pure contract source audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Pure Contract Source Audit Current-Main Sync",
+            "424_LAYER3_AUTHORITY_MATRIX_PURE_CONTRACT_SOURCE_AUDIT_CURRENT_MAIN_SYNC.md",
+            "PR `#1019`",
+            "0385a1b4dce2eea5a8aa763e3eeb3ca42aca3654",
+            "current_main_synced_layer3_authority_matrix_pure_contract_source_audit",
+            "layer3_authority_matrix_pure_contract_source_admitted_for_pure_source_implementation",
+            "await_layer3_authority_matrix_pure_contract_source_implementation_after_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_pure_contract_source_audit_current_main_sync",
+            "current_main_synced_layer3_authority_matrix_pure_contract_source_audit",
+            '"audit_pr": "#1019"',
+            "0385a1b4dce2eea5a8aa763e3eeb3ca42aca3654",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"entry_decision": "pure_source_contract_implementation_admitted"',
+            '"audit_result": "layer3_authority_matrix_pure_contract_source_admitted_for_pure_source_implementation"',
+            '"runtime_status": "not_implemented"',
+            "backend/app/services/layer3_authority_matrix_contract.py",
+            "layer3.authority_matrix_contract.v1",
+            "await_layer3_authority_matrix_pure_contract_source_implementation_after_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_pure_contract_source_audit_current_main_sync_proof",
+            "current_main_synced_layer3_authority_matrix_pure_contract_source_audit",
+            '"audit_pr": "#1019"',
+            "0385a1b4dce2eea5a8aa763e3eeb3ca42aca3654",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "layer3_authority_matrix_pure_contract_source_admitted_for_pure_source_implementation",
+            "await_layer3_authority_matrix_pure_contract_source_implementation_after_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix pure contract source audit sync term: {term}"
                 )
 
 def main() -> int:
