@@ -599,6 +599,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC = (
 CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET = (
     PLANNING_DOCS / "356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md"
 )
+CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "357_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29189,6 +29192,41 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing connector target revalidation term: {term}")
+
+    connector_target_revalidation_sync_text = _read_required_text(CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC, errors)
+    for term in (
+        "Status: current-main proof/control sync for connector/destination named-target revalidation; no runtime behavior admitted.",
+        "connector_destination_named_target_revalidation_packet",
+        "no_runtime_now_named_connector_or_destination_absent",
+        "4a96c514893e62cfa92358847faa807eea020309",
+        "Post-merge `python .\\tools\\l3-progress-check.py`: `PASS`",
+        "Connector/destination runtime remains blocked.",
+        "next_deferred_server_authoritative_runtime_lane_freeze_after_connector_no_runtime",
+    ):
+        if term not in connector_target_revalidation_sync_text:
+            errors.append(f"{_rel(CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC)} missing connector target revalidation current-main sync term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Connector Destination Named Target Revalidation Current-main Sync",
+            "357_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_CURRENT_MAIN_SYNC.md",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_connector_no_runtime",
+        ),
+        MANIFEST: (
+            "connector_destination_named_target_revalidation_current_main_sync",
+            "4a96c514893e62cfa92358847faa807eea020309",
+            "next_deferred_server_authoritative_runtime_lane_freeze_after_connector_no_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "connector_destination_named_target_revalidation_current_main_sync_proof",
+            "4a96c514893e62cfa92358847faa807eea020309",
+            "Connector/destination runtime remains blocked",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing connector target revalidation current-main sync term: {term}")
 
 def main() -> int:
     errors: list[str] = []
