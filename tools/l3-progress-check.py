@@ -756,6 +756,9 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC = (
 LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE = (
     PLANNING_DOCS / "409_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE.md"
 )
+LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "410_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -32237,6 +32240,84 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing next-runtime-tranche authority matrix freeze term: {term}"
+                )
+
+    next_runtime_tranche_authority_matrix_freeze_sync_text = _read_required_text(
+        LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_next_runtime_tranche_authority_matrix_contract_freeze`.",
+        "410_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC.md",
+        "409_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE.md",
+        "PR `#1005`",
+        "3ab1a2a67cc1768ca6fb8da39b93f0fa9f0f6cf2",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "`python .\\tools\\l3-progress-check.py`: `PASS`",
+        "current_main_synced_layer3_next_runtime_tranche_authority_matrix_contract_freeze",
+        "entry_decision: freeze_only",
+        "selected_freeze_mode: layer3_next_runtime_tranche_authority_matrix_contract_freeze",
+        "runtime_status: not_implemented",
+        "layer3_next_runtime_tranche_authority_matrix_contract_without_mutation_or_dispatch",
+        "conduct_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+        "no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent",
+        "await_layer3_next_runtime_tranche_authority_matrix_contract_audit_after_freeze_sync",
+        "No runtime behavior",
+    ):
+        if term not in next_runtime_tranche_authority_matrix_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC)} missing next-runtime-tranche authority matrix freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Next Runtime Tranche Authority Matrix Contract Freeze Current-Main Sync",
+            "410_LAYER3_NEXT_RUNTIME_TRANCHE_AUTHORITY_MATRIX_CONTRACT_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1005`",
+            "3ab1a2a67cc1768ca6fb8da39b93f0fa9f0f6cf2",
+            "current_main_synced_layer3_next_runtime_tranche_authority_matrix_contract_freeze",
+            "conduct_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            "await_layer3_next_runtime_tranche_authority_matrix_contract_audit_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_next_runtime_tranche_authority_matrix_contract_freeze_current_main_sync",
+            "current_main_synced_layer3_next_runtime_tranche_authority_matrix_contract_freeze",
+            '"freeze_pr": "#1005"',
+            "3ab1a2a67cc1768ca6fb8da39b93f0fa9f0f6cf2",
+            '"backend-layer3-api": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"entry_decision": "freeze_only"',
+            '"selected_freeze_mode": "layer3_next_runtime_tranche_authority_matrix_contract_freeze"',
+            '"runtime_status": "not_implemented"',
+            "layer3_next_runtime_tranche_authority_matrix_contract_without_mutation_or_dispatch",
+            "conduct_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            "no_runtime_now_layer3_next_runtime_tranche_authority_matrix_contract_absent",
+            "await_layer3_next_runtime_tranche_authority_matrix_contract_audit_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_next_runtime_tranche_authority_matrix_contract_freeze_current_main_sync_proof",
+            "current_main_synced_layer3_next_runtime_tranche_authority_matrix_contract_freeze",
+            '"freeze_pr": "#1005"',
+            "3ab1a2a67cc1768ca6fb8da39b93f0fa9f0f6cf2",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "PR reviewThreads totalCount 0",
+            "l3-progress-check.py PASS",
+            "layer3_next_runtime_tranche_authority_matrix_contract_without_mutation_or_dispatch",
+            "conduct_layer3_next_runtime_tranche_authority_matrix_contract_audit",
+            "await_layer3_next_runtime_tranche_authority_matrix_contract_audit_after_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing next-runtime-tranche authority matrix freeze sync term: {term}"
                 )
 
 def main() -> int:
