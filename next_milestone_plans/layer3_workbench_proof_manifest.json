@@ -17347,5 +17347,41 @@
   },
   "latest_downstream_access_lifecycle_read_only_dashboard_freeze_current_main_sync_branch": "codex/l3-downstream-access-freeze-sync",
   "latest_downstream_access_lifecycle_read_only_dashboard_freeze_current_main_sync_live_behavior_change": false,
-  "latest_downstream_access_lifecycle_read_only_dashboard_freeze_current_main_sync_summary": "Doc 392 proof entry records current-main sync for PR #987 merge commit 3ec3bb7f9644cba2cba26c2044e571058d19bdf8; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next action is implement_rendered_downstream_access_lifecycle_read_only_dashboard unless source audit requires stop_and_write_downstream_access_response_authority_freeze."
+  "latest_downstream_access_lifecycle_read_only_dashboard_freeze_current_main_sync_summary": "Doc 392 proof entry records current-main sync for PR #987 merge commit 3ec3bb7f9644cba2cba26c2044e571058d19bdf8; checks passed, reviewThreads totalCount 0, post-merge l3-progress-check.py PASS, and next action is implement_rendered_downstream_access_lifecycle_read_only_dashboard unless source audit requires stop_and_write_downstream_access_response_authority_freeze.",
+  "downstream_access_lifecycle_read_only_dashboard_proof": {
+    "proof_kind": "rendered_downstream_access_lifecycle_read_only_dashboard",
+    "status": "implemented_read_only_dashboard_over_existing_response_authority",
+    "implementation_branch": "codex/l3-downstream-access-dashboard-impl",
+    "base_commit": "c4cdf665e3bd6cea2a5e82c1a11bcad7a12eafc3",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/391_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE.md",
+    "proof_doc": "next_milestone_plans/Layer3_planning_docs/393_DOWNSTREAM_ACCESS_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF.md",
+    "source_authority": "existing_server_response_authority",
+    "rendered_selector": "downstream-access-lifecycle-dashboard-panel",
+    "proof_terms": [
+      "source audit proved current server/UI responses expose response-safe downstream access lifecycle fields",
+      "headless Chromium handoff flow PASS",
+      "headed Chromium handoff flow PASS",
+      "node --check layer3.js PASS",
+      "test_layer3_page.py PASS",
+      "current-main sync doc required after implementation merge"
+    ],
+    "remaining_runtime_boundaries": [
+      "external connector invocation remains blocked",
+      "destination write remains blocked",
+      "provider-public delivery/use remains blocked",
+      "raw public URL display/use remains blocked",
+      "public proxy runtime remains blocked",
+      "provider network/object-store write remains blocked",
+      "package mutation remains blocked",
+      "source expansion remains blocked",
+      "RAG/vector behavior remains blocked",
+      "auth/security behavior remains blocked",
+      "frontend-only durable authority remains blocked",
+      "backend route/DTO/model/migration/service behavior remains unchanged"
+    ],
+    "next_required_decision": "current_main_sync_downstream_access_lifecycle_dashboard_after_merge"
+  },
+  "latest_downstream_access_lifecycle_read_only_dashboard_branch": "codex/l3-downstream-access-dashboard-impl",
+  "latest_downstream_access_lifecycle_read_only_dashboard_live_behavior_change": true,
+  "latest_downstream_access_lifecycle_read_only_dashboard_summary": "Doc 393 proof entry records the read-only downstream access lifecycle dashboard implementation over existing_server_response_authority; headless/headed Chromium handoff proof and static page tests passed, with raw URL, connector/destination, provider-public delivery/use, backend runtime, and frontend-only durable authority boundaries preserved."
 }

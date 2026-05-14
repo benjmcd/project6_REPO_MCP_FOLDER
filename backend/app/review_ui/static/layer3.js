@@ -44,6 +44,9 @@ const RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES = new Set(['dataset_version',
 const PACKAGE_LIFECYCLE_DASHBOARD_MODE = 'rendered_package_lifecycle_read_only_dashboard';
 const PACKAGE_LIFECYCLE_USE_CASE = 'operator_inspects_package_lifecycle_without_mutation';
 const PACKAGE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
+const DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE = 'rendered_downstream_access_lifecycle_read_only_dashboard';
+const DOWNSTREAM_ACCESS_LIFECYCLE_USE_CASE = 'operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use';
+const DOWNSTREAM_ACCESS_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
 
 const State = {
     bootstrap: null,
@@ -185,6 +188,7 @@ const elements = {
     apsHandoffDispatchPanel: document.getElementById('aps-handoff-dispatch-panel'),
     apsHandoffDispatchSubmit: document.getElementById('aps-handoff-dispatch-submit'),
     externalExportDownloadPrepareForm: document.getElementById('external-export-download-prepare-form'),
+    downstreamAccessLifecycleDashboardPanel: document.getElementById('downstream-access-lifecycle-dashboard-panel'),
     externalExportDownloadPreparePanel: document.getElementById('external-export-download-prepare-panel'),
     externalExportDownloadPrepareSubmit: document.getElementById('external-export-download-prepare-submit'),
     externalExportDownloadDeliveryForm: document.getElementById('external-export-download-delivery-form'),
@@ -2101,6 +2105,156 @@ function canRevokeProviderPublicUrl() {
         && providerPublicUrlLatestState() !== 'provider_public_url_revoked'
         && !State.providerPublicUrlPending
     );
+}
+
+function downstreamAccessLifecycleRows() {
+    const handoff = handoffExportPrepareState() || {};
+    const aps = apsHandoffDispatchState() || {};
+    const external = externalExportDownloadPrepareState() || {};
+    const delivery = State.externalExportDownloadDelivery || {};
+    const signedReference = State.externalExportDownloadSignedReferenceUse || State.externalExportDownloadSignedReference || {};
+    const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
+    const providerPublic = State.providerPublicUrlRevoke || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
+    const rows = [
+        {
+            stage: 'handoff/export prepare',
+            state: handoff.handoff_export_state || handoff.next_state || handoff.state,
+            record_ref: handoff.prepare_record_ref || handoffExportEnvelopeRef(handoff),
+            authority: handoff.schema_id || 'handoff_export_prepare_response',
+            access_mode: handoff.export_mode || handoff.handoff_target,
+        },
+        {
+            stage: 'APS handoff dispatch',
+            state: aps.aps_handoff_state || aps.next_state || aps.state,
+            record_ref: aps.aps_handoff_record_ref,
+            authority: aps.schema_id || 'aps_handoff_dispatch_response',
+            access_mode: aps.dispatch_mode || aps.aps_handoff_target,
+        },
+        {
+            stage: 'external export/download readiness',
+            state: externalExportDownloadStateName(external),
+            record_ref: external.external_export_download_record_ref || external.export_download_descriptor_ref,
+            authority: external.schema_id || 'external_export_download_prepare_response',
+            access_mode: external.delivery_mode || external.download_mode || external.export_download_target,
+        },
+        {
+            stage: 'same-origin delivery',
+            state: externalExportDownloadDeliveryStateName(delivery),
+            record_ref: delivery.externalExportDownloadRecordRef || delivery.external_export_download_record_ref,
+            authority: delivery.schemaId || delivery.schema_id || 'external_export_download_delivery_response',
+            access_mode: externalExportDownloadDeliveryStateName(delivery) || delivery.externalExportDownloadRecordRef || delivery.external_export_download_record_ref
+                ? (delivery.deliveryMode || delivery.delivery_mode || 'same_origin_artifact_stream')
+                : null,
+        },
+        {
+            stage: 'signed reference',
+            state: signedReference.state || signedReference.signed_reference_state,
+            record_ref: signedReference.signedReferenceReceiptId || signedReference.signed_reference_receipt_id,
+            authority: signedReference.schemaId || signedReference.schema_id || 'external_export_download_signed_reference_response',
+            access_mode: signedReference.state || signedReference.signed_reference_state || signedReference.signedReferenceReceiptId || signedReference.signed_reference_receipt_id
+                ? (signedReference.replayPolicy || signedReference.signed_reference_replay_policy || 'same_origin_signed_delivery_reference')
+                : null,
+        },
+        {
+            stage: 'provider-private receipt',
+            state: providerPrivate.provider_signed_url_state,
+            record_ref: providerPrivate.provider_signed_url_receipt_id,
+            authority: providerPrivate.schema_id || 'provider_private_signed_url_response',
+            access_mode: providerPrivate.delivery_mode || providerPrivate.provider_url_replay_policy,
+        },
+        {
+            stage: 'provider-public receipt',
+            state: providerPublic.provider_public_url_state,
+            record_ref: providerPublic.provider_public_url_receipt_id,
+            authority: providerPublic.schema_id || 'provider_public_url_response',
+            access_mode: providerPublic.provider_public_url_redacted ? 'redacted_receipt_only' : providerPublic.delivery_mode,
+        },
+    ];
+    return rows.filter((row) => row.state || row.record_ref || row.access_mode);
+}
+
+function downstreamAccessLifecycleDashboardState(rows) {
+    const handoff = handoffExportPrepareState() || {};
+    const aps = apsHandoffDispatchState() || {};
+    const external = externalExportDownloadPrepareState() || {};
+    const apsState = apsHandoffStateName(aps);
+    const externalState = externalExportDownloadStateName(external);
+    if (
+        State.handoffExportPreparePending
+        || State.apsHandoffDispatchPending
+        || State.externalExportDownloadPreparePending
+        || State.externalExportDownloadDeliveryPending
+        || State.externalExportDownloadSignedReferencePending
+        || State.externalExportDownloadSignedReferenceUsePending
+        || State.providerPrivateSignedUrlPending
+        || State.providerPublicUrlPending
+    ) {
+        return { label: 'downstream_access_lifecycle_refreshing', pill: 'preview' };
+    }
+    const error = State.handoffExportPrepareError
+        || State.apsHandoffDispatchError
+        || State.externalExportDownloadPrepareError
+        || State.externalExportDownloadDeliveryError
+        || State.externalExportDownloadSignedReferenceError
+        || State.providerPrivateSignedUrlError
+        || State.providerPublicUrlError;
+    if (error) {
+        return { label: error.error_code || 'downstream_access_lifecycle_blocked', pill: 'blocked' };
+    }
+    if (providerPublicUrlLatestState()) {
+        return { label: providerPublicUrlLatestState(), pill: 'ready' };
+    }
+    if (providerPrivateSignedUrlLatestState()) {
+        return { label: providerPrivateSignedUrlLatestState(), pill: 'ready' };
+    }
+    if (State.externalExportDownloadSignedReferenceUse?.state || State.externalExportDownloadSignedReference?.signed_reference_state) {
+        return { label: State.externalExportDownloadSignedReferenceUse?.state || State.externalExportDownloadSignedReference?.signed_reference_state, pill: 'ready' };
+    }
+    if (externalExportDownloadDeliveryStateName()) {
+        return { label: externalExportDownloadDeliveryStateName(), pill: 'ready' };
+    }
+    if (
+        externalState
+        && (
+            State.externalExportDownloadPrepare
+            || external.available === true
+            || externalState === 'external_export_download_ready'
+            || recordedExternalExportDownloadPrepare()
+        )
+    ) {
+        return { label: externalState, pill: recordedExternalExportDownloadPrepare() ? 'ready' : 'preview' };
+    }
+    if (
+        apsState
+        && (
+            State.apsHandoffDispatch
+            || aps.available === true
+            || apsState === 'aps_handoff_ready'
+            || recordedApsHandoffDispatch()
+        )
+    ) {
+        return { label: apsState, pill: recordedApsHandoffDispatch() ? 'ready' : 'preview' };
+    }
+    if (handoff.handoff_export_state || handoff.next_state || handoff.state) {
+        return { label: handoff.handoff_export_state || handoff.next_state || handoff.state, pill: recordedHandoffExportPrepare() ? 'ready' : 'preview' };
+    }
+    return {
+        label: rows.length ? 'downstream_access_lifecycle_partial_server_state' : 'downstream_access_lifecycle_waiting_for_server_state',
+        pill: rows.length ? 'preview' : 'blocked',
+    };
+}
+
+function renderDownstreamAccessLifecycleRows(rows) {
+    return rows.length
+        ? rows.map((row) => `
+            <li>
+                <code>${escapeHtml(row.stage)}</code>
+                ${row.state ? `<span>${escapeHtml(row.state)}</span>` : ''}
+                ${row.record_ref ? `<code>${escapeHtml(row.record_ref)}</code>` : ''}
+                ${row.access_mode ? `<span>${escapeHtml(row.access_mode)}</span>` : ''}
+            </li>
+        `).join('')
+        : '<li>No downstream access lifecycle rows are available.</li>';
 }
 
 function handoffExportEnvelopeRef(handoff = handoffExportPrepareState() || State.sessionSummary?.handoff_export_prepare || {}) {
@@ -4222,6 +4376,55 @@ function renderPackageLifecycleDashboardPanel() {
     `;
 }
 
+function renderDownstreamAccessLifecycleDashboardPanel() {
+    const rows = downstreamAccessLifecycleRows();
+    const dashboardState = downstreamAccessLifecycleDashboardState(rows);
+    const external = externalExportDownloadPrepareState() || {};
+    const downstream = currentDownstreamUnavailable() || [
+        'external_connector_invocation_blocked',
+        'destination_write_blocked',
+        'provider_public_delivery_use_blocked',
+        'raw_public_url_display_use_blocked',
+        'frontend_durable_authority_blocked',
+    ];
+    elements.downstreamAccessLifecycleDashboardPanel.dataset.lifecycleState = dashboardState.label;
+    elements.downstreamAccessLifecycleDashboardPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(dashboardState.pill)}">${escapeHtml(dashboardState.label)}</span>
+            <span class="rail-label">${escapeHtml(DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE)}</span>
+        </div>
+        <div class="result-review-grid downstream-access-lifecycle-grid">
+            <section class="result-review-card">
+                <strong>Lifecycle Authority</strong>
+                <ul>
+                    ${fieldItem('use case', DOWNSTREAM_ACCESS_LIFECYCLE_USE_CASE, { code: true })}
+                    ${fieldItem('response authority', DOWNSTREAM_ACCESS_LIFECYCLE_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('session', currentSessionId(), { code: true })}
+                    ${fieldItem('source gate', external.source_gate || external.package_construction_source_gate, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Access Boundaries</strong>
+                <ul>
+                    ${fieldItem('connector invocation', false)}
+                    ${fieldItem('destination write', false)}
+                    ${fieldItem('provider public delivery/use', false)}
+                    ${fieldItem('raw public URL display/use', false)}
+                    ${fieldItem('browser durable authority', false)}
+                </ul>
+            </section>
+            <section class="result-review-card downstream-access-lifecycle-rows">
+                <strong>Downstream Lifecycle Rows</strong>
+                <ul>${renderDownstreamAccessLifecycleRows(rows)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Deferred Capabilities</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+        </div>
+    `;
+}
+
 function handoffExportPanelState() {
     const handoff = handoffExportPrepareState() || {};
     const submit = packageReviewSubmitState() || {};
@@ -5290,6 +5493,7 @@ function renderAll() {
     renderResultReviewPanel();
     renderPackageReviewPreviewPanel();
     renderPackageLifecycleDashboardPanel();
+    renderDownstreamAccessLifecycleDashboardPanel();
     renderHandoffExportPreparePanel();
     renderApsHandoffDispatchPanel();
     renderExternalExportDownloadPreparePanel();
