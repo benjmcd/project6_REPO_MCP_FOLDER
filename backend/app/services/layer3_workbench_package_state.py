@@ -44,6 +44,15 @@ QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "connector_dispatch",
     "provider_public_url",
 )
+SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
+    "package_review_submit",
+    "handoff",
+    "export",
+    "aps_handoff",
+    "external_export_download",
+    "connector_dispatch",
+    "provider_public_url",
+)
 QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
 PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
     PACKAGE_KIND_CANONICAL_INTERNAL,
@@ -382,17 +391,29 @@ def package_review_preview_summary(
         isinstance(review_state, dict)
         and review_state.get("engine_family") == "qualitative_aps_document"
     )
+    source_intake = bool(
+        isinstance(review_state, dict)
+        and (
+            review_state.get("engine_family") == "source_intake_qualitative_preview"
+            or review_state.get("pass_scope") == "qualitative_single_item_operator_uploaded_source"
+            or bool(str(review_state.get("source_intake_record_id") or "").strip())
+        )
+    )
     downstream_unavailable = (
         COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
         if associated_cohort
         else QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
         if qualitative_aps
+        else SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
+        if source_intake
         else PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
     )
     package_commit_enabled = bool(approved)
     readiness_reason = (
         "candidate family is eligible for bounded qualitative APS package construction commit"
         if qualitative_aps
+        else "candidate family is eligible for bounded source-intake package construction commit"
+        if source_intake
         else None
     )
     return {
@@ -417,6 +438,7 @@ def package_review_preview_summary(
         "pass_type": review_state.get("pass_type") if isinstance(review_state, dict) else None,
         "pass_scope": review_state.get("pass_scope") if isinstance(review_state, dict) else None,
         "selected_method_name": review_state.get("selected_method_name") if isinstance(review_state, dict) else None,
+        "engine_family": review_state.get("engine_family") if isinstance(review_state, dict) else None,
         "source_gate": review_state.get("source_gate") if isinstance(review_state, dict) else None,
         "source_dataset_version_ids": (
             json_clone(review_state.get("source_dataset_version_ids") or [])
@@ -424,6 +446,16 @@ def package_review_preview_summary(
             else []
         ),
         "cohort_shape": review_state.get("cohort_shape") if isinstance(review_state, dict) else None,
+        "source_intake_record_id": (
+            review_state.get("source_intake_record_id") if isinstance(review_state, dict) else None
+        ),
+        "candidate_id": review_state.get("candidate_id") if isinstance(review_state, dict) else None,
+        "output_payload_ref": review_state.get("output_payload_ref") if isinstance(review_state, dict) else None,
+        "output_payload_hash": (
+            review_state.get("output_payload_hash") or review_state.get("output_hash")
+            if isinstance(review_state, dict)
+            else None
+        ),
         "downstream_unavailable": list(downstream_unavailable),
     }
 

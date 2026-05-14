@@ -259,6 +259,7 @@ from app.services.layer3_workbench_package_state import (
     PACKAGE_REVIEW_PREVIEW_READY_STATE,
     PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
     QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
+    SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
     PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
     active_downstream_unavailable as package_state_active_downstream_unavailable,
     aps_handoff_dispatch_from_reconciliation as _aps_handoff_dispatch_from_reconciliation,
@@ -494,7 +495,6 @@ QUAL_APS_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "connector_dispatch",
     "provider_public_url",
 )
-SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = QUAL_APS_PREVIEW_DOWNSTREAM_UNAVAILABLE
 SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE = "314_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY_FREEZE"
 SOURCE_INTAKE_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
@@ -505,6 +505,7 @@ SOURCE_INTAKE_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "connector_dispatch",
     "provider_public_url",
 )
+SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = SOURCE_INTAKE_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
 QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
     "handoff",
@@ -4791,6 +4792,13 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             "cohort_shape": review_state.get("cohort_shape"),
             "requested_method_name": review_state.get("requested_method_name"),
             "requested_method_source": review_state.get("requested_method_source"),
+            "output_schema_id": review_state.get("output_schema_id"),
+            "source_intake_record_id": review_state.get("source_intake_record_id"),
+            "candidate_id": review_state.get("candidate_id"),
+            "output_payload_ref": review_state.get("output_payload_ref"),
+            "output_payload_hash": review_state.get("output_payload_hash"),
+            "output_hash": review_state.get("output_hash"),
+            "planned_pass_source_gate": review_state.get("planned_pass_source_gate"),
             "unresolved_trace_count": unresolved_trace_count,
             "package_review_enabled": False,
             "handoff_enabled": False,
@@ -5048,9 +5056,15 @@ def _package_construction_summary(
         commit_summary = reconciliation_summary.get("workbench_package_commit")
         if not isinstance(commit_summary, dict):
             commit_summary = {}
+        commit_authority = commit_summary.get("authority_basis")
+        if not isinstance(commit_authority, dict):
+            commit_authority = {}
         cohort_package_construction = _is_cohort_package_construction_source(reconciliation_summary.get("source_gate"))
         qualitative_package_construction = _is_qualitative_aps_package_construction_source(
             reconciliation_summary.get("source_gate")
+        )
+        source_intake_package_construction = (
+            reconciliation_summary.get("source_gate") == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE
         )
         package_review_submit_enabled = bool(
             constructed
@@ -5059,9 +5073,12 @@ def _package_construction_summary(
                 commit_summary.get("package_review_submit_enabled", True) is True
                 or cohort_package_construction
                 or qualitative_package_construction
+                or source_intake_package_construction
             )
         )
-        if package_review_submit_enabled and cohort_package_construction:
+        if package_review_submit_enabled and source_intake_package_construction:
+            downstream_unavailable = list(SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
+        elif package_review_submit_enabled and cohort_package_construction:
             downstream_unavailable = list(COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
         elif package_review_submit_enabled and qualitative_package_construction:
             downstream_unavailable = list(QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
@@ -5076,6 +5093,8 @@ def _package_construction_summary(
                 list(
                     COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
                     if cohort_package_construction
+                    else SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+                    if source_intake_package_construction
                     else QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
                     if qualitative_package_construction
                     else PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
@@ -5094,9 +5113,33 @@ def _package_construction_summary(
             "payload_refs": [package.payload_ref for package in review_packages],
             "unexpected_package_kinds": unexpected_package_kinds,
             "package_review_preview_hash": commit_summary.get("package_review_preview_hash"),
+            "analysis_run_id": commit_summary.get("analysis_run_id") or commit_authority.get("analysis_run_id"),
+            "result_review_record_ref": (
+                commit_summary.get("result_review_record_ref")
+                or commit_authority.get("result_review_record_ref")
+            ),
             "construction_basis_hash": commit_summary.get("construction_basis_hash")
             or commit_summary.get("authority_basis_hash"),
             "package_construction_source_gate": reconciliation_summary.get("source_gate"),
+            "pass_type": commit_summary.get("pass_type") or commit_authority.get("pass_type"),
+            "pass_scope": commit_summary.get("pass_scope") or commit_authority.get("pass_scope"),
+            "method": commit_summary.get("method") or commit_authority.get("method"),
+            "source_gate": commit_summary.get("source_gate") or commit_authority.get("source_gate"),
+            "source_shape": commit_summary.get("source_shape") or commit_authority.get("source_shape"),
+            "source_dataset_version_ids": _json_clone(
+                commit_summary.get("source_dataset_version_ids")
+                or commit_authority.get("source_dataset_version_ids")
+                or []
+            ),
+            "source_intake_record_id": (
+                commit_summary.get("source_intake_record_id")
+                or commit_authority.get("source_intake_record_id")
+            ),
+            "candidate_id": commit_summary.get("candidate_id") or commit_authority.get("candidate_id"),
+            "output_payload_ref": commit_summary.get("output_payload_ref") or commit_authority.get("output_payload_ref"),
+            "output_payload_hash": (
+                commit_summary.get("output_payload_hash") or commit_authority.get("output_payload_hash")
+            ),
             "package_commit_enabled": False,
             "package_review_submit_enabled": package_review_submit_enabled,
             "handoff_enabled": False,
@@ -5339,7 +5382,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             "result_review_state": review_state.get("review_state"),
             "result_review_record_ref": review_state.get("review_record_ref"),
             "package_review_preview_enabled": True,
-            "package_commit_enabled": False,
+            "package_commit_enabled": True,
             "package_review_enabled": False,
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
@@ -5348,29 +5391,29 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             "connector_dispatch_enabled": False,
             "provider_public_url_enabled": False,
             "candidate_package_kinds": package_review_candidate_projection(
-                package_commit_enabled=False,
-                readiness_reason="source-intake package construction requires a later boundary",
+                package_commit_enabled=True,
+                readiness_reason="source-intake package construction is admitted for this boundary",
             ),
             "package_owner_compatibility": {
                 "schema_id": "layer3.source_intake_package_owner_compatibility.v1",
-                "owner_service": "source_intake_package_construction_not_admitted",
+                "owner_service": "source_intake_package_construction",
                 "assessment_basis": [
                     "approved_source_intake_execution_result_review",
                     "read_only_source_intake_output_metadata",
                     "operator_uploaded_single_source_identity",
                 ],
-                "materialize_package_entry_callable": False,
-                "workbench_package_commit_callable": False,
+                "materialize_package_entry_callable": True,
+                "workbench_package_commit_callable": True,
                 "preview_candidate_projection_compatible": True,
-                "construction_compatible_with_current_workbench_state": False,
-                "missing_owner_service_inputs": ["source_intake_package_construction_boundary"],
+                "construction_compatible_with_current_workbench_state": True,
+                "missing_owner_service_inputs": [],
                 "selected_pass_status": pass_run.status,
                 "pass_type": pass_run.pass_type,
                 "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
                 "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
                 "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
-                "status": "source_intake_package_construction_not_admitted",
-                "reason": "Source-intake package-review preview is read-only until package construction is separately frozen.",
+                "status": "source_intake_package_construction_admitted",
+                "reason": "Source-intake package-review preview can proceed to bounded package construction.",
             },
             "blocked_reasons": [],
             "downstream_unavailable": list(downstream_unavailable),
@@ -5858,7 +5901,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             if associated_cohort_commit
             else SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE
         )
-    package_review_submit_enabled = not source_intake_commit
+    package_review_submit_enabled = True
     downstream_unavailable = (
         SOURCE_INTAKE_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
         if source_intake_commit
@@ -5886,7 +5929,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             "candidate_id": output_metadata_summary.get("candidate_id"),
             "output_payload_hash": output_metadata_summary.get("output_hash"),
             "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
-            "package_review_submit_enabled": False,
+            "package_review_submit_enabled": package_review_submit_enabled,
         }
         package_payload_extras_by_kind = _source_intake_package_payload_extras(
             output_metadata_summary=output_metadata_summary,
@@ -6040,7 +6083,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
         "connector_dispatch_enabled": False,
         "provider_public_url_enabled": False,
         "downstream_unavailable": list(downstream_unavailable),
-        "next_allowed_actions": [] if (source_intake_commit or qualitative_aps_commit) else ["submit_package_review"],
+        "next_allowed_actions": [] if qualitative_aps_commit else ["submit_package_review"],
         "next_state": PACKAGE_CONSTRUCTED_STATE,
         "authority_rail": _authority_rail(
             session_id=session_id,
@@ -10715,12 +10758,16 @@ def _package_review_submit_summary(
     qualitative_package_construction = _is_qualitative_aps_package_construction_source(
         reconciliation_summary.get("source_gate")
     )
+    source_intake_package_construction = (
+        reconciliation_summary.get("source_gate") == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE
+    )
     recorded_submit = _package_review_submit_from_reconciliation(reconciliation)
     if (
         recorded_submit is None
         and commit_summary.get("package_review_submit_enabled", True) is not True
         and not cohort_package_construction
         and not qualitative_package_construction
+        and not source_intake_package_construction
     ):
         downstream_unavailable = commit_summary.get("downstream_unavailable")
         if not isinstance(downstream_unavailable, list):
@@ -10752,13 +10799,23 @@ def _package_review_submit_summary(
             recorded_submit.get("package_construction_source_gate")
             or reconciliation_summary.get("source_gate")
         )
+        recorded_source_intake_submit = (
+            (
+                recorded_submit.get("package_construction_source_gate")
+                or reconciliation_summary.get("source_gate")
+            )
+            == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE
+        )
         downstream_unavailable = _package_review_submit_downstream_unavailable(
             str(recorded_submit.get("package_review_state") or ""),
             associated_cohort_submit=recorded_cohort_submit,
             qualitative_aps_submit=recorded_qualitative_submit,
+            source_intake_submit=recorded_source_intake_submit,
         )
         recorded_submit_schema_id = (
-            QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            if recorded_source_intake_submit
+            else QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
             if recorded_qualitative_submit
             else COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
             if recorded_cohort_submit
@@ -10794,13 +10851,19 @@ def _package_review_submit_summary(
             ),
             "source_shape": recorded_submit.get("source_shape"),
             "source_dataset_version_ids": _json_clone(recorded_submit.get("source_dataset_version_ids") or []),
+            "source_intake_record_id": recorded_submit.get("source_intake_record_id"),
+            "candidate_id": recorded_submit.get("candidate_id"),
+            "output_payload_ref": recorded_submit.get("output_payload_ref"),
+            "output_payload_hash": recorded_submit.get("output_payload_hash"),
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
             "export_enabled": False,
             "downstream_unavailable": list(downstream_unavailable),
         }
     ready_downstream_unavailable = (
-        COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+        SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+        if source_intake_package_construction
+        else COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
         if cohort_package_construction
         else QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
         if qualitative_package_construction
@@ -10809,7 +10872,9 @@ def _package_review_submit_summary(
     return {
         "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
         "package_review_submit_schema_id": (
-            QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            if source_intake_package_construction
+            else QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
             if qualitative_package_construction
             else COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
             if cohort_package_construction
@@ -10827,6 +10892,18 @@ def _package_review_submit_summary(
         "construction_basis_hash": commit_summary.get("construction_basis_hash")
         or commit_summary.get("authority_basis_hash"),
         "package_construction_source_gate": reconciliation_summary.get("source_gate"),
+        "analysis_run_id": commit_summary.get("analysis_run_id"),
+        "result_review_record_ref": commit_summary.get("result_review_record_ref"),
+        "pass_type": commit_summary.get("pass_type"),
+        "pass_scope": commit_summary.get("pass_scope"),
+        "method": commit_summary.get("method"),
+        "source_gate": commit_summary.get("source_gate"),
+        "source_shape": commit_summary.get("source_shape"),
+        "source_dataset_version_ids": _json_clone(commit_summary.get("source_dataset_version_ids") or []),
+        "source_intake_record_id": commit_summary.get("source_intake_record_id"),
+        "candidate_id": commit_summary.get("candidate_id"),
+        "output_payload_ref": commit_summary.get("output_payload_ref"),
+        "output_payload_hash": commit_summary.get("output_payload_hash"),
         "package_review_submit_enabled": True,
         "handoff_enabled": False,
         "export_enabled": False,
@@ -10912,7 +10989,9 @@ def _handoff_export_prepare_summary(
         or reconciliation_summary.get("source_gate")
     )
     prepare_submit_schema_id = (
-        QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        if package_construction_source_gate == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE
+        else QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
         if _is_qualitative_aps_package_construction_source(package_construction_source_gate)
         else COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
         if _is_cohort_package_construction_source(package_construction_source_gate)
