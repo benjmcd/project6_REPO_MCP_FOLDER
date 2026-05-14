@@ -16775,5 +16775,28 @@
     "runtime_behavior_change": false,
     "rendered_ui_behavior_change": false,
     "next_required_action": "next_deferred_server_authoritative_runtime_lane_freeze_after_full_mockup_no_runtime"
+  },
+  "next_deferred_server_authoritative_runtime_lane_after_full_mockup_freeze_proof": {
+    "status": "branch_local_planning_control_proof",
+    "branch": "codex/l3-auth-security-revalidation-freeze",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/374_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_FULL_MOCKUP_FREEZE.md",
+    "selected_next_lane": "auth_security_hardening_named_behavior_revalidation_packet",
+    "freeze_result": "selected_auth_security_hardening_named_behavior_revalidation_packet_only",
+    "current_failure_boundary": "auth_security_hardening_deferred_by_operator_instruction",
+    "authority_files": [
+      "backend/app/services/layer3_preflight_request_contract.py",
+      "backend/app/services/layer3_state_action_contract.py"
+    ],
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "proof_terms": [
+      "auth_security_hardening_named_behavior_revalidation_packet",
+      "selected_auth_security_hardening_named_behavior_revalidation_packet_only",
+      "auth_security_hardening_deferred_by_operator_instruction",
+      "No auth/security behavior is admitted.",
+      "No auth/security hardening runtime is admitted.",
+      "No authorization model change is admitted."
+    ],
+    "next_required_action": "current_main_sync_next_deferred_runtime_lane_after_full_mockup_freeze"
   }
 }
