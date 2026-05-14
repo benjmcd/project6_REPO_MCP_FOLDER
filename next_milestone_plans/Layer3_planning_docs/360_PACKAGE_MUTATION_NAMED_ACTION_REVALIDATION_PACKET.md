@@ -21,7 +21,7 @@ The next required action is `current_main_sync_package_mutation_named_action_rev
 Current repo authority admits bounded package lifecycle metadata only:
 
 - Service owner: `backend/app/services/layer3_package_mutation_entry.py`
-- Endpoint: `/api/v1/layer3/package/supersession/preview`
+- Endpoint: `/api/v1/layer3/package/mutation/preview`
 - Mode: `package_supersession_preview_only`
 - Operator decision: `preview_package_supersession`
 - State: `package_supersession_previewed`
