@@ -672,6 +672,9 @@ REVIEW_DEBT_REMEDIATION_PACKET = PLANNING_DOCS / "380_REVIEW_DEBT_REMEDIATION_PA
 REVIEW_DEBT_CURRENT_MAIN_SYNC_PACKET = (
     PLANNING_DOCS / "381_REVIEW_DEBT_REMEDIATION_CURRENT_MAIN_SYNC.md"
 )
+NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE = (
+    PLANNING_DOCS / "382_NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -30248,6 +30251,10 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             errors.append(f"current decision mirror {value_path} missing review-debt current-main sync packet")
         if "current_main_sync_review_debt_remediation_fulfilled_by_pr_970" not in value:
             errors.append(f"current decision mirror {value_path} missing review-debt current-main sync fulfillment")
+        if "next_layer3_server_authoritative_runtime_tranche_selection_freeze" not in value:
+            errors.append(f"current decision mirror {value_path} missing next-runtime selection freeze")
+        if "source_intake_provider_public_url_delivery_use_runtime_freeze" not in value:
+            errors.append(f"current decision mirror {value_path} missing selected provider-public delivery/use runtime freeze")
 
     for path, terms in {
         BOARD: (
@@ -30281,6 +30288,49 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing review-debt remediation packet term: {term}")
+
+
+    next_runtime_selection_text = _read_required_text(NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE, errors)
+    for term in (
+        "Status: planning/control selection freeze for the next exact named Layer 3 server-authoritative runtime tranche; no runtime behavior admitted.",
+        "source_intake_provider_public_url_delivery_use_runtime_freeze",
+        "352_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT.md",
+        "353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "connector/destination lacks a named connector or destination target",
+        "frontend-only durable authority remains a no-go invariant",
+        "No closed or blocked deferred lane is reopened by implication.",
+    ):
+        if term not in next_runtime_selection_text:
+            errors.append(f"{_rel(NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE)} missing next-runtime selection term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Next Layer 3 Server-Authoritative Runtime Tranche Selection Freeze",
+            "382_NEXT_LAYER3_SERVER_AUTHORITATIVE_RUNTIME_TRANCHE_SELECTION_FREEZE.md",
+            "source_intake_provider_public_url_delivery_use_runtime_freeze",
+            "provider-public delivery/use route",
+            "frontend-only durable authority remain blocked",
+        ),
+        MANIFEST: (
+            "next_layer3_server_authoritative_runtime_tranche_selection_freeze",
+            "selected_source_intake_provider_public_url_delivery_use_runtime_freeze_only",
+            "source_intake_provider_public_url_delivery_use_runtime_freeze",
+            "provider_public_delivery_use_route",
+            "raw_public_url_exposure",
+            "frontend_only_durable_authority",
+        ),
+        PROOF_MANIFEST: (
+            "next_layer3_server_authoritative_runtime_tranche_selection_freeze_proof",
+            "source_intake_provider_public_url_delivery_use_runtime_freeze",
+            "docs_352_353_preserve_provider_public_delivery_use_as_contract_only",
+            "provider_public_service_currently_redacts_raw_public_url",
+            "provider_public_state_tests_assert_raw_public_url_not_serialized",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing next-runtime selection freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []
