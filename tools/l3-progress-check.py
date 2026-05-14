@@ -23278,7 +23278,8 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
         "codex/l3-source-intake-delivery-controls-freeze",
         "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
         "325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md",
-        "backend/app/review_ui/static/claude.html",
+        "backend/app/review_ui/static/layer3.js",
+        "backend/app/review_ui/static/layer3.html",
         "layer3.source_intake_external_export_download_delivery.v1",
         "layer3.source_intake_external_export_download_prepare.v1",
         "implement_source_intake_external_export_download_rendered_controls_boundary",
@@ -23327,8 +23328,9 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "freeze_predecessor": "source_intake_external_export_download_delivery_boundary",
             "canonical_source_of_truth": "server_owned_source_intake_external_export_download_delivery_authority_and_rendered_projection_state",
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
+            "owner_ui": "backend/app/review_ui/static/layer3.js",
             "owner_service": "backend/app/services/layer3_workbench.py",
-            "rendered_surface": "backend/app/review_ui/static/claude.html",
+            "rendered_surface": "backend/app/review_ui/static/layer3.html",
             "current_failure_boundary": "source_intake_external_export_download_rendered_controls_absent",
             "implementation_entry_allowed_next": True,
             "live_behavior_change": False,
@@ -23339,15 +23341,37 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             if freeze.get(key) != expected:
                 errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_rendered_controls_boundary_freeze.{key} must be {expected!r}")
         semantics = freeze.get("future_rendered_controls_semantics")
-        if not isinstance(semantics, dict) or semantics.get("required_delivery_schema_id") != "layer3.source_intake_external_export_download_delivery.v1" or semantics.get("rendered_ui_changed") is not False or semantics.get("frontend_authority_created") is not False:
+        expected_semantics = {
+            "required_delivery_schema_id": "layer3.source_intake_external_export_download_delivery.v1",
+            "required_prepare_schema_id": "layer3.source_intake_external_export_download_prepare.v1",
+            "server_authority_only": True,
+            "rendered_ui_changed": False,
+            "runtime_behavior_change": False,
+            "route_added": False,
+            "model_migration_changed": False,
+            "provider_url_created": False,
+            "signed_reference_created": False,
+            "connector_dispatch_created": False,
+            "frontend_authority_created": False,
+        }
+        if not isinstance(semantics, dict):
             errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_rendered_controls_boundary_freeze future_rendered_controls_semantics invalid")
+        else:
+            for key, expected in expected_semantics.items():
+                if semantics.get(key) != expected:
+                    errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_rendered_controls_boundary_freeze future_rendered_controls_semantics.{key} must be {expected!r}")
         for required in (
             "source_intake_delivery_controls_project_server_authority_only",
             "source_intake_delivery_control_uses_existing_same_origin_delivery_path",
+            "source_intake_delivery_control_requires_external_export_download_prepared_state",
             "source_intake_delivery_control_preserves_source_intake_identity",
             "provider_public_private_url_controls_remain_blocked",
             "signed_reference_controls_remain_blocked",
             "connector_destination_controls_remain_blocked",
+            "package_mutation_controls_remain_blocked",
+            "source_expansion_controls_remain_blocked",
+            "rag_vector_controls_remain_blocked",
+            "existing_associated_cohort_single_aps_qualitative_aps_and_source_intake_delivery_unchanged",
         ):
             if required not in freeze.get("required_future_proofs", []):
                 errors.append(f"{_rel(MANIFEST)} source_intake_external_export_download_rendered_controls_boundary_freeze required_future_proofs missing {required}")
@@ -23365,19 +23389,33 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "branch": "codex/l3-source-intake-delivery-controls-freeze",
             "current_main_predecessor_commit": "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-            "owner_ui": "backend/app/review_ui/static/claude.html",
+            "owner_ui": "backend/app/review_ui/static/layer3.js",
+            "rendered_shell": "backend/app/review_ui/static/layer3.html",
             "owner_service": "backend/app/services/layer3_workbench.py",
             "validation_status": "planning_control_freeze_only_progress_check_required",
         }.items():
             if proof_entry.get(key) != expected:
                 errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_external_export_download_rendered_controls_boundary_freeze_proof.{key} must be {expected!r}")
-    ui_text = _read_required_text(ROOT / "backend/app/review_ui/static/claude.html", errors)
+        frozen_future_scope = proof_entry.get("frozen_future_scope", [])
+        for required in (
+            "layer3.source_intake_external_export_download_delivery.v1",
+            "layer3.source_intake_external_export_download_prepare.v1",
+            "server_authority_only_rendered_projection",
+            "source_intake_delivery_control_requires_external_export_download_prepared_state",
+            "package_mutation_controls_remain_blocked",
+            "source_expansion_controls_remain_blocked",
+            "rag_vector_controls_remain_blocked",
+            "existing_associated_cohort_single_aps_qualitative_aps_and_source_intake_delivery_unchanged",
+        ):
+            if required not in frozen_future_scope:
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_external_export_download_rendered_controls_boundary_freeze_proof frozen_future_scope missing {required}")
+    ui_text = _read_required_text(ROOT / "backend/app/review_ui/static/layer3.html", errors)
     for forbidden in (
         "source_intake_external_export_download_delivery",
         "source-intake-external-export-download-delivery",
     ):
         if forbidden in ui_text:
-            errors.append(f"backend/app/review_ui/static/claude.html unexpectedly contains source-intake delivery rendered control term: {forbidden}")
+            errors.append(f"backend/app/review_ui/static/layer3.html unexpectedly contains source-intake delivery rendered control term: {forbidden}")
 
 
 def _check_source_intake_external_export_download_rendered_controls_boundary(errors: list[str]) -> None:
@@ -28856,6 +28894,12 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing provider-public prepare/status current-main sync term: {term}")
+    proof = _load_json(PROOF_MANIFEST, errors)
+    prepare_status_proof = proof.get("source_intake_provider_public_url_prepare_status_current_main_sync_proof") if isinstance(proof, dict) else None
+    if not isinstance(prepare_status_proof, dict):
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing source_intake_provider_public_url_prepare_status_current_main_sync_proof")
+    elif "full_mockup_activation" not in prepare_status_proof.get("preserved_blocked_scope", []):
+        errors.append(f"{_rel(PROOF_MANIFEST)} source_intake_provider_public_url_prepare_status_current_main_sync_proof.preserved_blocked_scope missing full_mockup_activation")
 
     revoke_freeze_text = _read_required_text(SOURCE_INTAKE_PROVIDER_PUBLIC_URL_REVOKE_ROUTE_FREEZE, errors)
     for term in (
@@ -29236,6 +29280,8 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         "no_runtime_now_named_connector_or_destination_absent",
         "current_main_sync_connector_destination_named_target_revalidation_packet_after_merge",
         "internal_dispatch_record_only",
+        "Current Layer 3 workbench connector/destination authority still admits only",
+        "The Layer 3 API schema and tests keep connector/destination target fields",
         "No external connector invocation is admitted.",
         "No destination write is admitted.",
         "No connector-run creation is admitted.",
@@ -29254,6 +29300,8 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             "connector_destination_named_target_revalidation_packet",
             "no_runtime_now_named_connector_or_destination_absent",
             "current_main_sync_connector_destination_named_target_revalidation_packet_after_merge",
+            "backend/app/services/layer3_connector_dispatch_entry.py exposes internal_dispatch_record_only only for Layer 3 workbench connector/destination authority",
+            "Layer 3 connector/destination target fields remain forbidden or known-but-non-admitted in API schema/tests",
         ),
         PROOF_MANIFEST: (
             "connector_destination_named_target_revalidation_packet_proof",

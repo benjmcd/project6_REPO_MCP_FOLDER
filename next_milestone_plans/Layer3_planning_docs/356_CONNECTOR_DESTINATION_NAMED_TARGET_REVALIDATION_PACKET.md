@@ -16,9 +16,9 @@ The revalidation result is `no_runtime_now_named_connector_or_destination_absent
 
 The next required action is `current_main_sync_connector_destination_named_target_revalidation_packet_after_merge`.
 
-## Repo-confirmed authority
+## Layer 3 workbench-confirmed authority
 
-Current repo authority still admits only `internal_dispatch_record_only`:
+Current Layer 3 workbench connector/destination authority still admits only `internal_dispatch_record_only`:
 
 - Service owner: `backend/app/services/layer3_connector_dispatch_entry.py`
 - Endpoint: `/api/v1/layer3/handoff/connector/record`
@@ -34,7 +34,7 @@ Current repo authority still admits only `internal_dispatch_record_only`:
 - Source widening: disabled
 - Qualitative/hybrid/RAG execution: disabled
 
-The API schema and tests keep connector/destination target fields as known but non-admitted or forbidden request fields, including connector keys, connector run ids, connector secrets, destination ids, destination secrets, destination URLs, connector payloads, destination selectors, generic dispatch fields, provider/public URLs, package payload fields, local paths, local directory inputs, web connector fields, and RAG/vector fields.
+The Layer 3 API schema and tests keep connector/destination target fields as known but non-admitted or forbidden request fields, including connector keys, connector run ids, connector secrets, destination ids, destination secrets, destination URLs, connector payloads, destination selectors, generic dispatch fields, provider/public URLs, package payload fields, local paths, local directory inputs, web connector fields, and RAG/vector fields.
 
 ## Gate result
 
