@@ -22,7 +22,7 @@ This is a planning/control revalidation packet only. It may not implement packag
 
 ## Required next packet
 
-The next packet must be `359_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md`.
+The next packet must be `360_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET.md` after the current-main sync doc for this freeze.
 
 It must answer, from current repo authority only:
 
