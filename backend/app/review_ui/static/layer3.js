@@ -1765,12 +1765,8 @@ function isQualitativeApsExternalExportDownloadState(external = externalExportDo
         || summary.pass_scope === QUAL_APS_PASS_SCOPE
         || external.source_gate === QUAL_APS_SOURCE_GATE
         || summary.source_gate === QUAL_APS_SOURCE_GATE
-        || external.source_shape === QUAL_APS_SOURCE_SHAPE
-        || summary.source_shape === QUAL_APS_SOURCE_SHAPE
-        || (
-            (external.export_download_target || summary.export_download_target) === 'aps_evidence_bundle_download_reference'
-            && (external.aps_schema_id || summary.aps_schema_id) === 'aps.evidence_bundle.v2'
-        );
+        || external.package_construction_source_gate === QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE
+        || summary.package_construction_source_gate === QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE;
 }
 
 function associatedCohortDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
@@ -1782,6 +1778,13 @@ function associatedCohortDeliveryUiState(external = externalExportDownloadPrepar
 
 function qualitativeApsDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
     if (!isQualitativeApsExternalExportDownloadState(external)) return null;
+    const summary = State.sessionSummary?.external_export_download || {};
+    const deliveryUi = external?.delivery_ui || summary.delivery_ui || null;
+    if (deliveryUi) return deliveryUi;
+    return null;
+}
+
+function serverExternalExportDownloadDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
     const summary = State.sessionSummary?.external_export_download || {};
     const deliveryUi = external?.delivery_ui || summary.delivery_ui || null;
     if (deliveryUi) return deliveryUi;
@@ -1863,12 +1866,14 @@ function externalExportDownloadDeliveryUiAdmitted(external = externalExportDownl
             'external_export_download_delivery_ui_ready',
         ]);
     }
-    if (!isAssociatedCohortExternalExportDownloadState(external)) {
-        return false;
+    if (isAssociatedCohortExternalExportDownloadState(external)) {
+        const deliveryUi = associatedCohortDeliveryUiState(external);
+        return deliveryUiStateAdmitted(deliveryUi, [
+            'associated_cohort_external_export_download_delivery_ui_ready',
+            'external_export_download_delivery_ui_ready',
+        ]);
     }
-    const deliveryUi = associatedCohortDeliveryUiState(external);
-    return deliveryUiStateAdmitted(deliveryUi, [
-        'associated_cohort_external_export_download_delivery_ui_ready',
+    return deliveryUiStateAdmitted(serverExternalExportDownloadDeliveryUiState(external), [
         'external_export_download_delivery_ui_ready',
     ]);
 }
@@ -4436,7 +4441,10 @@ function externalExportDownloadDeliveryPanelState() {
     const stateName = externalExportDownloadStateName(external);
     const associatedCohort = isAssociatedCohortExternalExportDownloadState(external);
     const sourceIntake = isSourceIntakeExternalExportDownloadState(external);
-    const deliveryUi = sourceIntakeDeliveryUiState(external) || qualitativeApsDeliveryUiState(external) || associatedCohortDeliveryUiState(external);
+    const deliveryUi = sourceIntakeDeliveryUiState(external)
+        || qualitativeApsDeliveryUiState(external)
+        || associatedCohortDeliveryUiState(external)
+        || serverExternalExportDownloadDeliveryUiState(external);
     if (State.externalExportDownloadDeliveryPending) {
         return { label: 'external_export_download_delivery_ui_downloading', pill: 'preview', message: 'Submitting one same-origin attachment request for browser-managed download.' };
     }
@@ -4469,7 +4477,11 @@ function externalExportDownloadDeliveryPanelState() {
 function renderExternalExportDownloadDeliveryPanel() {
     const external = externalExportDownloadPrepareState() || {};
     const panelState = externalExportDownloadDeliveryPanelState();
-    const deliveryUi = sourceIntakeDeliveryUiState(external) || qualitativeApsDeliveryUiState(external) || associatedCohortDeliveryUiState(external) || {};
+    const deliveryUi = sourceIntakeDeliveryUiState(external)
+        || qualitativeApsDeliveryUiState(external)
+        || associatedCohortDeliveryUiState(external)
+        || serverExternalExportDownloadDeliveryUiState(external)
+        || {};
     const downstream = [
         'public_url',
         'signed_url',

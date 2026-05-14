@@ -5182,7 +5182,7 @@ def _check_qualitative_aps_rendered_ui_freeze(errors: list[str]) -> None:
             "external_export_download_delivery_ui_unavailable",
             "external_export_download_signed_reference_ui_blocked",
             "deliveryUiStateAdmitted(deliveryUi",
-            "if (!isAssociatedCohortExternalExportDownloadState(external))",
+            "serverExternalExportDownloadDeliveryUiState(external)",
             "payload.construction_basis_hash = constructionBasisHash",
             "apsHandoffDispatchState()?.available === true",
         ),
@@ -23427,8 +23427,7 @@ def _check_source_intake_external_export_download_rendered_controls_boundary(err
             "function sourceIntakeDeliveryUiState",
             "source_intake_external_export_download_delivery_ui_ready",
             "!isSourceIntakeExternalExportDownloadState(external)",
-            "if (!isAssociatedCohortExternalExportDownloadState(external))",
-            "return false;",
+            "serverExternalExportDownloadDeliveryUiState(external)",
             "submitAttachmentForm('/handoff/export/download/deliver'",
         ),
         ROOT / "backend/tests/test_layer3_page.py": (

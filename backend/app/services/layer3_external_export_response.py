@@ -306,6 +306,71 @@ def qualitative_aps_delivery_ui_state(
     }
 
 
+def aps_bundle_delivery_ui_state(
+    readiness_state: dict[str, Any],
+    *,
+    blocked_reason: str | None = None,
+) -> dict[str, Any]:
+    required_refs = (
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "package_review_submit_record_ref",
+        "prepare_record_ref",
+        "handoff_export_envelope_ref",
+        "aps_handoff_record_ref",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "source_artifact_hash",
+        "source_artifact_size_bytes",
+    )
+    mismatches = [
+        field
+        for field, expected in {
+            "external_export_download_state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+            "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+            "aps_output_package_kind": PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+            "export_download_target": "aps_evidence_bundle_download_reference",
+            "download_mode": "reference_only_prepare",
+        }.items()
+        if readiness_state.get(field) != expected
+    ]
+    missing_refs = [field for field in required_refs if readiness_state.get(field) in (None, "", [])]
+    if (
+        associated_cohort_external_export_download(readiness_state)
+        or source_intake_external_export_download_admitted(readiness_state)
+        or qualitative_aps_external_export_download_admitted(readiness_state)
+    ):
+        mismatches.append("generic_aps_bundle_delivery_authority")
+    available = not blocked_reason and not mismatches and not missing_refs
+    return {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID,
+        "available": available,
+        "state": QUAL_APS_DELIVERY_UI_READY_STATE if available else QUAL_APS_DELIVERY_UI_UNAVAILABLE_STATE,
+        "blocked_reason": blocked_reason
+        or ("missing_or_mismatched_aps_bundle_delivery_authority" if not available else None),
+        "blocked_fields": sorted(set(mismatches + missing_refs)),
+        "operator_decision": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
+        "delivery_mode": "same_origin_artifact_stream",
+        "server_authority": "aps_bundle_external_export_download_delivery_ui_gate",
+        "browser_managed_same_origin_attachment_enabled": available,
+        "public_url_enabled": False,
+        "signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "package_mutation_enabled": False,
+        "schema_runtime_source_widening_enabled": False,
+    }
+
+
 def source_intake_delivery_ui_state(
     readiness_state: dict[str, Any],
     *,
@@ -677,10 +742,10 @@ def external_export_download_prepare_summary(
             summary["delivery_ui"] = recorded_readiness.get("delivery_ui") or source_intake_delivery_ui_state(
                 recorded_readiness
             )
-        elif qualitative_aps_external_export_download_admitted(recorded_readiness):
-            summary["delivery_ui"] = recorded_readiness.get("delivery_ui") or qualitative_aps_delivery_ui_state(
-                recorded_readiness
-            )
+        else:
+            delivery_ui = recorded_readiness.get("delivery_ui") or aps_bundle_delivery_ui_state(recorded_readiness)
+            if delivery_ui["available"]:
+                summary["delivery_ui"] = delivery_ui
         return summary
 
     if (
@@ -865,8 +930,10 @@ def external_export_download_prepare_response(
         body["delivery_ui"] = associated_cohort_delivery_ui_state(readiness_state)
     elif source_intake_external_export_download_admitted(readiness_state):
         body["delivery_ui"] = source_intake_delivery_ui_state(readiness_state)
-    elif qualitative_aps_external_export_download_admitted(readiness_state):
-        body["delivery_ui"] = qualitative_aps_delivery_ui_state(readiness_state)
+    else:
+        delivery_ui = aps_bundle_delivery_ui_state(readiness_state)
+        if delivery_ui["available"]:
+            body["delivery_ui"] = delivery_ui
     descriptor = readiness_state.get("external_export_download_descriptor")
     if isinstance(descriptor, dict):
         body["external_export_download_descriptor"] = descriptor
