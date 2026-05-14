@@ -717,6 +717,9 @@ LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE = (
 LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "396_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF = (
+    PLANNING_DOCS / "397_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -1424,9 +1427,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         errors.append("layer3_workbench_current_decision.next_required_decision must be a non-empty string")
     else:
         required_terms = [
-            "current_main_synced_layer3_end_to_end_governance_lifecycle_read_only_dashboard_freeze",
             "implement_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
-            "stop_and_write_layer3_end_to_end_lifecycle_response_authority_freeze",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_dashboard_after_merge",
         ]
         for term in required_terms:
             if next_required != term and term not in next_required:
@@ -1446,8 +1448,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         return
     allowed_text = "\n".join(str(item) for item in allowed_actions)
     required_allowed = [
-        "implement_rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
-        "stop_and_write_layer3_end_to_end_lifecycle_response_authority_freeze",
+        "current_main_sync_layer3_end_to_end_governance_lifecycle_dashboard_after_merge",
+        "settle_comments_reviews_and_reviewThreads_before_merge",
         "progress/proof/state drift checker",
     ]
     for term in required_allowed:
@@ -1477,7 +1479,7 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         "await_next_exact_named_layer3_product_use_case_requirement_after_downstream_access_lifecycle_dashboard_sync",
         "exact_named_server_authoritative_runtime_use_case_freeze_before_any_new_functional_slice",
         "current_main_sync_layer3_end_to_end_governance_lifecycle_freeze_after_merge",
-        "settle_comments_reviews_and_reviewThreads_before_merge",
+        "stop_and_write_layer3_end_to_end_lifecycle_response_authority_freeze",
     ]
     for term in stale_allowed:
         if term in allowed_text:
@@ -31249,6 +31251,84 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing Layer 3 end-to-end lifecycle sync term: {term}"
+                )
+
+    layer3_e2e_lifecycle_proof_text = _read_required_text(
+        LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard`.",
+        "source audit proved current `/review/layer3` server/UI response state already exposes sufficient response-safe lifecycle state",
+        "layer3-e2e-governance-lifecycle-dashboard-panel",
+        "operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch",
+        "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+        "existing_server_response_authority",
+        "No runtime implementation beyond rendered read-only inspection is admitted.",
+        "current_main_sync_layer3_end_to_end_governance_lifecycle_dashboard_after_merge",
+    ):
+        if term not in layer3_e2e_lifecycle_proof_text:
+            errors.append(
+                f"{_rel(LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF)} missing Layer 3 end-to-end lifecycle proof term: {term}"
+            )
+
+    for path, terms in {
+        LAYER3_HTML: (
+            "layer3-e2e-governance-lifecycle-dashboard-panel",
+            'data-rendered-mode="rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard"',
+            'aria-label="Layer 3 end-to-end governance lifecycle dashboard"',
+        ),
+        LAYER3_JS: (
+            "LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard'",
+            "LAYER3_E2E_GOVERNANCE_LIFECYCLE_USE_CASE = 'operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch'",
+            "LAYER3_E2E_GOVERNANCE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority'",
+            "layer3E2EGovernanceLifecycleRows",
+            "layer3E2EGovernanceLifecycleDashboardState",
+            "renderLayer3E2EGovernanceLifecycleDashboardPanel",
+            "package_mutation_blocked",
+            "raw_public_url_display_use_blocked",
+            "renderLayer3E2EGovernanceLifecycleDashboardPanel();",
+        ),
+        LAYER3_CSS: (
+            "layer3-e2e-governance-lifecycle-panel",
+            "layer3-e2e-governance-lifecycle-grid",
+            "layer3-e2e-governance-lifecycle-rows",
+        ),
+        LAYER3_PAGE_TEST: (
+            "layer3-e2e-governance-lifecycle-dashboard-panel",
+            "rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard",
+            "function layer3E2EGovernanceLifecycleRows",
+        ),
+        LAYER3_HANDOFF_E2E: (
+            "expectRenderedLayer3E2EGovernanceLifecycleDashboard",
+            "layer3-e2e-governance-lifecycle-dashboard-panel",
+            "layer3_e2e_latest_downstream_access",
+            "button,input,select,textarea",
+        ),
+        BOARD: (
+            "## Layer 3 End-To-End Governance Lifecycle Read-Only Dashboard Proof",
+            "397_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_READ_ONLY_DASHBOARD_PROOF.md",
+            "existing_server_response_authority",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_dashboard_after_merge",
+        ),
+        MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_read_only_dashboard_proof",
+            "implemented_read_only_dashboard_over_existing_response_authority",
+            "layer3-e2e-governance-lifecycle-dashboard-panel",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_dashboard_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_read_only_dashboard_proof",
+            "implemented_read_only_dashboard_over_existing_response_authority",
+            "source audit proved current server/UI responses expose response-safe lifecycle fields",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_dashboard_after_merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing Layer 3 end-to-end lifecycle dashboard implementation term: {term}"
                 )
 
 def main() -> int:
