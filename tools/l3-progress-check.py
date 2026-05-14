@@ -614,6 +614,9 @@ PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_PACKET = (
 PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "361_PACKAGE_MUTATION_NAMED_ACTION_REVALIDATION_CURRENT_MAIN_SYNC.md"
 )
+NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE = (
+    PLANNING_DOCS / "362_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29383,6 +29386,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing package action current-main sync term: {term}")
+
+    after_package_freeze_text = _read_required_text(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE, errors)
+    for term in (
+        "Status: planning/control next deferred server-authoritative runtime lane freeze after package action no-runtime; no runtime behavior admitted.",
+        "broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+        "selected_broad_qualitative_hybrid_rag_named_mode_revalidation_packet_only",
+        "blocked_named_analysis_mode_absent",
+        "current_main_sync_next_deferred_runtime_lane_after_package_action_freeze",
+        "No broad qualitative runtime is admitted.",
+        "No hybrid execution runtime is admitted.",
+        "No RAG/vector indexing or retrieval runtime is admitted.",
+        "No auth/security behavior is admitted.",
+    ):
+        if term not in after_package_freeze_text:
+            errors.append(f"{_rel(NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE)} missing after-package freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Next Deferred Server-Authoritative Runtime Lane After Package Action Freeze",
+            "362_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_AFTER_PACKAGE_ACTION_FREEZE.md",
+            "selected_broad_qualitative_hybrid_rag_named_mode_revalidation_packet_only",
+        ),
+        MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_package_action_freeze",
+            "broad_qualitative_hybrid_rag_named_mode_revalidation_packet",
+            "current_main_sync_next_deferred_runtime_lane_after_package_action_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "next_deferred_server_authoritative_runtime_lane_after_package_action_freeze_proof",
+            "selected_broad_qualitative_hybrid_rag_named_mode_revalidation_packet_only",
+            "blocked_named_analysis_mode_absent",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing after-package freeze term: {term}")
 
 def main() -> int:
     errors: list[str] = []
