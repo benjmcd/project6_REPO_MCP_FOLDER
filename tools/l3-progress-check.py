@@ -783,6 +783,9 @@ LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE = (
 LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "418_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_AUDIT = (
+    PLANNING_DOCS / "419_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_AUDIT.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -32976,6 +32979,93 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix contract definition freeze sync term: {term}"
+                )
+
+    authority_matrix_contract_definition_audit_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control audit for `conduct_layer3_authority_matrix_contract_definition_audit`.",
+        "419_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_AUDIT.md",
+        "418_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "c46ab08fb71b1c9e74e7ecc5ba08f40e63782237",
+        "layer3_authority_matrix_contract_definition_without_service_route_schema_or_ui_implementation",
+        "Result: `layer3_authority_matrix_contract_definition_admitted_for_planning_control_only`.",
+        "STATE_ACTION_CONTRACT_SCHEMA_ID = \"layer3.state_action_contract.v1\"",
+        "STATE_MODEL_SCHEMA_ID = \"layer3.workbench_state_model.v1\"",
+        "layer3_authority_matrix_contract_definition_v1",
+        "backend/app/services/layer3_authority_matrix_contract.py",
+        "layer3.authority_matrix_contract.v1",
+        "server_authoritative_next_runtime_tranche_authority_matrix",
+        "admitted_for_contract_definition_only",
+        "requires_audit_before_runtime",
+        "blocked_no_runtime_authority",
+        "Entry decision: `planning_control_contract_definition_admitted`.",
+        "Runtime status: `not_implemented`.",
+        "No backend service file is created.",
+        "current_main_sync_layer3_authority_matrix_contract_definition_audit_after_merge",
+        "await_layer3_authority_matrix_pure_contract_source_freeze_after_definition_audit_sync",
+    ):
+        if term not in authority_matrix_contract_definition_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_AUDIT)} missing authority matrix contract definition audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Contract Definition Audit",
+            "419_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_AUDIT.md",
+            "conduct_layer3_authority_matrix_contract_definition_audit",
+            "layer3_authority_matrix_contract_definition_admitted_for_planning_control_only",
+            "layer3_authority_matrix_contract_definition_v1",
+            "backend/app/services/layer3_authority_matrix_contract.py",
+            "layer3.authority_matrix_contract.v1",
+            "current_main_sync_layer3_authority_matrix_contract_definition_audit_after_merge",
+            "await_layer3_authority_matrix_pure_contract_source_freeze_after_definition_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_contract_definition_audit",
+            "planning_control_audit",
+            "codex/l3-authority-matrix-contract-definition-audit",
+            "419_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_AUDIT.md",
+            "c46ab08fb71b1c9e74e7ecc5ba08f40e63782237",
+            "conduct_layer3_authority_matrix_contract_definition_audit",
+            "layer3_authority_matrix_contract_definition_admitted_for_planning_control_only",
+            '"entry_decision": "planning_control_contract_definition_admitted"',
+            '"runtime_status": "not_implemented"',
+            "layer3_authority_matrix_contract_definition_v1",
+            "backend/app/services/layer3_authority_matrix_contract.py",
+            "layer3.authority_matrix_contract.v1",
+            '"backend_route_behavior_change": false',
+            '"service_behavior_change": false',
+            '"schema_shape_change": false',
+            "current_main_sync_layer3_authority_matrix_contract_definition_audit_after_merge",
+            "await_layer3_authority_matrix_pure_contract_source_freeze_after_definition_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_contract_definition_audit_proof",
+            "planning_control_audit",
+            "419_LAYER3_AUTHORITY_MATRIX_CONTRACT_DEFINITION_AUDIT.md",
+            "layer3_authority_matrix_contract_definition_admitted_for_planning_control_only",
+            "planning_control_contract_definition_admitted",
+            "not_implemented",
+            "layer3_authority_matrix_contract_definition_v1",
+            "backend/app/services/layer3_authority_matrix_contract.py",
+            "layer3.authority_matrix_contract.v1",
+            "blocked_no_runtime_authority",
+            "no backend route behavior",
+            "no service behavior",
+            "no schema shape",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_authority_matrix_contract_definition_audit_after_merge",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix contract definition audit term: {term}"
                 )
 
 def main() -> int:
