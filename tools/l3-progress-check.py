@@ -858,6 +858,10 @@ LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "438_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT = (
+    PLANNING_DOCS
+    / "439_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -34710,6 +34714,85 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing authority matrix rendered review freeze sync term: {term}"
+                )
+
+    authority_matrix_rendered_review_source_audit_text = _read_required_text(
+        LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control source audit for `layer3_authority_matrix_rendered_review_surface_source_audit`.",
+        "439_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT.md",
+        "438_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_FREEZE_CURRENT_MAIN_SYNC.md",
+        "96cb3d397c90cd486f641035c5d70f5ff2fa17bc",
+        "conduct_layer3_authority_matrix_rendered_review_surface_source_audit",
+        "layer3_authority_matrix_rendered_review_surface_admitted_for_read_only_ui_implementation",
+        "read-only `/review/layer3` panel over `State.bootstrap.authority_matrix_contract`",
+        "backend/app/services/layer3_workbench.py",
+        "build_exposed_authority_matrix_contract",
+        "Layer3WorkbenchBootstrapResponse",
+        "Layer3ExecutionReadinessResponse",
+        "`/api/v1/layer3/authority-matrix` absent",
+        "`renderLayer3E2EGovernanceLifecycleDashboardPanel()`",
+        "`renderPackageLifecycleDashboardPanel()`",
+        "`renderDownstreamAccessLifecycleDashboardPanel()`",
+        "no additional authority-matrix route is fetched",
+        "fail-closed unavailable behavior is rendered when the bootstrap matrix is absent or malformed",
+        "This audit admits no implementation by itself.",
+        "frontend-only durable authority",
+        "current_main_sync_layer3_authority_matrix_rendered_review_surface_source_audit_after_merge",
+        "await_layer3_authority_matrix_rendered_review_surface_implementation_after_audit_sync",
+    ):
+        if term not in authority_matrix_rendered_review_source_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT)} missing authority matrix rendered review source audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Authority Matrix Rendered Review Surface Source Audit",
+            "439_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT.md",
+            "conduct_layer3_authority_matrix_rendered_review_surface_source_audit",
+            "layer3_authority_matrix_rendered_review_surface_admitted_for_read_only_ui_implementation",
+            "`State.bootstrap.authority_matrix_contract`",
+            "current_main_sync_layer3_authority_matrix_rendered_review_surface_source_audit_after_merge",
+            "await_layer3_authority_matrix_rendered_review_surface_implementation_after_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_authority_matrix_rendered_review_surface_source_audit",
+            "branch_local_planning_control_source_audit",
+            "codex/l3-authority-matrix-rendered-review-audit",
+            "439_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT.md",
+            "96cb3d397c90cd486f641035c5d70f5ff2fa17bc",
+            "layer3_authority_matrix_rendered_review_surface_admitted_for_read_only_ui_implementation",
+            "read_only_review_ui_panel_over_State.bootstrap.authority_matrix_contract",
+            "bootstrap_response_contains_authority_matrix_contract",
+            "readiness_response_contains_authority_matrix_contract",
+            "no_additional_authority_matrix_route_fetch",
+            "current_main_sync_layer3_authority_matrix_rendered_review_surface_source_audit_after_merge",
+            "await_layer3_authority_matrix_rendered_review_surface_implementation_after_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_authority_matrix_rendered_review_surface_source_audit_proof",
+            "branch_local_planning_control_source_audit",
+            "codex/l3-authority-matrix-rendered-review-audit",
+            "439_LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_SOURCE_AUDIT.md",
+            "96cb3d397c90cd486f641035c5d70f5ff2fa17bc",
+            "layer3_authority_matrix_rendered_review_surface_admitted_for_read_only_ui_implementation",
+            "read_only_review_ui_panel_over_State.bootstrap.authority_matrix_contract",
+            "bootstrap_response_contains_authority_matrix_contract",
+            "readiness_response_contains_authority_matrix_contract",
+            "no additional authority-matrix route fetch",
+            "no frontend-only durable authority",
+            "current_main_sync_layer3_authority_matrix_rendered_review_surface_source_audit_after_merge",
+            "await_layer3_authority_matrix_rendered_review_surface_implementation_after_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing authority matrix rendered review source audit term: {term}"
                 )
 
 def main() -> int:
