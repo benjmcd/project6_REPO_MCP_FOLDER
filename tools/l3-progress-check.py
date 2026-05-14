@@ -596,6 +596,9 @@ NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_FREEZE = (
 NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "355_NEXT_DEFERRED_SERVER_AUTHORITATIVE_RUNTIME_LANE_CURRENT_MAIN_SYNC.md"
 )
+CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET = (
+    PLANNING_DOCS / "356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md"
+)
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 PROVIDER_PUBLIC_URL_STATE_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_state.py"
@@ -29149,6 +29152,43 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
         for term in terms:
             if term not in path_text:
                 errors.append(f"{_rel(path)} missing next deferred runtime lane current-main sync term: {term}")
+
+    connector_target_revalidation_text = _read_required_text(CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET, errors)
+    for term in (
+        "Status: planning/control connector/destination named-target revalidation packet only; no runtime behavior admitted.",
+        "connector_destination_named_target_revalidation_packet",
+        "no_runtime_now_named_connector_or_destination_absent",
+        "current_main_sync_connector_destination_named_target_revalidation_packet_after_merge",
+        "internal_dispatch_record_only",
+        "No external connector invocation is admitted.",
+        "No destination write is admitted.",
+        "No connector-run creation is admitted.",
+        "No auth/security behavior is admitted.",
+    ):
+        if term not in connector_target_revalidation_text:
+            errors.append(f"{_rel(CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET)} missing connector target revalidation term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Connector Destination Named Target Revalidation Packet",
+            "356_CONNECTOR_DESTINATION_NAMED_TARGET_REVALIDATION_PACKET.md",
+            "no_runtime_now_named_connector_or_destination_absent",
+        ),
+        MANIFEST: (
+            "connector_destination_named_target_revalidation_packet",
+            "no_runtime_now_named_connector_or_destination_absent",
+            "current_main_sync_connector_destination_named_target_revalidation_packet_after_merge",
+        ),
+        PROOF_MANIFEST: (
+            "connector_destination_named_target_revalidation_packet_proof",
+            "no_runtime_now_named_connector_or_destination_absent",
+            "internal_dispatch_record_only",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(f"{_rel(path)} missing connector target revalidation term: {term}")
 
 def main() -> int:
     errors: list[str] = []
