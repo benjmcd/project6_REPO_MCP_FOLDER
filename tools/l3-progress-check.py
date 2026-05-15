@@ -1163,6 +1163,9 @@ LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_AFTER_HANDOFF_EXP
     PLANNING_DOCS
     / "515_LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SELECTION_FREEZE_SYNC.md"
 )
+LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "516_LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -41360,6 +41363,89 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector/destination dispatch boundary authority audit term: {term}"
+                )
+
+    connector_destination_dispatch_boundary_authority_audit_sync_text = _read_required_text(
+        LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection_freeze_sync`.",
+        "516_LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+        "515_LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SELECTION_FREEZE_SYNC.md",
+        "#1111",
+        "6a6d966aed59b0d85ac508ef954b6b613faed7b1",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR reviewThreads totalCount before merge: `0`.",
+        "Unresolved reviewThreads before merge: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection",
+        "Audit result remains `layer3_connector_destination_dispatch_boundary_authority_current_main_satisfied_no_runtime`.",
+        "Selected implementation action remains `none`.",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_connector_destination_dispatch_boundary_audit_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in connector_destination_dispatch_boundary_authority_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC)} missing connector/destination dispatch boundary authority audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector/Destination Dispatch Boundary Authority Audit Current-Main Sync",
+            "516_LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1111",
+            "6a6d966aed59b0d85ac508ef954b6b613faed7b1",
+            "reviewThreads totalCount was `0`",
+            "current_main_synced_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection",
+            "layer3_connector_destination_dispatch_boundary_authority_current_main_satisfied_no_runtime",
+            "selected implementation action remains `none`",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_connector_destination_dispatch_boundary_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_connector_destination_dispatch_boundary_authority_audit_current_main_sync",
+            "current_main_synced_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection",
+            "codex/l3-connector-destination-boundary-authority-audit-sync",
+            "516_LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1111",
+            "6a6d966aed59b0d85ac508ef954b6b613faed7b1",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"external_connector_invocation_change": false',
+            '"destination_write_change": false',
+            '"connector_run_creation_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_connector_destination_dispatch_boundary_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_destination_dispatch_boundary_authority_audit_current_main_sync_proof",
+            "current_main_synced_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection",
+            "codex/l3-connector-destination-boundary-authority-audit-sync",
+            "516_LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1111",
+            "6a6d966aed59b0d85ac508ef954b6b613faed7b1",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "selected implementation action none",
+            "no implementation",
+            "no runtime behavior",
+            "no connector provider destination dispatch runtime",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_connector_destination_dispatch_boundary_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector/destination dispatch boundary authority audit current-main sync term: {term}"
                 )
 
 
