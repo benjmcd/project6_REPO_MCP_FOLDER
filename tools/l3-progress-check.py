@@ -1413,6 +1413,10 @@ LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SY
     PLANNING_DOCS
     / "582_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC = (
+    PLANNING_DOCS
+    / "583_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -47219,6 +47223,110 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector internal fake local destination receipt runtime current-main sync term: {term}"
+                )
+
+    missing_decision_text = _read_required_text(
+        LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: missing-decision packet for `determine_next_connector_destination_runtime_authority_after_internal_fake_local_receipt_sync`.",
+        "583_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC.md",
+        "9d4ee902eb71e9d5de953df08408ec766f907a73",
+        "582_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "codex/l3-connector-destination-missing-decision-packet",
+        "internal_dispatch_record_only",
+        "internal_fake_local_destination_receipt_only",
+        "one real connector or destination target",
+        "selected dispatch mode",
+        "credential/access model",
+        "lifecycle semantics",
+        "receipt/audit contract",
+        "fake-target or fake-connector test architecture",
+        "leak controls and response redaction requirements",
+        "rendered-control obligations",
+        "auth/security posture",
+        "no_runtime_now_connector_destination_real_target_authority_absent_after_internal_fake_local_receipt_sync",
+        "Implementation-entry freeze written: false.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: none.",
+        "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        "This packet admits no runtime behavior",
+        "connector/provider/destination dispatch behavior",
+        "frontend-only durable authority",
+    ):
+        if term not in missing_decision_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC)} missing connector/destination missing-decision packet term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector/Destination Runtime Missing-Decision Packet After Local Receipt Sync",
+            "583_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC.md",
+            "9d4ee902eb71e9d5de953df08408ec766f907a73",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_internal_fake_local_receipt_sync",
+            "internal_dispatch_record_only",
+            "internal_fake_local_destination_receipt_only",
+            "one real connector or destination target",
+            "credential/access model",
+            "fake-target or fake-connector test architecture",
+            "not_implemented",
+            "selected implementation action is none",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+            "This packet admits no runtime behavior",
+        ),
+        MANIFEST: (
+            "layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync",
+            '"status": "missing_decision_packet"',
+            "codex/l3-connector-destination-missing-decision-packet",
+            "583_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC.md",
+            "9d4ee902eb71e9d5de953df08408ec766f907a73",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_internal_fake_local_receipt_sync",
+            '"implementation_entry_freeze_written": false',
+            '"runtime_status": "not_implemented"',
+            '"selected_implementation_action": "none"',
+            '"internal_dispatch_record_only"',
+            '"internal_fake_local_destination_receipt_only"',
+            '"one real connector or destination target"',
+            '"selected dispatch mode"',
+            '"credential/access model"',
+            '"receipt/audit contract"',
+            '"auth/security posture"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_proof",
+            '"status": "missing_decision_packet"',
+            "codex/l3-connector-destination-missing-decision-packet",
+            "583_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC.md",
+            "determine_next_connector_destination_runtime_authority_after_internal_fake_local_receipt_sync",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_internal_fake_local_receipt_sync",
+            "internal_dispatch_record_only",
+            "internal_fake_local_destination_receipt_only",
+            "one real connector or destination target",
+            "selected dispatch mode",
+            "credential/access model",
+            "fake-target or fake-connector test architecture",
+            "implementation-entry freeze written: false",
+            "not_implemented",
+            "selected implementation action: none",
+            "no runtime behavior",
+            "no external connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no frontend-only durable authority",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector/destination missing-decision packet term: {term}"
                 )
 
 
