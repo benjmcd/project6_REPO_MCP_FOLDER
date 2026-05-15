@@ -2877,6 +2877,14 @@ The decision result is `no_runtime_now_connector_destination_real_target_authori
 
 This packet admits no runtime behavior, backend route behavior, service behavior, response-model shape change, schema/model/migration change, rendered UI implementation, executable test behavior, connector/provider/destination dispatch behavior, package mutation/reconstruction, source expansion, RAG/vector behavior, broad qualitative behavior, auth/security behavior change, full mockup activation, credential handling, network write, real destination integration, or frontend-only durable authority.
 
+## Layer 3 Connector/Destination Runtime Missing-Decision Current-Main Sync
+
+Current-main proof/control sync: PR `#1179` merged `583_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC.md` at merge commit `d92c25024fcb17368e4b52430fb0a4274ad6ef38`.
+
+The sync doc `584_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` passed in `2m26s`, GitHub `test` passed in `2m44s`, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, merge state was `CLEAN`, open PR state after merge was none, and post-merge current-main JSON manifest checks, `tools/l3-progress-check.py` compile, and progress check passed. Current main is synced as `no_runtime_now_connector_destination_real_target_authority_absent_after_internal_fake_local_receipt_sync`; implementation-entry freeze written remains false; runtime status remains `not_implemented`; and selected implementation action remains none.
+
+No implementation begins in this sync. Current main still proves only `internal_dispatch_record_only` and `internal_fake_local_destination_receipt_only`, not real connector/destination dispatch. The next whole-project posture is `await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync`.
+
 ## Layer 3 Provider-Public Delivery/Use No-Runtime Boundary Authority Audit After Source Intake Provider-Private E2E Connector Requirement Freeze Sync
 
 Branch-local planning/control audit: `533_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md` audits `operator_reviews_layer3_provider_public_delivery_use_no_runtime_boundary_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_selection_without_raw_public_url_exposure_or_dispatch` at current-main preflight commit `f914c1eac88666dd69af489bd4b50a1a78283bf2`.
