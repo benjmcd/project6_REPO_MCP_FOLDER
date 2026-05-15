@@ -1445,6 +1445,10 @@ LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_VALIDATOR_CURRENT_
     PLANNING_DOCS
     / "590_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_VALIDATOR_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REMEDIATION = (
+    PLANNING_DOCS
+    / "591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -48047,6 +48051,93 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector local destination receipt delivery-authority validator current-main sync term: {term}"
+                )
+
+    readiness_artifact_text = _read_required_text(
+        LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REMEDIATION,
+        errors,
+    )
+    for term in (
+        "Status: review-remediation implementation for `remediate_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_threads`.",
+        "591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md",
+        "17344bb9166bc82f2bb62f6ab934af75b41a659f",
+        "codex/l3-local-receipt-delivery-authority-readiness-artifact-remediation",
+        "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284",
+        "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289",
+        "Both findings are valid against the PR `#1185` validator remediation.",
+        "layer3_workbench.external_export_download_prepare",
+        "_external_export_download_prepare_payload_for_delivery",
+        "_external_export_download_delivery_response",
+        "persisted APS bundle artifact hash",
+        "3 passed, 149 deselected",
+        "current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_merge",
+        "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+    ):
+        if term not in readiness_artifact_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REMEDIATION)} missing connector local destination receipt delivery-authority readiness/artifact remediation term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Local Destination Receipt Delivery-Authority Readiness/Artifact Review Remediation",
+            "591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md",
+            "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284",
+            "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289",
+            "remediated_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_threads",
+            "layer3_workbench.external_export_download_prepare",
+            "_external_export_download_delivery_response",
+            "3 passed, 149 deselected",
+            "current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_merge",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+        MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation",
+            '"status": "review_remediation_branch_local"',
+            "codex/l3-local-receipt-delivery-authority-readiness-artifact-remediation",
+            "591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md",
+            "17344bb9166bc82f2bb62f6ab934af75b41a659f",
+            "discussion_r3249255284",
+            "discussion_r3249255289",
+            '"review_result": "valid_findings_remediated"',
+            '"readiness_revalidation": "layer3_workbench.external_export_download_prepare in existing receipt transaction"',
+            '"artifact_validation": "layer3_workbench._external_export_download_delivery_response validates persisted APS bundle hash size and bundle id"',
+            "3 passed, 149 deselected",
+            '"schema_shape_change": false',
+            '"migration_lineage_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_proof",
+            '"status": "review_remediation_branch_local"',
+            "codex/l3-local-receipt-delivery-authority-readiness-artifact-remediation",
+            "591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md",
+            "discussion_r3249255284",
+            "discussion_r3249255289",
+            "external_export_download_prepare",
+            "_external_export_download_prepare_payload_for_delivery",
+            "_external_export_download_delivery_response",
+            "persisted APS bundle artifact hash",
+            "artifact size",
+            "bundle id",
+            "3 passed, 149 deselected",
+            "no second Session",
+            "no external_export_download_deliver",
+        ),
+        connector_service: (
+            "validation_body = layer3_workbench.external_export_download_prepare(",
+            "layer3_workbench._external_export_download_prepare_payload_for_delivery(",
+            "delivery = layer3_workbench._external_export_download_delivery_response(",
+            "expected_artifact_hash=str(readiness_state.get(\"source_artifact_hash\") or \"\")",
+            "expected_artifact_size=expected_artifact_size",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector local destination receipt delivery-authority readiness/artifact remediation term: {term}"
                 )
 
 

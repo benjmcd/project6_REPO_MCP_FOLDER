@@ -23443,5 +23443,37 @@
   },
   "latest_layer3_connector_local_destination_receipt_delivery_authority_validator_current_main_sync_branch": "codex/l3-local-receipt-delivery-authority-validator-current-main-sync",
   "latest_layer3_connector_local_destination_receipt_delivery_authority_validator_current_main_sync_live_behavior_change": false,
-  "latest_layer3_connector_local_destination_receipt_delivery_authority_validator_current_main_sync_summary": "Doc 590 proof records current-main sync for PR #1185 merge commit b16e92ef4fa7ae375eea8278e377a505aeb22426 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_validator_current_main_sync_summary": "Doc 590 proof records current-main sync for PR #1185 merge commit b16e92ef4fa7ae375eea8278e377a505aeb22426 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync.",
+  "layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_proof": {
+    "proof_kind": "layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation",
+    "status": "review_remediation_branch_local",
+    "branch": "codex/l3-local-receipt-delivery-authority-readiness-artifact-remediation",
+    "remediation_doc": "next_milestone_plans/Layer3_planning_docs/591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md",
+    "source_review_threads": [
+      "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284",
+      "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289"
+    ],
+    "proof_terms": [
+      "valid_findings_remediated",
+      "external_export_download_prepare",
+      "_external_export_download_prepare_payload_for_delivery",
+      "_external_export_download_delivery_response",
+      "persisted APS bundle artifact hash",
+      "artifact size",
+      "bundle id",
+      "3 passed, 149 deselected",
+      "no second Session",
+      "no external_export_download_deliver",
+      "no real connector target",
+      "no real destination target",
+      "no schema/model/migration changes",
+      "no frontend-only durable authority",
+      "current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_merge",
+      "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+    ],
+    "next_whole_project_posture_after_sync": "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+  },
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_branch": "codex/l3-local-receipt-delivery-authority-readiness-artifact-remediation",
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_live_behavior_change": true,
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_summary": "Doc 591 proof records review remediation for PR #1185 discussion_r3249255284 and discussion_r3249255289. The service recomputes readiness in the existing receipt transaction and validates the persisted APS bundle artifact before writing the receipt."
 }
