@@ -1238,6 +1238,10 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SO
     PLANNING_DOCS
     / "534_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SYNC = (
+    PLANNING_DOCS
+    / "535_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -42917,6 +42921,80 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private e2e connector provider-public no-runtime authority audit sync term: {term}"
+                )
+
+    requirement_selection_after_provider_public_audit_source_intake_provider_private_e2e_connector_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_sync`.",
+        "535_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+        "ceccbe4f8590e4607b2429891d0953a713492a9b",
+        "534_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "select_next_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        "operator_selects_next_layer3_product_use_case_requirement_after_read_only_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_e2e_connector_requirement_without_runtime_expansion",
+        "Selected freeze mode: `layer3_product_use_case_requirement_selection_freeze`.",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_merge",
+        "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in requirement_selection_after_provider_public_audit_source_intake_provider_private_e2e_connector_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SYNC)} missing source-intake provider-private e2e connector provider-public audit requirement selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Requirement Selection Freeze After Provider-Public Audit Source Intake Provider-Private E2E Connector Sync",
+            "535_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+            "select_next_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_e2e_connector_requirement_without_runtime_expansion",
+            "layer3_product_use_case_requirement_selection_freeze",
+            "`freeze_only`",
+            "`not_implemented`",
+            "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_merge",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement_sync",
+            "planning_control_freeze",
+            "codex/l3-requirement-selection-after-provider-public-audit-source-intake-provider-private-e2e-connector",
+            "535_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+            "ceccbe4f8590e4607b2429891d0953a713492a9b",
+            "select_next_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_e2e_connector_requirement_without_runtime_expansion",
+            '"selected_freeze_mode": "layer3_product_use_case_requirement_selection_freeze"',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement_sync_proof",
+            "planning_control_freeze",
+            "codex/l3-requirement-selection-after-provider-public-audit-source-intake-provider-private-e2e-connector",
+            "535_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+            "ceccbe4f8590e4607b2429891d0953a713492a9b",
+            "select_next_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_e2e_connector_requirement_without_runtime_expansion",
+            "freeze_only",
+            "not_implemented",
+            "no provider-public delivery/use",
+            "no raw public URL exposure",
+            "no connector/provider/destination dispatch",
+            "no frontend-only durable authority",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing source-intake provider-private e2e connector provider-public audit requirement selection term: {term}"
                 )
 
 
