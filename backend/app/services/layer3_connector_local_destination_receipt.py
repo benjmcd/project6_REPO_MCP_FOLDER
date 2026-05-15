@@ -169,27 +169,64 @@ def _delivery_authority_payload(
 
 def _validate_existing_delivery_authority(
     *,
-    db: Session,
     payload: dict[str, Any],
     connector_record: dict[str, Any],
     readiness_state: dict[str, Any],
 ) -> None:
-    validation_db = Session(bind=db.get_bind())
-    try:
-        delivery = layer3_workbench.external_export_download_deliver(
-            validation_db,
-            _delivery_authority_payload(
-                payload=payload,
-                connector_record=connector_record,
-                readiness_state=readiness_state,
-            ),
+    delivery_payload = _delivery_authority_payload(
+        payload=payload,
+        connector_record=connector_record,
+        readiness_state=readiness_state,
+    )
+    delivery_request = layer3_workbench.external_export_download_delivery_request_fields(delivery_payload)
+    missing = delivery_request.missing_fields
+    if missing:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "missing_external_export_download_delivery_fields",
+            f"External export/download delivery request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_external_export_download_delivery_request"],
         )
-    finally:
-        validation_db.close()
-    if (
-        delivery.headers.get("X-Layer3-Delivery-State")
-        != layer3_workbench.EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE
-    ):
+    blocked_payload_fields = layer3_workbench.external_export_download_delivery_blocked_fields(delivery_payload)
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise layer3_workbench.Layer3WorkbenchError(
+            "external_export_download_delivery_scope_not_admitted",
+            f"External export/download delivery request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_bounded_external_export_download_delivery_request"],
+        )
+    if delivery_request.export_download_target != "aps_evidence_bundle_download_reference":
+        raise layer3_workbench.Layer3WorkbenchError(
+            "external_export_download_delivery_target_not_admitted",
+            "export_download_target must be aps_evidence_bundle_download_reference.",
+            status="invalid",
+            blocked_fields=["export_download_target"],
+        )
+    if delivery_request.download_mode != "reference_only_prepare":
+        raise layer3_workbench.Layer3WorkbenchError(
+            "external_export_download_delivery_download_mode_not_admitted",
+            "download_mode must be reference_only_prepare.",
+            status="invalid",
+            blocked_fields=["download_mode"],
+        )
+    if delivery_request.delivery_mode != "same_origin_artifact_stream":
+        raise layer3_workbench.Layer3WorkbenchError(
+            "external_export_download_delivery_mode_not_admitted",
+            "delivery_mode must be same_origin_artifact_stream.",
+            status="invalid",
+            blocked_fields=["delivery_mode"],
+        )
+    if delivery_request.operator_decision != layer3_workbench.EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "unsupported_external_export_download_delivery_decision",
+            "operator_decision must be deliver_external_export_download.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
+    if delivery_request.supplied_readiness_state != layer3_workbench.EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE:
         raise layer3_workbench.Layer3WorkbenchError(
             "connector_local_destination_receipt_requires_delivery_authority",
             "Internal fake/local destination receipt requires validated same-origin delivery authority.",
@@ -197,6 +234,43 @@ def _validate_existing_delivery_authority(
             http_status=409,
             blocked_fields=["external_export_download_record_ref"],
             next_allowed_actions=["validate_same_origin_external_export_download_delivery"],
+        )
+    if not str(readiness_state.get("client_request_id") or "").strip():
+        raise layer3_workbench.Layer3WorkbenchError(
+            "external_export_download_delivery_readiness_request_id_missing",
+            "Recorded external export/download readiness is missing its idempotency basis.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["external_export_download_record_ref"],
+        )
+    for field, _supplied, _expected in layer3_workbench.external_export_download_delivery_readiness_mismatches(
+        delivery_request,
+        readiness_state,
+    ):
+        raise layer3_workbench.Layer3WorkbenchError(
+            f"external_export_download_delivery_{field}_mismatch",
+            f"Supplied {field} does not match recorded external export/download readiness.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=[field],
+        )
+    descriptor = readiness_state.get("external_export_download_descriptor")
+    if not isinstance(descriptor, dict) or descriptor.get("descriptor_ref") != delivery_request.supplied_descriptor_ref:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "external_export_download_delivery_descriptor_mismatch",
+            "Recorded external export/download descriptor is missing or stale.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["export_download_descriptor_ref"],
+        )
+    source_artifact_ref = str(descriptor.get("source_artifact_ref") or "").strip()
+    if not source_artifact_ref or source_artifact_ref != delivery_request.supplied_aps_bundle_ref:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "external_export_download_delivery_source_artifact_mismatch",
+            "Recorded source artifact does not match the supplied APS bundle ref.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
         )
 
 
@@ -460,7 +534,6 @@ def record_internal_fake_local_destination_receipt(db: Session, payload: dict[st
             blocked_fields=["client_request_id", "connector_dispatch_record_ref"],
         )
     _validate_existing_delivery_authority(
-        db=db,
         payload=payload,
         connector_record=connector_record,
         readiness_state=readiness_state,
