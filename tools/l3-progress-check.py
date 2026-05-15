@@ -1322,6 +1322,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOF
     PLANNING_DOCS
     / "555_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "556_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -44691,6 +44695,97 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private e2e connector post-connector/destination behavior freeze term: {term}"
+                )
+
+    behavior_freeze_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement_sync_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_product_use_case_behavior_freeze_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement_sync`.",
+        "556_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "555_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SYNC.md",
+        "#1151",
+        "0ec403f558ee50d81ef303a3a22981469d8fc17d",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments before merge: empty.",
+        "PR reviews before merge: empty.",
+        "PR reviewThreads totalCount before merge: `0`.",
+        "Unresolved reviewThreads before merge: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "Current-main result: `current_main_synced_layer3_product_use_case_behavior_freeze_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement`.",
+        "Selected exact milestone remains `freeze_layer3_end_to_end_governance_lifecycle_behavior_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync`.",
+        "Selected exact named product/use-case behavior remains `operator_reviews_layer3_end_to_end_governance_lifecycle_after_connector_destination_dispatch_boundary_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_without_mutation_or_dispatch`.",
+        "Entry decision remains `freeze_only`.",
+        "Runtime status remains `not_implemented`.",
+        "No implementation begins in this sync.",
+        "conduct_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+        "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in behavior_freeze_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC)} missing source-intake provider-private e2e connector post-connector/destination behavior freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Behavior Freeze After Connector/Destination Audit Handoff/Export Package-Lifecycle Source Intake Provider-Private E2E Connector Requirement Current-Main Sync",
+            "PR `#1151` merged `555_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SYNC.md`",
+            "556_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "0ec403f558ee50d81ef303a3a22981469d8fc17d",
+            "current_main_synced_layer3_product_use_case_behavior_freeze_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement",
+            "freeze_layer3_end_to_end_governance_lifecycle_behavior_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+            "operator_reviews_layer3_end_to_end_governance_lifecycle_after_connector_destination_dispatch_boundary_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_without_mutation_or_dispatch",
+            "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement_current_main_sync",
+            "current_main_synced_layer3_product_use_case_behavior_freeze_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement",
+            "codex/l3-e2e-governance-behavior-freeze-current-main-sync-after-connector-destination-handoff-e2e",
+            "556_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1151",
+            "0ec403f558ee50d81ef303a3a22981469d8fc17d",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"sync_live_behavior_change": false',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            "conduct_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+            "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement_current_main_sync_proof",
+            "current_main_synced_layer3_product_use_case_behavior_freeze_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement",
+            "codex/l3-e2e-governance-behavior-freeze-current-main-sync-after-connector-destination-handoff-e2e",
+            "556_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1151",
+            "0ec403f558ee50d81ef303a3a22981469d8fc17d",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "freeze_only",
+            "not_implemented",
+            "no implementation",
+            "no runtime behavior",
+            "no connector/provider/destination dispatch",
+            "no package mutation",
+            "no frontend-only durable authority",
+            "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing source-intake provider-private e2e connector post-connector/destination behavior freeze sync term: {term}"
                 )
 
 
