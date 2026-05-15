@@ -1386,6 +1386,9 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SO
 LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "574_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_FREEZE_SYNC = (
+    PLANNING_DOCS / "575_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_FREEZE_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -46397,6 +46400,87 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing behavior freeze after provider-public authority audit source-intake provider-private authority requirement current-main sync term: {term}"
+                )
+
+    package_lifecycle_authority_audit_after_provider_public_authority_audit_source_intake_provider_private_authority_requirement_freeze_sync_text = _read_required_text(
+        LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main authority audit for `await_layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync`.",
+        "575_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_FREEZE_SYNC.md",
+        "dc135f15754a667e5993a722f63ae4d2b91decf3",
+        "574_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "operator_reviews_layer3_package_lifecycle_non_mutation_boundary_after_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_without_package_mutation_or_dispatch",
+        "layer3_package_lifecycle_non_mutation_boundary_authority_current_main_satisfied_no_runtime_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_requirement",
+        "Entry decision: `read_only_current_main_control_surface_only`.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: `none`.",
+        "backend/app/services/layer3_package_mutation_entry.py",
+        "backend/app/services/layer3_package_supersession_commit.py",
+        "backend/app/services/layer3_replacement_package_set_authority.py",
+        "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+        "backend/app/services/layer3_replacement_package_namespace.py",
+        "backend/app/models/models.py",
+        "`PASS` (`46 passed in 2.98s`)",
+        "current_main_sync_layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_merge",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        "No implementation begins in this audit.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in package_lifecycle_authority_audit_after_provider_public_authority_audit_source_intake_provider_private_authority_requirement_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_FREEZE_SYNC)} missing package-lifecycle authority audit after provider-public authority audit source-intake provider-private authority requirement freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Package-Lifecycle Non-Mutation Boundary Authority Audit After Provider-Public Authority Audit Source Intake Provider-Private Authority Requirement Freeze Sync",
+            "575_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_FREEZE_SYNC.md",
+            "dc135f15754a667e5993a722f63ae4d2b91decf3",
+            "layer3_package_lifecycle_non_mutation_boundary_authority_current_main_satisfied_no_runtime_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_requirement",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action is `none`",
+            "46 passed in 2.98s",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        MANIFEST: (
+            "layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_requirement_freeze_sync",
+            "current_main_authority_audit",
+            "codex/l3-package-lifecycle-authority-audit-after-provider-public-authority-source-intake-provider-private-authority-e2e",
+            "575_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_FREEZE_SYNC.md",
+            "dc135f15754a667e5993a722f63ae4d2b91decf3",
+            "574_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "layer3_package_lifecycle_non_mutation_boundary_authority_current_main_satisfied_no_runtime_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_requirement",
+            '"entry_decision": "read_only_current_main_control_surface_only"',
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            "PASS 46 passed in 2.98s",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_requirement_freeze_sync_proof",
+            "current_main_authority_audit",
+            "codex/l3-package-lifecycle-authority-audit-after-provider-public-authority-source-intake-provider-private-authority-e2e",
+            "575_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_REQUIREMENT_FREEZE_SYNC.md",
+            "dc135f15754a667e5993a722f63ae4d2b91decf3",
+            "read_only_current_main_control_surface_only",
+            "not_implemented",
+            "selected implementation action none",
+            "46 passed in 2.98s",
+            "no implementation",
+            "no runtime behavior",
+            "no package mutation",
+            "no connector/provider/destination dispatch",
+            "no frontend-only durable authority",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing package-lifecycle authority audit after provider-public authority audit source-intake provider-private authority requirement freeze sync term: {term}"
                 )
 
 
