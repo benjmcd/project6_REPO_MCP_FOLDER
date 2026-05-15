@@ -1405,6 +1405,10 @@ LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FR
     PLANNING_DOCS
     / "580_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE.md"
 )
+LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION = (
+    PLANNING_DOCS
+    / "581_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -46912,6 +46916,202 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
                 )
 
 
+def _check_connector_internal_fake_local_destination_receipt_runtime(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION,
+        errors,
+    )
+    for term in (
+        "Status: runtime implementation for `implement_layer3_connector_internal_fake_local_destination_receipt_runtime`.",
+        "581_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION.md",
+        "cb7ee86b3ebcabb285bc41f424081413d646b86e",
+        "580_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE.md",
+        "codex/l3-connector-local-receipt-runtime",
+        "layer3_connector_internal_fake_local_destination_receipt",
+        "layer3_internal_fake_local_destination_receipt",
+        "internal_fake_local_destination_receipt_only",
+        "record_internal_fake_local_destination_receipt",
+        "connector_local_destination_receipt_recorded",
+        "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+        "backend/app/services/layer3_connector_local_destination_receipt.py",
+        "L3ConnectorLocalDestinationReceipt",
+        "l3_connector_local_destination_receipt",
+        "connector_dispatch_recorded",
+        "external_export_download_prepared",
+        "client_request_id",
+        "authority_basis_hash",
+        "artifact://layer3-internal-fake-local-destination-redacted",
+        "does not perform external connector invocation",
+        "destination write",
+        "connector-run creation",
+        "credential handling",
+        "network write",
+        "real destination integration",
+        "current_main_sync_layer3_connector_internal_fake_local_destination_receipt_runtime_merge",
+        "await_named_authority_for_next_layer3_connector_destination_runtime_after_internal_fake_local_destination_receipt",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION)} missing connector internal fake local destination receipt runtime term: {term}"
+            )
+
+    connector_service = ROOT / "backend" / "app" / "services" / "layer3_connector_local_destination_receipt.py"
+    connector_migration = (
+        ROOT
+        / "backend"
+        / "alembic"
+        / "versions"
+        / "0026_layer3_connector_local_destination_receipt.py"
+    )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Internal Fake Local Destination Receipt Runtime Implementation",
+            "581_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION.md",
+            "implement_layer3_connector_internal_fake_local_destination_receipt_runtime",
+            "cb7ee86b3ebcabb285bc41f424081413d646b86e",
+            "layer3_connector_internal_fake_local_destination_receipt",
+            "internal_fake_local_destination_receipt_only",
+            "record_internal_fake_local_destination_receipt",
+            "connector_local_destination_receipt_recorded",
+            "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+            "L3ConnectorLocalDestinationReceipt",
+            "l3_connector_local_destination_receipt",
+            "artifact://layer3-internal-fake-local-destination-redacted",
+            "no external connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no credential handling",
+            "no network write",
+            "no real destination integration",
+            "current_main_sync_layer3_connector_internal_fake_local_destination_receipt_runtime_merge",
+        ),
+        MANIFEST: (
+            "layer3_connector_internal_fake_local_destination_receipt_runtime_implementation",
+            '"status": "implemented_branch_local"',
+            "codex/l3-connector-local-receipt-runtime",
+            "581_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION.md",
+            "cb7ee86b3ebcabb285bc41f424081413d646b86e",
+            '"selected_runtime_slice": "layer3_connector_internal_fake_local_destination_receipt"',
+            '"selected_target": "layer3_internal_fake_local_destination_receipt"',
+            '"selected_dispatch_mode": "internal_fake_local_destination_receipt_only"',
+            '"operator_decision": "record_internal_fake_local_destination_receipt"',
+            '"implemented_state": "connector_local_destination_receipt_recorded"',
+            '"implemented_table": "l3_connector_local_destination_receipt"',
+            '"redacted_artifact_ref": "artifact://layer3-internal-fake-local-destination-redacted"',
+            '"runtime_behavior_change": true',
+            '"backend_route_behavior_change": true',
+            '"service_runtime_behavior_change": true',
+            '"schema_shape_change": true',
+            '"migration_lineage_change": true',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_named_authority_for_next_layer3_connector_destination_runtime_after_internal_fake_local_destination_receipt",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_internal_fake_local_destination_receipt_runtime_implementation_proof",
+            '"status": "implemented_branch_local"',
+            "codex/l3-connector-local-receipt-runtime",
+            "581_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION.md",
+            "implement_layer3_connector_internal_fake_local_destination_receipt_runtime",
+            "record_internal_fake_local_destination_receipt",
+            "connector_local_destination_receipt_recorded",
+            "L3ConnectorLocalDestinationReceipt",
+            "l3_connector_local_destination_receipt",
+            "/handoff/connector/local-destination/receipt",
+            "artifact://layer3-internal-fake-local-destination-redacted",
+            "client_request_id",
+            "authority_basis_hash",
+            "no external connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no credential handling",
+            "no network write",
+            "no real destination integration",
+        ),
+        connector_service: (
+            'CONNECTOR_LOCAL_DESTINATION_RECEIPT_SCHEMA_ID = "layer3.connector_local_destination_receipt.v1"',
+            'CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATE_SCHEMA_ID = "layer3.connector_local_destination_receipt_state.v1"',
+            'CONNECTOR_LOCAL_DESTINATION_RECEIPT_TARGET = "layer3_internal_fake_local_destination_receipt"',
+            'CONNECTOR_LOCAL_DESTINATION_RECEIPT_MODE = "internal_fake_local_destination_receipt_only"',
+            'CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATE = "connector_local_destination_receipt_recorded"',
+            'CONNECTOR_LOCAL_DESTINATION_RECEIPT_OPERATOR_DECISION = "record_internal_fake_local_destination_receipt"',
+            'CONNECTOR_LOCAL_DESTINATION_REDACTED_ARTIFACT_REF = "artifact://layer3-internal-fake-local-destination-redacted"',
+            "def record_internal_fake_local_destination_receipt(",
+            "connector_local_destination_receipt_already_recorded",
+            "connector_local_destination_receipt_{field}_mismatch",
+            "connector_local_destination_receipt_scope_not_admitted",
+            "connector_dispatch_recorded",
+            "external_export_download_prepared",
+            "L3ConnectorLocalDestinationReceipt(",
+        ),
+        LAYER3_API: (
+            "Layer3ConnectorLocalDestinationReceiptRequest",
+            "Layer3ConnectorLocalDestinationReceiptResponse",
+            "CONNECTOR_LOCAL_DESTINATION_RECEIPT_REQUEST_SCHEMA",
+            '"/handoff/connector/local-destination/receipt"',
+            "record_internal_fake_local_destination_receipt",
+            "internal_fake_local_destination_receipt_admitted",
+        ),
+        MODELS: (
+            "class L3ConnectorLocalDestinationReceipt",
+            '__tablename__ = "l3_connector_local_destination_receipt"',
+            'UniqueConstraint("client_request_id"',
+            'UniqueConstraint("authority_basis_hash"',
+            "connector_dispatch_record_ref",
+            "external_export_download_record_ref",
+            "authority_snapshot_json",
+        ),
+        connector_migration: (
+            'revision = "0026_layer3_connector_local_destination_receipt"',
+            'down_revision = "0025_layer3_merge_source_intake_provider_public_url_heads"',
+            '"l3_connector_local_destination_receipt"',
+            '"uq_l3_connector_local_destination_receipt_client_request"',
+            '"uq_l3_connector_local_destination_receipt_authority_basis"',
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"internal_fake_local_destination_receipt": True',
+            "internal_fake_local_destination_receipt_admitted",
+            "/handoff/connector/local-destination/receipt",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            '"connector-local-destination-receipt"',
+            "internal_fake_local_destination_receipt_admitted",
+            "duplicate_internal_fake_local_destination_receipt",
+            "internal_fake_local_destination_receipt_uses_unique_request_and_basis",
+        ),
+        STATE_ACTION_CONTRACT: (
+            '"internal_fake_local_destination_receipt"',
+            "layer3_connector_local_destination_receipt.py",
+            "external_connector_invocation",
+        ),
+        STATE_MODEL_CONTRACT_SERVICE: (
+            "record_internal_fake_local_destination_receipt",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_connector_local_destination_receipt_records_durable_fake_local_receipt",
+            "test_layer3_api_connector_local_destination_receipt_prechecks_fail_closed",
+            "connector_local_destination_receipt_already_recorded",
+            "connector_local_destination_receipt_connector_dispatch_record_ref_mismatch",
+            "L3ConnectorLocalDestinationReceipt",
+            "artifact://layer3-internal-fake-local-destination-redacted",
+            "assert db.query(ConnectorRun).count() == counts_before[\"connector_runs\"]",
+        ),
+        LAYER3_WORKBENCH_TEST: (
+            "internal_fake_local_destination_receipt",
+            "layer3_connector_local_destination_receipt.py",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector internal fake local destination receipt runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -47382,6 +47582,7 @@ def main() -> int:
     _check_external_export_contract_extraction(errors)
     _check_bounded_e2e_current_main_sync(errors)
     _check_pr798_review_debt_closeout(errors)
+    _check_connector_internal_fake_local_destination_receipt_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

@@ -24,6 +24,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "external_export_download_prepare": True,
     "external_export_download_deliver": True,
     "internal_connector_dispatch_record": True,
+    "internal_fake_local_destination_receipt": True,
     "package_supersession_preview": True,
     "replacement_package_set_authority": True,
     "package_supersession_commit": True,
@@ -101,6 +102,10 @@ def build_bootstrap_contract(
             "external_export_download_deliver_endpoint": f"{api_root}/handoff/export/download/deliver",
             "internal_connector_dispatch_record_admitted": True,
             "internal_connector_dispatch_record_endpoint": f"{api_root}/handoff/connector/record",
+            "internal_fake_local_destination_receipt_admitted": True,
+            "internal_fake_local_destination_receipt_endpoint": (
+                f"{api_root}/handoff/connector/local-destination/receipt"
+            ),
             "package_supersession_preview_admitted": True,
             "package_supersession_preview_endpoint": f"{api_root}/package/mutation/preview",
             "replacement_package_set_authority_admitted": True,

@@ -364,7 +364,10 @@ def build_workbench_state_model(*, state_names: Mapping[str, str]) -> dict[str, 
             {
                 "state": _state(state_names, "CONNECTOR_DISPATCH_RECORDED_STATE"),
                 "authority_source": "existing_l3_reconciliation_record_connector_dispatch_record",
-                "allowed_next_actions": ["inspect_internal_connector_dispatch_record"],
+                "allowed_next_actions": [
+                    "inspect_internal_connector_dispatch_record",
+                    "record_internal_fake_local_destination_receipt",
+                ],
                 "forbidden_downstream_actions": [
                     "external_connector_invocation",
                     "destination_write",
