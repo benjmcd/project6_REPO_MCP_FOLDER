@@ -1409,6 +1409,10 @@ LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION 
     PLANNING_DOCS
     / "581_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION.md"
 )
+LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "582_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -47109,6 +47113,112 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector internal fake local destination receipt runtime term: {term}"
+                )
+
+    sync_text = _read_required_text(
+        LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `current_main_sync_layer3_connector_internal_fake_local_destination_receipt_runtime_merge`.",
+        "582_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "#1177",
+        "0d0a56e914955a64bb23f4b07dfc25b7a2a94a97",
+        "581_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_IMPLEMENTATION.md",
+        "580_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE.md",
+        "codex/l3-connector-local-receipt-runtime-current-main-sync",
+        "`backend-layer3-api` passed in `2m36s`",
+        "`test` passed in `2m56s`",
+        "PR comments were empty.",
+        "PR reviews were empty.",
+        "PR reviewThreads totalCount was `0`",
+        "unresolved reviewThreads were `0`",
+        "Merge state before merge was `CLEAN`",
+        "Open PR state after merge: none.",
+        "layer3_connector_internal_fake_local_destination_receipt",
+        "connector_local_destination_receipt_recorded",
+        "artifact://layer3-internal-fake-local-destination-redacted",
+        "Post-merge validation from current main passed",
+        "no runtime behavior",
+        "no external connector invocation",
+        "no destination write",
+        "no connector-run creation",
+        "no credential handling",
+        "no network write",
+        "no real destination integration",
+        "no frontend-only durable authority",
+        "await_named_authority_for_next_layer3_connector_destination_runtime_after_internal_fake_local_destination_receipt",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC)} missing connector internal fake local destination receipt runtime current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Internal Fake Local Destination Receipt Runtime Current-Main Sync",
+            "PR `#1177`",
+            "0d0a56e914955a64bb23f4b07dfc25b7a2a94a97",
+            "582_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "backend-layer3-api` passed in `2m36s",
+            "test` passed in `2m56s",
+            "reviewThreads totalCount was `0`",
+            "unresolved reviewThreads were `0`",
+            "open PR state after merge was none",
+            "layer3_connector_internal_fake_local_destination_receipt",
+            "L3ConnectorLocalDestinationReceipt",
+            "l3_connector_local_destination_receipt",
+            "no external connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no frontend-only durable authority",
+            "await_named_authority_for_next_layer3_connector_destination_runtime_after_internal_fake_local_destination_receipt",
+        ),
+        MANIFEST: (
+            "layer3_connector_internal_fake_local_destination_receipt_runtime_current_main_sync",
+            '"status": "current_main_synced_layer3_connector_internal_fake_local_destination_receipt_runtime"',
+            "codex/l3-connector-local-receipt-runtime-current-main-sync",
+            "582_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            '"implementation_pr": "#1177"',
+            "0d0a56e914955a64bb23f4b07dfc25b7a2a94a97",
+            '"backend-layer3-api": "pass 2m36s"',
+            '"test": "pass 2m56s"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"merge_state_before_merge": "CLEAN"',
+            '"open_pr_state_after_merge": "none"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_named_authority_for_next_layer3_connector_destination_runtime_after_internal_fake_local_destination_receipt",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_internal_fake_local_destination_receipt_runtime_current_main_sync_proof",
+            '"status": "current_main_synced_layer3_connector_internal_fake_local_destination_receipt_runtime"',
+            "codex/l3-connector-local-receipt-runtime-current-main-sync",
+            "582_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            '"implementation_pr": "#1177"',
+            "0d0a56e914955a64bb23f4b07dfc25b7a2a94a97",
+            "backend-layer3-api pass 2m36s",
+            "test pass 2m56s",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "merge_state_before_merge CLEAN",
+            "open PR state after merge none",
+            "post-merge progress validation passed",
+            "no runtime behavior",
+            "no external connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no frontend-only durable authority",
+            "await_named_authority_for_next_layer3_connector_destination_runtime_after_internal_fake_local_destination_receipt",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector internal fake local destination receipt runtime current-main sync term: {term}"
                 )
 
 
