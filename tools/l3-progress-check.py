@@ -1230,6 +1230,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUD
     PLANNING_DOCS
     / "532_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC = (
+    PLANNING_DOCS
+    / "533_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -42753,6 +42757,88 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private e2e connector product/use-case behavior freeze sync term: {term}"
+                )
+
+    provider_public_no_runtime_authority_audit_after_source_intake_provider_private_e2e_connector_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control audit for `conduct_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_selection_sync`.",
+        "533_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+        "532_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "f914c1eac88666dd69af489bd4b50a1a78283bf2",
+        "operator_reviews_layer3_provider_public_delivery_use_no_runtime_boundary_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_selection_without_raw_public_url_exposure_or_dispatch",
+        "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime_after_source_intake_provider_private_e2e_connector_requirement",
+        "Entry decision: `read_only_current_main_control_surface_only`.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: `none`.",
+        "350_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_FREEZE.md",
+        "353_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "385_LAYER3_RUNTIME_FREEZE_SEQUENCE_COMPLETION_AUDIT_AFTER_PROVIDER_PUBLIC_NO_RUNTIME.md",
+        "497_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+        "backend/app/api/layer3.py",
+        "backend/app/services/layer3_provider_public_url.py",
+        "backend/app/services/layer3_provider_public_url_state.py",
+        "backend/tests/test_layer3_api.py",
+        "backend/tests/test_layer3_provider_public_url_state.py",
+        "`PASS` (`9 passed, 3 warnings`)",
+        "current_main_sync_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_merge",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        "No implementation begins in this audit.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in provider_public_no_runtime_authority_audit_after_source_intake_provider_private_e2e_connector_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC)} missing source-intake provider-private e2e connector provider-public no-runtime authority audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Provider-Public Delivery/Use No-Runtime Boundary Authority Audit After Source Intake Provider-Private E2E Connector Requirement Freeze Sync",
+            "533_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+            "f914c1eac88666dd69af489bd4b50a1a78283bf2",
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime_after_source_intake_provider_private_e2e_connector_requirement",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action is `none`",
+            "Targeted provider-public validation passed with `9 passed, 3 warnings`.",
+            "current_main_sync_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_merge",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        MANIFEST: (
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_freeze_sync",
+            "current_main_satisfied_no_runtime_authority_audit",
+            "codex/l3-provider-public-no-runtime-authority-audit-after-source-intake-provider-private-e2e-connector",
+            "533_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+            "f914c1eac88666dd69af489bd4b50a1a78283bf2",
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_current_main_satisfied_no_runtime_after_source_intake_provider_private_e2e_connector_requirement",
+            '"entry_decision": "read_only_current_main_control_surface_only"',
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_freeze_sync_proof",
+            "current_main_satisfied_no_runtime_authority_audit",
+            "codex/l3-provider-public-no-runtime-authority-audit-after-source-intake-provider-private-e2e-connector",
+            "533_LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_NO_RUNTIME_BOUNDARY_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+            "f914c1eac88666dd69af489bd4b50a1a78283bf2",
+            "selected implementation action none",
+            "test_layer3_api_provider_public_url_openapi_prepare_status_schema PASS",
+            "test_layer3_provider_public_url_state.py PASS",
+            "no provider-public delivery/use",
+            "no raw public URL exposure",
+            "no connector/provider/destination dispatch",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing source-intake provider-private e2e connector provider-public no-runtime authority audit term: {term}"
                 )
 
 
