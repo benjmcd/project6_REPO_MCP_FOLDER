@@ -1136,6 +1136,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMEN
     PLANNING_DOCS
     / "508_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_FREEZE_SYNC = (
+    PLANNING_DOCS
+    / "509_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_FREEZE_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -40753,6 +40757,89 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing package-lifecycle audit handoff/export behavior freeze sync term: {term}"
+                )
+
+    handoff_export_boundary_authority_audit_text = _read_required_text(
+        LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main authority audit for `await_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_selection_freeze_sync`.",
+        "509_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+        "508_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "ea9199b1943ae15e7e3f0d371c624000f13a70e0",
+        "operator_reviews_layer3_handoff_export_boundary_after_package_lifecycle_non_mutation_audit_requirement_selection_without_connector_provider_or_destination_dispatch",
+        "conduct_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_selection_sync",
+        "Audit result: `layer3_handoff_export_boundary_authority_current_main_satisfied_no_runtime`.",
+        "Entry decision: `read_only_current_main_control_surface_only`.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: `none`.",
+        "external_connector_invocation_enabled: False",
+        "destination_write_enabled: False",
+        "connector_run_created: False",
+        "provider_public_url_enabled: False",
+        "current_main_sync_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_merge",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_handoff_export_boundary_audit_sync",
+        "No implementation begins in this audit.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in handoff_export_boundary_authority_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_FREEZE_SYNC)} missing handoff/export boundary authority audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Handoff/Export Boundary Authority Audit After Package-Lifecycle Audit Requirement Freeze Sync",
+            "509_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+            "ea9199b1943ae15e7e3f0d371c624000f13a70e0",
+            "layer3_handoff_export_boundary_authority_current_main_satisfied_no_runtime",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action is `none`",
+            "current_main_sync_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_merge",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_handoff_export_boundary_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_freeze_sync",
+            "authority_audit_current_main_satisfied_no_runtime",
+            "codex/l3-handoff-export-boundary-authority-audit",
+            "509_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+            "ea9199b1943ae15e7e3f0d371c624000f13a70e0",
+            "operator_reviews_layer3_handoff_export_boundary_after_package_lifecycle_non_mutation_audit_requirement_selection_without_connector_provider_or_destination_dispatch",
+            "layer3_handoff_export_boundary_authority_current_main_satisfied_no_runtime",
+            '"entry_decision": "read_only_current_main_control_surface_only"',
+            '"runtime_status": "not_implemented"',
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_handoff_export_boundary_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_freeze_sync_proof",
+            "authority_audit_current_main_satisfied_no_runtime",
+            "codex/l3-handoff-export-boundary-authority-audit",
+            "509_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+            "ea9199b1943ae15e7e3f0d371c624000f13a70e0",
+            "layer3_handoff_export_boundary_authority_current_main_satisfied_no_runtime",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action none",
+            "external_connector_invocation_enabled False",
+            "destination_write_enabled False",
+            "connector_run_created False",
+            "provider_public_url_enabled False",
+            "no implementation",
+            "no runtime behavior",
+            "no connector/provider/destination dispatch",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_handoff_export_boundary_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing handoff/export boundary authority audit term: {term}"
                 )
 
 
