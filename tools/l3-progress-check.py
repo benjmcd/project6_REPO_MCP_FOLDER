@@ -1365,6 +1365,9 @@ LAYER3_REQUIREMENT_SELECTION_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURR
 LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_SELECTION_SYNC = (
     PLANNING_DOCS / "567_LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_SELECTION_SYNC.md"
 )
+LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "568_LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -45750,6 +45753,95 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing provider-public behavior freeze after source-intake provider-private authority selection term: {term}"
+                )
+
+    provider_public_behavior_freeze_after_source_intake_provider_private_authority_current_main_sync_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_provider_public_delivery_use_no_runtime_boundary_behavior_freeze_after_source_intake_provider_private_authority_selection_sync`.",
+        "568_LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC.md",
+        "567_LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_SELECTION_SYNC.md",
+        "PR `#1163`",
+        "3958d60ee7e10a33e83819b8c9e3990282c1d6ff",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments before merge: empty.",
+        "PR reviews before merge: empty.",
+        "PR reviewThreads totalCount before merge: `0`.",
+        "Unresolved reviewThreads before merge: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_provider_public_delivery_use_no_runtime_boundary_behavior_freeze_after_source_intake_provider_private_authority_selection",
+        "freeze_layer3_provider_public_delivery_use_no_runtime_boundary_behavior_after_source_intake_provider_private_signed_reference_delivery_boundary_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+        "operator_reviews_layer3_provider_public_delivery_use_no_runtime_boundary_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_without_raw_public_url_exposure_or_dispatch",
+        "Entry decision remains `freeze_only`.",
+        "Runtime status remains `not_implemented`.",
+        "No implementation begins in this sync.",
+        "conduct_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+        "await_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync",
+    ):
+        if term not in provider_public_behavior_freeze_after_source_intake_provider_private_authority_current_main_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC)} missing provider-public behavior freeze after source-intake provider-private authority current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Provider-Public Behavior Freeze After Source Intake Provider-Private Authority Current-Main Sync",
+            "PR `#1163`",
+            "3958d60ee7e10a33e83819b8c9e3990282c1d6ff",
+            "568_LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_layer3_provider_public_delivery_use_no_runtime_boundary_behavior_freeze_after_source_intake_provider_private_authority_selection",
+            "await_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_provider_public_delivery_use_no_runtime_boundary_behavior_freeze_after_source_intake_provider_private_authority_selection_current_main_sync",
+            "current_main_synced_layer3_provider_public_delivery_use_no_runtime_boundary_behavior_freeze_after_source_intake_provider_private_authority_selection",
+            "codex/l3-provider-public-behavior-freeze-current-main-sync-after-source-intake-provider-private-authority-selection-e2e",
+            "568_LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC.md",
+            "#1163",
+            "3958d60ee7e10a33e83819b8c9e3990282c1d6ff",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"sync_live_behavior_change": false',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            "conduct_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+            "await_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_provider_public_delivery_use_no_runtime_boundary_behavior_freeze_after_source_intake_provider_private_authority_selection_current_main_sync_proof",
+            "current_main_synced_layer3_provider_public_delivery_use_no_runtime_boundary_behavior_freeze_after_source_intake_provider_private_authority_selection",
+            "codex/l3-provider-public-behavior-freeze-current-main-sync-after-source-intake-provider-private-authority-selection-e2e",
+            "568_LAYER3_PROVIDER_PUBLIC_BEHAVIOR_FREEZE_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC.md",
+            "#1163",
+            "3958d60ee7e10a33e83819b8c9e3990282c1d6ff",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "freeze_only",
+            "not_implemented",
+            "no implementation",
+            "no runtime behavior",
+            "no connector/provider/destination dispatch",
+            "no provider-public delivery/use",
+            "no package mutation",
+            "no frontend-only durable authority",
+            "await_layer3_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public behavior freeze after source-intake provider-private authority current-main sync term: {term}"
                 )
 
 
