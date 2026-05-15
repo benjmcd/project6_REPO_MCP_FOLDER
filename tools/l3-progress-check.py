@@ -1210,6 +1210,10 @@ LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTH
     PLANNING_DOCS
     / "527_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md"
 )
+LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "528_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -42367,6 +42371,70 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private authority audit after e2e connector term: {term}"
+                )
+
+    source_intake_provider_private_audit_after_e2e_connector_sync_text = _read_required_text(
+        LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_freeze_sync`.",
+        "528_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "527_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+        "#1123",
+        "9c2eb4058a8e426cfa5b019403228eafc70a41a1",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR reviewThreads totalCount before merge: `0`.",
+        "Unresolved reviewThreads before merge: `0`.",
+        "current_main_synced_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement",
+        "Selected implementation action remains `none`.",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_sync",
+        "No implementation begins in this sync.",
+    ):
+        if term not in source_intake_provider_private_audit_after_e2e_connector_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC)} missing source-intake provider-private authority audit after e2e connector sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Source Intake to Provider-Private Signed-Reference Delivery Boundary Authority Audit After E2E Connector Requirement Current-Main Sync",
+            "528_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1123",
+            "9c2eb4058a8e426cfa5b019403228eafc70a41a1",
+            "current_main_synced_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_sync",
+        ),
+        MANIFEST: (
+            "layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_current_main_sync",
+            "current_main_synced_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement",
+            "codex/l3-source-intake-provider-private-authority-audit-current-main-sync",
+            "528_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1123",
+            "9c2eb4058a8e426cfa5b019403228eafc70a41a1",
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_source_intake_to_provider_private_signed_reference_delivery_boundary_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement_current_main_sync_proof",
+            "current_main_synced_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_authority_audit_after_end_to_end_governance_lifecycle_connector_destination_requirement",
+            "codex/l3-source-intake-provider-private-authority-audit-current-main-sync",
+            "528_LAYER3_SOURCE_INTAKE_TO_PROVIDER_PRIVATE_SIGNED_REFERENCE_DELIVERY_BOUNDARY_AUTHORITY_AUDIT_AFTER_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1123",
+            "9c2eb4058a8e426cfa5b019403228eafc70a41a1",
+            "selected implementation action none",
+            "no runtime behavior",
+            "no connector/provider/destination dispatch",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing source-intake provider-private authority audit after e2e connector sync term: {term}"
                 )
 
 
