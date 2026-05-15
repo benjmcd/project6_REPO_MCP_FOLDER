@@ -1433,6 +1433,10 @@ LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REMEDIATI
     PLANNING_DOCS
     / "587_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REVIEW_REMEDIATION.md"
 )
+LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "588_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -47733,6 +47737,104 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector local destination receipt delivery-authority follow-up remediation term: {term}"
+                )
+
+    followup_sync_text = _read_required_text(
+        LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_followup_review_remediation_merge`.",
+        "588_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_CURRENT_MAIN_SYNC.md",
+        "#1183",
+        "c0a774d61442d845f4b214fe5a89e053729ad1f8",
+        "587_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REVIEW_REMEDIATION.md",
+        "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1181#discussion_r3249031415",
+        "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1181#discussion_r3249031420",
+        "backend-layer3-api` passed in `2m17s",
+        "test` passed in `2m52s",
+        "PR comments were empty.",
+        "PR reviews were empty.",
+        "PR reviewThreads totalCount was `0`",
+        "unresolved reviewThreads were `0`",
+        "Merge state before merge was `CLEAN`",
+        "Open PR state after merge: none before this sync branch.",
+        "remediated_layer3_connector_local_destination_receipt_delivery_authority_followup_review_threads",
+        "validation_db = Session(bind=db.get_bind())",
+        "same-client idempotent replay",
+        "This sync adds no runtime behavior",
+        "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+    ):
+        if term not in followup_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_CURRENT_MAIN_SYNC)} missing connector local destination receipt delivery-authority follow-up current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Local Destination Receipt Delivery-Authority Follow-Up Current-Main Sync",
+            "PR `#1183`",
+            "c0a774d61442d845f4b214fe5a89e053729ad1f8",
+            "588_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_CURRENT_MAIN_SYNC.md",
+            "backend-layer3-api` passed in `2m17s",
+            "test` passed in `2m52s",
+            "reviewThreads totalCount was `0`",
+            "unresolved reviewThreads were `0`",
+            "open PR state after merge was none before this sync branch",
+            "remediated_layer3_connector_local_destination_receipt_delivery_authority_followup_review_threads",
+            "validation_db = Session(bind=db.get_bind())",
+            "same-client idempotent replay is preserved before stale delivery-authority revalidation",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+        MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_followup_current_main_sync",
+            '"status": "current_main_synced_layer3_connector_local_destination_receipt_delivery_authority_followup_review_remediation"',
+            "codex/l3-local-receipt-delivery-authority-followup-current-main-sync",
+            "588_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_CURRENT_MAIN_SYNC.md",
+            '"followup_review_remediation_pr": "#1183"',
+            "c0a774d61442d845f4b214fe5a89e053729ad1f8",
+            "remediated_layer3_connector_local_destination_receipt_delivery_authority_followup_review_threads",
+            '"backend-layer3-api": "pass 2m17s"',
+            '"test": "pass 2m52s"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"merge_state_before_merge": "CLEAN"',
+            '"open_pr_state_after_merge": "none_before_sync_branch"',
+            '"runtime_behavior_change": false',
+            '"schema_shape_change": false',
+            '"migration_lineage_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_followup_current_main_sync_proof",
+            '"status": "current_main_synced_layer3_connector_local_destination_receipt_delivery_authority_followup_review_remediation"',
+            "codex/l3-local-receipt-delivery-authority-followup-current-main-sync",
+            "588_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_CURRENT_MAIN_SYNC.md",
+            '"followup_review_remediation_pr": "#1183"',
+            "c0a774d61442d845f4b214fe5a89e053729ad1f8",
+            "backend-layer3-api pass 2m17s",
+            "test pass 2m52s",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "merge_state_before_merge CLEAN",
+            "open PR state after merge none before sync branch",
+            "post-merge progress validation passed",
+            "validation_db = Session(bind=db.get_bind())",
+            "already_recorded before stale delivery-authority revalidation",
+            "no runtime behavior in sync",
+            "no real connector target",
+            "no real destination target",
+            "no schema/model/migration changes",
+            "no frontend-only durable authority",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector local destination receipt delivery-authority follow-up current-main sync term: {term}"
                 )
 
 
