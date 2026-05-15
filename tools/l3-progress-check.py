@@ -1120,6 +1120,10 @@ LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC
     PLANNING_DOCS
     / "504_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SYNC = (
+    PLANNING_DOCS
+    / "505_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -40418,6 +40422,80 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing package-lifecycle non-mutation boundary audit sync term: {term}"
+                )
+
+    product_use_case_requirement_selection_after_package_lifecycle_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_sync`.",
+        "505_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SYNC.md",
+        "b4c8be680ae59e827591ef24172edc6bf438abea",
+        "504_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+        "select_next_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_sync",
+        "operator_selects_next_layer3_product_use_case_requirement_after_read_only_package_lifecycle_non_mutation_boundary_authority_audit_without_runtime_expansion",
+        "Selected freeze mode: `layer3_product_use_case_requirement_selection_freeze`.",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_package_lifecycle_non_mutation_boundary_audit_merge",
+        "await_next_exact_named_layer3_product_use_case_behavior_after_package_lifecycle_non_mutation_boundary_audit_requirement_selection_sync",
+        "No runtime behavior",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in product_use_case_requirement_selection_after_package_lifecycle_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SYNC)} missing package-lifecycle audit requirement-selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Requirement Selection Freeze After Package-Lifecycle Audit Sync",
+            "505_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SYNC.md",
+            "select_next_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_sync",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_package_lifecycle_non_mutation_boundary_authority_audit_without_runtime_expansion",
+            "layer3_product_use_case_requirement_selection_freeze",
+            "`freeze_only`",
+            "`not_implemented`",
+            "current_main_sync_layer3_product_use_case_requirement_selection_freeze_after_package_lifecycle_non_mutation_boundary_audit_merge",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_package_lifecycle_non_mutation_boundary_audit_requirement_selection_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_package_lifecycle_audit_sync",
+            "planning_control_freeze",
+            "codex/l3-requirement-selection-after-package-lifecycle-audit-sync",
+            "505_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SYNC.md",
+            "b4c8be680ae59e827591ef24172edc6bf438abea",
+            "select_next_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_sync",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_package_lifecycle_non_mutation_boundary_authority_audit_without_runtime_expansion",
+            '"selected_freeze_mode": "layer3_product_use_case_requirement_selection_freeze"',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_next_exact_named_layer3_product_use_case_behavior_after_package_lifecycle_non_mutation_boundary_audit_requirement_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_package_lifecycle_audit_sync_proof",
+            "planning_control_freeze",
+            "codex/l3-requirement-selection-after-package-lifecycle-audit-sync",
+            "505_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SYNC.md",
+            "b4c8be680ae59e827591ef24172edc6bf438abea",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_package_lifecycle_non_mutation_boundary_authority_audit_without_runtime_expansion",
+            "freeze_only",
+            "not_implemented",
+            "no runtime behavior",
+            "no response-model shape change",
+            "no package mutation",
+            "no frontend-only durable authority",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_package_lifecycle_non_mutation_boundary_audit_requirement_selection_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing package-lifecycle audit requirement-selection freeze term: {term}"
                 )
 
 
