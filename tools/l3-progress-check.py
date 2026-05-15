@@ -1174,6 +1174,10 @@ LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_CONNECTOR_DESTINATION
     PLANNING_DOCS
     / "518_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_REQUIREMENT_SYNC = (
+    PLANNING_DOCS
+    / "519_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_REQUIREMENT_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -41614,6 +41618,78 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector/destination audit requirement-selection freeze current-main sync term: {term}"
+                )
+
+    behavior_freeze_after_connector_destination_audit_requirement_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_REQUIREMENT_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_next_exact_named_layer3_product_use_case_behavior_after_connector_destination_dispatch_boundary_audit_requirement_selection_sync`.",
+        "519_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_REQUIREMENT_SYNC.md",
+        "518_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_CURRENT_MAIN_SYNC.md",
+        "0bf2594b71a1ea1eed08bacd848b3102839537eb",
+        "Selected exact milestone: `freeze_layer3_end_to_end_governance_lifecycle_behavior_after_connector_destination_audit_requirement_sync`.",
+        "Selected exact named product/use-case behavior: `operator_reviews_layer3_end_to_end_governance_lifecycle_after_connector_destination_dispatch_boundary_audit_requirement_selection_without_mutation_or_dispatch`.",
+        "Selected freeze mode: `layer3_product_use_case_behavior_authority_freeze`.",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "conduct_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_requirement_selection_sync",
+        "no_runtime_now_layer3_end_to_end_governance_lifecycle_authority_absent_after_connector_destination_audit_requirement_selection",
+        "current_main_sync_layer3_product_use_case_behavior_freeze_after_connector_destination_audit_requirement_selection_merge",
+        "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_requirement_selection_freeze_sync",
+        "No implementation begins in this freeze.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in behavior_freeze_after_connector_destination_audit_requirement_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_REQUIREMENT_SYNC)} missing connector/destination audit behavior freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Behavior Freeze After Connector/Destination Audit Requirement Sync",
+            "519_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_REQUIREMENT_SYNC.md",
+            "freeze_layer3_end_to_end_governance_lifecycle_behavior_after_connector_destination_audit_requirement_sync",
+            "operator_reviews_layer3_end_to_end_governance_lifecycle_after_connector_destination_dispatch_boundary_audit_requirement_selection_without_mutation_or_dispatch",
+            "conduct_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_requirement_selection_sync",
+            "no_runtime_now_layer3_end_to_end_governance_lifecycle_authority_absent_after_connector_destination_audit_requirement_selection",
+            "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_requirement_selection_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_connector_destination_audit_requirement_sync",
+            "codex/l3-e2e-governance-behavior-freeze-after-connector-audit",
+            "519_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_REQUIREMENT_SYNC.md",
+            "0bf2594b71a1ea1eed08bacd848b3102839537eb",
+            "freeze_layer3_end_to_end_governance_lifecycle_behavior_after_connector_destination_audit_requirement_sync",
+            "operator_reviews_layer3_end_to_end_governance_lifecycle_after_connector_destination_dispatch_boundary_audit_requirement_selection_without_mutation_or_dispatch",
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_requirement_selection_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_connector_destination_audit_requirement_sync_proof",
+            "codex/l3-e2e-governance-behavior-freeze-after-connector-audit",
+            "519_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_REQUIREMENT_SYNC.md",
+            "freeze_layer3_end_to_end_governance_lifecycle_behavior_after_connector_destination_audit_requirement_sync",
+            "operator_reviews_layer3_end_to_end_governance_lifecycle_after_connector_destination_dispatch_boundary_audit_requirement_selection_without_mutation_or_dispatch",
+            "conduct_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_requirement_selection_sync",
+            "no_runtime_now_layer3_end_to_end_governance_lifecycle_authority_absent_after_connector_destination_audit_requirement_selection",
+            "no implementation",
+            "no runtime behavior",
+            "no connector/provider/destination dispatch",
+            "no frontend-only durable authority",
+            "await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_requirement_selection_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector/destination audit behavior freeze term: {term}"
                 )
 
 
