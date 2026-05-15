@@ -1132,6 +1132,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMEN
     PLANNING_DOCS
     / "507_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "508_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -40666,6 +40670,89 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing package-lifecycle audit handoff/export behavior freeze term: {term}"
+                )
+
+    product_use_case_behavior_freeze_after_package_lifecycle_sync_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_product_use_case_behavior_freeze_after_package_lifecycle_audit_requirement_sync`.",
+        "508_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "507_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_SYNC.md",
+        "#1103",
+        "e9b470c6482a7c4c8bbb7e1427283494bbad5ae4",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR reviewThreads totalCount before merge: `0`.",
+        "Unresolved reviewThreads before merge: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_product_use_case_behavior_freeze_after_package_lifecycle_audit_requirement",
+        "Selected exact milestone remains `freeze_layer3_handoff_export_boundary_behavior_after_package_lifecycle_audit_requirement_sync`.",
+        "Selected exact named product/use-case behavior remains `operator_reviews_layer3_handoff_export_boundary_after_package_lifecycle_non_mutation_audit_requirement_selection_without_connector_provider_or_destination_dispatch`.",
+        "Entry decision remains `freeze_only`.",
+        "Runtime status remains `not_implemented`.",
+        "await_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_selection_freeze_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in product_use_case_behavior_freeze_after_package_lifecycle_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC)} missing package-lifecycle audit handoff/export behavior freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Behavior Freeze After Package-Lifecycle Audit Requirement Current-Main Sync",
+            "508_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1103",
+            "e9b470c6482a7c4c8bbb7e1427283494bbad5ae4",
+            "reviewThreads totalCount was `0`",
+            "current_main_synced_layer3_product_use_case_behavior_freeze_after_package_lifecycle_audit_requirement",
+            "freeze_layer3_handoff_export_boundary_behavior_after_package_lifecycle_audit_requirement_sync",
+            "operator_reviews_layer3_handoff_export_boundary_after_package_lifecycle_non_mutation_audit_requirement_selection_without_connector_provider_or_destination_dispatch",
+            "await_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_selection_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_package_lifecycle_audit_requirement_current_main_sync",
+            "current_main_synced_layer3_product_use_case_behavior_freeze_after_package_lifecycle_audit_requirement",
+            "codex/l3-handoff-export-boundary-behavior-freeze-sync",
+            "508_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1103",
+            "e9b470c6482a7c4c8bbb7e1427283494bbad5ae4",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_selection_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_package_lifecycle_audit_requirement_current_main_sync_proof",
+            "current_main_synced_layer3_product_use_case_behavior_freeze_after_package_lifecycle_audit_requirement",
+            "codex/l3-handoff-export-boundary-behavior-freeze-sync",
+            "508_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1103",
+            "e9b470c6482a7c4c8bbb7e1427283494bbad5ae4",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "no implementation",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_requirement_selection_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing package-lifecycle audit handoff/export behavior freeze sync term: {term}"
                 )
 
 
