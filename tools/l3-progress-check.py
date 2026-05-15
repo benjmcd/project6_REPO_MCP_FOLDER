@@ -1457,6 +1457,10 @@ LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_READINESS_ART
     PLANNING_DOCS
     / "593_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_READINESS_ARTIFACT_SYNC.md"
 )
+LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "594_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -48324,6 +48328,120 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector/destination missing-decision after readiness/artifact sync term: {term}"
+                )
+
+    connector_missing_after_readiness_artifact_sync_text = _read_required_text(
+        LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `current_main_sync_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync_merge`.",
+        "594_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+        "#1189",
+        "2ac5ae2451a0c658beed3c5e450862bd4ac22221",
+        "593_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_READINESS_ARTIFACT_SYNC.md",
+        "592_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+        "codex/l3-connector-destination-missing-decision-readiness-current-main-sync",
+        "`backend-layer3-api` passed in `2m34s`",
+        "`test` passed in `3m1s`",
+        "PR comments were empty.",
+        "PR reviews were empty.",
+        "PR reviewThreads totalCount was `0`",
+        "Unresolved reviewThreads were `0`",
+        "Mergeability before merge was `MERGEABLE`",
+        "Merge state before merge was `CLEAN`",
+        "Open PR state after merge was none.",
+        "Post-merge progress validation passed",
+        "current_main_synced_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync",
+        "no_runtime_now_connector_destination_real_target_authority_absent_after_readiness_artifact_sync",
+        "Implementation-entry freeze written remains false.",
+        "Runtime status remains `not_implemented`.",
+        "Selected implementation action remains `none`.",
+        "one real connector or destination target",
+        "credential/access model",
+        "auth/security posture",
+        "This sync admits no runtime behavior",
+        "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+    ):
+        if term not in connector_missing_after_readiness_artifact_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC)} missing connector/destination missing-decision readiness/artifact current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector/Destination Runtime Missing-Decision After Readiness/Artifact Current-Main Sync",
+            "PR `#1189`",
+            "2ac5ae2451a0c658beed3c5e450862bd4ac22221",
+            "594_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+            "backend-layer3-api` passed in `2m34s",
+            "test` passed in `3m1s",
+            "reviewThreads totalCount was `0`",
+            "unresolved reviewThreads were `0`",
+            "open PR state after merge was none",
+            "current_main_synced_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_readiness_artifact_sync",
+            "implementation-entry freeze written remains false",
+            "runtime status remains `not_implemented`",
+            "selected implementation action remains `none`",
+            "one real connector or destination target",
+            "credential/access model",
+            "auth/security posture",
+            "No runtime behavior",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+        MANIFEST: (
+            "layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync",
+            '"status": "current_main_synced_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync"',
+            "codex/l3-connector-destination-missing-decision-readiness-current-main-sync",
+            "594_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+            '"missing_decision_pr": "#1189"',
+            "2ac5ae2451a0c658beed3c5e450862bd4ac22221",
+            "593_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_READINESS_ARTIFACT_SYNC.md",
+            "current_main_synced_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_readiness_artifact_sync",
+            '"implementation_entry_freeze_written": false',
+            '"runtime_status": "not_implemented"',
+            '"selected_implementation_action": "none"',
+            '"backend-layer3-api": "pass 2m34s"',
+            '"test": "pass 3m1s"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"mergeability_before_merge": "MERGEABLE"',
+            '"merge_state_before_merge": "CLEAN"',
+            '"post_merge_progress_validation": "passed"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync_proof",
+            '"status": "current_main_synced_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync"',
+            "codex/l3-connector-destination-missing-decision-readiness-current-main-sync",
+            "594_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+            '"missing_decision_pr": "#1189"',
+            "2ac5ae2451a0c658beed3c5e450862bd4ac22221",
+            "backend-layer3-api pass 2m34s",
+            "test pass 3m1s",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "mergeability before merge MERGEABLE",
+            "merge_state_before_merge CLEAN",
+            "post-merge progress validation passed",
+            "implementation-entry freeze written remains false",
+            "runtime status remains not_implemented",
+            "selected implementation action remains none",
+            "no runtime behavior in sync",
+            "no external connector invocation",
+            "no destination write",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector/destination missing-decision readiness/artifact current-main sync term: {term}"
                 )
 
 
