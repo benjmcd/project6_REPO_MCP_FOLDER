@@ -1151,6 +1151,10 @@ LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_
     PLANNING_DOCS
     / "512_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SYNC = (
+    PLANNING_DOCS
+    / "513_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -41095,6 +41099,83 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing handoff/export audit requirement-selection current-main sync term: {term}"
+                )
+
+    behavior_freeze_after_handoff_export_audit_requirement_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `await_next_exact_named_layer3_product_use_case_behavior_after_handoff_export_boundary_audit_requirement_selection_sync`.",
+        "513_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SYNC.md",
+        "512_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_CURRENT_MAIN_SYNC.md",
+        "7dd81687368f349b263e20ed00358c1045e57152",
+        "freeze_layer3_connector_destination_dispatch_boundary_behavior_after_handoff_export_audit_requirement_sync",
+        "operator_reviews_layer3_connector_destination_dispatch_boundary_after_handoff_export_audit_requirement_selection_without_external_connector_invocation_or_destination_write",
+        "Selected freeze mode: `layer3_product_use_case_behavior_authority_freeze`.",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "conduct_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection_sync",
+        "no_runtime_now_layer3_connector_destination_dispatch_boundary_authority_absent_after_handoff_export_audit_requirement_selection",
+        "current_main_sync_layer3_product_use_case_behavior_freeze_after_handoff_export_audit_requirement_selection_merge",
+        "await_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection_freeze_sync",
+        "No implementation begins in this freeze.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in behavior_freeze_after_handoff_export_audit_requirement_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SYNC)} missing handoff/export audit connector/destination behavior freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Behavior Freeze After Handoff/Export Audit Requirement Sync",
+            "513_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SYNC.md",
+            "freeze_layer3_connector_destination_dispatch_boundary_behavior_after_handoff_export_audit_requirement_sync",
+            "operator_reviews_layer3_connector_destination_dispatch_boundary_after_handoff_export_audit_requirement_selection_without_external_connector_invocation_or_destination_write",
+            "layer3_product_use_case_behavior_authority_freeze",
+            "`freeze_only`",
+            "`not_implemented`",
+            "conduct_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection_sync",
+            "no_runtime_now_layer3_connector_destination_dispatch_boundary_authority_absent_after_handoff_export_audit_requirement_selection",
+            "await_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_handoff_export_audit_requirement_sync",
+            "planning_control_freeze",
+            "codex/l3-connector-destination-boundary-behavior-freeze",
+            "513_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SYNC.md",
+            "7dd81687368f349b263e20ed00358c1045e57152",
+            "freeze_layer3_connector_destination_dispatch_boundary_behavior_after_handoff_export_audit_requirement_sync",
+            "operator_reviews_layer3_connector_destination_dispatch_boundary_after_handoff_export_audit_requirement_selection_without_external_connector_invocation_or_destination_write",
+            '"selected_freeze_mode": "layer3_product_use_case_behavior_authority_freeze"',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_behavior_freeze_after_handoff_export_audit_requirement_sync_proof",
+            "planning_control_freeze",
+            "codex/l3-connector-destination-boundary-behavior-freeze",
+            "513_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_REQUIREMENT_SYNC.md",
+            "7dd81687368f349b263e20ed00358c1045e57152",
+            "operator_reviews_layer3_connector_destination_dispatch_boundary_after_handoff_export_audit_requirement_selection_without_external_connector_invocation_or_destination_write",
+            "freeze_only",
+            "not_implemented",
+            "no runtime behavior",
+            "no connector/provider/destination dispatch",
+            "no frontend-only durable authority",
+            "await_layer3_connector_destination_dispatch_boundary_authority_audit_after_handoff_export_audit_requirement_selection_freeze_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing handoff/export audit connector/destination behavior freeze term: {term}"
                 )
 
 
