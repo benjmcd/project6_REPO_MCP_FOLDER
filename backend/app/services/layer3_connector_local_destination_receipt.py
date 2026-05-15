@@ -111,6 +111,91 @@ def _existing_connector_record(reconciliation: L3ReconciliationRecord) -> dict[s
     return state
 
 
+def _existing_external_export_download_prepare(reconciliation: L3ReconciliationRecord) -> dict[str, Any] | None:
+    state = (reconciliation.summary_json or {}).get("external_export_download_prepare")
+    if not isinstance(state, dict):
+        return None
+    if state.get("schema_id") != layer3_workbench.EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID:
+        return None
+    return state
+
+
+def _delivery_authority_payload(
+    *,
+    payload: dict[str, Any],
+    connector_record: dict[str, Any],
+    readiness_state: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "client_request_id": _string(payload.get("client_request_id")),
+        "session_id": _string(payload.get("session_id")),
+        "analysis_plan_id": connector_record.get("analysis_plan_id"),
+        "pass_run_id": connector_record.get("pass_run_id"),
+        "preview_id": connector_record.get("source_preview_id") or readiness_state.get("source_preview_id"),
+        "preview_hash": connector_record.get("source_preview_hash") or readiness_state.get("source_preview_hash"),
+        "result_review_record_ref": connector_record.get("result_review_record_ref"),
+        "package_review_preview_hash": connector_record.get("package_review_preview_hash"),
+        "reconciliation_record_id": connector_record.get("reconciliation_record_id"),
+        "output_package_ids": connector_record.get("output_package_ids"),
+        "package_kinds": connector_record.get("package_kinds"),
+        "payload_refs": connector_record.get("payload_refs"),
+        "payload_hashes": connector_record.get("payload_hashes"),
+        "package_review_submit_record_ref": connector_record.get("package_review_submit_record_ref"),
+        "package_review_state": connector_record.get("package_review_state"),
+        "prepare_record_ref": connector_record.get("prepare_record_ref"),
+        "handoff_export_state": connector_record.get("handoff_export_state"),
+        "handoff_export_envelope_ref": readiness_state.get("handoff_export_envelope_ref"),
+        "handoff_target": readiness_state.get("handoff_target"),
+        "export_mode": readiness_state.get("export_mode"),
+        "aps_handoff_record_ref": connector_record.get("aps_handoff_record_ref"),
+        "aps_handoff_state": connector_record.get("aps_handoff_state"),
+        "aps_handoff_target": connector_record.get("aps_handoff_target"),
+        "dispatch_mode": readiness_state.get("dispatch_mode"),
+        "aps_output_package_id": connector_record.get("aps_output_package_id"),
+        "aps_output_package_kind": connector_record.get("aps_output_package_kind"),
+        "aps_bundle_ref": connector_record.get("aps_bundle_ref"),
+        "aps_bundle_id": readiness_state.get("aps_bundle_id"),
+        "aps_schema_id": readiness_state.get("aps_schema_id"),
+        "external_export_download_record_ref": connector_record.get("external_export_download_record_ref"),
+        "export_download_descriptor_ref": connector_record.get("external_export_download_descriptor_ref")
+        or readiness_state.get("export_download_descriptor_ref"),
+        "external_export_download_state": connector_record.get("external_export_download_state"),
+        "export_download_target": readiness_state.get("export_download_target"),
+        "download_mode": readiness_state.get("download_mode"),
+        "delivery_mode": "same_origin_artifact_stream",
+        "operator_decision": layer3_workbench.EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
+    }
+
+
+def _validate_existing_delivery_authority(
+    *,
+    db: Session,
+    payload: dict[str, Any],
+    connector_record: dict[str, Any],
+    readiness_state: dict[str, Any],
+) -> None:
+    delivery = layer3_workbench.external_export_download_deliver(
+        db,
+        _delivery_authority_payload(
+            payload=payload,
+            connector_record=connector_record,
+            readiness_state=readiness_state,
+        ),
+    )
+    if (
+        delivery.headers.get("X-Layer3-Delivery-State")
+        != layer3_workbench.EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE
+    ):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "connector_local_destination_receipt_requires_delivery_authority",
+            "Internal fake/local destination receipt requires validated same-origin delivery authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["external_export_download_record_ref"],
+            next_allowed_actions=["validate_same_origin_external_export_download_delivery"],
+        )
+
+
 def _authority_basis(
     *,
     payload: dict[str, Any],
@@ -326,6 +411,26 @@ def record_internal_fake_local_destination_receipt(db: Session, payload: dict[st
             http_status=409,
             blocked_fields=["connector_dispatch_record_ref"],
         )
+    readiness_state = _existing_external_export_download_prepare(reconciliation)
+    if (
+        readiness_state is None
+        or readiness_state.get("external_export_download_state")
+        != layer3_workbench.EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+    ):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "connector_local_destination_receipt_requires_external_export_download_prepare",
+            "Internal fake/local destination receipt requires recorded external_export_download_prepared state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["external_export_download_state"],
+            next_allowed_actions=["record_external_export_download_prepare"],
+        )
+    _validate_existing_delivery_authority(
+        db=db,
+        payload=payload,
+        connector_record=connector_record,
+        readiness_state=readiness_state,
+    )
 
     basis = _authority_basis(payload=payload, connector_record=connector_record)
     authority_basis_hash = stable_hash(basis)
