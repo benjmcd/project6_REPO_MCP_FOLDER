@@ -21283,5 +21283,46 @@
   "latest_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_branch": "codex/l3-local-receipt-delivery-authority-remediation",
   "latest_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_doc": "next_milestone_plans/Layer3_planning_docs/585_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REVIEW_REMEDIATION.md",
   "latest_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_live_behavior_change": true,
-  "latest_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_summary": "Doc 585 records branch-local review remediation for the unresolved PR #1177 local destination receipt delivery-authority thread. The service now revalidates same-origin external export/download delivery authority with layer3_workbench.external_export_download_deliver before writing L3ConnectorLocalDestinationReceipt, and the focused connector local destination receipt tests pass with 3 passed, 149 deselected. No real connector/destination dispatch, schema/model/migration, UI, provider, package, source, RAG, auth/security, full mockup, or frontend-only durable authority is admitted."
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_summary": "Doc 585 records branch-local review remediation for the unresolved PR #1177 local destination receipt delivery-authority thread. The service now revalidates same-origin external export/download delivery authority with layer3_workbench.external_export_download_deliver before writing L3ConnectorLocalDestinationReceipt, and the focused connector local destination receipt tests pass with 3 passed, 149 deselected. No real connector/destination dispatch, schema/model/migration, UI, provider, package, source, RAG, auth/security, full mockup, or frontend-only durable authority is admitted.",
+  "layer3_connector_local_destination_receipt_delivery_authority_current_main_sync": {
+    "status": "current_main_synced_layer3_connector_local_destination_receipt_delivery_authority_review_remediation",
+    "sync_branch": "codex/l3-local-receipt-delivery-authority-current-main-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/586_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_CURRENT_MAIN_SYNC.md",
+    "review_remediation_pr": "#1181",
+    "review_remediation_merge_commit": "9db84236dce5b6e86dc3d80a31edc068fb9d8b53",
+    "review_remediation_doc": "next_milestone_plans/Layer3_planning_docs/585_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REVIEW_REMEDIATION.md",
+    "source_review_thread": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1177#discussion_r3248772902",
+    "current_main_result": "remediated_layer3_connector_local_destination_receipt_delivery_authority_review_thread",
+    "github_checks": {
+      "backend-layer3-api": "pass 2m36s",
+      "test": "pass 3m18s"
+    },
+    "pr_comments_empty": true,
+    "pr_reviews_empty": true,
+    "reviewThreads_totalCount": 0,
+    "unresolved_reviewThreads": 0,
+    "merge_state_before_merge": "CLEAN",
+    "open_pr_state_after_merge": "none_before_sync_branch",
+    "post_merge_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "backend_route_behavior_change": false,
+    "service_runtime_behavior_change": false,
+    "response_model_shape_change": false,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "connector_provider_destination_dispatch_change": false,
+    "frontend_only_durable_authority_change": false,
+    "next_whole_project_posture": "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+  },
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_current_main_sync_branch": "codex/l3-local-receipt-delivery-authority-current-main-sync",
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/586_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_CURRENT_MAIN_SYNC.md",
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_current_main_sync_live_behavior_change": false,
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_current_main_sync_summary": "Doc 586 syncs PR #1181 merge commit 9db84236dce5b6e86dc3d80a31edc068fb9d8b53 to current main. GitHub backend-layer3-api/test passed, PR comments/reviews/reviewThreads were empty, post-merge JSON/progress validation passed, and next posture remains await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
 }
