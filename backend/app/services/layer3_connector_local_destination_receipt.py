@@ -169,6 +169,7 @@ def _delivery_authority_payload(
 
 def _validate_existing_delivery_authority(
     *,
+    db: Session,
     payload: dict[str, Any],
     connector_record: dict[str, Any],
     readiness_state: dict[str, Any],
@@ -254,6 +255,22 @@ def _validate_existing_delivery_authority(
             http_status=409,
             blocked_fields=[field],
         )
+    validation_body = layer3_workbench.external_export_download_prepare(
+        db,
+        layer3_workbench._external_export_download_prepare_payload_for_delivery(  # noqa: SLF001
+            delivery_payload,
+            readiness_state=readiness_state,
+        ),
+        validate_source_artifact=False,
+    )
+    if validation_body.get("external_export_download_record_ref") != delivery_request.supplied_readiness_ref:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "external_export_download_delivery_readiness_mismatch",
+            "Validated readiness authority does not match the requested delivery record.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["external_export_download_record_ref"],
+        )
     descriptor = readiness_state.get("external_export_download_descriptor")
     if not isinstance(descriptor, dict) or descriptor.get("descriptor_ref") != delivery_request.supplied_descriptor_ref:
         raise layer3_workbench.Layer3WorkbenchError(
@@ -271,6 +288,31 @@ def _validate_existing_delivery_authority(
             status="conflict",
             http_status=409,
             blocked_fields=["aps_bundle_ref"],
+        )
+    try:
+        expected_artifact_size = int(readiness_state.get("source_artifact_size_bytes") or -1)
+    except (TypeError, ValueError):
+        expected_artifact_size = -1
+    delivery = layer3_workbench._external_export_download_delivery_response(  # noqa: SLF001
+        session_id=delivery_request.session_id,
+        supplied_aps_bundle_id=delivery_request.supplied_aps_bundle_id,
+        supplied_readiness_ref=delivery_request.supplied_readiness_ref,
+        source_artifact_ref=source_artifact_ref,
+        expected_artifact_hash=str(readiness_state.get("source_artifact_hash") or ""),
+        expected_artifact_size=expected_artifact_size,
+        validation_body=validation_body,
+    )
+    if (
+        delivery.headers.get("X-Layer3-Delivery-State")
+        != layer3_workbench.EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE
+    ):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "connector_local_destination_receipt_requires_delivery_authority",
+            "Internal fake/local destination receipt requires validated same-origin delivery authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["external_export_download_record_ref"],
+            next_allowed_actions=["validate_same_origin_external_export_download_delivery"],
         )
 
 
@@ -534,6 +576,7 @@ def record_internal_fake_local_destination_receipt(db: Session, payload: dict[st
             blocked_fields=["client_request_id", "connector_dispatch_record_ref"],
         )
     _validate_existing_delivery_authority(
+        db=db,
         payload=payload,
         connector_record=connector_record,
         readiness_state=readiness_state,
