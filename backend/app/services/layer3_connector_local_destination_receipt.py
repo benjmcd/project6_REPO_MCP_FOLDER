@@ -174,14 +174,18 @@ def _validate_existing_delivery_authority(
     connector_record: dict[str, Any],
     readiness_state: dict[str, Any],
 ) -> None:
-    delivery = layer3_workbench.external_export_download_deliver(
-        db,
-        _delivery_authority_payload(
-            payload=payload,
-            connector_record=connector_record,
-            readiness_state=readiness_state,
-        ),
-    )
+    validation_db = Session(bind=db.get_bind())
+    try:
+        delivery = layer3_workbench.external_export_download_deliver(
+            validation_db,
+            _delivery_authority_payload(
+                payload=payload,
+                connector_record=connector_record,
+                readiness_state=readiness_state,
+            ),
+        )
+    finally:
+        validation_db.close()
     if (
         delivery.headers.get("X-Layer3-Delivery-State")
         != layer3_workbench.EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE
@@ -425,13 +429,6 @@ def record_internal_fake_local_destination_receipt(db: Session, payload: dict[st
             blocked_fields=["external_export_download_state"],
             next_allowed_actions=["record_external_export_download_prepare"],
         )
-    _validate_existing_delivery_authority(
-        db=db,
-        payload=payload,
-        connector_record=connector_record,
-        readiness_state=readiness_state,
-    )
-
     basis = _authority_basis(payload=payload, connector_record=connector_record)
     authority_basis_hash = stable_hash(basis)
     existing_by_client = (
@@ -462,6 +459,12 @@ def record_internal_fake_local_destination_receipt(db: Session, payload: dict[st
             http_status=409,
             blocked_fields=["client_request_id", "connector_dispatch_record_ref"],
         )
+    _validate_existing_delivery_authority(
+        db=db,
+        payload=payload,
+        connector_record=connector_record,
+        readiness_state=readiness_state,
+    )
 
     now = utcnow()
     receipt_id = stable_id(
