@@ -23536,5 +23536,37 @@
   },
   "latest_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync_branch": "codex/l3-connector-destination-missing-decision-after-readiness-artifact-sync",
   "latest_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync_live_behavior_change": false,
-  "latest_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync_summary": "Doc 593 proof records that real connector/destination runtime remains blocked after readiness/artifact sync because current authority names no real target, mode, credentials/access model, lifecycle semantics, receipt/audit contract, fake-target architecture, leak controls, rendered-control obligations, or auth/security posture."
+  "latest_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync_summary": "Doc 593 proof records that real connector/destination runtime remains blocked after readiness/artifact sync because current authority names no real target, mode, credentials/access model, lifecycle semantics, receipt/audit contract, fake-target architecture, leak controls, rendered-control obligations, or auth/security posture.",
+  "layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync_proof": {
+    "proof_kind": "layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync",
+    "status": "current_main_synced_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync",
+    "branch": "codex/l3-connector-destination-missing-decision-readiness-current-main-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/594_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+    "missing_decision_pr": "#1189",
+    "missing_decision_merge_commit": "2ac5ae2451a0c658beed3c5e450862bd4ac22221",
+    "proof_terms": [
+      "current_main_sync_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync_merge",
+      "current_main_synced_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync",
+      "no_runtime_now_connector_destination_real_target_authority_absent_after_readiness_artifact_sync",
+      "backend-layer3-api pass 2m34s",
+      "test pass 3m1s",
+      "reviewThreads_totalCount 0",
+      "unresolved_reviewThreads 0",
+      "mergeability before merge MERGEABLE",
+      "merge_state_before_merge CLEAN",
+      "post-merge progress validation passed",
+      "implementation-entry freeze written remains false",
+      "runtime status remains not_implemented",
+      "selected implementation action remains none",
+      "no runtime behavior in sync",
+      "no external connector invocation",
+      "no destination write",
+      "no frontend-only durable authority",
+      "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+    ],
+    "next_whole_project_posture": "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+  },
+  "latest_layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync_branch": "codex/l3-connector-destination-missing-decision-readiness-current-main-sync",
+  "latest_layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync_live_behavior_change": false,
+  "latest_layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync_summary": "Doc 594 proof records current-main sync for PR #1189 merge commit 2ac5ae2451a0c658beed3c5e450862bd4ac22221 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
 }
