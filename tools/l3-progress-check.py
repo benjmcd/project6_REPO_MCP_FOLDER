@@ -1258,6 +1258,10 @@ LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PU
     PLANNING_DOCS
     / "539_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md"
 )
+LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "540_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -43321,6 +43325,89 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private e2e connector package-lifecycle authority audit term: {term}"
+                )
+
+    package_lifecycle_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_sync_text = _read_required_text(
+        LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement_freeze_sync`.",
+        "540_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "539_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+        "#1135",
+        "f8215fead6e19559f82cf604b6fcd6f848cce385",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR reviewThreads totalCount before merge: `0`.",
+        "Unresolved reviewThreads before merge: `0`.",
+        "current_main_synced_layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+        "layer3_package_lifecycle_non_mutation_boundary_authority_current_main_satisfied_no_runtime_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+        "Selected implementation action remains `none`.",
+        "`PASS` (`46 passed`)",
+        "No implementation begins in this sync.",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in package_lifecycle_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC)} missing source-intake provider-private e2e connector package-lifecycle authority audit sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Package-Lifecycle Non-Mutation Boundary Authority Audit After Provider-Public Audit Source Intake Provider-Private E2E Connector Requirement Current-Main Sync",
+            "540_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1135",
+            "f8215fead6e19559f82cf604b6fcd6f848cce385",
+            "current_main_synced_layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+            "layer3_package_lifecycle_non_mutation_boundary_authority_current_main_satisfied_no_runtime_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+            "selected implementation action remains `none`",
+            "`46 passed`",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        MANIFEST: (
+            "layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement_current_main_sync",
+            "current_main_synced_layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+            "codex/l3-package-lifecycle-authority-audit-current-main-sync-after-provider-public-source-intake-e2e-connector",
+            "540_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1135",
+            "f8215fead6e19559f82cf604b6fcd6f848cce385",
+            "backend-layer3-api",
+            "SUCCESS",
+            "46 passed",
+            '"selected_implementation_action": "none"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement_current_main_sync_proof",
+            "current_main_synced_layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+            "codex/l3-package-lifecycle-authority-audit-current-main-sync-after-provider-public-source-intake-e2e-connector",
+            "540_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+            "#1135",
+            "f8215fead6e19559f82cf604b6fcd6f848cce385",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "selected implementation action none",
+            "46 passed",
+            "no implementation",
+            "no runtime behavior",
+            "no package mutation",
+            "no connector/provider/destination dispatch",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing source-intake provider-private e2e connector package-lifecycle authority audit sync term: {term}"
                 )
 
 
