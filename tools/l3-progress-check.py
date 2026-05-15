@@ -1401,6 +1401,10 @@ LAYER3_REQUIREMENT_SELECTION_AFTER_PACKAGE_LIFECYCLE_AUTHORITY_AUDIT_PROVIDER_PU
 LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT = (
     PLANNING_DOCS / "579_LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT.md"
 )
+LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE = (
+    PLANNING_DOCS
+    / "580_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -46818,6 +46822,93 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing terminal no-runtime roadmap term: {term}"
+                )
+
+    connector_internal_fake_local_destination_receipt_entry_freeze_text = (
+        _read_required_text(
+            LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE,
+            errors,
+        )
+    )
+    for term in (
+        "Status: implementation-entry freeze for `layer3_connector_internal_fake_local_destination_receipt_implementation_entry_freeze`.",
+        "580_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE.md",
+        "a9dfe56a22966e7e0bb845126b244ea552a2bc95",
+        "connector_destination_dispatch",
+        "layer3_connector_internal_fake_local_destination_receipt",
+        "layer3_internal_fake_local_destination_receipt",
+        "internal_fake_local_destination_receipt_only",
+        "server-owned durable local receipt",
+        "implementation_entry_freeze_only",
+        "not_implemented",
+        "implement_layer3_connector_internal_fake_local_destination_receipt_runtime",
+        "await_implementation_of_layer3_connector_internal_fake_local_destination_receipt_runtime",
+        "no network write",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if (
+            term
+            not in connector_internal_fake_local_destination_receipt_entry_freeze_text
+        ):
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE)} missing connector internal fake local destination receipt implementation-entry freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Internal Fake Local Destination Receipt Implementation-Entry Freeze",
+            "580_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "a9dfe56a22966e7e0bb845126b244ea552a2bc95",
+            "connector_destination_dispatch",
+            "layer3_connector_internal_fake_local_destination_receipt",
+            "layer3_internal_fake_local_destination_receipt",
+            "internal_fake_local_destination_receipt_only",
+            "implementation_entry_freeze_only",
+            "not_implemented",
+            "implement_layer3_connector_internal_fake_local_destination_receipt_runtime",
+            "await_implementation_of_layer3_connector_internal_fake_local_destination_receipt_runtime",
+        ),
+        MANIFEST: (
+            "layer3_connector_internal_fake_local_destination_receipt_implementation_entry_freeze",
+            '"status": "implementation_entry_freeze"',
+            "codex/l3-connector-local-destination-entry-freeze",
+            "580_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "a9dfe56a22966e7e0bb845126b244ea552a2bc95",
+            '"selected_candidate": "connector_destination_dispatch"',
+            '"selected_runtime_slice": "layer3_connector_internal_fake_local_destination_receipt"',
+            '"selected_target": "layer3_internal_fake_local_destination_receipt"',
+            '"selected_dispatch_mode": "internal_fake_local_destination_receipt_only"',
+            '"entry_decision": "implementation_entry_freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"implementation_action_admitted_next": "implement_layer3_connector_internal_fake_local_destination_receipt_runtime"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"next_whole_project_posture": "await_implementation_of_layer3_connector_internal_fake_local_destination_receipt_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_internal_fake_local_destination_receipt_implementation_entry_freeze_proof",
+            '"status": "implementation_entry_freeze"',
+            "codex/l3-connector-local-destination-entry-freeze",
+            "580_LAYER3_CONNECTOR_INTERNAL_FAKE_LOCAL_DESTINATION_RECEIPT_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "a9dfe56a22966e7e0bb845126b244ea552a2bc95",
+            "internal_fake_local_destination_receipt_only",
+            "implementation_entry_freeze_only",
+            "not_implemented",
+            "implement_layer3_connector_internal_fake_local_destination_receipt_runtime",
+            "no external connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no credential handling",
+            "no network write",
+            "no real destination integration",
+            "await_implementation_of_layer3_connector_internal_fake_local_destination_receipt_runtime",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector internal fake local destination receipt implementation-entry freeze term: {term}"
                 )
 
 
