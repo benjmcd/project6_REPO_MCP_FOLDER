@@ -22758,5 +22758,44 @@
   },
   "latest_layer3_product_use_case_requirement_selection_freeze_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_sync_branch": "codex/l3-requirement-selection-after-provider-public-authority-audit-source-intake-provider-private-authority-e2e",
   "latest_layer3_product_use_case_requirement_selection_freeze_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_sync_live_behavior_change": false,
-  "latest_layer3_product_use_case_requirement_selection_freeze_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_sync_summary": "Doc 571 freezes the requirement-selection gate after the synced provider-public delivery/use no-runtime boundary authority audit and admits no runtime behavior."
+  "latest_layer3_product_use_case_requirement_selection_freeze_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_sync_summary": "Doc 571 freezes the requirement-selection gate after the synced provider-public delivery/use no-runtime boundary authority audit and admits no runtime behavior.",
+  "layer3_product_use_case_requirement_selection_freeze_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_current_main_sync_proof": {
+    "proof_kind": "layer3_product_use_case_requirement_selection_freeze_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_current_main_sync",
+    "status": "current_main_synced_layer3_product_use_case_requirement_selection_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector",
+    "branch": "codex/l3-requirement-selection-current-main-sync-after-provider-public-authority-audit-source-intake-provider-private-authority-e2e",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/572_LAYER3_REQUIREMENT_SELECTION_AFTER_PROVIDER_PUBLIC_AUTHORITY_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC.md",
+    "requirement_selection_pr": "#1167",
+    "requirement_selection_merge_commit": "c9f6aedfd49ee0139fecb0772b6628c89ae68dbc",
+    "proof_terms": [
+      "current_main_synced_layer3_product_use_case_requirement_selection_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector",
+      "select_next_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+      "operator_selects_next_layer3_product_use_case_requirement_after_read_only_provider_public_delivery_use_no_runtime_boundary_authority_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_without_runtime_expansion",
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "reviewThreads_totalCount 0",
+      "unresolved_reviewThreads 0",
+      "merge_state_before_merge CLEAN",
+      "freeze_only",
+      "not_implemented",
+      "no implementation",
+      "no runtime behavior",
+      "no raw public URL display/use",
+      "no provider-public delivery/use",
+      "no connector/provider/destination dispatch",
+      "no package mutation",
+      "no frontend-only durable authority",
+      "freeze_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+      "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync"
+    ],
+    "post_merge_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "next_whole_project_posture": "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync"
+  },
+  "latest_layer3_product_use_case_requirement_selection_freeze_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_current_main_sync_branch": "codex/l3-requirement-selection-current-main-sync-after-provider-public-authority-audit-source-intake-provider-private-authority-e2e",
+  "latest_layer3_product_use_case_requirement_selection_freeze_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_current_main_sync_live_behavior_change": false,
+  "latest_layer3_product_use_case_requirement_selection_freeze_after_provider_public_authority_audit_source_intake_provider_private_authority_e2e_connector_current_main_sync_summary": "Doc 572 syncs PR #1167 merge commit c9f6aedfd49ee0139fecb0772b6628c89ae68dbc to current main. GitHub backend-layer3-api/test passed, comments/reviews/reviewThreads were empty, post-merge JSON/progress validation passed, and next posture is await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_after_source_intake_provider_private_signed_reference_audit_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync."
 }
