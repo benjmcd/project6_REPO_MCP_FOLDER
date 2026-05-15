@@ -12734,6 +12734,22 @@ def test_layer3_api_connector_local_destination_receipt_records_durable_fake_loc
     finally:
         db.close()
 
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        summary = dict(reconciliation.summary_json)
+        readiness_state = dict(summary["external_export_download_prepare"])
+        descriptor = dict(readiness_state["external_export_download_descriptor"])
+        descriptor["source_artifact_ref"] = "artifact://stale-local-receipt-replay-authority"
+        readiness_state["external_export_download_descriptor"] = descriptor
+        summary["external_export_download_prepare"] = readiness_state
+        reconciliation.summary_json = summary
+        db.commit()
+    finally:
+        db.close()
+
     replay = client.post("/api/v1/layer3/handoff/connector/local-destination/receipt", json=payload)
     assert replay.status_code == 200
     replay_body = replay.json()

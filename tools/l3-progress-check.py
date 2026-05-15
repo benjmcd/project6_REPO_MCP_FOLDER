@@ -1429,6 +1429,10 @@ LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_CURRENT_MAIN_SYNC 
     PLANNING_DOCS
     / "586_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REMEDIATION = (
+    PLANNING_DOCS
+    / "587_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REVIEW_REMEDIATION.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -47635,6 +47639,100 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector local destination receipt delivery-authority current-main sync term: {term}"
+                )
+
+    followup_text = _read_required_text(
+        LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REMEDIATION,
+        errors,
+    )
+    for term in (
+        "Status: follow-up review-remediation implementation for `remediate_layer3_connector_local_destination_receipt_delivery_authority_followup_review_threads`.",
+        "587_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REVIEW_REMEDIATION.md",
+        "8949e854ce78a68e0dea60c4b0ac097e4911ea3d",
+        "codex/l3-local-receipt-delivery-authority-followup-remediation",
+        "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1181#discussion_r3249031415",
+        "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1181#discussion_r3249031420",
+        "Both follow-up findings are valid against the PR `#1181` remediation intent.",
+        "validation_db = Session(bind=db.get_bind())",
+        "existing_by_client",
+        "before calling `_validate_existing_delivery_authority`",
+        "artifact://stale-local-receipt-replay-authority",
+        "3 passed, 149 deselected",
+        "current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_followup_review_remediation_merge",
+        "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+    ):
+        if term not in followup_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REMEDIATION)} missing connector local destination receipt delivery-authority follow-up remediation term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Local Destination Receipt Delivery-Authority Follow-Up Review Remediation",
+            "587_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REVIEW_REMEDIATION.md",
+            "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1181#discussion_r3249031415",
+            "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1181#discussion_r3249031420",
+            "remediated_layer3_connector_local_destination_receipt_delivery_authority_followup_review_threads",
+            "validation_db = Session(bind=db.get_bind())",
+            "_validate_existing_delivery_authority",
+            "already_recorded",
+            "3 passed, 149 deselected",
+            "current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_followup_review_remediation_merge",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+        MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_followup_review_remediation",
+            '"status": "followup_review_remediation_branch_local"',
+            "codex/l3-local-receipt-delivery-authority-followup-remediation",
+            "587_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REVIEW_REMEDIATION.md",
+            "8949e854ce78a68e0dea60c4b0ac097e4911ea3d",
+            "discussion_r3249031415",
+            "discussion_r3249031420",
+            '"review_result": "valid_findings_remediated"',
+            '"rollback_isolation": "validation_db = Session(bind=db.get_bind())"',
+            '"replay_ordering": "existing same-client replay and same-basis conflict checks occur before delivery authority revalidation"',
+            "3 passed, 149 deselected",
+            '"schema_shape_change": false',
+            '"migration_lineage_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_followup_review_remediation_proof",
+            '"status": "followup_review_remediation_branch_local"',
+            "codex/l3-local-receipt-delivery-authority-followup-remediation",
+            "587_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_FOLLOWUP_REVIEW_REMEDIATION.md",
+            "discussion_r3249031415",
+            "discussion_r3249031420",
+            "validation_db = Session(bind=db.get_bind())",
+            "rollback isolation from receipt write transaction",
+            "existing_by_client before _validate_existing_delivery_authority",
+            "already_recorded before stale delivery-authority revalidation",
+            "artifact://stale-local-receipt-replay-authority",
+            "3 passed, 149 deselected",
+            "no real connector target",
+            "no real destination target",
+            "no schema/model/migration changes",
+            "no frontend-only durable authority",
+        ),
+        connector_service: (
+            "validation_db = Session(bind=db.get_bind())",
+            "validation_db.close()",
+            "existing_by_client =",
+            "status=\"already_recorded\"",
+            "_validate_existing_delivery_authority(",
+        ),
+        LAYER3_API_TEST: (
+            "artifact://stale-local-receipt-replay-authority",
+            'assert replay_body["status"] == "already_recorded"',
+            'assert same_basis_new_request.json()["error_code"] == "connector_local_destination_receipt_already_recorded"',
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector local destination receipt delivery-authority follow-up remediation term: {term}"
                 )
 
 
