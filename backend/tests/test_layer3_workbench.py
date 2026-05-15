@@ -1553,6 +1553,11 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
     )
     assert admitted_capabilities["internal_dispatch_record_only"]["admitted"] is True
     assert admitted_capabilities["internal_dispatch_record_only"]["source_gate"] == "121_CONNECTOR_DISPATCH_ENTRY_FREEZE"
+    assert admitted_capabilities["internal_fake_local_destination_receipt"]["admitted"] is True
+    assert (
+        admitted_capabilities["internal_fake_local_destination_receipt"]["owner_service"]
+        == "backend/app/services/layer3_connector_local_destination_receipt.py"
+    )
     assert admitted_capabilities["package_supersession_preview_only"]["admitted"] is True
     assert admitted_capabilities["package_supersession_preview_only"]["source_gate"] == "122_PACKAGE_MUTATION_FREEZE"
     assert (
