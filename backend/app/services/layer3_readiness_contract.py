@@ -33,6 +33,7 @@ READINESS_REQUIRED_GATES = (
     "aps-handoff-dispatch",
     "external-export-download-prepare",
     "external-export-download-deliver",
+    "connector-local-destination-receipt",
     "browser-proof",
 )
 READINESS_IMPLEMENTED_GATES = (
@@ -54,6 +55,7 @@ READINESS_IMPLEMENTED_GATES = (
     "aps-handoff-dispatch",
     "external-export-download-prepare",
     "external-export-download-deliver",
+    "connector-local-destination-receipt",
 )
 READINESS_DEFERRED_GATES = (
     "approved-plan-correction",
@@ -100,6 +102,8 @@ def build_readiness_contract(
         "external_export_download_deliver_endpoint": f"{api_root}/handoff/export/download/deliver",
         "internal_connector_dispatch_record_admitted": True,
         "internal_connector_dispatch_record_endpoint": f"{api_root}/handoff/connector/record",
+        "internal_fake_local_destination_receipt_admitted": True,
+        "internal_fake_local_destination_receipt_endpoint": f"{api_root}/handoff/connector/local-destination/receipt",
         "package_supersession_preview_admitted": True,
         "package_supersession_preview_endpoint": f"{api_root}/package/mutation/preview",
         "replacement_package_set_authority_admitted": True,
@@ -143,6 +147,7 @@ def build_readiness_contract(
             "client_request_id_required_for_aps_handoff_dispatch": True,
             "client_request_id_required_for_external_export_download_prepare": True,
             "client_request_id_required_for_external_export_download_deliver": True,
+            "client_request_id_required_for_internal_fake_local_destination_receipt": True,
             "client_request_id_required_for_package_supersession_preview": True,
             "client_request_id_required_for_replacement_package_set_authority": True,
             "client_request_id_required_for_package_supersession_commit": True,
@@ -166,6 +171,7 @@ def build_readiness_contract(
             "duplicate_aps_handoff_dispatch": "same client_request_id and same prepared-envelope authority returns existing APS handoff state; conflicts fail closed",
             "duplicate_external_export_download_prepare": "same client_request_id and same APS handoff authority returns existing readiness state; conflicts fail closed",
             "duplicate_external_export_download_deliver": "read-only delivery revalidates the recorded readiness descriptor and may re-stream the same existing artifact",
+            "duplicate_internal_fake_local_destination_receipt": "same client_request_id and same connector dispatch authority basis returns existing local destination receipt; same basis with a different request conflicts fail closed",
             "duplicate_package_supersession_preview": "read-only package supersession preview recomputes the same package-set and downstream-dependency hash without persistence",
             "duplicate_replacement_package_set_authority": "same client_request_id or authority basis returns existing replacement package-set authority; conflicts fail closed",
             "duplicate_package_supersession_commit": "same client_request_id or commit basis returns existing immutable supersession lineage record; conflicts fail closed",
@@ -191,6 +197,7 @@ def build_readiness_contract(
             "aps_handoff_dispatch_uses_session_reconciliation_and_package_locks": True,
             "external_export_download_prepare_uses_session_reconciliation_and_package_locks": True,
             "external_export_download_deliver_uses_session_reconciliation_and_package_locks": True,
+            "internal_fake_local_destination_receipt_uses_unique_request_and_basis": True,
             "package_supersession_preview_is_read_only": True,
             "replacement_package_set_authority_uses_unique_request_and_basis": True,
             "package_supersession_commit_uses_unique_request_and_basis": True,
@@ -217,6 +224,7 @@ def build_readiness_contract(
             "external_export_download_prepare": "admitted only as a reference-only readiness descriptor after aps_handoff_dispatched; browser download remains disabled",
             "external_export_download_deliver": "admitted only as same-origin streaming of the already validated APS evidence-bundle artifact after recorded readiness; public or signed URLs remain disabled",
             "internal_connector_dispatch_record": "admitted only as response-safe internal dispatch intent record after associated-cohort external export/download readiness; external invocation and destination writes remain blocked",
+            "internal_fake_local_destination_receipt": "admitted only as a durable fake/local receipt over an existing internal connector dispatch record; external connector invocation, destination writes, credentials, network writes, and real destination integration remain blocked",
             "package_supersession_preview": "admitted only as read-only immutable package supersession preview; package row mutation, payload rewrite, and supersession commit remain blocked",
             "replacement_package_set_authority": "admitted only as a durable metadata authority record; package row mutation, payload writes, and broad package mutation remain blocked",
             "package_supersession_commit": "admitted only as a durable immutable lineage record; package row mutation, payload writes, and broad package mutation remain blocked",

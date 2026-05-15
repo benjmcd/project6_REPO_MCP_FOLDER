@@ -1545,6 +1545,42 @@ class L3ProviderPrivateSignedUrlAuditEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class L3ConnectorLocalDestinationReceipt(Base):
+    __tablename__ = "l3_connector_local_destination_receipt"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_connector_local_destination_receipt_client_request"),
+        UniqueConstraint("authority_basis_hash", name="uq_l3_connector_local_destination_receipt_authority_basis"),
+        Index("ix_l3_connector_local_destination_receipt_session", "session_id"),
+        Index("ix_l3_connector_local_destination_receipt_reconciliation", "reconciliation_record_id"),
+        Index("ix_l3_connector_local_destination_receipt_state", "receipt_state"),
+    )
+
+    connector_local_destination_receipt_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    pass_run_id: Mapped[str] = mapped_column(ForeignKey("l3_pass_run.pass_run_id"), nullable=False)
+    reconciliation_record_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_reconciliation_record.reconciliation_record_id"),
+        nullable=False,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    connector_dispatch_record_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    external_export_download_record_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    destination_target: Mapped[str] = mapped_column(String(128), nullable=False)
+    dispatch_mode: Mapped[str] = mapped_column(String(128), nullable=False)
+    receipt_state: Mapped[str] = mapped_column(String(64), nullable=False)
+    accepted_artifact_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    accepted_artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    authority_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_by_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class L3ProviderPublicUrlObjectAuthority(Base):
     __tablename__ = "l3_provider_public_url_object_authority"
     __table_args__ = (
