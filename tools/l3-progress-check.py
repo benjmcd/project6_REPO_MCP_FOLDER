@@ -1449,6 +1449,10 @@ LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT
     PLANNING_DOCS
     / "591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md"
 )
+LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "592_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -48138,6 +48142,88 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector local destination receipt delivery-authority readiness/artifact remediation term: {term}"
+                )
+
+    readiness_artifact_sync_text = _read_required_text(
+        LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_merge`.",
+        "592_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+        "#1187",
+        "3609a496acd55a8130c2dc49cb3c3c4528ac77d4",
+        "591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md",
+        "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284",
+        "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289",
+        "backend-layer3-api` passed in `2m30s",
+        "test` passed in `3m2s",
+        "PR comments were empty.",
+        "PR reviews were empty.",
+        "PR reviewThreads totalCount was `0`",
+        "unresolved reviewThreads were `0`",
+        "Merge state before merge was `CLEAN`",
+        "Open PR state after merge: none before this sync branch.",
+        "remediated_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_threads",
+        "This sync adds no runtime behavior",
+        "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+    ):
+        if term not in readiness_artifact_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC)} missing connector local destination receipt delivery-authority readiness/artifact current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Local Destination Receipt Delivery-Authority Readiness/Artifact Current-Main Sync",
+            "PR `#1187`",
+            "3609a496acd55a8130c2dc49cb3c3c4528ac77d4",
+            "592_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+            "backend-layer3-api` passed in `2m30s",
+            "test` passed in `3m2s",
+            "reviewThreads totalCount was `0`",
+            "unresolved reviewThreads were `0`",
+            "remediated_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_threads",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+        MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_current_main_sync",
+            '"status": "current_main_synced_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation"',
+            "codex/l3-local-receipt-delivery-authority-readiness-artifact-current-main-sync",
+            "592_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+            '"readiness_artifact_review_remediation_pr": "#1187"',
+            "3609a496acd55a8130c2dc49cb3c3c4528ac77d4",
+            "remediated_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_threads",
+            '"backend-layer3-api": "pass 2m30s"',
+            '"test": "pass 3m2s"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"merge_state_before_merge": "CLEAN"',
+            '"runtime_behavior_change": false',
+            '"schema_shape_change": false',
+            '"frontend_only_durable_authority_change": false',
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_current_main_sync_proof",
+            '"status": "current_main_synced_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation"',
+            "codex/l3-local-receipt-delivery-authority-readiness-artifact-current-main-sync",
+            "592_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+            '"readiness_artifact_review_remediation_pr": "#1187"',
+            "3609a496acd55a8130c2dc49cb3c3c4528ac77d4",
+            "backend-layer3-api pass 2m30s",
+            "test pass 3m2s",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "post-merge progress validation passed",
+            "no runtime behavior in sync",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector local destination receipt delivery-authority readiness/artifact current-main sync term: {term}"
                 )
 
 
