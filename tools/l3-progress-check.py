@@ -1326,6 +1326,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOF
     PLANNING_DOCS
     / "556_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SYNC = (
+    PLANNING_DOCS
+    / "557_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -44786,6 +44790,87 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private e2e connector post-connector/destination behavior freeze sync term: {term}"
+                )
+
+    e2e_governance_audit_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_text = _read_required_text(
+        LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main authority audit for `await_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync`.",
+        "557_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+        "556_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "033a6870bde682c5ba0101cfb114d73021d9cea3",
+        "operator_reviews_layer3_end_to_end_governance_lifecycle_after_connector_destination_dispatch_boundary_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_without_mutation_or_dispatch",
+        "conduct_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+        "layer3_end_to_end_governance_lifecycle_behavior_authority_read_only_current_main_satisfied_no_runtime_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+        "Entry decision: `read_only_current_main_control_surface_only`.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: `none`.",
+        "`backend/app/review_ui/static/layer3.html` contains `#layer3-e2e-governance-lifecycle-dashboard-panel`",
+        "`backend/app/review_ui/static/layer3.js` defines `LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE`",
+        "`backend/app/services/layer3_workbench.py` owns `bootstrap()` and `session_summary()`",
+        "`backend/tests/test_layer3_page.py` proves the lifecycle dashboard panel shell",
+        "python -m pytest .\\backend\\tests\\test_layer3_page.py -q`: `PASS`, `3 passed, 3 warnings`.",
+        "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_bootstrap_readiness_openapi_contracts -q`: `PASS`, `1 passed, 3 warnings`.",
+        "python -m pytest .\\backend\\tests\\test_layer3_workbench.py::test_bootstrap_is_explicit_about_first_slice_limits -q`: `PASS`, `1 passed`.",
+        "current_main_sync_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_merge",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in e2e_governance_audit_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_text:
+            errors.append(
+                f"{_rel(LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SYNC)} missing source-intake provider-private e2e connector post-connector/destination e2e governance authority audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 End-to-End Governance Lifecycle Behavior Authority Audit After Connector/Destination Audit Handoff/Export Package-Lifecycle Source Intake Provider-Private E2E Connector Requirement Freeze Sync",
+            "557_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+            "033a6870bde682c5ba0101cfb114d73021d9cea3",
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_read_only_current_main_satisfied_no_runtime_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action is `none`",
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_merge",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement_sync",
+            "authority_audit_current_main_satisfied_no_runtime",
+            "codex/l3-e2e-governance-authority-audit-after-connector-destination-handoff-e2e",
+            "557_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+            "033a6870bde682c5ba0101cfb114d73021d9cea3",
+            '"entry_decision": "read_only_current_main_control_surface_only"',
+            '"runtime_status": "not_implemented"',
+            '"selected_implementation_action": "none"',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "current_main_sync_layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_merge",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement_sync_proof",
+            "authority_audit_current_main_satisfied_no_runtime",
+            "codex/l3-e2e-governance-authority-audit-after-connector-destination-handoff-e2e",
+            "557_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+            "033a6870bde682c5ba0101cfb114d73021d9cea3",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action none",
+            "no runtime behavior",
+            "no connector/provider/destination dispatch",
+            "no package mutation",
+            "no source expansion",
+            "no RAG/vector behavior",
+            "no auth/security behavior",
+            "no frontend-only durable authority",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing source-intake provider-private e2e connector post-connector/destination e2e governance authority audit term: {term}"
                 )
 
 
