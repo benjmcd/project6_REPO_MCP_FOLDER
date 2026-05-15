@@ -21210,5 +21210,48 @@
   "latest_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_branch": "codex/l3-connector-destination-missing-decision-packet",
   "latest_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_doc": "next_milestone_plans/Layer3_planning_docs/583_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC.md",
   "latest_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_live_behavior_change": false,
-  "latest_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_summary": "Doc 583 records a missing-decision packet after the internal fake/local destination receipt sync. Current main proves internal_dispatch_record_only and internal_fake_local_destination_receipt_only, but no real connector or destination target, selected dispatch mode, credential/access model, lifecycle semantics, receipt/audit contract, fake-target architecture, leak controls, rendered-control obligations, or auth/security posture is named. No implementation-entry freeze is written and next posture is await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
+  "latest_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_summary": "Doc 583 records a missing-decision packet after the internal fake/local destination receipt sync. Current main proves internal_dispatch_record_only and internal_fake_local_destination_receipt_only, but no real connector or destination target, selected dispatch mode, credential/access model, lifecycle semantics, receipt/audit contract, fake-target architecture, leak controls, rendered-control obligations, or auth/security posture is named. No implementation-entry freeze is written and next posture is await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync.",
+  "layer3_connector_destination_runtime_missing_decision_current_main_sync": {
+    "status": "current_main_synced_layer3_connector_destination_runtime_missing_decision_packet",
+    "sync_branch": "codex/l3-connector-destination-missing-decision-current-main-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/584_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+    "missing_decision_pr": "#1179",
+    "missing_decision_merge_commit": "d92c25024fcb17368e4b52430fb0a4274ad6ef38",
+    "missing_decision_packet": "next_milestone_plans/Layer3_planning_docs/583_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_LOCAL_RECEIPT_SYNC.md",
+    "current_main_result": "no_runtime_now_connector_destination_real_target_authority_absent_after_internal_fake_local_receipt_sync",
+    "implementation_entry_freeze_written": false,
+    "runtime_status": "not_implemented",
+    "selected_implementation_action": "none",
+    "github_checks": {
+      "backend-layer3-api": "pass 2m26s",
+      "test": "pass 2m44s"
+    },
+    "pr_comments_empty": true,
+    "pr_reviews_empty": true,
+    "reviewThreads_totalCount": 0,
+    "unresolved_reviewThreads": 0,
+    "merge_state_before_merge": "CLEAN",
+    "open_pr_state_after_merge": "none",
+    "post_merge_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "backend_route_behavior_change": false,
+    "service_runtime_behavior_change": false,
+    "response_model_shape_change": false,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "connector_provider_destination_dispatch_change": false,
+    "frontend_only_durable_authority_change": false,
+    "next_whole_project_posture": "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+  },
+  "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_branch": "codex/l3-connector-destination-missing-decision-current-main-sync",
+  "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/584_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+  "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_live_behavior_change": false,
+  "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_summary": "Doc 584 syncs PR #1179 merge commit d92c25024fcb17368e4b52430fb0a4274ad6ef38 to current main. GitHub backend-layer3-api/test passed, comments/reviews/reviewThreads were empty, post-merge JSON/progress validation passed, no implementation-entry freeze is written, and next posture is await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
 }

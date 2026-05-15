@@ -23183,5 +23183,39 @@
   },
   "latest_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_branch": "codex/l3-connector-destination-missing-decision-packet",
   "latest_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_live_behavior_change": false,
-  "latest_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_summary": "Doc 583 proof records that real connector/destination runtime remains blocked after the internal fake/local receipt sync because current authority names no real target, mode, credentials/access model, lifecycle semantics, receipt/audit contract, fake-target architecture, leak controls, rendered-control obligations, or auth/security posture."
+  "latest_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync_summary": "Doc 583 proof records that real connector/destination runtime remains blocked after the internal fake/local receipt sync because current authority names no real target, mode, credentials/access model, lifecycle semantics, receipt/audit contract, fake-target architecture, leak controls, rendered-control obligations, or auth/security posture.",
+  "layer3_connector_destination_runtime_missing_decision_current_main_sync_proof": {
+    "proof_kind": "layer3_connector_destination_runtime_missing_decision_current_main_sync",
+    "status": "current_main_synced_layer3_connector_destination_runtime_missing_decision_packet",
+    "branch": "codex/l3-connector-destination-missing-decision-current-main-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/584_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+    "missing_decision_pr": "#1179",
+    "missing_decision_merge_commit": "d92c25024fcb17368e4b52430fb0a4274ad6ef38",
+    "proof_terms": [
+      "current_main_sync_layer3_connector_destination_runtime_missing_decision_packet_after_local_receipt_sync",
+      "no_runtime_now_connector_destination_real_target_authority_absent_after_internal_fake_local_receipt_sync",
+      "backend-layer3-api pass 2m26s",
+      "test pass 2m44s",
+      "reviewThreads_totalCount 0",
+      "unresolved_reviewThreads 0",
+      "merge_state_before_merge CLEAN",
+      "open PR state after merge none",
+      "post-merge progress validation passed",
+      "implementation-entry freeze written false",
+      "not_implemented",
+      "selected implementation action none",
+      "internal_dispatch_record_only",
+      "internal_fake_local_destination_receipt_only",
+      "no runtime behavior",
+      "no external connector invocation",
+      "no destination write",
+      "no connector-run creation",
+      "no frontend-only durable authority",
+      "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+    ],
+    "next_whole_project_posture": "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+  },
+  "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_branch": "codex/l3-connector-destination-missing-decision-current-main-sync",
+  "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_live_behavior_change": false,
+  "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_summary": "Doc 584 proof records current-main sync for PR #1179 merge commit d92c25024fcb17368e4b52430fb0a4274ad6ef38 with green checks, empty review/comment/thread surfaces, post-merge progress validation, no implementation-entry freeze, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
 }
