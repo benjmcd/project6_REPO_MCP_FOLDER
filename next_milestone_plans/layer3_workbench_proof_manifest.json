@@ -23568,5 +23568,38 @@
   },
   "latest_layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync_branch": "codex/l3-connector-destination-missing-decision-readiness-current-main-sync",
   "latest_layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync_live_behavior_change": false,
-  "latest_layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync_summary": "Doc 594 proof records current-main sync for PR #1189 merge commit 2ac5ae2478a7c36374fb96b5b3ed7fbbf7309ce4 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
+  "latest_layer3_connector_destination_runtime_missing_decision_after_readiness_artifact_current_main_sync_summary": "Doc 594 proof records current-main sync for PR #1189 merge commit 2ac5ae2478a7c36374fb96b5b3ed7fbbf7309ce4 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync.",
+  "layer3_connector_destination_sync_hash_remediation_current_main_sync_proof": {
+    "proof_kind": "layer3_connector_destination_sync_hash_remediation_current_main_sync",
+    "status": "current_main_synced_layer3_connector_destination_sync_hash_remediation",
+    "branch": "codex/l3-connector-destination-sync-hash-remediation-current-main-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/595_LAYER3_CONNECTOR_DESTINATION_SYNC_HASH_REMEDIATION_CURRENT_MAIN_SYNC.md",
+    "hash_remediation_pr": "#1191",
+    "hash_remediation_merge_commit": "ef3deb2f208987df301e6b16b5deed3345ff67fc",
+    "proof_terms": [
+      "current_main_sync_layer3_connector_destination_sync_hash_remediation_merge",
+      "current_main_synced_layer3_connector_destination_sync_hash_remediation",
+      "corrected prior merge commit 2ac5ae2478a7c36374fb96b5b3ed7fbbf7309ce4",
+      "backend-layer3-api pass 2m31s",
+      "test pass 3m10s",
+      "reviewThreads_totalCount 0",
+      "unresolved_reviewThreads 0",
+      "mergeability before merge MERGEABLE",
+      "merge_state_before_merge CLEAN",
+      "post-merge current-main validation passed",
+      "no_runtime_now_connector_destination_real_target_authority_absent_after_readiness_artifact_sync",
+      "implementation-entry freeze written remains false",
+      "runtime status remains not_implemented",
+      "selected implementation action remains none",
+      "no runtime behavior in sync",
+      "no external connector invocation",
+      "no destination write",
+      "no frontend-only durable authority",
+      "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+    ],
+    "next_whole_project_posture": "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+  },
+  "latest_layer3_connector_destination_sync_hash_remediation_current_main_sync_branch": "codex/l3-connector-destination-sync-hash-remediation-current-main-sync",
+  "latest_layer3_connector_destination_sync_hash_remediation_current_main_sync_live_behavior_change": false,
+  "latest_layer3_connector_destination_sync_hash_remediation_current_main_sync_summary": "Doc 595 proof records current-main sync for PR #1191 merge commit ef3deb2f208987df301e6b16b5deed3345ff67fc with corrected PR #1189 merge commit 2ac5ae2478a7c36374fb96b5b3ed7fbbf7309ce4, green checks, empty review/comment/thread surfaces, post-merge current-main validation, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
 }
