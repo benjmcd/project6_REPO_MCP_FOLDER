@@ -1398,6 +1398,9 @@ LAYER3_REQUIREMENT_SELECTION_AFTER_PACKAGE_LIFECYCLE_AUTHORITY_AUDIT_PROVIDER_PU
 LAYER3_REQUIREMENT_SELECTION_AFTER_PACKAGE_LIFECYCLE_AUTHORITY_AUDIT_PROVIDER_PUBLIC_AUTHORITY_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "578_LAYER3_REQUIREMENT_SELECTION_AFTER_PACKAGE_LIFECYCLE_AUTHORITY_AUDIT_PROVIDER_PUBLIC_AUTHORITY_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT = (
+    PLANNING_DOCS / "579_LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -46731,6 +46734,90 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing requirement selection after package-lifecycle authority audit provider-public authority source-intake provider-private authority current-main sync term: {term}"
+                )
+
+    terminal_no_runtime_roadmap_after_current_sync_checkpoint_text = _read_required_text(
+        LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT,
+        errors,
+    )
+    for term in (
+        "Status: terminal no-runtime roadmap for `finish_current_open_sync_checkpoint_state_then_select_one_concrete_blocked_runtime_capability_for_implementation_entry_assessment`.",
+        "579_LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT.md",
+        "51acad0d3fbb367e7faa4515c9b6fc67ccfc1326",
+        "Open PR state before this roadmap: none.",
+        "No implementation-entry freeze is written.",
+        "terminal_no_runtime_roadmap_after_current_sync_checkpoint_no_prioritized_runtime_candidate_admissible",
+        "connector/destination dispatch",
+        "provider-public delivery/use",
+        "package mutation",
+        "source expansion",
+        "broad qualitative/hybrid/RAG",
+        "auth/security",
+        "full mockup activation",
+        "internal_dispatch_record_only",
+        "raw public URL authority model",
+        "one rendered operator package-revision use case",
+        "one concrete source-expansion use case",
+        "one analysis mode and one operator use case",
+        "one security or operator-access use case",
+        "one mockup activation target or operator journey",
+        "terminal_no_runtime_until_one_prioritized_runtime_candidate_has_named_authority",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in terminal_no_runtime_roadmap_after_current_sync_checkpoint_text:
+            errors.append(
+                f"{_rel(LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT)} missing terminal no-runtime roadmap term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Terminal No-Runtime Roadmap After Current Sync Checkpoint",
+            "579_LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT.md",
+            "51acad0d3fbb367e7faa4515c9b6fc67ccfc1326",
+            "terminal_no_runtime_roadmap_after_current_sync_checkpoint_no_prioritized_runtime_candidate_admissible",
+            "internal_dispatch_record_only",
+            "raw URL authority and exposure policy",
+            "one rendered package-revision action and payload authority",
+            "one new source use case and source family",
+            "one analysis mode, corpus, and retrieval/model boundary",
+            "one protected surface, threat model, and policy owner",
+            "one activation target, server authority mapping, and browser proof plan",
+            "terminal_no_runtime_until_one_prioritized_runtime_candidate_has_named_authority",
+        ),
+        MANIFEST: (
+            "layer3_terminal_no_runtime_roadmap_after_current_sync_checkpoint",
+            "terminal_no_runtime_roadmap_after_current_sync_checkpoint_no_prioritized_runtime_candidate_admissible",
+            "codex/l3-terminal-runtime-roadmap-after-sync-checkpoint",
+            "579_LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT.md",
+            "51acad0d3fbb367e7faa4515c9b6fc67ccfc1326",
+            '"first_assessed_candidate": "connector_destination_dispatch"',
+            '"implementation_entry_freeze_written": false',
+            '"connector_destination_dispatch"',
+            '"provider_public_delivery_use"',
+            '"package_mutation"',
+            '"source_expansion"',
+            '"broad_qualitative_hybrid_rag"',
+            '"auth_security"',
+            '"full_mockup_activation"',
+            "terminal_no_runtime_until_one_prioritized_runtime_candidate_has_named_authority",
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+        ),
+        PROOF_MANIFEST: (
+            "layer3_terminal_no_runtime_roadmap_after_current_sync_checkpoint_proof",
+            "terminal_no_runtime_roadmap_after_current_sync_checkpoint_no_prioritized_runtime_candidate_admissible",
+            "codex/l3-terminal-runtime-roadmap-after-sync-checkpoint",
+            "579_LAYER3_TERMINAL_NO_RUNTIME_ROADMAP_AFTER_CURRENT_SYNC_CHECKPOINT.md",
+            "51acad0d3fbb367e7faa4515c9b6fc67ccfc1326",
+            "No implementation-entry freeze is written.",
+            "terminal_no_runtime_until_one_prioritized_runtime_candidate_has_named_authority",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing terminal no-runtime roadmap term: {term}"
                 )
 
 
