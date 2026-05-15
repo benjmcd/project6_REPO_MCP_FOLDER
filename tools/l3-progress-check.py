@@ -1278,6 +1278,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INT
     PLANNING_DOCS
     / "544_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC = (
+    PLANNING_DOCS
+    / "545_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -43749,6 +43753,87 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing source-intake provider-private e2e connector package-lifecycle audit behavior freeze sync term: {term}"
+                )
+
+    handoff_export_audit_after_package_lifecycle_audit_source_intake_provider_private_e2e_connector_text = _read_required_text(
+        LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main authority audit for `await_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_freeze_sync`.",
+        "545_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+        "544_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "9f14c07677d31a19217b13ca943097162f9cf591",
+        "operator_reviews_layer3_handoff_export_boundary_after_package_lifecycle_non_mutation_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_without_connector_provider_or_destination_dispatch",
+        "conduct_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
+        "layer3_handoff_export_boundary_authority_current_main_satisfied_no_runtime_after_package_lifecycle_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+        "Entry decision: `read_only_current_main_control_surface_only`.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: `none`.",
+        "external_connector_invocation_enabled: False",
+        "destination_write_enabled: False",
+        "connector_run_created: False",
+        "provider_public_url_enabled: False",
+        "This evidence satisfies the selected operator review behavior as a read-only current-main authority review.",
+        "No implementation begins in this audit.",
+        "8 passed",
+        "current_main_sync_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_merge",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_handoff_export_boundary_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+    ):
+        if term not in handoff_export_audit_after_package_lifecycle_audit_source_intake_provider_private_e2e_connector_text:
+            errors.append(
+                f"{_rel(LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC)} missing source-intake provider-private e2e connector handoff/export authority audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Handoff/Export Boundary Authority Audit After Package-Lifecycle Audit Source Intake Provider-Private E2E Connector Requirement Freeze Sync",
+            "545_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+            "9f14c07677d31a19217b13ca943097162f9cf591",
+            "layer3_handoff_export_boundary_authority_current_main_satisfied_no_runtime_after_package_lifecycle_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action is `none`",
+            "8 passed",
+            "current_main_sync_layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_merge",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_handoff_export_boundary_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        MANIFEST: (
+            "layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_source_intake_provider_private_e2e_connector_requirement_freeze_sync",
+            "current_main_authority_audit",
+            "codex/l3-handoff-export-authority-audit-after-package-lifecycle-source-intake-e2e",
+            "545_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+            "9f14c07677d31a19217b13ca943097162f9cf591",
+            "layer3_handoff_export_boundary_authority_current_main_satisfied_no_runtime_after_package_lifecycle_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+            "read_only_current_main_control_surface_only",
+            '"selected_implementation_action": "none"',
+            "8 passed",
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            "await_new_exact_named_layer3_product_use_case_requirement_after_handoff_export_boundary_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_source_intake_provider_private_e2e_connector_requirement_freeze_sync_proof",
+            "current_main_authority_audit",
+            "codex/l3-handoff-export-authority-audit-after-package-lifecycle-source-intake-e2e",
+            "545_LAYER3_HANDOFF_EXPORT_BOUNDARY_AUTHORITY_AUDIT_AFTER_PACKAGE_LIFECYCLE_AUDIT_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md",
+            "9f14c07677d31a19217b13ca943097162f9cf591",
+            "layer3_handoff_export_boundary_authority_current_main_satisfied_no_runtime_after_package_lifecycle_audit_after_provider_public_audit_source_intake_provider_private_e2e_connector_requirement",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action none",
+            "8 passed",
+            "no implementation",
+            "no runtime behavior",
+            "no package mutation",
+            "no connector/provider/destination dispatch",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_handoff_export_boundary_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing source-intake provider-private e2e connector handoff/export authority audit term: {term}"
                 )
 
 
