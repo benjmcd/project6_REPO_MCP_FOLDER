@@ -21995,5 +21995,34 @@
   },
   "latest_layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_sync_branch": "codex/l3-requirement-selection-after-handoff-export-package-lifecycle-e2e",
   "latest_layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_sync_live_behavior_change": false,
-  "latest_layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_sync_summary": "Doc 547 proof entry records a freeze-only requirement-selection gate after handoff/export audit, package-lifecycle audit, provider-public audit, source-intake, and provider-private E2E connector sync, with no runtime behavior admitted."
+  "latest_layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_sync_summary": "Doc 547 proof entry records a freeze-only requirement-selection gate after handoff/export audit, package-lifecycle audit, provider-public audit, source-intake, and provider-private E2E connector sync, with no runtime behavior admitted.",
+  "layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_current_main_sync_proof": {
+    "proof_kind": "layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_current_main_sync",
+    "status": "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_requirement",
+    "branch": "codex/l3-requirement-selection-current-main-sync-after-handoff-export-e2e",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/548_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_HANDOFF_EXPORT_AUDIT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_CURRENT_MAIN_SYNC.md",
+    "freeze_pr": "#1143",
+    "freeze_merge_commit": "934adb29c2f542839abb3a8b988dd1f8c099a112",
+    "proof_terms": [
+      "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_requirement",
+      "select_next_layer3_product_use_case_requirement_after_handoff_export_boundary_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
+      "operator_selects_next_layer3_product_use_case_requirement_after_read_only_handoff_export_boundary_authority_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_without_runtime_expansion",
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "reviewThreads_totalCount 0",
+      "unresolved_reviewThreads 0",
+      "merge_state_before_merge CLEAN",
+      "not_implemented",
+      "no implementation",
+      "no runtime behavior",
+      "no package mutation",
+      "no connector/provider/destination dispatch",
+      "no frontend-only durable authority",
+      "await_next_exact_named_layer3_product_use_case_behavior_after_handoff_export_boundary_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync"
+    ],
+    "next_whole_project_posture": "await_next_exact_named_layer3_product_use_case_behavior_after_handoff_export_boundary_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync"
+  },
+  "latest_layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_current_main_sync_branch": "codex/l3-requirement-selection-current-main-sync-after-handoff-export-e2e",
+  "latest_layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_current_main_sync_live_behavior_change": false,
+  "latest_layer3_product_use_case_requirement_selection_freeze_after_handoff_export_audit_package_lifecycle_source_intake_provider_private_e2e_connector_current_main_sync_summary": "Doc 548 proof entry records current-main sync for PR #1143 merge commit 934adb29c2f542839abb3a8b988dd1f8c099a112 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_next_exact_named_layer3_product_use_case_behavior_after_handoff_export_boundary_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync."
 }
