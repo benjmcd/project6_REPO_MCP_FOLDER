@@ -1421,6 +1421,10 @@ LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "584_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REMEDIATION = (
+    PLANNING_DOCS
+    / "585_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REVIEW_REMEDIATION.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -47438,6 +47442,100 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector/destination missing-decision current-main sync term: {term}"
+                )
+
+    remediation_text = _read_required_text(
+        LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REMEDIATION,
+        errors,
+    )
+    for term in (
+        "Status: review-remediation implementation for `remediate_layer3_connector_local_destination_receipt_delivery_authority_review_thread`.",
+        "585_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REVIEW_REMEDIATION.md",
+        "9f197c4ce4ffda0def8ff58f8d3925204d941e14",
+        "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1177#discussion_r3248772902",
+        "The finding is valid against the freeze text.",
+        "layer3_workbench.external_export_download_deliver",
+        "X-Layer3-Delivery-State: external_export_download_delivered",
+        "test_layer3_api_connector_local_destination_receipt_revalidates_delivery_authority",
+        "external_export_download_delivery_source_artifact_mismatch",
+        "writes no `L3ConnectorLocalDestinationReceipt`",
+        "3 passed, 149 deselected",
+        "current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_merge",
+        "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+    ):
+        if term not in remediation_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REMEDIATION)} missing connector local destination receipt delivery-authority remediation term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Connector Local Destination Receipt Delivery-Authority Review Remediation",
+            "585_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REVIEW_REMEDIATION.md",
+            "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1177#discussion_r3248772902",
+            "remediated_layer3_connector_local_destination_receipt_delivery_authority_review_thread",
+            "layer3_workbench.external_export_download_deliver",
+            "test_layer3_api_connector_local_destination_receipt_revalidates_delivery_authority",
+            "3 passed, 149 deselected",
+            "current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_merge",
+            "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync",
+        ),
+        MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_review_remediation",
+            '"status": "review_remediation_branch_local"',
+            "codex/l3-local-receipt-delivery-authority-remediation",
+            "585_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REVIEW_REMEDIATION.md",
+            "9f197c4ce4ffda0def8ff58f8d3925204d941e14",
+            "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1177#discussion_r3248772902",
+            '"review_result": "valid_finding_remediated"',
+            '"new_regression_test": "test_layer3_api_connector_local_destination_receipt_revalidates_delivery_authority"',
+            '"delivery_validator": "layer3_workbench.external_export_download_deliver"',
+            "3 passed, 149 deselected",
+            '"schema_shape_change": false',
+            '"migration_lineage_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_local_destination_receipt_delivery_authority_review_remediation_proof",
+            '"status": "review_remediation_branch_local"',
+            "codex/l3-local-receipt-delivery-authority-remediation",
+            "585_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REVIEW_REMEDIATION.md",
+            "discussion_r3248772902",
+            "valid_finding_remediated",
+            "layer3_workbench.external_export_download_deliver",
+            "X-Layer3-Delivery-State: external_export_download_delivered",
+            "test_layer3_api_connector_local_destination_receipt_revalidates_delivery_authority",
+            "external_export_download_delivery_source_artifact_mismatch",
+            "L3ConnectorLocalDestinationReceipt count remains 0 on stale delivery authority",
+            "3 passed, 149 deselected",
+            "no real connector target",
+            "no real destination target",
+            "no external connector invocation",
+            "no destination write",
+            "no schema/model/migration changes",
+            "no frontend-only durable authority",
+        ),
+        connector_service: (
+            "def _existing_external_export_download_prepare(",
+            "def _delivery_authority_payload(",
+            "def _validate_existing_delivery_authority(",
+            "layer3_workbench.external_export_download_deliver",
+            "EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE",
+            "connector_local_destination_receipt_requires_delivery_authority",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_connector_local_destination_receipt_revalidates_delivery_authority",
+            "external_export_download_delivery_source_artifact_mismatch",
+            "stale-local-receipt-delivery-authority",
+            "assert db.query(L3ConnectorLocalDestinationReceipt).count() == 0",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing connector local destination receipt delivery-authority remediation term: {term}"
                 )
 
 

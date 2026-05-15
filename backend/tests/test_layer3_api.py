@@ -12748,6 +12748,79 @@ def test_layer3_api_connector_local_destination_receipt_records_durable_fake_loc
     assert same_basis_new_request.json()["error_code"] == "connector_local_destination_receipt_already_recorded"
 
 
+def test_layer3_api_connector_local_destination_receipt_revalidates_delivery_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-connector-local-receipt-delivery-authority",
+    )
+    connector_payload = _connector_dispatch_record_payload(
+        request_id="api-connector-local-receipt-delivery-authority-dispatch",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+    )
+    connector = client.post("/api/v1/layer3/handoff/connector/record", json=connector_payload)
+    assert connector.status_code == 200, connector.json()
+    payload = _connector_local_destination_receipt_payload(
+        request_id="api-connector-local-receipt-delivery-authority-local",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector.json(),
+        readiness_body=readiness_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        summary = dict(reconciliation.summary_json)
+        readiness_state = dict(summary["external_export_download_prepare"])
+        descriptor = dict(readiness_state["external_export_download_descriptor"])
+        descriptor["source_artifact_ref"] = "artifact://stale-local-receipt-delivery-authority"
+        readiness_state["external_export_download_descriptor"] = descriptor
+        summary["external_export_download_prepare"] = readiness_state
+        reconciliation.summary_json = summary
+        db.commit()
+    finally:
+        db.close()
+
+    receipt = client.post("/api/v1/layer3/handoff/connector/local-destination/receipt", json=payload)
+    assert receipt.status_code == 409, receipt.json()
+    assert receipt.json()["error_code"] == "external_export_download_delivery_source_artifact_mismatch"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3ConnectorLocalDestinationReceipt).count() == 0
+    finally:
+        db.close()
+
+
 def test_layer3_api_connector_local_destination_receipt_prechecks_fail_closed(
     client: TestClient,
     tmp_path,

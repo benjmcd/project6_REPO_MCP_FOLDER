@@ -23217,5 +23217,40 @@
   },
   "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_branch": "codex/l3-connector-destination-missing-decision-current-main-sync",
   "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_live_behavior_change": false,
-  "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_summary": "Doc 584 proof records current-main sync for PR #1179 merge commit d92c25024fcb17368e4b52430fb0a4274ad6ef38 with green checks, empty review/comment/thread surfaces, post-merge progress validation, no implementation-entry freeze, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
+  "latest_layer3_connector_destination_runtime_missing_decision_current_main_sync_summary": "Doc 584 proof records current-main sync for PR #1179 merge commit d92c25024fcb17368e4b52430fb0a4274ad6ef38 with green checks, empty review/comment/thread surfaces, post-merge progress validation, no implementation-entry freeze, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync.",
+  "layer3_connector_local_destination_receipt_delivery_authority_review_remediation_proof": {
+    "proof_kind": "layer3_connector_local_destination_receipt_delivery_authority_review_remediation",
+    "status": "review_remediation_branch_local",
+    "branch": "codex/l3-local-receipt-delivery-authority-remediation",
+    "remediation_doc": "next_milestone_plans/Layer3_planning_docs/585_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_REVIEW_REMEDIATION.md",
+    "source_review_thread": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1177#discussion_r3248772902",
+    "proof_terms": [
+      "remediate_layer3_connector_local_destination_receipt_delivery_authority_review_thread",
+      "valid_finding_remediated",
+      "requires existing same-origin external export/download prepare/delivery authority",
+      "layer3_connector_local_destination_receipt.py",
+      "layer3_workbench.external_export_download_deliver",
+      "X-Layer3-Delivery-State: external_export_download_delivered",
+      "test_layer3_api_connector_local_destination_receipt_revalidates_delivery_authority",
+      "external_export_download_delivery_source_artifact_mismatch",
+      "L3ConnectorLocalDestinationReceipt count remains 0 on stale delivery authority",
+      "3 passed, 149 deselected",
+      "no real connector target",
+      "no real destination target",
+      "no external connector invocation",
+      "no destination write",
+      "no connector-run creation",
+      "no credential use",
+      "no network write",
+      "no real destination integration",
+      "no schema/model/migration changes",
+      "no frontend-only durable authority",
+      "current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_merge",
+      "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+    ],
+    "next_whole_project_posture_after_sync": "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+  },
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_branch": "codex/l3-local-receipt-delivery-authority-remediation",
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_live_behavior_change": true,
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_review_remediation_summary": "Doc 585 proof records review remediation for PR #1177 discussion_r3248772902. The local receipt service now validates same-origin external export/download delivery authority before receipt persistence and focused connector local destination receipt tests pass with 3 passed, 149 deselected."
 }
