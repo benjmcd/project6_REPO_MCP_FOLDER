@@ -23475,5 +23475,29 @@
   },
   "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_branch": "codex/l3-local-receipt-delivery-authority-readiness-artifact-remediation",
   "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_live_behavior_change": true,
-  "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_summary": "Doc 591 proof records review remediation for PR #1185 discussion_r3249255284 and discussion_r3249255289. The service recomputes readiness in the existing receipt transaction and validates the persisted APS bundle artifact before writing the receipt."
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_summary": "Doc 591 proof records review remediation for PR #1185 discussion_r3249255284 and discussion_r3249255289. The service recomputes readiness in the existing receipt transaction and validates the persisted APS bundle artifact before writing the receipt.",
+  "layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_current_main_sync_proof": {
+    "proof_kind": "layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_current_main_sync",
+    "status": "current_main_synced_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation",
+    "branch": "codex/l3-local-receipt-delivery-authority-readiness-artifact-current-main-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/592_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md",
+    "readiness_artifact_review_remediation_pr": "#1187",
+    "readiness_artifact_review_remediation_merge_commit": "3609a496acd55a8130c2dc49cb3c3c4528ac77d4",
+    "proof_terms": [
+      "current_main_sync_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_remediation_merge",
+      "remediated_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_review_threads",
+      "backend-layer3-api pass 2m30s",
+      "test pass 3m2s",
+      "reviewThreads_totalCount 0",
+      "unresolved_reviewThreads 0",
+      "merge_state_before_merge CLEAN",
+      "post-merge progress validation passed",
+      "no runtime behavior in sync",
+      "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+    ],
+    "next_whole_project_posture": "await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync"
+  },
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_current_main_sync_branch": "codex/l3-local-receipt-delivery-authority-readiness-artifact-current-main-sync",
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_current_main_sync_live_behavior_change": false,
+  "latest_layer3_connector_local_destination_receipt_delivery_authority_readiness_artifact_current_main_sync_summary": "Doc 592 proof records current-main sync for PR #1187 merge commit 3609a496acd55a8130c2dc49cb3c3c4528ac77d4 with green checks, empty review/comment/thread surfaces, post-merge progress validation, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
 }
