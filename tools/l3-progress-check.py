@@ -1100,6 +1100,10 @@ LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT
     PLANNING_DOCS
     / "499_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SYNC.md"
 )
+LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "500_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -39985,6 +39989,91 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing provider-public audit product/use-case requirement selection freeze term: {term}"
+                )
+
+    product_use_case_requirement_freeze_after_provider_public_audit_sync_text = _read_required_text(
+        LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `layer3_product_use_case_requirement_selection_freeze_after_provider_public_audit_sync`.",
+        "500_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_CURRENT_MAIN_SYNC.md",
+        "499_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_SYNC.md",
+        "#1095",
+        "f6ee4adeb2dce76456e9282c7ae7504812829304",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_provider_public_audit",
+        "select_next_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+        "operator_selects_next_layer3_product_use_case_requirement_after_read_only_provider_public_delivery_use_no_runtime_boundary_authority_audit_without_runtime_expansion",
+        "Entry decision remains `freeze_only`.",
+        "Runtime status remains `not_implemented`.",
+        "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_requirement_selection_sync",
+        "No implementation begins in this sync.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in product_use_case_requirement_freeze_after_provider_public_audit_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_CURRENT_MAIN_SYNC)} missing provider-public audit product/use-case requirement selection sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Product Use-Case Requirement Selection Freeze After Provider-Public Audit Current-Main Sync",
+            "500_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1095",
+            "f6ee4adeb2dce76456e9282c7ae7504812829304",
+            "reviewThreads totalCount was `0`",
+            "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_provider_public_audit",
+            "select_next_layer3_product_use_case_requirement_after_provider_public_delivery_use_no_runtime_boundary_audit_sync",
+            "operator_selects_next_layer3_product_use_case_requirement_after_read_only_provider_public_delivery_use_no_runtime_boundary_authority_audit_without_runtime_expansion",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_requirement_selection_sync",
+        ),
+        MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_provider_public_audit_current_main_sync",
+            "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_provider_public_audit",
+            "codex/l3-requirement-selection-after-provider-public-audit-current-main-sync",
+            "500_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1095",
+            "f6ee4adeb2dce76456e9282c7ae7504812829304",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_requirement_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_product_use_case_requirement_selection_freeze_after_provider_public_audit_current_main_sync_proof",
+            "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_provider_public_audit",
+            "codex/l3-requirement-selection-after-provider-public-audit-current-main-sync",
+            "500_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1095",
+            "f6ee4adeb2dce76456e9282c7ae7504812829304",
+            "backend-layer3-api SUCCESS",
+            "test SUCCESS",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "no implementation",
+            "no runtime behavior",
+            "no frontend-only durable authority",
+            "await_next_exact_named_layer3_product_use_case_behavior_after_provider_public_delivery_use_no_runtime_boundary_audit_requirement_selection_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public audit product/use-case requirement selection sync term: {term}"
                 )
 
 def main() -> int:
