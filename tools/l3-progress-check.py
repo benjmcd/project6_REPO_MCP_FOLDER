@@ -1112,6 +1112,10 @@ LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_
     PLANNING_DOCS
     / "502_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_FREEZE_SYNC = (
+    PLANNING_DOCS
+    / "503_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_FREEZE_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -40247,6 +40251,82 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing provider-public audit package-lifecycle behavior freeze sync term: {term}"
+                )
+
+    package_lifecycle_non_mutation_boundary_audit_text = _read_required_text(
+        LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main authority audit for `await_layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_requirement_selection_freeze_sync`.",
+        "503_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+        "108803c0e72d858ab25b4844c0b200dff06592ab",
+        "502_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_CURRENT_MAIN_SYNC.md",
+        "operator_reviews_layer3_package_lifecycle_non_mutation_boundary_after_provider_public_no_runtime_audit_requirement_selection_without_package_mutation_or_dispatch",
+        "layer3_package_lifecycle_non_mutation_boundary_authority_current_main_satisfied_no_runtime",
+        "Entry decision: `read_only_current_main_control_surface_only`.",
+        "Runtime status: `not_implemented`.",
+        "Selected implementation action: `none`.",
+        "layer3_package_mutation_entry.py",
+        "layer3_replacement_package_set_authority.py",
+        "layer3_replacement_package_artifact_manifest.py",
+        "layer3_replacement_package_namespace.py",
+        "`PASS` (`46 passed`)",
+        "current_main_sync_layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_requirement_merge",
+        "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_sync",
+        "No implementation begins in this audit.",
+        "No closed or blocked lane is reopened by implication.",
+    ):
+        if term not in package_lifecycle_non_mutation_boundary_audit_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_FREEZE_SYNC)} missing package-lifecycle non-mutation boundary audit term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Package-Lifecycle Non-Mutation Boundary Authority Audit After Provider-Public Audit Requirement Freeze Sync",
+            "503_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+            "layer3_package_lifecycle_non_mutation_boundary_authority_current_main_satisfied_no_runtime",
+            "read_only_current_main_control_surface_only",
+            "selected implementation action is `none`",
+            "`46 passed`",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_sync",
+        ),
+        MANIFEST: (
+            "layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_requirement_freeze_sync",
+            "planning_control_audit",
+            "codex/l3-package-lifecycle-boundary-authority-audit",
+            "503_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+            "108803c0e72d858ab25b4844c0b200dff06592ab",
+            "layer3_package_lifecycle_non_mutation_boundary_authority_current_main_satisfied_no_runtime",
+            '"selected_implementation_action": "none"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"response_model_shape_change": false',
+            "46 passed",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_package_lifecycle_non_mutation_boundary_authority_audit_after_provider_public_audit_requirement_freeze_sync_proof",
+            "planning_control_audit",
+            "codex/l3-package-lifecycle-boundary-authority-audit",
+            "503_LAYER3_PACKAGE_LIFECYCLE_NON_MUTATION_BOUNDARY_AUTHORITY_AUDIT_AFTER_PROVIDER_PUBLIC_AUDIT_REQUIREMENT_FREEZE_SYNC.md",
+            "108803c0e72d858ab25b4844c0b200dff06592ab",
+            "layer3_package_lifecycle_non_mutation_boundary_authority_current_main_satisfied_no_runtime",
+            "selected implementation action none",
+            "46 passed",
+            "no implementation",
+            "no runtime behavior",
+            "no package mutation",
+            "no frontend-only durable authority",
+            "await_new_exact_named_layer3_product_use_case_requirement_after_package_lifecycle_non_mutation_boundary_audit_sync",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing package-lifecycle non-mutation boundary audit term: {term}"
                 )
 
 def main() -> int:
