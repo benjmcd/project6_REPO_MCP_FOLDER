@@ -2911,7 +2911,7 @@ This packet admits no runtime behavior, backend route behavior, service behavior
 
 ## Layer 3 Connector/Destination Runtime Missing-Decision After Readiness/Artifact Current-Main Sync
 
-Current-main proof/control sync: PR `#1189` merged `593_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_READINESS_ARTIFACT_SYNC.md` at merge commit `2ac5ae2451a0c658beed3c5e450862bd4ac22221`.
+Current-main proof/control sync: PR `#1189` merged `593_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_PACKET_AFTER_READINESS_ARTIFACT_SYNC.md` at merge commit `2ac5ae2478a7c36374fb96b5b3ed7fbbf7309ce4`.
 
 The sync doc `594_LAYER3_CONNECTOR_DESTINATION_RUNTIME_MISSING_DECISION_AFTER_READINESS_ARTIFACT_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` passed in `2m34s`, GitHub `test` passed in `3m1s`, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, mergeability before merge was `MERGEABLE`, merge state before merge was `CLEAN`, open PR state after merge was none, and post-merge progress validation passed. The packet is now current-main synced as `current_main_synced_layer3_connector_destination_runtime_missing_decision_packet_after_readiness_artifact_sync`.
 
