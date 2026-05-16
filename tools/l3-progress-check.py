@@ -1502,6 +1502,9 @@ LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD = (
 LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_TARGET_SELECTION_FIELD_CONTRACT = (
+    PLANNING_DOCS / "616_TARGET_SELECTION_FIELD_CONTRACT.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -49455,11 +49458,31 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
 
 def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
     intake_text = _read_required_text(LAYER3_TARGET_SELECTION_INTAKE, errors)
+    required_fields = (
+        "target_identity",
+        "target_owner",
+        "target_class",
+        "operator_purpose",
+        "authority_source",
+        "artifact_family",
+        "credential_model",
+        "destination_address_model",
+        "side_effect_boundary",
+        "idempotency_contract",
+        "failure_lifecycle",
+        "receipt_audit_contract",
+        "exposure_security_posture",
+        "operator_surface",
+        "proof_architecture",
+    )
     for term in (
         "Selected target identity: `null`.",
         "Selected target class: `null`.",
         "Implementation-entry freeze written: false.",
         "Selection complete: false.",
+        "## Structured Selection Record",
+        "selection_complete: false",
+        "implementation_entry_freeze_written: false",
         "Required next action: fill this intake with one named real connector or destination target.",
         "If no target can be named, keep runtime blocked and do not start another broad no-runtime audit unless current-main authority contradicts the local-outbox provider-private lifecycle proof.",
     ):
@@ -49467,6 +49490,12 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             errors.append(
                 f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} missing target-selection intake guard term: {term}"
             )
+    for field in required_fields:
+        for term in (f"| `{field}` |", f"{field}: null"):
+            if term not in intake_text:
+                errors.append(
+                    f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} missing target-selection field term: {term}"
+                )
 
     audit_text = _read_required_text(
         LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_TARGET_SELECTION_INTAKE, errors
@@ -49522,9 +49551,37 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC)} missing target-selection guard current-main sync term: {term}"
             )
 
+    field_contract_text = _read_required_text(
+        LAYER3_TARGET_SELECTION_FIELD_CONTRACT, errors
+    )
+    for term in (
+        "Status: validate-only field contract for `612_TARGET_SELECTION_INTAKE.md`.",
+        "616_TARGET_SELECTION_FIELD_CONTRACT.md",
+        "Current-main checkpoint at field-contract creation: `652e8a77b2382021110e28489797019d5eba418f`.",
+        "Validated intake: `612_TARGET_SELECTION_INTAKE.md`.",
+        "Prior guard sync: `615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md`.",
+        "This contract makes the operator-fillable target-selection fields explicit",
+        "It does not select a target and does not admit runtime behavior.",
+        "selection_complete: false",
+        "implementation_entry_freeze_written: false",
+        "The next required action remains operator completion of `612_TARGET_SELECTION_INTAKE.md`",
+    ):
+        if term not in field_contract_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_FIELD_CONTRACT)} missing target-selection field-contract term: {term}"
+            )
+    for field in required_fields:
+        term = f"- `{field}`"
+        if term not in field_contract_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_FIELD_CONTRACT)} missing required target-selection field term: {term}"
+            )
+
     for path, terms in {
         BOARD: (
             "2026-05-16 target-selection validate-only guard current-main sync",
+            "2026-05-16 target-selection field contract",
+            "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1218",
@@ -49534,17 +49591,22 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
         MANIFEST: (
             "target_selection_validate_only_guard",
             "target_selection_validate_only_guard_current_main_sync",
+            "target_selection_field_contract",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
+            "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "codex/l3-target-selection-guard",
+            "codex/l3-target-selection-field-contract",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
             "selection_complete false",
         ),
         PROOF_MANIFEST: (
             "latest_target_selection_validate_only_guard",
             "latest_target_selection_validate_only_guard_current_main_sync",
+            "latest_target_selection_field_contract",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
+            "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "validate-only progress guard",
             "does not select a target",
         ),
