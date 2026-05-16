@@ -36,6 +36,7 @@ from app.models.models import (
     L3ReplacementOutputPackage,
     L3ReplacementPackageArtifactManifest,
     L3ReplacementPackageSetAuthority,
+    L3ServerOwnedLocalOutboxTargetReceipt,
     L3RetrievalEvent,
     L3SelectionManifest,
     L3Session,
@@ -68,6 +69,7 @@ from test_layer3_api import (
     _aps_handoff_dispatch_payload,
     _connector_dispatch_record_payload,
     _connector_local_destination_receipt_payload,
+    _server_owned_local_outbox_fake_target_payload,
     _external_export_download_deliver_payload,
     _external_export_download_prepare_payload,
     _handoff_export_prepare_payload,
@@ -714,6 +716,29 @@ class Layer3ApiDriver:
         )
         return self.post_ok("/api/v1/layer3/handoff/connector/local-destination/receipt", payload)
 
+    def server_owned_local_outbox_fake_target(
+        self,
+        *,
+        session_id: str,
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        commit: dict[str, Any],
+        connector: dict[str, Any],
+        local_receipt: dict[str, Any],
+        readiness: dict[str, Any],
+    ) -> dict[str, Any]:
+        payload = _server_owned_local_outbox_fake_target_payload(
+            request_id="bounded-e2e-local-outbox-fake-target",
+            session_id=session_id,
+            approval_body=approval,
+            selection_body=selection,
+            commit_body=commit,
+            connector_body=connector,
+            local_receipt_body=local_receipt,
+            readiness_body=readiness,
+        )
+        return self.post_ok("/api/v1/layer3/handoff/connector/local-outbox/fake-target", payload)
+
     def external_export_download_deliver(
         self,
         *,
@@ -779,6 +804,9 @@ class Layer3StateAssertions:
                 "connector_local_destination_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
                 "connector_run_targets": db.query(ConnectorRunTarget).count(),
                 "connector_runs": db.query(ConnectorRun).count(),
+                "server_owned_local_outbox_target_receipts": db.query(
+                    L3ServerOwnedLocalOutboxTargetReceipt
+                ).count(),
                 "datasets": db.query(Dataset).count(),
                 "dataset_rows": db.query(DatasetRow).count(),
                 "dataset_source_provenance": db.query(DatasetSourceProvenance).count(),
@@ -950,12 +978,16 @@ class Layer3StateAssertions:
         allowed_output_packages: int = 0,
         allowed_reconciliations: int = 0,
         allowed_local_receipts: int = 0,
+        allowed_local_outbox_target_receipts: int = 0,
     ) -> None:
         counts = self.counts()
         assert counts["connector_runs"] == seeded_counts["connector_runs"]
         assert counts["connector_run_targets"] == seeded_counts["connector_run_targets"]
         assert counts["connector_local_destination_receipts"] == (
             seeded_counts["connector_local_destination_receipts"] + allowed_local_receipts
+        )
+        assert counts["server_owned_local_outbox_target_receipts"] == (
+            seeded_counts["server_owned_local_outbox_target_receipts"] + allowed_local_outbox_target_receipts
         )
         assert counts["replacement_authorities"] == 0
         assert counts["replacement_packages"] == 0
@@ -1362,6 +1394,49 @@ def _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
     assert local_status["idempotency_policy"]["same_key_same_payload_replay"] == "already_recorded"
     assert local_status["retry_policy"]["retry_fields_admitted"] is False
 
+    target_ready = summary_after_receipt["server_owned_local_outbox_target"]
+    assert target_ready["state"] == "server_owned_local_outbox_fake_target_ready"
+    assert target_ready["available"] is True
+    assert target_ready["target_receipt_history_count"] == 0
+    assert target_ready["connector_local_destination_receipt_id"] == (
+        local_receipt["connector_local_destination_receipt_id"]
+    )
+
+    local_outbox_target = driver.server_owned_local_outbox_fake_target(
+        session_id=session_id,
+        approval=plan_approval,
+        selection=selection,
+        commit=package_commit,
+        connector=connector,
+        local_receipt=local_receipt,
+        readiness=download_prepare,
+    )
+    assert local_outbox_target["status"] == "recorded"
+    assert local_outbox_target["server_owned_local_outbox_target_state"] == (
+        "server_owned_local_outbox_fake_target_recorded"
+    )
+    assert local_outbox_target["destination_write_performed"] is False
+    assert local_outbox_target["connector_run_created"] is False
+    assert local_outbox_target["connector_run_target_created"] is False
+    target_counts = state.counts()
+    assert target_counts == {
+        **receipt_counts,
+        "server_owned_local_outbox_target_receipts": (
+            receipt_counts["server_owned_local_outbox_target_receipts"] + 1
+        ),
+    }
+    assert state.files() == files_before_dispatch | added_dispatch_files
+
+    summary_after_target = driver.get(f"/api/v1/layer3/session/{session_id}")
+    target_status = summary_after_target["server_owned_local_outbox_target"]
+    assert target_status["state"] == "server_owned_local_outbox_fake_target_recorded"
+    assert target_status["target_receipt_history_count"] == 1
+    assert target_status["latest_target_receipt"]["server_owned_local_outbox_target_receipt_id"] == (
+        local_outbox_target["server_owned_local_outbox_target_receipt_id"]
+    )
+    assert target_status["idempotency_policy"]["same_key_same_payload_replay"] == "already_recorded"
+    assert target_status["retry_policy"]["retry_fields_admitted"] is False
+
     delivery = driver.external_export_download_deliver(
         prepare_payload=download_prepare_payload,
         readiness=download_prepare,
@@ -1369,12 +1444,15 @@ def _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
     assert delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
     assert delivery.headers["x-layer3-schema-id"] == "layer3.external_export_download_delivery.v1"
     assert delivery.content == Path(aps_dispatch["aps_bundle_ref"]).read_bytes()
-    assert state.counts() == receipt_counts
+    assert state.counts() == target_counts
     assert state.files() == files_before_dispatch | added_dispatch_files
-    assert receipt_counts["connector_runs"] == seeded_counts["connector_runs"]
-    assert receipt_counts["connector_run_targets"] == seeded_counts["connector_run_targets"]
-    assert receipt_counts["connector_local_destination_receipts"] == (
+    assert target_counts["connector_runs"] == seeded_counts["connector_runs"]
+    assert target_counts["connector_run_targets"] == seeded_counts["connector_run_targets"]
+    assert target_counts["connector_local_destination_receipts"] == (
         seeded_counts["connector_local_destination_receipts"] + 1
+    )
+    assert target_counts["server_owned_local_outbox_target_receipts"] == (
+        seeded_counts["server_owned_local_outbox_target_receipts"] + 1
     )
 
 
@@ -1840,6 +1918,7 @@ def _assert_no_layer3_flow_delta(before: dict[str, int], after: dict[str, int]) 
         "replacement_packages",
         "retrieval_events",
         "selection_manifests",
+        "server_owned_local_outbox_target_receipts",
         "sessions",
         "signed_reference_audit_events",
         "signed_reference_receipts",
