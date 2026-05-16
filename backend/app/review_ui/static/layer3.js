@@ -5371,9 +5371,50 @@ function connectorLocalDestinationReceiptPanelState() {
     };
 }
 
+function connectorLocalDestinationReceiptLifecycle(status) {
+    return status?.lifecycle_status_surface || {};
+}
+
+function connectorLocalDestinationReceiptHistoryRows(status) {
+    const lifecycle = connectorLocalDestinationReceiptLifecycle(status);
+    if (Array.isArray(lifecycle.receipt_history)) return lifecycle.receipt_history;
+    if (Array.isArray(status?.receipt_history)) return status.receipt_history;
+    return [];
+}
+
+function connectorLocalDestinationReceiptFailureRows(status) {
+    const lifecycle = connectorLocalDestinationReceiptLifecycle(status);
+    if (Array.isArray(lifecycle.failure_state_projection)) return lifecycle.failure_state_projection;
+    if (Array.isArray(status?.failure_state_projection)) return status.failure_state_projection;
+    return [];
+}
+
+function renderConnectorLocalDestinationReceiptHistory(status) {
+    const history = connectorLocalDestinationReceiptHistoryRows(status);
+    if (!history.length) {
+        return '<li>history: none</li>';
+    }
+    return history.slice(0, 4).map((row) => (
+        `<li><code>${escapeHtml(row.connector_local_destination_receipt_id || 'pending')}</code>: ${escapeHtml(row.connector_local_destination_receipt_state || 'unknown')} / <code>${escapeHtml(row.authority_basis_hash || 'no-authority-hash')}</code></li>`
+    )).join('');
+}
+
+function renderConnectorLocalDestinationReceiptFailureProjection(status) {
+    const rows = connectorLocalDestinationReceiptFailureRows(status);
+    if (!rows.length) {
+        return '<li>guardrails: unavailable</li>';
+    }
+    return rows.slice(0, 8).map((row) => (
+        `<li>${escapeHtml(row.case)}: ${escapeHtml(row.projected_error_code || row.operator_status || 'status-only')}</li>`
+    )).join('');
+}
+
 function renderConnectorLocalDestinationReceiptStatusPanel() {
     const status = connectorLocalDestinationReceiptStatusState() || {};
     const panelState = connectorLocalDestinationReceiptPanelState();
+    const lifecycle = connectorLocalDestinationReceiptLifecycle(status);
+    const idempotency = status.idempotency_policy || lifecycle.idempotency_policy || {};
+    const retry = status.retry_policy || lifecycle.retry_policy || {};
     const downstream = status.downstream_unavailable || [
         'external_connector_invocation',
         'destination_write',
@@ -5402,6 +5443,8 @@ function renderConnectorLocalDestinationReceiptStatusPanel() {
                     ${fieldItem('state', connectorLocalDestinationReceiptStateName(status))}
                     ${fieldItem('available', status.available)}
                     ${fieldItem('blocked reason', status.blocked_reason)}
+                    ${fieldItem('lifecycle surface', lifecycle.surface_mode)}
+                    ${fieldItem('history count', status.receipt_history_count ?? lifecycle.history_count)}
                 </ul>
             </section>
             <section class="result-review-card">
@@ -5425,6 +5468,30 @@ function renderConnectorLocalDestinationReceiptStatusPanel() {
                     ${fieldItem('redacted artifact', status.accepted_artifact_ref, { code: true })}
                     ${fieldItem('artifact hash', status.accepted_artifact_hash, { code: true })}
                     ${fieldItem('artifact size bytes', status.accepted_artifact_size_bytes)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Lifecycle Policy</strong>
+                <ul>
+                    ${fieldItem('history authority', lifecycle.history_listing_authority)}
+                    ${fieldItem('audit authority', lifecycle.audit_trail_authority)}
+                    ${fieldItem('same key replay', idempotency.same_key_same_payload_replay)}
+                    ${fieldItem('same key conflict', idempotency.same_key_different_payload_conflict)}
+                    ${fieldItem('same basis conflict', idempotency.same_basis_different_client_request_id)}
+                    ${fieldItem('retry fields', retry.retry_fields_admitted === false ? 'blocked' : retry.retry_fields_admitted)}
+                    ${fieldItem('replay semantics', retry.replay_semantics)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Receipt History</strong>
+                <ul>
+                    ${renderConnectorLocalDestinationReceiptHistory(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Guardrail Projection</strong>
+                <ul>
+                    ${renderConnectorLocalDestinationReceiptFailureProjection(status)}
                 </ul>
             </section>
             <section class="result-review-card">
