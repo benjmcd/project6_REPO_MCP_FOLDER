@@ -36,6 +36,8 @@ from app.models.models import (
     L3AnalysisUnit,
     L3ConnectorLocalDestinationReceipt,
     L3GateBIdempotencyKey,
+    L3LocalOutboxProviderPrivateHandoffAuditEvent,
+    L3LocalOutboxProviderPrivateHandoffReceipt,
     L3OutputPackage,
     L3PackageSupersessionCommit,
     L3PassRun,
@@ -66,6 +68,7 @@ from app.services import (
     layer3_package_mutation_entry,
     layer3_package_supersession_commit,
     layer3_pass_entry as layer3_pass_entry_module,
+    layer3_local_outbox_provider_private_handoff,
     layer3_provider_private_signed_url,
     layer3_raw_mixed_bridge,
     layer3_replacement_package_artifact_manifest,
@@ -4049,6 +4052,42 @@ def _server_owned_local_outbox_write_payload(
     }
 
 
+def _local_outbox_provider_private_handoff_payload(
+    *,
+    request_id: str,
+    session_id: str,
+    approval_body: dict,
+    selection_body: dict,
+    commit_body: dict,
+    connector_body: dict,
+    local_receipt_body: dict,
+    target_body: dict,
+    write_body: dict,
+    readiness_body: dict,
+    recipient_scope: str = "ops-recipient:layer3-local-outbox-provider-private",
+    requested_ttl_seconds: int = 300,
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "connector_dispatch_record_ref": connector_body["connector_dispatch_record_ref"],
+        "connector_local_destination_receipt_id": local_receipt_body["connector_local_destination_receipt_id"],
+        "server_owned_local_outbox_target_receipt_id": (
+            target_body["server_owned_local_outbox_target_receipt_id"]
+        ),
+        "server_owned_local_outbox_write_receipt_id": write_body["server_owned_local_outbox_write_receipt_id"],
+        "external_export_download_record_ref": readiness_body["external_export_download_record_ref"],
+        "target_identity": "server_owned_local_outbox_provider_private_handoff_destination",
+        "dispatch_mode": "provider_private_fake_provider_prepare_status_from_local_outbox_receipt",
+        "operator_decision": "prepare_provider_private_handoff_from_local_outbox",
+        "recipient_scope": recipient_scope,
+        "requested_ttl_seconds": requested_ttl_seconds,
+    }
+
+
 def _prepare_cohort_connector_dispatch_record(
     client: TestClient,
     tmp_path,
@@ -4287,6 +4326,66 @@ def _prepare_server_owned_local_outbox_fake_target(
     )
 
 
+def _prepare_server_owned_local_outbox_write(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+    *,
+    request_id: str,
+) -> tuple[str, dict, dict, dict, dict, dict, dict, dict, dict, dict, dict, dict, dict, dict]:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+    ) = _prepare_server_owned_local_outbox_fake_target(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id=request_id,
+    )
+    write = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/write",
+        json=_server_owned_local_outbox_write_payload(
+            request_id=f"{request_id}-write",
+            session_id=session_id,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            commit_body=commit_body,
+            connector_body=connector_body,
+            local_receipt_body=local_receipt_body,
+            target_body=target_body,
+            readiness_body=readiness_body,
+        ),
+    )
+    assert write.status_code == 200, write.json()
+    return (
+        session_id,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+        write.json(),
+    )
+
+
 def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
     prepare_path = "/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare"
@@ -4295,9 +4394,16 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
         "{provider_signed_url_receipt_id}"
     )
     revoke_path = "/api/v1/layer3/handoff/export/download/provider-private-signed-url/revoke"
+    local_outbox_prepare_path = "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare"
+    local_outbox_status_path = (
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/status/"
+        "{provider_private_handoff_receipt_id}"
+    )
     assert prepare_path in spec["paths"]
     assert status_path in spec["paths"]
     assert revoke_path in spec["paths"]
+    assert local_outbox_prepare_path in spec["paths"]
+    assert local_outbox_status_path in spec["paths"]
     assert "/api/v1/layer3/handoff/export/download/provider-private-signed-url/use" not in spec["paths"]
 
     prepare_schema = spec["paths"][prepare_path]["post"]["requestBody"]["content"]["application/json"]["schema"]
@@ -4368,6 +4474,55 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
         assert revoke_schema["properties"][forbidden]["not"] == {}
     assert _openapi_response_schema(spec, revoke_path, "post")["title"] == (
         "Layer3ProviderPrivateSignedUrlRevokeResponse"
+    )
+    local_outbox_prepare_schema = spec["paths"][local_outbox_prepare_path]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert local_outbox_prepare_schema["additionalProperties"] is False
+    assert set(local_outbox_prepare_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "server_owned_local_outbox_target_receipt_id",
+        "server_owned_local_outbox_write_receipt_id",
+        "external_export_download_record_ref",
+        "target_identity",
+        "dispatch_mode",
+        "operator_decision",
+        "recipient_scope",
+    }
+    assert local_outbox_prepare_schema["properties"]["target_identity"]["enum"] == [
+        "server_owned_local_outbox_provider_private_handoff_destination"
+    ]
+    assert local_outbox_prepare_schema["properties"]["dispatch_mode"]["enum"] == [
+        "provider_private_fake_provider_prepare_status_from_local_outbox_receipt"
+    ]
+    assert local_outbox_prepare_schema["properties"]["operator_decision"]["enum"] == [
+        "prepare_provider_private_handoff_from_local_outbox"
+    ]
+    for forbidden in (
+        "provider_credentials",
+        "provider_private_signed_url_token",
+        "connector_run_id",
+        "destination_path",
+        "provider_public_url",
+        "package_payload",
+        "source_expansion",
+        "rag_vector_index",
+        "auth_policy",
+        "frontend_durable_authority",
+        "full_mockup_activation",
+    ):
+        assert local_outbox_prepare_schema["properties"][forbidden]["not"] == {}
+    assert _openapi_response_schema(spec, local_outbox_prepare_path, "post")["title"] == (
+        "Layer3LocalOutboxProviderPrivateHandoffResponse"
+    )
+    assert _openapi_response_schema(spec, local_outbox_status_path, "get")["title"] == (
+        "Layer3LocalOutboxProviderPrivateHandoffResponse"
     )
     same_origin_prepare_schema = spec["paths"]["/api/v1/layer3/handoff/export/download/prepare"]["post"][
         "requestBody"
@@ -13866,6 +14021,425 @@ def test_layer3_api_server_owned_local_outbox_write_prechecks_fail_closed(
     db = client.layer3_session_factory()
     try:
         assert db.query(L3ServerOwnedLocalOutboxWriteReceipt).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_local_outbox_provider_private_handoff_prepare_status_and_idempotency(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+        write_body,
+    ) = _prepare_server_owned_local_outbox_write(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-local-outbox-provider-private-success",
+    )
+    payload = _local_outbox_provider_private_handoff_payload(
+        request_id="api-local-outbox-provider-private-prepare",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
+            "handoff_audit_events": db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count(),
+            "provider_private_signed_url_receipts": db.query(L3ProviderPrivateSignedUrlReceipt).count(),
+            "packages": db.query(L3OutputPackage).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+    finally:
+        db.close()
+
+    prepare = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json=payload,
+    )
+    assert prepare.status_code == 200, prepare.json()
+    body = prepare.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.local_outbox_provider_private_handoff.prepare.v1"
+    assert body["status"] == "prepared"
+    assert body["provider_private_handoff_state"] == "local_outbox_provider_private_handoff_prepared"
+    assert body["handoff_operation_state"] == "local_outbox_provider_private_handoff_prepared"
+    assert body["provider_private_marker"] == "provider-private-local-outbox-handoff:redacted"
+    assert body["target_identity"] == "server_owned_local_outbox_provider_private_handoff_destination"
+    assert body["dispatch_mode"] == "provider_private_fake_provider_prepare_status_from_local_outbox_receipt"
+    assert body["server_owned_local_outbox_write_receipt_id"] == (
+        write_body["server_owned_local_outbox_write_receipt_id"]
+    )
+    assert body["server_owned_local_outbox_target_receipt_id"] == (
+        target_body["server_owned_local_outbox_target_receipt_id"]
+    )
+    assert body["connector_local_destination_receipt_id"] == (
+        local_receipt_body["connector_local_destination_receipt_id"]
+    )
+    assert body["connector_dispatch_record_ref"] == connector_body["connector_dispatch_record_ref"]
+    assert body["external_export_download_record_ref"] == readiness_body["external_export_download_record_ref"]
+    assert body["source_artifact_hash"] == readiness_body["source_artifact_hash"]
+    assert body["source_artifact_size_bytes"] == readiness_body["source_artifact_size_bytes"]
+    assert body["outbox_artifact_ref"].startswith("storage://server-owned-local-outbox/")
+    assert body["outbox_manifest_ref"].startswith("storage://server-owned-local-outbox/")
+    assert body["outbox_artifact_hash"] == write_body["outbox_artifact_hash"]
+    assert body["outbox_artifact_size_bytes"] == write_body["outbox_artifact_size_bytes"]
+    assert body["provider_private_revocation_supported"] is False
+    assert body["provider_private_use_route_enabled"] is False
+    assert body["raw_token_exposed"] is False
+    assert body["real_connector_invocation_enabled"] is False
+    assert body["external_provider_network_write_enabled"] is False
+    assert body["external_object_store_write_enabled"] is False
+    assert body["external_destination_write_enabled"] is False
+    assert body["connector_run_created"] is False
+    assert body["connector_run_target_created"] is False
+    assert body["credentials_enabled"] is False
+    assert body["provider_public_delivery_enabled"] is False
+    assert body["package_mutation_enabled"] is False
+    assert body["source_expansion_enabled"] is False
+    assert body["rag_vector_enabled"] is False
+    assert body["auth_security_implementation_enabled"] is False
+    assert body["full_mockup_activation_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["audit_receipt"]["provider_secret_redacted"] is True
+    assert body["audit_receipt"]["provider_network_enabled"] is False
+    assert body["audit_receipt"]["provider_object_write_enabled"] is False
+    assert body["authority_rail"]["durable_state_authority"] is True
+    response_text = json.dumps(body, sort_keys=True)
+    assert str(Path(settings.storage_dir)) not in response_text
+    assert readiness_body["source_artifact_ref"] not in response_text
+    assert "fake-provider-private-token" not in response_text
+    assert "signature=" not in response_text
+    for forbidden_key in (
+        "provider_credentials",
+        "provider_private_signed_url_token",
+        "connector_run_id",
+        "connector_run_target_id",
+        "destination_path",
+        "provider_public_url",
+        "package_payload",
+        "source_expansion",
+        "rag_vector_index",
+        "auth_policy",
+        "frontend_durable_authority",
+    ):
+        assert forbidden_key not in body
+
+    status = client.get(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/status/"
+        f"{body['provider_private_handoff_receipt_id']}"
+    )
+    assert status.status_code == 200, status.json()
+    status_body = status.json()
+    assert status_body["schema_id"] == "layer3.local_outbox_provider_private_handoff.status.v1"
+    assert status_body["status"] == "ok"
+    assert status_body["provider_private_handoff_receipt_id"] == body["provider_private_handoff_receipt_id"]
+    assert status_body["provider_private_handoff_state"] == "local_outbox_provider_private_handoff_prepared"
+    assert status_body["raw_token_exposed"] is False
+    assert "fake-provider-private-token" not in json.dumps(status_body, sort_keys=True)
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
+            "handoff_audit_events": db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count(),
+            "provider_private_signed_url_receipts": db.query(L3ProviderPrivateSignedUrlReceipt).count(),
+            "packages": db.query(L3OutputPackage).count(),
+        } == {
+            **counts_before,
+            "handoff_receipts": counts_before["handoff_receipts"] + 1,
+            "handoff_audit_events": counts_before["handoff_audit_events"] + 1,
+        }
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        row = db.query(L3LocalOutboxProviderPrivateHandoffReceipt).one()
+        assert row.provider_private_handoff_receipt_id == body["provider_private_handoff_receipt_id"]
+        assert row.authority_basis_hash == body["authority_basis_hash"]
+        assert row.request_basis_hash == body["request_basis_hash"]
+        assert row.provider_private_marker == "provider-private-local-outbox-handoff:redacted"
+        assert row.fake_provider_token_hash
+        assert "fake-provider-private-token" not in row.fake_provider_token_hash
+        assert row.authority_snapshot_json["record_source_gate"] == "610_REAL_TARGET_FREEZE"
+        assert row.authority_snapshot_json["outbox_artifact_ref"].startswith(
+            "storage://server-owned-local-outbox/"
+        )
+        assert "provider_private_signed_url_token" not in row.authority_snapshot_json
+    finally:
+        db.close()
+
+    replay = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json=payload,
+    )
+    assert replay.status_code == 200, replay.json()
+    replay_body = replay.json()
+    assert replay_body["status"] == "already_recorded"
+    assert replay_body["handoff_operation_state"] == "local_outbox_provider_private_handoff_replay"
+    assert replay_body["provider_private_handoff_receipt_id"] == body["provider_private_handoff_receipt_id"]
+
+    changed_payload_same_client = {
+        **payload,
+        "requested_ttl_seconds": payload["requested_ttl_seconds"] + 1,
+    }
+    changed = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json=changed_payload_same_client,
+    )
+    assert changed.status_code == 409, changed.json()
+    assert changed.json()["error_code"] == (
+        "local_outbox_provider_private_handoff_client_request_conflict"
+    )
+
+    same_basis_new_request = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json={**payload, "client_request_id": "api-local-outbox-provider-private-new-request"},
+    )
+    assert same_basis_new_request.status_code == 409, same_basis_new_request.json()
+    assert same_basis_new_request.json()["error_code"] == (
+        "local_outbox_provider_private_handoff_already_prepared"
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count() == (
+            counts_before["handoff_receipts"] + 1
+        )
+        assert db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count() == (
+            counts_before["handoff_audit_events"] + 2
+        )
+        row = db.query(L3LocalOutboxProviderPrivateHandoffReceipt).one()
+        row.provider_private_expires_at = datetime.fromtimestamp(0, timezone.utc)
+        db.commit()
+    finally:
+        db.close()
+
+    expired_status = client.get(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/status/"
+        f"{body['provider_private_handoff_receipt_id']}"
+    )
+    assert expired_status.status_code == 200, expired_status.json()
+    assert expired_status.json()["provider_private_handoff_state"] == (
+        "local_outbox_provider_private_handoff_expired"
+    )
+
+
+def test_layer3_api_local_outbox_provider_private_handoff_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json={"client_request_id": "api-local-outbox-provider-private-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) >= {
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "server_owned_local_outbox_target_receipt_id",
+        "server_owned_local_outbox_write_receipt_id",
+        "external_export_download_record_ref",
+        "target_identity",
+        "dispatch_mode",
+        "operator_decision",
+        "recipient_scope",
+    }
+
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+        write_body,
+    ) = _prepare_server_owned_local_outbox_write(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-local-outbox-provider-private-prechecks",
+    )
+    valid_payload = _local_outbox_provider_private_handoff_payload(
+        request_id="api-local-outbox-provider-private-prechecks-prepare",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+    cases = [
+        (
+            {**valid_payload, "credentials": {"token": "secret"}},
+            400,
+            "local_outbox_provider_private_handoff_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "provider_private_signed_url_token": "raw-token-not-admitted"},
+            400,
+            "local_outbox_provider_private_handoff_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "connector_run_id": "connector-run-not-admitted"},
+            400,
+            "local_outbox_provider_private_handoff_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "dispatch_mode": "real_provider_private_destination_write"},
+            400,
+            "local_outbox_provider_private_handoff_dispatch_mode_not_admitted",
+        ),
+        (
+            {**valid_payload, "operator_decision": "prepare_provider_private_signed_url"},
+            400,
+            "unsupported_local_outbox_provider_private_handoff_decision",
+        ),
+        (
+            {**valid_payload, "requested_ttl_seconds": 0},
+            400,
+            "local_outbox_provider_private_handoff_ttl_not_admitted",
+        ),
+        (
+            {**valid_payload, "connector_dispatch_record_ref": "wrong-dispatch-record"},
+            409,
+            "local_outbox_provider_private_handoff_connector_dispatch_record_ref_mismatch",
+        ),
+        (
+            {**valid_payload, "server_owned_local_outbox_write_receipt_id": "missing-write-receipt"},
+            409,
+            "local_outbox_provider_private_handoff_requires_outbox_write",
+        ),
+    ]
+    for payload, expected_status, expected_error in cases:
+        response = client.post(
+            "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+            json=payload,
+        )
+        assert response.status_code == expected_status, response.json()
+        assert response.json()["error_code"] == expected_error
+
+    class FailingProviderPrivateHandoffProvider:
+        def prepare(self, _request):
+            raise layer3_local_outbox_provider_private_handoff.ProviderPrivateSignedUrlError(
+                "local_outbox_provider_private_handoff_fake_provider_forced_failure",
+                "Forced fake-provider failure.",
+                "provider_private_signed_url_blocked",
+                blocked_fields=("server_owned_local_outbox_write_receipt_id",),
+                next_allowed_actions=("inspect_local_outbox_provider_private_handoff_status",),
+            )
+
+    monkeypatch.setattr(
+        layer3_local_outbox_provider_private_handoff,
+        "ProviderPrivateSignedUrlFakeProvider",
+        FailingProviderPrivateHandoffProvider,
+    )
+    fake_failure = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json={**valid_payload, "client_request_id": "api-local-outbox-provider-private-fake-failure"},
+    )
+    assert fake_failure.status_code == 409, fake_failure.json()
+    assert fake_failure.json()["error_code"] == (
+        "local_outbox_provider_private_handoff_fake_provider_forced_failure"
+    )
+    assert "fake-provider-private-token" not in json.dumps(fake_failure.json(), sort_keys=True)
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        summary = dict(reconciliation.summary_json)
+        write_state = dict(summary["server_owned_local_outbox_write"])
+        write_state["authority_basis_hash"] = "stale-local-outbox-write-authority"
+        summary["server_owned_local_outbox_write"] = write_state
+        reconciliation.summary_json = summary
+        db.commit()
+    finally:
+        db.close()
+
+    stale = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json=valid_payload,
+    )
+    assert stale.status_code == 409, stale.json()
+    assert stale.json()["error_code"] == "local_outbox_provider_private_handoff_stale_authority"
+
+    missing_status = client.get(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/status/missing-handoff-receipt"
+    )
+    assert missing_status.status_code == 404
+    assert missing_status.json()["error_code"] == "local_outbox_provider_private_handoff_not_recorded"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count() == 0
+        assert db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count() == 0
     finally:
         db.close()
 
