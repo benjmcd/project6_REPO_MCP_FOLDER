@@ -2739,6 +2739,7 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "handoff_export_prepare",
         "aps_handoff_dispatch",
         "external_export_download",
+        "connector_local_destination_receipt",
         "sublayer_visualization",
         "state_action_contract",
         "downstream_unavailable",
@@ -12755,6 +12756,28 @@ def test_layer3_api_connector_local_destination_receipt_records_durable_fake_loc
     replay_body = replay.json()
     assert replay_body["status"] == "already_recorded"
     assert replay_body["connector_local_destination_receipt_id"] == body["connector_local_destination_receipt_id"]
+
+    summary_response = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary_response.status_code == 200
+    local_status = summary_response.json()["connector_local_destination_receipt"]
+    assert local_status["schema_id"] == "layer3.connector_local_destination_receipt_status.v1"
+    assert local_status["state"] == "connector_local_destination_receipt_recorded"
+    assert local_status["connector_local_destination_receipt_id"] == body["connector_local_destination_receipt_id"]
+    assert local_status["connector_dispatch_record_ref"] == connector_body["connector_dispatch_record_ref"]
+    assert local_status["external_export_download_record_ref"] == readiness_body["external_export_download_record_ref"]
+    assert local_status["destination_target"] == "layer3_internal_fake_local_destination_receipt"
+    assert local_status["dispatch_mode"] == "internal_fake_local_destination_receipt_only"
+    assert local_status["operator_decision"] == "record_internal_fake_local_destination_receipt"
+    assert local_status["accepted_artifact_ref"] == "artifact://layer3-internal-fake-local-destination-redacted"
+    assert local_status["status_surface_mode"] == "read_only_server_session_summary_projection"
+    assert local_status["response_authority"] == "durable_connector_local_destination_receipt_row"
+    assert local_status["external_connector_invocation_enabled"] is False
+    assert local_status["destination_write_enabled"] is False
+    assert local_status["connector_run_created"] is False
+    assert local_status["network_write_enabled"] is False
+    assert local_status["provider_public_url_enabled"] is False
+    assert local_status["package_mutation_enabled"] is False
+    assert local_status["source_widening_enabled"] is False
 
     same_basis_new_request = client.post(
         "/api/v1/layer3/handoff/connector/local-destination/receipt",

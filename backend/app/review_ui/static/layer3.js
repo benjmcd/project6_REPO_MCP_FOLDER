@@ -44,6 +44,9 @@ const RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES = new Set(['dataset_version',
 const PACKAGE_LIFECYCLE_DASHBOARD_MODE = 'rendered_package_lifecycle_read_only_dashboard';
 const PACKAGE_LIFECYCLE_USE_CASE = 'operator_inspects_package_lifecycle_without_mutation';
 const PACKAGE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
+const CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE_MODE = 'rendered_connector_local_destination_receipt_read_only_status_surface';
+const CONNECTOR_LOCAL_RECEIPT_STATUS_USE_CASE = 'operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write';
+const CONNECTOR_LOCAL_RECEIPT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.connector_local_destination_receipt';
 const DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE = 'rendered_downstream_access_lifecycle_read_only_dashboard';
 const DOWNSTREAM_ACCESS_LIFECYCLE_USE_CASE = 'operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use';
 const DOWNSTREAM_ACCESS_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
@@ -206,6 +209,7 @@ const elements = {
     externalExportDownloadSignedReferencePanel: document.getElementById('external-export-download-signed-reference-panel'),
     externalExportDownloadSignedReferenceGenerate: document.getElementById('external-export-download-signed-reference-generate'),
     externalExportDownloadSignedReferenceUse: document.getElementById('external-export-download-signed-reference-use'),
+    connectorLocalDestinationReceiptPanel: document.getElementById('connector-local-destination-receipt-panel'),
     providerPrivateSignedUrlForm: document.getElementById('provider-private-signed-url-form'),
     providerPrivateSignedUrlPanel: document.getElementById('provider-private-signed-url-panel'),
     providerPrivateSignedUrlPrepare: document.getElementById('provider-private-signed-url-prepare'),
@@ -561,6 +565,7 @@ function currentDownstreamUnavailable() {
         return external.downstream_unavailable;
     }
     return State.apsHandoffDispatch?.downstream_unavailable
+        || State.sessionSummary?.connector_local_destination_receipt?.downstream_unavailable
         || State.sessionSummary?.aps_handoff_dispatch?.downstream_unavailable
         || State.handoffExportPrepare?.downstream_unavailable
         || State.packageReviewSubmit?.downstream_unavailable
@@ -603,6 +608,7 @@ function renderContext() {
         external_export_download: State.externalExportDownloadPrepare?.next_state || State.externalExportDownloadPrepareError?.error_code || State.sessionSummary?.external_export_download?.state || 'none',
         external_export_download_delivery: State.externalExportDownloadDelivery?.state || State.externalExportDownloadDeliveryError?.error_code || 'none',
         signed_reference: State.externalExportDownloadSignedReferenceUse?.state || State.externalExportDownloadSignedReference?.signed_reference_state || State.externalExportDownloadSignedReferenceError?.error_code || 'none',
+        connector_local_destination_receipt: State.sessionSummary?.connector_local_destination_receipt?.state || 'none',
         provider_private_signed_url: State.providerPrivateSignedUrlRevoke?.provider_signed_url_state || State.providerPrivateSignedUrlStatus?.provider_signed_url_state || State.providerPrivateSignedUrlPrepare?.provider_signed_url_state || State.providerPrivateSignedUrlError?.error_code || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
@@ -1871,6 +1877,14 @@ function recordedExternalExportDownloadPrepare() {
     return state.external_export_download_record_ref || EXTERNAL_EXPORT_DOWNLOAD_RECORDED_STATES.has(recordedState)
         ? state
         : null;
+}
+
+function connectorLocalDestinationReceiptStatusState() {
+    return State.sessionSummary?.connector_local_destination_receipt || null;
+}
+
+function connectorLocalDestinationReceiptStateName(state = connectorLocalDestinationReceiptStatusState()) {
+    return state?.connector_local_destination_receipt_state || state?.next_state || state?.state || null;
 }
 
 function isAssociatedCohortExternalExportDownloadState(external = externalExportDownloadPrepareState() || {}) {
@@ -5333,6 +5347,105 @@ function renderExternalExportDownloadSignedReferencePanel() {
     `;
 }
 
+function connectorLocalDestinationReceiptPanelState() {
+    const status = connectorLocalDestinationReceiptStatusState() || {};
+    const stateName = connectorLocalDestinationReceiptStateName(status);
+    if (stateName === 'connector_local_destination_receipt_recorded') {
+        return {
+            label: 'connector_local_destination_receipt_recorded',
+            pill: 'ok',
+            message: 'The server has recorded an internal fake/local destination receipt for this connector authority.',
+        };
+    }
+    if (status.available === true && stateName === 'connector_local_destination_receipt_ready') {
+        return {
+            label: 'connector_local_destination_receipt_ready',
+            pill: 'ok',
+            message: 'Existing connector dispatch and external export/download readiness can support a local receipt.',
+        };
+    }
+    return {
+        label: status.blocked_reason || 'connector_local_destination_receipt_unavailable',
+        pill: 'blocked',
+        message: 'The read-only status surface is waiting on server-owned connector dispatch and readiness state.',
+    };
+}
+
+function renderConnectorLocalDestinationReceiptStatusPanel() {
+    const status = connectorLocalDestinationReceiptStatusState() || {};
+    const panelState = connectorLocalDestinationReceiptPanelState();
+    const downstream = status.downstream_unavailable || [
+        'external_connector_invocation',
+        'destination_write',
+        'connector_run_creation',
+        'real_destination_integration',
+        'network_write',
+        'provider_public_url',
+        'package_mutation_reconstruction',
+        'source_upload_expansion',
+        'broad_qualitative_hybrid_rag_execution',
+        'full_mockup_activation',
+    ];
+    elements.connectorLocalDestinationReceiptPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Local Receipt Status</strong>
+                <ul>
+                    ${fieldItem('rendered mode', CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE_MODE)}
+                    ${fieldItem('use case', CONNECTOR_LOCAL_RECEIPT_STATUS_USE_CASE)}
+                    ${fieldItem('response authority', CONNECTOR_LOCAL_RECEIPT_STATUS_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('schema', status.schema_id)}
+                    ${fieldItem('state', connectorLocalDestinationReceiptStateName(status))}
+                    ${fieldItem('available', status.available)}
+                    ${fieldItem('blocked reason', status.blocked_reason)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Chain</strong>
+                <ul>
+                    ${fieldItem('session', status.session_id || currentSessionId(), { code: true })}
+                    ${fieldItem('pass run', status.pass_run_id || selectedResultAuthority().passRunId, { code: true })}
+                    ${fieldItem('reconciliation', status.reconciliation_record_id, { code: true })}
+                    ${fieldItem('connector record', status.connector_dispatch_record_ref, { code: true })}
+                    ${fieldItem('external readiness', status.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('authority hash', status.authority_basis_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Receipt Target</strong>
+                <ul>
+                    ${fieldItem('receipt id', status.connector_local_destination_receipt_id, { code: true })}
+                    ${fieldItem('target', status.destination_target || 'layer3_internal_fake_local_destination_receipt')}
+                    ${fieldItem('mode', status.dispatch_mode || 'internal_fake_local_destination_receipt_only')}
+                    ${fieldItem('decision', status.operator_decision || 'record_internal_fake_local_destination_receipt')}
+                    ${fieldItem('redacted artifact', status.accepted_artifact_ref, { code: true })}
+                    ${fieldItem('artifact hash', status.accepted_artifact_hash, { code: true })}
+                    ${fieldItem('artifact size bytes', status.accepted_artifact_size_bytes)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Runtime</strong>
+                <ul>
+                    ${fieldItem('external connector invocation', status.external_connector_invocation_enabled === false ? 'blocked' : status.external_connector_invocation_enabled)}
+                    ${fieldItem('destination write', status.destination_write_enabled === false ? 'blocked' : status.destination_write_enabled)}
+                    ${fieldItem('connector run created', status.connector_run_created === false ? 'blocked' : status.connector_run_created)}
+                    ${fieldItem('network write', status.network_write_enabled === false ? 'blocked' : status.network_write_enabled)}
+                    ${fieldItem('real destination integration', status.real_destination_integration_enabled === false ? 'blocked' : status.real_destination_integration_enabled)}
+                    ${fieldItem('provider public URL', status.provider_public_url_enabled === false ? 'blocked' : status.provider_public_url_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Still Disabled</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -5818,6 +5931,7 @@ function renderAll() {
     renderExternalExportDownloadPreparePanel();
     renderExternalExportDownloadDeliveryPanel();
     renderExternalExportDownloadSignedReferencePanel();
+    renderConnectorLocalDestinationReceiptStatusPanel();
     renderProviderPrivateSignedUrlPanel();
     renderProviderPublicUrlPanel();
     setGateControls();
