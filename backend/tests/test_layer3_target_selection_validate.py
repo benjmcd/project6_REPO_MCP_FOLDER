@@ -57,12 +57,15 @@ def _issue_codes(issues) -> set[str]:
     return {issue.code for issue in issues}
 
 
-def test_current_target_selection_intake_validates_as_pending() -> None:
+def test_current_target_selection_intake_validates_as_frozen() -> None:
     module = _load_validator()
     text = INTAKE_PATH.read_text(encoding="utf-8")
 
-    assert module.validate_text(text, "pending") == []
-    assert "selected_field_must_be_filled" in _issue_codes(
+    assert module.validate_text(text, "frozen") == []
+    assert "pending_field_must_be_null" in _issue_codes(
+        module.validate_text(text, "pending")
+    )
+    assert "selected_freeze_written_must_be_false" in _issue_codes(
         module.validate_text(text, "selected")
     )
 
