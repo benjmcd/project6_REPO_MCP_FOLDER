@@ -1505,6 +1505,9 @@ LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC = (
 LAYER3_TARGET_SELECTION_FIELD_CONTRACT = (
     PLANNING_DOCS / "616_TARGET_SELECTION_FIELD_CONTRACT.md"
 )
+LAYER3_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR = (
+    PLANNING_DOCS / "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -1873,6 +1876,74 @@ def _read_required_text(path: Path, errors: list[str]) -> str:
         errors.append(f"empty required text file: {_rel(path)}")
         return ""
     return path.read_text(encoding="utf-8")
+
+
+def _extract_fenced_block_after_heading(
+    path: Path,
+    text: str,
+    heading: str,
+    language: str,
+    errors: list[str],
+) -> str:
+    heading_index = text.find(heading)
+    if heading_index < 0:
+        errors.append(f"{_rel(path)} missing heading: {heading}")
+        return ""
+
+    section = text[heading_index:]
+    heading_tail_index = len(heading)
+    next_heading = re.search(r"\r?\n##\s+", section[heading_tail_index:])
+    if next_heading is not None:
+        section = section[: heading_tail_index + next_heading.start()]
+
+    fence_pattern = re.compile(
+        rf"```{re.escape(language)}\s*\r?\n(?P<body>.*?)\r?\n```",
+        re.DOTALL,
+    )
+    matches = list(fence_pattern.finditer(section))
+    if len(matches) != 1:
+        errors.append(
+            f"{_rel(path)} heading {heading!r} must contain exactly one fenced {language} block"
+        )
+        return ""
+    return matches[0].group("body").strip("\r\n")
+
+
+def _parse_simple_yaml_mapping(
+    path: Path,
+    block: str,
+    errors: list[str],
+) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for line_number, line in enumerate(block.splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if ":" not in stripped:
+            errors.append(
+                f"{_rel(path)} structured record line {line_number} is not a key/value mapping"
+            )
+            continue
+        key, value = stripped.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+            errors.append(
+                f"{_rel(path)} structured record line {line_number} has invalid key {key!r}"
+            )
+            continue
+        if key in parsed:
+            errors.append(
+                f"{_rel(path)} structured record line {line_number} duplicates key {key!r}"
+            )
+            continue
+        if not value:
+            errors.append(
+                f"{_rel(path)} structured record line {line_number} has empty value for key {key!r}"
+            )
+            continue
+        parsed[key] = value
+    return parsed
 
 
 def _load_literal_assignment(path: Path, name: str, errors: list[str]) -> Any:
@@ -49475,6 +49546,10 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
         "operator_surface",
         "proof_architecture",
     )
+    structured_record_fields = required_fields + (
+        "selection_complete",
+        "implementation_entry_freeze_written",
+    )
     for term in (
         "Selected target identity: `null`.",
         "Selected target class: `null`.",
@@ -49496,6 +49571,42 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 errors.append(
                     f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} missing target-selection field term: {term}"
                 )
+
+    structured_record_block = _extract_fenced_block_after_heading(
+        LAYER3_TARGET_SELECTION_INTAKE,
+        intake_text,
+        "## Structured Selection Record",
+        "yaml",
+        errors,
+    )
+    structured_record = _parse_simple_yaml_mapping(
+        LAYER3_TARGET_SELECTION_INTAKE,
+        structured_record_block,
+        errors,
+    )
+    for field in structured_record_fields:
+        if field not in structured_record:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured target-selection record missing key: {field}"
+            )
+    for field in structured_record:
+        if field not in structured_record_fields:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured target-selection record has unexpected key: {field}"
+            )
+    for field in required_fields:
+        if structured_record.get(field) != "null":
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured pending target-selection field {field} must remain null until a named target is selected"
+            )
+    if structured_record.get("selection_complete") != "false":
+        errors.append(
+            f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured target-selection record must keep selection_complete false"
+        )
+    if structured_record.get("implementation_entry_freeze_written") != "false":
+        errors.append(
+            f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured target-selection record must keep implementation_entry_freeze_written false"
+        )
 
     audit_text = _read_required_text(
         LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_TARGET_SELECTION_INTAKE, errors
@@ -49577,11 +49688,37 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_TARGET_SELECTION_FIELD_CONTRACT)} missing required target-selection field term: {term}"
             )
 
+    structured_record_validator_text = _read_required_text(
+        LAYER3_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR, errors
+    )
+    for term in (
+        "Status: validate-only structured record parser guard for `612_TARGET_SELECTION_INTAKE.md`.",
+        "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
+        "Current-main checkpoint at validator creation: `4e849bd69c871a4f29d61bb140222fd8432f6426`.",
+        "Validated record heading: `## Structured Selection Record`.",
+        "Parser status: `pending_record_required`.",
+        "missing fenced `yaml` block",
+        "malformed key/value mapping line",
+        "duplicate key",
+        "missing required key",
+        "unexpected key",
+        "non-null required field while pending",
+        "`selection_complete` not `false`",
+        "`implementation_entry_freeze_written` not `false`",
+        "It does not select a target and does not admit runtime behavior.",
+    ):
+        if term not in structured_record_validator_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR)} missing structured-record validator term: {term}"
+            )
+
     for path, terms in {
         BOARD: (
             "2026-05-16 target-selection validate-only guard current-main sync",
             "2026-05-16 target-selection field contract",
+            "2026-05-16 target-selection structured record validator",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
+            "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1218",
@@ -49592,11 +49729,14 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "target_selection_validate_only_guard",
             "target_selection_validate_only_guard_current_main_sync",
             "target_selection_field_contract",
+            "target_selection_structured_record_validator",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
+            "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "codex/l3-target-selection-guard",
             "codex/l3-target-selection-field-contract",
+            "codex/l3-target-selection-record-validator",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
             "selection_complete false",
         ),
@@ -49604,9 +49744,11 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "latest_target_selection_validate_only_guard",
             "latest_target_selection_validate_only_guard_current_main_sync",
             "latest_target_selection_field_contract",
+            "latest_target_selection_structured_record_validator",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
+            "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "validate-only progress guard",
             "does not select a target",
         ),
