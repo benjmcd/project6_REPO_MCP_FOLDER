@@ -1474,6 +1474,9 @@ LAYER3_CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE = (
 LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE = (
     PLANNING_DOCS / "598_LOCAL_RECEIPT_E2E_SMOKE.md"
 )
+LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "599_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -48935,6 +48938,95 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing local receipt E2E smoke term: {term}"
+                )
+
+    local_receipt_e2e_sync_text = _read_required_text(
+        LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `current_main_sync_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_merge`.",
+        "599_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC.md",
+        "#1195",
+        "d5eb7aeb9d26bc7bdb469da9a69e00f44801e140",
+        "598_LOCAL_RECEIPT_E2E_SMOKE.md",
+        "backend-layer3-api` passed in `2m27s`",
+        "test` passed in `2m54s`",
+        "reviewThreads totalCount was `0`",
+        "Unresolved reviewThreads were `0`",
+        "Current-main result: `current_main_synced_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke`",
+        "recordRenderedConnectorLocalReceiptSmoke",
+        "connector_local_destination_receipt_recorded",
+        "durable_connector_local_destination_receipt_row",
+        "no runtime behavior",
+        "provider-public delivery/use",
+        "frontend-only durable authority",
+        "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke_sync",
+        "confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target",
+    ):
+        if term not in local_receipt_e2e_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC)} missing local receipt E2E smoke sync term: {term}"
+            )
+
+    local_receipt_e2e_sync_sources = {
+        BOARD: (
+            "## Layer 3 Local Receipt E2E Smoke Current-Main Sync",
+            "599_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC.md",
+            "#1195",
+            "d5eb7aeb9d26bc7bdb469da9a69e00f44801e140",
+            "backend-layer3-api` passed in `2m27s`",
+            "test` passed in `2m54s`",
+            "current_main_synced_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke",
+            "recordRenderedConnectorLocalReceiptSmoke",
+            "connector_local_destination_receipt_recorded",
+            "durable_connector_local_destination_receipt_row",
+            "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke_sync",
+        ),
+        MANIFEST: (
+            "layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_current_main_sync",
+            '"status": "current_main_synced_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke"',
+            "codex/l3-local-receipt-smoke-current-main-sync",
+            "599_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC.md",
+            "#1195",
+            "d5eb7aeb9d26bc7bdb469da9a69e00f44801e140",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"sync_live_behavior_change": false',
+            '"runtime_behavior_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target",
+            "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_current_main_sync_proof",
+            '"status": "current_main_synced_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke"',
+            "codex/l3-local-receipt-smoke-current-main-sync",
+            "599_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC.md",
+            "#1195",
+            "d5eb7aeb9d26bc7bdb469da9a69e00f44801e140",
+            "backend-layer3-api pass 2m27s",
+            "test pass 2m54s",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "no runtime behavior in sync",
+            "no external connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no credential use",
+            "no provider-public delivery/use",
+            "no frontend-only durable authority",
+            "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke_sync",
+        ),
+    }
+    for path, terms in local_receipt_e2e_sync_sources.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing local receipt E2E smoke sync term: {term}"
                 )
 
 

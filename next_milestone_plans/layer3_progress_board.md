@@ -2979,6 +2979,18 @@ Immediate next goal after this smoke: `confirm_or_refresh_connector_destination_
 
 Next whole-project posture: `await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke`.
 
+## Layer 3 Local Receipt E2E Smoke Current-Main Sync
+
+Current-main proof/control sync: PR `#1195` merged `598_LOCAL_RECEIPT_E2E_SMOKE.md` at merge commit `d5eb7aeb9d26bc7bdb469da9a69e00f44801e140`.
+
+The sync doc `599_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` passed in `2m27s`, GitHub `test` passed in `2m54s`, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, merge state before merge was `CLEAN`, and post-merge current-main `python .\tools\l3-progress-check.py` passed.
+
+Current main is synced as `current_main_synced_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke`. The merged smoke proves existing handoff/export readiness through `recordRenderedConnectorLocalReceiptSmoke`, `POST /api/v1/layer3/handoff/connector/record`, `POST /api/v1/layer3/handoff/connector/local-destination/receipt`, `connector_local_destination_receipt_recorded`, and `durable_connector_local_destination_receipt_row`.
+
+No runtime behavior, backend route behavior, service behavior, response-model shape change, schema/model/migration change, rendered UI implementation, real connector invocation, destination write, connector-run creation, credential use, provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior change, full mockup activation, or frontend-only durable authority is admitted by this sync.
+
+Next whole-project posture: `await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke_sync`.
+
 ## Layer 3 Connector Local Destination Receipt Delivery-Authority Readiness/Artifact Review Remediation
 
 Branch-local review remediation: `591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md` addresses the PR `#1185` review threads `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284` and `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289`.
