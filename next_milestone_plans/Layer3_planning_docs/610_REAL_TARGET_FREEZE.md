@@ -306,7 +306,7 @@ Merged proof already exercised:
 - same-key/same-payload replay;
 - same-key/different-payload conflict;
 - same-authority/different-client-request conflict;
-- forbidden field, TTL, wrong dispatch mode, wrong operator decision, wrong connector dispatch ref, wrong write receipt, missing receipt, fake-provider failure, expired status, and stale authority fail-closed cases;
+- forbidden field, TTL, wrong dispatch mode, wrong operator decision, wrong connector dispatch ref, wrong analysis-plan/pass authority, missing local receipt, missing fake-target receipt, wrong write receipt, wrong external export/download ref, tampered outbox artifact, missing receipt, fake-provider failure, expired status, and stale authority fail-closed cases;
 - no `ConnectorRun` or `ConnectorRunTarget` creation;
 - no provider-private signed URL durable-state row creation;
 - no package mutation;
@@ -322,7 +322,8 @@ Rendered proof exercised:
 - `npx playwright test e2e/layer3-handoff.spec.js -g "local outbox provider-private handoff lifecycle" --project=chromium --headed` passed headed.
 - `npx playwright test e2e/layer3-handoff.spec.js -g "local receipt to server-owned outbox write lifecycle|local outbox provider-private handoff lifecycle" --project=chromium` passed.
 - `npx playwright test e2e/layer3-handoff.spec.js --project=chromium` passed with `6 passed`.
-- `python -m pytest .\backend\tests\test_layer3_api.py -k "local_outbox_provider_private_handoff"` passed with `2 passed, 157 deselected`.
+- `python -m pytest .\backend\tests\test_layer3_api.py -q -k "local_outbox_provider_private_handoff_lifecycle_guardrails_fail_closed"` passed with `1 passed, 159 deselected`.
+- `python -m pytest .\backend\tests\test_layer3_api.py -q -k "local_outbox_provider_private_handoff"` passed with `3 passed, 157 deselected`.
 - `python .\tools\l3-progress-check.py` passed.
 
 Still not admitted by this implementation:
@@ -342,4 +343,4 @@ Still not admitted by this implementation:
 - full mockup activation; and
 - frontend-durable authority.
 
-Next whole-project pass after this current-main sync: harden only repo-confirmed lifecycle gaps in stale authority, wrong receipt/session/basis, duplicate `client_request_id`, same-key/same-payload replay, same-key/different-payload conflict, expiry, and fake-provider failure projection. If no such gaps are confirmed, proceed to the missing-decision packet for a real connector/destination target. A named real provider/destination implementation freeze is still blocked unless the operator names a concrete target and separately admits that implementation entry.
+Next whole-project pass after this lifecycle hardening proof lands and current-main checks pass: proceed to the missing-decision packet for a real connector/destination target, unless a new repo-confirmed local-outbox provider-private lifecycle gap is found. A named real provider/destination implementation freeze is still blocked unless the operator names a concrete target and separately admits that implementation entry.
