@@ -1571,6 +1571,10 @@ LAYER3_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC = (
 LAYER3_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL = (
     PLANNING_DOCS / "634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md"
 )
+LAYER3_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "635_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -51529,6 +51533,62 @@ def _check_package_supersession_preview_rendered_control(errors: list[str]) -> N
                 errors.append(f"{_rel(path)} missing rendered package supersession control source term: {term}")
 
 
+def _check_package_supersession_preview_rendered_control_current_main_sync(errors: list[str]) -> None:
+    sync_text = _read_required_text(
+        LAYER3_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `package_supersession_preview_rendered_control`.",
+        "635_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+        "634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+        "Implementation PR: `#1238`.",
+        "b71f2942b767252ba5e29747c2ae554622f27cc3",
+        "6520f549110b709972a068c143ec2f3fcb613014",
+        "`backend-layer3-api`: `SUCCESS` in `2m35s`.",
+        "`test`: `SUCCESS` in `3m13s`.",
+        "PR reviewThreads totalCount: `0`.",
+        "Synced result: `current_main_synced_package_supersession_preview_rendered_control`.",
+        "The next exact current-main posture is `select_next_package_mutation_reconstruction_operator_action_after_package_supersession_preview_rendered_control_sync`.",
+        "This sync admits no new runtime behavior beyond the merged PR #1238 rendered control.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC)} "
+                f"missing rendered control sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Supersession Preview Rendered Control Current-Main Sync",
+            "635_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+            "PR `#1238`",
+            "6520f549110b709972a068c143ec2f3fcb613014",
+            "current_main_synced_package_supersession_preview_rendered_control",
+            "select_next_package_mutation_reconstruction_operator_action_after_package_supersession_preview_rendered_control_sync",
+        ),
+        MANIFEST: (
+            "package_supersession_preview_rendered_control_current_main_sync",
+            "current_main_synced_package_supersession_preview_rendered_control",
+            "backend-layer3-api passed 2m35s",
+            "test passed 3m13s",
+            "select_next_package_mutation_reconstruction_operator_action_after_package_supersession_preview_rendered_control_sync",
+        ),
+        PROOF_MANIFEST: (
+            "package_supersession_preview_rendered_control_current_main_sync_proof",
+            "current_main_sync_package_supersession_preview_rendered_control",
+            "reviewThreads totalCount 0",
+            "rendered_package_supersession_preview_control",
+            "current_main_synced_package_supersession_preview_rendered_control",
+            "select_next_package_mutation_reconstruction_operator_action_after_package_supersession_preview_rendered_control_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package supersession preview rendered control sync term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52003,6 +52063,7 @@ def main() -> int:
     _check_target_selection_validate_only_guard(errors)
     _check_package_supersession_preview_operator_action_freeze(errors)
     _check_package_supersession_preview_rendered_control(errors)
+    _check_package_supersession_preview_rendered_control_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
