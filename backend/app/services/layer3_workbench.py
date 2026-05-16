@@ -28,6 +28,8 @@ from app.models.models import (
     L3AnalysisSet,
     L3AnalysisUnit,
     L3ConnectorLocalDestinationReceipt,
+    L3LocalOutboxProviderPrivateHandoffAuditEvent,
+    L3LocalOutboxProviderPrivateHandoffReceipt,
     L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,
@@ -513,6 +515,42 @@ SERVER_OWNED_LOCAL_OUTBOX_WRITE_DOWNSTREAM_UNAVAILABLE = (
     "full_mockup_activation",
     "frontend_durable_authority",
     "generic_downstream_dispatch",
+)
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_SCHEMA_ID = (
+    "layer3.local_outbox_provider_private_handoff.status.v1"
+)
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_LIFECYCLE_SCHEMA_ID = (
+    "layer3.local_outbox_provider_private_handoff.lifecycle.v1"
+)
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_AUDIT_SCHEMA_ID = (
+    "layer3.local_outbox_provider_private_handoff.audit.v1"
+)
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_TARGET_IDENTITY = (
+    "server_owned_local_outbox_provider_private_handoff_destination"
+)
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_DISPATCH_MODE = (
+    "provider_private_fake_provider_prepare_status_from_local_outbox_receipt"
+)
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_OPERATOR_DECISION = "prepare_provider_private_handoff_from_local_outbox"
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_MARKER = "provider-private-local-outbox-handoff:redacted"
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_NOT_READY_STATE = "local_outbox_provider_private_handoff_not_ready"
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_READY_STATE = "local_outbox_provider_private_handoff_ready"
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_PREPARED_STATE = "local_outbox_provider_private_handoff_prepared"
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EXPIRED_STATE = "local_outbox_provider_private_handoff_expired"
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_DOWNSTREAM_UNAVAILABLE = (
+    "real_connector_invocation",
+    "external_destination_write",
+    "connector_run_creation",
+    "connector_run_target_creation",
+    "credentials",
+    "provider_public_delivery_use",
+    "raw_token_use",
+    "package_mutation_reconstruction",
+    "source_expansion",
+    "rag_vector",
+    "auth_security_hardening",
+    "full_mockup_activation",
+    "frontend_durable_authority",
 )
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UNAVAILABLE_STATE = "external_export_download_delivery_unavailable"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE = "external_export_download_delivery_ready"
@@ -12508,6 +12546,451 @@ def _server_owned_local_outbox_write_summary(
     )
 
 
+def _local_outbox_provider_private_handoff_datetime_epoch(value: datetime) -> int:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return int(value.astimezone(timezone.utc).timestamp())
+
+
+def _local_outbox_provider_private_handoff_storage_ref(relative_ref: str) -> str:
+    return relative_ref.replace("layer3-outbox/", "storage://server-owned-local-outbox/", 1)
+
+
+def _local_outbox_provider_private_handoff_state(
+    row: L3LocalOutboxProviderPrivateHandoffReceipt,
+    *,
+    now_epoch: int,
+) -> str:
+    if row.handoff_state == LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_PREPARED_STATE:
+        if now_epoch >= _local_outbox_provider_private_handoff_datetime_epoch(row.provider_private_expires_at):
+            return LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EXPIRED_STATE
+    return row.handoff_state
+
+
+def _local_outbox_provider_private_handoff_audit_item(
+    row: L3LocalOutboxProviderPrivateHandoffAuditEvent,
+) -> dict[str, Any]:
+    return {
+        "schema_id": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_AUDIT_SCHEMA_ID,
+        "provider_private_handoff_audit_event_id": row.provider_private_handoff_audit_event_id,
+        "provider_private_handoff_receipt_id": row.provider_private_handoff_receipt_id,
+        "event_type": row.event_type,
+        "event_status": row.event_status,
+        "request_id": row.request_id,
+        "authority_basis_hash": row.authority_basis_hash,
+        "reason_code": row.reason_code,
+        "event_payload": row.event_payload_json or {},
+        "created_at": _connector_local_destination_receipt_time(row.created_at),
+        "audit_authority": "durable_local_outbox_provider_private_handoff_audit_event_row",
+    }
+
+
+def _local_outbox_provider_private_handoff_history_item(
+    row: L3LocalOutboxProviderPrivateHandoffReceipt,
+    *,
+    audit_events: list[dict[str, Any]],
+    now_epoch: int,
+) -> dict[str, Any]:
+    expires_at_epoch = _local_outbox_provider_private_handoff_datetime_epoch(row.provider_private_expires_at)
+    return {
+        "schema_id": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_LIFECYCLE_SCHEMA_ID,
+        "provider_private_handoff_receipt_id": row.provider_private_handoff_receipt_id,
+        "provider_private_handoff_state": _local_outbox_provider_private_handoff_state(
+            row,
+            now_epoch=now_epoch,
+        ),
+        "session_id": row.session_id,
+        "pass_run_id": row.pass_run_id,
+        "reconciliation_record_id": row.reconciliation_record_id,
+        "server_owned_local_outbox_write_receipt_id": row.server_owned_local_outbox_write_receipt_id,
+        "server_owned_local_outbox_target_receipt_id": row.server_owned_local_outbox_target_receipt_id,
+        "connector_local_destination_receipt_id": row.connector_local_destination_receipt_id,
+        "connector_dispatch_record_ref": row.connector_dispatch_record_ref,
+        "external_export_download_record_ref": row.external_export_download_record_ref,
+        "target_identity": row.target_identity,
+        "dispatch_mode": row.dispatch_mode,
+        "recipient_scope": row.recipient_scope,
+        "requested_ttl_seconds": row.requested_ttl_seconds,
+        "provider_private_marker": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_MARKER,
+        "provider_private_expires_at": _epoch_iso(expires_at_epoch),
+        "provider_private_expires_in_seconds": max(0, expires_at_epoch - now_epoch),
+        "provider_private_replay_policy": row.provider_private_replay_policy,
+        "fake_provider_object_identity_hash": row.fake_provider_object_identity_hash,
+        "source_artifact_hash": row.source_artifact_hash,
+        "source_artifact_size_bytes": row.source_artifact_size_bytes,
+        "outbox_artifact_ref": _local_outbox_provider_private_handoff_storage_ref(row.outbox_artifact_ref),
+        "outbox_manifest_ref": _local_outbox_provider_private_handoff_storage_ref(row.outbox_manifest_ref),
+        "outbox_artifact_hash": row.outbox_artifact_hash,
+        "outbox_artifact_size_bytes": row.outbox_artifact_size_bytes,
+        "authority_basis_hash": row.authority_basis_hash,
+        "request_basis_hash": row.request_basis_hash,
+        "client_request_id": row.client_request_id,
+        "created_by_request_id": row.created_by_request_id,
+        "created_at": _connector_local_destination_receipt_time(row.created_at),
+        "updated_at": _connector_local_destination_receipt_time(row.updated_at),
+        "latest_audit_event": audit_events[0] if audit_events else None,
+        "audit_event_count": len(audit_events),
+        "audit_authority": "durable_local_outbox_provider_private_handoff_receipt_row",
+        "raw_token_exposed": False,
+        "provider_private_use_route_enabled": False,
+        "provider_private_revocation_supported": False,
+    }
+
+
+def _local_outbox_provider_private_handoff_failure_projection(
+    *,
+    current_state: str | None,
+    blocked_reason: str | None,
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "case": "not_ready",
+            "operator_status": blocked_reason or "await_server_owned_local_outbox_write",
+            "projected_error_code": "local_outbox_provider_private_handoff_requires_outbox_write",
+            "active": current_state == LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_NOT_READY_STATE,
+        },
+        {
+            "case": "stale_authority",
+            "operator_status": "conflict",
+            "projected_error_code": "local_outbox_provider_private_handoff_stale_authority",
+            "active": current_state == "local_outbox_provider_private_handoff_stale_authority",
+        },
+        {
+            "case": "wrong_session_or_pass",
+            "operator_status": "conflict",
+            "projected_error_code": "local_outbox_provider_private_handoff_pass_run_mismatch",
+            "active": False,
+        },
+        {
+            "case": "wrong_receipt_chain",
+            "operator_status": "conflict",
+            "projected_error_code": "local_outbox_provider_private_handoff_requires_receipt_chain",
+            "active": False,
+        },
+        {
+            "case": "same_key_same_payload_replay",
+            "operator_status": "already_recorded",
+            "projected_error_code": None,
+            "active": False,
+        },
+        {
+            "case": "same_key_different_payload_conflict",
+            "operator_status": "conflict",
+            "projected_error_code": "local_outbox_provider_private_handoff_client_request_conflict",
+            "active": False,
+        },
+        {
+            "case": "same_basis_different_client_request_id",
+            "operator_status": "conflict",
+            "projected_error_code": "local_outbox_provider_private_handoff_already_prepared",
+            "active": False,
+        },
+        {
+            "case": "expired",
+            "operator_status": "expired",
+            "projected_error_code": None,
+            "active": current_state == LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EXPIRED_STATE,
+        },
+        {
+            "case": "fake_provider_failed",
+            "operator_status": "failed",
+            "projected_error_code": "local_outbox_provider_private_handoff_failed",
+            "active": current_state == "local_outbox_provider_private_handoff_failed",
+        },
+        {
+            "case": "current_status",
+            "operator_status": current_state or LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_NOT_READY_STATE,
+            "projected_error_code": blocked_reason,
+            "active": True,
+        },
+    ]
+
+
+def _with_local_outbox_provider_private_handoff_lifecycle(
+    status: dict[str, Any],
+    *,
+    history_rows: list[L3LocalOutboxProviderPrivateHandoffReceipt],
+    audit_rows: list[L3LocalOutboxProviderPrivateHandoffAuditEvent],
+    current_state: str | None,
+    blocked_reason: str | None,
+    now_epoch: int,
+) -> dict[str, Any]:
+    audit_history_by_receipt: dict[str, list[dict[str, Any]]] = {}
+    audit_history = [_local_outbox_provider_private_handoff_audit_item(row) for row in audit_rows]
+    for item in audit_history:
+        receipt_id = str(item.get("provider_private_handoff_receipt_id") or "")
+        audit_history_by_receipt.setdefault(receipt_id, []).append(item)
+    history = [
+        _local_outbox_provider_private_handoff_history_item(
+            row,
+            audit_events=audit_history_by_receipt.get(row.provider_private_handoff_receipt_id, []),
+            now_epoch=now_epoch,
+        )
+        for row in history_rows
+    ]
+    latest_receipt = history[0] if history else None
+    latest_audit = audit_history[0] if audit_history else None
+    lifecycle = {
+        "schema_id": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_LIFECYCLE_SCHEMA_ID,
+        "surface_mode": "read_only_local_outbox_provider_private_handoff_status_history",
+        "history_listing_authority": "durable_local_outbox_provider_private_handoff_receipt_rows",
+        "audit_trail_authority": "durable_local_outbox_provider_private_handoff_audit_event_rows",
+        "history_count": len(history),
+        "provider_private_handoff_history": history,
+        "latest_provider_private_handoff_receipt": latest_receipt,
+        "audit_event_history_count": len(audit_history),
+        "audit_event_history": audit_history,
+        "latest_audit_event": latest_audit,
+        "idempotency_policy": {
+            "client_request_id_unique": True,
+            "authority_basis_hash_unique": True,
+            "request_basis_hash_unique": True,
+            "same_key_same_payload_replay": "already_recorded",
+            "same_key_different_payload_conflict": (
+                "local_outbox_provider_private_handoff_client_request_conflict"
+            ),
+            "same_basis_different_client_request_id": "local_outbox_provider_private_handoff_already_prepared",
+        },
+        "retry_policy": {
+            "retry_fields_admitted": False,
+            "rerun_fields_admitted": False,
+            "cancel_fields_admitted": False,
+            "raw_token_replay_admitted": False,
+            "replay_semantics": "status_only_for_same_client_request_and_same_request_basis",
+        },
+        "failure_state_projection": _local_outbox_provider_private_handoff_failure_projection(
+            current_state=current_state,
+            blocked_reason=blocked_reason,
+        ),
+    }
+    return {
+        **status,
+        "lifecycle_status_surface": lifecycle,
+        "provider_private_handoff_history": history,
+        "provider_private_handoff_history_count": len(history),
+        "latest_provider_private_handoff_receipt": latest_receipt,
+        "audit_event_history": audit_history,
+        "audit_event_history_count": len(audit_history),
+        "latest_audit_event": latest_audit,
+        "failure_state_projection": lifecycle["failure_state_projection"],
+        "idempotency_policy": lifecycle["idempotency_policy"],
+        "retry_policy": lifecycle["retry_policy"],
+    }
+
+
+def _local_outbox_provider_private_handoff_summary(
+    db: Session,
+    *,
+    session_id: str,
+    server_owned_local_outbox_write_state: dict[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(server_owned_local_outbox_write_state, dict):
+        server_owned_local_outbox_write_state = {}
+    write_receipt_id = str(
+        server_owned_local_outbox_write_state.get("server_owned_local_outbox_write_receipt_id") or ""
+    ).strip()
+    handoff_query = db.query(L3LocalOutboxProviderPrivateHandoffReceipt).filter(
+        L3LocalOutboxProviderPrivateHandoffReceipt.session_id == session_id
+    )
+    if write_receipt_id:
+        handoff_query = handoff_query.filter(
+            L3LocalOutboxProviderPrivateHandoffReceipt.server_owned_local_outbox_write_receipt_id == write_receipt_id
+        )
+    handoff_row = handoff_query.order_by(L3LocalOutboxProviderPrivateHandoffReceipt.created_at.desc()).first()
+    history_rows = (
+        db.query(L3LocalOutboxProviderPrivateHandoffReceipt)
+        .filter(L3LocalOutboxProviderPrivateHandoffReceipt.session_id == session_id)
+        .order_by(L3LocalOutboxProviderPrivateHandoffReceipt.created_at.desc())
+        .all()
+    )
+    receipt_ids = [row.provider_private_handoff_receipt_id for row in history_rows]
+    audit_rows = []
+    if receipt_ids:
+        audit_rows = (
+            db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent)
+            .filter(L3LocalOutboxProviderPrivateHandoffAuditEvent.provider_private_handoff_receipt_id.in_(receipt_ids))
+            .order_by(L3LocalOutboxProviderPrivateHandoffAuditEvent.created_at.desc())
+            .all()
+        )
+    now_epoch = int(time.time())
+    if handoff_row is not None:
+        state = _local_outbox_provider_private_handoff_state(handoff_row, now_epoch=now_epoch)
+        return _with_local_outbox_provider_private_handoff_lifecycle(
+            {
+                "schema_id": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_SCHEMA_ID,
+                "available": False,
+                "state": state,
+                "blocked_reason": None,
+                "session_id": handoff_row.session_id,
+                "pass_run_id": handoff_row.pass_run_id,
+                "reconciliation_record_id": handoff_row.reconciliation_record_id,
+                "provider_private_handoff_receipt_id": handoff_row.provider_private_handoff_receipt_id,
+                "provider_private_handoff_state": state,
+                "server_owned_local_outbox_write_receipt_id": (
+                    handoff_row.server_owned_local_outbox_write_receipt_id
+                ),
+                "server_owned_local_outbox_target_receipt_id": (
+                    handoff_row.server_owned_local_outbox_target_receipt_id
+                ),
+                "connector_local_destination_receipt_id": handoff_row.connector_local_destination_receipt_id,
+                "connector_dispatch_record_ref": handoff_row.connector_dispatch_record_ref,
+                "external_export_download_record_ref": handoff_row.external_export_download_record_ref,
+                "target_identity": handoff_row.target_identity,
+                "dispatch_mode": handoff_row.dispatch_mode,
+                "operator_decision": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_OPERATOR_DECISION,
+                "recipient_scope": handoff_row.recipient_scope,
+                "requested_ttl_seconds": handoff_row.requested_ttl_seconds,
+                "provider_private_marker": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_MARKER,
+                "provider_private_expires_at": _epoch_iso(
+                    _local_outbox_provider_private_handoff_datetime_epoch(
+                        handoff_row.provider_private_expires_at
+                    )
+                ),
+                "provider_private_replay_policy": handoff_row.provider_private_replay_policy,
+                "provider_private_handoff_enabled": True,
+                "provider_private_handoff_performed": True,
+                "raw_token_exposed": False,
+                "provider_private_use_route_enabled": False,
+                "provider_private_revocation_supported": False,
+                "source_artifact_hash": handoff_row.source_artifact_hash,
+                "source_artifact_size_bytes": handoff_row.source_artifact_size_bytes,
+                "outbox_artifact_ref": _local_outbox_provider_private_handoff_storage_ref(
+                    handoff_row.outbox_artifact_ref
+                ),
+                "outbox_manifest_ref": _local_outbox_provider_private_handoff_storage_ref(
+                    handoff_row.outbox_manifest_ref
+                ),
+                "outbox_artifact_hash": handoff_row.outbox_artifact_hash,
+                "outbox_artifact_size_bytes": handoff_row.outbox_artifact_size_bytes,
+                "authority_basis_hash": handoff_row.authority_basis_hash,
+                "request_basis_hash": handoff_row.request_basis_hash,
+                "real_connector_invocation_enabled": False,
+                "external_provider_network_write_enabled": False,
+                "external_object_store_write_enabled": False,
+                "external_destination_write_enabled": False,
+                "operator_destination_path_enabled": False,
+                "connector_run_created": False,
+                "connector_run_target_created": False,
+                "credentials_enabled": False,
+                "provider_public_url_enabled": False,
+                "provider_public_delivery_enabled": False,
+                "package_mutation_enabled": False,
+                "source_expansion_enabled": False,
+                "rag_vector_enabled": False,
+                "auth_security_implementation_enabled": False,
+                "full_mockup_activation_enabled": False,
+                "frontend_durable_authority_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "durable_local_outbox_provider_private_handoff_receipt_row",
+                "downstream_unavailable": list(LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            audit_rows=audit_rows,
+            current_state=state,
+            blocked_reason=None,
+            now_epoch=now_epoch,
+        )
+    write_recorded = (
+        server_owned_local_outbox_write_state.get("state") == SERVER_OWNED_LOCAL_OUTBOX_WRITE_RECORDED_STATE
+        and server_owned_local_outbox_write_state.get("server_owned_local_outbox_write_receipt_id")
+    )
+    if write_recorded:
+        return _with_local_outbox_provider_private_handoff_lifecycle(
+            {
+                "schema_id": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_SCHEMA_ID,
+                "available": True,
+                "state": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_READY_STATE,
+                "blocked_reason": None,
+                "reconciliation_record_id": server_owned_local_outbox_write_state.get("reconciliation_record_id"),
+                "server_owned_local_outbox_write_receipt_id": (
+                    server_owned_local_outbox_write_state.get("server_owned_local_outbox_write_receipt_id")
+                ),
+                "server_owned_local_outbox_target_receipt_id": (
+                    server_owned_local_outbox_write_state.get("server_owned_local_outbox_target_receipt_id")
+                ),
+                "server_owned_local_outbox_write_state": server_owned_local_outbox_write_state.get("state"),
+                "connector_local_destination_receipt_id": server_owned_local_outbox_write_state.get(
+                    "connector_local_destination_receipt_id"
+                ),
+                "connector_dispatch_record_ref": server_owned_local_outbox_write_state.get(
+                    "connector_dispatch_record_ref"
+                ),
+                "external_export_download_record_ref": server_owned_local_outbox_write_state.get(
+                    "external_export_download_record_ref"
+                ),
+                "target_identity": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_TARGET_IDENTITY,
+                "dispatch_mode": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_DISPATCH_MODE,
+                "operator_decision": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_OPERATOR_DECISION,
+                "provider_private_marker": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_MARKER,
+                "provider_private_handoff_enabled": True,
+                "provider_private_handoff_performed": False,
+                "raw_token_exposed": False,
+                "real_connector_invocation_enabled": False,
+                "external_provider_network_write_enabled": False,
+                "external_object_store_write_enabled": False,
+                "external_destination_write_enabled": False,
+                "operator_destination_path_enabled": False,
+                "connector_run_created": False,
+                "connector_run_target_created": False,
+                "credentials_enabled": False,
+                "provider_public_url_enabled": False,
+                "provider_public_delivery_enabled": False,
+                "package_mutation_enabled": False,
+                "source_expansion_enabled": False,
+                "rag_vector_enabled": False,
+                "auth_security_implementation_enabled": False,
+                "full_mockup_activation_enabled": False,
+                "frontend_durable_authority_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "durable_server_owned_local_outbox_write_receipt_authority",
+                "downstream_unavailable": list(LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            audit_rows=audit_rows,
+            current_state=LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_READY_STATE,
+            blocked_reason=None,
+            now_epoch=now_epoch,
+        )
+    return _with_local_outbox_provider_private_handoff_lifecycle(
+        {
+            "schema_id": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_SCHEMA_ID,
+            "available": False,
+            "state": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_NOT_READY_STATE,
+            "blocked_reason": "write_server_owned_local_outbox",
+            "target_identity": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_TARGET_IDENTITY,
+            "dispatch_mode": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_DISPATCH_MODE,
+            "operator_decision": LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_OPERATOR_DECISION,
+            "provider_private_handoff_enabled": False,
+            "provider_private_handoff_performed": False,
+            "raw_token_exposed": False,
+            "real_connector_invocation_enabled": False,
+            "external_provider_network_write_enabled": False,
+            "external_object_store_write_enabled": False,
+            "external_destination_write_enabled": False,
+            "operator_destination_path_enabled": False,
+            "connector_run_created": False,
+            "connector_run_target_created": False,
+            "credentials_enabled": False,
+            "provider_public_url_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "package_mutation_enabled": False,
+            "source_expansion_enabled": False,
+            "rag_vector_enabled": False,
+            "auth_security_implementation_enabled": False,
+            "full_mockup_activation_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "status_surface_mode": "read_only_server_session_summary_projection",
+            "response_authority": "existing_session_summary_without_local_outbox_provider_private_handoff_receipt",
+            "downstream_unavailable": list(LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_DOWNSTREAM_UNAVAILABLE),
+        },
+        history_rows=history_rows,
+        audit_rows=audit_rows,
+        current_state=LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_NOT_READY_STATE,
+        blocked_reason="write_server_owned_local_outbox",
+        now_epoch=now_epoch,
+    )
+
+
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = _latest_selection_manifest_for_session(db, session=session)
@@ -12669,6 +13152,11 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         session_id=session_id,
         server_owned_local_outbox_target_state=server_owned_local_outbox_target_state,
     )
+    local_outbox_provider_private_handoff_state = _local_outbox_provider_private_handoff_summary(
+        db,
+        session_id=session_id,
+        server_owned_local_outbox_write_state=server_owned_local_outbox_write_state,
+    )
     selection_active = bool(execution_selection_readiness["selected"])
     package_active = bool(
         package_review_preview_state.get("available")
@@ -12725,6 +13213,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "connector_local_destination_receipt": connector_local_destination_receipt_state,
         "server_owned_local_outbox_target": server_owned_local_outbox_target_state,
         "server_owned_local_outbox_write": server_owned_local_outbox_write_state,
+        "local_outbox_provider_private_handoff": local_outbox_provider_private_handoff_state,
         "pdf_location_projection": _pdf_location_projection_for_session(db, session_id=session_id),
         "sublayer_visualization": _session_sublayer_visualization_state(db, session_id=session_id),
         "state_action_contract": _workbench_state_action_contract(),
