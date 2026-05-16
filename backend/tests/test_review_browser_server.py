@@ -101,6 +101,7 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
         "layer3-aps-handoff",
     ]
     assert "/__test/layer3/seed-quant" in payload["seed_routes"]
+    assert "/__test/layer3/seed-cohort-aps-handoff" in payload["seed_routes"]
     windows_user_prefix = "C:" + "\\" + "Users" + "\\"
     posix_user_prefix = "/" + "Users" + "/"
     assert windows_user_prefix not in str(payload)
