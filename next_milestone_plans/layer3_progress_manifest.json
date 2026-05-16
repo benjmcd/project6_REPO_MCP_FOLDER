@@ -21713,5 +21713,74 @@
   "latest_layer3_connector_local_receipt_outward_sequence_control_branch": "codex/l3-local-receipt-plan",
   "latest_layer3_connector_local_receipt_outward_sequence_control_doc": "next_milestone_plans/Layer3_planning_docs/596_LOCAL_RECEIPT_PLAN.md",
   "latest_layer3_connector_local_receipt_outward_sequence_control_live_behavior_change": false,
-  "latest_layer3_connector_local_receipt_outward_sequence_control_summary": "Doc 596 prepares the preferred outward connector-local receipt sequence: first a read-only operator status surface, then a focused E2E smoke path from existing handoff/export readiness, while preserving the current real-target missing-decision packet and blocking real connector invocation, destination writes, connector-run creation, credentials, provider-public delivery/use, package mutation, source expansion, RAG/vector, auth/security, full mockup activation, and frontend-only durable authority."
+  "latest_layer3_connector_local_receipt_outward_sequence_control_summary": "Doc 596 prepares the preferred outward connector-local receipt sequence: first a read-only operator status surface, then a focused E2E smoke path from existing handoff/export readiness, while preserving the current real-target missing-decision packet and blocking real connector invocation, destination writes, connector-run creation, credentials, provider-public delivery/use, package mutation, source expansion, RAG/vector, auth/security, full mockup activation, and frontend-only durable authority.",
+  "layer3_connector_local_receipt_read_only_status_surface": {
+    "status": "implemented_read_only_connector_local_receipt_status_surface",
+    "branch": "codex/l3-local-receipt-status",
+    "implementation_doc": "next_milestone_plans/Layer3_planning_docs/597_LOCAL_RECEIPT_STATUS_SURFACE.md",
+    "current_main_checkpoint": "b6de6a8bd8210536d80a3c679fc1d04ac8f6a4b7",
+    "prior_control_doc": "next_milestone_plans/Layer3_planning_docs/596_LOCAL_RECEIPT_PLAN.md",
+    "implemented_exact_milestone": "implement_connector_local_receipt_read_only_status_surface",
+    "exact_product_use_case_behavior": "operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write",
+    "response_authority": "State.sessionSummary.connector_local_destination_receipt",
+    "server_projection_authorities": [
+      "durable_connector_local_destination_receipt_row",
+      "connector_local_destination_receipt_reconciliation_summary",
+      "existing_connector_dispatch_and_external_export_download_readiness"
+    ],
+    "rendered_status_surface_mode": "rendered_connector_local_destination_receipt_read_only_status_surface",
+    "server_projection_mode": "read_only_server_session_summary_projection",
+    "implemented_files": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/api/layer3.py",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_api.py",
+      "backend/tests/test_layer3_page.py"
+    ],
+    "focused_validation": "python -m pytest .\\backend\\tests\\test_layer3_page.py .\\backend\\tests\\test_layer3_api.py::test_layer3_external_export_download_openapi_contracts .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_records_durable_fake_local_receipt PASS 5 passed, 3 warnings",
+    "connector_local_receipt_status_response_authority_freeze_needed": false,
+    "live_behavior_change": true,
+    "runtime_behavior_change": true,
+    "rendered_ui_behavior_change": true,
+    "backend_route_behavior_change": true,
+    "service_runtime_behavior_change": true,
+    "response_model_shape_change": true,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "connector_provider_destination_dispatch_change": false,
+    "frontend_only_durable_authority_change": false,
+    "blocked_lanes": [
+      "real connector invocation",
+      "destination writes",
+      "connector-run creation",
+      "credentials",
+      "provider-public delivery/use",
+      "package mutation/reconstruction",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security changes without an admitted external surface",
+      "full mockup activation",
+      "frontend-only durable authority"
+    ],
+    "immediate_goal": "connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path",
+    "mid_term_goals": [
+      "confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target",
+      "harden_connector_local_receipt_lifecycle",
+      "write_real_connector_destination_implementation_entry_freeze_after_target_named"
+    ],
+    "long_term_gated_goals": [
+      "provider_public_delivery_use_after_exposure_security_decision",
+      "package_mutation_reconstruction_after_named_operator_action",
+      "source_expansion_as_one_named_source_family",
+      "rag_vector_after_source_index_authority_defined",
+      "auth_security_hardening_tied_to_admitted_external_surface"
+    ],
+    "next_allowed_action": "connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path",
+    "next_whole_project_posture": "await_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path"
+  },
+  "latest_layer3_connector_local_receipt_read_only_status_surface_branch": "codex/l3-local-receipt-status",
+  "latest_layer3_connector_local_receipt_read_only_status_surface_doc": "next_milestone_plans/Layer3_planning_docs/597_LOCAL_RECEIPT_STATUS_SURFACE.md",
+  "latest_layer3_connector_local_receipt_read_only_status_surface_live_behavior_change": true,
+  "latest_layer3_connector_local_receipt_read_only_status_surface_summary": "Doc 597 implements the read-only operator-visible connector-local receipt status surface by projecting server-owned session summary state into the rendered review UI. The next immediate goal is the focused E2E smoke path from existing handoff/export readiness, while real connector invocation, destination writes, connector-run creation, credentials, provider-public delivery/use, package mutation, source expansion, RAG/vector, auth/security, full mockup activation, and frontend-only durable authority remain blocked."
 }

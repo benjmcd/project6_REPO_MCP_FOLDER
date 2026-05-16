@@ -138,6 +138,8 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="external-export-download-signed-reference-panel"' in response.text
     assert 'id="external-export-download-signed-reference-generate"' in response.text
     assert 'id="external-export-download-signed-reference-use"' in response.text
+    assert 'id="connector-local-destination-receipt-panel"' in response.text
+    assert 'data-rendered-mode="rendered_connector_local_destination_receipt_read_only_status_surface"' in response.text
     assert 'id="provider-public-url-form"' in response.text
     assert 'data-rendered-mode="provider_public_url_prepare_status_revoke_controls"' in response.text
     assert 'id="provider-public-url-panel"' in response.text
@@ -282,6 +284,16 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function downstreamAccessLifecycleRows" in js.text
     assert "function renderDownstreamAccessLifecycleDashboardPanel" in js.text
     assert "renderDownstreamAccessLifecycleDashboardPanel()" in js.text
+    assert "CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE_MODE = 'rendered_connector_local_destination_receipt_read_only_status_surface'" in js.text
+    assert "CONNECTOR_LOCAL_RECEIPT_STATUS_USE_CASE = 'operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write'" in js.text
+    assert "CONNECTOR_LOCAL_RECEIPT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.connector_local_destination_receipt'" in js.text
+    assert "function connectorLocalDestinationReceiptStatusState" in js.text
+    assert "function renderConnectorLocalDestinationReceiptStatusPanel" in js.text
+    assert "renderConnectorLocalDestinationReceiptStatusPanel()" in js.text
+    assert "connector_local_destination_receipt_recorded" in js.text
+    assert "connector_local_destination_receipt_ready" in js.text
+    assert "real_destination_integration" in js.text
+    assert "/handoff/connector/local-destination/receipt" not in js.text
     assert "provider_public_url_redacted ? 'redacted_receipt_only'" in js.text
     assert "raw public URL display/use" in js.text
     assert ".authority-matrix-review-panel" in css.text

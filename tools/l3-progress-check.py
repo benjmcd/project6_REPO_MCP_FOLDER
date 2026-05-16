@@ -1468,6 +1468,9 @@ LAYER3_CONNECTOR_DESTINATION_SYNC_HASH_REMEDIATION_CURRENT_MAIN_SYNC = (
 LAYER3_CONNECTOR_LOCAL_RECEIPT_OUTWARD_SEQUENCE_CONTROL = (
     PLANNING_DOCS / "596_LOCAL_RECEIPT_PLAN.md"
 )
+LAYER3_CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE = (
+    PLANNING_DOCS / "597_LOCAL_RECEIPT_STATUS_SURFACE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -48666,6 +48669,155 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
                 errors.append(
                     f"{_rel(path)} missing local receipt outward sequence term: {term}"
                 )
+
+    local_receipt_status_text = _read_required_text(
+        LAYER3_CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE,
+        errors,
+    )
+    for term in (
+        "Status: implemented/read-only status surface for `implement_connector_local_receipt_read_only_status_surface`.",
+        "597_LOCAL_RECEIPT_STATUS_SURFACE.md",
+        "b6de6a8bd8210536d80a3c679fc1d04ac8f6a4b7",
+        "596_LOCAL_RECEIPT_PLAN.md",
+        "codex/l3-local-receipt-status",
+        "State.sessionSummary.connector_local_destination_receipt",
+        "durable receipt row, reconciliation summary state, or existing handoff/export readiness chain",
+        "operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write",
+        "_connector_local_destination_receipt_summary",
+        "Layer3SessionSummaryResponse",
+        "connector-local-destination-receipt-panel",
+        "renderConnectorLocalDestinationReceiptStatusPanel",
+        "rendered_connector_local_destination_receipt_read_only_status_surface",
+        "read_only_server_session_summary_projection",
+        "5 passed, 3 warnings",
+        "connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path",
+        "confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target",
+        "harden_connector_local_receipt_lifecycle",
+        "write_real_connector_destination_implementation_entry_freeze_after_target_named",
+        "provider_public_delivery_use_after_exposure_security_decision",
+        "await_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path",
+    ):
+        if term not in local_receipt_status_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE)} missing local receipt status surface term: {term}"
+            )
+
+    local_receipt_status_sources = {
+        BOARD: (
+            "## Layer 3 Local Receipt Status Surface",
+            "597_LOCAL_RECEIPT_STATUS_SURFACE.md",
+            "b6de6a8bd8210536d80a3c679fc1d04ac8f6a4b7",
+            "State.sessionSummary.connector_local_destination_receipt",
+            "L3ConnectorLocalDestinationReceipt",
+            "_connector_local_destination_receipt_summary",
+            "connector-local-destination-receipt-panel",
+            "renderConnectorLocalDestinationReceiptStatusPanel",
+            "/handoff/connector/local-destination/receipt",
+            "5 passed, 3 warnings",
+            "connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path",
+            "confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target",
+            "harden_connector_local_receipt_lifecycle",
+            "write_real_connector_destination_implementation_entry_freeze_after_target_named",
+            "frontend-only durable authority is admitted",
+        ),
+        MANIFEST: (
+            "layer3_connector_local_receipt_read_only_status_surface",
+            '"status": "implemented_read_only_connector_local_receipt_status_surface"',
+            "codex/l3-local-receipt-status",
+            "597_LOCAL_RECEIPT_STATUS_SURFACE.md",
+            "b6de6a8bd8210536d80a3c679fc1d04ac8f6a4b7",
+            "implement_connector_local_receipt_read_only_status_surface",
+            "State.sessionSummary.connector_local_destination_receipt",
+            "durable_connector_local_destination_receipt_row",
+            "connector_local_destination_receipt_reconciliation_summary",
+            "existing_connector_dispatch_and_external_export_download_readiness",
+            "rendered_connector_local_destination_receipt_read_only_status_surface",
+            "read_only_server_session_summary_projection",
+            "test_layer3_external_export_download_openapi_contracts",
+            "test_layer3_api_connector_local_destination_receipt_records_durable_fake_local_receipt",
+            '"connector_local_receipt_status_response_authority_freeze_needed": false',
+            '"runtime_behavior_change": true',
+            '"response_model_shape_change": true',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_local_receipt_read_only_status_surface_proof",
+            '"status": "implemented_read_only_connector_local_receipt_status_surface"',
+            "codex/l3-local-receipt-status",
+            "597_LOCAL_RECEIPT_STATUS_SURFACE.md",
+            "State.sessionSummary.connector_local_destination_receipt",
+            "_connector_local_destination_receipt_summary",
+            "Layer3SessionSummaryResponse connector_local_destination_receipt",
+            "connector-local-destination-receipt-panel",
+            "renderConnectorLocalDestinationReceiptStatusPanel",
+            "read_only_server_session_summary_projection",
+            "review UI does not call /handoff/connector/local-destination/receipt",
+            "connector_local_receipt_status_response_authority_freeze_needed false",
+            "no real connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no credential use",
+            "no frontend-only durable authority",
+            "await_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path",
+        ),
+        WORKBENCH_SERVICE: (
+            "CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATUS_SCHEMA_ID",
+            "CONNECTOR_LOCAL_DESTINATION_RECEIPT_READY_STATE",
+            "CONNECTOR_LOCAL_DESTINATION_RECEIPT_TARGET",
+            "CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE",
+            "def _connector_local_destination_receipt_summary",
+            "durable_connector_local_destination_receipt_row",
+            "connector_local_destination_receipt_reconciliation_summary",
+            "existing_connector_dispatch_and_external_export_download_readiness",
+            '"connector_local_destination_receipt": connector_local_destination_receipt_state',
+        ),
+        LAYER3_API: (
+            "class Layer3SessionSummaryResponse",
+            "connector_local_destination_receipt: dict[str, Any]",
+        ),
+        LAYER3_HTML: (
+            'id="connector-local-destination-receipt-panel"',
+            'data-rendered-mode="rendered_connector_local_destination_receipt_read_only_status_surface"',
+        ),
+        LAYER3_JS: (
+            "CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE_MODE = 'rendered_connector_local_destination_receipt_read_only_status_surface'",
+            "CONNECTOR_LOCAL_RECEIPT_STATUS_USE_CASE = 'operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write'",
+            "CONNECTOR_LOCAL_RECEIPT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.connector_local_destination_receipt'",
+            "connectorLocalDestinationReceiptPanel",
+            "function connectorLocalDestinationReceiptStatusState",
+            "State.sessionSummary?.connector_local_destination_receipt",
+            "function renderConnectorLocalDestinationReceiptStatusPanel",
+            "renderConnectorLocalDestinationReceiptStatusPanel();",
+            "real_destination_integration",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_connector_local_destination_receipt_records_durable_fake_local_receipt",
+            "connector_local_destination_receipt",
+            "read_only_server_session_summary_projection",
+            "durable_connector_local_destination_receipt_row",
+        ),
+        LAYER3_PAGE_TEST: (
+            'id="connector-local-destination-receipt-panel"',
+            "function renderConnectorLocalDestinationReceiptStatusPanel",
+            "renderConnectorLocalDestinationReceiptStatusPanel()",
+            '"/handoff/connector/local-destination/receipt" not in js.text',
+        ),
+    }
+    for path, terms in local_receipt_status_sources.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing local receipt status surface term: {term}"
+                )
+
+    layer3_js_text = _read_required_text(LAYER3_JS, errors)
+    if "/handoff/connector/local-destination/receipt" in layer3_js_text:
+        errors.append(
+            f"{_rel(LAYER3_JS)} must not call or reference the connector-local receipt write endpoint"
+        )
 
 
 def main() -> int:
