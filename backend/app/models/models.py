@@ -1763,6 +1763,93 @@ class L3LocalOutboxProviderPrivateHandoffAuditEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class L3ExternalLocalExportReceipt(Base):
+    __tablename__ = "l3_external_local_export_receipt"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_external_local_export_client_request"),
+        UniqueConstraint("authority_basis_hash", name="uq_l3_external_local_export_authority_basis"),
+        UniqueConstraint("external_artifact_ref", name="uq_l3_external_local_export_artifact_ref"),
+        Index("ix_l3_external_local_export_session", "session_id"),
+        Index("ix_l3_external_local_export_write_receipt", "server_owned_local_outbox_write_receipt_id"),
+        Index("ix_l3_external_local_export_state", "export_state"),
+    )
+
+    external_local_export_receipt_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    server_owned_local_outbox_write_receipt_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_server_owned_local_outbox_write_receipt.server_owned_local_outbox_write_receipt_id"),
+        nullable=False,
+    )
+    server_owned_local_outbox_target_receipt_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_server_owned_local_outbox_target_receipt.server_owned_local_outbox_target_receipt_id"),
+        nullable=False,
+    )
+    connector_local_destination_receipt_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_connector_local_destination_receipt.connector_local_destination_receipt_id"),
+        nullable=False,
+    )
+    provider_private_handoff_receipt_id: Mapped[str | None] = mapped_column(
+        ForeignKey("l3_local_outbox_provider_private_handoff_receipt.provider_private_handoff_receipt_id")
+    )
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    pass_run_id: Mapped[str] = mapped_column(ForeignKey("l3_pass_run.pass_run_id"), nullable=False)
+    reconciliation_record_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_reconciliation_record.reconciliation_record_id"),
+        nullable=False,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    connector_dispatch_record_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    external_export_download_record_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    target_identity: Mapped[str] = mapped_column(String(128), nullable=False)
+    target_class: Mapped[str] = mapped_column(String(128), nullable=False)
+    dispatch_mode: Mapped[str] = mapped_column(String(128), nullable=False)
+    export_state: Mapped[str] = mapped_column(String(64), nullable=False)
+    redacted_destination_label: Mapped[str] = mapped_column(String(128), nullable=False)
+    external_artifact_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    external_manifest_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    external_artifact_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    external_artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    external_manifest_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    external_manifest_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_outbox_artifact_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_outbox_artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    redacted_failure_code: Mapped[str | None] = mapped_column(String(128))
+    authority_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_by_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class L3ExternalLocalExportAuditEvent(Base):
+    __tablename__ = "l3_external_local_export_audit_event"
+    __table_args__ = (
+        Index("ix_l3_external_local_export_audit_receipt", "external_local_export_receipt_id"),
+        Index("ix_l3_external_local_export_audit_type_created", "event_type", "created_at"),
+    )
+
+    external_local_export_audit_event_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    external_local_export_receipt_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_external_local_export_receipt.external_local_export_receipt_id"),
+        nullable=False,
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    event_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_id: Mapped[str | None] = mapped_column(String(255))
+    authority_basis_hash: Mapped[str | None] = mapped_column(String(64))
+    reason_code: Mapped[str] = mapped_column(String(128), nullable=False)
+    event_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class L3ProviderPublicUrlObjectAuthority(Base):
     __tablename__ = "l3_provider_public_url_object_authority"
     __table_args__ = (
