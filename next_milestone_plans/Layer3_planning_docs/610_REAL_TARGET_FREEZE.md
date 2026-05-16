@@ -2,23 +2,29 @@
 
 ## Status
 
-Status: implemented and merged on current main for `server_owned_local_outbox_provider_private_handoff_target_after_local_outbox_write`.
+Status: implemented and merged on current main for `server_owned_local_outbox_provider_private_handoff_target_after_local_outbox_write`, including the read-only session-summary/history projection.
 
 Doc: `610_REAL_TARGET_FREEZE.md`.
 
 Pre-implementation current-main checkpoint: `e813759ee4c9346d5bb7fefe737c7c046fc55644`.
 
-Implemented feature commit: `d44cd7dc2a5d5f848b2d794f8cdac697e8c94dde`.
+Prepare/status feature commit: `d44cd7dc2a5d5f848b2d794f8cdac697e8c94dde`.
 
-Merged current-main checkpoint: `3eb68cdd4c6e6b2582515ef9f76b62b22d3deb5e`.
+Prepare/status merged current-main checkpoint: `3eb68cdd4c6e6b2582515ef9f76b62b22d3deb5e`.
 
-Merged PR: `#1207`.
+Prepare/status merged PR: `#1207`.
+
+Read-only session-summary/history projection feature commit: `1fc4921c870157fcbcb00e8674a46739f21c18f2`.
+
+Read-only session-summary/history projection merged current-main checkpoint: `79926fe5943703425a25a680cd84a901bb7db150`.
+
+Read-only session-summary/history projection merged PR: `#1209`.
 
 Prior decision packet: `609_REAL_CONNECTOR_DESTINATION_DECISION_PACKET_AFTER_LOCAL_OUTBOX_WRITE.md`.
 
 Runtime status before implementation: `server_owned_local_outbox_write_implemented_and_reaudited_on_current_main`.
 
-Implementation-entry result: fake-provider prepare/status slice implemented and merged; further real-provider, destination-write, provider-public, raw-token, package, source-expansion, RAG/vector, auth/security, rendered-write-control, full-mockup, and frontend-durable authority remains blocked unless separately frozen and admitted.
+Implementation-entry result: fake-provider prepare/status slice and read-only session-summary/history projection implemented and merged; further real-provider, destination-write, provider-public, raw-token, package, source-expansion, RAG/vector, auth/security, rendered-write-control, full-mockup, and frontend-durable authority remains blocked unless separately frozen and admitted.
 
 ## Selected Target
 
@@ -260,11 +266,11 @@ Stop before implementation if the next pass:
 
 ## Next Posture
 
-The next whole-project posture is `implement_local_outbox_provider_private_handoff_prepare_status_after_freeze`.
+The next whole-project posture is `prove_and_harden_local_outbox_provider_private_handoff_lifecycle_after_status_projection`.
 
 ## Current-Main Implementation Status
 
-Current main status: `local_outbox_provider_private_handoff_prepare_status_implemented_merged`.
+Current main status: `local_outbox_provider_private_handoff_prepare_status_and_session_history_projection_implemented_merged`.
 
 Implemented first-slice surfaces:
 
@@ -272,13 +278,18 @@ Implemented first-slice surfaces:
 - durable audit table `l3_local_outbox_provider_private_handoff_audit_event`;
 - owner service `backend/app/services/layer3_local_outbox_provider_private_handoff.py`;
 - prepare API `POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare`;
-- read-only status API `GET /api/v1/layer3/handoff/connector/local-outbox/provider-private/status/{provider_private_handoff_receipt_id}`; and
+- read-only status API `GET /api/v1/layer3/handoff/connector/local-outbox/provider-private/status/{provider_private_handoff_receipt_id}`;
+- read-only session-summary field `local_outbox_provider_private_handoff`;
+- lifecycle/history projection from durable provider-private handoff receipt rows;
+- audit-event history projection from durable provider-private handoff audit rows; and
 - OpenAPI and targeted backend proof in `backend/tests/test_layer3_api.py`.
 
 Merged proof already exercised:
 
 - prepare success from an existing server-owned local outbox write receipt;
 - read-only status success from durable handoff state;
+- session-summary ready projection after server-owned local outbox write and before provider-private handoff prepare;
+- session-summary recorded projection after provider-private handoff prepare, including receipt history, audit history, idempotency/retry policy, and failure-state projection;
 - same-key/same-payload replay;
 - same-key/different-payload conflict;
 - same-authority/different-client-request conflict;
@@ -286,8 +297,9 @@ Merged proof already exercised:
 - no `ConnectorRun` or `ConnectorRunTarget` creation;
 - no provider-private signed URL durable-state row creation;
 - no package mutation;
-- no raw token, signed URL, provider URL, source artifact ref, credential, destination path, or absolute filesystem path exposure in responses; and
-- migration upgrade to head against isolated in-memory SQLite.
+- no raw token, signed URL, provider URL, source artifact ref, credential, destination path, or absolute filesystem path exposure in responses;
+- migration upgrade to head against isolated in-memory SQLite; and
+- full `backend/tests/test_layer3_api.py` coverage on the status-projection merge branch.
 
 Still not admitted by this implementation:
 
@@ -306,4 +318,4 @@ Still not admitted by this implementation:
 - full mockup activation; and
 - frontend-durable authority.
 
-Next whole-project pass after this merge: choose between adding a read-only session-summary/history projection for this handoff receipt or freezing a named real provider/destination target. The default next pass should be the read-only projection unless current-main authority proves it already exists or a named external target freeze has been separately admitted.
+Next whole-project pass after this merge: run focused headed/headless E2E proof for the local-outbox provider-private handoff lifecycle status surface, then harden only any repo-confirmed lifecycle gaps in stale authority, wrong receipt/session/basis, duplicate `client_request_id`, same-key/same-payload replay, same-key/different-payload conflict, expiry, and fake-provider failure projection. A named real provider/destination target freeze is still blocked unless the operator names a concrete target and separately admits that implementation entry.
