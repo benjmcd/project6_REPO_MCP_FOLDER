@@ -1499,6 +1499,9 @@ LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_TARGET_SELECTION_INTAKE = (
 LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD = (
     PLANNING_DOCS / "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md"
 )
+LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -49494,22 +49497,54 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD)} missing target-selection validate-only guard term: {term}"
             )
 
+    guard_sync_text = _read_required_text(
+        LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC, errors
+    )
+    for term in (
+        "Status: current-main sync for `target_selection_validate_only_guard`.",
+        "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
+        "Current-main checkpoint: `43f8d86a82d2cee361c29026830eb1f8eab7ffa2`.",
+        "Guard doc: `614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md`.",
+        "Guard PR: `#1218`.",
+        "GitHub `backend-layer3-api` passed in `2m34s`.",
+        "GitHub `test` passed in `3m19s`.",
+        "PR comments were empty.",
+        "PR reviews were empty.",
+        "PR reviewThreads totalCount was `0`.",
+        "Unresolved reviewThreads were `0`.",
+        "Post-merge `python .\\tools\\l3-progress-check.py` passed.",
+        "selected target identity `null`",
+        "selection complete false",
+        "The next required action remains operator completion of `612_TARGET_SELECTION_INTAKE.md`",
+    ):
+        if term not in guard_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC)} missing target-selection guard current-main sync term: {term}"
+            )
+
     for path, terms in {
         BOARD: (
-            "2026-05-16 target-selection validate-only guard",
+            "2026-05-16 target-selection validate-only guard current-main sync",
+            "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
+            "#1218",
             "tools/l3-progress-check.py",
             "Selection complete: false",
         ),
         MANIFEST: (
             "target_selection_validate_only_guard",
+            "target_selection_validate_only_guard_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
+            "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "codex/l3-target-selection-guard",
+            "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
             "selection_complete false",
         ),
         PROOF_MANIFEST: (
             "latest_target_selection_validate_only_guard",
+            "latest_target_selection_validate_only_guard_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
+            "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "validate-only progress guard",
             "does not select a target",
         ),
