@@ -338,6 +338,83 @@ async function prepareLocalOutboxProviderPrivateHandoffViaApi(request) {
   };
 }
 
+async function prepareExternalLocalExportViaApi(request) {
+  const setup = await prepareLocalOutboxProviderPrivateHandoffViaApi(request);
+  const readySummary = await expectJson(await request.get(`/api/v1/layer3/session/${setup.sessionId}`));
+  const readyStatus = readySummary.external_local_export;
+  expect(readyStatus.state).toBe('external_local_export_ready');
+  expect(readyStatus.available).toBe(true);
+  expect(readyStatus.server_owned_local_outbox_write_receipt_id).toBe(
+    setup.write.server_owned_local_outbox_write_receipt_id,
+  );
+  expect(readyStatus.provider_private_handoff_receipt_id).toBe(
+    setup.providerPrivate.provider_private_handoff_receipt_id,
+  );
+
+  const externalLocalExportPayload = {
+    client_request_id: requestId('api-external-local-export'),
+    session_id: setup.sessionId,
+    analysis_plan_id: setup.approval.analysis_plan_id,
+    pass_run_id: setup.passRunId,
+    reconciliation_record_id: setup.commit.reconciliation_record_id,
+    connector_dispatch_record_ref: setup.connector.connector_dispatch_record_ref,
+    connector_local_destination_receipt_id: setup.localReceipt.connector_local_destination_receipt_id,
+    server_owned_local_outbox_target_receipt_id: setup.target.server_owned_local_outbox_target_receipt_id,
+    server_owned_local_outbox_write_receipt_id: setup.write.server_owned_local_outbox_write_receipt_id,
+    external_export_download_record_ref: setup.external.external_export_download_record_ref,
+    provider_private_handoff_receipt_id: setup.providerPrivate.provider_private_handoff_receipt_id,
+    target_identity: 'server_configured_external_local_export_directory',
+    dispatch_mode: 'server_configured_external_local_export_directory_write',
+    operator_decision: 'write_server_configured_external_local_export_directory',
+  };
+  const externalLocalExport = await postLayer3Json(
+    request,
+    '/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write',
+    externalLocalExportPayload,
+  );
+  expect(externalLocalExport.external_local_export_state).toBe('external_local_export_written');
+  expect(externalLocalExport.server_configured_external_local_export_write_performed).toBe(true);
+  expect(externalLocalExport.external_artifact_ref).toMatch(/^external-local-export:\/\//);
+  expect(externalLocalExport.external_manifest_ref).toMatch(/^external-local-export:\/\//);
+  expect(externalLocalExport.real_connector_invocation_enabled).toBe(false);
+  expect(externalLocalExport.connector_run_created).toBe(false);
+  expect(externalLocalExport.connector_run_target_created).toBe(false);
+  expect(externalLocalExport.credentials_enabled).toBe(false);
+  expect(externalLocalExport.network_egress_enabled).toBe(false);
+  expect(externalLocalExport.raw_public_url_exposed).toBe(false);
+  expect(JSON.stringify(externalLocalExport)).not.toContain('LAYER3_EXTERNAL_LOCAL_EXPORT_DIR');
+  expect(externalLocalExport).not.toHaveProperty('destination_path');
+  expect(externalLocalExport).not.toHaveProperty('caller_supplied_destination_path');
+
+  const replay = await postLayer3Json(
+    request,
+    '/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write',
+    externalLocalExportPayload,
+  );
+  expect(replay.external_local_export_receipt_id).toBe(externalLocalExport.external_local_export_receipt_id);
+  expect(replay.export_operation_state).toBe('external_local_export_replay');
+
+  const externalLocalExportStatus = await expectJson(
+    await request.get(
+      `/api/v1/layer3/handoff/connector/local-outbox/external-local-export/status/${externalLocalExport.external_local_export_receipt_id}`,
+    ),
+  );
+  expect(externalLocalExportStatus.schema_id).toBe('layer3.external_local_export.status.v1');
+  expect(externalLocalExportStatus.external_local_export_state).toBe('external_local_export_written');
+  expect(externalLocalExportStatus.external_local_export_receipt_id).toBe(
+    externalLocalExport.external_local_export_receipt_id,
+  );
+  expect(JSON.stringify(externalLocalExportStatus)).not.toContain('LAYER3_EXTERNAL_LOCAL_EXPORT_DIR');
+  expect(externalLocalExportStatus).not.toHaveProperty('destination_path');
+  expect(externalLocalExportStatus).not.toHaveProperty('caller_supplied_destination_path');
+
+  return {
+    ...setup,
+    externalLocalExport,
+    externalLocalExportStatus,
+  };
+}
+
 test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff after approved package review', async ({ page, request }) => {
   const setup = await prepareExecutedLayer3Session(request, '/__test/layer3/seed-aps-handoff');
 
@@ -1537,6 +1614,90 @@ test('Layer 3 renders local outbox provider-private handoff lifecycle as read-on
   await expect(handoffPanel).not.toContainText('provider_private_signed_url_token');
   await expect(handoffPanel).not.toContainText('C:\\');
   await expect(handoffPanel).not.toContainText('destination_path');
+});
+
+test('Layer 3 renders external local export lifecycle as read-only status history', async ({ page, request }) => {
+  const setup = await prepareExternalLocalExportViaApi(request);
+  const summary = await expectJson(await request.get(`/api/v1/layer3/session/${setup.sessionId}`));
+  const exportStatus = summary.external_local_export;
+
+  expect(exportStatus.state).toBe('external_local_export_written');
+  expect(exportStatus.external_local_export_receipt_id).toBe(
+    setup.externalLocalExport.external_local_export_receipt_id,
+  );
+  expect(exportStatus.external_local_export_history_count).toBe(1);
+  expect(exportStatus.latest_external_local_export_receipt.external_local_export_receipt_id).toBe(
+    setup.externalLocalExport.external_local_export_receipt_id,
+  );
+  expect(exportStatus.audit_event_history_count).toBe(1);
+  expect(exportStatus.lifecycle_status_surface.history_listing_authority).toBe(
+    'durable_external_local_export_receipt_rows',
+  );
+  expect(exportStatus.lifecycle_status_surface.audit_trail_authority).toBe(
+    'durable_external_local_export_audit_event_rows',
+  );
+  expect(exportStatus.idempotency_policy.same_key_same_payload_replay).toBe('already_recorded');
+  expect(exportStatus.idempotency_policy.same_key_different_payload_conflict).toBe(
+    'external_local_export_client_request_conflict',
+  );
+  expect(exportStatus.idempotency_policy.same_basis_different_client_request_id).toBe('return_existing_status');
+  expect(exportStatus.idempotency_policy.duplicate_target_conflicting_output).toBe(
+    'external_local_export_existing_output_conflict',
+  );
+  expect(exportStatus.failure_state_projection.map((entry) => entry.case)).toEqual(
+    expect.arrayContaining(['stale_authority', 'same_key_different_payload_conflict', 'target_write_conflict']),
+  );
+  expect(exportStatus.real_connector_invocation_enabled).toBe(false);
+  expect(exportStatus.connector_run_created).toBe(false);
+  expect(exportStatus.connector_run_target_created).toBe(false);
+  expect(exportStatus.credentials_enabled).toBe(false);
+  expect(exportStatus.network_egress_enabled).toBe(false);
+  expect(exportStatus.provider_public_delivery_enabled).toBe(false);
+  expect(exportStatus.raw_public_url_exposed).toBe(false);
+  expect(exportStatus.raw_token_exposed).toBe(false);
+  expect(exportStatus.package_mutation_enabled).toBe(false);
+  expect(exportStatus.source_expansion_enabled).toBe(false);
+  expect(exportStatus.rag_vector_enabled).toBe(false);
+  expect(JSON.stringify(exportStatus)).not.toContain('LAYER3_EXTERNAL_LOCAL_EXPORT_DIR');
+  expect(exportStatus).not.toHaveProperty('destination_path');
+  expect(exportStatus).not.toHaveProperty('caller_supplied_destination_path');
+
+  const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expectJson(await bootstrapResponsePromise);
+  await attachSessionToWorkbench(page, setup.sessionId);
+
+  const renderedSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.sessionId}`));
+  await page.locator('#result-review-refresh').click();
+  const renderedSummary = await expectJson(await renderedSummaryPromise);
+  expect(renderedSummary.external_local_export.external_local_export_receipt_id).toBe(
+    setup.externalLocalExport.external_local_export_receipt_id,
+  );
+
+  const exportPanel = page.locator('#external-local-export-panel');
+  await expect(exportPanel).toContainText('rendered_external_local_export_read_only_status_surface');
+  await expect(exportPanel).toContainText('external_local_export_written');
+  await expect(exportPanel).toContainText(setup.externalLocalExport.external_local_export_receipt_id);
+  await expect(exportPanel).toContainText(setup.externalLocalExport.external_artifact_ref);
+  await expect(exportPanel).toContainText(setup.externalLocalExport.external_manifest_ref);
+  await expect(exportPanel).toContainText('durable_external_local_export_receipt_rows');
+  await expect(exportPanel).toContainText('durable_external_local_export_audit_event_rows');
+  await expect(exportPanel).toContainText('external_local_export_client_request_conflict');
+  await expect(exportPanel).toContainText('external_local_export_existing_output_conflict');
+  await expect(exportPanel).toContainText('operator path authority');
+  await expect(exportPanel).toContainText('real connector invocation');
+  await expect(exportPanel).toContainText('network egress');
+  await expect(exportPanel).toContainText('provider public delivery/use');
+  await expect(exportPanel).toContainText('raw public URL');
+  await expect(exportPanel).toContainText('package mutation');
+  await expect(exportPanel).toContainText('source expansion');
+  await expect(exportPanel).toContainText('RAG/vector');
+  await expect(exportPanel.locator('button,input,select,textarea')).toHaveCount(0);
+  await expect(exportPanel).not.toContainText('C:\\');
+  await expect(exportPanel).not.toContainText('LAYER3_EXTERNAL_LOCAL_EXPORT_DIR');
+  await expect(exportPanel).not.toContainText('destination_path');
+  await expect(exportPanel).not.toContainText('raw_public_url_exposed: true');
+  await expect(exportPanel).not.toContainText('connector_run_created: true');
 });
 
 test('Layer 3 renders local receipt to server-owned outbox write status as read-only redacted state', async ({ page }) => {

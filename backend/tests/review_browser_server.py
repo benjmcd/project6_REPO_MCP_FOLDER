@@ -996,6 +996,7 @@ def create_app() -> FastAPI:
     install_review_browser_patches(fixture)
     _install_layer3_browser_patches(temp_path)
     settings.storage_dir = str(temp_path / "storage")
+    settings.layer3_external_local_export_dir = str(temp_path / "external-local-export")
     bootstrap_storage_tree(settings.storage_dir)
     engine = create_engine(
         "sqlite:///:memory:",
