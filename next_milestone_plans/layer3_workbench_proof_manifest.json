@@ -811,6 +811,67 @@
       ],
       "next_posture": "await_operator_decision_for_next_external_surface_after_selected_server_owned_local_outbox_target_satisfied"
     },
+    "latest_target_selection_selected_outbox_current_main_sync_branch": "codex/l3-selected-outbox-current-main-sync",
+    "latest_target_selection_selected_outbox_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md",
+    "latest_target_selection_selected_outbox_current_main_sync_live_behavior_change": false,
+    "latest_target_selection_selected_outbox_current_main_sync_summary": "Doc 622 records PR #1225 merge commit a8379403f77adaf2c490943774e2f5e655c49e68, green checks, empty review surfaces, post-merge validation, and next posture await_operator_decision_for_next_external_surface_after_selected_server_owned_local_outbox_target_satisfied_sync.",
+    "target_selection_selected_outbox_current_main_sync_proof": {
+      "proof_kind": "target_selection_selected_outbox_current_main_sync",
+      "status": "current_main_synced_selected_server_owned_local_outbox_target",
+      "branch": "codex/l3-selected-outbox-current-main-sync",
+      "doc": "next_milestone_plans/Layer3_planning_docs/622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md",
+      "synced_posture_doc": "next_milestone_plans/Layer3_planning_docs/621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
+      "selected_intake": "next_milestone_plans/Layer3_planning_docs/612_TARGET_SELECTION_INTAKE.md",
+      "existing_freeze": "next_milestone_plans/Layer3_planning_docs/608_SERVER_OWNED_LOCAL_OUTBOX_REAL_WRITE_ADMISSION_FREEZE.md",
+      "selected_target_identity": "server_owned_local_delivery_outbox_destination",
+      "operator_target_class": "external_destination_write",
+      "current_main_adjudicated_target_class": "server_owned_local_destination_write",
+      "selected_outbox_pr": "#1225",
+      "selected_outbox_branch_commit": "a763b393f7f97dd798ad53f50cec161c67465e43",
+      "selected_outbox_merge_commit": "a8379403f77adaf2c490943774e2f5e655c49e68",
+      "checks": {
+        "backend-layer3-api": "pass 2m40s",
+        "test": "pass 3m21s"
+      },
+      "review_surfaces": {
+        "comments": 0,
+        "reviews": 0,
+        "reviewThreads_totalCount": 0,
+        "unresolved_reviewThreads": 0,
+        "mergeable_before_merge": "MERGEABLE",
+        "merge_state_before_merge": "CLEAN"
+      },
+      "post_merge_validation": [
+        "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null => PASS",
+        "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null => PASS",
+        "python -m py_compile .\\tools\\l3-progress-check.py => PASS",
+        "python .\\tools\\l3-progress-check.py => PASS",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen => PASS",
+        "python -m pytest .\\backend\\tests\\test_layer3_target_selection_validate.py -q => 3 passed",
+        "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"server_owned_local_outbox_write\" => 2 passed, 158 deselected",
+        "git diff --check HEAD project6-origin/main -- . => PASS"
+      ],
+      "implementation_entry_allowed_next": false,
+      "selected_implementation_action": "none_current_main_already_contains_selected_server_owned_local_outbox_runtime",
+      "live_behavior_change": false,
+      "runtime_behavior_change": false,
+      "rendered_ui_behavior_change": false,
+      "blocked_surfaces": [
+        "real_external_connector_invocation",
+        "destination_writes_beyond_selected_server_owned_local_outbox_target",
+        "connector_run_creation",
+        "credential_use",
+        "network_write",
+        "provider_public_delivery_use",
+        "package_mutation_reconstruction",
+        "source_expansion",
+        "rag_vector_behavior",
+        "auth_security_behavior",
+        "full_mockup_activation",
+        "frontend_durable_authority"
+      ],
+      "next_posture": "await_operator_decision_for_next_external_surface_after_selected_server_owned_local_outbox_target_satisfied_sync"
+    },
     "local_outbox_provider_private_rendered_e2e_proof": {
       "proof_kind": "local_outbox_provider_private_rendered_e2e",
       "status": "focused_rendered_e2e_proof",

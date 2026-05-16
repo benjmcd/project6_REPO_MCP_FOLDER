@@ -1523,6 +1523,9 @@ LAYER3_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED = (
     PLANNING_DOCS
     / "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md"
 )
+LAYER3_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_TARGET_SELECTION_VALIDATOR_CLI = ROOT / "tools" / "l3-target-selection-validate.py"
 LAYER3_TARGET_SELECTION_VALIDATOR_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_target_selection_validate.py"
@@ -49880,6 +49883,35 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED)} missing selected outbox current-main satisfied term: {term}"
             )
 
+    target_selection_selected_outbox_sync_text = _read_required_text(
+        LAYER3_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC, errors
+    )
+    for term in (
+        "Status: current-main sync for `target_selection_selected_outbox_current_main_satisfied`.",
+        "622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md",
+        "Synced posture doc: `621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md`.",
+        "Selected-outbox PR: `#1225`.",
+        "Selected-outbox branch commit: `a763b393f7f97dd798ad53f50cec161c67465e43`.",
+        "Selected-outbox merge commit: `a8379403f77adaf2c490943774e2f5e655c49e68`.",
+        "Current-main checkpoint after merge: `a8379403f77adaf2c490943774e2f5e655c49e68`.",
+        "Runtime status: `current_main_synced_selected_server_owned_local_outbox_target`.",
+        "GitHub `backend-layer3-api` passed in `2m40s`.",
+        "GitHub `test` passed in `3m21s`.",
+        "PR comments were empty.",
+        "PR reviews were empty.",
+        "PR reviewThreads totalCount was `0`.",
+        "Unresolved reviewThreads were `0`.",
+        "Mergeability before merge was `MERGEABLE`.",
+        "Merge state before merge was `CLEAN`.",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "backend/tests/test_layer3_api.py -k \"server_owned_local_outbox_write\"",
+        "The next whole-project posture is `await_operator_decision_for_next_external_surface_after_selected_server_owned_local_outbox_target_satisfied_sync`.",
+    ):
+        if term not in target_selection_selected_outbox_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC)} missing selected outbox current-main sync term: {term}"
+            )
+
     local_outbox_provider_private_rendered_e2e_text = _read_required_text(
         LAYER3_WORKBENCH_E2E, errors
     )
@@ -49910,22 +49942,26 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "2026-05-16 local-outbox provider-private rendered E2E proof",
             "2026-05-16 local-outbox provider-private rendered E2E current-main sync",
             "2026-05-16 target-selection selected outbox current-main satisfied",
+            "2026-05-16 target-selection selected outbox current-main sync",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
             "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
             "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
+            "622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1218",
             "#1223",
+            "#1225",
             "tools/l3-progress-check.py",
             "tools/l3-target-selection-validate.py",
             "e2e/layer3-workbench.spec.js",
             "Selection complete: false",
             "Selection complete: true",
             "server_owned_local_delivery_outbox_destination",
+            "a8379403f77adaf2c490943774e2f5e655c49e68",
         ),
         MANIFEST: (
             "target_selection_validate_only_guard",
@@ -49936,6 +49972,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "local_outbox_provider_private_rendered_e2e",
             "local_outbox_provider_private_rendered_e2e_current_main_sync",
             "target_selection_selected_outbox_current_main_satisfied",
+            "target_selection_selected_outbox_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
@@ -49944,6 +49981,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
             "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
             "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
+            "622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md",
             "codex/l3-target-selection-guard",
             "codex/l3-target-selection-field-contract",
             "codex/l3-target-selection-record-validator",
@@ -49951,12 +49989,15 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "codex/l3-local-outbox-provider-private-e2e",
             "codex/l3-local-outbox-provider-private-sync",
             "codex/l3-target-selection-selected-outbox",
+            "codex/l3-selected-outbox-current-main-sync",
             "e2e/layer3-workbench.spec.js",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
             "47fff614513530b71b897166eff0008152424065",
+            "a8379403f77adaf2c490943774e2f5e655c49e68",
             "selection_complete false",
             "selection_complete true",
             "server_owned_local_delivery_outbox_destination",
+            "await_operator_decision_for_next_external_surface_after_selected_server_owned_local_outbox_target_satisfied_sync",
         ),
         PROOF_MANIFEST: (
             "latest_target_selection_validate_only_guard",
@@ -49967,6 +50008,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "latest_local_outbox_provider_private_rendered_e2e",
             "latest_local_outbox_provider_private_rendered_e2e_current_main_sync",
             "latest_target_selection_selected_outbox_current_main_satisfied",
+            "latest_target_selection_selected_outbox_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
@@ -49975,15 +50017,19 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
             "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
             "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
+            "622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md",
             "validate-only progress guard",
             "does not select a target",
             "local_outbox_provider_private_rendered_e2e_proof",
             "local_outbox_provider_private_rendered_e2e_current_main_sync_proof",
             "target_selection_selected_outbox_current_main_satisfied_proof",
+            "target_selection_selected_outbox_current_main_sync_proof",
             "codex/l3-local-outbox-provider-private-e2e",
             "codex/l3-local-outbox-provider-private-sync",
             "codex/l3-target-selection-selected-outbox",
+            "codex/l3-selected-outbox-current-main-sync",
             "server_owned_local_delivery_outbox_destination",
+            "a8379403f77adaf2c490943774e2f5e655c49e68",
         ),
     }.items():
         path_text = _read_required_text(path, errors)
