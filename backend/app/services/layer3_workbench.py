@@ -33,6 +33,7 @@ from app.models.models import (
     L3PassRun,
     L3ReconciliationRecord,
     L3SelectionManifest,
+    L3ServerOwnedLocalOutboxTargetReceipt,
     L3Session,
     L3SourceIntakeRecord,
     L3TypingRecord,
@@ -465,6 +466,30 @@ CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE = (
 )
 CONNECTOR_LOCAL_DESTINATION_RECEIPT_LIFECYCLE_SCHEMA_ID = (
     "layer3.connector_local_destination_receipt_lifecycle.v1"
+)
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATUS_SCHEMA_ID = "layer3.server_owned_local_outbox_fake_target_status.v1"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATE_SCHEMA_ID = "layer3.server_owned_local_outbox_fake_target_state.v1"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_LIFECYCLE_SCHEMA_ID = "layer3.server_owned_local_outbox_fake_target_lifecycle.v1"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_IDENTITY = "server_owned_local_delivery_outbox_destination"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_DISPATCH_MODE = "single_named_destination_dispatch_fake_target_first"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_OPERATOR_DECISION = "record_server_owned_local_outbox_fake_target"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_REDACTED_ARTIFACT_REF = "artifact://server-owned-local-outbox-fake-target-redacted"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_NOT_READY_STATE = "server_owned_local_outbox_target_not_ready"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_READY_STATE = "server_owned_local_outbox_fake_target_ready"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_RECORDED_STATE = "server_owned_local_outbox_fake_target_recorded"
+SERVER_OWNED_LOCAL_OUTBOX_TARGET_DOWNSTREAM_UNAVAILABLE = (
+    "real_connector_invocation",
+    "production_destination_write",
+    "connector_run_creation",
+    "credentials",
+    "provider_public_delivery_use",
+    "package_mutation_reconstruction",
+    "source_expansion",
+    "rag_vector",
+    "auth_security_implementation",
+    "full_mockup_activation",
+    "frontend_durable_authority",
+    "generic_downstream_dispatch",
 )
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UNAVAILABLE_STATE = "external_export_download_delivery_unavailable"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE = "external_export_download_delivery_ready"
@@ -11781,6 +11806,392 @@ def _connector_local_destination_receipt_summary(
     )
 
 
+def _server_owned_local_outbox_target_history_item(
+    row: L3ServerOwnedLocalOutboxTargetReceipt,
+) -> dict[str, Any]:
+    return {
+        "schema_id": SERVER_OWNED_LOCAL_OUTBOX_TARGET_LIFECYCLE_SCHEMA_ID,
+        "server_owned_local_outbox_target_receipt_id": row.server_owned_local_outbox_target_receipt_id,
+        "server_owned_local_outbox_target_state": row.target_state,
+        "session_id": row.session_id,
+        "pass_run_id": row.pass_run_id,
+        "reconciliation_record_id": row.reconciliation_record_id,
+        "connector_dispatch_record_ref": row.connector_dispatch_record_ref,
+        "connector_local_destination_receipt_id": row.connector_local_destination_receipt_id,
+        "external_export_download_record_ref": row.external_export_download_record_ref,
+        "target_identity": row.target_identity,
+        "dispatch_mode": row.dispatch_mode,
+        "accepted_artifact_ref": SERVER_OWNED_LOCAL_OUTBOX_TARGET_REDACTED_ARTIFACT_REF,
+        "accepted_artifact_hash": row.accepted_artifact_hash,
+        "accepted_artifact_size_bytes": row.accepted_artifact_size_bytes,
+        "authority_basis_hash": row.authority_basis_hash,
+        "client_request_id": row.client_request_id,
+        "created_by_request_id": row.created_by_request_id,
+        "created_at": _connector_local_destination_receipt_time(row.created_at),
+        "updated_at": _connector_local_destination_receipt_time(row.updated_at),
+        "audit_authority": "durable_server_owned_local_outbox_fake_target_receipt_row",
+    }
+
+
+def _server_owned_local_outbox_target_summary_history_item(
+    summary: dict[str, Any],
+    *,
+    reconciliation_record_id: str,
+) -> dict[str, Any]:
+    return {
+        "schema_id": SERVER_OWNED_LOCAL_OUTBOX_TARGET_LIFECYCLE_SCHEMA_ID,
+        "server_owned_local_outbox_target_receipt_id": summary.get(
+            "server_owned_local_outbox_target_receipt_id"
+        ),
+        "server_owned_local_outbox_target_state": summary.get("server_owned_local_outbox_target_state"),
+        "reconciliation_record_id": reconciliation_record_id,
+        "connector_dispatch_record_ref": summary.get("connector_dispatch_record_ref"),
+        "connector_local_destination_receipt_id": summary.get("connector_local_destination_receipt_id"),
+        "external_export_download_record_ref": summary.get("external_export_download_record_ref"),
+        "target_identity": summary.get("target_identity"),
+        "dispatch_mode": summary.get("dispatch_mode"),
+        "accepted_artifact_ref": summary.get("accepted_artifact_ref"),
+        "accepted_artifact_hash": summary.get("accepted_artifact_hash"),
+        "accepted_artifact_size_bytes": summary.get("accepted_artifact_size_bytes"),
+        "authority_basis_hash": summary.get("authority_basis_hash"),
+        "audit_authority": "server_owned_local_outbox_target_reconciliation_summary",
+    }
+
+
+def _server_owned_local_outbox_target_failure_projection(
+    *,
+    current_state: str | None,
+    blocked_reason: str | None,
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "case": "ready_authority_missing",
+            "projected_error_code": blocked_reason or "server_owned_local_outbox_target_not_ready",
+            "operator_status": "blocked_until_connector_local_destination_receipt_recorded",
+        },
+        {
+            "case": "stale_authority",
+            "projected_error_code": "server_owned_local_outbox_target_stale_authority",
+            "operator_status": "reject_when_connector_local_receipt_or_export_authority_drifts",
+        },
+        {
+            "case": "wrong_session_or_pass",
+            "projected_error_code": "server_owned_local_outbox_target_pass_run_mismatch",
+            "operator_status": "reject_payload_outside_current_session_pass_authority",
+        },
+        {
+            "case": "wrong_artifact_or_basis",
+            "projected_error_code": "server_owned_local_outbox_target_stale_authority",
+            "operator_status": "reject_artifact_hash_size_connector_or_local_receipt_drift",
+        },
+        {
+            "case": "same_key_same_payload_replay",
+            "projected_error_code": None,
+            "operator_status": "return_already_recorded_with_replay_operation_state",
+        },
+        {
+            "case": "same_key_different_payload_conflict",
+            "projected_error_code": "server_owned_local_outbox_target_client_request_conflict",
+            "operator_status": "reject_duplicate_client_request_id_for_different_authority_basis",
+        },
+        {
+            "case": "same_basis_different_client_request_id",
+            "projected_error_code": "server_owned_local_outbox_target_already_recorded",
+            "operator_status": "reject_second_fake_target_receipt_for_same_authority_basis",
+        },
+        {
+            "case": "current_status",
+            "projected_error_code": blocked_reason,
+            "operator_status": current_state or SERVER_OWNED_LOCAL_OUTBOX_TARGET_NOT_READY_STATE,
+        },
+    ]
+
+
+def _with_server_owned_local_outbox_target_lifecycle(
+    status: dict[str, Any],
+    *,
+    history_rows: list[L3ServerOwnedLocalOutboxTargetReceipt],
+    current_state: str | None,
+    blocked_reason: str | None,
+    recorded_summary: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    history = [_server_owned_local_outbox_target_history_item(row) for row in history_rows]
+    if not history and recorded_summary:
+        history = [
+            _server_owned_local_outbox_target_summary_history_item(
+                recorded_summary,
+                reconciliation_record_id=str(status.get("reconciliation_record_id") or ""),
+            )
+        ]
+    latest_receipt = history[0] if history else None
+    lifecycle = {
+        "schema_id": SERVER_OWNED_LOCAL_OUTBOX_TARGET_LIFECYCLE_SCHEMA_ID,
+        "surface_mode": "read_only_server_owned_local_outbox_fake_target_status_history",
+        "history_listing_authority": "durable_server_owned_local_outbox_fake_target_receipt_rows",
+        "audit_trail_authority": "durable_fake_target_receipt_row_and_reconciliation_summary_projection",
+        "history_count": len(history),
+        "target_receipt_history": history,
+        "latest_target_receipt": latest_receipt,
+        "idempotency_policy": {
+            "client_request_id_unique": True,
+            "authority_basis_hash_unique": True,
+            "same_key_same_payload_replay": "already_recorded",
+            "same_key_different_payload_conflict": "server_owned_local_outbox_target_client_request_conflict",
+            "same_basis_different_client_request_id": "server_owned_local_outbox_target_already_recorded",
+        },
+        "retry_policy": {
+            "retry_fields_admitted": False,
+            "rerun_fields_admitted": False,
+            "cancel_fields_admitted": False,
+            "replay_semantics": "status_only_for_same_client_request_and_same_authority_basis",
+        },
+        "failure_state_projection": _server_owned_local_outbox_target_failure_projection(
+            current_state=current_state,
+            blocked_reason=blocked_reason,
+        ),
+    }
+    return {
+        **status,
+        "lifecycle_status_surface": lifecycle,
+        "target_receipt_history": history,
+        "target_receipt_history_count": len(history),
+        "latest_target_receipt": latest_receipt,
+        "failure_state_projection": lifecycle["failure_state_projection"],
+        "idempotency_policy": lifecycle["idempotency_policy"],
+        "retry_policy": lifecycle["retry_policy"],
+    }
+
+
+def _server_owned_local_outbox_target_summary(
+    db: Session,
+    *,
+    session_id: str,
+    connector_local_destination_receipt_state: dict[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(connector_local_destination_receipt_state, dict):
+        connector_local_destination_receipt_state = {}
+    reconciliation_record_id = str(
+        connector_local_destination_receipt_state.get("reconciliation_record_id") or ""
+    ).strip()
+    reconciliation = None
+    if reconciliation_record_id:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(
+                L3ReconciliationRecord.session_id == session_id,
+                L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            )
+            .one_or_none()
+        )
+    if reconciliation is None:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.session_id == session_id)
+            .one_or_none()
+        )
+        if reconciliation is not None:
+            reconciliation_record_id = reconciliation.reconciliation_record_id
+    reconciliation_summary = reconciliation.summary_json if reconciliation is not None else {}
+    if not isinstance(reconciliation_summary, dict):
+        reconciliation_summary = {}
+    recorded_summary = reconciliation_summary.get("server_owned_local_outbox_target")
+    if not isinstance(recorded_summary, dict):
+        recorded_summary = {}
+    target_receipt_id = str(recorded_summary.get("server_owned_local_outbox_target_receipt_id") or "").strip()
+    target_query = db.query(L3ServerOwnedLocalOutboxTargetReceipt).filter(
+        L3ServerOwnedLocalOutboxTargetReceipt.session_id == session_id
+    )
+    if target_receipt_id:
+        target_query = target_query.filter(
+            L3ServerOwnedLocalOutboxTargetReceipt.server_owned_local_outbox_target_receipt_id == target_receipt_id
+        )
+    target_row = target_query.order_by(L3ServerOwnedLocalOutboxTargetReceipt.created_at.desc()).first()
+    history_rows = (
+        db.query(L3ServerOwnedLocalOutboxTargetReceipt)
+        .filter(L3ServerOwnedLocalOutboxTargetReceipt.session_id == session_id)
+        .order_by(L3ServerOwnedLocalOutboxTargetReceipt.created_at.desc())
+        .all()
+    )
+    if target_row is not None:
+        return _with_server_owned_local_outbox_target_lifecycle(
+            {
+                "schema_id": SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATUS_SCHEMA_ID,
+                "available": False,
+                "state": target_row.target_state,
+                "blocked_reason": None,
+                "server_owned_local_outbox_target_receipt_id": (
+                    target_row.server_owned_local_outbox_target_receipt_id
+                ),
+                "server_owned_local_outbox_target_state": target_row.target_state,
+                "session_id": target_row.session_id,
+                "pass_run_id": target_row.pass_run_id,
+                "reconciliation_record_id": target_row.reconciliation_record_id,
+                "connector_dispatch_record_ref": target_row.connector_dispatch_record_ref,
+                "connector_local_destination_receipt_id": target_row.connector_local_destination_receipt_id,
+                "external_export_download_record_ref": target_row.external_export_download_record_ref,
+                "target_identity": target_row.target_identity,
+                "dispatch_mode": target_row.dispatch_mode,
+                "operator_decision": SERVER_OWNED_LOCAL_OUTBOX_TARGET_OPERATOR_DECISION,
+                "accepted_artifact_ref": SERVER_OWNED_LOCAL_OUTBOX_TARGET_REDACTED_ARTIFACT_REF,
+                "accepted_artifact_hash": target_row.accepted_artifact_hash,
+                "accepted_artifact_size_bytes": target_row.accepted_artifact_size_bytes,
+                "authority_basis_hash": target_row.authority_basis_hash,
+                "fake_target_contract_enabled": True,
+                "real_connector_invocation_enabled": False,
+                "destination_write_enabled": False,
+                "destination_write_performed": False,
+                "connector_run_created": False,
+                "connector_run_target_created": False,
+                "credentials_enabled": False,
+                "provider_public_delivery_enabled": False,
+                "package_mutation_enabled": False,
+                "source_expansion_enabled": False,
+                "rag_vector_enabled": False,
+                "auth_security_implementation_enabled": False,
+                "full_mockup_activation_enabled": False,
+                "frontend_durable_authority_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "durable_server_owned_local_outbox_fake_target_receipt_row",
+                "downstream_unavailable": list(SERVER_OWNED_LOCAL_OUTBOX_TARGET_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            current_state=target_row.target_state,
+            blocked_reason=None,
+        )
+    if recorded_summary.get("schema_id") == SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATE_SCHEMA_ID:
+        return _with_server_owned_local_outbox_target_lifecycle(
+            {
+                "schema_id": SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATUS_SCHEMA_ID,
+                "available": False,
+                "state": recorded_summary.get("server_owned_local_outbox_target_state"),
+                "blocked_reason": None,
+                "server_owned_local_outbox_target_receipt_id": recorded_summary.get(
+                    "server_owned_local_outbox_target_receipt_id"
+                ),
+                "server_owned_local_outbox_target_state": recorded_summary.get(
+                    "server_owned_local_outbox_target_state"
+                ),
+                "reconciliation_record_id": reconciliation_record_id,
+                "connector_dispatch_record_ref": recorded_summary.get("connector_dispatch_record_ref"),
+                "connector_local_destination_receipt_id": recorded_summary.get(
+                    "connector_local_destination_receipt_id"
+                ),
+                "external_export_download_record_ref": recorded_summary.get("external_export_download_record_ref"),
+                "target_identity": recorded_summary.get("target_identity"),
+                "dispatch_mode": recorded_summary.get("dispatch_mode"),
+                "operator_decision": SERVER_OWNED_LOCAL_OUTBOX_TARGET_OPERATOR_DECISION,
+                "accepted_artifact_ref": recorded_summary.get("accepted_artifact_ref"),
+                "accepted_artifact_hash": recorded_summary.get("accepted_artifact_hash"),
+                "accepted_artifact_size_bytes": recorded_summary.get("accepted_artifact_size_bytes"),
+                "authority_basis_hash": recorded_summary.get("authority_basis_hash"),
+                "fake_target_contract_enabled": True,
+                "real_connector_invocation_enabled": False,
+                "destination_write_enabled": False,
+                "destination_write_performed": False,
+                "connector_run_created": False,
+                "connector_run_target_created": False,
+                "credentials_enabled": False,
+                "provider_public_delivery_enabled": False,
+                "package_mutation_enabled": False,
+                "source_expansion_enabled": False,
+                "rag_vector_enabled": False,
+                "auth_security_implementation_enabled": False,
+                "full_mockup_activation_enabled": False,
+                "frontend_durable_authority_enabled": False,
+                "status_surface_mode": "read_only_server_reconciliation_projection",
+                "response_authority": "server_owned_local_outbox_target_reconciliation_summary",
+                "downstream_unavailable": list(SERVER_OWNED_LOCAL_OUTBOX_TARGET_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            current_state=recorded_summary.get("server_owned_local_outbox_target_state"),
+            blocked_reason=None,
+            recorded_summary=recorded_summary,
+        )
+    local_recorded = (
+        connector_local_destination_receipt_state.get("state") == CONNECTOR_LOCAL_DESTINATION_RECEIPT_RECORDED_STATE
+        and connector_local_destination_receipt_state.get("connector_local_destination_receipt_id")
+    )
+    if local_recorded:
+        return _with_server_owned_local_outbox_target_lifecycle(
+            {
+                "schema_id": SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATUS_SCHEMA_ID,
+                "available": True,
+                "state": SERVER_OWNED_LOCAL_OUTBOX_TARGET_READY_STATE,
+                "blocked_reason": None,
+                "reconciliation_record_id": reconciliation_record_id,
+                "connector_dispatch_record_ref": connector_local_destination_receipt_state.get(
+                    "connector_dispatch_record_ref"
+                ),
+                "connector_local_destination_receipt_id": connector_local_destination_receipt_state.get(
+                    "connector_local_destination_receipt_id"
+                ),
+                "connector_local_destination_receipt_state": connector_local_destination_receipt_state.get("state"),
+                "external_export_download_record_ref": connector_local_destination_receipt_state.get(
+                    "external_export_download_record_ref"
+                ),
+                "target_identity": SERVER_OWNED_LOCAL_OUTBOX_TARGET_IDENTITY,
+                "dispatch_mode": SERVER_OWNED_LOCAL_OUTBOX_TARGET_DISPATCH_MODE,
+                "operator_decision": SERVER_OWNED_LOCAL_OUTBOX_TARGET_OPERATOR_DECISION,
+                "accepted_artifact_ref": SERVER_OWNED_LOCAL_OUTBOX_TARGET_REDACTED_ARTIFACT_REF,
+                "accepted_artifact_hash": connector_local_destination_receipt_state.get("accepted_artifact_hash"),
+                "accepted_artifact_size_bytes": connector_local_destination_receipt_state.get(
+                    "accepted_artifact_size_bytes"
+                ),
+                "fake_target_contract_enabled": True,
+                "real_connector_invocation_enabled": False,
+                "destination_write_enabled": False,
+                "destination_write_performed": False,
+                "connector_run_created": False,
+                "connector_run_target_created": False,
+                "credentials_enabled": False,
+                "provider_public_delivery_enabled": False,
+                "package_mutation_enabled": False,
+                "source_expansion_enabled": False,
+                "rag_vector_enabled": False,
+                "auth_security_implementation_enabled": False,
+                "full_mockup_activation_enabled": False,
+                "frontend_durable_authority_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "durable_connector_local_destination_receipt_authority",
+                "downstream_unavailable": list(SERVER_OWNED_LOCAL_OUTBOX_TARGET_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            current_state=SERVER_OWNED_LOCAL_OUTBOX_TARGET_READY_STATE,
+            blocked_reason=None,
+        )
+    return _with_server_owned_local_outbox_target_lifecycle(
+        {
+            "schema_id": SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATUS_SCHEMA_ID,
+            "available": False,
+            "state": SERVER_OWNED_LOCAL_OUTBOX_TARGET_NOT_READY_STATE,
+            "blocked_reason": "record_connector_local_destination_receipt",
+            "target_identity": SERVER_OWNED_LOCAL_OUTBOX_TARGET_IDENTITY,
+            "dispatch_mode": SERVER_OWNED_LOCAL_OUTBOX_TARGET_DISPATCH_MODE,
+            "operator_decision": SERVER_OWNED_LOCAL_OUTBOX_TARGET_OPERATOR_DECISION,
+            "fake_target_contract_enabled": False,
+            "real_connector_invocation_enabled": False,
+            "destination_write_enabled": False,
+            "destination_write_performed": False,
+            "connector_run_created": False,
+            "connector_run_target_created": False,
+            "credentials_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "package_mutation_enabled": False,
+            "source_expansion_enabled": False,
+            "rag_vector_enabled": False,
+            "auth_security_implementation_enabled": False,
+            "full_mockup_activation_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "status_surface_mode": "read_only_server_session_summary_projection",
+            "response_authority": "existing_session_summary_without_fake_target_receipt",
+            "downstream_unavailable": list(SERVER_OWNED_LOCAL_OUTBOX_TARGET_DOWNSTREAM_UNAVAILABLE),
+        },
+        history_rows=history_rows,
+        current_state=SERVER_OWNED_LOCAL_OUTBOX_TARGET_NOT_READY_STATE,
+        blocked_reason="record_connector_local_destination_receipt",
+    )
+
+
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = _latest_selection_manifest_for_session(db, session=session)
@@ -11932,6 +12343,11 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         session_id=session_id,
         external_export_download_state=external_export_download_state,
     )
+    server_owned_local_outbox_target_state = _server_owned_local_outbox_target_summary(
+        db,
+        session_id=session_id,
+        connector_local_destination_receipt_state=connector_local_destination_receipt_state,
+    )
     selection_active = bool(execution_selection_readiness["selected"])
     package_active = bool(
         package_review_preview_state.get("available")
@@ -11986,6 +12402,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "aps_handoff_dispatch": aps_handoff_dispatch_state,
         "external_export_download": external_export_download_state,
         "connector_local_destination_receipt": connector_local_destination_receipt_state,
+        "server_owned_local_outbox_target": server_owned_local_outbox_target_state,
         "pdf_location_projection": _pdf_location_projection_for_session(db, session_id=session_id),
         "sublayer_visualization": _session_sublayer_visualization_state(db, session_id=session_id),
         "state_action_contract": _workbench_state_action_contract(),
