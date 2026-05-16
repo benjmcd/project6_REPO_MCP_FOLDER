@@ -1537,6 +1537,10 @@ LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_NEXT_EXTERNAL_SURFACE_INTAKE_SYNC = (
     PLANNING_DOCS
     / "625_LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_NEXT_EXTERNAL_SURFACE_INTAKE_SYNC.md"
 )
+LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE = (
+    PLANNING_DOCS
+    / "626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md"
+)
 LAYER3_TARGET_SELECTION_VALIDATOR_CLI = ROOT / "tools" / "l3-target-selection-validate.py"
 LAYER3_TARGET_SELECTION_VALIDATOR_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_target_selection_validate.py"
@@ -49927,25 +49931,32 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
         LAYER3_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE, errors
     )
     for term in (
-        "Status: planning/control intake for `await_operator_decision_for_next_external_surface_after_selected_server_owned_local_outbox_target_satisfied_sync`.",
+        "Status: filled planning/control intake for `server_configured_external_local_export_directory_after_selected_server_owned_local_outbox_target_satisfied_sync`.",
         "623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md",
         "Current-main checkpoint at intake creation: `2e30146544409eea5bd194485510ad9f5d17bb1b`.",
+        "Current-main checkpoint at operator fill: `173cb84553eb1841c7b317879adcd151afafee2b`.",
         "Prior current-main sync: `622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md`.",
         "Satisfied selected target: `server_owned_local_delivery_outbox_destination`.",
         "Satisfied selected target freeze: `608_SERVER_OWNED_LOCAL_OUTBOX_REAL_WRITE_ADMISSION_FREEZE.md`.",
-        "Runtime status: `no_new_runtime_next_external_surface_decision_required`.",
-        "Implementation-entry freeze written for next external surface: false.",
-        "Selected next external surface: `null`.",
-        "selected local/server-owned outbox target was satisfied and synced",
-        "next_surface_identity: null",
-        "next_surface_class: null",
-        "selection_complete: false",
-        "implementation_entry_freeze_written: false",
+        "Runtime status: `selected_next_external_surface_frozen_runtime_not_implemented`.",
+        "Implementation-entry freeze written for next external surface: true.",
+        "Selected next external surface: `server_configured_external_local_export_directory`.",
+        "Selected implementation action: `write_server_configured_external_local_export_directory_implementation_entry_freeze`.",
+        "Data Structuring & Processing",
+        "next_surface_identity: server_configured_external_local_export_directory",
+        "next_surface_class: server_configured_external_destination_write",
+        "credential_model: no_credentials",
+        "destination_address_model: server_configured_target_only",
+        "operator_surface: write_submit_control_plus_read_only_status_history_no_path_editing",
+        "selection_complete: true",
+        "implementation_entry_freeze_written: true",
+        "626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
         "Do one live authority check before writing the next freeze.",
         "do not run another broad no-runtime audit",
         "This intake admits no runtime behavior",
-        "destination write beyond the already-satisfied server-owned local outbox target",
-        "The next whole-project posture is `await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_sync`.",
+        "destination write implementation before the separate freeze is current-main authority",
+        "The next whole-project posture is `await_current_main_sync_for_server_configured_external_local_export_directory_freeze`.",
+        "implement_server_configured_external_local_export_directory_after_freeze_sync",
     ):
         if term not in next_external_surface_intake_text:
             errors.append(
@@ -50016,6 +50027,45 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_NEXT_EXTERNAL_SURFACE_INTAKE_SYNC)} missing objective completion audit after next surface sync term: {term}"
             )
 
+    external_local_export_freeze_text = _read_required_text(
+        LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE, errors
+    )
+    for term in (
+        "Status: implementation-entry freeze for `server_configured_external_local_export_directory`.",
+        "626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
+        "Current-main checkpoint before freeze: `173cb84553eb1841c7b317879adcd151afafee2b`.",
+        "Prior decision intake: `623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md`.",
+        "Runtime status before implementation: `selected_next_external_surface_frozen_runtime_not_implemented`.",
+        "Implementation-entry allowed next: true",
+        "next_surface_identity: server_configured_external_local_export_directory",
+        "next_surface_class: server_configured_external_destination_write",
+        "Data Structuring & Processing",
+        "credential_model: no_credentials",
+        "destination_address_model: server_configured_target_only",
+        "operator_surface: write_submit_control_plus_read_only_status_history_no_path_editing",
+        "backend/app/services/layer3_external_local_export.py",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        "GET /api/v1/layer3/handoff/connector/local-outbox/external-local-export/status/{external_local_export_receipt_id}",
+        "LAYER3_EXTERNAL_LOCAL_EXPORT_DIR",
+        "l3_external_local_export_receipt",
+        "l3_external_local_export_audit_event",
+        "server_configured_external_local_export_directory_write",
+        "same authority basis plus different `client_request_id` returns the existing receipt/status rather than duplicate output",
+        "Database counts prove no `ConnectorRun` or `ConnectorRunTarget` creation.",
+        "Headed and headless E2E proof runs if rendered write/status controls change.",
+        "no caller-supplied destination path/URL",
+        "no package mutation/reconstruction",
+        "no source expansion/ingestion",
+        "no RAG/vector behavior",
+        "no qualitative-hybrid analysis runtime",
+        "The next whole-project posture is `await_current_main_sync_for_server_configured_external_local_export_directory_freeze`.",
+        "implement_server_configured_external_local_export_directory_after_freeze_sync",
+    ):
+        if term not in external_local_export_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE)} missing external local export freeze term: {term}"
+            )
+
     local_outbox_provider_private_rendered_e2e_text = _read_required_text(
         LAYER3_WORKBENCH_E2E, errors
     )
@@ -50050,6 +50100,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "Layer 3 Next External Surface Decision Intake After Selected Outbox Sync",
             "Layer 3 Next External Surface Decision Intake Current-Main Sync",
             "Layer 3 Objective Completion Audit After Next External Surface Intake Sync",
+            "Layer 3 Selected External Local Export Surface And Implementation-Entry Freeze",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
@@ -50060,6 +50111,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md",
             "624_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC.md",
             "625_LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_NEXT_EXTERNAL_SURFACE_INTAKE_SYNC.md",
+            "626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1218",
@@ -50072,11 +50124,15 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "Selection complete: false",
             "Selection complete: true",
             "server_owned_local_delivery_outbox_destination",
+            "server_configured_external_local_export_directory",
+            "server_configured_external_destination_write",
+            "backend/app/services/layer3_external_local_export.py",
             "a8379403f77adaf2c490943774e2f5e655c49e68",
             "5905d8e4ef4d3722b6d1d4259eef22241543dd08",
             "active_layer3_objective_not_complete_after_next_external_surface_intake_sync",
             "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_sync",
             "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_current_main_sync",
+            "await_current_main_sync_for_server_configured_external_local_export_directory_freeze",
         ),
         MANIFEST: (
             "target_selection_validate_only_guard",
@@ -50091,6 +50147,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "layer3_next_external_surface_decision_intake",
             "layer3_next_external_surface_decision_intake_current_main_sync",
             "layer3_objective_completion_audit_after_next_external_surface_intake_sync",
+            "server_configured_external_local_export_directory_freeze",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
@@ -50103,6 +50160,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md",
             "624_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC.md",
             "625_LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_NEXT_EXTERNAL_SURFACE_INTAKE_SYNC.md",
+            "626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
             "codex/l3-target-selection-guard",
             "codex/l3-target-selection-field-contract",
             "codex/l3-target-selection-record-validator",
@@ -50114,6 +50172,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "codex/l3-next-external-surface-intake",
             "codex/l3-next-external-surface-intake-sync",
             "codex/l3-objective-audit-after-next-surface-sync",
+            "codex/l3-external-local-export-surface-freeze",
             "e2e/layer3-workbench.spec.js",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
             "47fff614513530b71b897166eff0008152424065",
@@ -50121,13 +50180,17 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "2e30146544409eea5bd194485510ad9f5d17bb1b",
             "5905d8e4ef4d3722b6d1d4259eef22241543dd08",
             "ce732cd4db15a0d20ff29addc5ddf962c03347f7",
+            "173cb84553eb1841c7b317879adcd151afafee2b",
             "selection_complete false",
             "selection_complete true",
             "server_owned_local_delivery_outbox_destination",
+            "server_configured_external_local_export_directory",
+            "server_configured_external_destination_write",
+            "backend/app/services/layer3_external_local_export.py",
             "await_operator_decision_for_next_external_surface_after_selected_server_owned_local_outbox_target_satisfied_sync",
-            "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_sync",
             "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_current_main_sync",
             "await_operator_filled_next_external_surface_decision_after_objective_audit",
+            "await_current_main_sync_for_server_configured_external_local_export_directory_freeze",
         ),
         PROOF_MANIFEST: (
             "latest_target_selection_validate_only_guard",
@@ -50154,6 +50217,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md",
             "624_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC.md",
             "625_LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_NEXT_EXTERNAL_SURFACE_INTAKE_SYNC.md",
+            "626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
             "validate-only progress guard",
             "does not select a target",
             "local_outbox_provider_private_rendered_e2e_proof",
@@ -50163,6 +50227,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "layer3_next_external_surface_decision_intake_proof",
             "layer3_next_external_surface_decision_intake_current_main_sync_proof",
             "layer3_objective_completion_audit_after_next_external_surface_intake_sync_proof",
+            "server_configured_external_local_export_directory_freeze_proof",
             "codex/l3-local-outbox-provider-private-e2e",
             "codex/l3-local-outbox-provider-private-sync",
             "codex/l3-target-selection-selected-outbox",
@@ -50170,14 +50235,19 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "codex/l3-next-external-surface-intake",
             "codex/l3-next-external-surface-intake-sync",
             "codex/l3-objective-audit-after-next-surface-sync",
+            "codex/l3-external-local-export-surface-freeze",
             "server_owned_local_delivery_outbox_destination",
+            "server_configured_external_local_export_directory",
+            "server_configured_external_destination_write",
             "a8379403f77adaf2c490943774e2f5e655c49e68",
             "2e30146544409eea5bd194485510ad9f5d17bb1b",
             "5905d8e4ef4d3722b6d1d4259eef22241543dd08",
             "ce732cd4db15a0d20ff29addc5ddf962c03347f7",
-            "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_sync",
+            "173cb84553eb1841c7b317879adcd151afafee2b",
             "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_current_main_sync",
             "await_operator_filled_next_external_surface_decision_after_objective_audit",
+            "await_current_main_sync_for_server_configured_external_local_export_directory_freeze",
+            "implement_server_configured_external_local_export_directory_after_freeze_sync",
         ),
     }.items():
         path_text = _read_required_text(path, errors)
@@ -50186,6 +50256,65 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 errors.append(
                     f"{_rel(path)} missing target-selection validate-only guard term: {term}"
                 )
+
+    manifest_data = _load_json(MANIFEST, errors)
+    if isinstance(manifest_data, dict):
+        intake = manifest_data.get("layer3_next_external_surface_decision_intake")
+        if not isinstance(intake, dict):
+            errors.append(f"{_rel(MANIFEST)} missing layer3_next_external_surface_decision_intake object")
+        else:
+            expected_intake_scalars = {
+                "status": "filled_planning_control_intake",
+                "branch": "codex/l3-external-local-export-surface-freeze",
+                "selected_next_external_surface": "server_configured_external_local_export_directory",
+                "selected_next_external_surface_class": "server_configured_external_destination_write",
+                "implementation_entry_freeze_written": True,
+                "implementation_entry_freeze_doc": "next_milestone_plans/Layer3_planning_docs/626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
+                "next_whole_project_posture": "await_current_main_sync_for_server_configured_external_local_export_directory_freeze",
+            }
+            for key, expected in expected_intake_scalars.items():
+                if intake.get(key) != expected:
+                    errors.append(f"{_rel(MANIFEST)} layer3_next_external_surface_decision_intake.{key} must be {expected!r}")
+        freeze = manifest_data.get("server_configured_external_local_export_directory_freeze")
+        if not isinstance(freeze, dict):
+            errors.append(f"{_rel(MANIFEST)} missing server_configured_external_local_export_directory_freeze object")
+        else:
+            expected_freeze_scalars = {
+                "status": "implementation_entry_freeze_runtime_blocked_until_current_main_sync",
+                "branch": "codex/l3-external-local-export-surface-freeze",
+                "freeze_doc": "next_milestone_plans/Layer3_planning_docs/626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
+                "selected_next_external_surface": "server_configured_external_local_export_directory",
+                "selected_next_external_surface_class": "server_configured_external_destination_write",
+                "credential_model": "no_credentials",
+                "destination_address_model": "server_configured_target_only",
+                "owner_service_seam": "backend/app/services/layer3_external_local_export.py",
+                "next_whole_project_posture": "await_current_main_sync_for_server_configured_external_local_export_directory_freeze",
+                "next_implementation_posture_after_sync": "implement_server_configured_external_local_export_directory_after_freeze_sync",
+            }
+            for key, expected in expected_freeze_scalars.items():
+                if freeze.get(key) != expected:
+                    errors.append(f"{_rel(MANIFEST)} server_configured_external_local_export_directory_freeze.{key} must be {expected!r}")
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    if isinstance(proof_data, dict):
+        proof = proof_data.get("server_configured_external_local_export_directory_freeze_proof")
+        if not isinstance(proof, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing server_configured_external_local_export_directory_freeze_proof object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "server_configured_external_local_export_directory_freeze",
+                "status": "implementation_entry_freeze_runtime_blocked_until_current_main_sync",
+                "branch": "codex/l3-external-local-export-surface-freeze",
+                "freeze_doc": "next_milestone_plans/Layer3_planning_docs/626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
+                "selected_next_external_surface": "server_configured_external_local_export_directory",
+                "selected_next_external_surface_class": "server_configured_external_destination_write",
+                "live_behavior_change": False,
+                "next_whole_project_posture": "await_current_main_sync_for_server_configured_external_local_export_directory_freeze",
+                "next_implementation_posture_after_sync": "implement_server_configured_external_local_export_directory_after_freeze_sync",
+            }
+            for key, expected in expected_proof_scalars.items():
+                if proof.get(key) != expected:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} server_configured_external_local_export_directory_freeze_proof.{key} must be {expected!r}")
 
 
 def main() -> int:
