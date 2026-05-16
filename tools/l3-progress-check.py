@@ -1465,6 +1465,9 @@ LAYER3_CONNECTOR_DESTINATION_SYNC_HASH_REMEDIATION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "595_LAYER3_CONNECTOR_DESTINATION_SYNC_HASH_REMEDIATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CONNECTOR_LOCAL_RECEIPT_OUTWARD_SEQUENCE_CONTROL = (
+    PLANNING_DOCS / "596_LOCAL_RECEIPT_PLAN.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -48555,6 +48558,113 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing connector/destination sync hash remediation current-main sync term: {term}"
+                )
+
+    local_receipt_plan_text = _read_required_text(
+        LAYER3_CONNECTOR_LOCAL_RECEIPT_OUTWARD_SEQUENCE_CONTROL,
+        errors,
+    )
+    for term in (
+        "Status: planning/control sequence for `plan_connector_local_receipt_outward_sequence_after_sync_hash_remediation`.",
+        "596_LOCAL_RECEIPT_PLAN.md",
+        "3922446a52fc9af901f32a3cc4ef7bd86818ba33",
+        "595_LAYER3_CONNECTOR_DESTINATION_SYNC_HASH_REMEDIATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-local-receipt-plan",
+        "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+        "backend/app/services/layer3_connector_local_destination_receipt.py",
+        "L3ConnectorLocalDestinationReceipt",
+        "l3_connector_local_destination_receipt",
+        "layer3_internal_fake_local_destination_receipt",
+        "internal_fake_local_destination_receipt_only",
+        "record_internal_fake_local_destination_receipt",
+        "artifact://layer3-internal-fake-local-destination-redacted",
+        "operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write",
+        "conduct_connector_local_receipt_status_surface_authority_audit",
+        "connector_local_receipt_status_response_authority_freeze",
+        "Each pass must start with one live authority check, then execute exactly the next named step.",
+        "This doc is the selection/control artifact for the local receipt status surface.",
+        "Do not create a separate broad selection freeze before the status-surface authority audit.",
+        "Do not create another broad no-runtime audit",
+        "await_connector_local_receipt_read_only_status_surface_authority_audit",
+    ):
+        if term not in local_receipt_plan_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_LOCAL_RECEIPT_OUTWARD_SEQUENCE_CONTROL)} missing local receipt outward sequence term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Layer 3 Local Receipt Outward Plan",
+            "596_LOCAL_RECEIPT_PLAN.md",
+            "3922446a52fc9af901f32a3cc4ef7bd86818ba33",
+            "read-only operator/status surface for connector-local receipt",
+            "focused E2E smoke path from existing handoff/export readiness",
+            "missing-decision packet for real connector/destination target",
+            "local receipt lifecycle hardening",
+            "operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write",
+            "conduct_connector_local_receipt_status_surface_authority_audit",
+            "connector_local_receipt_status_response_authority_freeze",
+            "one live authority check",
+            "selection/control artifact for the local receipt status surface",
+            "do not create a separate broad selection freeze",
+            "No runtime behavior",
+            "await_connector_local_receipt_read_only_status_surface_authority_audit",
+        ),
+        MANIFEST: (
+            "layer3_connector_local_receipt_outward_sequence_control",
+            '"status": "planning_control_prepared_connector_local_receipt_outward_sequence"',
+            "codex/l3-local-receipt-plan",
+            "596_LOCAL_RECEIPT_PLAN.md",
+            "3922446a52fc9af901f32a3cc4ef7bd86818ba33",
+            "build_outward_from_merged_internal_fake_local_connector_destination_receipt_runtime",
+            "read_only_operator_status_surface_for_connector_local_receipt",
+            "focused_e2e_smoke_path_for_local_receipt_from_existing_handoff_export_readiness",
+            "missing_decision_packet_for_real_connector_destination_target",
+            "local_receipt_lifecycle_hardening",
+            '"selection_control_artifact": "596_LOCAL_RECEIPT_PLAN.md"',
+            '"immediate_milestone": "conduct_connector_local_receipt_status_surface_authority_audit"',
+            "operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write",
+            "conduct_connector_local_receipt_status_surface_authority_audit",
+            "connector_local_receipt_status_response_authority_freeze",
+            "single_live_authority_check_then_execute_exact_next_named_step_no_separate_broad_selection_freeze",
+            '"existing_missing_decision_packet_remains_current": true',
+            '"runtime_behavior_change": false',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_connector_local_receipt_read_only_status_surface_authority_audit",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_local_receipt_outward_sequence_control_proof",
+            '"status": "planning_control_prepared_connector_local_receipt_outward_sequence"',
+            "codex/l3-local-receipt-plan",
+            "596_LOCAL_RECEIPT_PLAN.md",
+            "3922446a52fc9af901f32a3cc4ef7bd86818ba33",
+            "read_only_operator_status_surface_for_connector_local_receipt",
+            "focused_e2e_smoke_path_for_local_receipt_from_existing_handoff_export_readiness",
+            "operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write",
+            "conduct_connector_local_receipt_status_surface_authority_audit",
+            "connector_local_receipt_status_response_authority_freeze",
+            "single_live_authority_check_then_execute_exact_next_named_step_no_separate_broad_selection_freeze",
+            "existing missing-decision packet remains current",
+            "no external connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no credential use",
+            "no network write",
+            "no provider-public delivery/use",
+            "no package mutation/reconstruction",
+            "no source expansion",
+            "no RAG/vector behavior",
+            "no auth/security behavior change",
+            "no frontend-only durable authority",
+            "await_connector_local_receipt_read_only_status_surface_authority_audit",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing local receipt outward sequence term: {term}"
                 )
 
 
