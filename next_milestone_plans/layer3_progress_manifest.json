@@ -21952,5 +21952,48 @@
   "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_branch": "codex/l3-real-target-missing-decision",
   "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_doc": "next_milestone_plans/Layer3_planning_docs/600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md",
   "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_live_behavior_change": false,
-  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_summary": "Doc 600 confirms no real connector/destination implementation-entry freeze can be written after local receipt smoke sync because current main still lacks a named target, dispatch mode, credential/access model, lifecycle semantics, receipt/audit contract, fake-target architecture, leak controls, rendered-control obligations, and auth/security posture."
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_summary": "Doc 600 confirms no real connector/destination implementation-entry freeze can be written after local receipt smoke sync because current main still lacks a named target, dispatch mode, credential/access model, lifecycle semantics, receipt/audit contract, fake-target architecture, leak controls, rendered-control obligations, and auth/security posture.",
+  "layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync": {
+    "status": "current_main_synced_layer3_real_target_missing_decision_after_local_receipt_smoke",
+    "sync_branch": "codex/l3-real-target-decision-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+    "missing_decision_pr": "#1197",
+    "missing_decision_merge_commit": "77958674510232ae3e72871fd66d8b04e52b7c93",
+    "current_main_after_merge": "77958674510232ae3e72871fd66d8b04e52b7c93",
+    "synced_decision_doc": "next_milestone_plans/Layer3_planning_docs/600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md",
+    "github_checks": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS"
+    },
+    "review_gate": {
+      "comments": "empty",
+      "reviews": "empty",
+      "reviewThreads_totalCount": 0,
+      "unresolved_reviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "current_main_result": "current_main_synced_layer3_real_target_missing_decision_after_local_receipt_smoke",
+    "decision_result": "no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync",
+    "implementation_entry_freeze_written": false,
+    "runtime_status": "not_implemented",
+    "selected_implementation_action": "none",
+    "sync_live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "backend_route_behavior_change": false,
+    "service_runtime_behavior_change": false,
+    "response_model_shape_change": false,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "connector_provider_destination_dispatch_change": false,
+    "frontend_only_durable_authority_change": false,
+    "next_whole_project_posture": "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync"
+  },
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_branch": "codex/l3-real-target-decision-sync",
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_live_behavior_change": false,
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_summary": "Doc 601 syncs PR #1197 merge commit 77958674510232ae3e72871fd66d8b04e52b7c93 to current main, with green backend-layer3-api/test checks, empty PR comments/reviews/reviewThreads, post-merge Layer 3 progress validation, and next posture await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync."
 }

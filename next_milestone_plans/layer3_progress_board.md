@@ -3005,6 +3005,18 @@ No real connector target, no real destination target, external connector invocat
 
 Next whole-project posture: `await_local_receipt_lifecycle_hardening_after_real_target_missing_decision`.
 
+## Layer 3 Real Target Missing Decision Current-Main Sync
+
+Current-main proof/control sync: PR `#1197` merged `600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md` at merge commit `77958674510232ae3e72871fd66d8b04e52b7c93`.
+
+The sync doc `601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` passed in `2m29s`, GitHub `test` passed in `2m58s`, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, merge state before merge was `CLEAN`, and post-merge current-main `python .\tools\l3-progress-check.py` passed.
+
+Current main is synced as `current_main_synced_layer3_real_target_missing_decision_after_local_receipt_smoke`. The decision result remains `no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync`; implementation-entry freeze written remains false; runtime status remains `not_implemented`; and selected implementation action remains `none`.
+
+No runtime behavior, backend route behavior, service behavior, response-model shape change, schema/model/migration change, rendered UI implementation, real connector invocation, destination write, connector-run creation, credential use, provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior change, full mockup activation, or frontend-only durable authority is admitted by this sync.
+
+Next whole-project posture: `await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync`.
+
 ## Layer 3 Connector Local Destination Receipt Delivery-Authority Readiness/Artifact Review Remediation
 
 Branch-local review remediation: `591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md` addresses the PR `#1185` review threads `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284` and `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289`.
