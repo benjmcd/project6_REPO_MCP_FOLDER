@@ -1480,6 +1480,9 @@ LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC = (
 LAYER3_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE = (
     PLANNING_DOCS / "600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md"
 )
+LAYER3_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -49118,6 +49121,98 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing real target missing-decision term: {term}"
+                )
+
+    real_target_missing_decision_sync_text = _read_required_text(
+        LAYER3_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `current_main_sync_layer3_real_target_missing_decision_after_local_receipt_smoke_merge`.",
+        "601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+        "#1197",
+        "77958674510232ae3e72871fd66d8b04e52b7c93",
+        "600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md",
+        "backend-layer3-api` passed in `2m29s`",
+        "test` passed in `2m58s`",
+        "reviewThreads totalCount was `0`",
+        "Unresolved reviewThreads were `0`",
+        "Current-main result: `current_main_synced_layer3_real_target_missing_decision_after_local_receipt_smoke`",
+        "Decision result remains `no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync`",
+        "Implementation-entry freeze written remains false",
+        "Runtime status remains `not_implemented`",
+        "Selected implementation action remains `none`",
+        "no runtime behavior",
+        "frontend-only durable authority",
+        "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+    ):
+        if term not in real_target_missing_decision_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC)} missing real target missing-decision sync term: {term}"
+            )
+
+    real_target_missing_decision_sync_sources = {
+        BOARD: (
+            "## Layer 3 Real Target Missing Decision Current-Main Sync",
+            "601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+            "#1197",
+            "77958674510232ae3e72871fd66d8b04e52b7c93",
+            "backend-layer3-api` passed in `2m29s`",
+            "test` passed in `2m58s`",
+            "current_main_synced_layer3_real_target_missing_decision_after_local_receipt_smoke",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync",
+            "implementation-entry freeze written remains false",
+            "runtime status remains `not_implemented`",
+            "selected implementation action remains `none`",
+            "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+        ),
+        MANIFEST: (
+            "layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync",
+            '"status": "current_main_synced_layer3_real_target_missing_decision_after_local_receipt_smoke"',
+            "codex/l3-real-target-decision-sync",
+            "601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+            "#1197",
+            "77958674510232ae3e72871fd66d8b04e52b7c93",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"implementation_entry_freeze_written": false',
+            '"runtime_status": "not_implemented"',
+            '"selected_implementation_action": "none"',
+            '"sync_live_behavior_change": false',
+            '"runtime_behavior_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_proof",
+            '"status": "current_main_synced_layer3_real_target_missing_decision_after_local_receipt_smoke"',
+            "codex/l3-real-target-decision-sync",
+            "601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+            "#1197",
+            "77958674510232ae3e72871fd66d8b04e52b7c93",
+            "backend-layer3-api pass 2m29s",
+            "test pass 2m58s",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync",
+            "implementation-entry freeze written remains false",
+            "runtime status remains not_implemented",
+            "selected implementation action remains none",
+            "no runtime behavior in sync",
+            "no external connector invocation",
+            "no destination write",
+            "no frontend-only durable authority",
+            "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+        ),
+    }
+    for path, terms in real_target_missing_decision_sync_sources.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing real target missing-decision sync term: {term}"
                 )
 
 
