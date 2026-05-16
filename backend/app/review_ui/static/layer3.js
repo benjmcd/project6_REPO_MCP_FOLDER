@@ -53,6 +53,9 @@ const SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATUS_RESPONSE_AUTHORITY = 'State.sessio
 const SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATUS_SURFACE_MODE = 'rendered_server_owned_local_outbox_write_read_only_status_surface';
 const SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATUS_USE_CASE = 'operator_reviews_server_owned_local_outbox_write_status_without_real_connector_invocation_or_external_destination_write';
 const SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.server_owned_local_outbox_write';
+const LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_SURFACE_MODE = 'rendered_local_outbox_provider_private_handoff_read_only_status_surface';
+const LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_USE_CASE = 'operator_reviews_local_outbox_provider_private_handoff_status_without_raw_token_use_or_external_write';
+const LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.local_outbox_provider_private_handoff';
 const DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE = 'rendered_downstream_access_lifecycle_read_only_dashboard';
 const DOWNSTREAM_ACCESS_LIFECYCLE_USE_CASE = 'operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use';
 const DOWNSTREAM_ACCESS_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
@@ -218,6 +221,7 @@ const elements = {
     connectorLocalDestinationReceiptPanel: document.getElementById('connector-local-destination-receipt-panel'),
     serverOwnedLocalOutboxTargetPanel: document.getElementById('server-owned-local-outbox-target-panel'),
     serverOwnedLocalOutboxWritePanel: document.getElementById('server-owned-local-outbox-write-panel'),
+    localOutboxProviderPrivateHandoffPanel: document.getElementById('local-outbox-provider-private-handoff-panel'),
     providerPrivateSignedUrlForm: document.getElementById('provider-private-signed-url-form'),
     providerPrivateSignedUrlPanel: document.getElementById('provider-private-signed-url-panel'),
     providerPrivateSignedUrlPrepare: document.getElementById('provider-private-signed-url-prepare'),
@@ -620,6 +624,7 @@ function renderContext() {
         signed_reference: State.externalExportDownloadSignedReferenceUse?.state || State.externalExportDownloadSignedReference?.signed_reference_state || State.externalExportDownloadSignedReferenceError?.error_code || 'none',
         connector_local_destination_receipt: State.sessionSummary?.connector_local_destination_receipt?.state || 'none',
         server_owned_local_outbox_target: State.sessionSummary?.server_owned_local_outbox_target?.state || 'none',
+        local_outbox_provider_private_handoff: State.sessionSummary?.local_outbox_provider_private_handoff?.state || 'none',
         provider_private_signed_url: State.providerPrivateSignedUrlRevoke?.provider_signed_url_state || State.providerPrivateSignedUrlStatus?.provider_signed_url_state || State.providerPrivateSignedUrlPrepare?.provider_signed_url_state || State.providerPrivateSignedUrlError?.error_code || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
@@ -5885,6 +5890,238 @@ function renderServerOwnedLocalOutboxWriteStatusPanel() {
     `;
 }
 
+function localOutboxProviderPrivateHandoffStatusState() {
+    return State.sessionSummary?.local_outbox_provider_private_handoff || null;
+}
+
+function localOutboxProviderPrivateHandoffStateName(status = localOutboxProviderPrivateHandoffStatusState()) {
+    return status?.provider_private_handoff_state || status?.next_state || status?.state || null;
+}
+
+function localOutboxProviderPrivateHandoffPanelState() {
+    const status = localOutboxProviderPrivateHandoffStatusState() || {};
+    const stateName = localOutboxProviderPrivateHandoffStateName(status);
+    if (stateName === 'local_outbox_provider_private_handoff_prepared') {
+        return {
+            label: 'local_outbox_provider_private_handoff_prepared',
+            pill: 'ok',
+            message: 'The server has prepared a redacted provider-private handoff receipt from local outbox authority.',
+        };
+    }
+    if (stateName === 'local_outbox_provider_private_handoff_expired') {
+        return {
+            label: 'local_outbox_provider_private_handoff_expired',
+            pill: 'ready',
+            message: 'The provider-private handoff receipt is expired; status remains read-only.',
+        };
+    }
+    if (status.available === true && stateName === 'local_outbox_provider_private_handoff_ready') {
+        return {
+            label: 'local_outbox_provider_private_handoff_ready',
+            pill: 'ok',
+            message: 'Server-owned local outbox write authority can support provider-private handoff prepare.',
+        };
+    }
+    return {
+        label: status.blocked_reason || 'local_outbox_provider_private_handoff_not_ready',
+        pill: 'blocked',
+        message: 'The read-only status surface is waiting on server-owned local outbox write authority.',
+    };
+}
+
+function localOutboxProviderPrivateHandoffLifecycle(status) {
+    return status?.lifecycle_status_surface || {};
+}
+
+function localOutboxProviderPrivateHandoffHistoryRows(status) {
+    const lifecycle = localOutboxProviderPrivateHandoffLifecycle(status);
+    if (Array.isArray(lifecycle.provider_private_handoff_history)) return lifecycle.provider_private_handoff_history;
+    if (Array.isArray(status?.provider_private_handoff_history)) return status.provider_private_handoff_history;
+    return [];
+}
+
+function localOutboxProviderPrivateHandoffAuditRows(status) {
+    const lifecycle = localOutboxProviderPrivateHandoffLifecycle(status);
+    if (Array.isArray(lifecycle.audit_event_history)) return lifecycle.audit_event_history;
+    if (Array.isArray(status?.audit_event_history)) return status.audit_event_history;
+    return [];
+}
+
+function localOutboxProviderPrivateHandoffFailureRows(status) {
+    const lifecycle = localOutboxProviderPrivateHandoffLifecycle(status);
+    if (Array.isArray(lifecycle.failure_state_projection)) return lifecycle.failure_state_projection;
+    if (Array.isArray(status?.failure_state_projection)) return status.failure_state_projection;
+    return [];
+}
+
+function renderLocalOutboxProviderPrivateHandoffHistory(status) {
+    const history = localOutboxProviderPrivateHandoffHistoryRows(status);
+    if (!history.length) {
+        return '<li>history: none</li>';
+    }
+    return history.slice(0, 4).map((row) => (
+        `<li><code>${escapeHtml(row.provider_private_handoff_receipt_id || 'pending')}</code>: ${escapeHtml(row.provider_private_handoff_state || 'unknown')} / <code>${escapeHtml(row.authority_basis_hash || 'no-authority-hash')}</code></li>`
+    )).join('');
+}
+
+function renderLocalOutboxProviderPrivateHandoffAuditHistory(status) {
+    const audit = localOutboxProviderPrivateHandoffAuditRows(status);
+    if (!audit.length) {
+        return '<li>audit: none</li>';
+    }
+    return audit.slice(0, 4).map((row) => (
+        `<li><code>${escapeHtml(row.provider_private_handoff_audit_event_id || 'pending')}</code>: ${escapeHtml(row.event_type || 'event')} / ${escapeHtml(row.reason_code || row.event_status || 'status-only')}</li>`
+    )).join('');
+}
+
+function renderLocalOutboxProviderPrivateHandoffFailureProjection(status) {
+    const rows = localOutboxProviderPrivateHandoffFailureRows(status);
+    if (!rows.length) {
+        return '<li>guardrails: unavailable</li>';
+    }
+    return rows.slice(0, 10).map((row) => (
+        `<li>${escapeHtml(row.case)}: ${escapeHtml(row.projected_error_code || row.operator_status || 'status-only')}</li>`
+    )).join('');
+}
+
+function renderLocalOutboxProviderPrivateHandoffStatusPanel() {
+    const status = localOutboxProviderPrivateHandoffStatusState() || {};
+    const panelState = localOutboxProviderPrivateHandoffPanelState();
+    const lifecycle = localOutboxProviderPrivateHandoffLifecycle(status);
+    const idempotency = status.idempotency_policy || lifecycle.idempotency_policy || {};
+    const retry = status.retry_policy || lifecycle.retry_policy || {};
+    const downstream = status.downstream_unavailable || [
+        'real_connector_invocation',
+        'external_destination_write',
+        'connector_run_creation',
+        'connector_run_target_creation',
+        'credentials',
+        'provider_public_delivery_use',
+        'raw_token_use',
+        'package_mutation_reconstruction',
+        'source_expansion',
+        'rag_vector',
+        'auth_security_implementation',
+        'full_mockup_activation',
+        'frontend_durable_authority',
+        'generic_downstream_dispatch',
+    ];
+    elements.localOutboxProviderPrivateHandoffPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Provider-Private Handoff</strong>
+                <ul>
+                    ${fieldItem('rendered mode', LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_SURFACE_MODE)}
+                    ${fieldItem('use case', LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_USE_CASE)}
+                    ${fieldItem('response authority', LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('schema', status.schema_id)}
+                    ${fieldItem('state', localOutboxProviderPrivateHandoffStateName(status))}
+                    ${fieldItem('available', status.available)}
+                    ${fieldItem('blocked reason', status.blocked_reason)}
+                    ${fieldItem('lifecycle surface', lifecycle.surface_mode)}
+                    ${fieldItem('history count', status.provider_private_handoff_history_count ?? lifecycle.history_count)}
+                    ${fieldItem('audit event count', status.audit_event_history_count ?? lifecycle.audit_event_history_count)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Chain</strong>
+                <ul>
+                    ${fieldItem('session', status.session_id || currentSessionId(), { code: true })}
+                    ${fieldItem('pass run', status.pass_run_id || selectedResultAuthority().passRunId, { code: true })}
+                    ${fieldItem('reconciliation', status.reconciliation_record_id, { code: true })}
+                    ${fieldItem('connector record', status.connector_dispatch_record_ref, { code: true })}
+                    ${fieldItem('local receipt', status.connector_local_destination_receipt_id, { code: true })}
+                    ${fieldItem('fake target receipt', status.server_owned_local_outbox_target_receipt_id, { code: true })}
+                    ${fieldItem('outbox write receipt', status.server_owned_local_outbox_write_receipt_id, { code: true })}
+                    ${fieldItem('external readiness', status.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('authority hash', status.authority_basis_hash, { code: true })}
+                    ${fieldItem('request hash', status.request_basis_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Redacted Receipt</strong>
+                <ul>
+                    ${fieldItem('handoff receipt id', status.provider_private_handoff_receipt_id, { code: true })}
+                    ${fieldItem('target', status.target_identity || 'server_owned_local_outbox_provider_private_handoff_destination')}
+                    ${fieldItem('mode', status.dispatch_mode || 'provider_private_fake_provider_prepare_status_from_local_outbox_receipt')}
+                    ${fieldItem('decision', status.operator_decision || 'prepare_provider_private_handoff_from_local_outbox')}
+                    ${fieldItem('recipient scope', status.recipient_scope)}
+                    ${fieldItem('marker', status.provider_private_marker)}
+                    ${fieldItem('expires at', status.provider_private_expires_at)}
+                    ${fieldItem('requested ttl seconds', status.requested_ttl_seconds)}
+                    ${fieldItem('replay policy', status.provider_private_replay_policy)}
+                    ${fieldItem('outbox artifact', status.outbox_artifact_ref, { code: true })}
+                    ${fieldItem('outbox manifest', status.outbox_manifest_ref, { code: true })}
+                    ${fieldItem('outbox artifact hash', status.outbox_artifact_hash, { code: true })}
+                    ${fieldItem('outbox size bytes', status.outbox_artifact_size_bytes)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Lifecycle Policy</strong>
+                <ul>
+                    ${fieldItem('history authority', lifecycle.history_listing_authority)}
+                    ${fieldItem('audit authority', lifecycle.audit_trail_authority)}
+                    ${fieldItem('same key replay', idempotency.same_key_same_payload_replay)}
+                    ${fieldItem('same key conflict', idempotency.same_key_different_payload_conflict)}
+                    ${fieldItem('same basis conflict', idempotency.same_basis_different_client_request_id)}
+                    ${fieldItem('request basis unique', idempotency.request_basis_hash_unique)}
+                    ${fieldItem('retry fields', retry.retry_fields_admitted === false ? 'blocked' : retry.retry_fields_admitted)}
+                    ${fieldItem('raw token replay', retry.raw_token_replay_admitted === false ? 'blocked' : retry.raw_token_replay_admitted)}
+                    ${fieldItem('replay semantics', retry.replay_semantics)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Handoff History</strong>
+                <ul>
+                    ${renderLocalOutboxProviderPrivateHandoffHistory(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Audit History</strong>
+                <ul>
+                    ${renderLocalOutboxProviderPrivateHandoffAuditHistory(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Guardrail Projection</strong>
+                <ul>
+                    ${renderLocalOutboxProviderPrivateHandoffFailureProjection(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Runtime</strong>
+                <ul>
+                    ${fieldItem('real connector invocation', status.real_connector_invocation_enabled === false ? 'blocked' : status.real_connector_invocation_enabled)}
+                    ${fieldItem('external provider network write', status.external_provider_network_write_enabled === false ? 'blocked' : status.external_provider_network_write_enabled)}
+                    ${fieldItem('external object store write', status.external_object_store_write_enabled === false ? 'blocked' : status.external_object_store_write_enabled)}
+                    ${fieldItem('external destination write', status.external_destination_write_enabled === false ? 'blocked' : status.external_destination_write_enabled)}
+                    ${fieldItem('operator path authority', status.operator_destination_path_enabled === false ? 'blocked' : status.operator_destination_path_enabled)}
+                    ${fieldItem('connector run created', status.connector_run_created === false ? 'blocked' : status.connector_run_created)}
+                    ${fieldItem('connector target created', status.connector_run_target_created === false ? 'blocked' : status.connector_run_target_created)}
+                    ${fieldItem('credentials', status.credentials_enabled === false ? 'blocked' : status.credentials_enabled)}
+                    ${fieldItem('provider public delivery', status.provider_public_delivery_enabled === false ? 'blocked' : status.provider_public_delivery_enabled)}
+                    ${fieldItem('provider private use route', status.provider_private_use_route_enabled === false ? 'blocked' : status.provider_private_use_route_enabled)}
+                    ${fieldItem('provider private revocation', status.provider_private_revocation_supported === false ? 'blocked' : status.provider_private_revocation_supported)}
+                    ${fieldItem('raw token exposed', status.raw_token_exposed === false ? 'blocked' : status.raw_token_exposed)}
+                    ${fieldItem('package mutation', status.package_mutation_enabled === false ? 'blocked' : status.package_mutation_enabled)}
+                    ${fieldItem('source expansion', status.source_expansion_enabled === false ? 'blocked' : status.source_expansion_enabled)}
+                    ${fieldItem('RAG/vector', status.rag_vector_enabled === false ? 'blocked' : status.rag_vector_enabled)}
+                    ${fieldItem('auth/security implementation', status.auth_security_implementation_enabled === false ? 'blocked' : status.auth_security_implementation_enabled)}
+                    ${fieldItem('frontend durable authority', status.frontend_durable_authority_enabled === false ? 'blocked' : status.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Still Disabled</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -6373,6 +6610,7 @@ function renderAll() {
     renderConnectorLocalDestinationReceiptStatusPanel();
     renderServerOwnedLocalOutboxTargetStatusPanel();
     renderServerOwnedLocalOutboxWriteStatusPanel();
+    renderLocalOutboxProviderPrivateHandoffStatusPanel();
     renderProviderPrivateSignedUrlPanel();
     renderProviderPublicUrlPanel();
     setGateControls();
