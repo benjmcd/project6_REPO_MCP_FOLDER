@@ -1726,7 +1726,7 @@ async function submitRenderedExternalExportDownloadPrepare(
   return downloadPrepare;
 }
 
-async function recordRenderedConnectorLocalReceiptSmoke(
+async function recordRenderedLocalOutboxProviderPrivateHandoffSmoke(
   page,
   sessionId,
   approval,
@@ -2082,7 +2082,302 @@ async function recordRenderedConnectorLocalReceiptSmoke(
   await expect(page.locator('#server-owned-local-outbox-target-panel')).toContainText(
     'same key conflict: server_owned_local_outbox_target_client_request_conflict',
   );
-  return localReceipt;
+
+  await expect(page.locator('#server-owned-local-outbox-write-panel')).toContainText(
+    'rendered_server_owned_local_outbox_write_read_only_status_surface',
+  );
+  await expect(page.locator(
+    '#server-owned-local-outbox-write-panel button, #server-owned-local-outbox-write-panel input, #server-owned-local-outbox-write-panel select, #server-owned-local-outbox-write-panel textarea',
+  )).toHaveCount(0);
+  expect(postTargetSummary.server_owned_local_outbox_write.state).toBe(
+    'server_owned_local_outbox_write_ready',
+  );
+  expect(postTargetSummary.server_owned_local_outbox_write.available).toBe(true);
+  expect(postTargetSummary.server_owned_local_outbox_write.write_receipt_history_count).toBe(0);
+
+  const localOutboxWritePayload = {
+    client_request_id: requestId('rendered-local-outbox-write'),
+    session_id: sessionId,
+    analysis_plan_id: approval.analysis_plan_id,
+    pass_run_id: execution.selection.pass_run_ids[0],
+    reconciliation_record_id: commit.reconciliation_record_id,
+    connector_dispatch_record_ref: connectorRecord.connector_dispatch_record_ref,
+    connector_local_destination_receipt_id: localReceipt.connector_local_destination_receipt_id,
+    server_owned_local_outbox_target_receipt_id: localOutboxTarget.server_owned_local_outbox_target_receipt_id,
+    server_owned_local_outbox_target_state: localOutboxTarget.server_owned_local_outbox_target_state,
+    external_export_download_record_ref: downloadPrepare.external_export_download_record_ref,
+    target_identity: 'server_owned_local_delivery_outbox_destination',
+    dispatch_mode: 'server_owned_local_outbox_write_via_storage_dir',
+    operator_decision: 'write_server_owned_local_outbox',
+  };
+  expectOnlyPayloadKeys(localOutboxWritePayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'connector_dispatch_record_ref',
+    'connector_local_destination_receipt_id',
+    'server_owned_local_outbox_target_receipt_id',
+    'server_owned_local_outbox_target_state',
+    'external_export_download_record_ref',
+    'target_identity',
+    'dispatch_mode',
+    'operator_decision',
+  ]);
+  for (const forbidden of [
+    'connector_key',
+    'connector_run_id',
+    'connector_run_target_id',
+    'destination_path',
+    'destination_url',
+    'provider_public_url',
+    'public_url',
+    'signed_url',
+    'bucket',
+    'object_key',
+    'local_path',
+    'local_file_path',
+    'package_payload',
+    'source_expansion',
+    'rag_vector_index',
+    'credential',
+    'credentials',
+    'network_write',
+    'external_connector_invocation',
+    'destination_write',
+    'frontend_durable_authority',
+  ]) {
+    expect(localOutboxWritePayload).not.toHaveProperty(forbidden);
+  }
+  const localOutboxWrite = await expectJson(await apiRequest.post('/api/v1/layer3/handoff/connector/local-outbox/write', {
+    data: localOutboxWritePayload,
+  }));
+  expect(localOutboxWrite.schema_id).toBe('layer3.server_owned_local_outbox_write_receipt.v1');
+  expect(localOutboxWrite.server_owned_local_outbox_write_state).toBe('server_owned_local_outbox_write_recorded');
+  expect(localOutboxWrite.server_owned_local_outbox_target_receipt_id).toBe(
+    localOutboxTarget.server_owned_local_outbox_target_receipt_id,
+  );
+  expect(localOutboxWrite.connector_local_destination_receipt_id).toBe(
+    localReceipt.connector_local_destination_receipt_id,
+  );
+  expect(localOutboxWrite.outbox_artifact_ref).toContain('storage://server-owned-local-outbox/');
+  expect(localOutboxWrite.outbox_manifest_ref).toContain('storage://server-owned-local-outbox/');
+  expect(localOutboxWrite.accepted_artifact_ref).toBe('artifact://server-owned-local-outbox-source-redacted');
+  expect(localOutboxWrite.server_owned_local_outbox_write_performed).toBe(true);
+  expect(localOutboxWrite.real_connector_invocation_enabled).toBe(false);
+  expect(localOutboxWrite.external_destination_write_enabled).toBe(false);
+  expect(localOutboxWrite.connector_run_created).toBe(false);
+  expect(localOutboxWrite.connector_run_target_created).toBe(false);
+  expect(localOutboxWrite.credentials_enabled).toBe(false);
+  expect(localOutboxWrite.provider_public_delivery_enabled).toBe(false);
+
+  const postWriteSummary = await page.evaluate(async (activeSessionId) => {
+    State.sessionSummary = await getJson(`/session/${encodeURIComponent(activeSessionId)}`);
+    renderAll();
+    return State.sessionSummary;
+  }, sessionId);
+  expect(postWriteSummary.server_owned_local_outbox_write.state).toBe(
+    'server_owned_local_outbox_write_recorded',
+  );
+  expect(postWriteSummary.server_owned_local_outbox_write.server_owned_local_outbox_write_receipt_id).toBe(
+    localOutboxWrite.server_owned_local_outbox_write_receipt_id,
+  );
+  expect(postWriteSummary.server_owned_local_outbox_write.write_receipt_history_count).toBe(1);
+  expect(postWriteSummary.server_owned_local_outbox_write.latest_write_receipt.server_owned_local_outbox_write_receipt_id).toBe(
+    localOutboxWrite.server_owned_local_outbox_write_receipt_id,
+  );
+  expect(postWriteSummary.server_owned_local_outbox_write.idempotency_policy.same_key_same_payload_replay).toBe(
+    'already_recorded',
+  );
+  expect(postWriteSummary.server_owned_local_outbox_write.retry_policy.retry_fields_admitted).toBe(false);
+  await expect(page.locator('#server-owned-local-outbox-write-panel')).toContainText(
+    'server_owned_local_outbox_write_recorded',
+  );
+  await expect(page.locator('#server-owned-local-outbox-write-panel')).toContainText(
+    localOutboxWrite.server_owned_local_outbox_write_receipt_id,
+  );
+  await expect(page.locator('#server-owned-local-outbox-write-panel')).toContainText(
+    'artifact://server-owned-local-outbox-source-redacted',
+  );
+  await expect(page.locator('#server-owned-local-outbox-write-panel')).toContainText(
+    'external destination write: blocked',
+  );
+  await expect(page.locator('#server-owned-local-outbox-write-panel')).toContainText(
+    'same key conflict: server_owned_local_outbox_write_client_request_conflict',
+  );
+
+  expect(postWriteSummary.local_outbox_provider_private_handoff.state).toBe(
+    'local_outbox_provider_private_handoff_ready',
+  );
+  expect(postWriteSummary.local_outbox_provider_private_handoff.available).toBe(true);
+  expect(postWriteSummary.local_outbox_provider_private_handoff.provider_private_handoff_history_count).toBe(0);
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    'rendered_local_outbox_provider_private_handoff_read_only_status_surface',
+  );
+  await expect(page.locator(
+    '#local-outbox-provider-private-handoff-panel button, #local-outbox-provider-private-handoff-panel input, #local-outbox-provider-private-handoff-panel select, #local-outbox-provider-private-handoff-panel textarea',
+  )).toHaveCount(0);
+
+  const localOutboxProviderPrivatePayload = {
+    client_request_id: requestId('rendered-local-outbox-provider-private-handoff'),
+    session_id: sessionId,
+    analysis_plan_id: approval.analysis_plan_id,
+    pass_run_id: execution.selection.pass_run_ids[0],
+    reconciliation_record_id: commit.reconciliation_record_id,
+    connector_dispatch_record_ref: connectorRecord.connector_dispatch_record_ref,
+    connector_local_destination_receipt_id: localReceipt.connector_local_destination_receipt_id,
+    server_owned_local_outbox_target_receipt_id: localOutboxTarget.server_owned_local_outbox_target_receipt_id,
+    server_owned_local_outbox_write_receipt_id: localOutboxWrite.server_owned_local_outbox_write_receipt_id,
+    external_export_download_record_ref: downloadPrepare.external_export_download_record_ref,
+    target_identity: 'server_owned_local_outbox_provider_private_handoff_destination',
+    dispatch_mode: 'provider_private_fake_provider_prepare_status_from_local_outbox_receipt',
+    operator_decision: 'prepare_provider_private_handoff_from_local_outbox',
+    recipient_scope: 'ops-recipient:layer3-local-outbox-provider-private',
+    requested_ttl_seconds: 300,
+  };
+  expectOnlyPayloadKeys(localOutboxProviderPrivatePayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'connector_dispatch_record_ref',
+    'connector_local_destination_receipt_id',
+    'server_owned_local_outbox_target_receipt_id',
+    'server_owned_local_outbox_write_receipt_id',
+    'external_export_download_record_ref',
+    'target_identity',
+    'dispatch_mode',
+    'operator_decision',
+    'recipient_scope',
+    'requested_ttl_seconds',
+  ]);
+  for (const forbidden of [
+    'provider_credentials',
+    'provider_private_signed_url_token',
+    'connector_run_id',
+    'connector_run_target_id',
+    'destination_path',
+    'provider_public_url',
+    'public_url',
+    'package_payload',
+    'source_expansion',
+    'rag_vector_index',
+    'auth_policy',
+    'frontend_durable_authority',
+  ]) {
+    expect(localOutboxProviderPrivatePayload).not.toHaveProperty(forbidden);
+  }
+  const localOutboxProviderPrivate = await expectJson(await apiRequest.post('/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare', {
+    data: localOutboxProviderPrivatePayload,
+  }));
+  expect(localOutboxProviderPrivate.schema_id).toBe('layer3.local_outbox_provider_private_handoff.prepare.v1');
+  expect(localOutboxProviderPrivate.status).toBe('prepared');
+  expect(localOutboxProviderPrivate.provider_private_handoff_state).toBe(
+    'local_outbox_provider_private_handoff_prepared',
+  );
+  expect(localOutboxProviderPrivate.handoff_operation_state).toBe(
+    'local_outbox_provider_private_handoff_prepared',
+  );
+  expect(localOutboxProviderPrivate.provider_private_marker).toBe(
+    'provider-private-local-outbox-handoff:redacted',
+  );
+  expect(localOutboxProviderPrivate.server_owned_local_outbox_write_receipt_id).toBe(
+    localOutboxWrite.server_owned_local_outbox_write_receipt_id,
+  );
+  expect(localOutboxProviderPrivate.provider_private_use_route_enabled).toBe(false);
+  expect(localOutboxProviderPrivate.provider_private_revocation_supported).toBe(false);
+  expect(localOutboxProviderPrivate.raw_token_exposed).toBe(false);
+  expect(localOutboxProviderPrivate.real_connector_invocation_enabled).toBe(false);
+  expect(localOutboxProviderPrivate.external_destination_write_enabled).toBe(false);
+  expect(localOutboxProviderPrivate.connector_run_created).toBe(false);
+  expect(localOutboxProviderPrivate.connector_run_target_created).toBe(false);
+  expect(localOutboxProviderPrivate.credentials_enabled).toBe(false);
+  expect(localOutboxProviderPrivate.provider_public_delivery_enabled).toBe(false);
+  expect(JSON.stringify(localOutboxProviderPrivate)).not.toContain('fake-provider-private-token');
+  expect(JSON.stringify(localOutboxProviderPrivate)).not.toContain('signature=');
+
+  const localOutboxProviderPrivateStatus = await expectJson(
+    await apiRequest.get(
+      `/api/v1/layer3/handoff/connector/local-outbox/provider-private/status/${localOutboxProviderPrivate.provider_private_handoff_receipt_id}`,
+    ),
+  );
+  expect(localOutboxProviderPrivateStatus.schema_id).toBe('layer3.local_outbox_provider_private_handoff.status.v1');
+  expect(localOutboxProviderPrivateStatus.provider_private_handoff_receipt_id).toBe(
+    localOutboxProviderPrivate.provider_private_handoff_receipt_id,
+  );
+  expect(localOutboxProviderPrivateStatus.provider_private_handoff_state).toBe(
+    'local_outbox_provider_private_handoff_prepared',
+  );
+  expect(localOutboxProviderPrivateStatus.raw_token_exposed).toBe(false);
+  expect(JSON.stringify(localOutboxProviderPrivateStatus)).not.toContain('fake-provider-private-token');
+
+  const postProviderPrivateHandoffSummary = await page.evaluate(async (activeSessionId) => {
+    State.sessionSummary = await getJson(`/session/${encodeURIComponent(activeSessionId)}`);
+    renderAll();
+    return State.sessionSummary;
+  }, sessionId);
+  const localOutboxProviderPrivateSummary = postProviderPrivateHandoffSummary.local_outbox_provider_private_handoff;
+  expect(localOutboxProviderPrivateSummary.state).toBe('local_outbox_provider_private_handoff_prepared');
+  expect(localOutboxProviderPrivateSummary.provider_private_handoff_receipt_id).toBe(
+    localOutboxProviderPrivate.provider_private_handoff_receipt_id,
+  );
+  expect(localOutboxProviderPrivateSummary.server_owned_local_outbox_write_receipt_id).toBe(
+    localOutboxWrite.server_owned_local_outbox_write_receipt_id,
+  );
+  expect(localOutboxProviderPrivateSummary.provider_private_handoff_history_count).toBe(1);
+  expect(localOutboxProviderPrivateSummary.audit_event_history_count).toBe(1);
+  expect(localOutboxProviderPrivateSummary.latest_provider_private_handoff_receipt.provider_private_handoff_receipt_id).toBe(
+    localOutboxProviderPrivate.provider_private_handoff_receipt_id,
+  );
+  expect(localOutboxProviderPrivateSummary.latest_audit_event.reason_code).toBe(
+    'prepared_after_local_outbox_authority_validation',
+  );
+  expect(localOutboxProviderPrivateSummary.idempotency_policy.same_key_same_payload_replay).toBe(
+    'already_recorded',
+  );
+  expect(localOutboxProviderPrivateSummary.idempotency_policy.same_key_different_payload_conflict).toBe(
+    'local_outbox_provider_private_handoff_client_request_conflict',
+  );
+  expect(localOutboxProviderPrivateSummary.retry_policy.retry_fields_admitted).toBe(false);
+  expect(localOutboxProviderPrivateSummary.retry_policy.raw_token_replay_admitted).toBe(false);
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    'local_outbox_provider_private_handoff_prepared',
+  );
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    localOutboxProviderPrivate.provider_private_handoff_receipt_id,
+  );
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    'provider-private-local-outbox-handoff:redacted',
+  );
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    'Handoff History',
+  );
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    'Audit History',
+  );
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    'same key conflict: local_outbox_provider_private_handoff_client_request_conflict',
+  );
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    'raw token replay: blocked',
+  );
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    'provider private use route: blocked',
+  );
+  await expect(page.locator('#local-outbox-provider-private-handoff-panel')).toContainText(
+    'real connector invocation: blocked',
+  );
+  expect(JSON.stringify(localOutboxProviderPrivateSummary)).not.toContain('fake-provider-private-token');
+  expect(JSON.stringify(localOutboxProviderPrivateSummary)).not.toContain('signature=');
+  return {
+    localReceipt,
+    localOutboxTarget,
+    localOutboxWrite,
+    localOutboxProviderPrivate,
+    localOutboxProviderPrivateStatus,
+  };
 }
 
 async function submitRenderedExternalExportDownloadDelivery(
@@ -3958,7 +4253,7 @@ test('Layer 3 workbench drives raw mixed rendered external export download deliv
     handoffPrepare,
     apsDispatch,
   );
-  await recordRenderedConnectorLocalReceiptSmoke(
+  await recordRenderedLocalOutboxProviderPrivateHandoffSmoke(
     page,
     gateB.session_id,
     approval,

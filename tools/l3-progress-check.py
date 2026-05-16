@@ -1511,6 +1511,10 @@ LAYER3_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR = (
 LAYER3_TARGET_SELECTION_VALIDATOR_CLI_DOC = (
     PLANNING_DOCS / "618_TARGET_SELECTION_VALIDATOR_CLI.md"
 )
+LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_DOC = (
+    PLANNING_DOCS
+    / "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md"
+)
 LAYER3_TARGET_SELECTION_VALIDATOR_CLI = ROOT / "tools" / "l3-target-selection-validate.py"
 LAYER3_TARGET_SELECTION_VALIDATOR_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_target_selection_validate.py"
@@ -49022,7 +49026,7 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke",
         ),
         LAYER3_WORKBENCH_E2E: (
-            "recordRenderedConnectorLocalReceiptSmoke",
+            "recordRenderedLocalOutboxProviderPrivateHandoffSmoke",
             "Layer 3 workbench drives raw mixed rendered external export download delivery",
             "connectorRecordPayload",
             "localReceiptPayload",
@@ -49774,20 +49778,66 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_TARGET_SELECTION_VALIDATOR_TEST)} missing target-selection validator test term: {term}"
             )
 
+    local_outbox_provider_private_rendered_e2e_doc_text = _read_required_text(
+        LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_DOC, errors
+    )
+    for term in (
+        "Status: focused rendered E2E proof for the local-outbox provider-private handoff lifecycle.",
+        "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
+        "Current-main checkpoint at proof entry: `5b243b147adb1f186547bb5a6b0681be257af367`.",
+        "Branch: `codex/l3-local-outbox-provider-private-e2e`.",
+        "Owner proof: `e2e/layer3-workbench.spec.js`.",
+        "server-owned local outbox write",
+        "local-outbox provider-private prepare/status",
+        "#local-outbox-provider-private-handoff-panel",
+        "Headless proof:",
+        "Headed proof:",
+        "This proof admits no real connector invocation.",
+        "The selected real target remains `null`, `selection_complete` remains `false`",
+    ):
+        if term not in local_outbox_provider_private_rendered_e2e_doc_text:
+            errors.append(
+                f"{_rel(LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_DOC)} missing local-outbox provider-private rendered E2E proof term: {term}"
+            )
+
+    local_outbox_provider_private_rendered_e2e_text = _read_required_text(
+        LAYER3_WORKBENCH_E2E, errors
+    )
+    for term in (
+        "recordRenderedLocalOutboxProviderPrivateHandoffSmoke",
+        "/api/v1/layer3/handoff/connector/local-outbox/write",
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/status/",
+        "local_outbox_provider_private_handoff_prepared",
+        "provider-private-local-outbox-handoff:redacted",
+        "same key conflict: local_outbox_provider_private_handoff_client_request_conflict",
+        "#local-outbox-provider-private-handoff-panel",
+        "raw token replay: blocked",
+        "provider private use route: blocked",
+        "real connector invocation: blocked",
+    ):
+        if term not in local_outbox_provider_private_rendered_e2e_text:
+            errors.append(
+                f"{_rel(LAYER3_WORKBENCH_E2E)} missing local-outbox provider-private rendered E2E proof term: {term}"
+            )
+
     for path, terms in {
         BOARD: (
             "2026-05-16 target-selection validate-only guard current-main sync",
             "2026-05-16 target-selection field contract",
             "2026-05-16 target-selection structured record validator",
             "2026-05-16 target-selection validator CLI",
+            "2026-05-16 local-outbox provider-private rendered E2E proof",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
+            "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1218",
             "tools/l3-progress-check.py",
             "tools/l3-target-selection-validate.py",
+            "e2e/layer3-workbench.spec.js",
             "Selection complete: false",
         ),
         MANIFEST: (
@@ -49796,15 +49846,19 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "target_selection_field_contract",
             "target_selection_structured_record_validator",
             "target_selection_validator_cli",
+            "local_outbox_provider_private_rendered_e2e",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
+            "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
             "codex/l3-target-selection-guard",
             "codex/l3-target-selection-field-contract",
             "codex/l3-target-selection-record-validator",
             "codex/l3-target-selection-cli",
+            "codex/l3-local-outbox-provider-private-e2e",
+            "e2e/layer3-workbench.spec.js",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
             "selection_complete false",
         ),
@@ -49814,13 +49868,17 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "latest_target_selection_field_contract",
             "latest_target_selection_structured_record_validator",
             "latest_target_selection_validator_cli",
+            "latest_local_outbox_provider_private_rendered_e2e",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
+            "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
             "validate-only progress guard",
             "does not select a target",
+            "local_outbox_provider_private_rendered_e2e_proof",
+            "codex/l3-local-outbox-provider-private-e2e",
         ),
     }.items():
         path_text = _read_required_text(path, errors)
