@@ -34,6 +34,7 @@ from app.models.models import (
     L3ReconciliationRecord,
     L3SelectionManifest,
     L3ServerOwnedLocalOutboxTargetReceipt,
+    L3ServerOwnedLocalOutboxWriteReceipt,
     L3Session,
     L3SourceIntakeRecord,
     L3TypingRecord,
@@ -480,6 +481,28 @@ SERVER_OWNED_LOCAL_OUTBOX_TARGET_RECORDED_STATE = "server_owned_local_outbox_fak
 SERVER_OWNED_LOCAL_OUTBOX_TARGET_DOWNSTREAM_UNAVAILABLE = (
     "real_connector_invocation",
     "production_destination_write",
+    "connector_run_creation",
+    "credentials",
+    "provider_public_delivery_use",
+    "package_mutation_reconstruction",
+    "source_expansion",
+    "rag_vector",
+    "auth_security_implementation",
+    "full_mockup_activation",
+    "frontend_durable_authority",
+    "generic_downstream_dispatch",
+)
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATUS_SCHEMA_ID = "layer3.server_owned_local_outbox_write_status.v1"
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATE_SCHEMA_ID = "layer3.server_owned_local_outbox_write_state.v1"
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_LIFECYCLE_SCHEMA_ID = "layer3.server_owned_local_outbox_write_lifecycle.v1"
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_DISPATCH_MODE = "server_owned_local_outbox_write_via_storage_dir"
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_OPERATOR_DECISION = "write_server_owned_local_outbox"
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_NOT_READY_STATE = "server_owned_local_outbox_write_not_ready"
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_READY_STATE = "server_owned_local_outbox_write_ready"
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_RECORDED_STATE = "server_owned_local_outbox_write_recorded"
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_DOWNSTREAM_UNAVAILABLE = (
+    "real_connector_invocation",
+    "external_destination_write",
     "connector_run_creation",
     "credentials",
     "provider_public_delivery_use",
@@ -12192,6 +12215,299 @@ def _server_owned_local_outbox_target_summary(
     )
 
 
+def _server_owned_local_outbox_write_history_item(
+    row: L3ServerOwnedLocalOutboxWriteReceipt,
+) -> dict[str, Any]:
+    return {
+        "schema_id": SERVER_OWNED_LOCAL_OUTBOX_WRITE_LIFECYCLE_SCHEMA_ID,
+        "server_owned_local_outbox_write_receipt_id": row.server_owned_local_outbox_write_receipt_id,
+        "server_owned_local_outbox_target_receipt_id": row.server_owned_local_outbox_target_receipt_id,
+        "server_owned_local_outbox_write_state": row.write_state,
+        "session_id": row.session_id,
+        "pass_run_id": row.pass_run_id,
+        "reconciliation_record_id": row.reconciliation_record_id,
+        "connector_dispatch_record_ref": row.connector_dispatch_record_ref,
+        "connector_local_destination_receipt_id": row.connector_local_destination_receipt_id,
+        "external_export_download_record_ref": row.external_export_download_record_ref,
+        "target_identity": row.target_identity,
+        "dispatch_mode": row.dispatch_mode,
+        "outbox_artifact_ref": row.outbox_artifact_ref.replace(
+            "layer3-outbox/",
+            "storage://server-owned-local-outbox/",
+            1,
+        ),
+        "outbox_manifest_ref": row.outbox_manifest_ref.replace(
+            "layer3-outbox/",
+            "storage://server-owned-local-outbox/",
+            1,
+        ),
+        "outbox_artifact_hash": row.outbox_artifact_hash,
+        "outbox_artifact_size_bytes": row.outbox_artifact_size_bytes,
+        "accepted_artifact_ref": "artifact://server-owned-local-outbox-source-redacted",
+        "accepted_artifact_hash": row.accepted_artifact_hash,
+        "accepted_artifact_size_bytes": row.accepted_artifact_size_bytes,
+        "authority_basis_hash": row.authority_basis_hash,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+
+
+def _server_owned_local_outbox_write_failure_projection(
+    *,
+    current_state: str | None,
+    blocked_reason: str | None,
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "case": "not_ready",
+            "operator_status": blocked_reason or "await_fake_target_receipt",
+            "projected_error_code": "server_owned_local_outbox_write_requires_fake_target",
+            "active": current_state == SERVER_OWNED_LOCAL_OUTBOX_WRITE_NOT_READY_STATE,
+        },
+        {
+            "case": "stale_authority",
+            "operator_status": "conflict",
+            "projected_error_code": "server_owned_local_outbox_write_stale_authority",
+            "active": current_state == "server_owned_local_outbox_write_stale_authority",
+        },
+        {
+            "case": "same_key_different_payload_conflict",
+            "operator_status": "conflict",
+            "projected_error_code": "server_owned_local_outbox_write_client_request_conflict",
+            "active": current_state == "server_owned_local_outbox_write_conflict",
+        },
+        {
+            "case": "same_basis_different_client_request_id",
+            "operator_status": "conflict",
+            "projected_error_code": "server_owned_local_outbox_write_already_recorded",
+            "active": False,
+        },
+        {
+            "case": "write_failed",
+            "operator_status": "failed",
+            "projected_error_code": "server_owned_local_outbox_write_artifact_verification_failed",
+            "active": current_state == "server_owned_local_outbox_write_failed",
+        },
+    ]
+
+
+def _with_server_owned_local_outbox_write_lifecycle(
+    status: dict[str, Any],
+    *,
+    history_rows: list[L3ServerOwnedLocalOutboxWriteReceipt],
+    current_state: str | None,
+    blocked_reason: str | None,
+) -> dict[str, Any]:
+    history = [_server_owned_local_outbox_write_history_item(row) for row in history_rows]
+    latest_receipt = history[0] if history else None
+    lifecycle = {
+        "schema_id": SERVER_OWNED_LOCAL_OUTBOX_WRITE_LIFECYCLE_SCHEMA_ID,
+        "surface_mode": "read_only_server_owned_local_outbox_write_status_history",
+        "history_listing_authority": "durable_server_owned_local_outbox_write_receipt_rows",
+        "audit_trail_authority": "durable_local_outbox_write_receipt_row_and_manifest_projection",
+        "history_count": len(history),
+        "write_receipt_history": history,
+        "latest_write_receipt": latest_receipt,
+        "idempotency_policy": {
+            "client_request_id_unique": True,
+            "authority_basis_hash_unique": True,
+            "same_key_same_payload_replay": "already_recorded",
+            "same_key_different_payload_conflict": "server_owned_local_outbox_write_client_request_conflict",
+            "same_basis_different_client_request_id": "server_owned_local_outbox_write_already_recorded",
+        },
+        "retry_policy": {
+            "retry_fields_admitted": False,
+            "rerun_fields_admitted": False,
+            "cancel_fields_admitted": False,
+            "replay_semantics": "status_only_for_same_client_request_and_same_authority_basis",
+        },
+        "failure_state_projection": _server_owned_local_outbox_write_failure_projection(
+            current_state=current_state,
+            blocked_reason=blocked_reason,
+        ),
+    }
+    return {
+        **status,
+        "lifecycle_status_surface": lifecycle,
+        "write_receipt_history": history,
+        "write_receipt_history_count": len(history),
+        "latest_write_receipt": latest_receipt,
+        "failure_state_projection": lifecycle["failure_state_projection"],
+        "idempotency_policy": lifecycle["idempotency_policy"],
+        "retry_policy": lifecycle["retry_policy"],
+    }
+
+
+def _server_owned_local_outbox_write_summary(
+    db: Session,
+    *,
+    session_id: str,
+    server_owned_local_outbox_target_state: dict[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(server_owned_local_outbox_target_state, dict):
+        server_owned_local_outbox_target_state = {}
+    reconciliation_record_id = str(
+        server_owned_local_outbox_target_state.get("reconciliation_record_id") or ""
+    ).strip()
+    reconciliation = None
+    if reconciliation_record_id:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(
+                L3ReconciliationRecord.session_id == session_id,
+                L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            )
+            .one_or_none()
+        )
+    reconciliation_summary = reconciliation.summary_json if reconciliation is not None else {}
+    if not isinstance(reconciliation_summary, dict):
+        reconciliation_summary = {}
+    recorded_summary = reconciliation_summary.get("server_owned_local_outbox_write")
+    if not isinstance(recorded_summary, dict):
+        recorded_summary = {}
+    write_receipt_id = str(recorded_summary.get("server_owned_local_outbox_write_receipt_id") or "").strip()
+    write_query = db.query(L3ServerOwnedLocalOutboxWriteReceipt).filter(
+        L3ServerOwnedLocalOutboxWriteReceipt.session_id == session_id
+    )
+    if write_receipt_id:
+        write_query = write_query.filter(
+            L3ServerOwnedLocalOutboxWriteReceipt.server_owned_local_outbox_write_receipt_id == write_receipt_id
+        )
+    write_row = write_query.order_by(L3ServerOwnedLocalOutboxWriteReceipt.created_at.desc()).first()
+    history_rows = (
+        db.query(L3ServerOwnedLocalOutboxWriteReceipt)
+        .filter(L3ServerOwnedLocalOutboxWriteReceipt.session_id == session_id)
+        .order_by(L3ServerOwnedLocalOutboxWriteReceipt.created_at.desc())
+        .all()
+    )
+    if write_row is not None:
+        return _with_server_owned_local_outbox_write_lifecycle(
+            {
+                "schema_id": SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATUS_SCHEMA_ID,
+                "available": False,
+                "state": write_row.write_state,
+                "blocked_reason": None,
+                "server_owned_local_outbox_write_receipt_id": write_row.server_owned_local_outbox_write_receipt_id,
+                "server_owned_local_outbox_target_receipt_id": (
+                    write_row.server_owned_local_outbox_target_receipt_id
+                ),
+                "server_owned_local_outbox_write_state": write_row.write_state,
+                "session_id": write_row.session_id,
+                "pass_run_id": write_row.pass_run_id,
+                "reconciliation_record_id": write_row.reconciliation_record_id,
+                "connector_dispatch_record_ref": write_row.connector_dispatch_record_ref,
+                "connector_local_destination_receipt_id": write_row.connector_local_destination_receipt_id,
+                "external_export_download_record_ref": write_row.external_export_download_record_ref,
+                "target_identity": write_row.target_identity,
+                "dispatch_mode": write_row.dispatch_mode,
+                "operator_decision": SERVER_OWNED_LOCAL_OUTBOX_WRITE_OPERATOR_DECISION,
+                "outbox_artifact_ref": write_row.outbox_artifact_ref.replace(
+                    "layer3-outbox/",
+                    "storage://server-owned-local-outbox/",
+                    1,
+                ),
+                "outbox_manifest_ref": write_row.outbox_manifest_ref.replace(
+                    "layer3-outbox/",
+                    "storage://server-owned-local-outbox/",
+                    1,
+                ),
+                "outbox_artifact_hash": write_row.outbox_artifact_hash,
+                "outbox_artifact_size_bytes": write_row.outbox_artifact_size_bytes,
+                "accepted_artifact_ref": "artifact://server-owned-local-outbox-source-redacted",
+                "accepted_artifact_hash": write_row.accepted_artifact_hash,
+                "accepted_artifact_size_bytes": write_row.accepted_artifact_size_bytes,
+                "authority_basis_hash": write_row.authority_basis_hash,
+                "server_owned_local_outbox_write_enabled": True,
+                "server_owned_local_outbox_write_performed": True,
+                "real_connector_invocation_enabled": False,
+                "external_destination_write_enabled": False,
+                "connector_run_created": False,
+                "connector_run_target_created": False,
+                "credentials_enabled": False,
+                "provider_public_delivery_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "durable_server_owned_local_outbox_write_receipt_row",
+                "downstream_unavailable": list(SERVER_OWNED_LOCAL_OUTBOX_WRITE_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            current_state=write_row.write_state,
+            blocked_reason=None,
+        )
+    target_recorded = (
+        server_owned_local_outbox_target_state.get("state") == SERVER_OWNED_LOCAL_OUTBOX_TARGET_RECORDED_STATE
+        and server_owned_local_outbox_target_state.get("server_owned_local_outbox_target_receipt_id")
+    )
+    if target_recorded:
+        return _with_server_owned_local_outbox_write_lifecycle(
+            {
+                "schema_id": SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATUS_SCHEMA_ID,
+                "available": True,
+                "state": SERVER_OWNED_LOCAL_OUTBOX_WRITE_READY_STATE,
+                "blocked_reason": None,
+                "reconciliation_record_id": reconciliation_record_id,
+                "connector_dispatch_record_ref": server_owned_local_outbox_target_state.get(
+                    "connector_dispatch_record_ref"
+                ),
+                "connector_local_destination_receipt_id": server_owned_local_outbox_target_state.get(
+                    "connector_local_destination_receipt_id"
+                ),
+                "server_owned_local_outbox_target_receipt_id": server_owned_local_outbox_target_state.get(
+                    "server_owned_local_outbox_target_receipt_id"
+                ),
+                "server_owned_local_outbox_target_state": server_owned_local_outbox_target_state.get("state"),
+                "external_export_download_record_ref": server_owned_local_outbox_target_state.get(
+                    "external_export_download_record_ref"
+                ),
+                "target_identity": SERVER_OWNED_LOCAL_OUTBOX_TARGET_IDENTITY,
+                "dispatch_mode": SERVER_OWNED_LOCAL_OUTBOX_WRITE_DISPATCH_MODE,
+                "operator_decision": SERVER_OWNED_LOCAL_OUTBOX_WRITE_OPERATOR_DECISION,
+                "accepted_artifact_ref": "artifact://server-owned-local-outbox-source-redacted",
+                "accepted_artifact_hash": server_owned_local_outbox_target_state.get("accepted_artifact_hash"),
+                "accepted_artifact_size_bytes": server_owned_local_outbox_target_state.get(
+                    "accepted_artifact_size_bytes"
+                ),
+                "server_owned_local_outbox_write_enabled": True,
+                "server_owned_local_outbox_write_performed": False,
+                "real_connector_invocation_enabled": False,
+                "external_destination_write_enabled": False,
+                "connector_run_created": False,
+                "connector_run_target_created": False,
+                "credentials_enabled": False,
+                "provider_public_delivery_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "durable_server_owned_local_outbox_fake_target_receipt_authority",
+                "downstream_unavailable": list(SERVER_OWNED_LOCAL_OUTBOX_WRITE_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            current_state=SERVER_OWNED_LOCAL_OUTBOX_WRITE_READY_STATE,
+            blocked_reason=None,
+        )
+    return _with_server_owned_local_outbox_write_lifecycle(
+        {
+            "schema_id": SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATUS_SCHEMA_ID,
+            "available": False,
+            "state": SERVER_OWNED_LOCAL_OUTBOX_WRITE_NOT_READY_STATE,
+            "blocked_reason": "record_server_owned_local_outbox_fake_target",
+            "target_identity": SERVER_OWNED_LOCAL_OUTBOX_TARGET_IDENTITY,
+            "dispatch_mode": SERVER_OWNED_LOCAL_OUTBOX_WRITE_DISPATCH_MODE,
+            "operator_decision": SERVER_OWNED_LOCAL_OUTBOX_WRITE_OPERATOR_DECISION,
+            "server_owned_local_outbox_write_enabled": False,
+            "server_owned_local_outbox_write_performed": False,
+            "real_connector_invocation_enabled": False,
+            "external_destination_write_enabled": False,
+            "connector_run_created": False,
+            "connector_run_target_created": False,
+            "credentials_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "status_surface_mode": "read_only_server_session_summary_projection",
+            "response_authority": "existing_session_summary_without_local_outbox_write_receipt",
+            "downstream_unavailable": list(SERVER_OWNED_LOCAL_OUTBOX_WRITE_DOWNSTREAM_UNAVAILABLE),
+        },
+        history_rows=history_rows,
+        current_state=SERVER_OWNED_LOCAL_OUTBOX_WRITE_NOT_READY_STATE,
+        blocked_reason="record_server_owned_local_outbox_fake_target",
+    )
+
+
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = _latest_selection_manifest_for_session(db, session=session)
@@ -12348,6 +12664,11 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         session_id=session_id,
         connector_local_destination_receipt_state=connector_local_destination_receipt_state,
     )
+    server_owned_local_outbox_write_state = _server_owned_local_outbox_write_summary(
+        db,
+        session_id=session_id,
+        server_owned_local_outbox_target_state=server_owned_local_outbox_target_state,
+    )
     selection_active = bool(execution_selection_readiness["selected"])
     package_active = bool(
         package_review_preview_state.get("available")
@@ -12403,6 +12724,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "external_export_download": external_export_download_state,
         "connector_local_destination_receipt": connector_local_destination_receipt_state,
         "server_owned_local_outbox_target": server_owned_local_outbox_target_state,
+        "server_owned_local_outbox_write": server_owned_local_outbox_write_state,
         "pdf_location_projection": _pdf_location_projection_for_session(db, session_id=session_id),
         "sublayer_visualization": _session_sublayer_visualization_state(db, session_id=session_id),
         "state_action_contract": _workbench_state_action_contract(),
