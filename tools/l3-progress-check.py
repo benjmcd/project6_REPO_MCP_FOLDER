@@ -1489,6 +1489,16 @@ LAYER3_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE = (
 LAYER3_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "603_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_TARGET_SELECTION_INTAKE = (
+    PLANNING_DOCS / "612_TARGET_SELECTION_INTAKE.md"
+)
+LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_TARGET_SELECTION_INTAKE = (
+    PLANNING_DOCS
+    / "613_LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_TARGET_SELECTION_INTAKE.md"
+)
+LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD = (
+    PLANNING_DOCS / "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -49440,6 +49450,78 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
                 )
 
 
+def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
+    intake_text = _read_required_text(LAYER3_TARGET_SELECTION_INTAKE, errors)
+    for term in (
+        "Selected target identity: `null`.",
+        "Selected target class: `null`.",
+        "Implementation-entry freeze written: false.",
+        "Selection complete: false.",
+        "Required next action: fill this intake with one named real connector or destination target.",
+        "If no target can be named, keep runtime blocked and do not start another broad no-runtime audit unless current-main authority contradicts the local-outbox provider-private lifecycle proof.",
+    ):
+        if term not in intake_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} missing target-selection intake guard term: {term}"
+            )
+
+    audit_text = _read_required_text(
+        LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_TARGET_SELECTION_INTAKE, errors
+    )
+    for term in (
+        "Completion decision: active Layer 3 objective is not complete under current authority.",
+        "Do not mark the active Layer 3 objective complete.",
+        "Doc `612_TARGET_SELECTION_INTAKE.md` is explicitly incomplete",
+        "The objective still has an unresolved external-target gate.",
+        "Fill `612_TARGET_SELECTION_INTAKE.md` with exactly one real connector or destination target",
+    ):
+        if term not in audit_text:
+            errors.append(
+                f"{_rel(LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_TARGET_SELECTION_INTAKE)} missing target-selection audit guard term: {term}"
+            )
+
+    guard_text = _read_required_text(LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD, errors)
+    for term in (
+        "Status: validate-only progress guard for incomplete target-selection intake.",
+        "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
+        "Current-main checkpoint at guard creation: `308eb98b27764728212d73ed41759949815cb4c1`.",
+        "Validated intake: `612_TARGET_SELECTION_INTAKE.md`.",
+        "The guard fails closed while target selection remains incomplete.",
+        "The guard does not select a target, generate artifacts, seed runtime state, admit runtime behavior, or permit a real connector/destination implementation.",
+    ):
+        if term not in guard_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD)} missing target-selection validate-only guard term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "2026-05-16 target-selection validate-only guard",
+            "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
+            "tools/l3-progress-check.py",
+            "Selection complete: false",
+        ),
+        MANIFEST: (
+            "target_selection_validate_only_guard",
+            "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
+            "codex/l3-target-selection-guard",
+            "selection_complete false",
+        ),
+        PROOF_MANIFEST: (
+            "latest_target_selection_validate_only_guard",
+            "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
+            "validate-only progress guard",
+            "does not select a target",
+        ),
+    }.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing target-selection validate-only guard term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -49911,6 +49993,7 @@ def main() -> int:
     _check_bounded_e2e_current_main_sync(errors)
     _check_pr798_review_debt_closeout(errors)
     _check_connector_internal_fake_local_destination_receipt_runtime(errors)
+    _check_target_selection_validate_only_guard(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
