@@ -1508,6 +1508,13 @@ LAYER3_TARGET_SELECTION_FIELD_CONTRACT = (
 LAYER3_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR = (
     PLANNING_DOCS / "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md"
 )
+LAYER3_TARGET_SELECTION_VALIDATOR_CLI_DOC = (
+    PLANNING_DOCS / "618_TARGET_SELECTION_VALIDATOR_CLI.md"
+)
+LAYER3_TARGET_SELECTION_VALIDATOR_CLI = ROOT / "tools" / "l3-target-selection-validate.py"
+LAYER3_TARGET_SELECTION_VALIDATOR_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_target_selection_validate.py"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -49712,17 +49719,75 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR)} missing structured-record validator term: {term}"
             )
 
+    validator_cli_doc_text = _read_required_text(
+        LAYER3_TARGET_SELECTION_VALIDATOR_CLI_DOC, errors
+    )
+    for term in (
+        "Status: validate-only CLI for `612_TARGET_SELECTION_INTAKE.md`.",
+        "618_TARGET_SELECTION_VALIDATOR_CLI.md",
+        "Current-main checkpoint at CLI creation: `489419d419a81ed74ae61c5b340b666409e0817a`.",
+        "Validated parser guard: `617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md`.",
+        "CLI: `tools/l3-target-selection-validate.py`.",
+        "Tests: `backend/tests/test_layer3_target_selection_validate.py`.",
+        "`pending`: current repo state",
+        "`selected`: future operator-filled intake before the separate freeze lands",
+        "`frozen`: future intake after the separate implementation-entry freeze lands",
+        "python .\\tools\\l3-target-selection-validate.py --expect pending",
+        "It does not select a target and does not admit runtime behavior.",
+    ):
+        if term not in validator_cli_doc_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_VALIDATOR_CLI_DOC)} missing target-selection validator CLI term: {term}"
+            )
+
+    validator_cli_text = _read_required_text(LAYER3_TARGET_SELECTION_VALIDATOR_CLI, errors)
+    for term in (
+        'EXPECTED_STATES = ("pending", "selected", "frozen")',
+        "def parse_structured_record(",
+        "def validate_record(",
+        "def validate_text(",
+        '"pending_field_must_be_null"',
+        '"selected_field_must_be_filled"',
+        '"frozen_freeze_written_must_be_true"',
+        "Layer 3 target-selection validation: PASS",
+        "--expect",
+        "--json",
+    ):
+        if term not in validator_cli_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_VALIDATOR_CLI)} missing target-selection validator CLI term: {term}"
+            )
+
+    validator_test_text = _read_required_text(
+        LAYER3_TARGET_SELECTION_VALIDATOR_TEST, errors
+    )
+    for term in (
+        "test_current_target_selection_intake_validates_as_pending",
+        "test_selected_and_frozen_records_have_distinct_freeze_expectations",
+        "test_duplicate_structured_record_key_fails_closed",
+        "module.validate_text(text, \"pending\")",
+        "selected_field_must_be_filled",
+        "duplicate_key",
+    ):
+        if term not in validator_test_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_VALIDATOR_TEST)} missing target-selection validator test term: {term}"
+            )
+
     for path, terms in {
         BOARD: (
             "2026-05-16 target-selection validate-only guard current-main sync",
             "2026-05-16 target-selection field contract",
             "2026-05-16 target-selection structured record validator",
+            "2026-05-16 target-selection validator CLI",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
+            "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1218",
             "tools/l3-progress-check.py",
+            "tools/l3-target-selection-validate.py",
             "Selection complete: false",
         ),
         MANIFEST: (
@@ -49730,13 +49795,16 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "target_selection_validate_only_guard_current_main_sync",
             "target_selection_field_contract",
             "target_selection_structured_record_validator",
+            "target_selection_validator_cli",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
+            "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "codex/l3-target-selection-guard",
             "codex/l3-target-selection-field-contract",
             "codex/l3-target-selection-record-validator",
+            "codex/l3-target-selection-cli",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
             "selection_complete false",
         ),
@@ -49745,10 +49813,12 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "latest_target_selection_validate_only_guard_current_main_sync",
             "latest_target_selection_field_contract",
             "latest_target_selection_structured_record_validator",
+            "latest_target_selection_validator_cli",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
+            "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "validate-only progress guard",
             "does not select a target",
         ),
