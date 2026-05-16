@@ -1117,3 +1117,208 @@ test('Layer 3 workbench can request plan revision without starting execution', a
   await expect(page.locator('#unavailable-list')).toContainText('execution');
   await expect(page.locator('#unavailable-list')).toContainText('package');
 });
+
+test('Layer 3 renders local receipt to server-owned outbox write status as read-only redacted state', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => {
+    const sessionId = 'session-local-outbox-ui';
+    const passRunId = 'pass-local-outbox-ui';
+    const reconciliationId = 'reconciliation-local-outbox-ui';
+    const connectorRecordRef = 'connector-dispatch-local-outbox-ui';
+    const localReceiptId = 'local-receipt-local-outbox-ui';
+    const targetReceiptId = 'target-receipt-local-outbox-ui';
+    const writeReceiptId = 'write-receipt-local-outbox-ui';
+    const externalRecordRef = 'external-export-local-outbox-ui';
+    const authorityHash = 'authority-hash-local-outbox-ui';
+    const lifecycleBase = {
+      idempotency_policy: {
+        client_request_id_unique: true,
+        authority_basis_hash_unique: true,
+        same_key_same_payload_replay: 'already_recorded',
+        same_key_different_payload_conflict: 'server_owned_local_outbox_write_client_request_conflict',
+        same_basis_different_client_request_id: 'server_owned_local_outbox_write_already_recorded',
+      },
+      retry_policy: {
+        retry_fields_admitted: false,
+        rerun_fields_admitted: false,
+        cancel_fields_admitted: false,
+        replay_semantics: 'status_only_for_same_client_request_and_same_authority_basis',
+      },
+      failure_state_projection: [
+        {
+          case: 'stale_authority',
+          operator_status: 'conflict',
+          projected_error_code: 'server_owned_local_outbox_write_stale_authority',
+        },
+        {
+          case: 'same_key_different_payload_conflict',
+          operator_status: 'conflict',
+          projected_error_code: 'server_owned_local_outbox_write_client_request_conflict',
+        },
+      ],
+    };
+    State.sessionSummary = {
+      session_id: sessionId,
+      execution_selection: {
+        selected: true,
+        execution_started: true,
+        analysis_plan_id: 'plan-local-outbox-ui',
+        pass_run_ids: [passRunId],
+        pass_run_statuses: { [passRunId]: 'completed' },
+      },
+      connector_local_destination_receipt: {
+        schema_id: 'layer3.connector_local_destination_receipt_status.v1',
+        state: 'connector_local_destination_receipt_recorded',
+        connector_local_destination_receipt_state: 'connector_local_destination_receipt_recorded',
+        session_id: sessionId,
+        pass_run_id: passRunId,
+        reconciliation_record_id: reconciliationId,
+        connector_dispatch_record_ref: connectorRecordRef,
+        external_export_download_record_ref: externalRecordRef,
+        connector_local_destination_receipt_id: localReceiptId,
+        destination_target: 'layer3_internal_fake_local_destination_receipt',
+        dispatch_mode: 'internal_fake_local_destination_receipt_only',
+        accepted_artifact_ref: 'artifact://layer3-internal-fake-local-destination-redacted',
+        authority_basis_hash: 'local-receipt-authority-hash',
+        receipt_history_count: 1,
+        lifecycle_status_surface: {
+          schema_id: 'layer3.connector_local_destination_receipt_lifecycle.v1',
+          surface_mode: 'read_only_connector_local_receipt_lifecycle_status_history',
+          history_listing_authority: 'durable_connector_local_destination_receipt_rows',
+          audit_trail_authority: 'durable_connector_local_destination_receipt_row',
+          history_count: 1,
+          receipt_history: [
+            {
+              connector_local_destination_receipt_id: localReceiptId,
+              connector_local_destination_receipt_state: 'connector_local_destination_receipt_recorded',
+              authority_basis_hash: 'local-receipt-authority-hash',
+            },
+          ],
+          ...lifecycleBase,
+        },
+        external_connector_invocation_enabled: false,
+        destination_write_enabled: false,
+        connector_run_created: false,
+      },
+      server_owned_local_outbox_target: {
+        schema_id: 'layer3.server_owned_local_outbox_fake_target_status.v1',
+        state: 'server_owned_local_outbox_fake_target_recorded',
+        server_owned_local_outbox_target_state: 'server_owned_local_outbox_fake_target_recorded',
+        session_id: sessionId,
+        pass_run_id: passRunId,
+        reconciliation_record_id: reconciliationId,
+        connector_dispatch_record_ref: connectorRecordRef,
+        connector_local_destination_receipt_id: localReceiptId,
+        external_export_download_record_ref: externalRecordRef,
+        server_owned_local_outbox_target_receipt_id: targetReceiptId,
+        target_identity: 'server_owned_local_delivery_outbox_destination',
+        dispatch_mode: 'single_named_destination_dispatch_fake_target_first',
+        accepted_artifact_ref: 'artifact://server-owned-local-outbox-fake-target-redacted',
+        authority_basis_hash: 'fake-target-authority-hash',
+        target_receipt_history_count: 1,
+        lifecycle_status_surface: {
+          schema_id: 'layer3.server_owned_local_outbox_fake_target_lifecycle.v1',
+          surface_mode: 'read_only_server_owned_local_outbox_fake_target_status_history',
+          history_listing_authority: 'durable_server_owned_local_outbox_fake_target_receipt_rows',
+          audit_trail_authority: 'durable_server_owned_local_outbox_fake_target_receipt_row',
+          history_count: 1,
+          target_receipt_history: [
+            {
+              server_owned_local_outbox_target_receipt_id: targetReceiptId,
+              server_owned_local_outbox_target_state: 'server_owned_local_outbox_fake_target_recorded',
+              authority_basis_hash: 'fake-target-authority-hash',
+            },
+          ],
+          ...lifecycleBase,
+        },
+        real_connector_invocation_enabled: false,
+        destination_write_enabled: false,
+        connector_run_created: false,
+        connector_run_target_created: false,
+        credentials_enabled: false,
+      },
+      server_owned_local_outbox_write: {
+        schema_id: 'layer3.server_owned_local_outbox_write_status.v1',
+        state: 'server_owned_local_outbox_write_recorded',
+        server_owned_local_outbox_write_state: 'server_owned_local_outbox_write_recorded',
+        session_id: sessionId,
+        pass_run_id: passRunId,
+        reconciliation_record_id: reconciliationId,
+        connector_dispatch_record_ref: connectorRecordRef,
+        connector_local_destination_receipt_id: localReceiptId,
+        external_export_download_record_ref: externalRecordRef,
+        server_owned_local_outbox_target_receipt_id: targetReceiptId,
+        server_owned_local_outbox_write_receipt_id: writeReceiptId,
+        target_identity: 'server_owned_local_delivery_outbox_destination',
+        dispatch_mode: 'server_owned_local_outbox_write_via_storage_dir',
+        operator_decision: 'write_server_owned_local_outbox',
+        outbox_artifact_ref: 'storage://server-owned-local-outbox/write-receipt-local-outbox-ui/artifact.json',
+        outbox_manifest_ref: 'storage://server-owned-local-outbox/write-receipt-local-outbox-ui/receipt.json',
+        outbox_artifact_hash: 'artifact-hash-local-outbox-ui',
+        outbox_artifact_size_bytes: 1234,
+        accepted_artifact_ref: 'artifact://server-owned-local-outbox-source-redacted',
+        authority_basis_hash: authorityHash,
+        write_receipt_history_count: 1,
+        lifecycle_status_surface: {
+          schema_id: 'layer3.server_owned_local_outbox_write_lifecycle.v1',
+          surface_mode: 'read_only_server_owned_local_outbox_write_status_history',
+          history_listing_authority: 'durable_server_owned_local_outbox_write_receipt_rows',
+          audit_trail_authority: 'durable_local_outbox_write_receipt_row_and_manifest_projection',
+          history_count: 1,
+          write_receipt_history: [
+            {
+              server_owned_local_outbox_write_receipt_id: writeReceiptId,
+              server_owned_local_outbox_write_state: 'server_owned_local_outbox_write_recorded',
+              authority_basis_hash: authorityHash,
+            },
+          ],
+          ...lifecycleBase,
+        },
+        server_owned_local_outbox_write_enabled: true,
+        server_owned_local_outbox_write_performed: true,
+        real_connector_invocation_enabled: false,
+        external_destination_write_enabled: false,
+        operator_destination_path_enabled: false,
+        connector_run_created: false,
+        connector_run_target_created: false,
+        credentials_enabled: false,
+        network_write_enabled: false,
+        provider_public_url_enabled: false,
+        package_mutation_enabled: false,
+        source_expansion_enabled: false,
+        rag_vector_enabled: false,
+        frontend_durable_authority_enabled: false,
+        downstream_unavailable: [
+          'real_connector_invocation',
+          'external_destination_write',
+          'connector_run_creation',
+          'credentials',
+          'provider_public_delivery_use',
+          'package_mutation_reconstruction',
+          'source_expansion',
+          'rag_vector',
+          'auth_security_implementation',
+          'full_mockup_activation',
+          'frontend_durable_authority',
+          'generic_downstream_dispatch',
+        ],
+      },
+    };
+    renderAll();
+  });
+
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText('connector_local_destination_receipt_recorded');
+  await expect(page.locator('#server-owned-local-outbox-target-panel')).toContainText('server_owned_local_outbox_fake_target_recorded');
+  const writePanel = page.locator('#server-owned-local-outbox-write-panel');
+  await expect(writePanel).toContainText('rendered_server_owned_local_outbox_write_read_only_status_surface');
+  await expect(writePanel).toContainText('server_owned_local_outbox_write_recorded');
+  await expect(writePanel).toContainText('storage://server-owned-local-outbox/write-receipt-local-outbox-ui/artifact.json');
+  await expect(writePanel).toContainText('durable_server_owned_local_outbox_write_receipt_rows');
+  await expect(writePanel).toContainText('server_owned_local_outbox_write_stale_authority');
+  await expect(writePanel).toContainText('real connector invocation');
+  await expect(writePanel).toContainText('external destination write');
+  await expect(writePanel.locator('button,input,select,textarea')).toHaveCount(0);
+  await expect(writePanel).not.toContainText('C:\\');
+  await expect(writePanel).not.toContainText('source_artifact_ref');
+  await expect(writePanel).not.toContainText('destination_path');
+});

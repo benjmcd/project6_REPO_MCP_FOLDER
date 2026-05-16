@@ -197,6 +197,10 @@ class Settings(BaseSettings):
     def connector_raw_dir(self) -> str:
         return str(Path(self.connector_storage_dir) / "raw")
 
+    @property
+    def layer3_local_outbox_dir(self) -> str:
+        return str(Path(self.storage_dir) / "layer3-outbox")
+
 
 settings = Settings()
 
@@ -213,6 +217,7 @@ def bootstrap_storage_tree(storage_dir: str | Path | None = None) -> None:
         root / "connectors" / "manifests",
         root / "connectors" / "snapshots",
         root / "connectors" / "raw",
+        root / "layer3-outbox",
     )
     for path in paths:
         path.mkdir(parents=True, exist_ok=True)
