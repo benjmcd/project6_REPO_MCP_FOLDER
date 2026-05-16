@@ -1190,6 +1190,124 @@ async function submitRenderedPackageReview(page, sessionId, approval, planPrevie
   return packageSubmit;
 }
 
+async function previewRenderedPackageSupersession(page, sessionId, approval, execution, commit, packageSubmit) {
+  await expect(page.locator('#package-supersession-preview-panel')).toHaveAttribute('data-rendered-mode', 'rendered_package_supersession_preview_control');
+  await expect(page.locator('#package-supersession-preview-panel')).toHaveAttribute('data-preview-state', 'package_supersession_preview_ready');
+  await expect(page.locator('#package-supersession-preview-submit')).toBeEnabled();
+
+  const previewRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/package/mutation/preview') && apiRequest.method() === 'POST'
+  ));
+  const previewResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/mutation/preview')
+  ));
+  await page.locator('#package-supersession-preview-submit').click();
+  const previewPayload = (await previewRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(previewPayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'operator_decision',
+    'output_package_ids',
+    'package_kinds',
+    'package_review_preview_hash',
+    'package_review_submit_record_ref',
+    'pass_run_id',
+    'payload_hashes',
+    'payload_refs',
+    'reconciliation_record_id',
+    'session_id',
+  ]);
+  expect(previewPayload.session_id).toBe(sessionId);
+  expect(previewPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(previewPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(previewPayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(previewPayload.output_package_ids).toEqual(commit.output_package_ids);
+  expect(previewPayload.package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(previewPayload.payload_refs).toEqual(commit.payload_refs);
+  expect(previewPayload.payload_hashes).toEqual(commit.payload_hashes);
+  expect(previewPayload.package_review_preview_hash).toBe(commit.package_review_preview_hash);
+  expect(previewPayload.package_review_submit_record_ref).toBe(packageSubmit.submit_record_ref);
+  expect(previewPayload.operator_decision).toBe('preview_package_supersession');
+  for (const forbiddenKey of [
+    'preview_id',
+    'preview_hash',
+    'analysis_run_id',
+    'result_review_record_ref',
+    'package_supersession_commit',
+    'package_row_mutation',
+    'package_payload_rewrite',
+    'replacement_package_set',
+    'edited_package_content',
+    'destination_id',
+    'destination_url',
+    'connector_id',
+    'connector_run_id',
+    'source_expansion',
+    'rag_vector_state',
+    'frontend_state',
+  ]) {
+    expect(previewPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  const supersessionPreview = await expectJson(await previewResponsePromise);
+  expect(supersessionPreview.schema_id).toBe('layer3.package_supersession_preview.v1');
+  expect(supersessionPreview.status).toBe('previewed');
+  expect(supersessionPreview.session_id).toBe(sessionId);
+  expect(supersessionPreview.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(supersessionPreview.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(supersessionPreview.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(supersessionPreview.output_package_ids).toEqual(commit.output_package_ids);
+  expect(supersessionPreview.package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(supersessionPreview.payload_refs).toEqual(commit.payload_refs);
+  expect(supersessionPreview.payload_hashes).toEqual(commit.payload_hashes);
+  expect(supersessionPreview.package_review_preview_hash).toBe(commit.package_review_preview_hash);
+  expect(supersessionPreview.operator_decision).toBe('preview_package_supersession');
+  expect(supersessionPreview.package_supersession_preview_mode).toBe('package_supersession_preview_only');
+  expect(supersessionPreview.package_supersession_preview_hash).toBeTruthy();
+  expect(supersessionPreview.package_set_hash).toBeTruthy();
+  expect(supersessionPreview.package_rows).toHaveLength(3);
+  expect(supersessionPreview.downstream_dependency_detected).toBe(true);
+  expect(supersessionPreview.immutable_package_rule_enforced).toBe(true);
+  expect(supersessionPreview.package_row_mutation_enabled).toBe(false);
+  expect(supersessionPreview.package_payload_rewrite_enabled).toBe(false);
+  expect(supersessionPreview.package_supersession_commit_enabled).toBe(false);
+  expect(supersessionPreview.database_write_enabled).toBe(false);
+  expect(supersessionPreview.filesystem_write_enabled).toBe(false);
+  expect(supersessionPreview.broad_package_mutation_enabled).toBe(false);
+  expect(supersessionPreview.source_widening_enabled).toBe(false);
+  expect(supersessionPreview.connector_dispatch_enabled).toBe(false);
+  expect(supersessionPreview.provider_public_url_enabled).toBe(false);
+  expect(supersessionPreview.qualitative_hybrid_rag_execution_enabled).toBe(false);
+  expect(supersessionPreview.next_state).toBe('package_supersession_previewed');
+
+  await expect(page.locator('#package-supersession-preview-panel')).toHaveAttribute('data-preview-state', 'package_supersession_previewed');
+  await expect(page.locator('#package-supersession-preview-panel')).toContainText('package_supersession_preview_only');
+  await expect(page.locator('#package-supersession-preview-panel')).toContainText('package_supersession_previewed');
+  await expect(page.locator('#package-supersession-preview-panel')).toContainText('false');
+  await expect(page.locator('#package-supersession-preview-panel')).not.toContainText('package_supersession_commit_enabled true');
+  await expect(page.locator('#package-supersession-preview-submit')).toBeEnabled();
+
+  await page.route('**/api/v1/layer3/package/mutation/preview', async (route) => {
+    await route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.workbench_error.v1',
+        error_code: 'package_supersession_preview_package_review_preview_hash_mismatch',
+        status: 'conflict',
+        message: 'Supplied package_review_preview_hash does not match package-construction authority.',
+        blocked_fields: ['package_review_preview_hash'],
+      }),
+    });
+  });
+  await page.locator('#package-supersession-preview-submit').click();
+  await expect(page.locator('#package-supersession-preview-panel')).toHaveAttribute('data-preview-state', 'package_supersession_preview_package_review_preview_hash_mismatch');
+  await expect(page.locator('#package-supersession-preview-panel')).toContainText('package_supersession_preview_package_review_preview_hash_mismatch');
+  await page.unroute('**/api/v1/layer3/package/mutation/preview');
+
+  return supersessionPreview;
+}
+
 async function submitRenderedHandoffExportPrepare(
   page,
   sessionId,
@@ -3894,6 +4012,83 @@ test('Layer 3 workbench drives raw mixed rendered package-review preview commit 
     '/package/mutation',
     '/package/replacement',
     '/package/supersession',
+  ]);
+});
+
+test('Layer 3 workbench drives rendered package supersession preview control', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  const status = await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+  const review = await submitRenderedResultReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    status,
+    {
+      operatorDecision: 'approved',
+      reviewNotes: 'Raw mixed rendered result review approves package supersession preview.',
+      packageReviewEnabled: true,
+    },
+  );
+  const packagePreview = await inspectRenderedPackagePreview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+  );
+  const commit = await commitRenderedPackageConstruction(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    packagePreview,
+  );
+  const packageSubmit = await submitRenderedPackageReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+  );
+  const supersessionPreview = await previewRenderedPackageSupersession(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    packageSubmit,
+  );
+
+  expect(review.review_state).toBe('execution_result_review_approved');
+  expect(packageSubmit.package_review_state).toBe('package_review_approved');
+  expect(supersessionPreview.next_state).toBe('package_supersession_previewed');
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/execution/result/review'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/preview'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/commit'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/submit'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/mutation/preview'))).toHaveLength(2);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/handoff/',
+    '/package/replacement',
+    '/package/supersession',
+    '/handoff/connector',
+    '/source/mixed-corpus/materialize',
   ]);
 });
 

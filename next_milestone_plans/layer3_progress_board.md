@@ -3590,3 +3590,15 @@ Current-main proof/control sync: PR `#1236` merged `632_PACKAGE_SUPERSESSION_PRE
 The sync doc `633_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` passed in `2m38s`, `test` passed in `2m51s`, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The freeze is now current-main synced as `current_main_synced_package_supersession_preview_operator_action_freeze`.
 
 The next exact posture is `implement_rendered_package_supersession_preview_control_after_freeze_sync`. No runtime begins in this sync, and package supersession commit control, package rebuild, package payload rewrite, source `L3OutputPackage` row mutation, replacement payload generation, downstream invalidation, re-delivery runtime, provider-public delivery/use, connector/destination dispatch, source expansion, RAG/vector behavior, auth/security behavior, full mockup activation, and frontend-durable authority remain blocked.
+
+## Package Supersession Preview Rendered Control
+
+Branch-local implementation proof: `634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md` follows the current-main synced package supersession preview freeze at `31966bce3fa8462cf918bf0c518359b0a51239b3`.
+
+The rendered `/review/layer3` package review area now exposes `rendered_package_supersession_preview_control` through `#package-supersession-preview-submit` and `#package-supersession-preview-panel`. The control derives its request from existing response-safe server authority, calls only `/api/v1/layer3/package/mutation/preview`, uses operator decision `preview_package_supersession`, and displays only response-safe `package_supersession_preview_only` state, hashes, immutable package rows, dependency rows, disabled capability flags, and redacted failure state.
+
+The implementation keeps browser state transient, uses `packageSupersessionPreviewPayload`, redacts local path-shaped payload refs as `redacted_local_payload_ref`, and does not admit package supersession commit, package rebuild, package payload rewrite, source `L3OutputPackage` row mutation, replacement payload generation, downstream invalidation, re-delivery runtime, provider-public delivery/use, connector/destination dispatch, source expansion, RAG/vector behavior, auth/security behavior, full mockup activation, or frontend-durable authority.
+
+Targeted proof includes static page assertions, existing package supersession preview API guardrail tests, and headed/headless Chromium coverage for `Layer 3 workbench drives rendered package supersession preview control`, including ready, submitted, previewed, and `package_supersession_preview_package_review_preview_hash_mismatch` failed states.
+
+The next exact posture is `await_current_main_sync_for_package_supersession_preview_rendered_control`.

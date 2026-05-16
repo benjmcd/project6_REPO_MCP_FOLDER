@@ -1568,6 +1568,9 @@ LAYER3_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "633_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL = (
+    PLANNING_DOCS / "634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -51415,6 +51418,117 @@ def _check_package_supersession_preview_operator_action_freeze(errors: list[str]
                 errors.append(f"{_rel(path)} missing package supersession preview sync term: {term}")
 
 
+def _check_package_supersession_preview_rendered_control(errors: list[str]) -> None:
+    rendered_control_text = _read_required_text(
+        LAYER3_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `rendered_package_supersession_preview_control`.",
+        "633_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-package-supersession-preview-control",
+        "31966bce3fa8462cf918bf0c518359b0a51239b3",
+        "Selected exact operator action: `supersede_package_preview`.",
+        "Existing backend surface: `/api/v1/layer3/package/mutation/preview`.",
+        "Owner service: `backend/app/services/layer3_package_mutation_entry.py`.",
+        "packageSupersessionPreviewPayload",
+        "safePackagePayloadRefForDisplay",
+        "redacted_local_payload_ref",
+        "Layer 3 workbench drives rendered package supersession preview control",
+        "package_supersession_preview_package_review_preview_hash_mismatch",
+        "Headless Chromium passed",
+        "Headed Chromium passed",
+        "No backend route, DTO, response model, database model, migration, or package mutation service behavior changed",
+        "This pass does not admit package supersession commit, package rebuild, package payload rewrite",
+        "The next exact posture is `await_current_main_sync_for_package_supersession_preview_rendered_control`.",
+    ):
+        if term not in rendered_control_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL)} missing rendered control term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Supersession Preview Rendered Control",
+            "634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+            "rendered_package_supersession_preview_control",
+            "/api/v1/layer3/package/mutation/preview",
+            "redacted_local_payload_ref",
+            "Layer 3 workbench drives rendered package supersession preview control",
+            "await_current_main_sync_for_package_supersession_preview_rendered_control",
+        ),
+        MANIFEST: (
+            "package_supersession_preview_rendered_control",
+            "branch_local_rendered_control_implemented",
+            "codex/l3-package-supersession-preview-control",
+            "634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+            "packageSupersessionPreviewPayload",
+            "postJson('/package/mutation/preview'",
+            "redacted_local_payload_ref",
+            "headless Chromium passed for Layer 3 workbench drives rendered package supersession preview control",
+            "headed Chromium passed for Layer 3 workbench drives rendered package supersession preview control",
+            "await_current_main_sync_for_package_supersession_preview_rendered_control",
+        ),
+        PROOF_MANIFEST: (
+            "package_supersession_preview_rendered_control_proof",
+            "branch_local_rendered_control_proof",
+            "rendered_package_supersession_preview_control",
+            "package_supersession_preview_only",
+            "packageSupersessionPreviewPayload",
+            "redacted_local_payload_ref",
+            "package_supersession_preview_package_review_preview_hash_mismatch",
+            "no package supersession commit request",
+            "await_current_main_sync_for_package_supersession_preview_rendered_control",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package supersession preview rendered control term: {term}")
+
+    for path, terms in {
+        LAYER3_HTML: (
+            'id="package-supersession-preview-submit"',
+            'id="package-supersession-preview-panel"',
+            'data-rendered-mode="rendered_package_supersession_preview_control"',
+        ),
+        LAYER3_CSS: (
+            ".package-supersession-preview-panel",
+            ".package-supersession-preview-grid",
+            ".package-supersession-preview-rows",
+        ),
+        LAYER3_JS: (
+            "PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE = 'rendered_package_supersession_preview_control'",
+            "PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION = 'preview_package_supersession'",
+            "function packageSupersessionPreviewPayload",
+            "postJson('/package/mutation/preview'",
+            "safePackagePayloadRefForDisplay",
+            "redacted_local_payload_ref",
+            "package_supersession_preview_ready",
+        ),
+        LAYER3_PAGE_TEST: (
+            "package-supersession-preview-submit",
+            "package-supersession-preview-panel",
+            "PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE",
+            "packageSupersessionPreviewPayload",
+            "redacted_local_payload_ref",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives rendered package supersession preview control",
+            "previewRenderedPackageSupersession",
+            "/api/v1/layer3/package/mutation/preview",
+            "expectOnlyPayloadKeys",
+            "package_supersession_preview_package_review_preview_hash_mismatch",
+            "/package/supersession",
+            "/source/mixed-corpus/materialize",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered package supersession control source term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -51888,6 +52002,7 @@ def main() -> int:
     _check_connector_internal_fake_local_destination_receipt_runtime(errors)
     _check_target_selection_validate_only_guard(errors)
     _check_package_supersession_preview_operator_action_freeze(errors)
+    _check_package_supersession_preview_rendered_control(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

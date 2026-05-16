@@ -44,6 +44,10 @@ const RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES = new Set(['dataset_version',
 const PACKAGE_LIFECYCLE_DASHBOARD_MODE = 'rendered_package_lifecycle_read_only_dashboard';
 const PACKAGE_LIFECYCLE_USE_CASE = 'operator_inspects_package_lifecycle_without_mutation';
 const PACKAGE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
+const PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE = 'rendered_package_supersession_preview_control';
+const PACKAGE_SUPERSESSION_PREVIEW_USE_CASE = 'operator_previews_package_supersession_without_package_row_or_payload_mutation';
+const PACKAGE_SUPERSESSION_PREVIEW_RESPONSE_AUTHORITY = 'State.packageSupersessionPreview';
+const PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION = 'preview_package_supersession';
 const CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE_MODE = 'rendered_connector_local_destination_receipt_read_only_status_surface';
 const CONNECTOR_LOCAL_RECEIPT_STATUS_USE_CASE = 'operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write';
 const CONNECTOR_LOCAL_RECEIPT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.connector_local_destination_receipt';
@@ -108,6 +112,9 @@ const State = {
     packageReviewSubmit: null,
     packageReviewSubmitError: null,
     packageReviewSubmitPending: false,
+    packageSupersessionPreview: null,
+    packageSupersessionPreviewError: null,
+    packageSupersessionPreviewPending: false,
     handoffExportPrepare: null,
     handoffExportPrepareError: null,
     handoffExportPreparePending: false,
@@ -202,6 +209,8 @@ const elements = {
     packageReviewSubmit: document.getElementById('package-review-submit'),
     packageReviewPreviewPanel: document.getElementById('package-review-preview-panel'),
     packageLifecycleDashboardPanel: document.getElementById('package-lifecycle-dashboard-panel'),
+    packageSupersessionPreviewPanel: document.getElementById('package-supersession-preview-panel'),
+    packageSupersessionPreviewSubmit: document.getElementById('package-supersession-preview-submit'),
     handoffExportPrepareForm: document.getElementById('handoff-export-prepare-form'),
     handoffExportPreparePanel: document.getElementById('handoff-export-prepare-panel'),
     handoffExportPrepareDecision: document.getElementById('handoff-export-prepare-decision'),
@@ -559,7 +568,7 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.externalExportDownloadPrepare?.authority_rail || State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
+    return State.externalExportDownloadPrepare?.authority_rail || State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.packageSupersessionPreview?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
         || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
         || State.executionStart?.authority_rail || State.executionSelection?.authority_rail
         || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
@@ -586,6 +595,7 @@ function currentDownstreamUnavailable() {
         || State.sessionSummary?.connector_local_destination_receipt?.downstream_unavailable
         || State.sessionSummary?.aps_handoff_dispatch?.downstream_unavailable
         || State.handoffExportPrepare?.downstream_unavailable
+        || State.packageSupersessionPreview?.downstream_unavailable
         || State.packageReviewSubmit?.downstream_unavailable
         || State.packageConstruction?.downstream_unavailable
         || State.packageReviewPreview?.downstream_unavailable
@@ -621,6 +631,7 @@ function renderContext() {
         package_preview: State.packageReviewPreview?.next_state || State.packageReviewPreviewError?.error_code || State.sessionSummary?.package_review_preview?.state || 'none',
         package_construction: State.packageConstruction?.next_state || State.packageConstructionError?.error_code || State.sessionSummary?.package_construction?.state || 'none',
         package_review_submit: State.packageReviewSubmit?.next_state || State.packageReviewSubmitError?.error_code || State.sessionSummary?.package_review_submit?.state || 'none',
+        package_supersession_preview: State.packageSupersessionPreview?.next_state || State.packageSupersessionPreviewError?.error_code || 'none',
         handoff_export_prepare: State.handoffExportPrepare?.next_state || State.handoffExportPrepareError?.error_code || State.sessionSummary?.handoff_export_prepare?.state || 'none',
         aps_handoff_dispatch: State.apsHandoffDispatch?.next_state || State.apsHandoffDispatchError?.error_code || State.sessionSummary?.aps_handoff_dispatch?.state || 'none',
         external_export_download: State.externalExportDownloadPrepare?.next_state || State.externalExportDownloadPrepareError?.error_code || State.sessionSummary?.external_export_download?.state || 'none',
@@ -1301,6 +1312,9 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.packageReviewSubmit = null;
     State.packageReviewSubmitError = null;
     State.packageReviewSubmitPending = false;
+    State.packageSupersessionPreview = null;
+    State.packageSupersessionPreviewError = null;
+    State.packageSupersessionPreviewPending = false;
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
     State.handoffExportPreparePending = false;
@@ -1771,6 +1785,47 @@ function packageLifecycleOutputRows() {
         payload_ref: outputPackages[index]?.payload_ref || payloadRefs[index],
         payload_hash: outputPackages[index]?.payload_hash || payloadHashes[index],
     })).filter((row) => row.package_kind || row.output_package_id || row.payload_ref || row.payload_hash);
+}
+
+function packageSupersessionPreviewState() {
+    return State.packageSupersessionPreview || null;
+}
+
+function safePackagePayloadRefForDisplay(value) {
+    const text = String(value || '').trim();
+    if (!text) return null;
+    if (/^[A-Za-z]:[\\/]/.test(text) || text.startsWith('\\\\') || text.startsWith('/') || text.includes('\\')) {
+        return 'redacted_local_payload_ref';
+    }
+    return text;
+}
+
+function renderPackageSupersessionPreviewRows(rows) {
+    return rows.length
+        ? rows.map((row) => {
+            const payloadRef = safePackagePayloadRefForDisplay(row.payload_ref);
+            return `
+                <li>
+                    <code>${escapeHtml(row.package_kind || 'unknown_package_kind')}</code>
+                    ${row.output_package_id ? `<code>${escapeHtml(row.output_package_id)}</code>` : ''}
+                    ${payloadRef ? `<code>${escapeHtml(payloadRef)}</code>` : ''}
+                    ${row.payload_hash ? `<code>${escapeHtml(row.payload_hash)}</code>` : ''}
+                </li>
+            `;
+        }).join('')
+        : '<li>No immutable package rows are available.</li>';
+}
+
+function renderPackageSupersessionDependencyRows(rows) {
+    return rows.length
+        ? rows.map((row) => `
+            <li>
+                <code>${escapeHtml(row.state_key || 'downstream_state')}</code>
+                ${row.record_ref ? `<code>${escapeHtml(row.record_ref)}</code>` : ''}
+                ${row.state ? `<span class="status-pill preview">${escapeHtml(row.state)}</span>` : ''}
+            </li>
+        `).join('')
+        : '<li>No downstream dependency refs are present.</li>';
 }
 
 function packageLifecycleDashboardState(preview, construction, submit) {
@@ -2526,6 +2581,35 @@ function canSubmitPackageReview() {
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && (!packageReviewSubmitDecisionNeedsNotes() || notes)
+    );
+}
+
+function canSubmitPackageSupersessionPreview() {
+    const authority = selectedResultAuthority();
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    const packageReviewState = submit.package_review_state || submit.next_state || submit.state;
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && packageReviewState === 'package_review_approved'
+        && submit.submit_record_ref
+        && (submit.reconciliation_record_id || construction.reconciliation_record_id)
+        && packageReviewPreviewHash()
+        && packageOutputPackageIds().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packageKindsFromState().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadRefs().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadHashes().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+        && !State.packageSupersessionPreviewPending
+        && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
+        && !State.externalExportDownloadDeliveryPending
     );
 }
 
@@ -4581,6 +4665,86 @@ function renderPackageLifecycleDashboardPanel() {
                 <strong>Deferred Capabilities</strong>
                 <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
             </section>
+        </div>
+    `;
+}
+
+function renderPackageSupersessionPreviewPanel() {
+    const preview = packageSupersessionPreviewState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    const rows = Array.isArray(preview.package_rows) && preview.package_rows.length
+        ? preview.package_rows
+        : packageLifecycleOutputRows();
+    const dependencies = Array.isArray(preview.downstream_dependencies)
+        ? preview.downstream_dependencies
+        : [];
+    const error = State.packageSupersessionPreviewError;
+    const stateLabel = State.packageSupersessionPreviewPending
+        ? 'package_supersession_preview_submitting'
+        : (error?.error_code || preview.next_state || (canSubmitPackageSupersessionPreview() ? 'package_supersession_preview_ready' : 'package_supersession_preview_unavailable'));
+    const statePill = error ? 'blocked' : (preview.next_state ? 'ok' : 'preview');
+    elements.packageSupersessionPreviewPanel.dataset.previewState = stateLabel;
+    elements.packageSupersessionPreviewPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(statePill)}">${escapeHtml(stateLabel)}</span>
+            <span class="rail-label">${escapeHtml(PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE)}</span>
+        </div>
+        <div class="result-review-grid package-supersession-preview-grid">
+            <section class="result-review-card">
+                <strong>Rendered Control</strong>
+                <ul>
+                    ${fieldItem('use case', PACKAGE_SUPERSESSION_PREVIEW_USE_CASE, { code: true })}
+                    ${fieldItem('response authority', PACKAGE_SUPERSESSION_PREVIEW_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('operator decision', PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION, { code: true })}
+                    ${fieldItem('browser durable authority', false)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Request Basis</strong>
+                <ul>
+                    ${fieldItem('session', preview.session_id || currentSessionId(), { code: true })}
+                    ${fieldItem('reconciliation', preview.reconciliation_record_id || submit.reconciliation_record_id || construction.reconciliation_record_id, { code: true })}
+                    ${fieldItem('package preview hash', preview.package_review_preview_hash || packageReviewPreviewHash(), { code: true })}
+                    ${fieldItem('package submit ref', submit.submit_record_ref, { code: true })}
+                    ${fieldItem('package count', rows.length)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Preview Result</strong>
+                <ul>
+                    ${fieldItem('status', preview.status)}
+                    ${fieldItem('mode', preview.package_supersession_preview_mode, { code: true })}
+                    ${fieldItem('preview hash', preview.package_supersession_preview_hash, { code: true })}
+                    ${fieldItem('package set hash', preview.package_set_hash, { code: true })}
+                    ${fieldItem('next state', preview.next_state)}
+                    ${fieldItem('downstream dependency detected', preview.downstream_dependency_detected)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Disabled Capability Flags</strong>
+                <ul>
+                    ${fieldItem('database write', preview.database_write_enabled)}
+                    ${fieldItem('filesystem write', preview.filesystem_write_enabled)}
+                    ${fieldItem('package row mutation', preview.package_row_mutation_enabled)}
+                    ${fieldItem('payload rewrite', preview.package_payload_rewrite_enabled)}
+                    ${fieldItem('supersession commit', preview.package_supersession_commit_enabled)}
+                    ${fieldItem('broad mutation', preview.broad_package_mutation_enabled)}
+                    ${fieldItem('connector dispatch', preview.connector_dispatch_enabled)}
+                    ${fieldItem('provider public URL', preview.provider_public_url_enabled)}
+                    ${fieldItem('source widening', preview.source_widening_enabled)}
+                    ${fieldItem('qualitative/RAG execution', preview.qualitative_hybrid_rag_execution_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card package-supersession-preview-rows">
+                <strong>Immutable Package Rows</strong>
+                <ul>${renderPackageSupersessionPreviewRows(rows)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Downstream Dependencies</strong>
+                <ul>${renderPackageSupersessionDependencyRows(dependencies)}</ul>
+            </section>
+            ${renderErrorCard(error)}
         </div>
     `;
 }
@@ -6784,6 +6948,7 @@ function setGateControls() {
     elements.resultReviewSubmit.disabled = !canSubmitResultReview();
     elements.packageReviewPreviewInspect.disabled = !canInspectPackageReviewPreview();
     elements.packageConstructionCommit.disabled = !canCommitPackageConstruction();
+    elements.packageSupersessionPreviewSubmit.disabled = !canSubmitPackageSupersessionPreview();
     elements.packageReviewSubmitDecision.disabled = !packageReviewControlsEnabled;
     elements.packageReviewSubmitNotes.disabled = !packageReviewControlsEnabled;
     elements.packageReviewSubmit.disabled = !canSubmitPackageReview();
@@ -6826,6 +6991,7 @@ function renderAll() {
     renderResultReviewPanel();
     renderPackageReviewPreviewPanel();
     renderPackageLifecycleDashboardPanel();
+    renderPackageSupersessionPreviewPanel();
     renderDownstreamAccessLifecycleDashboardPanel();
     renderHandoffExportPreparePanel();
     renderApsHandoffDispatchPanel();
@@ -6976,6 +7142,44 @@ function packageReviewSubmitPayload(authority = selectedResultAuthority()) {
     }
     if (authority.analysisRunId && !qualitativeAps) {
         payload.analysis_run_id = authority.analysisRunId;
+    }
+    return payload;
+}
+
+function packageSupersessionPreviewPayload(authority = selectedResultAuthority()) {
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    const handoff = handoffExportPrepareState() || {};
+    const aps = apsHandoffDispatchState() || {};
+    const external = externalExportDownloadPrepareState() || {};
+    const connector = State.sessionSummary?.connector_dispatch_record || {};
+    const payload = {
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        reconciliation_record_id: submit.reconciliation_record_id || construction.reconciliation_record_id,
+        output_package_ids: packageOutputPackageIds(),
+        package_kinds: packageKindsFromState(),
+        payload_refs: packagePayloadRefs(),
+        payload_hashes: packagePayloadHashes(),
+        package_review_preview_hash: packageReviewPreviewHash(),
+        operator_decision: PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION,
+    };
+    if (submit.submit_record_ref) {
+        payload.package_review_submit_record_ref = submit.submit_record_ref;
+    }
+    if (handoff.prepare_record_ref) {
+        payload.handoff_export_record_ref = handoff.prepare_record_ref;
+    }
+    if (aps.aps_handoff_record_ref) {
+        payload.aps_handoff_record_ref = aps.aps_handoff_record_ref;
+    }
+    if (external.external_export_download_record_ref) {
+        payload.external_export_download_record_ref = external.external_export_download_record_ref;
+    }
+    if (connector.connector_dispatch_record_ref) {
+        payload.connector_dispatch_record_ref = connector.connector_dispatch_record_ref;
     }
     return payload;
 }
@@ -7274,6 +7478,8 @@ async function selectExecution() {
         State.packageConstructionError = null;
         State.packageReviewSubmit = null;
         State.packageReviewSubmitError = null;
+        State.packageSupersessionPreview = null;
+        State.packageSupersessionPreviewError = null;
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatch = null;
@@ -7314,6 +7520,8 @@ async function startExecution() {
         State.packageConstructionError = null;
         State.packageReviewSubmit = null;
         State.packageReviewSubmitError = null;
+        State.packageSupersessionPreview = null;
+        State.packageSupersessionPreviewError = null;
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatch = null;
@@ -7388,6 +7596,8 @@ async function inspectResultStatus() {
         State.packageConstructionError = null;
         State.packageReviewSubmit = null;
         State.packageReviewSubmitError = null;
+        State.packageSupersessionPreview = null;
+        State.packageSupersessionPreviewError = null;
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatch = null;
@@ -7417,6 +7627,8 @@ async function inspectPackageReviewPreview() {
     State.handoffExportPrepareError = null;
     State.apsHandoffDispatch = null;
     State.apsHandoffDispatchError = null;
+    State.packageSupersessionPreview = null;
+    State.packageSupersessionPreviewError = null;
     clearExternalExportDownloadPrepareState();
     renderAll();
     setBusy(elements.packageReviewPreviewInspect, true, 'Inspect Package Preview');
@@ -7450,6 +7662,8 @@ async function commitPackageConstruction() {
     State.packageConstructionPending = true;
     State.packageConstructionError = null;
     State.packageReviewSubmitError = null;
+    State.packageSupersessionPreview = null;
+    State.packageSupersessionPreviewError = null;
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
     State.apsHandoffDispatch = null;
@@ -7492,6 +7706,8 @@ async function submitPackageReview(event) {
     if (!canSubmitPackageReview()) return;
     State.packageReviewSubmitPending = true;
     State.packageReviewSubmitError = null;
+    State.packageSupersessionPreview = null;
+    State.packageSupersessionPreviewError = null;
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
     State.apsHandoffDispatch = null;
@@ -7524,6 +7740,32 @@ async function submitPackageReview(event) {
     } finally {
         State.packageReviewSubmitPending = false;
         setBusy(elements.packageReviewSubmit, false, 'Submit Package Review');
+        renderAll();
+    }
+}
+
+async function submitPackageSupersessionPreview() {
+    if (!canSubmitPackageSupersessionPreview()) return;
+    State.packageSupersessionPreviewPending = true;
+    State.packageSupersessionPreviewError = null;
+    renderAll();
+    setBusy(elements.packageSupersessionPreviewSubmit, true, 'Preview Supersession');
+    try {
+        State.packageSupersessionPreview = await postJson('/package/mutation/preview', packageSupersessionPreviewPayload());
+        State.packageSupersessionPreviewError = null;
+        addEvent('Package supersession preview recorded as read-only response state.');
+        renderAll();
+    } catch (error) {
+        State.packageSupersessionPreviewError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'package_supersession_preview_request_failed',
+            message: error.message,
+        };
+        addEvent(`Package supersession preview blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.packageSupersessionPreviewPending = false;
+        setBusy(elements.packageSupersessionPreviewSubmit, false, 'Preview Supersession');
         renderAll();
     }
 }
@@ -7751,6 +7993,8 @@ async function submitResultReview(event) {
         State.packageConstructionError = null;
         State.packageReviewSubmit = null;
         State.packageReviewSubmitError = null;
+        State.packageSupersessionPreview = null;
+        State.packageSupersessionPreviewError = null;
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatch = null;
@@ -8322,6 +8566,7 @@ elements.resultReviewForm.addEventListener('submit', submitResultReview);
 elements.packageReviewPreviewInspect.addEventListener('click', inspectPackageReviewPreview);
 elements.packageConstructionCommit.addEventListener('click', commitPackageConstruction);
 elements.packageReviewSubmitForm.addEventListener('submit', submitPackageReview);
+elements.packageSupersessionPreviewSubmit.addEventListener('click', submitPackageSupersessionPreview);
 elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExportPrepare);
 elements.apsHandoffDispatchForm.addEventListener('submit', submitApsHandoffDispatch);
 elements.externalExportDownloadPrepareForm.addEventListener('submit', submitExternalExportDownloadPrepare);

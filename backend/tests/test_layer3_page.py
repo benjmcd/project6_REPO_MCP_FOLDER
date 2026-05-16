@@ -109,7 +109,10 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="package-review-preview-panel"' in response.text
     assert 'id="package-review-preview-inspect"' in response.text
     assert 'id="package-construction-commit"' in response.text
+    assert 'id="package-supersession-preview-submit"' in response.text
     assert 'id="package-review-submit-form"' in response.text
+    assert 'id="package-supersession-preview-panel"' in response.text
+    assert 'data-rendered-mode="rendered_package_supersession_preview_control"' in response.text
     assert 'id="package-review-submit-decision"' in response.text
     assert 'id="package-review-submit-notes"' in response.text
     assert 'id="package-review-submit"' in response.text
@@ -279,6 +282,12 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "AUTHORITY_MATRIX_REVIEW_RENDERED_MODE = 'rendered_authority_matrix_read_only_review_surface'" in js.text
     assert "AUTHORITY_MATRIX_REVIEW_USE_CASE = 'operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch'" in js.text
     assert "AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_matrix_contract'" in js.text
+    assert "PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE = 'rendered_package_supersession_preview_control'" in js.text
+    assert "PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION = 'preview_package_supersession'" in js.text
+    assert "function packageSupersessionPreviewPayload" in js.text
+    assert "postJson('/package/mutation/preview'" in js.text
+    assert "package_supersession_preview_ready" in js.text
+    assert "redacted_local_payload_ref" in js.text
     assert "function authorityMatrixContract" in js.text
     assert "function authorityMatrixReviewState" in js.text
     assert "function renderAuthorityMatrixReviewPanel" in js.text
@@ -330,6 +339,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".authority-matrix-review-panel" in css.text
     assert ".authority-matrix-review-grid" in css.text
     assert ".authority-matrix-review-rows" in css.text
+    assert ".package-supersession-preview-panel" in css.text
+    assert ".package-supersession-preview-grid" in css.text
+    assert ".package-supersession-preview-rows" in css.text
     assert ".layer3-e2e-governance-lifecycle-panel" in css.text
     assert ".layer3-e2e-governance-lifecycle-rows" in css.text
     assert ".downstream-access-lifecycle-dashboard-panel" in css.text

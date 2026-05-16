@@ -24811,5 +24811,80 @@
   "latest_package_supersession_preview_operator_action_current_main_sync_branch": "codex/l3-package-supersession-preview-freeze-sync",
   "latest_package_supersession_preview_operator_action_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/633_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md",
   "latest_package_supersession_preview_operator_action_current_main_sync_live_behavior_change": false,
-  "latest_package_supersession_preview_operator_action_current_main_sync_summary": "Doc 633 proof records current-main sync for PR #1236 and moves the next exact posture to implement_rendered_package_supersession_preview_control_after_freeze_sync."
+  "latest_package_supersession_preview_operator_action_current_main_sync_summary": "Doc 633 proof records current-main sync for PR #1236 and moves the next exact posture to implement_rendered_package_supersession_preview_control_after_freeze_sync.",
+  "package_supersession_preview_rendered_control_proof": {
+    "proof_kind": "rendered_package_supersession_preview_control",
+    "status": "branch_local_rendered_control_proof",
+    "branch": "codex/l3-package-supersession-preview-control",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/633_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "31966bce3fa8462cf918bf0c518359b0a51239b3",
+    "selected_surface": "package_mutation_reconstruction",
+    "selected_operator_action": "supersede_package_preview",
+    "selected_implementation_entry_mode": "rendered_package_supersession_preview_control",
+    "existing_backend_surface": "/api/v1/layer3/package/mutation/preview",
+    "owner_service": "backend/app/services/layer3_package_mutation_entry.py",
+    "server_runtime_mode": "package_supersession_preview_only",
+    "operator_decision": "preview_package_supersession",
+    "source_authority": [
+      "backend/app/api/layer3.py",
+      "backend/app/services/layer3_package_mutation_entry.py",
+      "backend/app/services/layer3_workbench_package_state.py",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "backend/tests/test_layer3_api.py",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "rendered_controls": [
+      "package-supersession-preview-submit",
+      "package-supersession-preview-panel"
+    ],
+    "request_builder": "packageSupersessionPreviewPayload",
+    "api_call": "postJson('/package/mutation/preview'",
+    "display_redaction": "safePackagePayloadRefForDisplay redacted_local_payload_ref",
+    "rendered_states_proven": [
+      "package_supersession_preview_ready",
+      "package_supersession_preview_submitting",
+      "package_supersession_previewed",
+      "package_supersession_preview_package_review_preview_hash_mismatch"
+    ],
+    "validation": [
+      "node --check backend/app/review_ui/static/layer3.js passed",
+      "python -m py_compile backend/tests/test_layer3_page.py passed",
+      "python -m pytest backend/tests/test_layer3_page.py -q passed",
+      "python -m pytest backend/tests/test_layer3_api.py -k package_supersession_preview -q passed",
+      "headless Chromium passed for Layer 3 workbench drives rendered package supersession preview control",
+      "headed Chromium passed for Layer 3 workbench drives rendered package supersession preview control"
+    ],
+    "proof_terms": [
+      "634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+      "633_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md",
+      "rendered_package_supersession_preview_control",
+      "supersede_package_preview",
+      "package_supersession_preview_only",
+      "preview_package_supersession",
+      "/api/v1/layer3/package/mutation/preview",
+      "packageSupersessionPreviewPayload",
+      "redacted_local_payload_ref",
+      "Layer 3 workbench drives rendered package supersession preview control",
+      "package_supersession_preview_package_review_preview_hash_mismatch",
+      "no package supersession commit request",
+      "no package payload rewrite",
+      "no source L3OutputPackage row mutation",
+      "no connector/destination dispatch",
+      "no source expansion",
+      "no RAG/vector behavior",
+      "no frontend-durable authority"
+    ],
+    "live_behavior_change": true,
+    "backend_behavior_change": false,
+    "rendered_ui_behavior_change": true,
+    "next_whole_project_posture": "await_current_main_sync_for_package_supersession_preview_rendered_control"
+  },
+  "latest_package_supersession_preview_rendered_control_branch": "codex/l3-package-supersession-preview-control",
+  "latest_package_supersession_preview_rendered_control_doc": "next_milestone_plans/Layer3_planning_docs/634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+  "latest_package_supersession_preview_rendered_control_live_behavior_change": true,
+  "latest_package_supersession_preview_rendered_control_summary": "Doc 634 proof records the rendered package supersession preview control over the existing package_supersession_preview_only API, with static page assertions, backend API guardrail tests, and headed/headless Chromium proof for ready, submitted, previewed, and failed states. The next exact posture is await_current_main_sync_for_package_supersession_preview_rendered_control."
 }
