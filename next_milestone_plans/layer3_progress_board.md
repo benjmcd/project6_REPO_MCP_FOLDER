@@ -2715,6 +2715,12 @@ The selected runtime family is `connector_local_destination_receipt_runtime`; th
 
 The freeze explicitly keeps real connector invocation, destination writes, connector-run creation, credentials, provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior, full mockup activation, and frontend-only durable authority blocked. The next whole-project posture is `await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze`.
 
+## Layer 3 Local Receipt Lifecycle Hardening Current-Main Sync
+
+Current-main proof/control sync: PR `#1199` merged `602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md` at merge commit `a59aff44dd21dc778f95370a7834bc1178ec8dae`.
+
+The sync doc `603_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` passed in `2m29s`, `test` passed in `2m46s`, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, mergeability was `MERGEABLE`, and merge state was `CLEAN`. The freeze is now current-main synced as `current_main_synced_layer3_local_receipt_lifecycle_hardening_freeze`; the selected exact milestone remains `implement_layer3_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync`; and the next whole-project posture is `await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze_sync`. No runtime behavior begins in this sync, and real connector invocation, destination writes, connector-run creation, credentials, provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior, full mockup activation, and frontend-only durable authority remain blocked.
+
 ## Layer 3 End-to-End Governance Lifecycle Behavior Authority Audit After Connector/Destination Audit Handoff/Export Package-Lifecycle Source Intake Provider-Private E2E Connector Requirement Current-Main Sync
 
 Current-main proof/control sync: PR `#1153` merged `557_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md` at merge commit `9cd63b4c9b2b327163500598944b3e018947eac2`.

@@ -1486,6 +1486,9 @@ LAYER3_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC = (
 LAYER3_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE = (
     PLANNING_DOCS / "602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md"
 )
+LAYER3_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "603_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -49327,6 +49330,113 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing local receipt lifecycle-hardening term: {term}"
+                )
+
+    local_receipt_lifecycle_hardening_sync_text = _read_required_text(
+        LAYER3_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `current_main_sync_layer3_local_receipt_lifecycle_hardening_freeze_merge`.",
+        "603_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC.md",
+        "602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md",
+        "#1199",
+        "a59aff44dd21dc778f95370a7834bc1178ec8dae",
+        "`backend-layer3-api` passed in `2m29s`",
+        "`test` passed in `2m46s`",
+        "PR comments: empty",
+        "PR reviews: empty",
+        "PR reviewThreads totalCount: `0`",
+        "unresolved reviewThreads: `0`",
+        "mergeability: `MERGEABLE`",
+        "merge state: `CLEAN`",
+        "Current-main result: `current_main_synced_layer3_local_receipt_lifecycle_hardening_freeze`",
+        "implement_layer3_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+        "connector_local_destination_receipt_runtime",
+        "internal_fake_local_destination_receipt_lifecycle_hardening",
+        "implementation_entry_prepared",
+        "partially_implemented_existing_local_receipt_runtime",
+        "no runtime behavior by itself",
+        "no real connector invocation",
+        "no destination write",
+        "no connector-run creation",
+        "no credential handling",
+        "no provider-public delivery/use",
+        "no package mutation/reconstruction",
+        "no source expansion",
+        "no RAG/vector behavior",
+        "no auth/security behavior change",
+        "no full mockup activation",
+        "no frontend-only durable authority",
+        "await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze_sync",
+    ):
+        if term not in local_receipt_lifecycle_hardening_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC)} missing local receipt lifecycle-hardening sync term: {term}"
+            )
+
+    local_receipt_lifecycle_hardening_sync_sources = {
+        BOARD: (
+            "## Layer 3 Local Receipt Lifecycle Hardening Current-Main Sync",
+            "603_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC.md",
+            "#1199",
+            "a59aff44dd21dc778f95370a7834bc1178ec8dae",
+            "backend-layer3-api` passed in `2m29s",
+            "test` passed in `2m46s",
+            "reviewThreads totalCount was `0`",
+            "current_main_synced_layer3_local_receipt_lifecycle_hardening_freeze",
+            "implement_layer3_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+            "No runtime behavior begins in this sync",
+            "real connector invocation",
+            "destination writes",
+            "connector-run creation",
+            "frontend-only durable authority",
+            "await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "layer3_local_receipt_lifecycle_hardening_freeze_current_main_sync",
+            '"status": "current_main_synced_layer3_local_receipt_lifecycle_hardening_freeze"',
+            "codex/l3-local-receipt-lifecycle-sync",
+            "603_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC.md",
+            "602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md",
+            "#1199",
+            "a59aff44dd21dc778f95370a7834bc1178ec8dae",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads_totalCount": 0',
+            '"unresolved_reviewThreads": 0',
+            '"implementation_entry_allowed_next": true',
+            '"sync_live_behavior_change": false',
+            '"runtime_behavior_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_local_receipt_lifecycle_hardening_freeze_current_main_sync_proof",
+            '"status": "current_main_synced_layer3_local_receipt_lifecycle_hardening_freeze"',
+            "codex/l3-local-receipt-lifecycle-sync",
+            "603_LOCAL_RECEIPT_LIFECYCLE_HARDENING_CURRENT_MAIN_SYNC.md",
+            "602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md",
+            "#1199",
+            "a59aff44dd21dc778f95370a7834bc1178ec8dae",
+            "backend-layer3-api pass 2m29s",
+            "test pass 2m46s",
+            "reviewThreads_totalCount 0",
+            "unresolved_reviewThreads 0",
+            "no runtime behavior in sync",
+            "no real connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no frontend-only durable authority",
+            "await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze_sync",
+        ),
+    }
+    for path, terms in local_receipt_lifecycle_hardening_sync_sources.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing local receipt lifecycle-hardening sync term: {term}"
                 )
 
 
