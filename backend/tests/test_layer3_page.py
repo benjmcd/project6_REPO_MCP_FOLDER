@@ -289,6 +289,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "CONNECTOR_LOCAL_RECEIPT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.connector_local_destination_receipt'" in js.text
     assert "function connectorLocalDestinationReceiptStatusState" in js.text
     assert "function renderConnectorLocalDestinationReceiptStatusPanel" in js.text
+    assert "function connectorLocalDestinationReceiptHistoryRows" in js.text
+    assert "function renderConnectorLocalDestinationReceiptFailureProjection" in js.text
+    assert "same_key_different_payload_conflict" in js.text
+    assert "Lifecycle Policy" in js.text
+    assert "Guardrail Projection" in js.text
     assert "renderConnectorLocalDestinationReceiptStatusPanel()" in js.text
     assert "connector_local_destination_receipt_recorded" in js.text
     assert "connector_local_destination_receipt_ready" in js.text

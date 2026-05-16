@@ -463,6 +463,9 @@ CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE = (
     "broad_qualitative_hybrid_rag_execution",
     "full_mockup_activation",
 )
+CONNECTOR_LOCAL_DESTINATION_RECEIPT_LIFECYCLE_SCHEMA_ID = (
+    "layer3.connector_local_destination_receipt_lifecycle.v1"
+)
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UNAVAILABLE_STATE = "external_export_download_delivery_unavailable"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE = "external_export_download_delivery_ready"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "external_export_download_delivered"
@@ -11383,12 +11386,181 @@ def _aps_handoff_dispatch_summary(
     }
 
 
+def _connector_local_destination_receipt_time(value: Any) -> str | None:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return None
+
+
+def _connector_local_destination_receipt_history_item(
+    row: L3ConnectorLocalDestinationReceipt,
+) -> dict[str, Any]:
+    return {
+        "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_LIFECYCLE_SCHEMA_ID,
+        "connector_local_destination_receipt_id": row.connector_local_destination_receipt_id,
+        "connector_local_destination_receipt_state": row.receipt_state,
+        "session_id": row.session_id,
+        "pass_run_id": row.pass_run_id,
+        "reconciliation_record_id": row.reconciliation_record_id,
+        "connector_dispatch_record_ref": row.connector_dispatch_record_ref,
+        "external_export_download_record_ref": row.external_export_download_record_ref,
+        "destination_target": row.destination_target,
+        "dispatch_mode": row.dispatch_mode,
+        "accepted_artifact_ref": CONNECTOR_LOCAL_DESTINATION_REDACTED_ARTIFACT_REF,
+        "accepted_artifact_hash": row.accepted_artifact_hash,
+        "accepted_artifact_size_bytes": row.accepted_artifact_size_bytes,
+        "authority_basis_hash": row.authority_basis_hash,
+        "client_request_id": row.client_request_id,
+        "created_by_request_id": row.created_by_request_id,
+        "created_at": _connector_local_destination_receipt_time(row.created_at),
+        "updated_at": _connector_local_destination_receipt_time(row.updated_at),
+        "audit_authority": "durable_connector_local_destination_receipt_row",
+    }
+
+
+def _connector_local_destination_receipt_summary_history_item(
+    summary: dict[str, Any],
+    *,
+    reconciliation_record_id: str,
+) -> dict[str, Any]:
+    return {
+        "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_LIFECYCLE_SCHEMA_ID,
+        "connector_local_destination_receipt_id": summary.get("connector_local_destination_receipt_id"),
+        "connector_local_destination_receipt_state": summary.get("connector_local_destination_receipt_state"),
+        "reconciliation_record_id": reconciliation_record_id,
+        "connector_dispatch_record_ref": summary.get("connector_dispatch_record_ref"),
+        "external_export_download_record_ref": summary.get("external_export_download_record_ref"),
+        "destination_target": summary.get("destination_target"),
+        "dispatch_mode": summary.get("dispatch_mode"),
+        "accepted_artifact_ref": summary.get("accepted_artifact_ref"),
+        "accepted_artifact_hash": summary.get("accepted_artifact_hash"),
+        "accepted_artifact_size_bytes": summary.get("accepted_artifact_size_bytes"),
+        "authority_basis_hash": summary.get("authority_basis_hash"),
+        "audit_authority": "connector_local_destination_receipt_reconciliation_summary",
+    }
+
+
+def _connector_local_destination_receipt_failure_projection(
+    *,
+    current_state: str | None,
+    blocked_reason: str | None,
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "case": "ready_authority_missing",
+            "projected_error_code": blocked_reason or "connector_local_destination_receipt_not_ready",
+            "operator_status": "blocked_until_existing_connector_dispatch_and_external_export_download_readiness",
+        },
+        {
+            "case": "stale_authority",
+            "projected_error_code": "external_export_download_delivery_authority_mismatch",
+            "operator_status": "reject_first_write_when_readiness_no_longer_matches_connector_basis",
+        },
+        {
+            "case": "wrong_session_or_pass",
+            "projected_error_code": "connector_local_destination_receipt_pass_run_session_mismatch",
+            "operator_status": "reject_payload_outside_current_session_pass_authority",
+        },
+        {
+            "case": "wrong_artifact",
+            "projected_error_code": "external_export_download_delivery_source_artifact_mismatch",
+            "operator_status": "reject_source_artifact_ref_hash_or_size_drift",
+        },
+        {
+            "case": "wrong_basis",
+            "projected_error_code": "connector_local_destination_receipt_connector_dispatch_record_ref_mismatch",
+            "operator_status": "reject_connector_or_external_readiness_basis_drift",
+        },
+        {
+            "case": "same_key_same_payload_replay",
+            "projected_error_code": None,
+            "operator_status": "return_already_recorded_without_revalidating_stale_readiness",
+        },
+        {
+            "case": "same_key_different_payload_conflict",
+            "projected_error_code": "connector_local_destination_receipt_client_request_conflict",
+            "operator_status": "reject_duplicate_client_request_id_for_different_authority_basis",
+        },
+        {
+            "case": "same_basis_different_client_request_id",
+            "projected_error_code": "connector_local_destination_receipt_already_recorded",
+            "operator_status": "reject_second_receipt_for_same_authority_basis",
+        },
+        {
+            "case": "current_status",
+            "projected_error_code": blocked_reason,
+            "operator_status": current_state or "connector_local_destination_receipt_unavailable",
+        },
+    ]
+
+
+def _with_connector_local_destination_receipt_lifecycle(
+    status: dict[str, Any],
+    *,
+    history_rows: list[L3ConnectorLocalDestinationReceipt],
+    current_state: str | None,
+    blocked_reason: str | None,
+    recorded_summary: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    history = [_connector_local_destination_receipt_history_item(row) for row in history_rows]
+    if not history and recorded_summary:
+        history = [
+            _connector_local_destination_receipt_summary_history_item(
+                recorded_summary,
+                reconciliation_record_id=str(status.get("reconciliation_record_id") or ""),
+            )
+        ]
+    latest_receipt = history[0] if history else None
+    lifecycle = {
+        "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_LIFECYCLE_SCHEMA_ID,
+        "surface_mode": "read_only_connector_local_receipt_lifecycle_status_history",
+        "history_listing_authority": "durable_connector_local_destination_receipt_rows",
+        "audit_trail_authority": "durable_receipt_row_and_reconciliation_summary_projection",
+        "history_count": len(history),
+        "receipt_history": history,
+        "latest_receipt": latest_receipt,
+        "idempotency_policy": {
+            "client_request_id_unique": True,
+            "authority_basis_hash_unique": True,
+            "same_key_same_payload_replay": "already_recorded",
+            "same_key_different_payload_conflict": (
+                "connector_local_destination_receipt_client_request_conflict"
+            ),
+            "same_basis_different_client_request_id": "connector_local_destination_receipt_already_recorded",
+        },
+        "retry_policy": {
+            "retry_fields_admitted": False,
+            "rerun_fields_admitted": False,
+            "cancel_fields_admitted": False,
+            "replay_semantics": "status_only_for_same_client_request_and_same_authority_basis",
+        },
+        "failure_state_projection": _connector_local_destination_receipt_failure_projection(
+            current_state=current_state,
+            blocked_reason=blocked_reason,
+        ),
+    }
+    return {
+        **status,
+        "lifecycle_status_surface": lifecycle,
+        "receipt_history": history,
+        "receipt_history_count": len(history),
+        "latest_receipt": latest_receipt,
+        "failure_state_projection": lifecycle["failure_state_projection"],
+        "idempotency_policy": lifecycle["idempotency_policy"],
+        "retry_policy": lifecycle["retry_policy"],
+    }
+
+
 def _connector_local_destination_receipt_summary(
     db: Session,
     *,
     session_id: str,
     external_export_download_state: dict[str, Any],
 ) -> dict[str, Any]:
+    if not isinstance(external_export_download_state, dict):
+        external_export_download_state = {}
+    else:
+        external_export_download_state = dict(external_export_download_state)
     reconciliation_record_id = str(external_export_download_state.get("reconciliation_record_id") or "").strip()
     reconciliation = None
     if reconciliation_record_id:
@@ -11400,9 +11572,31 @@ def _connector_local_destination_receipt_summary(
             )
             .one_or_none()
         )
+    if reconciliation is None:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.session_id == session_id)
+            .one_or_none()
+        )
+        if reconciliation is not None:
+            reconciliation_record_id = reconciliation.reconciliation_record_id
     reconciliation_summary = reconciliation.summary_json if reconciliation is not None else {}
     if not isinstance(reconciliation_summary, dict):
         reconciliation_summary = {}
+    recorded_external_export_download_state = reconciliation_summary.get("external_export_download_prepare")
+    if (
+        isinstance(recorded_external_export_download_state, dict)
+        and recorded_external_export_download_state.get("schema_id") == EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID
+        and (
+            external_export_download_state.get("external_export_download_state")
+            != EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+            or not external_export_download_state.get("external_export_download_record_ref")
+        )
+    ):
+        external_export_download_state = dict(recorded_external_export_download_state)
+        reconciliation_record_id = str(
+            external_export_download_state.get("reconciliation_record_id") or reconciliation_record_id
+        ).strip()
     recorded_summary = reconciliation_summary.get("connector_local_destination_receipt")
     if not isinstance(recorded_summary, dict):
         recorded_summary = {}
@@ -11415,74 +11609,93 @@ def _connector_local_destination_receipt_summary(
             L3ConnectorLocalDestinationReceipt.connector_local_destination_receipt_id == receipt_id
         )
     receipt_row = receipt_query.order_by(L3ConnectorLocalDestinationReceipt.created_at.desc()).first()
+    history_rows = (
+        db.query(L3ConnectorLocalDestinationReceipt)
+        .filter(L3ConnectorLocalDestinationReceipt.session_id == session_id)
+        .order_by(L3ConnectorLocalDestinationReceipt.created_at.desc())
+        .all()
+    )
     if receipt_row is not None:
-        return {
-            "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATUS_SCHEMA_ID,
-            "available": False,
-            "state": receipt_row.receipt_state,
-            "blocked_reason": None,
-            "connector_local_destination_receipt_id": receipt_row.connector_local_destination_receipt_id,
-            "connector_local_destination_receipt_state": receipt_row.receipt_state,
-            "session_id": receipt_row.session_id,
-            "pass_run_id": receipt_row.pass_run_id,
-            "reconciliation_record_id": receipt_row.reconciliation_record_id,
-            "connector_dispatch_record_ref": receipt_row.connector_dispatch_record_ref,
-            "external_export_download_record_ref": receipt_row.external_export_download_record_ref,
-            "destination_target": receipt_row.destination_target,
-            "dispatch_mode": receipt_row.dispatch_mode,
-            "operator_decision": CONNECTOR_LOCAL_DESTINATION_RECEIPT_OPERATOR_DECISION,
-            "accepted_artifact_ref": CONNECTOR_LOCAL_DESTINATION_REDACTED_ARTIFACT_REF,
-            "accepted_artifact_hash": receipt_row.accepted_artifact_hash,
-            "accepted_artifact_size_bytes": receipt_row.accepted_artifact_size_bytes,
-            "authority_basis_hash": receipt_row.authority_basis_hash,
-            "internal_fake_local_destination_enabled": True,
-            "external_connector_invocation_enabled": False,
-            "destination_write_enabled": False,
-            "connector_run_created": False,
-            "network_write_enabled": False,
-            "real_destination_integration_enabled": False,
-            "provider_public_url_enabled": False,
-            "package_mutation_enabled": False,
-            "source_widening_enabled": False,
-            "qualitative_hybrid_rag_execution_enabled": False,
-            "status_surface_mode": "read_only_server_session_summary_projection",
-            "response_authority": "durable_connector_local_destination_receipt_row",
-            "downstream_unavailable": list(CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE),
-        }
+        return _with_connector_local_destination_receipt_lifecycle(
+            {
+                "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATUS_SCHEMA_ID,
+                "available": False,
+                "state": receipt_row.receipt_state,
+                "blocked_reason": None,
+                "connector_local_destination_receipt_id": receipt_row.connector_local_destination_receipt_id,
+                "connector_local_destination_receipt_state": receipt_row.receipt_state,
+                "session_id": receipt_row.session_id,
+                "pass_run_id": receipt_row.pass_run_id,
+                "reconciliation_record_id": receipt_row.reconciliation_record_id,
+                "connector_dispatch_record_ref": receipt_row.connector_dispatch_record_ref,
+                "external_export_download_record_ref": receipt_row.external_export_download_record_ref,
+                "destination_target": receipt_row.destination_target,
+                "dispatch_mode": receipt_row.dispatch_mode,
+                "operator_decision": CONNECTOR_LOCAL_DESTINATION_RECEIPT_OPERATOR_DECISION,
+                "accepted_artifact_ref": CONNECTOR_LOCAL_DESTINATION_REDACTED_ARTIFACT_REF,
+                "accepted_artifact_hash": receipt_row.accepted_artifact_hash,
+                "accepted_artifact_size_bytes": receipt_row.accepted_artifact_size_bytes,
+                "authority_basis_hash": receipt_row.authority_basis_hash,
+                "internal_fake_local_destination_enabled": True,
+                "external_connector_invocation_enabled": False,
+                "destination_write_enabled": False,
+                "connector_run_created": False,
+                "network_write_enabled": False,
+                "real_destination_integration_enabled": False,
+                "provider_public_url_enabled": False,
+                "package_mutation_enabled": False,
+                "source_widening_enabled": False,
+                "qualitative_hybrid_rag_execution_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "durable_connector_local_destination_receipt_row",
+                "downstream_unavailable": list(CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            current_state=receipt_row.receipt_state,
+            blocked_reason=None,
+        )
     if recorded_summary.get("schema_id") == CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATE_SCHEMA_ID:
-        return {
-            "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATUS_SCHEMA_ID,
-            "available": False,
-            "state": recorded_summary.get("connector_local_destination_receipt_state"),
-            "blocked_reason": None,
-            "connector_local_destination_receipt_id": recorded_summary.get("connector_local_destination_receipt_id"),
-            "connector_local_destination_receipt_state": recorded_summary.get(
-                "connector_local_destination_receipt_state"
-            ),
-            "reconciliation_record_id": reconciliation_record_id,
-            "connector_dispatch_record_ref": recorded_summary.get("connector_dispatch_record_ref"),
-            "external_export_download_record_ref": recorded_summary.get("external_export_download_record_ref"),
-            "destination_target": recorded_summary.get("destination_target"),
-            "dispatch_mode": recorded_summary.get("dispatch_mode"),
-            "operator_decision": CONNECTOR_LOCAL_DESTINATION_RECEIPT_OPERATOR_DECISION,
-            "accepted_artifact_ref": recorded_summary.get("accepted_artifact_ref"),
-            "accepted_artifact_hash": recorded_summary.get("accepted_artifact_hash"),
-            "accepted_artifact_size_bytes": recorded_summary.get("accepted_artifact_size_bytes"),
-            "authority_basis_hash": recorded_summary.get("authority_basis_hash"),
-            "internal_fake_local_destination_enabled": True,
-            "external_connector_invocation_enabled": False,
-            "destination_write_enabled": False,
-            "connector_run_created": False,
-            "network_write_enabled": False,
-            "real_destination_integration_enabled": False,
-            "provider_public_url_enabled": False,
-            "package_mutation_enabled": False,
-            "source_widening_enabled": False,
-            "qualitative_hybrid_rag_execution_enabled": False,
-            "status_surface_mode": "read_only_server_reconciliation_projection",
-            "response_authority": "connector_local_destination_receipt_reconciliation_summary",
-            "downstream_unavailable": list(CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE),
-        }
+        return _with_connector_local_destination_receipt_lifecycle(
+            {
+                "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATUS_SCHEMA_ID,
+                "available": False,
+                "state": recorded_summary.get("connector_local_destination_receipt_state"),
+                "blocked_reason": None,
+                "connector_local_destination_receipt_id": recorded_summary.get(
+                    "connector_local_destination_receipt_id"
+                ),
+                "connector_local_destination_receipt_state": recorded_summary.get(
+                    "connector_local_destination_receipt_state"
+                ),
+                "reconciliation_record_id": reconciliation_record_id,
+                "connector_dispatch_record_ref": recorded_summary.get("connector_dispatch_record_ref"),
+                "external_export_download_record_ref": recorded_summary.get("external_export_download_record_ref"),
+                "destination_target": recorded_summary.get("destination_target"),
+                "dispatch_mode": recorded_summary.get("dispatch_mode"),
+                "operator_decision": CONNECTOR_LOCAL_DESTINATION_RECEIPT_OPERATOR_DECISION,
+                "accepted_artifact_ref": recorded_summary.get("accepted_artifact_ref"),
+                "accepted_artifact_hash": recorded_summary.get("accepted_artifact_hash"),
+                "accepted_artifact_size_bytes": recorded_summary.get("accepted_artifact_size_bytes"),
+                "authority_basis_hash": recorded_summary.get("authority_basis_hash"),
+                "internal_fake_local_destination_enabled": True,
+                "external_connector_invocation_enabled": False,
+                "destination_write_enabled": False,
+                "connector_run_created": False,
+                "network_write_enabled": False,
+                "real_destination_integration_enabled": False,
+                "provider_public_url_enabled": False,
+                "package_mutation_enabled": False,
+                "source_widening_enabled": False,
+                "qualitative_hybrid_rag_execution_enabled": False,
+                "status_surface_mode": "read_only_server_reconciliation_projection",
+                "response_authority": "connector_local_destination_receipt_reconciliation_summary",
+                "downstream_unavailable": list(CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            current_state=recorded_summary.get("connector_local_destination_receipt_state"),
+            blocked_reason=None,
+            recorded_summary=recorded_summary,
+        )
     connector_record = reconciliation_summary.get("connector_dispatch_record")
     if not isinstance(connector_record, dict):
         connector_record = {}
@@ -11495,27 +11708,60 @@ def _connector_local_destination_receipt_summary(
         and connector_record.get("connector_dispatch_record_ref")
     )
     if prepared and connector_recorded:
-        return {
+        return _with_connector_local_destination_receipt_lifecycle(
+            {
+                "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATUS_SCHEMA_ID,
+                "available": True,
+                "state": CONNECTOR_LOCAL_DESTINATION_RECEIPT_READY_STATE,
+                "blocked_reason": None,
+                "reconciliation_record_id": reconciliation_record_id,
+                "connector_dispatch_record_ref": connector_record.get("connector_dispatch_record_ref"),
+                "connector_dispatch_record_state": connector_record.get("connector_dispatch_record_state"),
+                "external_export_download_record_ref": external_export_download_state.get(
+                    "external_export_download_record_ref"
+                ),
+                "external_export_download_state": external_export_download_state.get("external_export_download_state"),
+                "destination_target": CONNECTOR_LOCAL_DESTINATION_RECEIPT_TARGET,
+                "dispatch_mode": CONNECTOR_LOCAL_DESTINATION_RECEIPT_MODE,
+                "operator_decision": CONNECTOR_LOCAL_DESTINATION_RECEIPT_OPERATOR_DECISION,
+                "accepted_artifact_ref": CONNECTOR_LOCAL_DESTINATION_REDACTED_ARTIFACT_REF,
+                "accepted_artifact_hash": connector_record.get("source_artifact_hash")
+                or external_export_download_state.get("source_artifact_hash"),
+                "accepted_artifact_size_bytes": connector_record.get("source_artifact_size_bytes")
+                or external_export_download_state.get("source_artifact_size_bytes"),
+                "internal_fake_local_destination_enabled": True,
+                "external_connector_invocation_enabled": False,
+                "destination_write_enabled": False,
+                "connector_run_created": False,
+                "network_write_enabled": False,
+                "real_destination_integration_enabled": False,
+                "provider_public_url_enabled": False,
+                "package_mutation_enabled": False,
+                "source_widening_enabled": False,
+                "qualitative_hybrid_rag_execution_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "existing_connector_dispatch_and_external_export_download_readiness",
+                "downstream_unavailable": list(CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            current_state=CONNECTOR_LOCAL_DESTINATION_RECEIPT_READY_STATE,
+            blocked_reason=None,
+        )
+    blocked_reason = (
+        "record_internal_connector_dispatch"
+        if prepared
+        else "record_external_export_download_prepare"
+    )
+    return _with_connector_local_destination_receipt_lifecycle(
+        {
             "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATUS_SCHEMA_ID,
-            "available": True,
-            "state": CONNECTOR_LOCAL_DESTINATION_RECEIPT_READY_STATE,
-            "blocked_reason": None,
-            "reconciliation_record_id": reconciliation_record_id,
-            "connector_dispatch_record_ref": connector_record.get("connector_dispatch_record_ref"),
-            "connector_dispatch_record_state": connector_record.get("connector_dispatch_record_state"),
-            "external_export_download_record_ref": external_export_download_state.get(
-                "external_export_download_record_ref"
-            ),
-            "external_export_download_state": external_export_download_state.get("external_export_download_state"),
+            "available": False,
+            "state": None,
+            "blocked_reason": blocked_reason,
             "destination_target": CONNECTOR_LOCAL_DESTINATION_RECEIPT_TARGET,
             "dispatch_mode": CONNECTOR_LOCAL_DESTINATION_RECEIPT_MODE,
             "operator_decision": CONNECTOR_LOCAL_DESTINATION_RECEIPT_OPERATOR_DECISION,
-            "accepted_artifact_ref": CONNECTOR_LOCAL_DESTINATION_REDACTED_ARTIFACT_REF,
-            "accepted_artifact_hash": connector_record.get("source_artifact_hash")
-            or external_export_download_state.get("source_artifact_hash"),
-            "accepted_artifact_size_bytes": connector_record.get("source_artifact_size_bytes")
-            or external_export_download_state.get("source_artifact_size_bytes"),
-            "internal_fake_local_destination_enabled": True,
+            "internal_fake_local_destination_enabled": False,
             "external_connector_invocation_enabled": False,
             "destination_write_enabled": False,
             "connector_run_created": False,
@@ -11526,36 +11772,13 @@ def _connector_local_destination_receipt_summary(
             "source_widening_enabled": False,
             "qualitative_hybrid_rag_execution_enabled": False,
             "status_surface_mode": "read_only_server_session_summary_projection",
-            "response_authority": "existing_connector_dispatch_and_external_export_download_readiness",
+            "response_authority": "existing_session_summary_without_local_receipt_record",
             "downstream_unavailable": list(CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE),
-        }
-    blocked_reason = (
-        "record_internal_connector_dispatch"
-        if prepared
-        else "record_external_export_download_prepare"
+        },
+        history_rows=history_rows,
+        current_state=None,
+        blocked_reason=blocked_reason,
     )
-    return {
-        "schema_id": CONNECTOR_LOCAL_DESTINATION_RECEIPT_STATUS_SCHEMA_ID,
-        "available": False,
-        "state": None,
-        "blocked_reason": blocked_reason,
-        "destination_target": CONNECTOR_LOCAL_DESTINATION_RECEIPT_TARGET,
-        "dispatch_mode": CONNECTOR_LOCAL_DESTINATION_RECEIPT_MODE,
-        "operator_decision": CONNECTOR_LOCAL_DESTINATION_RECEIPT_OPERATOR_DECISION,
-        "internal_fake_local_destination_enabled": False,
-        "external_connector_invocation_enabled": False,
-        "destination_write_enabled": False,
-        "connector_run_created": False,
-        "network_write_enabled": False,
-        "real_destination_integration_enabled": False,
-        "provider_public_url_enabled": False,
-        "package_mutation_enabled": False,
-        "source_widening_enabled": False,
-        "qualitative_hybrid_rag_execution_enabled": False,
-        "status_surface_mode": "read_only_server_session_summary_projection",
-        "response_authority": "existing_session_summary_without_local_receipt_record",
-        "downstream_unavailable": list(CONNECTOR_LOCAL_DESTINATION_RECEIPT_DOWNSTREAM_UNAVAILABLE),
-    }
 
 
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
