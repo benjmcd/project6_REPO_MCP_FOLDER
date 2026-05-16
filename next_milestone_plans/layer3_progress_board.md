@@ -2685,6 +2685,12 @@ The intake records that current main has already satisfied `server_owned_local_d
 
 No implementation begins in this intake, and real connector invocation, destination writes beyond the already-satisfied server-owned local outbox target, connector-run creation, credentials, provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior, full mockup activation, frontend-durable authority, and generic downstream dispatch remain blocked. The next whole-project posture is `await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_sync`.
 
+## Layer 3 Next External Surface Decision Intake Current-Main Sync
+
+Current-main proof/control sync: PR `#1227` merged `623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md` at merge commit `5905d8e4ef4d3722b6d1d4259eef22241543dd08`.
+
+The sync doc `624_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` and `test` checks passed, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and post-merge `project6-origin/main` JSON manifest checks, `tools/l3-progress-check.py` compile, target-selection validation, progress check, and `git diff --check HEAD project6-origin/main -- .` passed. The intake is now current-main synced as `current_main_synced_next_external_surface_decision_intake`; selected next external surface remains `null`; `implementation_entry_freeze_written` remains false; selected implementation action remains `none`; and the next whole-project posture is `await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_current_main_sync`. No implementation begins in this sync, and runtime/backend route/service/response-model/schema/model/migration/rendered UI/source/package/connector/provider/RAG/auth/frontend-durable behavior remains blocked.
+
 ## Layer 3 Connector/Destination Dispatch Boundary Authority Audit After Handoff/Export Audit Package-Lifecycle Source Intake Provider-Private E2E Connector Requirement Current-Main Sync
 
 Current-main proof/control sync: PR `#1147` merged `551_LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_AFTER_HANDOFF_EXPORT_AUDIT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md` at merge commit `e2521a82b20781f7b9d161674a4f40e795903778`.
