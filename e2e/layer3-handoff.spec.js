@@ -43,6 +43,244 @@ async function expectRenderedLayer3E2EGovernanceLifecycleDashboard(page, stateLa
   }
 }
 
+const LOCAL_OUTBOX_EXPECTED_PACKAGE_KINDS = ['canonical_internal', 'user_facing', 'review_facing'];
+
+function maybeAnalysisRun(start) {
+  return start.analysis_run_id ? { analysis_run_id: start.analysis_run_id } : {};
+}
+
+function outputPackageIds(commit) {
+  return commit.output_packages.map((item) => item.output_package_id);
+}
+
+async function postLayer3Json(request, path, data) {
+  const response = await request.post(path, { data });
+  if (response.status() !== 200) {
+    throw new Error(`${path} returned ${response.status()}: ${await response.text()}`);
+  }
+  return response.json();
+}
+
+async function prepareServerOwnedLocalOutboxWriteViaApi(request) {
+  const setup = await prepareExecutedLayer3Session(request, '/__test/layer3/seed-cohort-aps-handoff');
+  const sessionId = setup.seed.session_id;
+  const common = {
+    session_id: sessionId,
+    analysis_plan_id: setup.approval.analysis_plan_id,
+    pass_run_id: setup.passRunId,
+    preview_id: setup.planPreview.preview_id,
+    preview_hash: setup.planPreview.preview_hash,
+    ...maybeAnalysisRun(setup.start),
+  };
+  const status = await postLayer3Json(request, '/api/v1/layer3/execution/result/status', {
+    client_request_id: requestId('api-local-outbox-status'),
+    ...common,
+    operator_view_mode: 'status_only',
+  });
+  expect(status.result_status_available).toBe(true);
+
+  const review = await postLayer3Json(request, '/api/v1/layer3/execution/result/review', {
+    client_request_id: requestId('api-local-outbox-review'),
+    ...common,
+    operator_decision: 'approved',
+    review_notes: 'Request-backed local outbox lifecycle proof.',
+  });
+  const packagePreview = await postLayer3Json(request, '/api/v1/layer3/package/review/preview', {
+    client_request_id: requestId('api-local-outbox-package-preview'),
+    ...common,
+    result_review_record_ref: review.review_record_ref,
+  });
+  const commit = await postLayer3Json(request, '/api/v1/layer3/package/review/commit', {
+    client_request_id: requestId('api-local-outbox-package-commit'),
+    ...common,
+    result_review_record_ref: review.review_record_ref,
+    package_review_preview_hash: packagePreview.package_review_preview_hash,
+    expected_package_kinds: LOCAL_OUTBOX_EXPECTED_PACKAGE_KINDS,
+  });
+  const submit = await postLayer3Json(request, '/api/v1/layer3/package/review/submit', {
+    client_request_id: requestId('api-local-outbox-package-submit'),
+    ...common,
+    result_review_record_ref: review.review_record_ref,
+    package_review_preview_hash: commit.package_review_preview_hash,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    output_package_ids: outputPackageIds(commit),
+    payload_refs: commit.payload_refs,
+    payload_hashes: commit.payload_hashes,
+    ...(commit.construction_basis_hash ? { construction_basis_hash: commit.construction_basis_hash } : {}),
+    operator_decision: 'approved',
+    decision_notes: 'Approve package for request-backed local outbox lifecycle proof.',
+    expected_package_kinds: LOCAL_OUTBOX_EXPECTED_PACKAGE_KINDS,
+  });
+  const prepare = await postLayer3Json(request, '/api/v1/layer3/handoff/export/prepare', {
+    client_request_id: requestId('api-local-outbox-handoff-prepare'),
+    ...common,
+    result_review_record_ref: review.review_record_ref,
+    package_review_preview_hash: commit.package_review_preview_hash,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    output_package_ids: outputPackageIds(commit),
+    payload_refs: commit.payload_refs,
+    payload_hashes: commit.payload_hashes,
+    package_review_submit_record_ref: submit.submit_record_ref,
+    package_review_state: submit.package_review_state,
+    package_review_submit_schema_id: submit.schema_id,
+    ...(commit.construction_basis_hash ? { construction_basis_hash: commit.construction_basis_hash } : {}),
+    handoff_target: 'internal_export_envelope',
+    export_mode: 'prepare_only',
+    operator_decision: 'authorize_prepare',
+    expected_package_kinds: LOCAL_OUTBOX_EXPECTED_PACKAGE_KINDS,
+  });
+  const dispatch = await postLayer3Json(request, '/api/v1/layer3/handoff/aps/dispatch', {
+    client_request_id: requestId('api-local-outbox-aps-dispatch'),
+    ...common,
+    result_review_record_ref: review.review_record_ref,
+    package_review_preview_hash: commit.package_review_preview_hash,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    output_package_ids: outputPackageIds(commit),
+    package_kinds: commit.package_kinds,
+    payload_refs: commit.payload_refs,
+    payload_hashes: commit.payload_hashes,
+    package_review_submit_record_ref: submit.submit_record_ref,
+    package_review_state: submit.package_review_state,
+    prepare_record_ref: prepare.prepare_record_ref,
+    handoff_export_state: prepare.handoff_export_state,
+    handoff_export_envelope_ref: prepare.handoff_export_envelope.envelope_ref,
+    handoff_target: 'internal_export_envelope',
+    export_mode: 'prepare_only',
+    aps_handoff_target: 'aps_evidence_bundle',
+    dispatch_mode: 'server_side_aps_handoff',
+    operator_decision: 'dispatch_aps_handoff',
+  });
+  const postDispatchSummary = await expectJson(await request.get(`/api/v1/layer3/session/${sessionId}`));
+  const external = await postLayer3Json(request, '/api/v1/layer3/handoff/export/download/prepare', {
+    client_request_id: requestId('api-local-outbox-export-download'),
+    ...common,
+    result_review_record_ref: review.review_record_ref,
+    package_review_preview_hash: commit.package_review_preview_hash,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    output_package_ids: outputPackageIds(commit),
+    package_kinds: commit.package_kinds,
+    payload_refs: commit.payload_refs,
+    payload_hashes: commit.payload_hashes,
+    package_review_submit_record_ref: submit.submit_record_ref,
+    package_review_state: submit.package_review_state,
+    prepare_record_ref: prepare.prepare_record_ref,
+    handoff_export_state: prepare.handoff_export_state,
+    handoff_export_envelope_ref: prepare.handoff_export_envelope.envelope_ref,
+    handoff_target: 'internal_export_envelope',
+    export_mode: 'prepare_only',
+    aps_handoff_record_ref: dispatch.aps_handoff_record_ref,
+    aps_handoff_state: dispatch.aps_handoff_state,
+    aps_handoff_target: dispatch.aps_handoff_target,
+    dispatch_mode: dispatch.dispatch_mode,
+    aps_output_package_id: dispatch.aps_output_package_id,
+    aps_output_package_kind: dispatch.aps_output_package_kind,
+    aps_bundle_ref: dispatch.aps_bundle_ref,
+    aps_bundle_id: dispatch.aps_bundle_id,
+    aps_schema_id: dispatch.aps_schema_id,
+    aps_bundle_hash: postDispatchSummary.external_export_download.source_artifact_hash,
+    aps_bundle_size_bytes: postDispatchSummary.external_export_download.source_artifact_size_bytes,
+    export_download_target: 'aps_evidence_bundle_download_reference',
+    download_mode: 'reference_only_prepare',
+    operator_decision: 'prepare_external_export_download',
+  });
+  const connector = await postLayer3Json(request, '/api/v1/layer3/handoff/connector/record', {
+    client_request_id: requestId('api-local-outbox-connector'),
+    session_id: sessionId,
+    analysis_plan_id: setup.approval.analysis_plan_id,
+    pass_run_id: setup.passRunId,
+    ...maybeAnalysisRun(setup.start),
+    result_review_record_ref: review.review_record_ref,
+    package_review_preview_hash: commit.package_review_preview_hash,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    output_package_ids: outputPackageIds(commit),
+    package_kinds: commit.package_kinds,
+    payload_refs: commit.payload_refs,
+    payload_hashes: commit.payload_hashes,
+    package_review_submit_record_ref: submit.submit_record_ref,
+    prepare_record_ref: prepare.prepare_record_ref,
+    handoff_export_state: prepare.handoff_export_state,
+    aps_handoff_record_ref: dispatch.aps_handoff_record_ref,
+    aps_handoff_state: dispatch.aps_handoff_state,
+    aps_handoff_target: dispatch.aps_handoff_target,
+    aps_output_package_id: dispatch.aps_output_package_id,
+    aps_output_package_kind: dispatch.aps_output_package_kind,
+    aps_bundle_ref: dispatch.aps_bundle_ref,
+    source_artifact_hash: external.source_artifact_hash,
+    source_artifact_size_bytes: external.source_artifact_size_bytes,
+    source_artifact_ref: external.source_artifact_ref,
+    source_artifact_schema_id: external.source_artifact_schema_id,
+    external_export_download_record_ref: external.external_export_download_record_ref,
+    external_export_download_state: external.external_export_download_state,
+    external_export_download_descriptor_ref: external.export_download_descriptor_ref,
+    delivery_mode: 'same_origin_artifact_stream',
+    operator_decision: 'record_internal_connector_dispatch',
+  });
+  const localReceipt = await postLayer3Json(request, '/api/v1/layer3/handoff/connector/local-destination/receipt', {
+    client_request_id: requestId('api-local-outbox-local-receipt'),
+    session_id: sessionId,
+    analysis_plan_id: setup.approval.analysis_plan_id,
+    pass_run_id: setup.passRunId,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    connector_dispatch_record_ref: connector.connector_dispatch_record_ref,
+    external_export_download_record_ref: external.external_export_download_record_ref,
+    external_export_download_state: external.external_export_download_state,
+    destination_target: 'layer3_internal_fake_local_destination_receipt',
+    dispatch_mode: 'internal_fake_local_destination_receipt_only',
+    operator_decision: 'record_internal_fake_local_destination_receipt',
+  });
+  const target = await postLayer3Json(request, '/api/v1/layer3/handoff/connector/local-outbox/fake-target', {
+    client_request_id: requestId('api-local-outbox-fake-target'),
+    session_id: sessionId,
+    analysis_plan_id: setup.approval.analysis_plan_id,
+    pass_run_id: setup.passRunId,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    connector_dispatch_record_ref: connector.connector_dispatch_record_ref,
+    connector_local_destination_receipt_id: localReceipt.connector_local_destination_receipt_id,
+    connector_local_destination_receipt_state: localReceipt.connector_local_destination_receipt_state,
+    external_export_download_record_ref: external.external_export_download_record_ref,
+    target_identity: 'server_owned_local_delivery_outbox_destination',
+    dispatch_mode: 'single_named_destination_dispatch_fake_target_first',
+    operator_decision: 'record_server_owned_local_outbox_fake_target',
+  });
+  const write = await postLayer3Json(request, '/api/v1/layer3/handoff/connector/local-outbox/write', {
+    client_request_id: requestId('api-local-outbox-write'),
+    session_id: sessionId,
+    analysis_plan_id: setup.approval.analysis_plan_id,
+    pass_run_id: setup.passRunId,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    connector_dispatch_record_ref: connector.connector_dispatch_record_ref,
+    connector_local_destination_receipt_id: localReceipt.connector_local_destination_receipt_id,
+    server_owned_local_outbox_target_receipt_id: target.server_owned_local_outbox_target_receipt_id,
+    server_owned_local_outbox_target_state: target.server_owned_local_outbox_target_state,
+    external_export_download_record_ref: external.external_export_download_record_ref,
+    target_identity: 'server_owned_local_delivery_outbox_destination',
+    dispatch_mode: 'server_owned_local_outbox_write_via_storage_dir',
+    operator_decision: 'write_server_owned_local_outbox',
+  });
+  expect(write.server_owned_local_outbox_write_state).toBe('server_owned_local_outbox_write_recorded');
+  expect(write.server_owned_local_outbox_write_performed).toBe(true);
+  expect(write.real_connector_invocation_enabled).toBe(false);
+  expect(write.external_destination_write_enabled).toBe(false);
+  expect(write.connector_run_created).toBe(false);
+  expect(write.connector_run_target_created).toBe(false);
+  expect(write.outbox_artifact_ref).toMatch(/^storage:\/\/server-owned-local-outbox\//);
+  return {
+    ...setup,
+    sessionId,
+    review,
+    packagePreview,
+    commit,
+    submit,
+    prepare,
+    dispatch,
+    external,
+    connector,
+    localReceipt,
+    target,
+    write,
+  };
+}
+
 test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff after approved package review', async ({ page, request }) => {
   const setup = await prepareExecutedLayer3Session(request, '/__test/layer3/seed-aps-handoff');
 
@@ -1116,6 +1354,66 @@ test('Layer 3 workbench can request plan revision without starting execution', a
   await expectStepUnavailable(page, 'package');
   await expect(page.locator('#unavailable-list')).toContainText('execution');
   await expect(page.locator('#unavailable-list')).toContainText('package');
+});
+
+test('Layer 3 renders request-backed local receipt to server-owned outbox write lifecycle', async ({ page, request }) => {
+  const setup = await prepareServerOwnedLocalOutboxWriteViaApi(request);
+  const summary = await expectJson(await request.get(`/api/v1/layer3/session/${setup.sessionId}`));
+  const writeStatus = summary.server_owned_local_outbox_write;
+
+  expect(writeStatus.state).toBe('server_owned_local_outbox_write_recorded');
+  expect(writeStatus.server_owned_local_outbox_write_receipt_id).toBe(
+    setup.write.server_owned_local_outbox_write_receipt_id,
+  );
+  expect(writeStatus.outbox_artifact_ref).toBe(setup.write.outbox_artifact_ref);
+  expect(writeStatus.write_receipt_history_count).toBe(1);
+  expect(writeStatus.latest_write_receipt.server_owned_local_outbox_write_receipt_id).toBe(
+    setup.write.server_owned_local_outbox_write_receipt_id,
+  );
+  expect(writeStatus.lifecycle_status_surface.history_listing_authority).toBe(
+    'durable_server_owned_local_outbox_write_receipt_rows',
+  );
+  expect(writeStatus.idempotency_policy.same_key_same_payload_replay).toBe('already_recorded');
+  expect(writeStatus.idempotency_policy.same_key_different_payload_conflict).toBe(
+    'server_owned_local_outbox_write_client_request_conflict',
+  );
+  expect(writeStatus.failure_state_projection.map((entry) => entry.case)).toContain('stale_authority');
+  expect(writeStatus.real_connector_invocation_enabled).toBe(false);
+  expect(writeStatus.external_destination_write_enabled).toBe(false);
+  expect(writeStatus.connector_run_created).toBe(false);
+  expect(writeStatus.connector_run_target_created).toBe(false);
+
+  const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expectJson(await bootstrapResponsePromise);
+  await attachSessionToWorkbench(page, setup.sessionId);
+
+  const renderedSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.sessionId}`));
+  await page.locator('#result-review-refresh').click();
+  const renderedSummary = await expectJson(await renderedSummaryPromise);
+  expect(renderedSummary.server_owned_local_outbox_write.server_owned_local_outbox_write_receipt_id).toBe(
+    setup.write.server_owned_local_outbox_write_receipt_id,
+  );
+
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    setup.localReceipt.connector_local_destination_receipt_id,
+  );
+  await expect(page.locator('#server-owned-local-outbox-target-panel')).toContainText(
+    setup.target.server_owned_local_outbox_target_receipt_id,
+  );
+  const writePanel = page.locator('#server-owned-local-outbox-write-panel');
+  await expect(writePanel).toContainText('rendered_server_owned_local_outbox_write_read_only_status_surface');
+  await expect(writePanel).toContainText('server_owned_local_outbox_write_recorded');
+  await expect(writePanel).toContainText(setup.write.server_owned_local_outbox_write_receipt_id);
+  await expect(writePanel).toContainText(setup.write.outbox_artifact_ref);
+  await expect(writePanel).toContainText('durable_server_owned_local_outbox_write_receipt_rows');
+  await expect(writePanel).toContainText('server_owned_local_outbox_write_stale_authority');
+  await expect(writePanel).toContainText('real connector invocation');
+  await expect(writePanel).toContainText('external destination write');
+  await expect(writePanel.locator('button,input,select,textarea')).toHaveCount(0);
+  await expect(writePanel).not.toContainText('C:\\');
+  await expect(writePanel).not.toContainText('source_artifact_ref');
+  await expect(writePanel).not.toContainText('destination_path');
 });
 
 test('Layer 3 renders local receipt to server-owned outbox write status as read-only redacted state', async ({ page }) => {

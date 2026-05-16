@@ -37,6 +37,7 @@ from app.models.models import (
     Dataset,
     DatasetSourceProvenance,
     DatasetVersion,
+    L3AnalysisSet,
     L3OutputPackage,
     L3ReconciliationRecord,
     VariableDefinition,
@@ -878,6 +879,114 @@ def _build_browser_aps_handoff_ready_session(db, temp_path: Path) -> str:
     return session.session_id
 
 
+def _build_browser_cohort_aps_handoff_ready_session(db, temp_path: Path) -> str:
+    seed_id = uuid_str()
+    first_dataset_version_id = f"dv-cohort-aps-{seed_id}-001"
+    second_dataset_version_id = f"dv-cohort-aps-{seed_id}-002"
+    run_id = f"run-cohort-aps-{seed_id}"
+    target_id = f"target-cohort-aps-{seed_id}"
+    content_id = f"content-cohort-aps-{seed_id}"
+    first_csv_path = _seed_browser_dataset_version(
+        db,
+        temp_path,
+        seed_id=f"cohort-aps-a-{seed_id}",
+        dataset_id=f"ds-cohort-aps-{seed_id}-001",
+        dataset_version_id=first_dataset_version_id,
+    )
+    second_csv_path = _seed_browser_dataset_version(
+        db,
+        temp_path,
+        seed_id=f"cohort-aps-b-{seed_id}",
+        dataset_id=f"ds-cohort-aps-{seed_id}-002",
+        dataset_version_id=second_dataset_version_id,
+    )
+    _seed_browser_aps_content_fixture(db, temp_path, run_id=run_id, target_id=target_id, content_id=content_id)
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"selection_group": f"sel-cohort-aps-{seed_id}-quant"},
+                "selection_basis": {"selection_id": f"sel-cohort-aps-{seed_id}-quant"},
+                "expansion_reason": "committed_selection",
+            },
+            {
+                "source_plane": "plane_b",
+                "descriptor_type": "aps_content_document",
+                "selector_payload": {"run_id": run_id, "target_id": target_id},
+                "selection_basis": {"selection_id": f"sel-cohort-aps-{seed_id}-doc"},
+                "expansion_reason": "committed_selection",
+            },
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"], "plane_b": ["aps_content_document"]},
+        commit_reason="layer3-browser-cohort-aps-handoff-harness",
+        entry_route_context={"entrypoint": "playwright"},
+        operator_context={"operator": "playwright"},
+        summary={"phase": "cohort_aps_handoff_dispatch"},
+    )
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    descriptors_by_type = {descriptor.descriptor_type: descriptor for descriptor in descriptors}
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors_by_type["dataset_version"],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": first_dataset_version_id},
+                source_provenance={"dataset_id": f"ds-cohort-aps-{seed_id}-001", "storage_ref": str(first_csv_path)},
+                payload={"dataset_version_id": first_dataset_version_id},
+                load_summary={"loaded_records": 24, "failed_records": 0},
+            ),
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": second_dataset_version_id},
+                source_provenance={"dataset_id": f"ds-cohort-aps-{seed_id}-002", "storage_ref": str(second_csv_path)},
+                payload={"dataset_version_id": second_dataset_version_id},
+                load_summary={"loaded_records": 24, "failed_records": 0},
+            ),
+        ],
+        storage_root=temp_path,
+    )
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors_by_type["aps_content_document"],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="aps_content_document",
+                source_identity={"content_id": content_id, "run_id": run_id, "target_id": target_id},
+                source_provenance={"linkage_ref": f"aps/linkage/{content_id}"},
+                payload={"content": "browser APS handoff companion for cohort local outbox proof"},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            )
+        ],
+        storage_root=temp_path,
+    )
+    finalize_session(db, session=session)
+    db.commit()
+    materialize_typing_entry(db, session_id=session.session_id)
+    associated_set = (
+        db.query(L3AnalysisSet)
+        .filter(
+            L3AnalysisSet.session_id == session.session_id,
+            L3AnalysisSet.set_type == "associated_cohort",
+        )
+        .one()
+    )
+    associated_set.formation_basis_json = {
+        **associated_set.formation_basis_json,
+        "requested_method_name": "descriptive_summary",
+    }
+    db.commit()
+    return session.session_id
+
+
 def create_app() -> FastAPI:
     temp_dir = TemporaryDirectory(prefix="review-browser-", ignore_cleanup_errors=True)
     temp_path = Path(temp_dir.name)
@@ -957,6 +1066,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-aps-dataset",
                 "/__test/layer3/seed-aps-document",
                 "/__test/layer3/seed-aps-handoff",
+                "/__test/layer3/seed-cohort-aps-handoff",
                 "/__test/layer3/seed-raw-mixed",
                 "/__test/layer3/materialize-raw-mixed",
             ],
@@ -1004,6 +1114,15 @@ def create_app() -> FastAPI:
         db = SessionLocal()
         try:
             session_id = _build_browser_aps_handoff_ready_session(db, temp_path)
+            return {"session_id": session_id}
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/seed-cohort-aps-handoff")
+    def seed_layer3_cohort_aps_handoff() -> dict[str, str]:
+        db = SessionLocal()
+        try:
+            session_id = _build_browser_cohort_aps_handoff_ready_session(db, temp_path)
             return {"session_id": session_id}
         finally:
             db.close()
