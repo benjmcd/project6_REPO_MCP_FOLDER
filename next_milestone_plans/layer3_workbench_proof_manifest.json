@@ -23803,5 +23803,39 @@
   },
   "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_branch": "codex/l3-real-target-missing-decision",
   "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_live_behavior_change": false,
-  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_summary": "Doc 600 proof confirms current main still lacks the named real connector/destination target and required implementation-entry decisions after the local receipt smoke sync, so real connector/destination runtime remains not implemented and blocked."
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_summary": "Doc 600 proof confirms current main still lacks the named real connector/destination target and required implementation-entry decisions after the local receipt smoke sync, so real connector/destination runtime remains not implemented and blocked.",
+  "layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_layer3_real_target_missing_decision_after_local_receipt_smoke",
+    "status": "current_main_synced_layer3_real_target_missing_decision_after_local_receipt_smoke",
+    "sync_branch": "codex/l3-real-target-decision-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+    "missing_decision_pr": "#1197",
+    "missing_decision_merge_commit": "77958674510232ae3e72871fd66d8b04e52b7c93",
+    "proof_terms": [
+      "current_main_sync_layer3_real_target_missing_decision_after_local_receipt_smoke_merge",
+      "current_main_synced_layer3_real_target_missing_decision_after_local_receipt_smoke",
+      "backend-layer3-api pass 2m29s",
+      "test pass 2m58s",
+      "reviewThreads_totalCount 0",
+      "unresolved_reviewThreads 0",
+      "merge_state_before_merge CLEAN",
+      "post-merge current-main validation passed",
+      "no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync",
+      "implementation-entry freeze written remains false",
+      "runtime status remains not_implemented",
+      "selected implementation action remains none",
+      "no runtime behavior in sync",
+      "no external connector invocation",
+      "no destination write",
+      "no connector-run creation",
+      "no credential use",
+      "no provider-public delivery/use",
+      "no frontend-only durable authority",
+      "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync"
+    ],
+    "next_whole_project_posture": "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync"
+  },
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_branch": "codex/l3-real-target-decision-sync",
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_live_behavior_change": false,
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_summary": "Doc 601 proof records current-main sync for PR #1197 merge commit 77958674510232ae3e72871fd66d8b04e52b7c93 with green checks, empty review/comment/thread surfaces, post-merge current-main validation, and next posture await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync."
 }
