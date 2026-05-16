@@ -2677,6 +2677,14 @@ The audit result is `layer3_source_intake_to_provider_private_signed_reference_d
 
 No implementation begins in this audit, and runtime/backend route/service/response-model/schema/model/migration/rendered UI/source/package/connector/provider/RAG/auth/frontend-durable behavior remains blocked.
 
+## Layer 3 Next External Surface Decision Intake After Selected Outbox Sync
+
+Branch-local planning/control intake: `623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md` follows the selected server-owned local outbox target current-main sync from `622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md`.
+
+The intake records that current main has already satisfied `server_owned_local_delivery_outbox_destination` through `608_SERVER_OWNED_LOCAL_OUTBOX_REAL_WRITE_ADMISSION_FREEZE.md`, but the active Layer 3 objective is not complete. The selected next external surface remains `null`; `implementation_entry_freeze_written` remains false; runtime status is `no_new_runtime_next_external_surface_decision_required`; and selected implementation action is `none`. The next required operator step is to fill exactly one `next_surface_identity` and `next_surface_class`, then write a separate implementation-entry freeze before code.
+
+No implementation begins in this intake, and real connector invocation, destination writes beyond the already-satisfied server-owned local outbox target, connector-run creation, credentials, provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior, full mockup activation, frontend-durable authority, and generic downstream dispatch remain blocked. The next whole-project posture is `await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_sync`.
+
 ## Layer 3 Connector/Destination Dispatch Boundary Authority Audit After Handoff/Export Audit Package-Lifecycle Source Intake Provider-Private E2E Connector Requirement Current-Main Sync
 
 Current-main proof/control sync: PR `#1147` merged `551_LAYER3_CONNECTOR_DESTINATION_DISPATCH_BOUNDARY_AUTHORITY_AUDIT_AFTER_HANDOFF_EXPORT_AUDIT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_FREEZE_SYNC.md` at merge commit `e2521a82b20781f7b9d161674a4f40e795903778`.
