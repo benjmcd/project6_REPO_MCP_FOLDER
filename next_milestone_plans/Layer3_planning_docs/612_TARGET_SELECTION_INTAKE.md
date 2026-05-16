@@ -48,6 +48,30 @@ The operator must fill every field before a real-target implementation-entry fre
 | `operator_surface` | `read_only_status_only`, `write_submit_control`, or `no_rendered_surface`. |
 | `proof_architecture` | Fake/dry-run proof path, isolated runtime state, API proof, headed/headless E2E if rendered behavior changes, and negative guardrails. |
 
+## Structured Selection Record
+
+The operator may complete the intake by replacing every `null` value below. Leave `selection_complete: false` until every required value is filled and a separate implementation-entry freeze is ready to copy the completed record.
+
+```yaml
+target_identity: null
+target_owner: null
+target_class: null
+operator_purpose: null
+authority_source: null
+artifact_family: null
+credential_model: null
+destination_address_model: null
+side_effect_boundary: null
+idempotency_contract: null
+failure_lifecycle: null
+receipt_audit_contract: null
+exposure_security_posture: null
+operator_surface: null
+proof_architecture: null
+selection_complete: false
+implementation_entry_freeze_written: false
+```
+
 ## Acceptance Gate
 
 A completed intake is acceptable only when:
