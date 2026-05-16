@@ -28,6 +28,8 @@ from app.models.models import (
     L3AnalysisSet,
     L3AnalysisUnit,
     L3ConnectorLocalDestinationReceipt,
+    L3ExternalLocalExportAuditEvent,
+    L3ExternalLocalExportReceipt,
     L3LocalOutboxProviderPrivateHandoffAuditEvent,
     L3LocalOutboxProviderPrivateHandoffReceipt,
     L3MaterialSnapshot,
@@ -551,6 +553,40 @@ LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_DOWNSTREAM_UNAVAILABLE = (
     "auth_security_hardening",
     "full_mockup_activation",
     "frontend_durable_authority",
+)
+EXTERNAL_LOCAL_EXPORT_STATUS_SCHEMA_ID = "layer3.external_local_export.status.v1"
+EXTERNAL_LOCAL_EXPORT_STATE_SCHEMA_ID = "layer3.external_local_export.state.v1"
+EXTERNAL_LOCAL_EXPORT_LIFECYCLE_SCHEMA_ID = "layer3.external_local_export.lifecycle.v1"
+EXTERNAL_LOCAL_EXPORT_AUDIT_SCHEMA_ID = "layer3.external_local_export.audit.v1"
+EXTERNAL_LOCAL_EXPORT_TARGET_IDENTITY = "server_configured_external_local_export_directory"
+EXTERNAL_LOCAL_EXPORT_TARGET_CLASS = "server_configured_external_destination_write"
+EXTERNAL_LOCAL_EXPORT_DISPATCH_MODE = "server_configured_external_local_export_directory_write"
+EXTERNAL_LOCAL_EXPORT_OPERATOR_DECISION = "write_server_configured_external_local_export_directory"
+EXTERNAL_LOCAL_EXPORT_DESTINATION_LABEL = "server_configured_external_local_export_directory"
+EXTERNAL_LOCAL_EXPORT_NOT_READY_STATE = "external_local_export_not_ready"
+EXTERNAL_LOCAL_EXPORT_READY_STATE = "external_local_export_ready"
+EXTERNAL_LOCAL_EXPORT_WRITTEN_STATE = "external_local_export_written"
+EXTERNAL_LOCAL_EXPORT_REPLAY_STATE = "external_local_export_replay"
+EXTERNAL_LOCAL_EXPORT_CONFLICT_STATE = "external_local_export_conflict"
+EXTERNAL_LOCAL_EXPORT_STALE_AUTHORITY_STATE = "external_local_export_stale_authority"
+EXTERNAL_LOCAL_EXPORT_FAILED_STATE = "external_local_export_failed"
+EXTERNAL_LOCAL_EXPORT_DOWNSTREAM_UNAVAILABLE = (
+    "real_connector_invocation",
+    "connector_run_creation",
+    "connector_run_target_creation",
+    "credentials",
+    "network_egress",
+    "provider_public_delivery_use",
+    "raw_public_url_exposure",
+    "raw_token_use",
+    "package_mutation_reconstruction",
+    "source_expansion",
+    "rag_vector",
+    "qualitative_hybrid_analysis_runtime",
+    "auth_security_implementation",
+    "full_mockup_activation",
+    "frontend_durable_authority",
+    "generic_downstream_dispatch",
 )
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UNAVAILABLE_STATE = "external_export_download_delivery_unavailable"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE = "external_export_download_delivery_ready"
@@ -12991,6 +13027,411 @@ def _local_outbox_provider_private_handoff_summary(
     )
 
 
+def _external_local_export_history_item(
+    row: L3ExternalLocalExportReceipt,
+    *,
+    audit_events: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "schema_id": EXTERNAL_LOCAL_EXPORT_LIFECYCLE_SCHEMA_ID,
+        "external_local_export_receipt_id": row.external_local_export_receipt_id,
+        "external_local_export_state": row.export_state,
+        "session_id": row.session_id,
+        "pass_run_id": row.pass_run_id,
+        "reconciliation_record_id": row.reconciliation_record_id,
+        "server_owned_local_outbox_write_receipt_id": row.server_owned_local_outbox_write_receipt_id,
+        "server_owned_local_outbox_target_receipt_id": row.server_owned_local_outbox_target_receipt_id,
+        "connector_local_destination_receipt_id": row.connector_local_destination_receipt_id,
+        "provider_private_handoff_receipt_id": row.provider_private_handoff_receipt_id,
+        "connector_dispatch_record_ref": row.connector_dispatch_record_ref,
+        "external_export_download_record_ref": row.external_export_download_record_ref,
+        "target_identity": row.target_identity,
+        "target_class": row.target_class,
+        "dispatch_mode": row.dispatch_mode,
+        "redacted_destination_label": row.redacted_destination_label,
+        "external_artifact_ref": row.external_artifact_ref,
+        "external_manifest_ref": row.external_manifest_ref,
+        "external_artifact_hash": row.external_artifact_hash,
+        "external_artifact_size_bytes": row.external_artifact_size_bytes,
+        "external_manifest_hash": row.external_manifest_hash,
+        "external_manifest_size_bytes": row.external_manifest_size_bytes,
+        "source_outbox_artifact_ref": "artifact://external-local-export-source-outbox-redacted",
+        "source_outbox_artifact_hash": row.source_outbox_artifact_hash,
+        "source_outbox_artifact_size_bytes": row.source_outbox_artifact_size_bytes,
+        "authority_basis_hash": row.authority_basis_hash,
+        "idempotency_key": row.idempotency_key,
+        "created_by_request_id": row.created_by_request_id,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "audit_events": audit_events,
+        "audit_authority": "durable_external_local_export_receipt_row",
+    }
+
+
+def _external_local_export_audit_item(row: L3ExternalLocalExportAuditEvent) -> dict[str, Any]:
+    return {
+        "schema_id": EXTERNAL_LOCAL_EXPORT_AUDIT_SCHEMA_ID,
+        "external_local_export_audit_event_id": row.external_local_export_audit_event_id,
+        "external_local_export_receipt_id": row.external_local_export_receipt_id,
+        "event_type": row.event_type,
+        "event_status": row.event_status,
+        "request_id": row.request_id,
+        "authority_basis_hash": row.authority_basis_hash,
+        "reason_code": row.reason_code,
+        "event_payload": row.event_payload_json,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+
+
+def _external_local_export_failure_projection(
+    *,
+    current_state: str | None,
+    blocked_reason: str | None,
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "case": "not_ready",
+            "operator_status": blocked_reason or "await_server_owned_local_outbox_write",
+            "projected_error_code": "external_local_export_requires_outbox_write",
+            "active": current_state == EXTERNAL_LOCAL_EXPORT_NOT_READY_STATE,
+        },
+        {
+            "case": "stale_authority",
+            "operator_status": "conflict",
+            "projected_error_code": EXTERNAL_LOCAL_EXPORT_STALE_AUTHORITY_STATE,
+            "active": current_state == EXTERNAL_LOCAL_EXPORT_STALE_AUTHORITY_STATE,
+        },
+        {
+            "case": "wrong_session_or_pass",
+            "operator_status": "conflict",
+            "projected_error_code": "external_local_export_pass_run_mismatch",
+            "active": False,
+        },
+        {
+            "case": "wrong_receipt_chain",
+            "operator_status": "conflict",
+            "projected_error_code": "external_local_export_requires_receipt_chain",
+            "active": False,
+        },
+        {
+            "case": "missing_provider_private_handoff_when_applicable",
+            "operator_status": "blocked",
+            "projected_error_code": "external_local_export_requires_provider_private_handoff",
+            "active": False,
+        },
+        {
+            "case": "same_key_same_payload_replay",
+            "operator_status": "already_recorded",
+            "projected_error_code": None,
+            "active": current_state == EXTERNAL_LOCAL_EXPORT_REPLAY_STATE,
+        },
+        {
+            "case": "same_key_different_payload_conflict",
+            "operator_status": "conflict",
+            "projected_error_code": "external_local_export_client_request_conflict",
+            "active": current_state == EXTERNAL_LOCAL_EXPORT_CONFLICT_STATE,
+        },
+        {
+            "case": "same_basis_different_client_request_id",
+            "operator_status": "already_recorded",
+            "projected_error_code": None,
+            "active": False,
+        },
+        {
+            "case": "target_write_conflict",
+            "operator_status": "conflict",
+            "projected_error_code": "external_local_export_existing_output_conflict",
+            "active": False,
+        },
+        {
+            "case": "write_failed",
+            "operator_status": "failed",
+            "projected_error_code": EXTERNAL_LOCAL_EXPORT_FAILED_STATE,
+            "active": current_state == EXTERNAL_LOCAL_EXPORT_FAILED_STATE,
+        },
+    ]
+
+
+def _with_external_local_export_lifecycle(
+    status: dict[str, Any],
+    *,
+    history_rows: list[L3ExternalLocalExportReceipt],
+    audit_rows: list[L3ExternalLocalExportAuditEvent],
+    current_state: str | None,
+    blocked_reason: str | None,
+) -> dict[str, Any]:
+    audit_history_by_receipt: dict[str, list[dict[str, Any]]] = {}
+    audit_history = [_external_local_export_audit_item(row) for row in audit_rows]
+    for item in audit_history:
+        receipt_id = str(item.get("external_local_export_receipt_id") or "")
+        audit_history_by_receipt.setdefault(receipt_id, []).append(item)
+    history = [
+        _external_local_export_history_item(
+            row,
+            audit_events=audit_history_by_receipt.get(row.external_local_export_receipt_id, []),
+        )
+        for row in history_rows
+    ]
+    latest_receipt = history[0] if history else None
+    latest_audit = audit_history[0] if audit_history else None
+    lifecycle = {
+        "schema_id": EXTERNAL_LOCAL_EXPORT_LIFECYCLE_SCHEMA_ID,
+        "surface_mode": "read_only_external_local_export_status_history",
+        "history_listing_authority": "durable_external_local_export_receipt_rows",
+        "audit_trail_authority": "durable_external_local_export_audit_event_rows",
+        "history_count": len(history),
+        "external_local_export_history": history,
+        "latest_external_local_export_receipt": latest_receipt,
+        "audit_event_history_count": len(audit_history),
+        "audit_event_history": audit_history,
+        "latest_audit_event": latest_audit,
+        "idempotency_policy": {
+            "client_request_id_unique": True,
+            "authority_basis_hash_unique": True,
+            "external_artifact_ref_unique": True,
+            "same_key_same_payload_replay": "already_recorded",
+            "same_key_different_payload_conflict": "external_local_export_client_request_conflict",
+            "same_basis_different_client_request_id": "return_existing_status",
+            "duplicate_target_identical_output": "return_existing_status",
+            "duplicate_target_conflicting_output": "external_local_export_existing_output_conflict",
+        },
+        "retry_policy": {
+            "retry_fields_admitted": False,
+            "rerun_fields_admitted": False,
+            "cancel_fields_admitted": False,
+            "replay_semantics": "status_only_for_same_client_request_or_same_authority_basis",
+        },
+        "failure_state_projection": _external_local_export_failure_projection(
+            current_state=current_state,
+            blocked_reason=blocked_reason,
+        ),
+    }
+    return {
+        **status,
+        "lifecycle_status_surface": lifecycle,
+        "external_local_export_history": history,
+        "external_local_export_history_count": len(history),
+        "latest_external_local_export_receipt": latest_receipt,
+        "audit_event_history": audit_history,
+        "audit_event_history_count": len(audit_history),
+        "latest_audit_event": latest_audit,
+        "failure_state_projection": lifecycle["failure_state_projection"],
+        "idempotency_policy": lifecycle["idempotency_policy"],
+        "retry_policy": lifecycle["retry_policy"],
+    }
+
+
+def _external_local_export_summary(
+    db: Session,
+    *,
+    session_id: str,
+    server_owned_local_outbox_write_state: dict[str, Any],
+    local_outbox_provider_private_handoff_state: dict[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(server_owned_local_outbox_write_state, dict):
+        server_owned_local_outbox_write_state = {}
+    if not isinstance(local_outbox_provider_private_handoff_state, dict):
+        local_outbox_provider_private_handoff_state = {}
+    write_receipt_id = str(
+        server_owned_local_outbox_write_state.get("server_owned_local_outbox_write_receipt_id") or ""
+    ).strip()
+    export_query = db.query(L3ExternalLocalExportReceipt).filter(
+        L3ExternalLocalExportReceipt.session_id == session_id
+    )
+    if write_receipt_id:
+        export_query = export_query.filter(
+            L3ExternalLocalExportReceipt.server_owned_local_outbox_write_receipt_id == write_receipt_id
+        )
+    export_row = export_query.order_by(L3ExternalLocalExportReceipt.created_at.desc()).first()
+    history_rows = (
+        db.query(L3ExternalLocalExportReceipt)
+        .filter(L3ExternalLocalExportReceipt.session_id == session_id)
+        .order_by(L3ExternalLocalExportReceipt.created_at.desc())
+        .all()
+    )
+    receipt_ids = [row.external_local_export_receipt_id for row in history_rows]
+    audit_rows = []
+    if receipt_ids:
+        audit_rows = (
+            db.query(L3ExternalLocalExportAuditEvent)
+            .filter(L3ExternalLocalExportAuditEvent.external_local_export_receipt_id.in_(receipt_ids))
+            .order_by(L3ExternalLocalExportAuditEvent.created_at.desc())
+            .all()
+        )
+    if export_row is not None:
+        return _with_external_local_export_lifecycle(
+            {
+                "schema_id": EXTERNAL_LOCAL_EXPORT_STATUS_SCHEMA_ID,
+                "available": False,
+                "state": export_row.export_state,
+                "blocked_reason": None,
+                "session_id": export_row.session_id,
+                "pass_run_id": export_row.pass_run_id,
+                "reconciliation_record_id": export_row.reconciliation_record_id,
+                "external_local_export_receipt_id": export_row.external_local_export_receipt_id,
+                "external_local_export_state": export_row.export_state,
+                "server_owned_local_outbox_write_receipt_id": export_row.server_owned_local_outbox_write_receipt_id,
+                "server_owned_local_outbox_target_receipt_id": export_row.server_owned_local_outbox_target_receipt_id,
+                "connector_local_destination_receipt_id": export_row.connector_local_destination_receipt_id,
+                "provider_private_handoff_receipt_id": export_row.provider_private_handoff_receipt_id,
+                "connector_dispatch_record_ref": export_row.connector_dispatch_record_ref,
+                "external_export_download_record_ref": export_row.external_export_download_record_ref,
+                "target_identity": export_row.target_identity,
+                "target_class": export_row.target_class,
+                "dispatch_mode": export_row.dispatch_mode,
+                "operator_decision": EXTERNAL_LOCAL_EXPORT_OPERATOR_DECISION,
+                "redacted_destination_label": export_row.redacted_destination_label,
+                "external_artifact_ref": export_row.external_artifact_ref,
+                "external_manifest_ref": export_row.external_manifest_ref,
+                "external_artifact_hash": export_row.external_artifact_hash,
+                "external_artifact_size_bytes": export_row.external_artifact_size_bytes,
+                "external_manifest_hash": export_row.external_manifest_hash,
+                "external_manifest_size_bytes": export_row.external_manifest_size_bytes,
+                "source_outbox_artifact_ref": "artifact://external-local-export-source-outbox-redacted",
+                "source_outbox_artifact_hash": export_row.source_outbox_artifact_hash,
+                "source_outbox_artifact_size_bytes": export_row.source_outbox_artifact_size_bytes,
+                "authority_basis_hash": export_row.authority_basis_hash,
+                "idempotency_key": export_row.idempotency_key,
+                "server_configured_external_local_export_write_enabled": True,
+                "server_configured_external_local_export_write_performed": True,
+                "external_destination_write_enabled": True,
+                "operator_destination_path_enabled": False,
+                "real_connector_invocation_enabled": False,
+                "connector_run_created": False,
+                "connector_run_target_created": False,
+                "credentials_enabled": False,
+                "network_egress_enabled": False,
+                "provider_public_delivery_enabled": False,
+                "raw_public_url_exposed": False,
+                "raw_token_exposed": False,
+                "package_mutation_enabled": False,
+                "source_expansion_enabled": False,
+                "rag_vector_enabled": False,
+                "qualitative_hybrid_analysis_runtime_enabled": False,
+                "auth_security_implementation_enabled": False,
+                "full_mockup_activation_enabled": False,
+                "frontend_durable_authority_enabled": False,
+                "generic_downstream_dispatch_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "durable_external_local_export_receipt_row",
+                "downstream_unavailable": list(EXTERNAL_LOCAL_EXPORT_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            audit_rows=audit_rows,
+            current_state=export_row.export_state,
+            blocked_reason=None,
+        )
+    write_recorded = (
+        server_owned_local_outbox_write_state.get("state") == SERVER_OWNED_LOCAL_OUTBOX_WRITE_RECORDED_STATE
+        and write_receipt_id
+    )
+    provider_receipt_id = str(
+        local_outbox_provider_private_handoff_state.get("provider_private_handoff_receipt_id") or ""
+    ).strip()
+    if write_recorded:
+        return _with_external_local_export_lifecycle(
+            {
+                "schema_id": EXTERNAL_LOCAL_EXPORT_STATUS_SCHEMA_ID,
+                "available": True,
+                "state": EXTERNAL_LOCAL_EXPORT_READY_STATE,
+                "blocked_reason": None,
+                "reconciliation_record_id": server_owned_local_outbox_write_state.get("reconciliation_record_id"),
+                "server_owned_local_outbox_write_receipt_id": write_receipt_id,
+                "server_owned_local_outbox_target_receipt_id": server_owned_local_outbox_write_state.get(
+                    "server_owned_local_outbox_target_receipt_id"
+                ),
+                "server_owned_local_outbox_write_state": server_owned_local_outbox_write_state.get("state"),
+                "connector_local_destination_receipt_id": server_owned_local_outbox_write_state.get(
+                    "connector_local_destination_receipt_id"
+                ),
+                "provider_private_handoff_receipt_id": provider_receipt_id or None,
+                "provider_private_handoff_state": local_outbox_provider_private_handoff_state.get("state"),
+                "connector_dispatch_record_ref": server_owned_local_outbox_write_state.get(
+                    "connector_dispatch_record_ref"
+                ),
+                "external_export_download_record_ref": server_owned_local_outbox_write_state.get(
+                    "external_export_download_record_ref"
+                ),
+                "target_identity": EXTERNAL_LOCAL_EXPORT_TARGET_IDENTITY,
+                "target_class": EXTERNAL_LOCAL_EXPORT_TARGET_CLASS,
+                "dispatch_mode": EXTERNAL_LOCAL_EXPORT_DISPATCH_MODE,
+                "operator_decision": EXTERNAL_LOCAL_EXPORT_OPERATOR_DECISION,
+                "redacted_destination_label": EXTERNAL_LOCAL_EXPORT_DESTINATION_LABEL,
+                "source_outbox_artifact_ref": "artifact://external-local-export-source-outbox-redacted",
+                "source_outbox_artifact_hash": server_owned_local_outbox_write_state.get("outbox_artifact_hash"),
+                "source_outbox_artifact_size_bytes": server_owned_local_outbox_write_state.get(
+                    "outbox_artifact_size_bytes"
+                ),
+                "server_configured_external_local_export_write_enabled": True,
+                "server_configured_external_local_export_write_performed": False,
+                "external_destination_write_enabled": True,
+                "operator_destination_path_enabled": False,
+                "real_connector_invocation_enabled": False,
+                "connector_run_created": False,
+                "connector_run_target_created": False,
+                "credentials_enabled": False,
+                "network_egress_enabled": False,
+                "provider_public_delivery_enabled": False,
+                "raw_public_url_exposed": False,
+                "raw_token_exposed": False,
+                "package_mutation_enabled": False,
+                "source_expansion_enabled": False,
+                "rag_vector_enabled": False,
+                "qualitative_hybrid_analysis_runtime_enabled": False,
+                "auth_security_implementation_enabled": False,
+                "full_mockup_activation_enabled": False,
+                "frontend_durable_authority_enabled": False,
+                "generic_downstream_dispatch_enabled": False,
+                "status_surface_mode": "read_only_server_session_summary_projection",
+                "response_authority": "durable_server_owned_local_outbox_write_receipt_authority",
+                "downstream_unavailable": list(EXTERNAL_LOCAL_EXPORT_DOWNSTREAM_UNAVAILABLE),
+            },
+            history_rows=history_rows,
+            audit_rows=audit_rows,
+            current_state=EXTERNAL_LOCAL_EXPORT_READY_STATE,
+            blocked_reason=None,
+        )
+    return _with_external_local_export_lifecycle(
+        {
+            "schema_id": EXTERNAL_LOCAL_EXPORT_STATUS_SCHEMA_ID,
+            "available": False,
+            "state": EXTERNAL_LOCAL_EXPORT_NOT_READY_STATE,
+            "blocked_reason": "write_server_owned_local_outbox",
+            "target_identity": EXTERNAL_LOCAL_EXPORT_TARGET_IDENTITY,
+            "target_class": EXTERNAL_LOCAL_EXPORT_TARGET_CLASS,
+            "dispatch_mode": EXTERNAL_LOCAL_EXPORT_DISPATCH_MODE,
+            "operator_decision": EXTERNAL_LOCAL_EXPORT_OPERATOR_DECISION,
+            "server_configured_external_local_export_write_enabled": False,
+            "server_configured_external_local_export_write_performed": False,
+            "external_destination_write_enabled": True,
+            "operator_destination_path_enabled": False,
+            "real_connector_invocation_enabled": False,
+            "connector_run_created": False,
+            "connector_run_target_created": False,
+            "credentials_enabled": False,
+            "network_egress_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "raw_public_url_exposed": False,
+            "raw_token_exposed": False,
+            "package_mutation_enabled": False,
+            "source_expansion_enabled": False,
+            "rag_vector_enabled": False,
+            "qualitative_hybrid_analysis_runtime_enabled": False,
+            "auth_security_implementation_enabled": False,
+            "full_mockup_activation_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "status_surface_mode": "read_only_server_session_summary_projection",
+            "response_authority": "existing_session_summary_without_external_local_export_receipt",
+            "downstream_unavailable": list(EXTERNAL_LOCAL_EXPORT_DOWNSTREAM_UNAVAILABLE),
+        },
+        history_rows=history_rows,
+        audit_rows=audit_rows,
+        current_state=EXTERNAL_LOCAL_EXPORT_NOT_READY_STATE,
+        blocked_reason="write_server_owned_local_outbox",
+    )
+
+
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = _latest_selection_manifest_for_session(db, session=session)
@@ -13157,6 +13598,12 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         session_id=session_id,
         server_owned_local_outbox_write_state=server_owned_local_outbox_write_state,
     )
+    external_local_export_state = _external_local_export_summary(
+        db,
+        session_id=session_id,
+        server_owned_local_outbox_write_state=server_owned_local_outbox_write_state,
+        local_outbox_provider_private_handoff_state=local_outbox_provider_private_handoff_state,
+    )
     selection_active = bool(execution_selection_readiness["selected"])
     package_active = bool(
         package_review_preview_state.get("available")
@@ -13214,6 +13661,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "server_owned_local_outbox_target": server_owned_local_outbox_target_state,
         "server_owned_local_outbox_write": server_owned_local_outbox_write_state,
         "local_outbox_provider_private_handoff": local_outbox_provider_private_handoff_state,
+        "external_local_export": external_local_export_state,
         "pdf_location_projection": _pdf_location_projection_for_session(db, session_id=session_id),
         "sublayer_visualization": _session_sublayer_visualization_state(db, session_id=session_id),
         "state_action_contract": _workbench_state_action_contract(),
