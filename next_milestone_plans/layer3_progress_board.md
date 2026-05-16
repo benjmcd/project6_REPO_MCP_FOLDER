@@ -2991,6 +2991,20 @@ No runtime behavior, backend route behavior, service behavior, response-model sh
 
 Next whole-project posture: `await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke_sync`.
 
+## Layer 3 Real Target Missing Decision After Local Receipt Smoke
+
+Branch-local decision packet: `600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md` confirms the post-smoke real connector/destination target blocker after current-main sync doc `599`.
+
+Current-main checkpoint: `d73fe78c372f1237196ce7124e217f9366922e8c`.
+
+Current main proves the read-only operator-visible connector-local receipt status surface and focused E2E smoke through `recordRenderedConnectorLocalReceiptSmoke`, `POST /api/v1/layer3/handoff/connector/record`, `POST /api/v1/layer3/handoff/connector/local-destination/receipt`, `connector_local_destination_receipt_recorded`, and `durable_connector_local_destination_receipt_row`.
+
+Decision result: `no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync`. Implementation-entry freeze written remains false, runtime status remains `not_implemented`, and selected implementation action remains `none`.
+
+No real connector target, no real destination target, external connector invocation, destination write, connector-run creation, credential use, network write, real destination integration, provider-public delivery/use, rendered connector/destination controls, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior change, full mockup activation, or frontend-only durable authority is admitted by this packet.
+
+Next whole-project posture: `await_local_receipt_lifecycle_hardening_after_real_target_missing_decision`.
+
 ## Layer 3 Connector Local Destination Receipt Delivery-Authority Readiness/Artifact Review Remediation
 
 Branch-local review remediation: `591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md` addresses the PR `#1185` review threads `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284` and `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289`.
