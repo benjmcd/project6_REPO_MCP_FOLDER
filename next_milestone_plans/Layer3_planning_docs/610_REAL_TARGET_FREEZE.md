@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: implemented and merged on current main for `server_owned_local_outbox_provider_private_handoff_target_after_local_outbox_write`, including the read-only session-summary/history projection. Branch-local follow-up `codex/l3-provider-private-e2e-proof` adds the rendered read-only operator status/history panel and focused headed/headless E2E proof; this branch-local follow-up is pending merge until PR checks and current-main sync complete.
+Status: implemented and merged on current main for `server_owned_local_outbox_provider_private_handoff_target_after_local_outbox_write`, including the prepare/status runtime, read-only session-summary/history projection, rendered read-only operator status/history panel, and focused headed/headless E2E proof.
 
 Doc: `610_REAL_TARGET_FREEZE.md`.
 
@@ -20,11 +20,17 @@ Read-only session-summary/history projection merged current-main checkpoint: `79
 
 Read-only session-summary/history projection merged PR: `#1209`.
 
+Rendered status/history E2E proof feature commit: `0dac6cdd0f130682d5329da662107c26db54d972`.
+
+Rendered status/history E2E proof merged current-main checkpoint: `e86ef1bddf93700c543f337b4b4c9ca0c4518c1f`.
+
+Rendered status/history E2E proof merged PR: `#1211`.
+
 Prior decision packet: `609_REAL_CONNECTOR_DESTINATION_DECISION_PACKET_AFTER_LOCAL_OUTBOX_WRITE.md`.
 
 Runtime status before implementation: `server_owned_local_outbox_write_implemented_and_reaudited_on_current_main`.
 
-Implementation-entry result: fake-provider prepare/status slice and read-only session-summary/history projection implemented and merged; further real-provider, destination-write, provider-public, raw-token, package, source-expansion, RAG/vector, auth/security, rendered-write-control, full-mockup, and frontend-durable authority remains blocked unless separately frozen and admitted.
+Implementation-entry result: fake-provider prepare/status slice, read-only session-summary/history projection, and rendered read-only status/history proof implemented and merged; further real-provider, destination-write, provider-public, raw-token, package, source-expansion, RAG/vector, auth/security, rendered write controls, full-mockup, and frontend-durable authority remains blocked unless separately frozen and admitted.
 
 ## Selected Target
 
@@ -268,11 +274,9 @@ Stop before implementation if the next pass:
 
 The next whole-project posture is `prove_and_harden_local_outbox_provider_private_handoff_lifecycle_after_status_projection`.
 
-## Current-Main And Branch-Local Implementation Status
+## Current-Main Implementation Status
 
-Current main status: `local_outbox_provider_private_handoff_prepare_status_and_session_history_projection_implemented_merged`.
-
-Branch-local follow-up status: `local_outbox_provider_private_handoff_rendered_status_history_e2e_proof_implemented_pending_merge`.
+Current main status: `local_outbox_provider_private_handoff_rendered_status_history_e2e_proof_implemented_merged`.
 
 Implemented first-slice surfaces:
 
@@ -286,7 +290,7 @@ Implemented first-slice surfaces:
 - audit-event history projection from durable provider-private handoff audit rows; and
 - OpenAPI and targeted backend proof in `backend/tests/test_layer3_api.py`.
 
-Implemented branch-local follow-up surfaces:
+Implemented rendered proof surfaces:
 
 - read-only rendered panel `#local-outbox-provider-private-handoff-panel` in `backend/app/review_ui/static/layer3.html`;
 - session-summary-backed renderer in `backend/app/review_ui/static/layer3.js` for provider-private handoff state, authority chain, receipt refs, lifecycle policy, receipt history, audit history, guardrail projection, and disabled runtime lanes;
@@ -310,7 +314,7 @@ Merged proof already exercised:
 - migration upgrade to head against isolated in-memory SQLite; and
 - full `backend/tests/test_layer3_api.py` coverage on the status-projection merge branch.
 
-Branch-local proof exercised:
+Rendered proof exercised:
 
 - `node --check .\backend\app\review_ui\static\layer3.js` passed.
 - `git diff --check` passed with only expected LF-to-CRLF working-copy warnings.
@@ -338,4 +342,4 @@ Still not admitted by this implementation:
 - full mockup activation; and
 - frontend-durable authority.
 
-Next whole-project pass after this branch merges: perform current-main sync for the rendered local-outbox provider-private handoff status/history proof, then harden only repo-confirmed lifecycle gaps in stale authority, wrong receipt/session/basis, duplicate `client_request_id`, same-key/same-payload replay, same-key/different-payload conflict, expiry, and fake-provider failure projection. If no such gaps are confirmed, proceed to the missing-decision packet for a real connector/destination target. A named real provider/destination implementation freeze is still blocked unless the operator names a concrete target and separately admits that implementation entry.
+Next whole-project pass after this current-main sync: harden only repo-confirmed lifecycle gaps in stale authority, wrong receipt/session/basis, duplicate `client_request_id`, same-key/same-payload replay, same-key/different-payload conflict, expiry, and fake-provider failure projection. If no such gaps are confirmed, proceed to the missing-decision packet for a real connector/destination target. A named real provider/destination implementation freeze is still blocked unless the operator names a concrete target and separately admits that implementation entry.
