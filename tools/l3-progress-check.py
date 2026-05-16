@@ -1529,6 +1529,10 @@ LAYER3_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC = (
 LAYER3_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE = (
     PLANNING_DOCS / "623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md"
 )
+LAYER3_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "624_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_TARGET_SELECTION_VALIDATOR_CLI = ROOT / "tools" / "l3-target-selection-validate.py"
 LAYER3_TARGET_SELECTION_VALIDATOR_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_target_selection_validate.py"
@@ -49944,6 +49948,38 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE)} missing next external surface decision intake term: {term}"
             )
 
+    next_external_surface_intake_sync_text = _read_required_text(
+        LAYER3_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC, errors
+    )
+    for term in (
+        "Status: current-main sync for `layer3_next_external_surface_decision_intake`.",
+        "624_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC.md",
+        "Synced intake doc: `623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md`.",
+        "Decision-intake PR: `#1227`.",
+        "Decision-intake branch commit: `608de7f68061ce4ddecc41263924f6370ca2333a`.",
+        "Decision-intake merge commit: `5905d8e4ef4d3722b6d1d4259eef22241543dd08`.",
+        "Current-main checkpoint after merge: `5905d8e4ef4d3722b6d1d4259eef22241543dd08`.",
+        "Runtime status: `current_main_synced_next_external_surface_decision_intake`.",
+        "Selected next external surface: `null`.",
+        "Implementation-entry freeze written for next external surface: false.",
+        "GitHub `backend-layer3-api` passed in `2m32s`.",
+        "GitHub `test` passed in `3m11s`.",
+        "PR comments were empty.",
+        "PR reviews were empty.",
+        "PR reviewThreads totalCount was `0`.",
+        "Unresolved reviewThreads were `0`.",
+        "Mergeability before merge was `MERGEABLE`.",
+        "Merge state before merge was `CLEAN`.",
+        "tools/l3-progress-check.py`: PASS.",
+        "tools/l3-target-selection-validate.py --expect frozen`: PASS.",
+        "git diff --check HEAD project6-origin/main -- .`: PASS.",
+        "The next whole-project posture is `await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_current_main_sync`.",
+    ):
+        if term not in next_external_surface_intake_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC)} missing next external surface decision intake sync term: {term}"
+            )
+
     local_outbox_provider_private_rendered_e2e_text = _read_required_text(
         LAYER3_WORKBENCH_E2E, errors
     )
@@ -49976,6 +50012,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "2026-05-16 target-selection selected outbox current-main satisfied",
             "2026-05-16 target-selection selected outbox current-main sync",
             "Layer 3 Next External Surface Decision Intake After Selected Outbox Sync",
+            "Layer 3 Next External Surface Decision Intake Current-Main Sync",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
@@ -49984,11 +50021,13 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
             "622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md",
             "623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md",
+            "624_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1218",
             "#1223",
             "#1225",
+            "#1227",
             "tools/l3-progress-check.py",
             "tools/l3-target-selection-validate.py",
             "e2e/layer3-workbench.spec.js",
@@ -49996,7 +50035,9 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "Selection complete: true",
             "server_owned_local_delivery_outbox_destination",
             "a8379403f77adaf2c490943774e2f5e655c49e68",
+            "5905d8e4ef4d3722b6d1d4259eef22241543dd08",
             "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_sync",
+            "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_current_main_sync",
         ),
         MANIFEST: (
             "target_selection_validate_only_guard",
@@ -50009,6 +50050,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "target_selection_selected_outbox_current_main_satisfied",
             "target_selection_selected_outbox_current_main_sync",
             "layer3_next_external_surface_decision_intake",
+            "layer3_next_external_surface_decision_intake_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
@@ -50019,6 +50061,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
             "622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md",
             "623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md",
+            "624_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC.md",
             "codex/l3-target-selection-guard",
             "codex/l3-target-selection-field-contract",
             "codex/l3-target-selection-record-validator",
@@ -50028,16 +50071,19 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "codex/l3-target-selection-selected-outbox",
             "codex/l3-selected-outbox-current-main-sync",
             "codex/l3-next-external-surface-intake",
+            "codex/l3-next-external-surface-intake-sync",
             "e2e/layer3-workbench.spec.js",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
             "47fff614513530b71b897166eff0008152424065",
             "a8379403f77adaf2c490943774e2f5e655c49e68",
             "2e30146544409eea5bd194485510ad9f5d17bb1b",
+            "5905d8e4ef4d3722b6d1d4259eef22241543dd08",
             "selection_complete false",
             "selection_complete true",
             "server_owned_local_delivery_outbox_destination",
             "await_operator_decision_for_next_external_surface_after_selected_server_owned_local_outbox_target_satisfied_sync",
             "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_sync",
+            "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_current_main_sync",
         ),
         PROOF_MANIFEST: (
             "latest_target_selection_validate_only_guard",
@@ -50050,6 +50096,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "latest_target_selection_selected_outbox_current_main_satisfied",
             "latest_target_selection_selected_outbox_current_main_sync",
             "latest_layer3_next_external_surface_decision_intake",
+            "latest_layer3_next_external_surface_decision_intake_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
@@ -50060,6 +50107,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
             "622_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SYNC.md",
             "623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md",
+            "624_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE_CURRENT_MAIN_SYNC.md",
             "validate-only progress guard",
             "does not select a target",
             "local_outbox_provider_private_rendered_e2e_proof",
@@ -50067,15 +50115,19 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "target_selection_selected_outbox_current_main_satisfied_proof",
             "target_selection_selected_outbox_current_main_sync_proof",
             "layer3_next_external_surface_decision_intake_proof",
+            "layer3_next_external_surface_decision_intake_current_main_sync_proof",
             "codex/l3-local-outbox-provider-private-e2e",
             "codex/l3-local-outbox-provider-private-sync",
             "codex/l3-target-selection-selected-outbox",
             "codex/l3-selected-outbox-current-main-sync",
             "codex/l3-next-external-surface-intake",
+            "codex/l3-next-external-surface-intake-sync",
             "server_owned_local_delivery_outbox_destination",
             "a8379403f77adaf2c490943774e2f5e655c49e68",
             "2e30146544409eea5bd194485510ad9f5d17bb1b",
+            "5905d8e4ef4d3722b6d1d4259eef22241543dd08",
             "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_sync",
+            "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_current_main_sync",
         ),
     }.items():
         path_text = _read_required_text(path, errors)
