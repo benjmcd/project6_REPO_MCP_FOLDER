@@ -1840,6 +1840,29 @@ async function recordRenderedConnectorLocalReceiptSmoke(
   expect(connectorRecord.connector_run_created).toBe(false);
   expect(connectorRecord.provider_public_url_enabled).toBe(false);
 
+  const readySummary = await page.evaluate(async (activeSessionId) => {
+    State.sessionSummary = await getJson(`/session/${encodeURIComponent(activeSessionId)}`);
+    renderAll();
+    return State.sessionSummary;
+  }, sessionId);
+  expect(readySummary.connector_local_destination_receipt.state).toBe(
+    'connector_local_destination_receipt_ready',
+  );
+  expect(readySummary.connector_local_destination_receipt.available).toBe(true);
+  expect(readySummary.connector_local_destination_receipt.receipt_history_count).toBe(0);
+  expect(readySummary.connector_local_destination_receipt.lifecycle_status_surface.surface_mode).toBe(
+    'read_only_connector_local_receipt_lifecycle_status_history',
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'connector_local_destination_receipt_ready',
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'Lifecycle Policy',
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'Guardrail Projection',
+  );
+
   const localReceiptPayload = {
     client_request_id: requestId('rendered-connector-local-receipt'),
     session_id: sessionId,
@@ -1919,6 +1942,14 @@ async function recordRenderedConnectorLocalReceiptSmoke(
   expect(postReceiptSummary.connector_local_destination_receipt.connector_local_destination_receipt_id).toBe(
     localReceipt.connector_local_destination_receipt_id,
   );
+  expect(postReceiptSummary.connector_local_destination_receipt.receipt_history_count).toBe(1);
+  expect(postReceiptSummary.connector_local_destination_receipt.latest_receipt.connector_local_destination_receipt_id).toBe(
+    localReceipt.connector_local_destination_receipt_id,
+  );
+  expect(postReceiptSummary.connector_local_destination_receipt.idempotency_policy.same_key_same_payload_replay).toBe(
+    'already_recorded',
+  );
+  expect(postReceiptSummary.connector_local_destination_receipt.retry_policy.retry_fields_admitted).toBe(false);
   await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
     'connector_local_destination_receipt_recorded',
   );
@@ -1933,6 +1964,12 @@ async function recordRenderedConnectorLocalReceiptSmoke(
   );
   await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
     'destination write: blocked',
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'same key conflict: connector_local_destination_receipt_client_request_conflict',
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'retry fields: blocked',
   );
   return localReceipt;
 }

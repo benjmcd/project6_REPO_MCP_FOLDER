@@ -25,6 +25,7 @@ from app.models.models import (
     L3AnalysisPlan,
     L3AnalysisSet,
     L3AnalysisUnit,
+    L3ConnectorLocalDestinationReceipt,
     L3Descriptor,
     L3GateBIdempotencyKey,
     L3MaterialSnapshot,
@@ -65,6 +66,8 @@ from app.services.layer3_qual_aps_execution import (
 )
 from test_layer3_api import (
     _aps_handoff_dispatch_payload,
+    _connector_dispatch_record_payload,
+    _connector_local_destination_receipt_payload,
     _external_export_download_deliver_payload,
     _external_export_download_prepare_payload,
     _handoff_export_prepare_payload,
@@ -661,6 +664,56 @@ class Layer3ApiDriver:
         )
         return payload, self.post_ok("/api/v1/layer3/handoff/export/download/prepare", payload)
 
+    def connector_dispatch_record(
+        self,
+        *,
+        session_id: str,
+        preview: dict[str, Any],
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        start: dict[str, Any],
+        review: dict[str, Any],
+        commit: dict[str, Any],
+        submit: dict[str, Any],
+        prepare: dict[str, Any],
+        dispatch: dict[str, Any],
+        readiness: dict[str, Any],
+    ) -> dict[str, Any]:
+        payload = _connector_dispatch_record_payload(
+            request_id="bounded-e2e-connector-dispatch-record",
+            session_id=session_id,
+            approval_body=approval,
+            selection_body=selection,
+            review_body=review,
+            commit_body=commit,
+            submit_body=submit,
+            prepare_body=prepare,
+            dispatch_body=dispatch,
+            readiness_body=readiness,
+        )
+        return self.post_ok("/api/v1/layer3/handoff/connector/record", payload)
+
+    def connector_local_destination_receipt(
+        self,
+        *,
+        session_id: str,
+        approval: dict[str, Any],
+        selection: dict[str, Any],
+        commit: dict[str, Any],
+        connector: dict[str, Any],
+        readiness: dict[str, Any],
+    ) -> dict[str, Any]:
+        payload = _connector_local_destination_receipt_payload(
+            request_id="bounded-e2e-connector-local-receipt",
+            session_id=session_id,
+            approval_body=approval,
+            selection_body=selection,
+            commit_body=commit,
+            connector_body=connector,
+            readiness_body=readiness,
+        )
+        return self.post_ok("/api/v1/layer3/handoff/connector/local-destination/receipt", payload)
+
     def external_export_download_deliver(
         self,
         *,
@@ -723,6 +776,7 @@ class Layer3StateAssertions:
                 "aps_content_chunks": db.query(ApsContentChunk).count(),
                 "aps_content_documents": db.query(ApsContentDocument).count(),
                 "aps_content_linkages": db.query(ApsContentLinkage).count(),
+                "connector_local_destination_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
                 "connector_run_targets": db.query(ConnectorRunTarget).count(),
                 "connector_runs": db.query(ConnectorRun).count(),
                 "datasets": db.query(Dataset).count(),
@@ -895,10 +949,14 @@ class Layer3StateAssertions:
         seeded_counts: dict[str, int],
         allowed_output_packages: int = 0,
         allowed_reconciliations: int = 0,
+        allowed_local_receipts: int = 0,
     ) -> None:
         counts = self.counts()
         assert counts["connector_runs"] == seeded_counts["connector_runs"]
         assert counts["connector_run_targets"] == seeded_counts["connector_run_targets"]
+        assert counts["connector_local_destination_receipts"] == (
+            seeded_counts["connector_local_destination_receipts"] + allowed_local_receipts
+        )
         assert counts["replacement_authorities"] == 0
         assert counts["replacement_packages"] == 0
         assert counts["replacement_artifact_manifests"] == 0
@@ -1245,6 +1303,65 @@ def _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
     assert state.counts() == dispatch_counts
     assert state.files() == files_before_dispatch | added_dispatch_files
 
+    connector = driver.connector_dispatch_record(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+        prepare=handoff_prepare,
+        dispatch=aps_dispatch,
+        readiness=download_prepare,
+    )
+    assert connector["status"] == "recorded"
+    assert connector["connector_dispatch_record_state"] == "connector_dispatch_recorded"
+    assert connector["connector_run_created"] is False
+    assert state.counts() == dispatch_counts
+    assert state.files() == files_before_dispatch | added_dispatch_files
+
+    summary_after_connector = driver.get(f"/api/v1/layer3/session/{session_id}")
+    local_ready = summary_after_connector["connector_local_destination_receipt"]
+    assert local_ready["state"] == "connector_local_destination_receipt_ready"
+    assert local_ready["available"] is True
+    assert local_ready["receipt_history_count"] == 0
+    assert local_ready["lifecycle_status_surface"]["surface_mode"] == (
+        "read_only_connector_local_receipt_lifecycle_status_history"
+    )
+
+    local_receipt = driver.connector_local_destination_receipt(
+        session_id=session_id,
+        approval=plan_approval,
+        selection=selection,
+        commit=package_commit,
+        connector=connector,
+        readiness=download_prepare,
+    )
+    assert local_receipt["status"] == "recorded"
+    assert local_receipt["connector_local_destination_receipt_state"] == (
+        "connector_local_destination_receipt_recorded"
+    )
+    assert local_receipt["connector_run_created"] is False
+    assert local_receipt["destination_write_enabled"] is False
+    receipt_counts = state.counts()
+    assert receipt_counts == {
+        **dispatch_counts,
+        "connector_local_destination_receipts": dispatch_counts["connector_local_destination_receipts"] + 1,
+    }
+    assert state.files() == files_before_dispatch | added_dispatch_files
+
+    summary_after_receipt = driver.get(f"/api/v1/layer3/session/{session_id}")
+    local_status = summary_after_receipt["connector_local_destination_receipt"]
+    assert local_status["state"] == "connector_local_destination_receipt_recorded"
+    assert local_status["receipt_history_count"] == 1
+    assert local_status["latest_receipt"]["connector_local_destination_receipt_id"] == (
+        local_receipt["connector_local_destination_receipt_id"]
+    )
+    assert local_status["idempotency_policy"]["same_key_same_payload_replay"] == "already_recorded"
+    assert local_status["retry_policy"]["retry_fields_admitted"] is False
+
     delivery = driver.external_export_download_deliver(
         prepare_payload=download_prepare_payload,
         readiness=download_prepare,
@@ -1252,8 +1369,13 @@ def _drive_bounded_e2e_api_associated_cohort_to_download_delivery(
     assert delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
     assert delivery.headers["x-layer3-schema-id"] == "layer3.external_export_download_delivery.v1"
     assert delivery.content == Path(aps_dispatch["aps_bundle_ref"]).read_bytes()
-    assert state.counts() == dispatch_counts
+    assert state.counts() == receipt_counts
     assert state.files() == files_before_dispatch | added_dispatch_files
+    assert receipt_counts["connector_runs"] == seeded_counts["connector_runs"]
+    assert receipt_counts["connector_run_targets"] == seeded_counts["connector_run_targets"]
+    assert receipt_counts["connector_local_destination_receipts"] == (
+        seeded_counts["connector_local_destination_receipts"] + 1
+    )
 
 
 def _drive_standalone_aps_document_qualitative_e2e_to_read_only_package_preview(
@@ -1705,6 +1827,7 @@ def _assert_no_layer3_flow_delta(before: dict[str, int], after: dict[str, int]) 
         "analysis_runs",
         "analysis_sets",
         "analysis_units",
+        "connector_local_destination_receipts",
         "descriptors",
         "gate_b_keys",
         "material_snapshots",

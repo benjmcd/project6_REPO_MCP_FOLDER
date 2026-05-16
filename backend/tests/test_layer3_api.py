@@ -12778,6 +12778,42 @@ def test_layer3_api_connector_local_destination_receipt_records_durable_fake_loc
     assert local_status["provider_public_url_enabled"] is False
     assert local_status["package_mutation_enabled"] is False
     assert local_status["source_widening_enabled"] is False
+    assert local_status["receipt_history_count"] == 1
+    assert local_status["lifecycle_status_surface"]["schema_id"] == (
+        "layer3.connector_local_destination_receipt_lifecycle.v1"
+    )
+    assert local_status["lifecycle_status_surface"]["surface_mode"] == (
+        "read_only_connector_local_receipt_lifecycle_status_history"
+    )
+    assert local_status["lifecycle_status_surface"]["history_listing_authority"] == (
+        "durable_connector_local_destination_receipt_rows"
+    )
+    assert local_status["receipt_history"][0]["connector_local_destination_receipt_id"] == (
+        body["connector_local_destination_receipt_id"]
+    )
+    assert local_status["receipt_history"][0]["client_request_id"] == "api-connector-local-receipt"
+    assert local_status["latest_receipt"]["authority_basis_hash"] == body["authority_basis_hash"]
+    assert local_status["idempotency_policy"] == {
+        "client_request_id_unique": True,
+        "authority_basis_hash_unique": True,
+        "same_key_same_payload_replay": "already_recorded",
+        "same_key_different_payload_conflict": "connector_local_destination_receipt_client_request_conflict",
+        "same_basis_different_client_request_id": "connector_local_destination_receipt_already_recorded",
+    }
+    assert local_status["retry_policy"]["retry_fields_admitted"] is False
+    assert local_status["retry_policy"]["replay_semantics"] == (
+        "status_only_for_same_client_request_and_same_authority_basis"
+    )
+    projected_cases = {entry["case"]: entry for entry in local_status["failure_state_projection"]}
+    assert projected_cases["wrong_artifact"]["projected_error_code"] == (
+        "external_export_download_delivery_source_artifact_mismatch"
+    )
+    assert projected_cases["same_key_same_payload_replay"]["operator_status"] == (
+        "return_already_recorded_without_revalidating_stale_readiness"
+    )
+    assert projected_cases["same_key_different_payload_conflict"]["projected_error_code"] == (
+        "connector_local_destination_receipt_client_request_conflict"
+    )
 
     same_basis_new_request = client.post(
         "/api/v1/layer3/handoff/connector/local-destination/receipt",
@@ -12785,6 +12821,80 @@ def test_layer3_api_connector_local_destination_receipt_records_durable_fake_loc
     )
     assert same_basis_new_request.status_code == 409
     assert same_basis_new_request.json()["error_code"] == "connector_local_destination_receipt_already_recorded"
+
+
+def test_layer3_api_connector_local_destination_receipt_client_request_conflict_changed_basis(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-connector-local-receipt-conflict-a",
+    )
+    connector = client.post(
+        "/api/v1/layer3/handoff/connector/record",
+        json=_connector_dispatch_record_payload(
+            request_id="api-connector-local-receipt-conflict-a-dispatch",
+            session_id=session_id,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+            dispatch_body=dispatch_body,
+            readiness_body=readiness_body,
+        ),
+    )
+    assert connector.status_code == 200, connector.json()
+    shared_request_id = "api-connector-local-receipt-conflict-shared"
+    first_payload = _connector_local_destination_receipt_payload(
+        request_id=shared_request_id,
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector.json(),
+        readiness_body=readiness_body,
+    )
+    first = client.post("/api/v1/layer3/handoff/connector/local-destination/receipt", json=first_payload)
+    assert first.status_code == 200, first.json()
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        summary = dict(reconciliation.summary_json)
+        connector_record = dict(summary["connector_dispatch_record"])
+        connector_record["source_artifact_size_bytes"] = connector_record["source_artifact_size_bytes"] + 1
+        summary["connector_dispatch_record"] = connector_record
+        reconciliation.summary_json = summary
+        db.commit()
+    finally:
+        db.close()
+
+    conflict_payload = dict(first_payload)
+    conflict = client.post(
+        "/api/v1/layer3/handoff/connector/local-destination/receipt",
+        json=conflict_payload,
+    )
+    assert conflict.status_code == 409, conflict.json()
+    assert conflict.json()["error_code"] == "connector_local_destination_receipt_client_request_conflict"
 
 
 def test_layer3_api_connector_local_destination_receipt_revalidates_delivery_authority(
