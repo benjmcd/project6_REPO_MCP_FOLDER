@@ -26,7 +26,15 @@ Rendered status/history E2E proof merged current-main checkpoint: `e86ef1bddf937
 
 Rendered status/history E2E proof merged PR: `#1211`.
 
+Lifecycle guardrail hardening proof feature commit: `2787b937`.
+
+Lifecycle guardrail hardening proof merged current-main checkpoint: `2a576047e7d3d70810beb107e89d766becb0578c`.
+
+Lifecycle guardrail hardening proof merged PR: `#1213`.
+
 Prior decision packet: `609_REAL_CONNECTOR_DESTINATION_DECISION_PACKET_AFTER_LOCAL_OUTBOX_WRITE.md`.
+
+Next decision packet: `611_TARGET_DECISION_PACKET.md`.
 
 Runtime status before implementation: `server_owned_local_outbox_write_implemented_and_reaudited_on_current_main`.
 
@@ -343,4 +351,4 @@ Still not admitted by this implementation:
 - full mockup activation; and
 - frontend-durable authority.
 
-Next whole-project pass after this lifecycle hardening proof lands and current-main checks pass: proceed to the missing-decision packet for a real connector/destination target, unless a new repo-confirmed local-outbox provider-private lifecycle gap is found. A named real provider/destination implementation freeze is still blocked unless the operator names a concrete target and separately admits that implementation entry.
+Next whole-project pass after this lifecycle hardening proof lands and current-main checks pass: proceed to `611_TARGET_DECISION_PACKET.md` for the missing-decision packet for a real connector/destination target, unless a new repo-confirmed local-outbox provider-private lifecycle gap is found. A named real provider/destination implementation freeze is still blocked unless the operator names a concrete target and separately admits that implementation entry.
