@@ -2941,6 +2941,28 @@ No runtime behavior, backend route behavior, service behavior, response-model sh
 
 Next whole-project posture: `await_connector_local_receipt_read_only_status_surface_authority_audit`.
 
+## Layer 3 Local Receipt Status Surface
+
+Branch-local implementation/control pass: `597_LOCAL_RECEIPT_STATUS_SURFACE.md` follows the local receipt outward plan from doc `596` and implements the first preferred step, the read-only operator/status surface for connector-local receipt.
+
+Current-main checkpoint: `b6de6a8bd8210536d80a3c679fc1d04ac8f6a4b7`.
+
+The exact product/use-case behavior is `operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write`. The response authority is `State.sessionSummary.connector_local_destination_receipt`, populated by server-owned session summary state from the durable `L3ConnectorLocalDestinationReceipt` row, reconciliation summary state, or existing handoff/export readiness chain.
+
+The implementation exposes `_connector_local_destination_receipt_summary` through `backend/app/services/layer3_workbench.py`, adds `connector_local_destination_receipt` to `Layer3SessionSummaryResponse`, renders `connector-local-destination-receipt-panel` through `renderConnectorLocalDestinationReceiptStatusPanel`, and keeps the review UI read-only by not calling `/handoff/connector/local-destination/receipt`.
+
+Focused validation passed with `5 passed, 3 warnings`: `python -m pytest .\backend\tests\test_layer3_page.py .\backend\tests\test_layer3_api.py::test_layer3_external_export_download_openapi_contracts .\backend\tests\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_records_durable_fake_local_receipt`.
+
+No real connector invocation, destination write, connector-run creation, credential use, provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior change, full mockup activation, or frontend-only durable authority is admitted.
+
+Immediate goal: `connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path`.
+
+Mid-term goals: `confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target`, `harden_connector_local_receipt_lifecycle`, and `write_real_connector_destination_implementation_entry_freeze_after_target_named`.
+
+Long-term gated goals: `provider_public_delivery_use_after_exposure_security_decision`, `package_mutation_reconstruction_after_named_operator_action`, `source_expansion_as_one_named_source_family`, `rag_vector_after_source_index_authority_defined`, and `auth_security_hardening_tied_to_admitted_external_surface`.
+
+Next whole-project posture: `await_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path`.
+
 ## Layer 3 Connector Local Destination Receipt Delivery-Authority Readiness/Artifact Review Remediation
 
 Branch-local review remediation: `591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md` addresses the PR `#1185` review threads `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284` and `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289`.
