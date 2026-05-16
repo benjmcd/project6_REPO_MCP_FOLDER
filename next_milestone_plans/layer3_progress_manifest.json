@@ -22468,5 +22468,72 @@
   "latest_server_configured_external_local_export_directory_freeze_branch": "codex/l3-external-local-export-surface-freeze",
   "latest_server_configured_external_local_export_directory_freeze_doc": "next_milestone_plans/Layer3_planning_docs/626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
   "latest_server_configured_external_local_export_directory_freeze_live_behavior_change": false,
-  "latest_server_configured_external_local_export_directory_freeze_summary": "Doc 626 freezes the selected server-configured external local export directory surface as planning/control only. It names service, route, config, durable receipt/audit, proof, redaction, idempotency, and stop-condition boundaries; runtime remains blocked until the freeze is merged and current-main synced."
+  "latest_server_configured_external_local_export_directory_freeze_summary": "Doc 626 freezes the selected server-configured external local export directory surface as planning/control only. It names service, route, config, durable receipt/audit, proof, redaction, idempotency, and stop-condition boundaries; runtime remains blocked until the freeze is merged and current-main synced.",
+  "server_configured_external_local_export_directory_freeze_current_main_sync": {
+    "status": "current_main_synced_server_configured_external_local_export_directory_freeze_runtime_not_implemented",
+    "sync_branch": "codex/l3-external-local-export-freeze-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/627_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "synced_freeze_doc": "next_milestone_plans/Layer3_planning_docs/626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE.md",
+    "filled_decision_intake_doc": "next_milestone_plans/Layer3_planning_docs/623_NEXT_EXTERNAL_SURFACE_DECISION_INTAKE.md",
+    "freeze_pr": "#1230",
+    "freeze_branch": "codex/l3-external-local-export-surface-freeze",
+    "freeze_branch_commit": "cd4886c2f49ebd5c3a0356a00c7ebb62d3968b16",
+    "freeze_merge_commit": "883cbeaf83e4922b91436f880697bca45ede97d9",
+    "current_main_after_merge": "883cbeaf83e4922b91436f880697bca45ede97d9",
+    "github_checks": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS"
+    },
+    "check_durations": {
+      "backend-layer3-api": "2m40s",
+      "test": "3m7s"
+    },
+    "review_gate": {
+      "comments": "empty",
+      "reviews": "empty",
+      "reviewThreads_totalCount": 0,
+      "unresolved_reviewThreads": 0,
+      "mergeable": "MERGEABLE",
+      "merge_state_before_merge": "CLEAN"
+    },
+    "selected_next_external_surface": "server_configured_external_local_export_directory",
+    "selected_next_external_surface_class": "server_configured_external_destination_write",
+    "implementation_entry_freeze_written": true,
+    "implementation_entry_allowed_next": true,
+    "selected_implementation_action": "implement_server_configured_external_local_export_directory_after_freeze_sync",
+    "sync_live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "backend_route_behavior_change": false,
+    "service_runtime_behavior_change": false,
+    "response_model_shape_change": false,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "connector_provider_destination_dispatch_change": false,
+    "frontend_only_durable_authority_change": false,
+    "blocked_surfaces": [
+      "real_connector_invocation",
+      "connector_run_creation",
+      "connector_run_target_creation",
+      "credential_use",
+      "network_egress",
+      "provider_public_delivery_use",
+      "raw_public_url_exposure",
+      "raw_token_exposure",
+      "caller_supplied_destination_path_url",
+      "package_mutation_reconstruction",
+      "source_expansion_ingestion",
+      "rag_vector_behavior",
+      "qualitative_hybrid_analysis_runtime",
+      "auth_security_behavior",
+      "full_mockup_activation",
+      "frontend_durable_authority",
+      "generic_downstream_dispatch"
+    ],
+    "next_whole_project_posture": "implement_server_configured_external_local_export_directory_after_freeze_sync"
+  },
+  "latest_server_configured_external_local_export_directory_freeze_current_main_sync_branch": "codex/l3-external-local-export-freeze-sync",
+  "latest_server_configured_external_local_export_directory_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/627_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_server_configured_external_local_export_directory_freeze_current_main_sync_live_behavior_change": false,
+  "latest_server_configured_external_local_export_directory_freeze_current_main_sync_summary": "Doc 627 syncs PR #1230 merge commit 883cbeaf83e4922b91436f880697bca45ede97d9 to current main, with green backend-layer3-api/test checks, empty comments/reviews/reviewThreads, and next posture implement_server_configured_external_local_export_directory_after_freeze_sync. Runtime remains unimplemented until the next pass."
 }
