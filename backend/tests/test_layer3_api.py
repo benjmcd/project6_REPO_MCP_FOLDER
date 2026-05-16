@@ -29,6 +29,7 @@ from app.models.models import (
     AnalysisArtifact,
     AnalysisRun,
     ConnectorRun,
+    ConnectorRunTarget,
     L3AnalysisGroup,
     L3AnalysisPlan,
     L3AnalysisSet,
@@ -50,6 +51,7 @@ from app.models.models import (
     L3ReplacementOutputPackage,
     L3ReplacementPackageArtifactManifest,
     L3ReplacementPackageSetAuthority,
+    L3ServerOwnedLocalOutboxTargetReceipt,
     L3Session,
     L3SignedReferenceAuditEvent,
     L3SignedReferenceReceipt,
@@ -413,6 +415,7 @@ def test_layer3_forbidden_sentinel_openapi_fields_are_impossible(client: TestCli
         ("/api/v1/layer3/package/review/commit", "package_payload"),
         ("/api/v1/layer3/handoff/connector/record", "connector_key"),
         ("/api/v1/layer3/handoff/connector/local-destination/receipt", "destination_url"),
+        ("/api/v1/layer3/handoff/connector/local-outbox/fake-target", "destination_path"),
     } <= seen
 
 
@@ -2199,6 +2202,81 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "authority_rail",
     } <= set(local_receipt_schema["required"])
 
+    target_request_schema = spec["paths"][
+        "/api/v1/layer3/handoff/connector/local-outbox/fake-target"
+    ]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert target_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "connector_local_destination_receipt_state",
+        "external_export_download_record_ref",
+        "target_identity",
+        "dispatch_mode",
+        "operator_decision",
+    } == set(target_request_schema["required"])
+    assert target_request_schema["properties"]["target_identity"]["enum"] == [
+        "server_owned_local_delivery_outbox_destination"
+    ]
+    assert target_request_schema["properties"]["dispatch_mode"]["enum"] == [
+        "single_named_destination_dispatch_fake_target_first"
+    ]
+    assert target_request_schema["properties"]["destination_path"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert target_request_schema["properties"]["credentials"]["description"].startswith("Known but non-admitted")
+
+    target_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/handoff/connector/local-outbox/fake-target",
+        "post",
+    )
+    assert target_schema["title"] == "Layer3ServerOwnedLocalOutboxFakeTargetResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "server_owned_local_outbox_target_receipt_id",
+        "server_owned_local_outbox_target_state",
+        "target_operation_state",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "external_export_download_record_ref",
+        "target_identity",
+        "dispatch_mode",
+        "accepted_artifact_ref",
+        "accepted_artifact_hash",
+        "accepted_artifact_size_bytes",
+        "authority_basis_hash",
+        "fake_target_contract_enabled",
+        "real_connector_invocation_enabled",
+        "destination_write_enabled",
+        "destination_write_performed",
+        "connector_run_created",
+        "connector_run_target_created",
+        "credentials_enabled",
+        "provider_public_delivery_enabled",
+        "package_mutation_enabled",
+        "source_expansion_enabled",
+        "rag_vector_enabled",
+        "auth_security_implementation_enabled",
+        "full_mockup_activation_enabled",
+        "frontend_durable_authority_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(target_schema["required"])
+
 
 def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
@@ -2229,6 +2307,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/handoff/export/download/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/connector/record", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/connector/local-destination/receipt", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/handoff/connector/local-outbox/fake-target", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/signed-reference/generate", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/signed-reference/use", "post"): ("400", "404", "409"),
     }
@@ -2740,6 +2819,7 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "aps_handoff_dispatch",
         "external_export_download",
         "connector_local_destination_receipt",
+        "server_owned_local_outbox_target",
         "sublayer_visualization",
         "state_action_contract",
         "downstream_unavailable",
@@ -3824,6 +3904,33 @@ def _connector_local_destination_receipt_payload(
         "destination_target": "layer3_internal_fake_local_destination_receipt",
         "dispatch_mode": "internal_fake_local_destination_receipt_only",
         "operator_decision": "record_internal_fake_local_destination_receipt",
+    }
+
+
+def _server_owned_local_outbox_fake_target_payload(
+    *,
+    request_id: str,
+    session_id: str,
+    approval_body: dict,
+    selection_body: dict,
+    commit_body: dict,
+    connector_body: dict,
+    local_receipt_body: dict,
+    readiness_body: dict,
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "connector_dispatch_record_ref": connector_body["connector_dispatch_record_ref"],
+        "connector_local_destination_receipt_id": local_receipt_body["connector_local_destination_receipt_id"],
+        "connector_local_destination_receipt_state": local_receipt_body["connector_local_destination_receipt_state"],
+        "external_export_download_record_ref": readiness_body["external_export_download_record_ref"],
+        "target_identity": "server_owned_local_delivery_outbox_destination",
+        "dispatch_mode": "single_named_destination_dispatch_fake_target_first",
+        "operator_decision": "record_server_owned_local_outbox_fake_target",
     }
 
 
@@ -12821,6 +12928,389 @@ def test_layer3_api_connector_local_destination_receipt_records_durable_fake_loc
     )
     assert same_basis_new_request.status_code == 409
     assert same_basis_new_request.json()["error_code"] == "connector_local_destination_receipt_already_recorded"
+
+
+def test_layer3_api_server_owned_local_outbox_fake_target_records_durable_receipt(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-local-outbox-target-success",
+    )
+    connector_payload = _connector_dispatch_record_payload(
+        request_id="api-local-outbox-target-dispatch-record",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+    )
+    connector = client.post("/api/v1/layer3/handoff/connector/record", json=connector_payload)
+    assert connector.status_code == 200, connector.json()
+    connector_body = connector.json()
+    local_payload = _connector_local_destination_receipt_payload(
+        request_id="api-local-outbox-target-local-receipt",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        readiness_body=readiness_body,
+    )
+    local_receipt = client.post("/api/v1/layer3/handoff/connector/local-destination/receipt", json=local_payload)
+    assert local_receipt.status_code == 200, local_receipt.json()
+    local_receipt_body = local_receipt.json()
+    target_payload = _server_owned_local_outbox_fake_target_payload(
+        request_id="api-local-outbox-target-record",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        readiness_body=readiness_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "packages": db.query(L3OutputPackage).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+    finally:
+        db.close()
+
+    target = client.post("/api/v1/layer3/handoff/connector/local-outbox/fake-target", json=target_payload)
+    assert target.status_code == 200, target.json()
+    body = target.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.server_owned_local_outbox_fake_target_receipt.v1"
+    assert body["status"] == "recorded"
+    assert body["server_owned_local_outbox_target_state"] == "server_owned_local_outbox_fake_target_recorded"
+    assert body["target_operation_state"] == "server_owned_local_outbox_fake_target_recorded"
+    assert body["session_id"] == session_id
+    assert body["pass_run_id"] == selection_body["pass_run_ids"][0]
+    assert body["reconciliation_record_id"] == commit_body["reconciliation_record_id"]
+    assert body["connector_dispatch_record_ref"] == connector_body["connector_dispatch_record_ref"]
+    assert body["connector_local_destination_receipt_id"] == (
+        local_receipt_body["connector_local_destination_receipt_id"]
+    )
+    assert body["external_export_download_record_ref"] == readiness_body["external_export_download_record_ref"]
+    assert body["target_identity"] == "server_owned_local_delivery_outbox_destination"
+    assert body["dispatch_mode"] == "single_named_destination_dispatch_fake_target_first"
+    assert body["accepted_artifact_ref"] == "artifact://server-owned-local-outbox-fake-target-redacted"
+    assert body["accepted_artifact_hash"] == readiness_body["source_artifact_hash"]
+    assert body["accepted_artifact_size_bytes"] == readiness_body["source_artifact_size_bytes"]
+    assert body["fake_target_contract_enabled"] is True
+    assert body["real_connector_invocation_enabled"] is False
+    assert body["destination_write_enabled"] is False
+    assert body["destination_write_performed"] is False
+    assert body["connector_run_created"] is False
+    assert body["connector_run_target_created"] is False
+    assert body["credentials_enabled"] is False
+    assert body["provider_public_delivery_enabled"] is False
+    assert body["package_mutation_enabled"] is False
+    assert body["source_expansion_enabled"] is False
+    assert body["rag_vector_enabled"] is False
+    assert body["auth_security_implementation_enabled"] is False
+    assert body["full_mockup_activation_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    for forbidden_key in (
+        "connector_key",
+        "connector_run_id",
+        "connector_run_target_id",
+        "destination_path",
+        "destination_url",
+        "provider_public_url",
+        "public_url",
+        "local_path",
+        "package_payload",
+        "source_expansion",
+        "rag_vector_index",
+        "credentials",
+    ):
+        assert forbidden_key not in body
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "packages": db.query(L3OutputPackage).count(),
+        } == {**counts_before, "target_receipts": counts_before["target_receipts"] + 1}
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        row = db.query(L3ServerOwnedLocalOutboxTargetReceipt).one()
+        assert row.server_owned_local_outbox_target_receipt_id == (
+            body["server_owned_local_outbox_target_receipt_id"]
+        )
+        assert row.authority_basis_hash == body["authority_basis_hash"]
+        assert row.authority_snapshot_json["target_identity"] == "server_owned_local_delivery_outbox_destination"
+        assert row.authority_snapshot_json["connector_local_destination_receipt_id"] == (
+            local_receipt_body["connector_local_destination_receipt_id"]
+        )
+        assert "source_artifact_ref" not in row.authority_snapshot_json
+        assert "destination_path" not in row.authority_snapshot_json
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        target_state = reconciliation.summary_json["server_owned_local_outbox_target"]
+        assert target_state["schema_id"] == "layer3.server_owned_local_outbox_fake_target_state.v1"
+        assert target_state["server_owned_local_outbox_target_receipt_id"] == (
+            body["server_owned_local_outbox_target_receipt_id"]
+        )
+        assert target_state["destination_write_enabled"] is False
+        assert target_state["connector_run_created"] is False
+        assert target_state["connector_run_target_created"] is False
+    finally:
+        db.close()
+
+    replay = client.post("/api/v1/layer3/handoff/connector/local-outbox/fake-target", json=target_payload)
+    assert replay.status_code == 200
+    replay_body = replay.json()
+    assert replay_body["status"] == "already_recorded"
+    assert replay_body["target_operation_state"] == "server_owned_local_outbox_fake_target_replay"
+    assert replay_body["server_owned_local_outbox_target_receipt_id"] == (
+        body["server_owned_local_outbox_target_receipt_id"]
+    )
+
+    same_basis_new_request = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/fake-target",
+        json={**target_payload, "client_request_id": "api-local-outbox-target-new-request"},
+    )
+    assert same_basis_new_request.status_code == 409
+    assert same_basis_new_request.json()["error_code"] == "server_owned_local_outbox_target_already_recorded"
+
+    summary_response = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary_response.status_code == 200
+    target_status = summary_response.json()["server_owned_local_outbox_target"]
+    assert target_status["schema_id"] == "layer3.server_owned_local_outbox_fake_target_status.v1"
+    assert target_status["state"] == "server_owned_local_outbox_fake_target_recorded"
+    assert target_status["server_owned_local_outbox_target_receipt_id"] == (
+        body["server_owned_local_outbox_target_receipt_id"]
+    )
+    assert target_status["target_identity"] == "server_owned_local_delivery_outbox_destination"
+    assert target_status["dispatch_mode"] == "single_named_destination_dispatch_fake_target_first"
+    assert target_status["target_receipt_history_count"] == 1
+    assert target_status["lifecycle_status_surface"]["surface_mode"] == (
+        "read_only_server_owned_local_outbox_fake_target_status_history"
+    )
+    assert target_status["lifecycle_status_surface"]["history_listing_authority"] == (
+        "durable_server_owned_local_outbox_fake_target_receipt_rows"
+    )
+    assert target_status["latest_target_receipt"]["authority_basis_hash"] == body["authority_basis_hash"]
+    assert target_status["idempotency_policy"] == {
+        "client_request_id_unique": True,
+        "authority_basis_hash_unique": True,
+        "same_key_same_payload_replay": "already_recorded",
+        "same_key_different_payload_conflict": "server_owned_local_outbox_target_client_request_conflict",
+        "same_basis_different_client_request_id": "server_owned_local_outbox_target_already_recorded",
+    }
+    projected_cases = {entry["case"]: entry for entry in target_status["failure_state_projection"]}
+    assert projected_cases["stale_authority"]["projected_error_code"] == (
+        "server_owned_local_outbox_target_stale_authority"
+    )
+    assert projected_cases["same_key_different_payload_conflict"]["projected_error_code"] == (
+        "server_owned_local_outbox_target_client_request_conflict"
+    )
+
+
+def test_layer3_api_server_owned_local_outbox_fake_target_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/fake-target",
+        json={"client_request_id": "api-local-outbox-target-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) >= {
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "connector_local_destination_receipt_state",
+        "external_export_download_record_ref",
+        "target_identity",
+        "dispatch_mode",
+        "operator_decision",
+    }
+
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-local-outbox-target-prechecks",
+    )
+    connector_payload = _connector_dispatch_record_payload(
+        request_id="api-local-outbox-target-prechecks-dispatch",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+    )
+    connector = client.post("/api/v1/layer3/handoff/connector/record", json=connector_payload)
+    assert connector.status_code == 200, connector.json()
+    connector_body = connector.json()
+    no_local_payload = {
+        "client_request_id": "api-local-outbox-target-no-local",
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "connector_dispatch_record_ref": connector_body["connector_dispatch_record_ref"],
+        "connector_local_destination_receipt_id": "missing-local-receipt",
+        "connector_local_destination_receipt_state": "connector_local_destination_receipt_recorded",
+        "external_export_download_record_ref": readiness_body["external_export_download_record_ref"],
+        "target_identity": "server_owned_local_delivery_outbox_destination",
+        "dispatch_mode": "single_named_destination_dispatch_fake_target_first",
+        "operator_decision": "record_server_owned_local_outbox_fake_target",
+    }
+    no_local = client.post("/api/v1/layer3/handoff/connector/local-outbox/fake-target", json=no_local_payload)
+    assert no_local.status_code == 409
+    assert no_local.json()["error_code"] == "server_owned_local_outbox_target_requires_local_receipt"
+
+    local_receipt = client.post(
+        "/api/v1/layer3/handoff/connector/local-destination/receipt",
+        json=_connector_local_destination_receipt_payload(
+            request_id="api-local-outbox-target-prechecks-local",
+            session_id=session_id,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            commit_body=commit_body,
+            connector_body=connector_body,
+            readiness_body=readiness_body,
+        ),
+    )
+    assert local_receipt.status_code == 200, local_receipt.json()
+    valid_payload = _server_owned_local_outbox_fake_target_payload(
+        request_id="api-local-outbox-target-prechecks-record",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt.json(),
+        readiness_body=readiness_body,
+    )
+    cases = [
+        (
+            {**valid_payload, "credentials": {"token": "secret"}},
+            400,
+            "server_owned_local_outbox_target_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "dispatch_mode": "real_destination_dispatch"},
+            400,
+            "server_owned_local_outbox_target_dispatch_mode_not_admitted",
+        ),
+        (
+            {**valid_payload, "operator_decision": "write_server_local_outbox"},
+            400,
+            "unsupported_server_owned_local_outbox_target_decision",
+        ),
+        (
+            {**valid_payload, "connector_local_destination_receipt_state": "connector_local_destination_receipt_stale"},
+            409,
+            "server_owned_local_outbox_target_requires_local_receipt",
+        ),
+        (
+            {**valid_payload, "connector_dispatch_record_ref": "wrong-dispatch-record"},
+            409,
+            "server_owned_local_outbox_target_connector_dispatch_record_ref_mismatch",
+        ),
+    ]
+    for payload, expected_status, expected_error in cases:
+        response = client.post("/api/v1/layer3/handoff/connector/local-outbox/fake-target", json=payload)
+        assert response.status_code == expected_status, response.json()
+        assert response.json()["error_code"] == expected_error
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        summary = dict(reconciliation.summary_json)
+        local_state = dict(summary["connector_local_destination_receipt"])
+        local_state["authority_basis_hash"] = "stale-local-receipt-authority"
+        summary["connector_local_destination_receipt"] = local_state
+        reconciliation.summary_json = summary
+        db.commit()
+    finally:
+        db.close()
+
+    stale = client.post("/api/v1/layer3/handoff/connector/local-outbox/fake-target", json=valid_payload)
+    assert stale.status_code == 409, stale.json()
+    assert stale.json()["error_code"] == "server_owned_local_outbox_target_stale_authority"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3ServerOwnedLocalOutboxTargetReceipt).count() == 0
+    finally:
+        db.close()
 
 
 def test_layer3_api_connector_local_destination_receipt_client_request_conflict_changed_basis(

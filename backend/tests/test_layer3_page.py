@@ -140,6 +140,11 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="external-export-download-signed-reference-use"' in response.text
     assert 'id="connector-local-destination-receipt-panel"' in response.text
     assert 'data-rendered-mode="rendered_connector_local_destination_receipt_read_only_status_surface"' in response.text
+    assert 'id="server-owned-local-outbox-target-panel"' in response.text
+    assert (
+        'data-rendered-mode="rendered_server_owned_local_outbox_fake_target_read_only_status_surface"'
+        in response.text
+    )
     assert 'id="provider-public-url-form"' in response.text
     assert 'data-rendered-mode="provider_public_url_prepare_status_revoke_controls"' in response.text
     assert 'id="provider-public-url-panel"' in response.text
@@ -288,6 +293,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "CONNECTOR_LOCAL_RECEIPT_STATUS_USE_CASE = 'operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write'" in js.text
     assert "CONNECTOR_LOCAL_RECEIPT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.connector_local_destination_receipt'" in js.text
     assert "function connectorLocalDestinationReceiptStatusState" in js.text
+    assert "SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATUS_SURFACE_MODE = 'rendered_server_owned_local_outbox_fake_target_read_only_status_surface'" in js.text
+    assert "SERVER_OWNED_LOCAL_OUTBOX_TARGET_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.server_owned_local_outbox_target'" in js.text
+    assert "function serverOwnedLocalOutboxTargetStatusState" in js.text
+    assert "function renderServerOwnedLocalOutboxTargetStatusPanel" in js.text
+    assert "renderServerOwnedLocalOutboxTargetStatusPanel()" in js.text
     assert "function renderConnectorLocalDestinationReceiptStatusPanel" in js.text
     assert "function connectorLocalDestinationReceiptHistoryRows" in js.text
     assert "function renderConnectorLocalDestinationReceiptFailureProjection" in js.text
