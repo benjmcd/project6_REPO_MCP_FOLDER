@@ -2,74 +2,76 @@
 
 ## Status
 
-Status: operator-fillable intake for `select_one_real_connector_or_destination_target_after_local_outbox_provider_private_lifecycle_proof`.
+Status: operator-filled target-selection intake for `server_owned_local_delivery_outbox_destination`.
 
 Doc: `612_TARGET_SELECTION_INTAKE.md`.
 
 Current-main checkpoint at intake creation: `07b8cd1a22f2793602c6357d1964be224d07eb92`.
 
+Current-main checkpoint at operator fill: `8b3e845b77f1b09864e1fdd17a9997866a32975a`.
+
 Prior decision packet: `611_TARGET_DECISION_PACKET.md`.
 
-Runtime status: `not_implemented`.
+Runtime status: `implemented_on_current_main_by_existing_server_owned_local_outbox_write_runtime`.
 
-Implementation-entry freeze written: false.
+Implementation-entry freeze written: true.
 
-Selected target identity: `null`.
+Selected target identity: `server_owned_local_delivery_outbox_destination`.
 
-Selected target class: `null`.
+Selected target class: `external_destination_write`.
 
-Selected implementation action: `none`.
+Selected implementation action: `current_main_satisfied_by_608_server_owned_local_outbox_real_write_admission_freeze`.
 
 ## Purpose
 
-This intake is the narrow operator action required before any real connector or destination implementation-entry freeze.
+This intake records the narrow operator action required before any real connector or destination implementation-entry freeze.
 
-It converts the missing decisions in `611_TARGET_DECISION_PACKET.md` into a single fillable target-selection record. It does not select a target by itself, admit runtime behavior, or allow a generic connector/destination implementation.
+It converts the missing decisions in `611_TARGET_DECISION_PACKET.md` into a single target-selection record. This selected target is already covered by `608_SERVER_OWNED_LOCAL_OUTBOX_REAL_WRITE_ADMISSION_FREEZE.md` and the current-main server-owned local outbox write runtime, so this intake does not admit any new runtime behavior, real connector invocation, provider network write, public delivery/use, or generic connector/destination implementation.
 
 ## Fillable Selection Record
 
-The operator must fill every field before a real-target implementation-entry freeze can be written:
+The operator-filled values are:
 
-| Field | Required value |
+| Field | Selected value |
 | --- | --- |
-| `target_identity` | Exact connector, destination, provider, object-store, or delivery target name. |
-| `target_owner` | Person, team, service owner, or operator accountable for approving the first real side effect. |
-| `target_class` | Exactly one of `real_connector_invocation`, `external_destination_write`, `real_provider_private_delivery`, `provider_public_delivery_use`, or another single named class. |
-| `operator_purpose` | Concrete operator workflow that needs this real target. |
-| `authority_source` | Exact Layer 3 receipt or record authorizing the side effect. |
-| `artifact_family` | Exact artifact and whether the side effect uses the outbox artifact, outbox manifest, provider-private handoff receipt, package record, or another named server-owned artifact. |
-| `credential_model` | One of `no_credentials`, `operator_one_time_credential`, `stored_secret`, `delegated_token`, `provider_token`, `proxy_owned_identity`, or another named custody model. |
-| `destination_address_model` | One of `server_configured_target`, `allowlisted_object_target`, `provider_account_target`, `operator_selected_target`, or `no_destination_address`. |
-| `side_effect_boundary` | The one external write, call, delivery, or use that will be admitted if frozen. |
-| `idempotency_contract` | Required key fields, replay behavior, same-key conflict behavior, same-basis/new-key behavior, duplicate target behavior, and retry status. |
-| `failure_lifecycle` | Stale authority, wrong session/basis/artifact, credential failure, provider failure, timeout, partial completion, and recovery behavior. |
-| `receipt_audit_contract` | Durable receipt fields, audit-event fields, redaction rules, status/history fields, and retention expectations. |
-| `exposure_security_posture` | Provider-private, provider-public, public URL, network egress, auth/security, and operator-access posture. |
-| `operator_surface` | `read_only_status_only`, `write_submit_control`, or `no_rendered_surface`. |
-| `proof_architecture` | Fake/dry-run proof path, isolated runtime state, API proof, headed/headless E2E if rendered behavior changes, and negative guardrails. |
+| `target_identity` | `server_owned_local_delivery_outbox_destination` |
+| `target_owner` | Bennet / project operator |
+| `target_class` | `external_destination_write` |
+| `operator_purpose` | Write a finalized Layer 3 export/outbox artifact and manifest to a controlled server-owned local delivery outbox so it can be manually reviewed or consumed downstream. |
+| `authority_source` | external export/download readiness + connector-local durable receipt + server-owned local outbox write receipt + provider-private local-outbox handoff receipt where applicable |
+| `artifact_family` | outbox artifact + outbox manifest |
+| `credential_model` | `no_credentials` |
+| `destination_address_model` | `server_configured_target` |
+| `side_effect_boundary` | Write exactly one approved Layer 3 outbox artifact/manifest to one server-configured local delivery outbox destination. |
+| `idempotency_contract` | same `client_request_id` + same authority/artifact basis returns the same receipt; same `client_request_id` + different basis fails closed; same basis + new `client_request_id` returns existing status rather than creating duplicate output; duplicate target write returns existing receipt/status if identical and fails closed if conflicting. |
+| `failure_lifecycle` | fail closed on stale authority, wrong session/pass/artifact, missing readiness, missing receipt, tampered hash, target mismatch, timeout, partial write, unsupported credential/provider state, or any caller-supplied path/URL. |
+| `receipt_audit_contract` | durable receipt id, session/pass/package/export refs, artifact ref/hash/size, target identity/class, status/history, created/updated timestamps, idempotency key, redacted failure code, and audit history; do not expose raw local paths. |
+| `exposure_security_posture` | private/internal only; no public URL; no provider-public delivery/use; no raw token; no credential storage; no external network egress; no user-provided arbitrary path. |
+| `operator_surface` | `read_only_status_only` |
+| `proof_architecture` | fake/local/server-owned target proof first; API proof; headed/headless E2E proof if rendered status changes; negative tests for stale authority, wrong artifact, duplicate-key conflict, no connector-run creation, no real external connector invocation, no credential use, and no arbitrary destination write. |
 
 ## Structured Selection Record
 
-The operator may complete the intake by replacing every `null` value below. Leave `selection_complete: false` until every required value is filled and a separate implementation-entry freeze is ready to copy the completed record.
+The operator completed the intake below. `implementation_entry_freeze_written: true` is satisfied by the already-merged `608_SERVER_OWNED_LOCAL_OUTBOX_REAL_WRITE_ADMISSION_FREEZE.md`, which admits only the server-owned local outbox write tranche for this target identity.
 
 ```yaml
-target_identity: null
-target_owner: null
-target_class: null
-operator_purpose: null
-authority_source: null
-artifact_family: null
-credential_model: null
-destination_address_model: null
-side_effect_boundary: null
-idempotency_contract: null
-failure_lifecycle: null
-receipt_audit_contract: null
-exposure_security_posture: null
-operator_surface: null
-proof_architecture: null
-selection_complete: false
-implementation_entry_freeze_written: false
+target_identity: server_owned_local_delivery_outbox_destination
+target_owner: Bennet / project operator
+target_class: external_destination_write
+operator_purpose: Write a finalized Layer 3 export/outbox artifact and manifest to a controlled server-owned local delivery outbox so it can be manually reviewed or consumed downstream.
+authority_source: external export/download readiness + connector-local durable receipt + server-owned local outbox write receipt + provider-private local-outbox handoff receipt where applicable
+artifact_family: outbox artifact + outbox manifest
+credential_model: no_credentials
+destination_address_model: server_configured_target
+side_effect_boundary: Write exactly one approved Layer 3 outbox artifact/manifest to one server-configured local delivery outbox destination.
+idempotency_contract: same client_request_id + same authority/artifact basis returns the same receipt; same client_request_id + different basis fails closed; same basis + new client_request_id returns existing status rather than creating duplicate output; duplicate target write returns existing receipt/status if identical and fails closed if conflicting.
+failure_lifecycle: fail closed on stale authority, wrong session/pass/artifact, missing readiness, missing receipt, tampered hash, target mismatch, timeout, partial write, unsupported credential/provider state, or any caller-supplied path/URL.
+receipt_audit_contract: durable receipt id, session/pass/package/export refs, artifact ref/hash/size, target identity/class, status/history, created/updated timestamps, idempotency key, redacted failure code, and audit history; do not expose raw local paths.
+exposure_security_posture: private/internal only; no public URL; no provider-public delivery/use; no raw token; no credential storage; no external network egress; no user-provided arbitrary path.
+operator_surface: read_only_status_only
+proof_architecture: fake/local/server-owned target proof first; API proof; headed/headless E2E proof if rendered status changes; negative tests for stale authority, wrong artifact, duplicate-key conflict, no connector-run creation, no real external connector invocation, no credential use, and no arbitrary destination write.
+selection_complete: true
+implementation_entry_freeze_written: true
 ```
 
 ## Acceptance Gate
@@ -79,18 +81,18 @@ A completed intake is acceptable only when:
 1. Exactly one `target_identity` is named.
 2. Exactly one `target_class` is named.
 3. The `authority_source` is a server-owned Layer 3 receipt or record already present on current main.
-4. The `side_effect_boundary` names one and only one real external side effect.
+4. The `side_effect_boundary` names one and only one side effect; for this selected target, that side effect is the already-admitted server-owned local outbox write under backend-controlled storage.
 5. Credential custody is explicit, even if the answer is `no_credentials`.
 6. Public/private exposure is explicit, even if no public exposure is admitted.
 7. The receipt/audit contract is durable and operator-visible.
 8. The proof path includes a fake-provider, dry-run, fake-target, or equivalent fail-closed pre-live proof.
 9. The non-admission list below remains intact for all unselected surfaces.
 
-If any gate fails, the next action remains target selection, not implementation.
+This completed intake passes the selection gate by current-main reconciliation because the selected target identity, dispatch mode, credential model, destination-address model, idempotency, redaction, and proof architecture map to the already-merged `608` freeze and its current-main runtime.
 
 ## Freeze Output Required After Selection
 
-Once this intake is complete, the next artifact must be a separate implementation-entry freeze. That freeze must:
+When a selected target is not already covered by a current-main implementation-entry freeze, the next artifact must be a separate implementation-entry freeze. That freeze must:
 
 - copy the selected intake fields verbatim;
 - identify the exact files/routes/services/tables allowed for the first implementation tranche;
@@ -99,14 +101,16 @@ Once this intake is complete, the next artifact must be a separate implementatio
 - keep unselected candidates out of scope; and
 - preserve all blocked surfaces not named in the intake.
 
+For this selected target, no new implementation-entry freeze is required in this pass because `608_SERVER_OWNED_LOCAL_OUTBOX_REAL_WRITE_ADMISSION_FREEZE.md` already copies/adjudicates the selected target identity and admits only the server-owned local outbox write tranche.
+
 ## Non-Admission Boundary
 
-This intake admits no runtime behavior, backend route behavior, service behavior, response-model shape change, schema/model/migration change, rendered UI implementation, executable test behavior, real connector invocation, destination write, connector-run creation, credential handling, provider-public delivery/use, raw token use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior change, full mockup activation, frontend-durable authority, generic downstream dispatch, or external provider use.
+This intake admits no new runtime behavior, backend route behavior, service behavior, response-model shape change, schema/model/migration change, rendered UI implementation, executable test behavior, real connector invocation, new destination-write class beyond the already-admitted server-owned local outbox write, connector-run creation, credential handling, provider-public delivery/use, raw token use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior change, full mockup activation, frontend-durable authority, generic downstream dispatch, or external provider use.
 
 ## Decision State
 
-Decision state: `target_selection_required`.
+Decision state: `selected_target_current_main_satisfied_by_existing_608_server_owned_local_outbox_write_freeze`.
 
-Selection complete: false.
+Selection complete: true.
 
-Required next action: fill this intake with one named real connector or destination target. If no target can be named, keep runtime blocked and do not start another broad no-runtime audit unless current-main authority contradicts the local-outbox provider-private lifecycle proof.
+Required next action: record the current-main satisfied selected-target posture and do not implement runtime in this pass. If the operator needs behavior beyond the selected server-owned local outbox destination, the next exact posture is a new named-target decision and a separate implementation-entry freeze for that different surface.

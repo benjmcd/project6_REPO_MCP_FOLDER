@@ -1519,6 +1519,10 @@ LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_CURRENT_MAIN_SYNC_DOC = (
     PLANNING_DOCS
     / "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED = (
+    PLANNING_DOCS
+    / "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md"
+)
 LAYER3_TARGET_SELECTION_VALIDATOR_CLI = ROOT / "tools" / "l3-target-selection-validate.py"
 LAYER3_TARGET_SELECTION_VALIDATOR_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_target_selection_validate.py"
@@ -49565,23 +49569,46 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
         "selection_complete",
         "implementation_entry_freeze_written",
     )
+    expected_record = {
+        "target_identity": "server_owned_local_delivery_outbox_destination",
+        "target_owner": "Bennet / project operator",
+        "target_class": "external_destination_write",
+        "operator_purpose": "Write a finalized Layer 3 export/outbox artifact and manifest to a controlled server-owned local delivery outbox so it can be manually reviewed or consumed downstream.",
+        "authority_source": "external export/download readiness + connector-local durable receipt + server-owned local outbox write receipt + provider-private local-outbox handoff receipt where applicable",
+        "artifact_family": "outbox artifact + outbox manifest",
+        "credential_model": "no_credentials",
+        "destination_address_model": "server_configured_target",
+        "side_effect_boundary": "Write exactly one approved Layer 3 outbox artifact/manifest to one server-configured local delivery outbox destination.",
+        "idempotency_contract": "same client_request_id + same authority/artifact basis returns the same receipt; same client_request_id + different basis fails closed; same basis + new client_request_id returns existing status rather than creating duplicate output; duplicate target write returns existing receipt/status if identical and fails closed if conflicting.",
+        "failure_lifecycle": "fail closed on stale authority, wrong session/pass/artifact, missing readiness, missing receipt, tampered hash, target mismatch, timeout, partial write, unsupported credential/provider state, or any caller-supplied path/URL.",
+        "receipt_audit_contract": "durable receipt id, session/pass/package/export refs, artifact ref/hash/size, target identity/class, status/history, created/updated timestamps, idempotency key, redacted failure code, and audit history; do not expose raw local paths.",
+        "exposure_security_posture": "private/internal only; no public URL; no provider-public delivery/use; no raw token; no credential storage; no external network egress; no user-provided arbitrary path.",
+        "operator_surface": "read_only_status_only",
+        "proof_architecture": "fake/local/server-owned target proof first; API proof; headed/headless E2E proof if rendered status changes; negative tests for stale authority, wrong artifact, duplicate-key conflict, no connector-run creation, no real external connector invocation, no credential use, and no arbitrary destination write.",
+        "selection_complete": "true",
+        "implementation_entry_freeze_written": "true",
+    }
     for term in (
-        "Selected target identity: `null`.",
-        "Selected target class: `null`.",
-        "Implementation-entry freeze written: false.",
-        "Selection complete: false.",
+        "Status: operator-filled target-selection intake for `server_owned_local_delivery_outbox_destination`.",
+        "Current-main checkpoint at operator fill: `8b3e845b77f1b09864e1fdd17a9997866a32975a`.",
+        "Selected target identity: `server_owned_local_delivery_outbox_destination`.",
+        "Selected target class: `external_destination_write`.",
+        "Implementation-entry freeze written: true.",
+        "Selection complete: true.",
+        "current_main_satisfied_by_608_server_owned_local_outbox_real_write_admission_freeze",
         "## Structured Selection Record",
-        "selection_complete: false",
-        "implementation_entry_freeze_written: false",
-        "Required next action: fill this intake with one named real connector or destination target.",
-        "If no target can be named, keep runtime blocked and do not start another broad no-runtime audit unless current-main authority contradicts the local-outbox provider-private lifecycle proof.",
+        "selection_complete: true",
+        "implementation_entry_freeze_written: true",
+        "608_SERVER_OWNED_LOCAL_OUTBOX_REAL_WRITE_ADMISSION_FREEZE.md",
+        "Required next action: record the current-main satisfied selected-target posture and do not implement runtime in this pass.",
+        "the next exact posture is a new named-target decision and a separate implementation-entry freeze for that different surface",
     ):
         if term not in intake_text:
             errors.append(
                 f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} missing target-selection intake guard term: {term}"
             )
     for field in required_fields:
-        for term in (f"| `{field}` |", f"{field}: null"):
+        for term in (f"| `{field}` |", f"{field}: {expected_record[field]}"):
             if term not in intake_text:
                 errors.append(
                     f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} missing target-selection field term: {term}"
@@ -49609,19 +49636,11 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             errors.append(
                 f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured target-selection record has unexpected key: {field}"
             )
-    for field in required_fields:
-        if structured_record.get(field) != "null":
+    for field, expected in expected_record.items():
+        if structured_record.get(field) != expected:
             errors.append(
-                f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured pending target-selection field {field} must remain null until a named target is selected"
+                f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured selected target-selection field {field} mismatch"
             )
-    if structured_record.get("selection_complete") != "false":
-        errors.append(
-            f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured target-selection record must keep selection_complete false"
-        )
-    if structured_record.get("implementation_entry_freeze_written") != "false":
-        errors.append(
-            f"{_rel(LAYER3_TARGET_SELECTION_INTAKE)} structured target-selection record must keep implementation_entry_freeze_written false"
-        )
 
     audit_text = _read_required_text(
         LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_TARGET_SELECTION_INTAKE, errors
@@ -49629,9 +49648,10 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
     for term in (
         "Completion decision: active Layer 3 objective is not complete under current authority.",
         "Do not mark the active Layer 3 objective complete.",
-        "Doc `612_TARGET_SELECTION_INTAKE.md` is explicitly incomplete",
-        "The objective still has an unresolved external-target gate.",
-        "Fill `612_TARGET_SELECTION_INTAKE.md` with exactly one real connector or destination target",
+        "Target-selection update: `612_TARGET_SELECTION_INTAKE.md` is now filled for `server_owned_local_delivery_outbox_destination`",
+        "The operator-selected local/server-owned target gate is now resolved for `server_owned_local_delivery_outbox_destination`",
+        "The active Layer 3 objective is still not globally complete.",
+        "Record the current-main satisfied selected-target posture in `621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md`.",
     ):
         if term not in audit_text:
             errors.append(
@@ -49640,12 +49660,16 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
 
     guard_text = _read_required_text(LAYER3_TARGET_SELECTION_VALIDATE_ONLY_GUARD, errors)
     for term in (
-        "Status: validate-only progress guard for incomplete target-selection intake.",
+        "Status: validate-only progress guard for selected/frozen target-selection intake.",
         "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
         "Current-main checkpoint at guard creation: `308eb98b27764728212d73ed41759949815cb4c1`.",
+        "Operator-fill checkpoint: `8b3e845b77f1b09864e1fdd17a9997866a32975a`.",
         "Validated intake: `612_TARGET_SELECTION_INTAKE.md`.",
-        "The guard fails closed while target selection remains incomplete.",
-        "The guard does not select a target, generate artifacts, seed runtime state, admit runtime behavior, or permit a real connector/destination implementation.",
+        "Selected target identity: `server_owned_local_delivery_outbox_destination`.",
+        "Selected target class: `external_destination_write`.",
+        "Selection complete: true.",
+        "Existing doc `608` is the implementation-entry freeze satisfying this target identity.",
+        "The guard does not generate artifacts, seed runtime state, admit new runtime behavior, or permit a real connector/destination implementation beyond the already-admitted server-owned local outbox write.",
     ):
         if term not in guard_text:
             errors.append(
@@ -49737,10 +49761,11 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
         "Validated parser guard: `617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md`.",
         "CLI: `tools/l3-target-selection-validate.py`.",
         "Tests: `backend/tests/test_layer3_target_selection_validate.py`.",
-        "`pending`: current repo state",
+        "Current intake state: `frozen`.",
+        "`pending`: historical unfilled state",
         "`selected`: future operator-filled intake before the separate freeze lands",
-        "`frozen`: future intake after the separate implementation-entry freeze lands",
-        "python .\\tools\\l3-target-selection-validate.py --expect pending",
+        "`frozen`: current repo state after operator fill and current-main reconciliation to existing doc `608`",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
         "It does not select a target and does not admit runtime behavior.",
     ):
         if term not in validator_cli_doc_text:
@@ -49770,11 +49795,12 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
         LAYER3_TARGET_SELECTION_VALIDATOR_TEST, errors
     )
     for term in (
-        "test_current_target_selection_intake_validates_as_pending",
+        "test_current_target_selection_intake_validates_as_frozen",
         "test_selected_and_frozen_records_have_distinct_freeze_expectations",
         "test_duplicate_structured_record_key_fails_closed",
-        "module.validate_text(text, \"pending\")",
-        "selected_field_must_be_filled",
+        "module.validate_text(text, \"frozen\")",
+        "pending_field_must_be_null",
+        "selected_freeze_written_must_be_false",
         "duplicate_key",
     ):
         if term not in validator_test_text:
@@ -49830,6 +49856,30 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_CURRENT_MAIN_SYNC_DOC)} missing local-outbox provider-private rendered E2E sync term: {term}"
             )
 
+    target_selection_selected_outbox_text = _read_required_text(
+        LAYER3_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED, errors
+    )
+    for term in (
+        "Status: current-main satisfied posture for the operator-filled target-selection intake.",
+        "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
+        "Current-main checkpoint at branch start: `8b3e845b77f1b09864e1fdd17a9997866a32975a`.",
+        "Selected intake: `612_TARGET_SELECTION_INTAKE.md`.",
+        "Selected target identity: `server_owned_local_delivery_outbox_destination`.",
+        "Selected target class from operator intake: `external_destination_write`.",
+        "Current-main adjudicated target class: `server_owned_local_destination_write`.",
+        "Existing implementation-entry freeze: `608_SERVER_OWNED_LOCAL_OUTBOX_REAL_WRITE_ADMISSION_FREEZE.md`.",
+        "Runtime status: `current_main_satisfied_selected_server_owned_local_outbox_destination`.",
+        "Selected implementation action: `none_in_this_pass_current_main_already_contains_the_selected_runtime`.",
+        "Live behavior change in this pass: false.",
+        "This pass therefore records `612_TARGET_SELECTION_INTAKE.md` as selected and frozen by existing current-main authority.",
+        "It does not write a new implementation-entry freeze and does not implement runtime.",
+        "The next exact posture is `await_operator_decision_for_next_external_surface_after_selected_server_owned_local_outbox_target_satisfied`.",
+    ):
+        if term not in target_selection_selected_outbox_text:
+            errors.append(
+                f"{_rel(LAYER3_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED)} missing selected outbox current-main satisfied term: {term}"
+            )
+
     local_outbox_provider_private_rendered_e2e_text = _read_required_text(
         LAYER3_WORKBENCH_E2E, errors
     )
@@ -49859,11 +49909,13 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "2026-05-16 target-selection validator CLI",
             "2026-05-16 local-outbox provider-private rendered E2E proof",
             "2026-05-16 local-outbox provider-private rendered E2E current-main sync",
+            "2026-05-16 target-selection selected outbox current-main satisfied",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
             "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+            "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1218",
@@ -49872,6 +49924,8 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "tools/l3-target-selection-validate.py",
             "e2e/layer3-workbench.spec.js",
             "Selection complete: false",
+            "Selection complete: true",
+            "server_owned_local_delivery_outbox_destination",
         ),
         MANIFEST: (
             "target_selection_validate_only_guard",
@@ -49881,6 +49935,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "target_selection_validator_cli",
             "local_outbox_provider_private_rendered_e2e",
             "local_outbox_provider_private_rendered_e2e_current_main_sync",
+            "target_selection_selected_outbox_current_main_satisfied",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
@@ -49888,16 +49943,20 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
             "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+            "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
             "codex/l3-target-selection-guard",
             "codex/l3-target-selection-field-contract",
             "codex/l3-target-selection-record-validator",
             "codex/l3-target-selection-cli",
             "codex/l3-local-outbox-provider-private-e2e",
             "codex/l3-local-outbox-provider-private-sync",
+            "codex/l3-target-selection-selected-outbox",
             "e2e/layer3-workbench.spec.js",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
             "47fff614513530b71b897166eff0008152424065",
             "selection_complete false",
+            "selection_complete true",
+            "server_owned_local_delivery_outbox_destination",
         ),
         PROOF_MANIFEST: (
             "latest_target_selection_validate_only_guard",
@@ -49907,6 +49966,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "latest_target_selection_validator_cli",
             "latest_local_outbox_provider_private_rendered_e2e",
             "latest_local_outbox_provider_private_rendered_e2e_current_main_sync",
+            "latest_target_selection_selected_outbox_current_main_satisfied",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
@@ -49914,12 +49974,16 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
             "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+            "621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md",
             "validate-only progress guard",
             "does not select a target",
             "local_outbox_provider_private_rendered_e2e_proof",
             "local_outbox_provider_private_rendered_e2e_current_main_sync_proof",
+            "target_selection_selected_outbox_current_main_satisfied_proof",
             "codex/l3-local-outbox-provider-private-e2e",
             "codex/l3-local-outbox-provider-private-sync",
+            "codex/l3-target-selection-selected-outbox",
+            "server_owned_local_delivery_outbox_destination",
         ),
     }.items():
         path_text = _read_required_text(path, errors)
