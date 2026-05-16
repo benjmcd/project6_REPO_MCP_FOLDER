@@ -23,6 +23,7 @@ from app.services import (
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
     layer3_server_owned_local_outbox_target,
+    layer3_server_owned_local_outbox_write,
     layer3_source_intake,
     layer3_workbench,
 )
@@ -1584,6 +1585,68 @@ class Layer3ServerOwnedLocalOutboxFakeTargetRequest(BaseModel):
     full_mockup_activation: Any | None = None
 
 
+class Layer3ServerOwnedLocalOutboxWriteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    connector_dispatch_record_ref: str | None = None
+    connector_local_destination_receipt_id: str | None = None
+    server_owned_local_outbox_target_receipt_id: str | None = None
+    server_owned_local_outbox_target_state: str | None = None
+    external_export_download_record_ref: str | None = None
+    target_identity: str | None = None
+    dispatch_mode: str | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+    connector_key: Any | None = None
+    connector_run_id: Any | None = None
+    connector_run_target_id: Any | None = None
+    connector_secret: Any | None = None
+    destination_id: Any | None = None
+    destination_path: Any | None = None
+    destination_secret: Any | None = None
+    destination_url: Any | None = None
+    provider_url: Any | None = None
+    provider_public_url: Any | None = None
+    provider_public_delivery: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    download_url: Any | None = None
+    bucket: Any | None = None
+    object_key: Any | None = None
+    local_path: Any | None = None
+    local_file_path: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rebuild_package: Any | None = None
+    rewrite_output: Any | None = None
+    source_upload: Any | None = None
+    source_expansion: Any | None = None
+    local_directory: Any | None = None
+    rag_vector_index: Any | None = None
+    runtime_db_write: Any | None = None
+    retry: Any | None = None
+    rerun: Any | None = None
+    cancel: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_planning: Any | None = None
+    credential: Any | None = None
+    credentials: Any | None = None
+    network_write: Any | None = None
+    external_connector_invocation: Any | None = None
+    destination_write: Any | None = None
+    real_destination_integration: Any | None = None
+    auth_policy: Any | None = None
+    security_override: Any | None = None
+    frontend_durable_authority: Any | None = None
+    full_mockup_activation: Any | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -2443,6 +2506,51 @@ class Layer3ServerOwnedLocalOutboxFakeTargetResponse(Layer3BaseResponse):
     real_connector_invocation_enabled: bool
     destination_write_enabled: bool
     destination_write_performed: bool
+    connector_run_created: bool
+    connector_run_target_created: bool
+    credentials_enabled: bool
+    network_write_enabled: bool
+    real_destination_integration_enabled: bool
+    provider_public_url_enabled: bool
+    provider_public_delivery_enabled: bool
+    package_mutation_enabled: bool
+    source_expansion_enabled: bool
+    rag_vector_enabled: bool
+    auth_security_implementation_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3ServerOwnedLocalOutboxWriteResponse(Layer3BaseResponse):
+    session_id: str
+    pass_run_id: str
+    reconciliation_record_id: str
+    server_owned_local_outbox_write_receipt_id: str
+    server_owned_local_outbox_target_receipt_id: str
+    server_owned_local_outbox_write_state: str
+    write_operation_state: str
+    connector_dispatch_record_ref: str
+    connector_local_destination_receipt_id: str
+    external_export_download_record_ref: str
+    target_identity: str
+    dispatch_mode: str
+    outbox_artifact_ref: str
+    outbox_manifest_ref: str
+    outbox_artifact_hash: str
+    outbox_artifact_size_bytes: int
+    accepted_artifact_ref: str
+    accepted_artifact_hash: str
+    accepted_artifact_size_bytes: int
+    authority_basis_hash: str
+    server_owned_local_outbox_write_enabled: bool
+    server_owned_local_outbox_write_performed: bool
+    fake_target_contract_enabled: bool
+    real_connector_invocation_enabled: bool
+    external_destination_write_enabled: bool
+    operator_destination_path_enabled: bool
     connector_run_created: bool
     connector_run_target_created: bool
     credentials_enabled: bool
@@ -4785,6 +4893,89 @@ SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+SERVER_OWNED_LOCAL_OUTBOX_WRITE_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "server_owned_local_outbox_target_receipt_id",
+        "server_owned_local_outbox_target_state",
+        "external_export_download_record_ref",
+        "target_identity",
+        "dispatch_mode",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "connector_dispatch_record_ref": {"type": "string"},
+        "connector_local_destination_receipt_id": {"type": "string"},
+        "server_owned_local_outbox_target_receipt_id": {"type": "string"},
+        "server_owned_local_outbox_target_state": {
+            "type": "string",
+            "enum": ["server_owned_local_outbox_fake_target_recorded"],
+        },
+        "external_export_download_record_ref": {"type": "string"},
+        "target_identity": {"type": "string", "enum": ["server_owned_local_delivery_outbox_destination"]},
+        "dispatch_mode": {"type": "string", "enum": ["server_owned_local_outbox_write_via_storage_dir"]},
+        "operator_decision": {"type": "string", "enum": ["write_server_owned_local_outbox"]},
+        "decision_notes": {"type": "string"},
+        "connector_key": _forbidden_request_field_schema(),
+        "connector_run_id": _forbidden_request_field_schema(),
+        "connector_run_target_id": _forbidden_request_field_schema(),
+        "connector_secret": _forbidden_request_field_schema(),
+        "destination_id": _forbidden_request_field_schema(),
+        "destination_path": _forbidden_request_field_schema(),
+        "destination_secret": _forbidden_request_field_schema(),
+        "destination_url": _forbidden_request_field_schema(),
+        "provider_url": _forbidden_request_field_schema(),
+        "provider_public_url": _forbidden_request_field_schema(),
+        "provider_public_delivery": _forbidden_request_field_schema(),
+        "public_url": _forbidden_request_field_schema(),
+        "signed_url": _forbidden_request_field_schema(),
+        "download_url": _forbidden_request_field_schema(),
+        "bucket": _forbidden_request_field_schema(),
+        "object_key": _forbidden_request_field_schema(),
+        "local_path": _forbidden_request_field_schema(),
+        "local_file_path": _forbidden_request_field_schema(),
+        "package_payload": _forbidden_request_field_schema(),
+        "package_variant_content": _forbidden_request_field_schema(),
+        "rebuild_package": _forbidden_request_field_schema(),
+        "rewrite_output": _forbidden_request_field_schema(),
+        "source_upload": _forbidden_request_field_schema(),
+        "source_expansion": _forbidden_request_field_schema(),
+        "local_directory": _forbidden_request_field_schema(),
+        "rag_vector_index": _forbidden_request_field_schema(),
+        "runtime_db_write": _forbidden_request_field_schema(),
+        "retry": _forbidden_request_field_schema(),
+        "rerun": _forbidden_request_field_schema(),
+        "cancel": _forbidden_request_field_schema(),
+        "hybrid_execution": _forbidden_request_field_schema(),
+        "rag_execution": _forbidden_request_field_schema(),
+        "hidden_llm_planning": _forbidden_request_field_schema(),
+        "credential": _forbidden_request_field_schema(),
+        "credentials": _forbidden_request_field_schema(),
+        "network_write": _forbidden_request_field_schema(),
+        "external_connector_invocation": _forbidden_request_field_schema(),
+        "destination_write": _forbidden_request_field_schema(),
+        "real_destination_integration": _forbidden_request_field_schema(),
+        "auth_policy": _forbidden_request_field_schema(),
+        "security_override": _forbidden_request_field_schema(),
+        "frontend_durable_authority": _forbidden_request_field_schema(),
+        "full_mockup_activation": _forbidden_request_field_schema(),
+    },
+}
+
+
 class Layer3SessionSummaryResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -4807,6 +4998,7 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     external_export_download: dict[str, Any]
     connector_local_destination_receipt: dict[str, Any]
     server_owned_local_outbox_target: dict[str, Any]
+    server_owned_local_outbox_write: dict[str, Any]
     pdf_location_projection: dict[str, Any]
     sublayer_visualization: dict[str, Any]
     state_action_contract: dict[str, Any]
@@ -5412,6 +5604,24 @@ def post_server_owned_local_outbox_fake_target(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_server_owned_local_outbox_target.record_server_owned_local_outbox_fake_target(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/handoff/connector/local-outbox/write",
+    response_model=Layer3ServerOwnedLocalOutboxWriteResponse,
+    openapi_extra={"requestBody": _json_request_body(SERVER_OWNED_LOCAL_OUTBOX_WRITE_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_server_owned_local_outbox_write(
+    payload: Layer3ServerOwnedLocalOutboxWriteRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_server_owned_local_outbox_write.write_server_owned_local_outbox(
             db,
             payload.model_dump(exclude_unset=True),
         )
