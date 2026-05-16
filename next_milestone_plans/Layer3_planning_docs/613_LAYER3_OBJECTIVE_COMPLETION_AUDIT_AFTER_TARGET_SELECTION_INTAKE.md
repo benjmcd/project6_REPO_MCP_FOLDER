@@ -2,15 +2,19 @@
 
 ## Status
 
-Status: current-main objective completion audit after PR `#1216`.
+Status: current-main objective completion audit updated after operator target selection.
 
 Current-main checkpoint: `951917a3faa1bef7cabb5c880817328effa5825f`.
+
+Operator-fill checkpoint: `8b3e845b77f1b09864e1fdd17a9997866a32975a`.
 
 Prior target-selection intake: `612_TARGET_SELECTION_INTAKE.md`.
 
 Runtime status: audit only, no runtime behavior admitted.
 
 Completion decision: active Layer 3 objective is not complete under current authority.
+
+Target-selection update: `612_TARGET_SELECTION_INTAKE.md` is now filled for `server_owned_local_delivery_outbox_destination` and frozen by the existing `608_SERVER_OWNED_LOCAL_OUTBOX_REAL_WRITE_ADMISSION_FREEZE.md`; no new runtime behavior is admitted by this update.
 
 ## Objective Restated As Concrete Success Criteria
 
@@ -42,7 +46,7 @@ The active objective is complete only when current main proves all of the follow
 | Operator-visible read-only status/history surfaces | `backend/app/review_ui/static/layer3.html`; `backend/app/review_ui/static/layer3.js`; `e2e/layer3-handoff.spec.js`; doc `610` records headed and headless proof. | Current docs and source identify read-only operator panels for admitted local receipt/outbox/provider-private status-history. | This audit did not rerun Playwright. Any new rendered behavior still requires headed and headless proof. |
 | Durable audit state | `backend/app/models/models.py` includes receipt and audit-event rows for local-outbox provider-private handoff; connector/local and outbox receipt models exist. | Durable audit/receipt state exists for admitted handoff lifecycles. | External real provider/destination audit contract remains unselected until doc `612` is completed and a later freeze lands. |
 | Current-main progress artifacts | `next_milestone_plans/layer3_progress_board.md`; `next_milestone_plans/layer3_progress_manifest.json`; `next_milestone_plans/layer3_workbench_proof_manifest.json`; `python .\tools\l3-progress-check.py` passed. | Progress/proof surfaces are machine-checkable and current through PR `#1216` before this audit branch. | This audit must be added to those surfaces and merged before it is current-main proof. |
-| Real connector/destination implementation entry | `612_TARGET_SELECTION_INTAKE.md` has `Selected target identity: null`, `Selected target class: null`, `Selection complete: false`. | Not complete. | Required next action is operator completion of doc `612` with exactly one target before any implementation-entry freeze. |
+| Real connector/destination implementation entry | `612_TARGET_SELECTION_INTAKE.md` now has selected target `server_owned_local_delivery_outbox_destination`, selected class `external_destination_write`, `Selection complete: true`, and `implementation_entry_freeze_written: true` by existing doc `608`. | Selected local/server-owned target is current-main satisfied. | No new runtime is admitted here. Any target beyond the already-admitted server-owned local outbox write still requires one named target and a separate implementation-entry freeze. |
 | External provider, destination, public delivery, package mutation, source expansion, RAG/vector, auth/security, full mockup, frontend-durable authority | Docs `610`, `611`, `612`, progress manifest target-selection fields, and state/action boundaries preserve blocked surfaces. | Correctly blocked under current authority. | Completion of the broad objective cannot be claimed while required external target/security/source/package/RAG decisions remain absent or blocked. |
 
 ## Validation Commands Run For This Audit
@@ -68,17 +72,20 @@ Do not mark the active Layer 3 objective complete.
 
 Current main has substantial admitted runtime and proof for source/intake, typing/pass orchestration, package construction/review, APS handoff, connector-local receipt, server-owned local outbox, and local-outbox provider-private handoff status/history.
 
-The objective still has an unresolved external-target gate. Doc `612_TARGET_SELECTION_INTAKE.md` is explicitly incomplete: the target identity is `null`, target class is `null`, selection complete is false, and implementation-entry freeze written remains false. Under the active authority model, this blocks real connector invocation, external destination writes, connector-run creation, credentials, real provider/network/object-store behavior, provider-public delivery/use, package mutation/reconstruction beyond named lanes, source expansion, RAG/vector behavior, auth/security hardening, full mockup activation, and frontend-durable authority.
+The operator-selected local/server-owned target gate is now resolved for `server_owned_local_delivery_outbox_destination`: doc `612_TARGET_SELECTION_INTAKE.md` is filled, `selection_complete` is true, and `implementation_entry_freeze_written` is true through existing doc `608`.
+
+The active Layer 3 objective is still not globally complete. This update does not admit any target beyond the selected server-owned local outbox write, and it still blocks real connector invocation, external destination writes beyond that local/server-owned target, connector-run creation, credentials, real provider/network/object-store behavior, provider-public delivery/use, package mutation/reconstruction beyond named lanes, source expansion, RAG/vector behavior, auth/security hardening, full mockup activation, and frontend-durable authority.
 
 ## Future Steps
 
 Proceed in this order without reopening broad no-runtime cycles:
 
-1. Fill `612_TARGET_SELECTION_INTAKE.md` with exactly one real connector or destination target, including owner, class, authority source, artifact family, credential model, destination-address model, side-effect boundary, idempotency contract, failure lifecycle, receipt/audit contract, exposure/security posture, operator surface, and proof architecture.
-2. Write a separate implementation-entry freeze that copies the completed intake fields, names exact allowed files/routes/services/tables/tests, defines stop conditions, and preserves every unselected blocked surface.
-3. Implement fake-target, dry-run, fake-provider, or equivalent fail-closed proof for the selected real target before any live side effect.
-4. Add focused API tests for authority, stale state, wrong session/artifact/basis, idempotency replay, same-key conflict, same-basis different-key conflict, redaction, and disabled side effects.
-5. Add or update read-only operator status/history projection only if the selected target needs operator review; if rendered behavior changes, prove it headed and headless.
-6. Sync progress/proof artifacts to current main after merge.
-7. Admit real provider or destination behavior only after the selected fake/dry-run path and its exposure/security posture are proven and a later live-entry freeze explicitly authorizes the side effect.
-8. Treat provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector, auth/security, full mockup activation, and frontend-durable authority as separate future lanes, each requiring one named target/use case, its own freeze, focused proof, and progress sync.
+1. Record the current-main satisfied selected-target posture in `621_TARGET_SELECTION_SELECTED_OUTBOX_CURRENT_MAIN_SATISFIED.md`.
+2. Keep the selected server-owned local outbox write behavior bounded to the existing `608` freeze and current-main runtime.
+3. Do not implement runtime in this pass.
+4. If the operator needs behavior beyond the selected local/server-owned outbox target, name exactly one next target or action and write a separate implementation-entry freeze before code edits.
+5. For any future target, copy the completed intake fields, name exact allowed files/routes/services/tables/tests, define stop conditions, and preserve every unselected blocked surface.
+6. For any future implementation-bearing target, add focused API tests for authority, stale state, wrong session/artifact/basis, idempotency replay, same-key conflict, same-basis different-key conflict, redaction, and disabled side effects.
+7. Add or update read-only operator status/history projection only if the selected target needs operator review; if rendered behavior changes, prove it headed and headless.
+8. Sync progress/proof artifacts to current main after merge.
+9. Treat real connector invocation, provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector, auth/security, full mockup activation, and frontend-durable authority as separate future lanes, each requiring one named target/use case, its own freeze, focused proof, and progress sync.

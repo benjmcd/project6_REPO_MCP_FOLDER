@@ -2,40 +2,42 @@
 
 ## Status
 
-Status: validate-only progress guard for incomplete target-selection intake.
+Status: validate-only progress guard for selected/frozen target-selection intake.
 
 Doc: `614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md`.
 
 Current-main checkpoint at guard creation: `308eb98b27764728212d73ed41759949815cb4c1`.
 
+Operator-fill checkpoint: `8b3e845b77f1b09864e1fdd17a9997866a32975a`.
+
 Validated intake: `612_TARGET_SELECTION_INTAKE.md`.
 
 Prior completion audit: `613_LAYER3_OBJECTIVE_COMPLETION_AUDIT_AFTER_TARGET_SELECTION_INTAKE.md`.
 
-Runtime status: `not_implemented`.
+Runtime status: `current_main_satisfied_by_existing_server_owned_local_outbox_write_runtime`.
 
-Implementation-entry freeze written: false.
+Implementation-entry freeze written: true.
 
-Selected target identity: `null`.
+Selected target identity: `server_owned_local_delivery_outbox_destination`.
 
-Selected target class: `null`.
+Selected target class: `external_destination_write`.
 
-Selection complete: false.
+Selection complete: true.
 
 ## Purpose
 
-This guard makes the target-selection blocker machine-checkable through `tools/l3-progress-check.py`.
+This guard makes the selected/frozen target-selection state machine-checkable through `tools/l3-progress-check.py`.
 
-The guard fails closed while target selection remains incomplete. It verifies that `612_TARGET_SELECTION_INTAKE.md` still states selected target `null`, selected class `null`, implementation-entry freeze written false, and selection complete false. It also verifies that doc `613` keeps the active Layer 3 objective not complete until doc `612` is filled and followed by a separate implementation-entry freeze.
+The guard verifies that `612_TARGET_SELECTION_INTAKE.md` now states selected target `server_owned_local_delivery_outbox_destination`, selected class `external_destination_write`, implementation-entry freeze written true, and selection complete true. It also verifies that the selected target is reconciled to existing doc `608` and that no new runtime behavior is admitted by the target-fill pass.
 
 ## Validate-Only Boundary
 
-The guard does not select a target, generate artifacts, seed runtime state, admit runtime behavior, or permit a real connector/destination implementation.
+The guard does not generate artifacts, seed runtime state, admit new runtime behavior, or permit a real connector/destination implementation beyond the already-admitted server-owned local outbox write.
 
-It only validates current planning/progress truth so future work cannot silently reinterpret an incomplete intake as permission to implement:
+It only validates current planning/progress truth so future work cannot silently reinterpret the selected local/server-owned outbox target as permission to implement:
 
 - real connector invocation;
-- destination writes;
+- destination writes beyond the selected server-owned local outbox target;
 - connector-run creation;
 - credential custody;
 - real provider network/object-store behavior;
@@ -47,15 +49,16 @@ It only validates current planning/progress truth so future work cannot silently
 - full mockup activation; or
 - frontend-durable authority.
 
-## Required Future Change
+## Current Selected-Target Requirements
 
-When an operator fills `612_TARGET_SELECTION_INTAKE.md`, this guard must be updated in the same freeze-bound lane as the new implementation-entry decision. That update must replace the incomplete-intake assertions with proof that:
+This update replaces the incomplete-intake assertions with proof that:
 
 1. Exactly one target identity is named.
 2. Exactly one target class is named.
 3. Credential and exposure/security posture are explicit.
-4. The side-effect boundary names one external write, call, delivery, or use.
-5. A separate implementation-entry freeze copies the completed intake fields.
-6. Fake-target, dry-run, fake-provider, or equivalent fail-closed proof is required before live side effects.
+4. The side-effect boundary names one selected server-owned local outbox write.
+5. Existing doc `608` is the implementation-entry freeze satisfying this target identity.
+6. Existing fake/local/server-owned proof is the proof architecture for this selected target.
+7. No new runtime implementation begins in the target-fill pass.
 
-Until then, `tools/l3-progress-check.py` must fail if the intake no longer states `Selection complete: false` without also updating this guard and the downstream freeze evidence.
+`tools/l3-progress-check.py` must fail if the intake drifts away from the selected/frozen record without a later governed artifact naming a different target and freeze.

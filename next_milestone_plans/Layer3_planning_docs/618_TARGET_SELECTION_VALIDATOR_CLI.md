@@ -18,6 +18,8 @@ Tests: `backend/tests/test_layer3_target_selection_validate.py`.
 
 Runtime status: `not_implemented`.
 
+Current intake state: `frozen`.
+
 ## Purpose
 
 This CLI gives the operator a local validate-only command for the structured target-selection record before any implementation-entry freeze.
@@ -28,16 +30,16 @@ It does not select a target and does not admit runtime behavior.
 
 The CLI supports exactly these expected states:
 
-- `pending`: current repo state; every target field is `null`, `selection_complete` is `false`, and `implementation_entry_freeze_written` is `false`.
+- `pending`: historical unfilled state; every target field is `null`, `selection_complete` is `false`, and `implementation_entry_freeze_written` is `false`.
 - `selected`: future operator-filled intake before the separate freeze lands; every required target field is filled, `selection_complete` is `true`, and `implementation_entry_freeze_written` is `false`.
-- `frozen`: future intake after the separate implementation-entry freeze lands; every required target field is filled, `selection_complete` is `true`, and `implementation_entry_freeze_written` is `true`.
+- `frozen`: current repo state after operator fill and current-main reconciliation to existing doc `608`; every required target field is filled, `selection_complete` is `true`, and `implementation_entry_freeze_written` is `true`.
 
 ## Commands
 
-Validate current main pending state:
+Validate current main frozen state:
 
 ```powershell
-python .\tools\l3-target-selection-validate.py --expect pending
+python .\tools\l3-target-selection-validate.py --expect frozen
 ```
 
 Validate a candidate filled intake copy before freeze:
@@ -58,4 +60,4 @@ The CLI is validate-only. It reads the intake file and emits pass/fail output; i
 
 ## Next Posture
 
-The next required action remains operator completion of `612_TARGET_SELECTION_INTAKE.md` with exactly one real connector or destination target, followed by a separate implementation-entry freeze before any real external side effect.
+The next required action is current-main satisfied posture sync for the selected `server_owned_local_delivery_outbox_destination` target. Any future target beyond the selected server-owned local outbox destination must still name exactly one new target/action and write a separate implementation-entry freeze before any real external side effect.
