@@ -17,6 +17,7 @@ from app.services import (
     layer3_package_supersession_commit,
     layer3_raw_mixed_bridge,
     layer3_raw_mixed_materialization,
+    layer3_local_outbox_provider_private_handoff,
     layer3_replacement_package_namespace,
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_set_authority,
@@ -1647,6 +1648,27 @@ class Layer3ServerOwnedLocalOutboxWriteRequest(BaseModel):
     full_mockup_activation: Any | None = None
 
 
+class Layer3LocalOutboxProviderPrivateHandoffPrepareRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    connector_dispatch_record_ref: str | None = None
+    connector_local_destination_receipt_id: str | None = None
+    server_owned_local_outbox_target_receipt_id: str | None = None
+    server_owned_local_outbox_write_receipt_id: str | None = None
+    external_export_download_record_ref: str | None = None
+    target_identity: str | None = None
+    dispatch_mode: str | None = None
+    operator_decision: str | None = None
+    recipient_scope: str | None = None
+    requested_ttl_seconds: int | None = None
+    decision_notes: str | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -2567,6 +2589,57 @@ class Layer3ServerOwnedLocalOutboxWriteResponse(Layer3BaseResponse):
     downstream_unavailable: list[str]
     next_state: str
     authority_rail: dict[str, Any]
+
+
+class Layer3LocalOutboxProviderPrivateHandoffResponse(Layer3BaseResponse):
+    session_id: str
+    pass_run_id: str
+    reconciliation_record_id: str
+    provider_private_handoff_receipt_id: str
+    server_owned_local_outbox_write_receipt_id: str
+    server_owned_local_outbox_target_receipt_id: str
+    connector_local_destination_receipt_id: str
+    connector_dispatch_record_ref: str
+    external_export_download_record_ref: str
+    target_identity: str
+    dispatch_mode: str
+    recipient_scope: str
+    provider_private_handoff_state: str
+    handoff_operation_state: str
+    provider_private_marker: str
+    provider_private_expires_at: str
+    provider_private_expires_in_seconds: int
+    provider_private_replay_policy: str
+    provider_private_revocation_supported: bool
+    provider_private_use_route_enabled: bool
+    raw_token_exposed: bool
+    source_artifact_hash: str
+    source_artifact_size_bytes: int
+    outbox_artifact_ref: str
+    outbox_manifest_ref: str
+    outbox_artifact_hash: str
+    outbox_artifact_size_bytes: int
+    authority_basis_hash: str
+    request_basis_hash: str
+    audit_receipt: dict[str, Any]
+    authority_rail: dict[str, Any]
+    real_connector_invocation_enabled: bool
+    external_provider_network_write_enabled: bool
+    external_object_store_write_enabled: bool
+    external_destination_write_enabled: bool
+    connector_run_created: bool
+    connector_run_target_created: bool
+    credentials_enabled: bool
+    provider_public_delivery_enabled: bool
+    package_mutation_enabled: bool
+    source_expansion_enabled: bool
+    rag_vector_enabled: bool
+    auth_security_implementation_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    downstream_unavailable: list[str]
+    next_allowed_actions: list[str]
+    next_state: str
 
 
 class Layer3ExternalExportDownloadSignedReferenceResponse(Layer3BaseResponse):
@@ -4976,6 +5049,69 @@ SERVER_OWNED_LOCAL_OUTBOX_WRITE_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FORBIDDEN_REQUEST_FIELDS = tuple(
+    sorted(layer3_local_outbox_provider_private_handoff.LOCAL_OUTBOX_PROVIDER_PRIVATE_FORBIDDEN_FIELDS)
+)
+
+LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "server_owned_local_outbox_target_receipt_id",
+        "server_owned_local_outbox_write_receipt_id",
+        "external_export_download_record_ref",
+        "target_identity",
+        "dispatch_mode",
+        "operator_decision",
+        "recipient_scope",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "connector_dispatch_record_ref": {"type": "string"},
+        "connector_local_destination_receipt_id": {"type": "string"},
+        "server_owned_local_outbox_target_receipt_id": {"type": "string"},
+        "server_owned_local_outbox_write_receipt_id": {"type": "string"},
+        "external_export_download_record_ref": {"type": "string"},
+        "target_identity": {
+            "type": "string",
+            "enum": [
+                layer3_local_outbox_provider_private_handoff.LOCAL_OUTBOX_PROVIDER_PRIVATE_TARGET_IDENTITY
+            ],
+        },
+        "dispatch_mode": {
+            "type": "string",
+            "enum": [
+                layer3_local_outbox_provider_private_handoff.LOCAL_OUTBOX_PROVIDER_PRIVATE_DISPATCH_MODE
+            ],
+        },
+        "operator_decision": {
+            "type": "string",
+            "enum": [
+                layer3_local_outbox_provider_private_handoff.LOCAL_OUTBOX_PROVIDER_PRIVATE_OPERATOR_DECISION
+            ],
+        },
+        "recipient_scope": {"type": "string"},
+        "requested_ttl_seconds": {"type": "integer", "minimum": 1},
+        "decision_notes": {"type": "string"},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FORBIDDEN_REQUEST_FIELDS
+        },
+    },
+}
+
+
 class Layer3SessionSummaryResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -5624,6 +5760,41 @@ def post_server_owned_local_outbox_write(
         lambda: layer3_server_owned_local_outbox_write.write_server_owned_local_outbox(
             db,
             payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/handoff/connector/local-outbox/provider-private/prepare",
+    response_model=Layer3LocalOutboxProviderPrivateHandoffResponse,
+    openapi_extra={"requestBody": _json_request_body(LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_PREPARE_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_local_outbox_provider_private_handoff_prepare(
+    payload: Layer3LocalOutboxProviderPrivateHandoffPrepareRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_local_outbox_provider_private_handoff.prepare_local_outbox_provider_private_handoff(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.get(
+    "/handoff/connector/local-outbox/provider-private/status/{provider_private_handoff_receipt_id}",
+    response_model=Layer3LocalOutboxProviderPrivateHandoffResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_local_outbox_provider_private_handoff_status(
+    provider_private_handoff_receipt_id: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_local_outbox_provider_private_handoff.local_outbox_provider_private_handoff_status(
+            db,
+            provider_private_handoff_receipt_id,
         )
     )
 
