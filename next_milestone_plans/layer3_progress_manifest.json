@@ -21995,5 +21995,71 @@
   "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_branch": "codex/l3-real-target-decision-sync",
   "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
   "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_live_behavior_change": false,
-  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_summary": "Doc 601 syncs PR #1197 merge commit 77958674510232ae3e72871fd66d8b04e52b7c93 to current main, with green backend-layer3-api/test checks, empty PR comments/reviews/reviewThreads, post-merge Layer 3 progress validation, and next posture await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync."
+  "latest_layer3_real_target_missing_decision_after_local_receipt_smoke_current_main_sync_summary": "Doc 601 syncs PR #1197 merge commit 77958674510232ae3e72871fd66d8b04e52b7c93 to current main, with green backend-layer3-api/test checks, empty PR comments/reviews/reviewThreads, post-merge Layer 3 progress validation, and next posture await_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync.",
+  "layer3_local_receipt_lifecycle_hardening_freeze": {
+    "status": "planning_control_freeze",
+    "branch": "codex/l3-local-receipt-lifecycle-plan",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md",
+    "current_main_checkpoint": "f2515593d7fcd911b2e9ae20dceb826969d54526",
+    "prior_sync_doc": "next_milestone_plans/Layer3_planning_docs/601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+    "selected_exact_milestone": "implement_layer3_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+    "selected_runtime_family": "connector_local_destination_receipt_runtime",
+    "selected_runtime_mode": "internal_fake_local_destination_receipt_lifecycle_hardening",
+    "entry_decision": "implementation_entry_prepared",
+    "runtime_status_before_implementation": "partially_implemented_existing_local_receipt_runtime",
+    "implementation_entry_allowed_next": true,
+    "canonical_authority": [
+      "backend/app/services/layer3_connector_local_destination_receipt.py",
+      "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+      "L3ConnectorLocalDestinationReceipt",
+      "State.sessionSummary.connector_local_destination_receipt",
+      "backend/app/review_ui/static/layer3.js",
+      "recordRenderedConnectorLocalReceiptSmoke"
+    ],
+    "immediate_milestones": [
+      "read_only_receipt_lifecycle_history_listing_projection",
+      "status_and_failure_state_projection",
+      "idempotency_retry_clarity",
+      "focused_backend_api_guardrail_proof",
+      "headed_and_headless_rendered_lifecycle_e2e_proof"
+    ],
+    "guardrail_cases": [
+      "wrong_artifact",
+      "wrong_session",
+      "wrong_authority_basis",
+      "duplicate_client_request_id",
+      "same_key_same_payload_replay",
+      "same_key_different_payload_conflict",
+      "same_basis_new_key_conflict",
+      "stale_delivery_authority"
+    ],
+    "blocked_surfaces": [
+      "real_connector_invocation",
+      "destination_write",
+      "connector_run_creation",
+      "credential_handling",
+      "provider_public_delivery_use",
+      "package_mutation_reconstruction",
+      "source_expansion",
+      "rag_vector_behavior",
+      "auth_security_behavior_change",
+      "full_mockup_activation",
+      "frontend_only_durable_authority"
+    ],
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "backend_route_behavior_change": false,
+    "service_runtime_behavior_change": false,
+    "response_model_shape_change": false,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "connector_provider_destination_dispatch_change": false,
+    "frontend_only_durable_authority_change": false,
+    "next_whole_project_posture": "await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze"
+  },
+  "latest_layer3_local_receipt_lifecycle_hardening_freeze_branch": "codex/l3-local-receipt-lifecycle-plan",
+  "latest_layer3_local_receipt_lifecycle_hardening_freeze_doc": "next_milestone_plans/Layer3_planning_docs/602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md",
+  "latest_layer3_local_receipt_lifecycle_hardening_freeze_live_behavior_change": false,
+  "latest_layer3_local_receipt_lifecycle_hardening_freeze_summary": "Doc 602 prepares the next implementation-bearing local receipt lifecycle-hardening lane over the already-merged internal fake/local receipt runtime, covering read-only status/history/listing, failure-state projection, idempotency/retry clarity, guardrail proof, and headed/headless E2E while keeping real connector invocation, destination writes, connector-run creation, credentials, provider-public delivery/use, package mutation, source expansion, RAG/vector, auth/security, full mockup activation, and frontend-only durable authority blocked."
 }
