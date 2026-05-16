@@ -2907,6 +2907,7 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "connector_local_destination_receipt",
         "server_owned_local_outbox_target",
         "server_owned_local_outbox_write",
+        "local_outbox_provider_private_handoff",
         "sublayer_visualization",
         "state_action_contract",
         "downstream_unavailable",
@@ -13906,6 +13907,19 @@ def test_layer3_api_server_owned_local_outbox_write_records_server_owned_artifac
     assert projected_cases["same_key_different_payload_conflict"]["projected_error_code"] == (
         "server_owned_local_outbox_write_client_request_conflict"
     )
+    handoff_ready = summary_response.json()["local_outbox_provider_private_handoff"]
+    assert handoff_ready["schema_id"] == "layer3.local_outbox_provider_private_handoff.status.v1"
+    assert handoff_ready["available"] is True
+    assert handoff_ready["state"] == "local_outbox_provider_private_handoff_ready"
+    assert handoff_ready["server_owned_local_outbox_write_receipt_id"] == (
+        body["server_owned_local_outbox_write_receipt_id"]
+    )
+    assert handoff_ready["target_identity"] == "server_owned_local_outbox_provider_private_handoff_destination"
+    assert handoff_ready["provider_private_handoff_enabled"] is True
+    assert handoff_ready["provider_private_handoff_performed"] is False
+    assert handoff_ready["provider_private_handoff_history_count"] == 0
+    assert handoff_ready["audit_event_history_count"] == 0
+    assert handoff_ready["response_authority"] == "durable_server_owned_local_outbox_write_receipt_authority"
 
 
 def test_layer3_api_server_owned_local_outbox_write_prechecks_fail_closed(
@@ -14175,6 +14189,76 @@ def test_layer3_api_local_outbox_provider_private_handoff_prepare_status_and_ide
     assert status_body["provider_private_handoff_state"] == "local_outbox_provider_private_handoff_prepared"
     assert status_body["raw_token_exposed"] is False
     assert "fake-provider-private-token" not in json.dumps(status_body, sort_keys=True)
+
+    summary_response = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary_response.status_code == 200
+    handoff_status = summary_response.json()["local_outbox_provider_private_handoff"]
+    assert handoff_status["schema_id"] == "layer3.local_outbox_provider_private_handoff.status.v1"
+    assert handoff_status["state"] == "local_outbox_provider_private_handoff_prepared"
+    assert handoff_status["provider_private_handoff_receipt_id"] == body["provider_private_handoff_receipt_id"]
+    assert handoff_status["server_owned_local_outbox_write_receipt_id"] == (
+        write_body["server_owned_local_outbox_write_receipt_id"]
+    )
+    assert handoff_status["target_identity"] == "server_owned_local_outbox_provider_private_handoff_destination"
+    assert handoff_status["dispatch_mode"] == "provider_private_fake_provider_prepare_status_from_local_outbox_receipt"
+    assert handoff_status["provider_private_handoff_enabled"] is True
+    assert handoff_status["provider_private_handoff_performed"] is True
+    assert handoff_status["raw_token_exposed"] is False
+    assert handoff_status["provider_private_use_route_enabled"] is False
+    assert handoff_status["provider_public_delivery_enabled"] is False
+    assert handoff_status["real_connector_invocation_enabled"] is False
+    assert handoff_status["external_destination_write_enabled"] is False
+    assert handoff_status["credentials_enabled"] is False
+    assert handoff_status["package_mutation_enabled"] is False
+    assert handoff_status["source_expansion_enabled"] is False
+    assert handoff_status["rag_vector_enabled"] is False
+    assert handoff_status["status_surface_mode"] == "read_only_server_session_summary_projection"
+    assert handoff_status["response_authority"] == (
+        "durable_local_outbox_provider_private_handoff_receipt_row"
+    )
+    assert handoff_status["provider_private_handoff_history_count"] == 1
+    assert handoff_status["audit_event_history_count"] == 1
+    assert handoff_status["lifecycle_status_surface"]["schema_id"] == (
+        "layer3.local_outbox_provider_private_handoff.lifecycle.v1"
+    )
+    assert handoff_status["lifecycle_status_surface"]["surface_mode"] == (
+        "read_only_local_outbox_provider_private_handoff_status_history"
+    )
+    assert handoff_status["lifecycle_status_surface"]["history_listing_authority"] == (
+        "durable_local_outbox_provider_private_handoff_receipt_rows"
+    )
+    assert handoff_status["lifecycle_status_surface"]["audit_trail_authority"] == (
+        "durable_local_outbox_provider_private_handoff_audit_event_rows"
+    )
+    assert handoff_status["latest_provider_private_handoff_receipt"]["authority_basis_hash"] == (
+        body["authority_basis_hash"]
+    )
+    assert handoff_status["latest_audit_event"]["reason_code"] == (
+        "prepared_after_local_outbox_authority_validation"
+    )
+    assert handoff_status["idempotency_policy"] == {
+        "client_request_id_unique": True,
+        "authority_basis_hash_unique": True,
+        "request_basis_hash_unique": True,
+        "same_key_same_payload_replay": "already_recorded",
+        "same_key_different_payload_conflict": (
+            "local_outbox_provider_private_handoff_client_request_conflict"
+        ),
+        "same_basis_different_client_request_id": "local_outbox_provider_private_handoff_already_prepared",
+    }
+    assert handoff_status["retry_policy"]["retry_fields_admitted"] is False
+    assert handoff_status["retry_policy"]["raw_token_replay_admitted"] is False
+    projected_cases = {entry["case"]: entry for entry in handoff_status["failure_state_projection"]}
+    assert projected_cases["stale_authority"]["projected_error_code"] == (
+        "local_outbox_provider_private_handoff_stale_authority"
+    )
+    assert projected_cases["same_key_different_payload_conflict"]["projected_error_code"] == (
+        "local_outbox_provider_private_handoff_client_request_conflict"
+    )
+    handoff_status_text = json.dumps(handoff_status, sort_keys=True)
+    assert str(Path(settings.storage_dir)) not in handoff_status_text
+    assert readiness_body["source_artifact_ref"] not in handoff_status_text
+    assert "fake-provider-private-token" not in handoff_status_text
 
     db = client.layer3_session_factory()
     try:

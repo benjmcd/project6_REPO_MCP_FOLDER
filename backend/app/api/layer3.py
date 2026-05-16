@@ -5135,6 +5135,7 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     connector_local_destination_receipt: dict[str, Any]
     server_owned_local_outbox_target: dict[str, Any]
     server_owned_local_outbox_write: dict[str, Any]
+    local_outbox_provider_private_handoff: dict[str, Any]
     pdf_location_projection: dict[str, Any]
     sublayer_visualization: dict[str, Any]
     state_action_contract: dict[str, Any]
