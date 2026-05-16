@@ -3602,3 +3602,11 @@ The implementation keeps browser state transient, uses `packageSupersessionPrevi
 Targeted proof includes static page assertions, existing package supersession preview API guardrail tests, and headed/headless Chromium coverage for `Layer 3 workbench drives rendered package supersession preview control`, including ready, submitted, previewed, and `package_supersession_preview_package_review_preview_hash_mismatch` failed states.
 
 The next exact posture is `await_current_main_sync_for_package_supersession_preview_rendered_control`.
+
+## Package Supersession Preview Rendered Control Current-Main Sync
+
+Current-main proof/control sync: PR `#1238` merged `634_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md` at merge commit `6520f549110b709972a068c143ec2f3fcb613014`.
+
+The sync doc `635_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` passed in `2m35s`, `test` passed in `3m13s`, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The rendered package supersession preview control is now current-main synced as `current_main_synced_package_supersession_preview_rendered_control`.
+
+The next exact posture is `select_next_package_mutation_reconstruction_operator_action_after_package_supersession_preview_rendered_control_sync`. No runtime begins in this sync, and package supersession commit, package rebuild, package payload rewrite, source `L3OutputPackage` row mutation, replacement payload generation, downstream invalidation, re-delivery runtime, provider-public delivery/use, connector/destination dispatch, source expansion, RAG/vector behavior, auth/security behavior, full mockup activation, and frontend-durable authority remain blocked.
