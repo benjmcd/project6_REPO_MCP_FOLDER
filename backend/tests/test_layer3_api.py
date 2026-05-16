@@ -14528,6 +14528,134 @@ def test_layer3_api_local_outbox_provider_private_handoff_prechecks_fail_closed(
         db.close()
 
 
+def test_layer3_api_local_outbox_provider_private_handoff_lifecycle_guardrails_fail_closed(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+        write_body,
+    ) = _prepare_server_owned_local_outbox_write(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-local-outbox-provider-private-guardrails",
+    )
+    valid_payload = _local_outbox_provider_private_handoff_payload(
+        request_id="api-local-outbox-provider-private-guardrails-prepare",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+
+    cases = [
+        (
+            {
+                **valid_payload,
+                "client_request_id": "api-local-outbox-provider-private-wrong-plan",
+                "analysis_plan_id": "wrong-analysis-plan",
+            },
+            "local_outbox_provider_private_handoff_pass_run_mismatch",
+        ),
+        (
+            {
+                **valid_payload,
+                "client_request_id": "api-local-outbox-provider-private-missing-pass",
+                "pass_run_id": "missing-pass-run",
+            },
+            "local_outbox_provider_private_handoff_requires_existing_authority",
+        ),
+        (
+            {
+                **valid_payload,
+                "client_request_id": "api-local-outbox-provider-private-missing-local-receipt",
+                "connector_local_destination_receipt_id": "missing-local-destination-receipt",
+            },
+            "local_outbox_provider_private_handoff_requires_receipt_chain",
+        ),
+        (
+            {
+                **valid_payload,
+                "client_request_id": "api-local-outbox-provider-private-missing-target-receipt",
+                "server_owned_local_outbox_target_receipt_id": "missing-fake-target-receipt",
+            },
+            "local_outbox_provider_private_handoff_requires_receipt_chain",
+        ),
+        (
+            {
+                **valid_payload,
+                "client_request_id": "api-local-outbox-provider-private-missing-write-receipt",
+                "server_owned_local_outbox_write_receipt_id": "missing-write-receipt",
+            },
+            "local_outbox_provider_private_handoff_requires_outbox_write",
+        ),
+        (
+            {
+                **valid_payload,
+                "client_request_id": "api-local-outbox-provider-private-wrong-download-ref",
+                "external_export_download_record_ref": "wrong-external-export-download-ref",
+            },
+            "local_outbox_provider_private_handoff_external_export_download_record_ref_mismatch",
+        ),
+    ]
+    for payload, expected_error in cases:
+        response = client.post(
+            "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+            json=payload,
+        )
+        assert response.status_code == 409, response.json()
+        assert response.json()["error_code"] == expected_error
+        assert "fake-provider-private-token" not in json.dumps(response.json(), sort_keys=True)
+
+    db = client.layer3_session_factory()
+    try:
+        row = db.query(L3ServerOwnedLocalOutboxWriteReceipt).filter(
+            L3ServerOwnedLocalOutboxWriteReceipt.server_owned_local_outbox_write_receipt_id
+            == write_body["server_owned_local_outbox_write_receipt_id"]
+        ).one()
+        artifact_path = Path(settings.storage_dir) / row.outbox_artifact_ref
+        artifact_path.write_text("tampered local outbox artifact", encoding="utf-8")
+    finally:
+        db.close()
+
+    stale_artifact = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json={
+            **valid_payload,
+            "client_request_id": "api-local-outbox-provider-private-tampered-artifact",
+        },
+    )
+    assert stale_artifact.status_code == 409, stale_artifact.json()
+    assert stale_artifact.json()["error_code"] == "local_outbox_provider_private_handoff_stale_authority"
+    assert "tampered local outbox artifact" not in stale_artifact.text
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count() == 0
+        assert db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count() == 0
+    finally:
+        db.close()
+
+
 def test_layer3_api_connector_local_destination_receipt_client_request_conflict_changed_basis(
     client: TestClient,
     tmp_path,
