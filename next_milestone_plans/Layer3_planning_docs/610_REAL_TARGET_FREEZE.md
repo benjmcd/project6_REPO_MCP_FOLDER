@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: implemented and merged on current main for `server_owned_local_outbox_provider_private_handoff_target_after_local_outbox_write`, including the read-only session-summary/history projection.
+Status: implemented and merged on current main for `server_owned_local_outbox_provider_private_handoff_target_after_local_outbox_write`, including the read-only session-summary/history projection. Branch-local follow-up `codex/l3-provider-private-e2e-proof` adds the rendered read-only operator status/history panel and focused headed/headless E2E proof; this branch-local follow-up is pending merge until PR checks and current-main sync complete.
 
 Doc: `610_REAL_TARGET_FREEZE.md`.
 
@@ -268,9 +268,11 @@ Stop before implementation if the next pass:
 
 The next whole-project posture is `prove_and_harden_local_outbox_provider_private_handoff_lifecycle_after_status_projection`.
 
-## Current-Main Implementation Status
+## Current-Main And Branch-Local Implementation Status
 
 Current main status: `local_outbox_provider_private_handoff_prepare_status_and_session_history_projection_implemented_merged`.
+
+Branch-local follow-up status: `local_outbox_provider_private_handoff_rendered_status_history_e2e_proof_implemented_pending_merge`.
 
 Implemented first-slice surfaces:
 
@@ -283,6 +285,13 @@ Implemented first-slice surfaces:
 - lifecycle/history projection from durable provider-private handoff receipt rows;
 - audit-event history projection from durable provider-private handoff audit rows; and
 - OpenAPI and targeted backend proof in `backend/tests/test_layer3_api.py`.
+
+Implemented branch-local follow-up surfaces:
+
+- read-only rendered panel `#local-outbox-provider-private-handoff-panel` in `backend/app/review_ui/static/layer3.html`;
+- session-summary-backed renderer in `backend/app/review_ui/static/layer3.js` for provider-private handoff state, authority chain, receipt refs, lifecycle policy, receipt history, audit history, guardrail projection, and disabled runtime lanes;
+- E2E helper path in `e2e/layer3-handoff.spec.js` that prepares the provider-private handoff from the existing local outbox write chain and inspects the status endpoint; and
+- focused rendered E2E proof that the operator-visible panel remains read-only, redacted, and free of write controls, raw token text, provider-private signed URL token fields, destination path fields, and absolute Windows paths.
 
 Merged proof already exercised:
 
@@ -301,6 +310,17 @@ Merged proof already exercised:
 - migration upgrade to head against isolated in-memory SQLite; and
 - full `backend/tests/test_layer3_api.py` coverage on the status-projection merge branch.
 
+Branch-local proof exercised:
+
+- `node --check .\backend\app\review_ui\static\layer3.js` passed.
+- `git diff --check` passed with only expected LF-to-CRLF working-copy warnings.
+- `npx playwright test e2e/layer3-handoff.spec.js -g "local outbox provider-private handoff lifecycle" --project=chromium` passed headless.
+- `npx playwright test e2e/layer3-handoff.spec.js -g "local outbox provider-private handoff lifecycle" --project=chromium --headed` passed headed.
+- `npx playwright test e2e/layer3-handoff.spec.js -g "local receipt to server-owned outbox write lifecycle|local outbox provider-private handoff lifecycle" --project=chromium` passed.
+- `npx playwright test e2e/layer3-handoff.spec.js --project=chromium` passed with `6 passed`.
+- `python -m pytest .\backend\tests\test_layer3_api.py -k "local_outbox_provider_private_handoff"` passed with `2 passed, 157 deselected`.
+- `python .\tools\l3-progress-check.py` passed.
+
 Still not admitted by this implementation:
 
 - real connector invocation;
@@ -318,4 +338,4 @@ Still not admitted by this implementation:
 - full mockup activation; and
 - frontend-durable authority.
 
-Next whole-project pass after this merge: run focused headed/headless E2E proof for the local-outbox provider-private handoff lifecycle status surface, then harden only any repo-confirmed lifecycle gaps in stale authority, wrong receipt/session/basis, duplicate `client_request_id`, same-key/same-payload replay, same-key/different-payload conflict, expiry, and fake-provider failure projection. A named real provider/destination target freeze is still blocked unless the operator names a concrete target and separately admits that implementation entry.
+Next whole-project pass after this branch merges: perform current-main sync for the rendered local-outbox provider-private handoff status/history proof, then harden only repo-confirmed lifecycle gaps in stale authority, wrong receipt/session/basis, duplicate `client_request_id`, same-key/same-payload replay, same-key/different-payload conflict, expiry, and fake-provider failure projection. If no such gaps are confirmed, proceed to the missing-decision packet for a real connector/destination target. A named real provider/destination implementation freeze is still blocked unless the operator names a concrete target and separately admits that implementation entry.
