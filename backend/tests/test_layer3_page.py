@@ -145,6 +145,15 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
         'data-rendered-mode="rendered_server_owned_local_outbox_fake_target_read_only_status_surface"'
         in response.text
     )
+    assert 'id="server-owned-local-outbox-write-panel"' in response.text
+    assert 'data-rendered-mode="rendered_server_owned_local_outbox_write_read_only_status_surface"' in response.text
+    assert 'id="local-outbox-provider-private-handoff-panel"' in response.text
+    assert (
+        'data-rendered-mode="rendered_local_outbox_provider_private_handoff_read_only_status_surface"'
+        in response.text
+    )
+    assert 'id="external-local-export-panel"' in response.text
+    assert 'data-rendered-mode="rendered_external_local_export_read_only_status_surface"' in response.text
     assert 'id="provider-public-url-form"' in response.text
     assert 'data-rendered-mode="provider_public_url_prepare_status_revoke_controls"' in response.text
     assert 'id="provider-public-url-panel"' in response.text
@@ -298,6 +307,13 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function serverOwnedLocalOutboxTargetStatusState" in js.text
     assert "function renderServerOwnedLocalOutboxTargetStatusPanel" in js.text
     assert "renderServerOwnedLocalOutboxTargetStatusPanel()" in js.text
+    assert "SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATUS_SURFACE_MODE = 'rendered_server_owned_local_outbox_write_read_only_status_surface'" in js.text
+    assert "LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_SURFACE_MODE = 'rendered_local_outbox_provider_private_handoff_read_only_status_surface'" in js.text
+    assert "EXTERNAL_LOCAL_EXPORT_STATUS_SURFACE_MODE = 'rendered_external_local_export_read_only_status_surface'" in js.text
+    assert "EXTERNAL_LOCAL_EXPORT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.external_local_export'" in js.text
+    assert "function externalLocalExportStatusState" in js.text
+    assert "function renderExternalLocalExportStatusPanel" in js.text
+    assert "renderExternalLocalExportStatusPanel()" in js.text
     assert "function renderConnectorLocalDestinationReceiptStatusPanel" in js.text
     assert "function connectorLocalDestinationReceiptHistoryRows" in js.text
     assert "function renderConnectorLocalDestinationReceiptFailureProjection" in js.text

@@ -56,6 +56,9 @@ const SERVER_OWNED_LOCAL_OUTBOX_WRITE_STATUS_RESPONSE_AUTHORITY = 'State.session
 const LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_SURFACE_MODE = 'rendered_local_outbox_provider_private_handoff_read_only_status_surface';
 const LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_USE_CASE = 'operator_reviews_local_outbox_provider_private_handoff_status_without_raw_token_use_or_external_write';
 const LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.local_outbox_provider_private_handoff';
+const EXTERNAL_LOCAL_EXPORT_STATUS_SURFACE_MODE = 'rendered_external_local_export_read_only_status_surface';
+const EXTERNAL_LOCAL_EXPORT_STATUS_USE_CASE = 'operator_reviews_server_configured_external_local_export_status_without_path_editing_or_generic_dispatch';
+const EXTERNAL_LOCAL_EXPORT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.external_local_export';
 const DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE = 'rendered_downstream_access_lifecycle_read_only_dashboard';
 const DOWNSTREAM_ACCESS_LIFECYCLE_USE_CASE = 'operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use';
 const DOWNSTREAM_ACCESS_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
@@ -222,6 +225,7 @@ const elements = {
     serverOwnedLocalOutboxTargetPanel: document.getElementById('server-owned-local-outbox-target-panel'),
     serverOwnedLocalOutboxWritePanel: document.getElementById('server-owned-local-outbox-write-panel'),
     localOutboxProviderPrivateHandoffPanel: document.getElementById('local-outbox-provider-private-handoff-panel'),
+    externalLocalExportPanel: document.getElementById('external-local-export-panel'),
     providerPrivateSignedUrlForm: document.getElementById('provider-private-signed-url-form'),
     providerPrivateSignedUrlPanel: document.getElementById('provider-private-signed-url-panel'),
     providerPrivateSignedUrlPrepare: document.getElementById('provider-private-signed-url-prepare'),
@@ -6122,6 +6126,227 @@ function renderLocalOutboxProviderPrivateHandoffStatusPanel() {
     `;
 }
 
+function externalLocalExportStatusState() {
+    return State.sessionSummary?.external_local_export || null;
+}
+
+function externalLocalExportStateName(status = externalLocalExportStatusState()) {
+    return status?.external_local_export_state || status?.next_state || status?.state || null;
+}
+
+function externalLocalExportPanelState() {
+    const status = externalLocalExportStatusState() || {};
+    const stateName = externalLocalExportStateName(status);
+    if (stateName === 'external_local_export_written') {
+        return {
+            label: 'external_local_export_written',
+            pill: 'ok',
+            message: 'The server has written the approved outbox artifact and manifest to the configured local export directory.',
+        };
+    }
+    if (status.available === true && stateName === 'external_local_export_ready') {
+        return {
+            label: 'external_local_export_ready',
+            pill: 'ok',
+            message: 'Server-owned local outbox authority can support the configured external local export write.',
+        };
+    }
+    return {
+        label: status.blocked_reason || 'external_local_export_not_ready',
+        pill: 'blocked',
+        message: 'The read-only status surface is waiting on server-owned local outbox authority.',
+    };
+}
+
+function externalLocalExportLifecycle(status) {
+    return status?.lifecycle_status_surface || {};
+}
+
+function externalLocalExportHistoryRows(status) {
+    const lifecycle = externalLocalExportLifecycle(status);
+    if (Array.isArray(lifecycle.external_local_export_history)) return lifecycle.external_local_export_history;
+    if (Array.isArray(status?.external_local_export_history)) return status.external_local_export_history;
+    return [];
+}
+
+function externalLocalExportAuditRows(status) {
+    const lifecycle = externalLocalExportLifecycle(status);
+    if (Array.isArray(lifecycle.audit_event_history)) return lifecycle.audit_event_history;
+    if (Array.isArray(status?.audit_event_history)) return status.audit_event_history;
+    return [];
+}
+
+function externalLocalExportFailureRows(status) {
+    const lifecycle = externalLocalExportLifecycle(status);
+    if (Array.isArray(lifecycle.failure_state_projection)) return lifecycle.failure_state_projection;
+    if (Array.isArray(status?.failure_state_projection)) return status.failure_state_projection;
+    return [];
+}
+
+function renderExternalLocalExportHistory(status) {
+    const history = externalLocalExportHistoryRows(status);
+    if (!history.length) {
+        return '<li>history: none</li>';
+    }
+    return history.slice(0, 4).map((row) => (
+        `<li><code>${escapeHtml(row.external_local_export_receipt_id || 'pending')}</code>: ${escapeHtml(row.external_local_export_state || 'unknown')} / <code>${escapeHtml(row.authority_basis_hash || 'no-authority-hash')}</code></li>`
+    )).join('');
+}
+
+function renderExternalLocalExportAuditHistory(status) {
+    const audit = externalLocalExportAuditRows(status);
+    if (!audit.length) {
+        return '<li>audit: none</li>';
+    }
+    return audit.slice(0, 4).map((row) => (
+        `<li><code>${escapeHtml(row.external_local_export_audit_event_id || 'pending')}</code>: ${escapeHtml(row.event_type || 'event')} / ${escapeHtml(row.reason_code || row.event_status || 'status-only')}</li>`
+    )).join('');
+}
+
+function renderExternalLocalExportFailureProjection(status) {
+    const rows = externalLocalExportFailureRows(status);
+    if (!rows.length) {
+        return '<li>guardrails: unavailable</li>';
+    }
+    return rows.slice(0, 10).map((row) => (
+        `<li>${escapeHtml(row.case)}: ${escapeHtml(row.projected_error_code || row.operator_status || 'status-only')}</li>`
+    )).join('');
+}
+
+function renderExternalLocalExportStatusPanel() {
+    const status = externalLocalExportStatusState() || {};
+    const panelState = externalLocalExportPanelState();
+    const lifecycle = externalLocalExportLifecycle(status);
+    const idempotency = status.idempotency_policy || lifecycle.idempotency_policy || {};
+    const retry = status.retry_policy || lifecycle.retry_policy || {};
+    const downstream = status.downstream_unavailable || [
+        'real_connector_invocation',
+        'connector_run_creation',
+        'connector_run_target_creation',
+        'credentials',
+        'network_egress',
+        'provider_public_delivery_use',
+        'raw_public_url_exposure',
+        'raw_token_exposure',
+        'caller_supplied_destination_path_or_url',
+        'package_mutation_reconstruction',
+        'source_expansion_ingestion',
+        'rag_vector_behavior',
+        'qualitative_hybrid_analysis_runtime',
+        'auth_security_broadening',
+        'full_mockup_activation',
+        'frontend_durable_authority',
+        'generic_downstream_dispatch',
+    ];
+    elements.externalLocalExportPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>External Local Export</strong>
+                <ul>
+                    ${fieldItem('rendered mode', EXTERNAL_LOCAL_EXPORT_STATUS_SURFACE_MODE)}
+                    ${fieldItem('use case', EXTERNAL_LOCAL_EXPORT_STATUS_USE_CASE)}
+                    ${fieldItem('response authority', EXTERNAL_LOCAL_EXPORT_STATUS_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('schema', status.schema_id)}
+                    ${fieldItem('state', externalLocalExportStateName(status))}
+                    ${fieldItem('available', status.available)}
+                    ${fieldItem('blocked reason', status.blocked_reason)}
+                    ${fieldItem('history count', status.external_local_export_history_count ?? lifecycle.history_count)}
+                    ${fieldItem('audit count', status.audit_event_history_count ?? lifecycle.audit_event_history_count)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Chain</strong>
+                <ul>
+                    ${fieldItem('session', status.session_id || currentSessionId(), { code: true })}
+                    ${fieldItem('pass run', status.pass_run_id || selectedResultAuthority().passRunId, { code: true })}
+                    ${fieldItem('reconciliation', status.reconciliation_record_id, { code: true })}
+                    ${fieldItem('connector record', status.connector_dispatch_record_ref, { code: true })}
+                    ${fieldItem('local receipt', status.connector_local_destination_receipt_id, { code: true })}
+                    ${fieldItem('outbox target receipt', status.server_owned_local_outbox_target_receipt_id, { code: true })}
+                    ${fieldItem('outbox write receipt', status.server_owned_local_outbox_write_receipt_id, { code: true })}
+                    ${fieldItem('provider-private receipt', status.provider_private_handoff_receipt_id, { code: true })}
+                    ${fieldItem('external readiness', status.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('authority hash', status.authority_basis_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Export Receipt</strong>
+                <ul>
+                    ${fieldItem('receipt id', status.external_local_export_receipt_id, { code: true })}
+                    ${fieldItem('target', status.target_identity || 'server_configured_external_local_export_directory')}
+                    ${fieldItem('target class', status.target_class || 'server_configured_external_destination_write')}
+                    ${fieldItem('mode', status.dispatch_mode || 'server_configured_external_local_export_directory_write')}
+                    ${fieldItem('decision', status.operator_decision || 'write_server_configured_external_local_export_directory')}
+                    ${fieldItem('destination label', status.redacted_destination_label)}
+                    ${fieldItem('artifact ref', status.external_artifact_ref, { code: true })}
+                    ${fieldItem('manifest ref', status.external_manifest_ref, { code: true })}
+                    ${fieldItem('artifact hash', status.external_artifact_hash, { code: true })}
+                    ${fieldItem('artifact size bytes', status.external_artifact_size_bytes)}
+                    ${fieldItem('redacted source', status.source_outbox_artifact_ref, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Lifecycle Policy</strong>
+                <ul>
+                    ${fieldItem('history authority', lifecycle.history_listing_authority)}
+                    ${fieldItem('audit authority', lifecycle.audit_trail_authority)}
+                    ${fieldItem('same key replay', idempotency.same_key_same_payload_replay)}
+                    ${fieldItem('same key conflict', idempotency.same_key_different_payload_conflict)}
+                    ${fieldItem('same basis new key', idempotency.same_basis_different_client_request_id)}
+                    ${fieldItem('duplicate target conflict', idempotency.duplicate_target_conflicting_output)}
+                    ${fieldItem('retry fields', retry.retry_fields_admitted === false ? 'blocked' : retry.retry_fields_admitted)}
+                    ${fieldItem('replay semantics', retry.replay_semantics)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Export History</strong>
+                <ul>
+                    ${renderExternalLocalExportHistory(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Audit History</strong>
+                <ul>
+                    ${renderExternalLocalExportAuditHistory(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Guardrail Projection</strong>
+                <ul>
+                    ${renderExternalLocalExportFailureProjection(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Boundary Status</strong>
+                <ul>
+                    ${fieldItem('selected external local export write', status.server_configured_external_local_export_write_performed === true ? 'performed' : status.server_configured_external_local_export_write_enabled === true ? 'ready' : 'blocked')}
+                    ${fieldItem('operator path authority', status.operator_destination_path_enabled === false ? 'blocked' : status.operator_destination_path_enabled)}
+                    ${fieldItem('real connector invocation', status.real_connector_invocation_enabled === false ? 'blocked' : status.real_connector_invocation_enabled)}
+                    ${fieldItem('connector run created', status.connector_run_created === false ? 'blocked' : status.connector_run_created)}
+                    ${fieldItem('connector target created', status.connector_run_target_created === false ? 'blocked' : status.connector_run_target_created)}
+                    ${fieldItem('credentials', status.credentials_enabled === false ? 'blocked' : status.credentials_enabled)}
+                    ${fieldItem('network egress', status.network_egress_enabled === false ? 'blocked' : status.network_egress_enabled)}
+                    ${fieldItem('provider public delivery/use', status.provider_public_delivery_enabled === false ? 'blocked' : status.provider_public_delivery_enabled)}
+                    ${fieldItem('raw public URL', status.raw_public_url_exposed === false ? 'blocked' : status.raw_public_url_exposed)}
+                    ${fieldItem('raw token', status.raw_token_exposed === false ? 'blocked' : status.raw_token_exposed)}
+                    ${fieldItem('package mutation', status.package_mutation_enabled === false ? 'blocked' : status.package_mutation_enabled)}
+                    ${fieldItem('source expansion', status.source_expansion_enabled === false ? 'blocked' : status.source_expansion_enabled)}
+                    ${fieldItem('RAG/vector', status.rag_vector_enabled === false ? 'blocked' : status.rag_vector_enabled)}
+                    ${fieldItem('frontend durable authority', status.frontend_durable_authority_enabled === false ? 'blocked' : status.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Still Disabled</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -6611,6 +6836,7 @@ function renderAll() {
     renderServerOwnedLocalOutboxTargetStatusPanel();
     renderServerOwnedLocalOutboxWriteStatusPanel();
     renderLocalOutboxProviderPrivateHandoffStatusPanel();
+    renderExternalLocalExportStatusPanel();
     renderProviderPrivateSignedUrlPanel();
     renderProviderPublicUrlPanel();
     setGateControls();
