@@ -1515,6 +1515,10 @@ LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_DOC = (
     PLANNING_DOCS
     / "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md"
 )
+LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_CURRENT_MAIN_SYNC_DOC = (
+    PLANNING_DOCS
+    / "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_TARGET_SELECTION_VALIDATOR_CLI = ROOT / "tools" / "l3-target-selection-validate.py"
 LAYER3_TARGET_SELECTION_VALIDATOR_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_target_selection_validate.py"
@@ -49800,6 +49804,32 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_DOC)} missing local-outbox provider-private rendered E2E proof term: {term}"
             )
 
+    local_outbox_provider_private_rendered_e2e_sync_doc_text = _read_required_text(
+        LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_CURRENT_MAIN_SYNC_DOC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `local_outbox_provider_private_rendered_e2e`.",
+        "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+        "Proof doc: `619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md`.",
+        "Proof PR: `#1223`.",
+        "Proof merge commit: `47fff614513530b71b897166eff0008152424065`.",
+        "Current-main checkpoint: `47fff614513530b71b897166eff0008152424065`.",
+        "Selection complete: false.",
+        "GitHub `backend-layer3-api` passed in `2m34s`.",
+        "GitHub `test` passed in `3m5s`.",
+        "PR reviewThreads totalCount was `0`.",
+        "Post-merge `python .\\tools\\l3-progress-check.py` passed.",
+        "Post-merge `python .\\tools\\l3-target-selection-validate.py --expect pending` passed.",
+        "Current-main result: `current_main_synced_local_outbox_provider_private_rendered_e2e`.",
+        "The active Layer 3 objective is not complete under current-main authority.",
+        "The next whole-project posture is `await_operator_target_selection_after_local_outbox_provider_private_rendered_e2e_sync`.",
+    ):
+        if term not in local_outbox_provider_private_rendered_e2e_sync_doc_text:
+            errors.append(
+                f"{_rel(LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_RENDERED_E2E_CURRENT_MAIN_SYNC_DOC)} missing local-outbox provider-private rendered E2E sync term: {term}"
+            )
+
     local_outbox_provider_private_rendered_e2e_text = _read_required_text(
         LAYER3_WORKBENCH_E2E, errors
     )
@@ -49828,13 +49858,16 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "2026-05-16 target-selection structured record validator",
             "2026-05-16 target-selection validator CLI",
             "2026-05-16 local-outbox provider-private rendered E2E proof",
+            "2026-05-16 local-outbox provider-private rendered E2E current-main sync",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
+            "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1218",
+            "#1223",
             "tools/l3-progress-check.py",
             "tools/l3-target-selection-validate.py",
             "e2e/layer3-workbench.spec.js",
@@ -49847,19 +49880,23 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "target_selection_structured_record_validator",
             "target_selection_validator_cli",
             "local_outbox_provider_private_rendered_e2e",
+            "local_outbox_provider_private_rendered_e2e_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
+            "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
             "codex/l3-target-selection-guard",
             "codex/l3-target-selection-field-contract",
             "codex/l3-target-selection-record-validator",
             "codex/l3-target-selection-cli",
             "codex/l3-local-outbox-provider-private-e2e",
+            "codex/l3-local-outbox-provider-private-sync",
             "e2e/layer3-workbench.spec.js",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
+            "47fff614513530b71b897166eff0008152424065",
             "selection_complete false",
         ),
         PROOF_MANIFEST: (
@@ -49869,16 +49906,20 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "latest_target_selection_structured_record_validator",
             "latest_target_selection_validator_cli",
             "latest_local_outbox_provider_private_rendered_e2e",
+            "latest_local_outbox_provider_private_rendered_e2e_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
             "619_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_PROOF.md",
+            "620_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
             "validate-only progress guard",
             "does not select a target",
             "local_outbox_provider_private_rendered_e2e_proof",
+            "local_outbox_provider_private_rendered_e2e_current_main_sync_proof",
             "codex/l3-local-outbox-provider-private-e2e",
+            "codex/l3-local-outbox-provider-private-sync",
         ),
     }.items():
         path_text = _read_required_text(path, errors)
