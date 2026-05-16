@@ -1483,6 +1483,9 @@ LAYER3_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE = (
 LAYER3_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE = (
+    PLANNING_DOCS / "602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -49213,6 +49216,117 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing real target missing-decision sync term: {term}"
+                )
+
+    local_receipt_lifecycle_hardening_text = _read_required_text(
+        LAYER3_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `freeze_layer3_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync`.",
+        "602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md",
+        "f2515593d7fcd911b2e9ae20dceb826969d54526",
+        "601_REAL_TARGET_MISSING_DECISION_CURRENT_MAIN_SYNC.md",
+        "implement_layer3_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+        "connector_local_destination_receipt_runtime",
+        "internal_fake_local_destination_receipt_lifecycle_hardening",
+        "implementation_entry_prepared",
+        "partially_implemented_existing_local_receipt_runtime",
+        "read-only receipt lifecycle/history/listing projection",
+        "failure states for unavailable, ready, recorded, stale-authority, wrong-session, wrong-artifact, wrong-basis",
+        "same `client_request_id` plus same authority basis returns the existing row",
+        "same `client_request_id` plus different authority basis fails closed",
+        "wrong artifact/session/basis",
+        "duplicate `client_request_id`",
+        "same-key/same-payload replay",
+        "same-key/different-payload conflict",
+        "same-basis/new-key conflict",
+        "stale delivery authority",
+        "headed and headless browser proof",
+        "This freeze admits no real connector invocation",
+        "destination write",
+        "connector-run creation",
+        "provider-public delivery/use",
+        "package mutation/reconstruction",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior change",
+        "full mockup activation",
+        "frontend-durable authority",
+        "await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze",
+    ):
+        if term not in local_receipt_lifecycle_hardening_text:
+            errors.append(
+                f"{_rel(LAYER3_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE)} missing local receipt lifecycle-hardening term: {term}"
+            )
+
+    local_receipt_lifecycle_hardening_sources = {
+        BOARD: (
+            "## Layer 3 Local Receipt Lifecycle Hardening Freeze",
+            "602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md",
+            "f2515593d7fcd911b2e9ae20dceb826969d54526",
+            "implement_layer3_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+            "connector_local_destination_receipt_runtime",
+            "internal_fake_local_destination_receipt_lifecycle_hardening",
+            "implementation_entry_prepared",
+            "partially_implemented_existing_local_receipt_runtime",
+            "read-only receipt lifecycle/history/listing",
+            "failure-state projection",
+            "idempotency/retry clarity",
+            "headed/headless rendered E2E proof",
+            "real connector invocation",
+            "destination writes",
+            "connector-run creation",
+            "provider-public delivery/use",
+            "frontend-only durable authority",
+            "await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze",
+        ),
+        MANIFEST: (
+            "layer3_local_receipt_lifecycle_hardening_freeze",
+            '"status": "planning_control_freeze"',
+            "codex/l3-local-receipt-lifecycle-plan",
+            "602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md",
+            "f2515593d7fcd911b2e9ae20dceb826969d54526",
+            "implement_layer3_local_receipt_lifecycle_hardening_after_real_target_missing_decision_sync",
+            "connector_local_destination_receipt_runtime",
+            "internal_fake_local_destination_receipt_lifecycle_hardening",
+            '"implementation_entry_allowed_next": true',
+            "wrong_artifact",
+            "same_key_different_payload_conflict",
+            "stale_delivery_authority",
+            "real_connector_invocation",
+            "destination_write",
+            "connector_run_creation",
+            '"live_behavior_change": false',
+            '"runtime_behavior_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_local_receipt_lifecycle_hardening_freeze_proof",
+            '"status": "planning_control_freeze"',
+            "codex/l3-local-receipt-lifecycle-plan",
+            "602_LOCAL_RECEIPT_LIFECYCLE_HARDENING_FREEZE.md",
+            "f2515593d7fcd911b2e9ae20dceb826969d54526",
+            "read-only receipt lifecycle/history/listing",
+            "failure-state projection",
+            "idempotency/retry clarity",
+            "same-key/different-payload conflict",
+            "headed/headless rendered E2E proof",
+            "no real connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no provider-public delivery/use",
+            "no frontend-only durable authority",
+            "await_layer3_local_receipt_lifecycle_hardening_implementation_after_freeze",
+        ),
+    }
+    for path, terms in local_receipt_lifecycle_hardening_sources.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing local receipt lifecycle-hardening term: {term}"
                 )
 
 
