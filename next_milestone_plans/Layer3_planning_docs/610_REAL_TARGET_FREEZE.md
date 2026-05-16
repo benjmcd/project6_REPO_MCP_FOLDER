@@ -2,17 +2,23 @@
 
 ## Status
 
-Status: implementation-entry freeze for `server_owned_local_outbox_provider_private_handoff_target_after_local_outbox_write`.
+Status: implemented and merged on current main for `server_owned_local_outbox_provider_private_handoff_target_after_local_outbox_write`.
 
 Doc: `610_REAL_TARGET_FREEZE.md`.
 
-Current-main checkpoint: `e813759ee4c9346d5bb7fefe737c7c046fc55644`.
+Pre-implementation current-main checkpoint: `e813759ee4c9346d5bb7fefe737c7c046fc55644`.
+
+Implemented feature commit: `d44cd7dc2a5d5f848b2d794f8cdac697e8c94dde`.
+
+Merged current-main checkpoint: `3eb68cdd4c6e6b2582515ef9f76b62b22d3deb5e`.
+
+Merged PR: `#1207`.
 
 Prior decision packet: `609_REAL_CONNECTOR_DESTINATION_DECISION_PACKET_AFTER_LOCAL_OUTBOX_WRITE.md`.
 
 Runtime status before implementation: `server_owned_local_outbox_write_implemented_and_reaudited_on_current_main`.
 
-Implementation-entry allowed next: true, but only for the fake-provider prepare/status slice defined here.
+Implementation-entry result: fake-provider prepare/status slice implemented and merged; further real-provider, destination-write, provider-public, raw-token, package, source-expansion, RAG/vector, auth/security, rendered-write-control, full-mockup, and frontend-durable authority remains blocked unless separately frozen and admitted.
 
 ## Selected Target
 
@@ -256,9 +262,9 @@ Stop before implementation if the next pass:
 
 The next whole-project posture is `implement_local_outbox_provider_private_handoff_prepare_status_after_freeze`.
 
-## Branch-Local Implementation Status
+## Current-Main Implementation Status
 
-Current branch status: `local_outbox_provider_private_handoff_prepare_status_implemented_pending_landing`.
+Current main status: `local_outbox_provider_private_handoff_prepare_status_implemented_merged`.
 
 Implemented first-slice surfaces:
 
@@ -269,7 +275,7 @@ Implemented first-slice surfaces:
 - read-only status API `GET /api/v1/layer3/handoff/connector/local-outbox/provider-private/status/{provider_private_handoff_receipt_id}`; and
 - OpenAPI and targeted backend proof in `backend/tests/test_layer3_api.py`.
 
-Branch-local proof already exercised:
+Merged proof already exercised:
 
 - prepare success from an existing server-owned local outbox write receipt;
 - read-only status success from durable handoff state;
@@ -300,4 +306,4 @@ Still not admitted by this implementation:
 - full mockup activation; and
 - frontend-durable authority.
 
-Next whole-project pass after this branch lands: choose between adding a read-only session-summary/history projection for this handoff receipt or freezing a named real provider/destination target. The default next pass should be the read-only projection unless current-main authority proves it already exists or a named external target freeze has been separately admitted.
+Next whole-project pass after this merge: choose between adding a read-only session-summary/history projection for this handoff receipt or freezing a named real provider/destination target. The default next pass should be the read-only projection unless current-main authority proves it already exists or a named external target freeze has been separately admitted.
