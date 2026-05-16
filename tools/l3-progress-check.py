@@ -1477,6 +1477,9 @@ LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE = (
 LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "599_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE = (
+    PLANNING_DOCS / "600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -49027,6 +49030,94 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
             if term not in path_text:
                 errors.append(
                     f"{_rel(path)} missing local receipt E2E smoke sync term: {term}"
+                )
+
+    real_target_missing_decision_text = _read_required_text(
+        LAYER3_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE,
+        errors,
+    )
+    for term in (
+        "Status: missing-decision packet for `confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target`.",
+        "600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md",
+        "d73fe78c372f1237196ce7124e217f9366922e8c",
+        "599_LOCAL_RECEIPT_E2E_SMOKE_CURRENT_MAIN_SYNC.md",
+        "recordRenderedConnectorLocalReceiptSmoke",
+        "connector_local_destination_receipt_recorded",
+        "durable_connector_local_destination_receipt_row",
+        "exactly one real connector or destination target",
+        "selected dispatch mode",
+        "credential/access model",
+        "lifecycle semantics, including retry, timeout, cancel, replay, and idempotency behavior",
+        "receipt/audit contract",
+        "fake-target or fake-connector test architecture",
+        "leak controls and response redaction requirements",
+        "rendered-control obligations",
+        "auth/security posture tied to the admitted external surface",
+        "Decision result: `no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync`",
+        "Implementation-entry freeze written: false",
+        "Runtime status: `not_implemented`",
+        "Selected implementation action: `none`",
+        "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision",
+    ):
+        if term not in real_target_missing_decision_text:
+            errors.append(
+                f"{_rel(LAYER3_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE)} missing real target missing-decision term: {term}"
+            )
+
+    real_target_missing_decision_sources = {
+        BOARD: (
+            "## Layer 3 Real Target Missing Decision After Local Receipt Smoke",
+            "600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md",
+            "d73fe78c372f1237196ce7124e217f9366922e8c",
+            "recordRenderedConnectorLocalReceiptSmoke",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync",
+            "Implementation-entry freeze written remains false",
+            "runtime status remains `not_implemented`",
+            "selected implementation action remains `none`",
+            "No real connector target",
+            "no real destination target",
+            "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision",
+        ),
+        MANIFEST: (
+            "layer3_real_target_missing_decision_after_local_receipt_smoke",
+            '"status": "missing_decision_packet"',
+            "codex/l3-real-target-missing-decision",
+            "600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md",
+            "d73fe78c372f1237196ce7124e217f9366922e8c",
+            "confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync",
+            '"implementation_entry_freeze_written": false',
+            '"runtime_status": "not_implemented"',
+            '"selected_implementation_action": "none"',
+            '"connector_provider_destination_dispatch_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_real_target_missing_decision_after_local_receipt_smoke_proof",
+            '"status": "missing_decision_packet"',
+            "codex/l3-real-target-missing-decision",
+            "600_REAL_TARGET_MISSING_DECISION_AFTER_LOCAL_RECEIPT_SMOKE.md",
+            "no_runtime_now_connector_destination_real_target_authority_absent_after_local_receipt_smoke_sync",
+            "implementation-entry freeze written remains false",
+            "runtime status remains not_implemented",
+            "selected implementation action remains none",
+            "exactly one real connector or destination target",
+            "credential/access model",
+            "auth/security posture tied to admitted external surface",
+            "no external connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no frontend-only durable authority",
+            "await_local_receipt_lifecycle_hardening_after_real_target_missing_decision",
+        ),
+    }
+    for path, terms in real_target_missing_decision_sources.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing real target missing-decision term: {term}"
                 )
 
 
