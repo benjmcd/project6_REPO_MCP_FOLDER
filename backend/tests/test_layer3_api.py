@@ -35,6 +35,8 @@ from app.models.models import (
     L3AnalysisSet,
     L3AnalysisUnit,
     L3ConnectorLocalDestinationReceipt,
+    L3ExternalLocalExportAuditEvent,
+    L3ExternalLocalExportReceipt,
     L3GateBIdempotencyKey,
     L3LocalOutboxProviderPrivateHandoffAuditEvent,
     L3LocalOutboxProviderPrivateHandoffReceipt,
@@ -65,6 +67,7 @@ from app.services import (
     dataframe_io,
     layer3_connector_dispatch_entry,
     layer3_connector_local_destination_receipt,
+    layer3_external_local_export,
     layer3_package_mutation_entry,
     layer3_package_supersession_commit,
     layer3_pass_entry as layer3_pass_entry_module,
@@ -119,6 +122,7 @@ def _settings_for_test(**values):
 def client(tmp_path, monkeypatch):
     storage_dir = tmp_path / "storage"
     monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(tmp_path / "external-local-export"))
     bootstrap_storage_tree(storage_dir)
     engine = create_engine(
         "sqlite:///:memory:",
@@ -421,6 +425,7 @@ def test_layer3_forbidden_sentinel_openapi_fields_are_impossible(client: TestCli
         ("/api/v1/layer3/handoff/connector/local-destination/receipt", "destination_url"),
         ("/api/v1/layer3/handoff/connector/local-outbox/fake-target", "destination_path"),
         ("/api/v1/layer3/handoff/connector/local-outbox/write", "destination_path"),
+        ("/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write", "destination_path"),
     } <= seen
 
 
@@ -4089,6 +4094,44 @@ def _local_outbox_provider_private_handoff_payload(
     }
 
 
+def _external_local_export_payload(
+    *,
+    request_id: str,
+    session_id: str,
+    approval_body: dict,
+    selection_body: dict,
+    commit_body: dict,
+    connector_body: dict,
+    local_receipt_body: dict,
+    target_body: dict,
+    write_body: dict,
+    readiness_body: dict,
+    provider_private_body: dict | None = None,
+) -> dict:
+    payload = {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "connector_dispatch_record_ref": connector_body["connector_dispatch_record_ref"],
+        "connector_local_destination_receipt_id": local_receipt_body["connector_local_destination_receipt_id"],
+        "server_owned_local_outbox_target_receipt_id": (
+            target_body["server_owned_local_outbox_target_receipt_id"]
+        ),
+        "server_owned_local_outbox_write_receipt_id": write_body["server_owned_local_outbox_write_receipt_id"],
+        "external_export_download_record_ref": readiness_body["external_export_download_record_ref"],
+        "target_identity": "server_configured_external_local_export_directory",
+        "dispatch_mode": "server_configured_external_local_export_directory_write",
+        "operator_decision": "write_server_configured_external_local_export_directory",
+    }
+    if provider_private_body is not None:
+        payload["provider_private_handoff_receipt_id"] = provider_private_body[
+            "provider_private_handoff_receipt_id"
+        ]
+    return payload
+
+
 def _prepare_cohort_connector_dispatch_record(
     client: TestClient,
     tmp_path,
@@ -4400,11 +4443,20 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
         "/api/v1/layer3/handoff/connector/local-outbox/provider-private/status/"
         "{provider_private_handoff_receipt_id}"
     )
+    external_local_export_write_path = (
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write"
+    )
+    external_local_export_status_path = (
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/status/"
+        "{external_local_export_receipt_id}"
+    )
     assert prepare_path in spec["paths"]
     assert status_path in spec["paths"]
     assert revoke_path in spec["paths"]
     assert local_outbox_prepare_path in spec["paths"]
     assert local_outbox_status_path in spec["paths"]
+    assert external_local_export_write_path in spec["paths"]
+    assert external_local_export_status_path in spec["paths"]
     assert "/api/v1/layer3/handoff/export/download/provider-private-signed-url/use" not in spec["paths"]
 
     prepare_schema = spec["paths"][prepare_path]["post"]["requestBody"]["content"]["application/json"]["schema"]
@@ -4524,6 +4576,55 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
     )
     assert _openapi_response_schema(spec, local_outbox_status_path, "get")["title"] == (
         "Layer3LocalOutboxProviderPrivateHandoffResponse"
+    )
+    external_local_export_write_schema = spec["paths"][external_local_export_write_path]["post"]["requestBody"][
+        "content"
+    ]["application/json"]["schema"]
+    assert external_local_export_write_schema["additionalProperties"] is False
+    assert set(external_local_export_write_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "server_owned_local_outbox_target_receipt_id",
+        "server_owned_local_outbox_write_receipt_id",
+        "external_export_download_record_ref",
+        "target_identity",
+        "dispatch_mode",
+        "operator_decision",
+    }
+    assert external_local_export_write_schema["properties"]["target_identity"]["enum"] == [
+        "server_configured_external_local_export_directory"
+    ]
+    assert external_local_export_write_schema["properties"]["dispatch_mode"]["enum"] == [
+        "server_configured_external_local_export_directory_write"
+    ]
+    assert external_local_export_write_schema["properties"]["operator_decision"]["enum"] == [
+        "write_server_configured_external_local_export_directory"
+    ]
+    for forbidden in (
+        "destination_path",
+        "destination_url",
+        "credentials",
+        "connector_run_id",
+        "connector_run_target_id",
+        "provider_public_url",
+        "package_payload",
+        "source_expansion",
+        "rag_vector_index",
+        "auth_policy",
+        "frontend_durable_authority",
+        "full_mockup_activation",
+    ):
+        assert external_local_export_write_schema["properties"][forbidden]["not"] == {}
+    assert _openapi_response_schema(spec, external_local_export_write_path, "post")["title"] == (
+        "Layer3ExternalLocalExportResponse"
+    )
+    assert _openapi_response_schema(spec, external_local_export_status_path, "get")["title"] == (
+        "Layer3ExternalLocalExportResponse"
     )
     same_origin_prepare_schema = spec["paths"]["/api/v1/layer3/handoff/export/download/prepare"]["post"][
         "requestBody"
@@ -14652,6 +14753,568 @@ def test_layer3_api_local_outbox_provider_private_handoff_lifecycle_guardrails_f
     try:
         assert db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count() == 0
         assert db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_external_local_export_write_status_and_idempotency(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+        write_body,
+    ) = _prepare_server_owned_local_outbox_write(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-external-local-export-success",
+    )
+    provider_payload = _local_outbox_provider_private_handoff_payload(
+        request_id="api-external-local-export-provider-private",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+    provider_private = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json=provider_payload,
+    )
+    assert provider_private.status_code == 200, provider_private.json()
+    provider_private_body = provider_private.json()
+    payload = _external_local_export_payload(
+        request_id="api-external-local-export-write",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+        provider_private_body=provider_private_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
+            "external_receipts": db.query(L3ExternalLocalExportReceipt).count(),
+            "external_audit_events": db.query(L3ExternalLocalExportAuditEvent).count(),
+            "packages": db.query(L3OutputPackage).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+    finally:
+        db.close()
+
+    write = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json=payload,
+    )
+    assert write.status_code == 200, write.json()
+    body = write.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.external_local_export.write.v1"
+    assert body["status"] == "written"
+    assert body["external_local_export_state"] == "external_local_export_written"
+    assert body["export_operation_state"] == "external_local_export_written"
+    assert body["server_owned_local_outbox_write_receipt_id"] == write_body[
+        "server_owned_local_outbox_write_receipt_id"
+    ]
+    assert body["provider_private_handoff_receipt_id"] == provider_private_body[
+        "provider_private_handoff_receipt_id"
+    ]
+    assert body["target_identity"] == "server_configured_external_local_export_directory"
+    assert body["target_class"] == "server_configured_external_destination_write"
+    assert body["dispatch_mode"] == "server_configured_external_local_export_directory_write"
+    assert body["redacted_destination_label"] == "server_configured_external_local_export_directory"
+    assert body["external_artifact_ref"].startswith(
+        f"external-local-export://{body['external_local_export_receipt_id']}/"
+    )
+    assert body["external_manifest_ref"].startswith(
+        f"external-local-export://{body['external_local_export_receipt_id']}/"
+    )
+    assert body["external_artifact_hash"] == write_body["outbox_artifact_hash"]
+    assert body["external_artifact_size_bytes"] == write_body["outbox_artifact_size_bytes"]
+    assert body["source_outbox_artifact_ref"].startswith("external-local-export://")
+    assert body["source_outbox_artifact_hash"] == write_body["outbox_artifact_hash"]
+    assert body["server_configured_external_local_export_write_enabled"] is True
+    assert body["server_configured_external_local_export_write_performed"] is True
+    assert body["external_destination_write_enabled"] is True
+    assert body["operator_destination_path_enabled"] is False
+    assert body["real_connector_invocation_enabled"] is False
+    assert body["connector_run_created"] is False
+    assert body["connector_run_target_created"] is False
+    assert body["credentials_enabled"] is False
+    assert body["network_egress_enabled"] is False
+    assert body["provider_public_delivery_enabled"] is False
+    assert body["raw_public_url_exposed"] is False
+    assert body["raw_token_exposed"] is False
+    assert body["package_mutation_enabled"] is False
+    assert body["source_expansion_enabled"] is False
+    assert body["rag_vector_enabled"] is False
+    assert body["qualitative_hybrid_analysis_runtime_enabled"] is False
+    assert body["auth_security_implementation_enabled"] is False
+    assert body["full_mockup_activation_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["generic_downstream_dispatch_enabled"] is False
+    response_text = json.dumps(body, sort_keys=True)
+    assert str(Path(settings.storage_dir)) not in response_text
+    assert str(Path(settings.layer3_external_local_export_dir)) not in response_text
+    assert readiness_body["source_artifact_ref"] not in response_text
+    for forbidden_key in (
+        "destination_path",
+        "destination_url",
+        "connector_run_id",
+        "connector_run_target_id",
+        "credentials",
+        "provider_public_url",
+        "public_url",
+        "package_payload",
+        "source_expansion",
+        "rag_vector_index",
+        "frontend_durable_authority",
+    ):
+        assert forbidden_key not in body
+
+    status = client.get(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/status/"
+        f"{body['external_local_export_receipt_id']}"
+    )
+    assert status.status_code == 200, status.json()
+    status_body = status.json()
+    assert status_body["schema_id"] == "layer3.external_local_export.status.v1"
+    assert status_body["status"] == "ok"
+    assert status_body["external_local_export_receipt_id"] == body["external_local_export_receipt_id"]
+    assert status_body["external_local_export_state"] == "external_local_export_written"
+    assert str(Path(settings.layer3_external_local_export_dir)) not in json.dumps(status_body, sort_keys=True)
+
+    external_root = Path(settings.layer3_external_local_export_dir).resolve()
+    artifact_path = external_root / body["external_local_export_receipt_id"] / "artifact.json"
+    manifest_path = external_root / body["external_local_export_receipt_id"] / "manifest.json"
+    artifact_path.resolve().relative_to(external_root)
+    manifest_path.resolve().relative_to(external_root)
+    with pytest.raises(ValueError):
+        artifact_path.resolve().relative_to(Path(settings.storage_dir).resolve())
+    with pytest.raises(ValueError):
+        artifact_path.resolve().relative_to(Path(settings.layer3_local_outbox_dir).resolve())
+    assert artifact_path.exists()
+    assert manifest_path.exists()
+    assert hashlib.sha256(artifact_path.read_bytes()).hexdigest() == write_body["outbox_artifact_hash"]
+    assert artifact_path.stat().st_size == write_body["outbox_artifact_size_bytes"]
+    assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == body["external_manifest_hash"]
+    assert manifest_path.stat().st_size == body["external_manifest_size_bytes"]
+
+    summary_response = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary_response.status_code == 200
+    export_status = summary_response.json()["external_local_export"]
+    assert export_status["schema_id"] == "layer3.external_local_export.status.v1"
+    assert export_status["state"] == "external_local_export_written"
+    assert export_status["external_local_export_receipt_id"] == body["external_local_export_receipt_id"]
+    assert export_status["server_owned_local_outbox_write_receipt_id"] == write_body[
+        "server_owned_local_outbox_write_receipt_id"
+    ]
+    assert export_status["provider_private_handoff_receipt_id"] == provider_private_body[
+        "provider_private_handoff_receipt_id"
+    ]
+    assert export_status["external_local_export_history_count"] == 1
+    assert export_status["audit_event_history_count"] == 1
+    assert export_status["lifecycle_status_surface"]["surface_mode"] == (
+        "read_only_external_local_export_status_history"
+    )
+    assert export_status["latest_external_local_export_receipt"]["authority_basis_hash"] == (
+        body["authority_basis_hash"]
+    )
+    assert export_status["latest_audit_event"]["reason_code"] == (
+        "written_after_local_outbox_authority_validation"
+    )
+    assert export_status["idempotency_policy"]["same_basis_different_client_request_id"] == (
+        "return_existing_status"
+    )
+    export_status_text = json.dumps(export_status, sort_keys=True)
+    assert str(Path(settings.storage_dir)) not in export_status_text
+    assert str(Path(settings.layer3_external_local_export_dir)) not in export_status_text
+    assert readiness_body["source_artifact_ref"] not in export_status_text
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
+            "external_receipts": db.query(L3ExternalLocalExportReceipt).count(),
+            "external_audit_events": db.query(L3ExternalLocalExportAuditEvent).count(),
+            "packages": db.query(L3OutputPackage).count(),
+        } == {
+            **counts_before,
+            "external_receipts": counts_before["external_receipts"] + 1,
+            "external_audit_events": counts_before["external_audit_events"] + 1,
+        }
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        row = db.query(L3ExternalLocalExportReceipt).one()
+        assert row.external_local_export_receipt_id == body["external_local_export_receipt_id"]
+        assert row.authority_basis_hash == body["authority_basis_hash"]
+        assert row.authority_snapshot_json["record_source_gate"] == (
+            "626_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_FREEZE"
+        )
+        assert "destination_path" not in row.authority_snapshot_json
+        assert "source_artifact_ref" not in row.authority_snapshot_json
+    finally:
+        db.close()
+
+    replay = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json=payload,
+    )
+    assert replay.status_code == 200, replay.json()
+    replay_body = replay.json()
+    assert replay_body["status"] == "already_recorded"
+    assert replay_body["export_operation_state"] == "external_local_export_replay"
+    assert replay_body["external_local_export_receipt_id"] == body["external_local_export_receipt_id"]
+
+    same_basis_new_request = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json={**payload, "client_request_id": "api-external-local-export-new-request"},
+    )
+    assert same_basis_new_request.status_code == 200, same_basis_new_request.json()
+    assert same_basis_new_request.json()["status"] == "already_recorded"
+    assert same_basis_new_request.json()["external_local_export_receipt_id"] == (
+        body["external_local_export_receipt_id"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        provider_row = db.query(L3LocalOutboxProviderPrivateHandoffReceipt).filter(
+            L3LocalOutboxProviderPrivateHandoffReceipt.provider_private_handoff_receipt_id
+            == provider_private_body["provider_private_handoff_receipt_id"]
+        ).one()
+        provider_row.authority_basis_hash = "changed-provider-private-handoff-authority"
+        db.commit()
+    finally:
+        db.close()
+
+    conflict_response = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json=payload,
+    )
+    assert conflict_response.status_code == 409, conflict_response.json()
+    assert conflict_response.json()["error_code"] == "external_local_export_client_request_conflict"
+
+
+def test_layer3_api_external_local_export_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json={"client_request_id": "api-external-local-export-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) >= {
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "server_owned_local_outbox_target_receipt_id",
+        "server_owned_local_outbox_write_receipt_id",
+        "external_export_download_record_ref",
+        "target_identity",
+        "dispatch_mode",
+        "operator_decision",
+    }
+
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+        write_body,
+    ) = _prepare_server_owned_local_outbox_write(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-external-local-export-prechecks",
+    )
+    valid_payload = _external_local_export_payload(
+        request_id="api-external-local-export-prechecks-write",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+    cases = [
+        (
+            {**valid_payload, "destination_path": str(tmp_path / "caller-controlled")},
+            400,
+            "external_local_export_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "credentials": {"token": "secret"}},
+            400,
+            "external_local_export_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "connector_run_id": "connector-run-not-admitted"},
+            400,
+            "external_local_export_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "package_payload": {"mutate": True}},
+            400,
+            "external_local_export_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "source_expansion": {"add": "source"}},
+            400,
+            "external_local_export_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "rag_vector_index": "vector-index-not-admitted"},
+            400,
+            "external_local_export_scope_not_admitted",
+        ),
+        (
+            {**valid_payload, "dispatch_mode": "real_external_connector_write"},
+            400,
+            "external_local_export_dispatch_mode_not_admitted",
+        ),
+        (
+            {**valid_payload, "operator_decision": "dispatch_real_connector"},
+            400,
+            "unsupported_external_local_export_decision",
+        ),
+        (
+            {**valid_payload, "connector_dispatch_record_ref": "wrong-dispatch-record"},
+            409,
+            "external_local_export_connector_dispatch_record_ref_mismatch",
+        ),
+        (
+            {**valid_payload, "server_owned_local_outbox_write_receipt_id": "missing-write-receipt"},
+            409,
+            "external_local_export_requires_outbox_write",
+        ),
+    ]
+    for payload, expected_status, expected_error in cases:
+        response = client.post(
+            "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+            json=payload,
+        )
+        assert response.status_code == expected_status, response.json()
+        assert response.json()["error_code"] == expected_error
+        assert str(Path(settings.layer3_external_local_export_dir)) not in response.text
+
+    monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(Path(settings.storage_dir) / "bad-export"))
+    inside_storage = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json={**valid_payload, "client_request_id": "api-external-local-export-inside-storage"},
+    )
+    assert inside_storage.status_code == 409, inside_storage.json()
+    assert inside_storage.json()["error_code"] == "external_local_export_directory_inside_storage"
+    monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(tmp_path / "external-local-export"))
+
+    unavailable_target = tmp_path / "external-local-export-file"
+    unavailable_target.write_text("not a directory", encoding="utf-8")
+    monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(unavailable_target))
+    unavailable = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json={**valid_payload, "client_request_id": "api-external-local-export-unavailable-directory"},
+    )
+    assert unavailable.status_code == 409, unavailable.json()
+    assert unavailable.json()["error_code"] == "external_local_export_directory_unavailable"
+    assert str(unavailable_target) not in unavailable.text
+    monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(tmp_path / "external-local-export"))
+
+    provider_payload = _local_outbox_provider_private_handoff_payload(
+        request_id="api-external-local-export-prechecks-provider-private",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+    provider_private = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json=provider_payload,
+    )
+    assert provider_private.status_code == 200, provider_private.json()
+    missing_provider = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json={**valid_payload, "client_request_id": "api-external-local-export-missing-provider-private"},
+    )
+    assert missing_provider.status_code == 409, missing_provider.json()
+    assert missing_provider.json()["error_code"] == "external_local_export_requires_provider_private_handoff"
+
+    conflict_payload = _external_local_export_payload(
+        request_id="api-external-local-export-existing-output-conflict",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+        provider_private_body=provider_private.json(),
+    )
+    db = client.layer3_session_factory()
+    try:
+        write_row = db.query(L3ServerOwnedLocalOutboxWriteReceipt).filter(
+            L3ServerOwnedLocalOutboxWriteReceipt.server_owned_local_outbox_write_receipt_id
+            == write_body["server_owned_local_outbox_write_receipt_id"]
+        ).one()
+        target_row = db.query(L3ServerOwnedLocalOutboxTargetReceipt).filter(
+            L3ServerOwnedLocalOutboxTargetReceipt.server_owned_local_outbox_target_receipt_id
+            == write_body["server_owned_local_outbox_target_receipt_id"]
+        ).one()
+        local_row = db.query(L3ConnectorLocalDestinationReceipt).filter(
+            L3ConnectorLocalDestinationReceipt.connector_local_destination_receipt_id
+            == write_body["connector_local_destination_receipt_id"]
+        ).one()
+        provider_row = db.query(L3LocalOutboxProviderPrivateHandoffReceipt).filter(
+            L3LocalOutboxProviderPrivateHandoffReceipt.provider_private_handoff_receipt_id
+            == provider_private.json()["provider_private_handoff_receipt_id"]
+        ).one()
+        manifest_path = Path(settings.storage_dir) / write_row.outbox_manifest_ref
+        authority_basis = layer3_external_local_export._authority_basis(
+            payload=conflict_payload,
+            write_row=write_row,
+            target_row=target_row,
+            local_row=local_row,
+            provider_row=provider_row,
+            manifest_hash=layer3_external_local_export._file_sha256(manifest_path),
+            manifest_size=int(manifest_path.stat().st_size),
+        )
+        receipt_id = layer3_external_local_export.stable_id(
+            layer3_external_local_export.EXTERNAL_LOCAL_EXPORT_RECEIPT_ID_PREFIX,
+            layer3_external_local_export.stable_hash(authority_basis),
+            digest_chars=30,
+        )
+        conflict_artifact = (
+            Path(settings.layer3_external_local_export_dir).resolve() / receipt_id / "artifact.json"
+        )
+        conflict_artifact.parent.mkdir(parents=True, exist_ok=True)
+        conflict_artifact.write_text("conflicting external local export bytes", encoding="utf-8")
+    finally:
+        db.close()
+    existing_output_conflict = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json=conflict_payload,
+    )
+    assert existing_output_conflict.status_code == 409, existing_output_conflict.json()
+    assert existing_output_conflict.json()["error_code"] == "external_local_export_existing_output_conflict"
+    assert str(Path(settings.layer3_external_local_export_dir)) not in existing_output_conflict.text
+
+    db = client.layer3_session_factory()
+    try:
+        row = db.query(L3ServerOwnedLocalOutboxWriteReceipt).filter(
+            L3ServerOwnedLocalOutboxWriteReceipt.server_owned_local_outbox_write_receipt_id
+            == write_body["server_owned_local_outbox_write_receipt_id"]
+        ).one()
+        artifact_path = Path(settings.storage_dir) / row.outbox_artifact_ref
+        artifact_path.write_text("tampered external local export source artifact", encoding="utf-8")
+    finally:
+        db.close()
+
+    stale_artifact = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json=_external_local_export_payload(
+            request_id="api-external-local-export-tampered-artifact",
+            session_id=session_id,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            commit_body=commit_body,
+            connector_body=connector_body,
+            local_receipt_body=local_receipt_body,
+            target_body=target_body,
+            write_body=write_body,
+            readiness_body=readiness_body,
+            provider_private_body=provider_private.json(),
+        ),
+    )
+    assert stale_artifact.status_code == 409, stale_artifact.json()
+    assert stale_artifact.json()["error_code"] == "external_local_export_stale_authority"
+    assert "tampered external local export source artifact" not in stale_artifact.text
+
+    missing_status = client.get(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/status/missing-export-receipt"
+    )
+    assert missing_status.status_code == 404
+    assert missing_status.json()["error_code"] == "external_local_export_not_recorded"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3ExternalLocalExportReceipt).count() == 0
+        assert db.query(L3ExternalLocalExportAuditEvent).count() == 0
     finally:
         db.close()
 
