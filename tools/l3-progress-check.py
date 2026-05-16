@@ -1564,6 +1564,10 @@ LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MA
 LAYER3_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_FREEZE = (
     PLANNING_DOCS / "632_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_FREEZE.md"
 )
+LAYER3_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "633_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -51357,6 +51361,58 @@ def _check_package_supersession_preview_operator_action_freeze(errors: list[str]
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing package supersession preview freeze term: {term}")
+
+    sync_text = _read_required_text(
+        LAYER3_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `package_supersession_preview_operator_action_freeze`.",
+        "633_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md",
+        "632_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_FREEZE.md",
+        "Freeze PR: `#1236`.",
+        "ecf3c6395690c6d924d75911e97a279ec9e27378",
+        "c9ef27f8b10f3a82807f8473f1bbd8bbdae210da",
+        "Selected exact operator action: `supersede_package_preview`.",
+        "Selected implementation-entry mode: `rendered_package_supersession_preview_control`.",
+        "`backend-layer3-api`: `SUCCESS` in `2m38s`.",
+        "`test`: `SUCCESS` in `2m51s`.",
+        "PR reviewThreads totalCount: `0`.",
+        "Synced result: `current_main_synced_package_supersession_preview_operator_action_freeze`.",
+        "selected next implementation action is `implement_rendered_package_supersession_preview_control_after_freeze_sync`",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC)} missing package supersession preview sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Supersession Preview Operator Action Current-Main Sync",
+            "633_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md",
+            "PR `#1236`",
+            "c9ef27f8b10f3a82807f8473f1bbd8bbdae210da",
+            "implement_rendered_package_supersession_preview_control_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "package_supersession_preview_operator_action_current_main_sync",
+            "current_main_synced_package_supersession_preview_operator_action_freeze",
+            "backend-layer3-api passed 2m38s",
+            "test passed 2m51s",
+            "implement_rendered_package_supersession_preview_control_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "package_supersession_preview_operator_action_current_main_sync_proof",
+            "current_main_sync_package_supersession_preview_operator_action_freeze",
+            "reviewThreads totalCount 0",
+            "supersede_package_preview",
+            "package_supersession_preview_response_authority_freeze",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package supersession preview sync term: {term}")
 
 
 def main() -> int:
