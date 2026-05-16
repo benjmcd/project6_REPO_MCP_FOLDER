@@ -1561,6 +1561,9 @@ LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MA
     PLANNING_DOCS
     / "631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_FREEZE = (
+    PLANNING_DOCS / "632_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -51296,6 +51299,66 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                     )
 
 
+def _check_package_supersession_preview_operator_action_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `rendered_package_supersession_preview_control`; no runtime implementation begins in this pass.",
+        "631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+        "selected next surface is `package_mutation_reconstruction`",
+        "selected exact named operator action is `supersede_package_preview`",
+        "selected implementation-entry mode is `rendered_package_supersession_preview_control`",
+        "/api/v1/layer3/package/mutation/preview",
+        "backend/app/services/layer3_package_mutation_entry.py",
+        "operator_decision: preview_package_supersession",
+        "implement_rendered_package_supersession_preview_control",
+        "package_supersession_preview_response_authority_freeze",
+        "No backend route, DTO, response model, model, migration, service behavior",
+        "`package_supersession_commit_enabled` remains false",
+        "No headed/headless E2E run is required for this freeze",
+        "implement_rendered_package_supersession_preview_control_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_FREEZE)} missing package supersession preview freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Supersession Preview Operator Action Freeze",
+            "632_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_ACTION_FREEZE.md",
+            "supersede_package_preview",
+            "rendered_package_supersession_preview_control",
+            "package_supersession_preview_response_authority_freeze",
+        ),
+        MANIFEST: (
+            "package_supersession_preview_operator_action_freeze",
+            "implementation_entry_freeze_selected_no_runtime_implementation",
+            "supersede_package_preview",
+            "rendered_package_supersession_preview_control",
+            "/api/v1/layer3/package/mutation/preview",
+            "implement_rendered_package_supersession_preview_control_after_freeze_sync",
+            "package_supersession_preview_response_authority_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "package_supersession_preview_operator_action_freeze_proof",
+            "branch_local_planning_control_freeze",
+            "supersede_package_preview",
+            "rendered_package_supersession_preview_control",
+            "package_supersession_preview_only",
+            "preview_package_supersession",
+            "no package payload rewrite",
+            "no source L3OutputPackage row mutation",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package supersession preview freeze term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -51768,6 +51831,7 @@ def main() -> int:
     _check_pr798_review_debt_closeout(errors)
     _check_connector_internal_fake_local_destination_receipt_runtime(errors)
     _check_target_selection_validate_only_guard(errors)
+    _check_package_supersession_preview_operator_action_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
