@@ -1557,6 +1557,10 @@ LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF = (
     PLANNING_DOCS
     / "630_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF.md"
 )
+LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -50340,6 +50344,49 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 f"{_rel(LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF)} missing external local export rendered E2E proof term: {term}"
             )
 
+    external_local_export_rendered_e2e_sync_text = _read_required_text(
+        LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `server_configured_external_local_export_directory_rendered_e2e_proof`.",
+        "631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+        "Rendered E2E proof doc: `630_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF.md`.",
+        "Rendered E2E PR: `#1234`.",
+        "Rendered E2E branch: `codex/l3-external-local-export-e2e-proof`.",
+        "Rendered E2E branch commit: `bdf3fb82c4d90343619624d70e9d3330fbeca126`.",
+        "Rendered E2E merge commit: `99b85fe092a688505a5d47f44926a9b6cf138ed2`.",
+        "Current-main checkpoint after merge: `99b85fe092a688505a5d47f44926a9b6cf138ed2`.",
+        "Selected proof action completed: `prove_server_configured_external_local_export_directory_rendered_status_history`.",
+        "Sync status: `current_main_synced_server_configured_external_local_export_directory_rendered_e2e_proof`.",
+        "Layer 3 placement: Data Structuring & Processing export/write boundary.",
+        "Sync live behavior change: false.",
+        "Runtime behavior already merged: true.",
+        "Rendered UI behavior already merged: true.",
+        "read-only rendered panel `#external-local-export-panel`",
+        "rendered mode `rendered_external_local_export_read_only_status_surface`",
+        "response authority `State.sessionSummary.external_local_export`",
+        "Playwright proof owner `e2e/layer3-handoff.spec.js`",
+        "GitHub `backend-layer3-api` passed in `2m37s`.",
+        "GitHub `test` passed in `3m23s`.",
+        "PR comments were empty.",
+        "PR reviews were empty.",
+        "PR reviewThreads totalCount was `0`.",
+        "Unresolved reviewThreads were `0`.",
+        "Mergeability before merge was `MERGEABLE`.",
+        "Merge state before merge was `CLEAN`.",
+        "This sync admits no new runtime behavior beyond PR `#1234`",
+        "package mutation/reconstruction",
+        "source expansion/ingestion",
+        "RAG/vector behavior",
+        "qualitative-hybrid analysis runtime",
+        "The next current-main-selected step is `select_package_mutation_reconstruction_named_operator_action_after_external_local_export_rendered_e2e_sync`.",
+    ):
+        if term not in external_local_export_rendered_e2e_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC)} missing external local export rendered E2E current-main sync term: {term}"
+            )
+
     for path, terms in {
         LAYER3_HTML: (
             'id="external-local-export-panel"',
@@ -50438,6 +50485,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "Layer 3 Selected External Local Export Directory Runtime Proof",
             "Layer 3 Selected External Local Export Directory Runtime Current-Main Sync",
             "Layer 3 Selected External Local Export Directory Rendered E2E Proof",
+            "Layer 3 Selected External Local Export Directory Rendered E2E Current-Main Sync",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
             "617_TARGET_SELECTION_STRUCTURED_RECORD_VALIDATOR.md",
             "618_TARGET_SELECTION_VALIDATOR_CLI.md",
@@ -50453,6 +50501,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "628_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RUNTIME_PROOF.md",
             "629_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RUNTIME_CURRENT_MAIN_SYNC.md",
             "630_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF.md",
+            "631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "#1230",
@@ -50473,6 +50522,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "server_configured_external_local_export_directory_runtime_proof",
             "server_configured_external_local_export_directory_runtime_current_main_sync",
             "server_configured_external_local_export_directory_rendered_e2e_proof",
+            "server_configured_external_local_export_directory_rendered_e2e_current_main_sync",
             "backend/app/services/layer3_external_local_export.py",
             "backend/alembic/versions/0030_layer3_external_local_export.py",
             "external_local_export_directory_unavailable",
@@ -50480,6 +50530,9 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "State.sessionSummary.external_local_export",
             "#external-local-export-panel",
             "#1232",
+            "#1234",
+            "bdf3fb82c4d90343619624d70e9d3330fbeca126",
+            "99b85fe092a688505a5d47f44926a9b6cf138ed2",
             "a8379403f77adaf2c490943774e2f5e655c49e68",
             "5905d8e4ef4d3722b6d1d4259eef22241543dd08",
             "cd4886c2f49ebd5c3a0356a00c7ebb62d3968b16",
@@ -50493,6 +50546,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "await_current_main_sync_for_server_configured_external_local_export_directory_runtime",
             "await_named_next_layer3_action_after_external_local_export_runtime_current_main_sync",
             "await_current_main_sync_for_server_configured_external_local_export_directory_rendered_e2e_proof",
+            "select_package_mutation_reconstruction_named_operator_action_after_external_local_export_rendered_e2e_sync",
         ),
         MANIFEST: (
             "target_selection_validate_only_guard",
@@ -50515,6 +50569,8 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "latest_server_configured_external_local_export_directory_runtime_current_main_sync",
             "server_configured_external_local_export_directory_rendered_e2e_proof",
             "latest_server_configured_external_local_export_directory_rendered_e2e_proof",
+            "server_configured_external_local_export_directory_rendered_e2e_current_main_sync",
+            "latest_server_configured_external_local_export_directory_rendered_e2e_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
@@ -50532,6 +50588,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "628_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RUNTIME_PROOF.md",
             "629_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RUNTIME_CURRENT_MAIN_SYNC.md",
             "630_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF.md",
+            "631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
             "codex/l3-target-selection-guard",
             "codex/l3-target-selection-field-contract",
             "codex/l3-target-selection-record-validator",
@@ -50548,8 +50605,10 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "codex/l3-external-local-export-runtime",
             "codex/l3-external-local-export-runtime-sync",
             "codex/l3-external-local-export-e2e-proof",
+            "codex/l3-external-local-export-e2e-sync",
             "#1230",
             "#1232",
+            "#1234",
             "e2e/layer3-workbench.spec.js",
             "e2e/layer3-handoff.spec.js",
             "43f8d86a82d2cee361c29026830eb1f8eab7ffa2",
@@ -50562,6 +50621,8 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "cd4886c2f49ebd5c3a0356a00c7ebb62d3968b16",
             "883cbeaf83e4922b91436f880697bca45ede97d9",
             "a47b1b2c0c7d2c611443a7bb0adbcbaa7f1997c7",
+            "bdf3fb82c4d90343619624d70e9d3330fbeca126",
+            "99b85fe092a688505a5d47f44926a9b6cf138ed2",
             "selection_complete false",
             "selection_complete true",
             "server_owned_local_delivery_outbox_destination",
@@ -50581,6 +50642,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "await_current_main_sync_for_server_configured_external_local_export_directory_runtime",
             "await_named_next_layer3_action_after_external_local_export_runtime_current_main_sync",
             "await_current_main_sync_for_server_configured_external_local_export_directory_rendered_e2e_proof",
+            "select_package_mutation_reconstruction_named_operator_action_after_external_local_export_rendered_e2e_sync",
         ),
         PROOF_MANIFEST: (
             "latest_target_selection_validate_only_guard",
@@ -50599,6 +50661,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "latest_server_configured_external_local_export_directory_runtime",
             "latest_server_configured_external_local_export_directory_runtime_current_main_sync",
             "latest_server_configured_external_local_export_directory_rendered_e2e_proof",
+            "latest_server_configured_external_local_export_directory_rendered_e2e_current_main_sync",
             "614_TARGET_SELECTION_VALIDATE_ONLY_GUARD.md",
             "615_TARGET_SELECTION_VALIDATE_ONLY_GUARD_CURRENT_MAIN_SYNC.md",
             "616_TARGET_SELECTION_FIELD_CONTRACT.md",
@@ -50616,6 +50679,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "628_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RUNTIME_PROOF.md",
             "629_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RUNTIME_CURRENT_MAIN_SYNC.md",
             "630_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF.md",
+            "631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
             "validate-only progress guard",
             "does not select a target",
             "local_outbox_provider_private_rendered_e2e_proof",
@@ -50630,6 +50694,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "server_configured_external_local_export_directory_runtime_proof",
             "server_configured_external_local_export_directory_runtime_current_main_sync_proof",
             "server_configured_external_local_export_directory_rendered_e2e_proof",
+            "server_configured_external_local_export_directory_rendered_e2e_current_main_sync_proof",
             "codex/l3-local-outbox-provider-private-e2e",
             "codex/l3-local-outbox-provider-private-sync",
             "codex/l3-target-selection-selected-outbox",
@@ -50642,8 +50707,10 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "codex/l3-external-local-export-runtime",
             "codex/l3-external-local-export-runtime-sync",
             "codex/l3-external-local-export-e2e-proof",
+            "codex/l3-external-local-export-e2e-sync",
             "#1230",
             "#1232",
+            "#1234",
             "server_owned_local_delivery_outbox_destination",
             "server_configured_external_local_export_directory",
             "server_configured_external_destination_write",
@@ -50659,6 +50726,8 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "173cb84553eb1841c7b317879adcd151afafee2b",
             "cd4886c2f49ebd5c3a0356a00c7ebb62d3968b16",
             "883cbeaf83e4922b91436f880697bca45ede97d9",
+            "bdf3fb82c4d90343619624d70e9d3330fbeca126",
+            "99b85fe092a688505a5d47f44926a9b6cf138ed2",
             "await_filled_next_external_surface_decision_record_after_selected_server_owned_local_outbox_target_current_main_sync",
             "await_operator_filled_next_external_surface_decision_after_objective_audit",
             "await_current_main_sync_for_server_configured_external_local_export_directory_freeze",
@@ -50666,6 +50735,7 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
             "await_current_main_sync_for_server_configured_external_local_export_directory_runtime",
             "await_named_next_layer3_action_after_external_local_export_runtime_current_main_sync",
             "await_current_main_sync_for_server_configured_external_local_export_directory_rendered_e2e_proof",
+            "select_package_mutation_reconstruction_named_operator_action_after_external_local_export_rendered_e2e_sync",
         ),
     }.items():
         path_text = _read_required_text(path, errors)
@@ -50901,6 +50971,68 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                     errors.append(
                         f"{_rel(MANIFEST)} server_configured_external_local_export_directory_rendered_e2e_proof missing required detail: {required}"
                     )
+        rendered_e2e_sync = manifest_data.get(
+            "server_configured_external_local_export_directory_rendered_e2e_current_main_sync"
+        )
+        if not isinstance(rendered_e2e_sync, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing server_configured_external_local_export_directory_rendered_e2e_current_main_sync object"
+            )
+        else:
+            expected_rendered_e2e_sync_scalars = {
+                "status": "current_main_synced_server_configured_external_local_export_directory_rendered_e2e_proof",
+                "sync_branch": "codex/l3-external-local-export-e2e-sync",
+                "sync_doc": "next_milestone_plans/Layer3_planning_docs/631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+                "rendered_e2e_proof_doc": "next_milestone_plans/Layer3_planning_docs/630_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF.md",
+                "rendered_e2e_pr": "#1234",
+                "rendered_e2e_branch": "codex/l3-external-local-export-e2e-proof",
+                "rendered_e2e_branch_commit": "bdf3fb82c4d90343619624d70e9d3330fbeca126",
+                "rendered_e2e_merge_commit": "99b85fe092a688505a5d47f44926a9b6cf138ed2",
+                "current_main_after_merge": "99b85fe092a688505a5d47f44926a9b6cf138ed2",
+                "selected_next_external_surface": "server_configured_external_local_export_directory",
+                "selected_next_external_surface_class": "server_configured_external_destination_write",
+                "selected_proof_action_completed": "prove_server_configured_external_local_export_directory_rendered_status_history",
+                "layer3_block_area": "Data Structuring & Processing",
+                "sync_live_behavior_change": False,
+                "runtime_behavior_already_merged": True,
+                "rendered_ui_behavior_already_merged": True,
+                "github_comments_empty": True,
+                "github_reviews_empty": True,
+                "github_review_threads_total_count": 0,
+                "github_unresolved_review_threads": 0,
+                "mergeability_before_merge": "MERGEABLE",
+                "merge_state_before_merge": "CLEAN",
+                "rendered_panel": "#external-local-export-panel",
+                "rendered_mode": "rendered_external_local_export_read_only_status_surface",
+                "response_authority": "State.sessionSummary.external_local_export",
+                "status_surface_mode": "read_only_external_local_export_status_history",
+                "playwright_owner_proof": "e2e/layer3-handoff.spec.js",
+                "next_whole_project_posture": "select_package_mutation_reconstruction_named_operator_action_after_external_local_export_rendered_e2e_sync",
+            }
+            for key, expected in expected_rendered_e2e_sync_scalars.items():
+                if rendered_e2e_sync.get(key) != expected:
+                    errors.append(
+                        f"{_rel(MANIFEST)} server_configured_external_local_export_directory_rendered_e2e_current_main_sync.{key} must be {expected!r}"
+                    )
+            for required in (
+                "backend-layer3-api passed_2m37s",
+                "test passed_3m23s",
+                "reviewThreads totalCount 0",
+                "631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+                "630_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF.md",
+                "rendered_external_local_export_read_only_status_surface",
+                "State.sessionSummary.external_local_export",
+                "#external-local-export-panel",
+                "e2e/layer3-handoff.spec.js",
+                "package_mutation_reconstruction",
+                "source_expansion_ingestion",
+                "rag_vector_behavior",
+                "generic_downstream_dispatch",
+            ):
+                if required not in json.dumps(rendered_e2e_sync, sort_keys=True):
+                    errors.append(
+                        f"{_rel(MANIFEST)} server_configured_external_local_export_directory_rendered_e2e_current_main_sync missing required detail: {required}"
+                    )
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     if isinstance(proof_data, dict):
@@ -51099,6 +51231,68 @@ def _check_target_selection_validate_only_guard(errors: list[str]) -> None:
                 if required not in json.dumps(proof_rendered_e2e, sort_keys=True):
                     errors.append(
                         f"{_rel(PROOF_MANIFEST)} server_configured_external_local_export_directory_rendered_e2e_proof missing required detail: {required}"
+                    )
+        proof_rendered_e2e_sync = proof_data.get(
+            "server_configured_external_local_export_directory_rendered_e2e_current_main_sync_proof"
+        )
+        if not isinstance(proof_rendered_e2e_sync, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing server_configured_external_local_export_directory_rendered_e2e_current_main_sync_proof object"
+            )
+        else:
+            expected_proof_rendered_e2e_sync_scalars = {
+                "proof_kind": "current_main_sync_server_configured_external_local_export_directory_rendered_e2e",
+                "status": "current_main_synced_server_configured_external_local_export_directory_rendered_e2e_proof",
+                "sync_branch": "codex/l3-external-local-export-e2e-sync",
+                "sync_doc": "next_milestone_plans/Layer3_planning_docs/631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+                "rendered_e2e_proof_doc": "next_milestone_plans/Layer3_planning_docs/630_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF.md",
+                "rendered_e2e_pr": "#1234",
+                "rendered_e2e_branch": "codex/l3-external-local-export-e2e-proof",
+                "rendered_e2e_branch_commit": "bdf3fb82c4d90343619624d70e9d3330fbeca126",
+                "rendered_e2e_merge_commit": "99b85fe092a688505a5d47f44926a9b6cf138ed2",
+                "current_main_after_merge": "99b85fe092a688505a5d47f44926a9b6cf138ed2",
+                "selected_next_external_surface": "server_configured_external_local_export_directory",
+                "selected_next_external_surface_class": "server_configured_external_destination_write",
+                "selected_proof_action_completed": "prove_server_configured_external_local_export_directory_rendered_status_history",
+                "sync_live_behavior_change": False,
+                "runtime_behavior_already_merged": True,
+                "rendered_ui_behavior_already_merged": True,
+                "github_comments_empty": True,
+                "github_reviews_empty": True,
+                "github_review_threads_total_count": 0,
+                "github_unresolved_review_threads": 0,
+                "mergeability_before_merge": "MERGEABLE",
+                "merge_state_before_merge": "CLEAN",
+                "rendered_panel": "#external-local-export-panel",
+                "rendered_mode": "rendered_external_local_export_read_only_status_surface",
+                "response_authority": "State.sessionSummary.external_local_export",
+                "status_surface_mode": "read_only_external_local_export_status_history",
+                "playwright_owner_proof": "e2e/layer3-handoff.spec.js",
+                "next_whole_project_posture": "select_package_mutation_reconstruction_named_operator_action_after_external_local_export_rendered_e2e_sync",
+            }
+            for key, expected in expected_proof_rendered_e2e_sync_scalars.items():
+                if proof_rendered_e2e_sync.get(key) != expected:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} server_configured_external_local_export_directory_rendered_e2e_current_main_sync_proof.{key} must be {expected!r}"
+                    )
+            for required in (
+                "backend-layer3-api passed 2m37s",
+                "test passed 3m23s",
+                "reviewThreads totalCount 0",
+                "631_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_CURRENT_MAIN_SYNC.md",
+                "630_SERVER_CONFIGURED_EXTERNAL_LOCAL_EXPORT_DIRECTORY_RENDERED_E2E_PROOF.md",
+                "rendered_external_local_export_read_only_status_surface",
+                "State.sessionSummary.external_local_export",
+                "#external-local-export-panel",
+                "e2e/layer3-handoff.spec.js",
+                "package_mutation_reconstruction",
+                "source_expansion_ingestion",
+                "rag_vector_behavior",
+                "generic_downstream_dispatch",
+            ):
+                if required not in json.dumps(proof_rendered_e2e_sync, sort_keys=True):
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} server_configured_external_local_export_directory_rendered_e2e_current_main_sync_proof missing required detail: {required}"
                     )
 
 
