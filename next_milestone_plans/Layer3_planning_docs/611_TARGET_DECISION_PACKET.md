@@ -12,6 +12,8 @@ Prior runtime/freeze doc: `610_REAL_TARGET_FREEZE.md`.
 
 Prior lifecycle hardening proof: PR `#1213`, commit `2787b937`, merged into current main by `2a576047e7d3d70810beb107e89d766becb0578c`.
 
+Next target-selection intake: `612_TARGET_SELECTION_INTAKE.md`.
+
 Implementation-entry freeze written for real connector/destination: false.
 
 Runtime status: `not_implemented`.
@@ -89,4 +91,4 @@ This packet admits no runtime behavior, backend route behavior, service behavior
 
 Decision result: `real_connector_destination_target_not_yet_named_after_local_outbox_provider_private_lifecycle_proof`.
 
-Required next action: name exactly one real connector or destination target, then write a separate implementation-entry freeze for that target. If no target can be named, keep runtime blocked and do not run another broad no-runtime audit unless current-main authority contradicts the local-outbox provider-private lifecycle proof.
+Required next action: fill `612_TARGET_SELECTION_INTAKE.md` with exactly one real connector or destination target, then write a separate implementation-entry freeze for that target. If no target can be named, keep runtime blocked and do not run another broad no-runtime audit unless current-main authority contradicts the local-outbox provider-private lifecycle proof.
