@@ -2963,6 +2963,22 @@ Long-term gated goals: `provider_public_delivery_use_after_exposure_security_dec
 
 Next whole-project posture: `await_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path`.
 
+## Layer 3 Local Receipt E2E Smoke
+
+Branch-local E2E smoke/control pass: `598_LOCAL_RECEIPT_E2E_SMOKE.md` follows the read-only status surface from doc `597` and implements the second preferred step, a focused E2E smoke path for connector-local receipt from existing handoff/export readiness.
+
+Current-main checkpoint: `0ba2cc98132569e1d98049854f03959c62e23777`.
+
+The smoke path is in `e2e/layer3-workbench.spec.js`, inside `Layer 3 workbench drives raw mixed rendered external export download delivery`, using `recordRenderedConnectorLocalReceiptSmoke` after existing external export/download prepare authority and before same-origin delivery. It proves `external_export_download_prepared`, confirms `connector-local-destination-receipt-panel` is read-only, records `internal_dispatch_record_only` through `/api/v1/layer3/handoff/connector/record`, records `internal_fake_local_destination_receipt_only` through `/api/v1/layer3/handoff/connector/local-destination/receipt`, refreshes the status panel to `connector_local_destination_receipt_recorded`, and preserves same-origin external export/download delivery after the local receipt smoke.
+
+The smoke explicitly rejects connector keys, connector-run IDs, destination IDs/URLs, provider/public/signed/download URLs, package payloads, rewrites, uploads, local directories/paths, RAG/vector fields, credentials, network-write fields, external connector invocation fields, and destination-write fields. The response authority remains `State.sessionSummary.connector_local_destination_receipt` and the recorded authority is `durable_connector_local_destination_receipt_row`.
+
+No real connector invocation, destination write, connector-run creation, credential use, provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior change, full mockup activation, or frontend-only durable authority is admitted.
+
+Immediate next goal after this smoke: `confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target`. Mid-term goals remain `harden_connector_local_receipt_lifecycle`, `write_real_connector_destination_implementation_entry_freeze_after_target_named`, and `implement_exact_real_connector_destination_runtime_only_after_target_named`. Long-term gated goals remain provider-public delivery/use, package mutation/reconstruction, source expansion, RAG/vector, and auth/security only after their separate named authority gates.
+
+Next whole-project posture: `await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke`.
+
 ## Layer 3 Connector Local Destination Receipt Delivery-Authority Readiness/Artifact Review Remediation
 
 Branch-local review remediation: `591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md` addresses the PR `#1185` review threads `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284` and `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289`.

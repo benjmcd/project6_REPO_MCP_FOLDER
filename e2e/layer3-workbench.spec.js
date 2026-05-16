@@ -1726,6 +1726,217 @@ async function submitRenderedExternalExportDownloadPrepare(
   return downloadPrepare;
 }
 
+async function recordRenderedConnectorLocalReceiptSmoke(
+  page,
+  sessionId,
+  approval,
+  execution,
+  review,
+  commit,
+  packageSubmit,
+  handoffPrepare,
+  apsDispatch,
+  downloadPrepare,
+) {
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'rendered_connector_local_destination_receipt_read_only_status_surface',
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel button, #connector-local-destination-receipt-panel input, #connector-local-destination-receipt-panel select, #connector-local-destination-receipt-panel textarea')).toHaveCount(0);
+
+  const apiRequest = page.context().request;
+  const connectorRecordPayload = {
+    client_request_id: requestId('rendered-connector-record'),
+    session_id: sessionId,
+    analysis_plan_id: approval.analysis_plan_id,
+    pass_run_id: execution.selection.pass_run_ids[0],
+    analysis_run_id: downloadPrepare.analysis_run_id,
+    result_review_record_ref: review.review_record_ref,
+    package_review_preview_hash: commit.package_review_preview_hash,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    output_package_ids: commit.output_package_ids,
+    package_kinds: commit.package_kinds,
+    payload_refs: commit.payload_refs,
+    payload_hashes: commit.payload_hashes,
+    package_review_submit_record_ref: packageSubmit.submit_record_ref,
+    prepare_record_ref: handoffPrepare.prepare_record_ref,
+    handoff_export_state: handoffPrepare.handoff_export_state,
+    aps_handoff_record_ref: apsDispatch.aps_handoff_record_ref,
+    aps_handoff_state: apsDispatch.aps_handoff_state,
+    aps_handoff_target: apsDispatch.aps_handoff_target,
+    aps_output_package_id: apsDispatch.aps_output_package_id,
+    aps_output_package_kind: apsDispatch.aps_output_package_kind,
+    aps_bundle_ref: apsDispatch.aps_bundle_ref,
+    source_artifact_hash: downloadPrepare.source_artifact_hash,
+    source_artifact_size_bytes: downloadPrepare.source_artifact_size_bytes,
+    source_artifact_ref: downloadPrepare.source_artifact_ref,
+    source_artifact_schema_id: downloadPrepare.source_artifact_schema_id,
+    external_export_download_record_ref: downloadPrepare.external_export_download_record_ref,
+    external_export_download_state: downloadPrepare.external_export_download_state,
+    external_export_download_descriptor_ref: downloadPrepare.export_download_descriptor_ref,
+    delivery_mode: 'same_origin_artifact_stream',
+    operator_decision: 'record_internal_connector_dispatch',
+  };
+  expectOnlyPayloadKeys(connectorRecordPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'analysis_run_id',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'package_kinds',
+    'payload_refs',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'prepare_record_ref',
+    'handoff_export_state',
+    'aps_handoff_record_ref',
+    'aps_handoff_state',
+    'aps_handoff_target',
+    'aps_output_package_id',
+    'aps_output_package_kind',
+    'aps_bundle_ref',
+    'source_artifact_hash',
+    'source_artifact_size_bytes',
+    'source_artifact_ref',
+    'source_artifact_schema_id',
+    'external_export_download_record_ref',
+    'external_export_download_state',
+    'external_export_download_descriptor_ref',
+    'delivery_mode',
+    'operator_decision',
+  ]);
+  for (const forbidden of [
+    'connector_key',
+    'connector_run_id',
+    'destination_id',
+    'destination_url',
+    'provider_url',
+    'public_url',
+    'signed_url',
+    'download_url',
+    'package_payload',
+    'rewrite_output',
+    'source_upload',
+    'local_directory',
+    'rag_vector_index',
+    'runtime_db_write',
+    'credential',
+    'credentials',
+    'network_write',
+  ]) {
+    expect(connectorRecordPayload).not.toHaveProperty(forbidden);
+  }
+  const connectorRecord = await expectJson(await apiRequest.post('/api/v1/layer3/handoff/connector/record', {
+    data: connectorRecordPayload,
+  }));
+  expect(connectorRecord.schema_id).toBe('layer3.connector_dispatch_record.v1');
+  expect(connectorRecord.connector_dispatch_record_state).toBe('connector_dispatch_recorded');
+  expect(connectorRecord.dispatch_mode).toBe('internal_dispatch_record_only');
+  expect(connectorRecord.external_connector_invocation_enabled).toBe(false);
+  expect(connectorRecord.destination_write_enabled).toBe(false);
+  expect(connectorRecord.connector_run_created).toBe(false);
+  expect(connectorRecord.provider_public_url_enabled).toBe(false);
+
+  const localReceiptPayload = {
+    client_request_id: requestId('rendered-connector-local-receipt'),
+    session_id: sessionId,
+    analysis_plan_id: approval.analysis_plan_id,
+    pass_run_id: execution.selection.pass_run_ids[0],
+    reconciliation_record_id: commit.reconciliation_record_id,
+    connector_dispatch_record_ref: connectorRecord.connector_dispatch_record_ref,
+    external_export_download_record_ref: downloadPrepare.external_export_download_record_ref,
+    external_export_download_state: downloadPrepare.external_export_download_state,
+    destination_target: 'layer3_internal_fake_local_destination_receipt',
+    dispatch_mode: 'internal_fake_local_destination_receipt_only',
+    operator_decision: 'record_internal_fake_local_destination_receipt',
+  };
+  expectOnlyPayloadKeys(localReceiptPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'connector_dispatch_record_ref',
+    'external_export_download_record_ref',
+    'external_export_download_state',
+    'destination_target',
+    'dispatch_mode',
+    'operator_decision',
+  ]);
+  for (const forbidden of [
+    'connector_key',
+    'connector_run_id',
+    'destination_id',
+    'destination_url',
+    'provider_url',
+    'public_url',
+    'signed_url',
+    'download_url',
+    'bucket',
+    'object_key',
+    'local_path',
+    'local_file_path',
+    'package_payload',
+    'source_upload',
+    'local_directory',
+    'rag_vector_index',
+    'credential',
+    'credentials',
+    'network_write',
+    'external_connector_invocation',
+    'destination_write',
+  ]) {
+    expect(localReceiptPayload).not.toHaveProperty(forbidden);
+  }
+  const localReceipt = await expectJson(await apiRequest.post('/api/v1/layer3/handoff/connector/local-destination/receipt', {
+    data: localReceiptPayload,
+  }));
+  expect(localReceipt.schema_id).toBe('layer3.connector_local_destination_receipt.v1');
+  expect(localReceipt.connector_local_destination_receipt_state).toBe('connector_local_destination_receipt_recorded');
+  expect(localReceipt.destination_target).toBe('layer3_internal_fake_local_destination_receipt');
+  expect(localReceipt.dispatch_mode).toBe('internal_fake_local_destination_receipt_only');
+  expect(localReceipt.accepted_artifact_ref).toBe('artifact://layer3-internal-fake-local-destination-redacted');
+  expect(localReceipt.external_connector_invocation_enabled).toBe(false);
+  expect(localReceipt.destination_write_enabled).toBe(false);
+  expect(localReceipt.connector_run_created).toBe(false);
+  expect(localReceipt.network_write_enabled).toBe(false);
+  expect(localReceipt.provider_public_url_enabled).toBe(false);
+
+  const postReceiptSummary = await page.evaluate(async (activeSessionId) => {
+    State.sessionSummary = await getJson(`/session/${encodeURIComponent(activeSessionId)}`);
+    renderAll();
+    return State.sessionSummary;
+  }, sessionId);
+  expect(postReceiptSummary.connector_local_destination_receipt.state).toBe(
+    'connector_local_destination_receipt_recorded',
+  );
+  expect(postReceiptSummary.connector_local_destination_receipt.response_authority).toBe(
+    'durable_connector_local_destination_receipt_row',
+  );
+  expect(postReceiptSummary.connector_local_destination_receipt.connector_local_destination_receipt_id).toBe(
+    localReceipt.connector_local_destination_receipt_id,
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'connector_local_destination_receipt_recorded',
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    localReceipt.connector_local_destination_receipt_id,
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'artifact://layer3-internal-fake-local-destination-redacted',
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'external connector invocation: blocked',
+  );
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText(
+    'destination write: blocked',
+  );
+  return localReceipt;
+}
+
 async function submitRenderedExternalExportDownloadDelivery(
   page,
   sessionId,
@@ -3515,6 +3726,7 @@ test('Layer 3 workbench drives raw mixed rendered external export download prepa
 });
 
 test('Layer 3 workbench drives raw mixed rendered external export download delivery', async ({ page, request }) => {
+  test.setTimeout(60000);
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   const materialization = await openRawMixedMaterializedWorkbench(page, request);
   const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
@@ -3597,6 +3809,18 @@ test('Layer 3 workbench drives raw mixed rendered external export download deliv
     packageSubmit,
     handoffPrepare,
     apsDispatch,
+  );
+  await recordRenderedConnectorLocalReceiptSmoke(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    review,
+    commit,
+    packageSubmit,
+    handoffPrepare,
+    apsDispatch,
+    downloadPrepare,
   );
   const delivery = await submitRenderedExternalExportDownloadDelivery(
     page,

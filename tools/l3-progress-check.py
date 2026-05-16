@@ -1471,6 +1471,9 @@ LAYER3_CONNECTOR_LOCAL_RECEIPT_OUTWARD_SEQUENCE_CONTROL = (
 LAYER3_CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE = (
     PLANNING_DOCS / "597_LOCAL_RECEIPT_STATUS_SURFACE.md"
 )
+LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE = (
+    PLANNING_DOCS / "598_LOCAL_RECEIPT_E2E_SMOKE.md"
+)
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -48818,6 +48821,121 @@ def _check_connector_internal_fake_local_destination_receipt_runtime(
         errors.append(
             f"{_rel(LAYER3_JS)} must not call or reference the connector-local receipt write endpoint"
         )
+
+    local_receipt_e2e_text = _read_required_text(
+        LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local focused E2E smoke path for `connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path`.",
+        "598_LOCAL_RECEIPT_E2E_SMOKE.md",
+        "0ba2cc98132569e1d98049854f03959c62e23777",
+        "597_LOCAL_RECEIPT_STATUS_SURFACE.md",
+        "codex/l3-local-receipt-smoke",
+        "POST /api/v1/layer3/handoff/connector/record",
+        "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+        "State.sessionSummary.connector_local_destination_receipt",
+        "connector-local-destination-receipt-panel",
+        "rendered_connector_local_destination_receipt_read_only_status_surface",
+        "internal_dispatch_record_only",
+        "internal_fake_local_destination_receipt_only",
+        "record_internal_fake_local_destination_receipt",
+        "e2e/layer3-workbench.spec.js",
+        "Layer 3 workbench drives raw mixed rendered external export download delivery",
+        "recordRenderedConnectorLocalReceiptSmoke",
+        "external_export_download_prepared",
+        "connector_local_destination_receipt_recorded",
+        "durable_connector_local_destination_receipt_row",
+        "same-origin external export/download delivery still proceeds after the receipt smoke",
+        "confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target",
+        "harden_connector_local_receipt_lifecycle",
+        "write_real_connector_destination_implementation_entry_freeze_after_target_named",
+        "provider_public_delivery_use_after_exposure_security_decision",
+        "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke",
+    ):
+        if term not in local_receipt_e2e_text:
+            errors.append(
+                f"{_rel(LAYER3_CONNECTOR_LOCAL_RECEIPT_E2E_SMOKE)} missing local receipt E2E smoke term: {term}"
+            )
+
+    local_receipt_e2e_sources = {
+        BOARD: (
+            "## Layer 3 Local Receipt E2E Smoke",
+            "598_LOCAL_RECEIPT_E2E_SMOKE.md",
+            "0ba2cc98132569e1d98049854f03959c62e23777",
+            "e2e/layer3-workbench.spec.js",
+            "recordRenderedConnectorLocalReceiptSmoke",
+            "connector-local-destination-receipt-panel",
+            "internal_dispatch_record_only",
+            "internal_fake_local_destination_receipt_only",
+            "connector_local_destination_receipt_recorded",
+            "durable_connector_local_destination_receipt_row",
+            "confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target",
+            "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke",
+        ),
+        MANIFEST: (
+            "layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke",
+            '"status": "branch_local_focused_e2e_smoke_path"',
+            "codex/l3-local-receipt-smoke",
+            "598_LOCAL_RECEIPT_E2E_SMOKE.md",
+            "0ba2cc98132569e1d98049854f03959c62e23777",
+            "connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path",
+            "POST /api/v1/layer3/handoff/connector/record",
+            "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+            "State.sessionSummary.connector_local_destination_receipt",
+            "connector-local-destination-receipt-panel",
+            "durable_connector_local_destination_receipt_row",
+            "external_export_download_prepared",
+            "connector_local_destination_receipt_recorded",
+            "internal_dispatch_record_only",
+            "internal_fake_local_destination_receipt_only",
+            '"live_behavior_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke",
+        ),
+        PROOF_MANIFEST: (
+            "layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_proof",
+            '"status": "branch_local_focused_e2e_smoke_path"',
+            "codex/l3-local-receipt-smoke",
+            "598_LOCAL_RECEIPT_E2E_SMOKE.md",
+            "e2e/layer3-workbench.spec.js",
+            "Layer 3 workbench drives raw mixed rendered external export download delivery",
+            "recordRenderedConnectorLocalReceiptSmoke",
+            "/api/v1/layer3/handoff/connector/record",
+            "/api/v1/layer3/handoff/connector/local-destination/receipt",
+            "connector_local_destination_receipt_recorded",
+            "durable_connector_local_destination_receipt_row",
+            "no real connector invocation",
+            "no destination write",
+            "no connector-run creation",
+            "no credential use",
+            "no frontend-only durable authority",
+            "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "recordRenderedConnectorLocalReceiptSmoke",
+            "Layer 3 workbench drives raw mixed rendered external export download delivery",
+            "connectorRecordPayload",
+            "localReceiptPayload",
+            "/api/v1/layer3/handoff/connector/record",
+            "/api/v1/layer3/handoff/connector/local-destination/receipt",
+            "connector_local_destination_receipt_recorded",
+            "durable_connector_local_destination_receipt_row",
+            "rendered_connector_local_destination_receipt_read_only_status_surface",
+            "external_connector_invocation_enabled",
+            "destination_write_enabled",
+            "connector_run_created",
+            "provider_public_url_enabled",
+            "network_write_enabled",
+        ),
+    }
+    for path, terms in local_receipt_e2e_sources.items():
+        path_text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in path_text:
+                errors.append(
+                    f"{_rel(path)} missing local receipt E2E smoke term: {term}"
+                )
 
 
 def main() -> int:

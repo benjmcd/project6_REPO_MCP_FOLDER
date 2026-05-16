@@ -21782,5 +21782,93 @@
   "latest_layer3_connector_local_receipt_read_only_status_surface_branch": "codex/l3-local-receipt-status",
   "latest_layer3_connector_local_receipt_read_only_status_surface_doc": "next_milestone_plans/Layer3_planning_docs/597_LOCAL_RECEIPT_STATUS_SURFACE.md",
   "latest_layer3_connector_local_receipt_read_only_status_surface_live_behavior_change": true,
-  "latest_layer3_connector_local_receipt_read_only_status_surface_summary": "Doc 597 implements the read-only operator-visible connector-local receipt status surface by projecting server-owned session summary state into the rendered review UI. The next immediate goal is the focused E2E smoke path from existing handoff/export readiness, while real connector invocation, destination writes, connector-run creation, credentials, provider-public delivery/use, package mutation, source expansion, RAG/vector, auth/security, full mockup activation, and frontend-only durable authority remain blocked."
+  "latest_layer3_connector_local_receipt_read_only_status_surface_summary": "Doc 597 implements the read-only operator-visible connector-local receipt status surface by projecting server-owned session summary state into the rendered review UI. The next immediate goal is the focused E2E smoke path from existing handoff/export readiness, while real connector invocation, destination writes, connector-run creation, credentials, provider-public delivery/use, package mutation, source expansion, RAG/vector, auth/security, full mockup activation, and frontend-only durable authority remain blocked.",
+  "layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke": {
+    "status": "branch_local_focused_e2e_smoke_path",
+    "branch": "codex/l3-local-receipt-smoke",
+    "implementation_doc": "next_milestone_plans/Layer3_planning_docs/598_LOCAL_RECEIPT_E2E_SMOKE.md",
+    "current_main_checkpoint": "0ba2cc98132569e1d98049854f03959c62e23777",
+    "prior_status_surface_doc": "next_milestone_plans/Layer3_planning_docs/597_LOCAL_RECEIPT_STATUS_SURFACE.md",
+    "implemented_exact_milestone": "connector_local_receipt_from_handoff_export_readiness_e2e_smoke_path",
+    "e2e_file": "e2e/layer3-workbench.spec.js",
+    "e2e_test": "Layer 3 workbench drives raw mixed rendered external export download delivery",
+    "canonical_authorities": [
+      "POST /api/v1/layer3/handoff/connector/record",
+      "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+      "State.sessionSummary.connector_local_destination_receipt",
+      "connector-local-destination-receipt-panel",
+      "durable_connector_local_destination_receipt_row"
+    ],
+    "proved_states": [
+      "external_export_download_prepared",
+      "connector_local_destination_receipt_recorded"
+    ],
+    "admitted_modes": [
+      "internal_dispatch_record_only",
+      "internal_fake_local_destination_receipt_only"
+    ],
+    "rendered_status_surface_mode": "rendered_connector_local_destination_receipt_read_only_status_surface",
+    "blocked_fields_asserted_absent": [
+      "connector_key",
+      "connector_run_id",
+      "destination_id",
+      "destination_url",
+      "provider_url",
+      "public_url",
+      "signed_url",
+      "download_url",
+      "package_payload",
+      "rewrite_output",
+      "source_upload",
+      "local_directory",
+      "local_path",
+      "rag_vector_index",
+      "credential",
+      "credentials",
+      "network_write",
+      "external_connector_invocation",
+      "destination_write"
+    ],
+    "live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "backend_route_behavior_change": false,
+    "service_runtime_behavior_change": false,
+    "response_model_shape_change": false,
+    "schema_shape_change": false,
+    "migration_lineage_change": false,
+    "connector_provider_destination_dispatch_change": false,
+    "frontend_only_durable_authority_change": false,
+    "blocked_lanes": [
+      "real connector invocation",
+      "destination writes",
+      "connector-run creation",
+      "credentials",
+      "provider-public delivery/use",
+      "package mutation/reconstruction",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security changes without an admitted external surface",
+      "full mockup activation",
+      "frontend-only durable authority"
+    ],
+    "next_allowed_action": "confirm_or_refresh_connector_destination_missing_decision_packet_for_real_target",
+    "mid_term_goals": [
+      "harden_connector_local_receipt_lifecycle",
+      "write_real_connector_destination_implementation_entry_freeze_after_target_named",
+      "implement_exact_real_connector_destination_runtime_only_after_target_named"
+    ],
+    "long_term_gated_goals": [
+      "provider_public_delivery_use_after_exposure_security_decision",
+      "package_mutation_reconstruction_after_named_operator_action",
+      "source_expansion_as_one_named_source_family",
+      "rag_vector_after_source_index_authority_defined",
+      "auth_security_hardening_tied_to_admitted_external_surface"
+    ],
+    "next_whole_project_posture": "await_connector_destination_missing_decision_packet_for_real_target_after_local_receipt_smoke"
+  },
+  "latest_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_branch": "codex/l3-local-receipt-smoke",
+  "latest_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_doc": "next_milestone_plans/Layer3_planning_docs/598_LOCAL_RECEIPT_E2E_SMOKE.md",
+  "latest_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_live_behavior_change": false,
+  "latest_layer3_connector_local_receipt_from_handoff_export_readiness_e2e_smoke_summary": "Doc 598 adds the focused E2E smoke path from existing handoff/export readiness through internal connector dispatch record and internal fake/local destination receipt, proving the read-only operator status surface reaches recorded state without admitting real connector invocation, destination writes, connector-run creation, credentials, provider-public delivery/use, package mutation, source expansion, RAG/vector, auth/security, full mockup activation, or frontend-only durable authority."
 }

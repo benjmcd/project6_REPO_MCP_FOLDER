@@ -640,6 +640,8 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText('destination selection');
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText('generic downstream dispatch');
   await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
+  await expect(page.locator('#connector-local-destination-receipt-panel')).toContainText('rendered_connector_local_destination_receipt_read_only_status_surface');
+  await expect(page.locator('#connector-local-destination-receipt-panel button, #connector-local-destination-receipt-panel input, #connector-local-destination-receipt-panel select, #connector-local-destination-receipt-panel textarea')).toHaveCount(0);
 
   const deliveryRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/handoff/export/download/deliver'));
   const deliveryResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/handoff/export/download/deliver'));
