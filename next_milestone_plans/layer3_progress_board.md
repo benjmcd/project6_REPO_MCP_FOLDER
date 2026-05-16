@@ -2925,6 +2925,22 @@ The sync doc `595_LAYER3_CONNECTOR_DESTINATION_SYNC_HASH_REMEDIATION_CURRENT_MAI
 
 The hash remediation is now current-main synced as `current_main_synced_layer3_connector_destination_sync_hash_remediation`. The decision result remains `no_runtime_now_connector_destination_real_target_authority_absent_after_readiness_artifact_sync`; implementation-entry freeze written remains false; runtime status remains `not_implemented`; selected implementation action remains `none`. No runtime behavior, backend route behavior, service behavior, response-model shape change, schema/model/migration change, rendered UI implementation, executable test behavior, connector/provider/destination dispatch behavior, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior change, credential handling, network write, real destination integration, or frontend-only durable authority is admitted. The next whole-project posture remains `await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync`.
 
+## Layer 3 Local Receipt Outward Plan
+
+Planning/control sequence: `596_LOCAL_RECEIPT_PLAN.md` follows the connector/destination sync hash remediation current-main sync and records the preferred direction after the merged internal fake/local connector destination receipt runtime.
+
+Current-main checkpoint: `3922446a52fc9af901f32a3cc4ef7bd86818ba33`.
+
+The sequence builds outward from the admitted local receipt runtime instead of reopening real connector dispatch by implication. Priority order: read-only operator/status surface for connector-local receipt, focused E2E smoke path from existing handoff/export readiness, missing-decision packet for real connector/destination target, local receipt lifecycle hardening, real connector/destination implementation-entry freeze after target naming, provider-public delivery/use after exposure/security decision, package mutation/reconstruction after named operator action, source expansion by one named source family, RAG/vector after source/index authority, and auth/security hardening tied to the first real external surface.
+
+The immediate next milestone is `conduct_connector_local_receipt_status_surface_authority_audit`; the exact product/use-case behavior is `operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write`. If response authority is insufficient, the next pass must stop at `connector_local_receipt_status_response_authority_freeze` rather than inventing frontend-only durable authority.
+
+Anti-cycle rule: each pass starts with one live authority check, then executes exactly the next named step. This doc is the selection/control artifact for the local receipt status surface; do not create a separate broad selection freeze before the status-surface authority audit, and do not create another broad no-runtime audit while the existing real-target missing-decision packet remains current and no product/user authority names a real connector or destination target.
+
+No runtime behavior, backend route behavior, service behavior, response-model shape change, schema/model/migration change, rendered UI implementation, executable test behavior, connector/provider/destination dispatch behavior, package mutation/reconstruction, source expansion, RAG/vector behavior, auth/security behavior change, full mockup activation, credential handling, network write, real destination integration, or frontend-only durable authority is admitted by this planning/control pass.
+
+Next whole-project posture: `await_connector_local_receipt_read_only_status_surface_authority_audit`.
+
 ## Layer 3 Connector Local Destination Receipt Delivery-Authority Readiness/Artifact Review Remediation
 
 Branch-local review remediation: `591_LAYER3_CONNECTOR_LOCAL_DESTINATION_RECEIPT_DELIVERY_AUTHORITY_READINESS_ARTIFACT_REVIEW_REMEDIATION.md` addresses the PR `#1185` review threads `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255284` and `https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/1185#discussion_r3249255289`.

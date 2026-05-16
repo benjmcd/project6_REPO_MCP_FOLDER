@@ -23601,5 +23601,42 @@
   },
   "latest_layer3_connector_destination_sync_hash_remediation_current_main_sync_branch": "codex/l3-connector-destination-sync-hash-remediation-current-main-sync",
   "latest_layer3_connector_destination_sync_hash_remediation_current_main_sync_live_behavior_change": false,
-  "latest_layer3_connector_destination_sync_hash_remediation_current_main_sync_summary": "Doc 595 proof records current-main sync for PR #1191 merge commit ef3deb2f208987df301e6b16b5deed3345ff67fc with corrected PR #1189 merge commit 2ac5ae2478a7c36374fb96b5b3ed7fbbf7309ce4, green checks, empty review/comment/thread surfaces, post-merge current-main validation, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync."
+  "latest_layer3_connector_destination_sync_hash_remediation_current_main_sync_summary": "Doc 595 proof records current-main sync for PR #1191 merge commit ef3deb2f208987df301e6b16b5deed3345ff67fc with corrected PR #1189 merge commit 2ac5ae2478a7c36374fb96b5b3ed7fbbf7309ce4, green checks, empty review/comment/thread surfaces, post-merge current-main validation, and next posture await_real_connector_or_destination_target_authority_after_internal_fake_local_receipt_sync.",
+  "layer3_connector_local_receipt_outward_sequence_control_proof": {
+    "proof_kind": "layer3_connector_local_receipt_outward_sequence_control",
+    "status": "planning_control_prepared_connector_local_receipt_outward_sequence",
+    "branch": "codex/l3-local-receipt-plan",
+    "plan_doc": "next_milestone_plans/Layer3_planning_docs/596_LOCAL_RECEIPT_PLAN.md",
+    "current_main_checkpoint": "3922446a52fc9af901f32a3cc4ef7bd86818ba33",
+    "prior_sync_doc": "next_milestone_plans/Layer3_planning_docs/595_LAYER3_CONNECTOR_DESTINATION_SYNC_HASH_REMEDIATION_CURRENT_MAIN_SYNC.md",
+    "proof_terms": [
+      "build_outward_from_merged_internal_fake_local_connector_destination_receipt_runtime",
+      "read_only_operator_status_surface_for_connector_local_receipt",
+      "focused_e2e_smoke_path_for_local_receipt_from_existing_handoff_export_readiness",
+      "missing_decision_packet_for_real_connector_destination_target",
+      "local_receipt_lifecycle_hardening",
+      "operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write",
+      "conduct_connector_local_receipt_status_surface_authority_audit",
+      "connector_local_receipt_status_response_authority_freeze",
+      "single_live_authority_check_then_execute_exact_next_named_step_no_separate_broad_selection_freeze",
+      "existing missing-decision packet remains current",
+      "no runtime behavior",
+      "no external connector invocation",
+      "no destination write",
+      "no connector-run creation",
+      "no credential use",
+      "no network write",
+      "no provider-public delivery/use",
+      "no package mutation/reconstruction",
+      "no source expansion",
+      "no RAG/vector behavior",
+      "no auth/security behavior change",
+      "no frontend-only durable authority",
+      "await_connector_local_receipt_read_only_status_surface_authority_audit"
+    ],
+    "next_whole_project_posture": "await_connector_local_receipt_read_only_status_surface_authority_audit"
+  },
+  "latest_layer3_connector_local_receipt_outward_sequence_control_branch": "codex/l3-local-receipt-plan",
+  "latest_layer3_connector_local_receipt_outward_sequence_control_live_behavior_change": false,
+  "latest_layer3_connector_local_receipt_outward_sequence_control_summary": "Doc 596 proof records the preferred connector-local receipt outward sequence and anti-cycle rule: plan the read-only status surface first, then focused E2E smoke, then real-target missing-decision/implementation-entry only when named target authority exists."
 }
