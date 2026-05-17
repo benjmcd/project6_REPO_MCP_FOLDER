@@ -3678,3 +3678,15 @@ The sync doc `643_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_M
 The materialization runtime now supplies governed replacement package-set request fields from `POST /api/v1/layer3/package/replacement-artifact/materialize`, service `backend/app/services/layer3_replacement_package_materialization.py`, table `l3_replacement_package_artifact_materialization`, and namespace `replacement-package-artifacts`.
 
 The next exact posture is `implement_rendered_replacement_package_set_authority_control_after_materialization_runtime_sync`. No runtime begins in this sync, and package supersession commit control, package row mutation, source `L3OutputPackage` mutation, source expansion, RAG/vector behavior, provider-public delivery/use, connector/destination dispatch, auth/security behavior, full mockup activation, and frontend-durable authority remain blocked.
+
+## Rendered Replacement Package-Set Authority Control Runtime Proof
+
+Branch-local implementation proof: `644_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF.md` implements `rendered_replacement_package_set_authority_control` after the doc `643` materialization runtime current-main sync.
+
+The rendered `/review/layer3` package review area now exposes `#replacement-package-set-authority-submit` and `#replacement-package-set-authority-panel`. The control first calls `POST /api/v1/layer3/package/replacement-artifact/materialize` using only existing package supersession preview/source package authority, then calls `POST /api/v1/layer3/package/replacement-set/record` using only the server-owned materialization response fields.
+
+The implementation changes only rendered UI/static proof surfaces and tests: `backend/app/review_ui/static/layer3.html`, `backend/app/review_ui/static/layer3.css`, `backend/app/review_ui/static/layer3.js`, `backend/tests/test_layer3_page.py`, and `e2e/layer3-workbench.spec.js`. No backend route, DTO, response model, database model, migration, materialization service, or replacement authority service behavior changed.
+
+Targeted proof covers static page assertions, existing replacement materialization and replacement authority API guardrail tests, and headed/headless Chromium coverage for `Layer 3 workbench records rendered replacement package-set authority control`, including ready, failure, materialized, recorded, request-field, forbidden-field, redaction, and disabled-side-effect checks.
+
+The next exact posture after merge is `await_current_main_sync_for_rendered_replacement_package_set_authority_control`. Package supersession commit control, package rebuild, package payload rewrite, source `L3OutputPackage` row mutation, replacement output package namespace rows, replacement artifact manifest recording, provider-public delivery/use, connector/destination dispatch, source expansion, RAG/vector behavior, auth/security behavior, full mockup activation, and frontend-durable authority remain blocked unless separately selected and frozen.

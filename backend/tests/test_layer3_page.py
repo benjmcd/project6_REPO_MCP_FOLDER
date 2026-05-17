@@ -110,9 +110,12 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="package-review-preview-inspect"' in response.text
     assert 'id="package-construction-commit"' in response.text
     assert 'id="package-supersession-preview-submit"' in response.text
+    assert 'id="replacement-package-set-authority-submit"' in response.text
     assert 'id="package-review-submit-form"' in response.text
     assert 'id="package-supersession-preview-panel"' in response.text
     assert 'data-rendered-mode="rendered_package_supersession_preview_control"' in response.text
+    assert 'id="replacement-package-set-authority-panel"' in response.text
+    assert 'data-rendered-mode="rendered_replacement_package_set_authority_control"' in response.text
     assert 'id="package-review-submit-decision"' in response.text
     assert 'id="package-review-submit-notes"' in response.text
     assert 'id="package-review-submit"' in response.text
@@ -330,6 +333,12 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "Lifecycle Policy" in js.text
     assert "Guardrail Projection" in js.text
     assert "renderConnectorLocalDestinationReceiptStatusPanel()" in js.text
+    assert "renderReplacementPackageSetAuthorityPanel()" in js.text
+    assert "replacementPackageArtifactMaterializationPayload()" in js.text
+    assert "replacementPackageSetAuthorityPayload(materialization)" in js.text
+    assert "/package/replacement-artifact/materialize" in js.text
+    assert "/package/replacement-set/record" in js.text
+    assert "record_replacement_package_set_authority" in js.text
     assert "connector_local_destination_receipt_recorded" in js.text
     assert "connector_local_destination_receipt_ready" in js.text
     assert "real_destination_integration" in js.text
@@ -342,6 +351,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".package-supersession-preview-panel" in css.text
     assert ".package-supersession-preview-grid" in css.text
     assert ".package-supersession-preview-rows" in css.text
+    assert ".replacement-package-set-authority-panel" in css.text
+    assert ".replacement-package-set-authority-grid" in css.text
+    assert ".replacement-package-set-authority-rows" in css.text
     assert ".layer3-e2e-governance-lifecycle-panel" in css.text
     assert ".layer3-e2e-governance-lifecycle-rows" in css.text
     assert ".downstream-access-lifecycle-dashboard-panel" in css.text

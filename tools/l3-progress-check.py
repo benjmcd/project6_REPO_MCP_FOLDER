@@ -1607,6 +1607,10 @@ LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC = 
     PLANNING_DOCS
     / "643_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "644_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52123,6 +52127,111 @@ def _check_replacement_package_artifact_materialization_runtime_current_main_syn
                 )
 
 
+def _check_rendered_replacement_package_set_authority_control_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `rendered_replacement_package_set_authority_control`.",
+        "643_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "Implementation branch: `codex/l3-rendered-replacement-set-authority-control-2`.",
+        "Current-main checkpoint before implementation: `698970d713abfc7e7a786e6f66d8a5010112439f`.",
+        "Selected exact operator action: `record_replacement_package_set_authority_after_supersession_preview`.",
+        "Selected implementation-entry mode: `rendered_replacement_package_set_authority_control`.",
+        "Existing materialization surface: `/api/v1/layer3/package/replacement-artifact/materialize`.",
+        "Existing authority surface: `/api/v1/layer3/package/replacement-set/record`.",
+        "replacementPackageArtifactMaterializationPayload",
+        "replacementPackageSetAuthorityPayload",
+        "redacted_local_payload_ref",
+        "Layer 3 workbench records rendered replacement package-set authority control",
+        "The next exact posture is `await_current_main_sync_for_rendered_replacement_package_set_authority_control`.",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF)} "
+                f"missing rendered replacement package-set authority runtime proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Replacement Package-Set Authority Control Runtime Proof",
+            "644_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF.md",
+            "#replacement-package-set-authority-submit",
+            "#replacement-package-set-authority-panel",
+            "POST /api/v1/layer3/package/replacement-artifact/materialize",
+            "POST /api/v1/layer3/package/replacement-set/record",
+            "await_current_main_sync_for_rendered_replacement_package_set_authority_control",
+        ),
+        MANIFEST: (
+            "rendered_replacement_package_set_authority_control_runtime",
+            "rendered_replacement_package_set_authority_control_runtime_implemented_branch_local",
+            "codex/l3-rendered-replacement-set-authority-control-2",
+            "644_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF.md",
+            "replacement-package-set-authority-submit",
+            "replacement-package-set-authority-panel",
+            "replacementPackageArtifactMaterializationPayload",
+            "replacementPackageSetAuthorityPayload",
+            "redacted_local_payload_ref",
+            "await_current_main_sync_for_rendered_replacement_package_set_authority_control",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_replacement_package_set_authority_control_runtime_proof",
+            "branch_local_rendered_replacement_package_set_authority_control_runtime",
+            "replacement-package-set-authority-submit",
+            "replacement-package-set-authority-panel",
+            "replacement_package_set_authority_basis_hash_mismatch",
+            "Layer 3 workbench records rendered replacement package-set authority control",
+            "await_current_main_sync_for_rendered_replacement_package_set_authority_control",
+        ),
+        LAYER3_HTML: (
+            'id="replacement-package-set-authority-submit"',
+            'id="replacement-package-set-authority-panel"',
+            'data-rendered-mode="rendered_replacement_package_set_authority_control"',
+        ),
+        LAYER3_CSS: (
+            ".replacement-package-set-authority-panel",
+            ".replacement-package-set-authority-grid",
+            ".replacement-package-set-authority-rows",
+        ),
+        LAYER3_JS: (
+            "REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE = 'rendered_replacement_package_set_authority_control'",
+            "REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_OPERATOR_DECISION = 'materialize_replacement_package_artifacts_from_supersession_preview'",
+            "REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_DECISION = 'record_replacement_package_set_authority'",
+            "function replacementPackageArtifactMaterializationPayload",
+            "function replacementPackageSetAuthorityPayload",
+            "function submitReplacementPackageSetAuthority",
+            "postJson(",
+            "/package/replacement-artifact/materialize",
+            "/package/replacement-set/record",
+            "safePackagePayloadRefForDisplay",
+        ),
+        LAYER3_PAGE_TEST: (
+            "replacement-package-set-authority-submit",
+            "replacement-package-set-authority-panel",
+            "rendered_replacement_package_set_authority_control",
+            "replacementPackageArtifactMaterializationPayload()",
+            "replacementPackageSetAuthorityPayload(materialization)",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "recordRenderedReplacementPackageSetAuthority",
+            "Layer 3 workbench records rendered replacement package-set authority control",
+            "replacement_package_set_authority_basis_hash_mismatch",
+            "redacted_local_payload_ref",
+            "/package/replacement-artifact/materialize",
+            "/package/replacement-set/record",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered replacement package-set authority runtime proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52606,6 +52715,7 @@ def main() -> int:
     _check_replacement_package_set_request_source_authority_selection_current_main_sync(errors)
     _check_replacement_package_artifact_materialization_runtime_proof(errors)
     _check_replacement_package_artifact_materialization_runtime_current_main_sync(errors)
+    _check_rendered_replacement_package_set_authority_control_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
