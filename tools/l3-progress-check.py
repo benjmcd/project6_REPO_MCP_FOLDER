@@ -1763,6 +1763,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME
     PLANNING_DOCS
     / "683_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE = (
+    PLANNING_DOCS
+    / "684_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55886,6 +55890,100 @@ def _check_source_l3_output_package_active_authority_connector_local_receipt_run
                 )
 
 
+def _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `source_l3_output_package_active_authority_server_owned_local_outbox_write`.",
+        "684_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE.md",
+        "683_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "2d342439bd1dc6c91f279293da7891190a3d4e4e",
+        "Selected follow-on surface: `downstream_active_package_authority_read_adoption`.",
+        "Selected reader path: `server_owned_local_outbox_write`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+        "load_persisted_bundle_artifact",
+        "adopt_active_replacement_package_authority_for_server_owned_local_outbox_write",
+        "Selected implementation-entry mode: `source_l3_output_package_active_authority_server_owned_local_outbox_write`.",
+        "No runtime begins in this freeze.",
+        "existing server-owned local outbox write behavior remains unchanged",
+        "L3ServerOwnedLocalOutboxWriteReceipt` remains durable write/status authority",
+        "storage://server-owned-local-outbox/",
+        "no `ConnectorRun` or `ConnectorRunTarget` creation",
+        "current_main_sync_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
+        "implement_source_l3_output_package_active_authority_server_owned_local_outbox_write_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE)} "
+                f"missing source L3 output package active authority server-owned local outbox write freeze term: {term}"
+            )
+
+    for blocked in (
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "package rebuild",
+        "package payload rewrite",
+        "direct source `L3OutputPackage` mutation",
+        "real connector invocation",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE)} "
+                f"missing source L3 output package active authority server-owned local outbox write freeze non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Server-Owned Local Outbox Write Freeze",
+            "684_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE.md",
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write",
+            "server_owned_local_outbox_write",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+            "adopt_active_replacement_package_authority_for_server_owned_local_outbox_write",
+            "current_main_sync_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write",
+            "implementation_entry_frozen_source_l3_output_package_active_authority_server_owned_local_outbox_write",
+            "codex/l3-active-authority-local-outbox-freeze",
+            "684_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE.md",
+            "server_owned_local_outbox_write",
+            "adopt_active_replacement_package_authority_for_server_owned_local_outbox_write",
+            "current_main_sync_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
+            "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_proof",
+            "implementation_entry_freeze_source_l3_output_package_active_authority_server_owned_local_outbox_write",
+            "684_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE.md",
+            "server_owned_local_outbox_write",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+            "no runtime begins in this freeze",
+            "current_main_sync_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
+            "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority server-owned local outbox write freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -56412,6 +56510,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
