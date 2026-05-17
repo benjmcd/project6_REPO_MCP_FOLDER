@@ -156,6 +156,10 @@ def _kind_index(values: list[str], package_kind: str, *, error_code: str, field:
         ) from exc
 
 
+def _response_safe_artifact_ref(*, manifest_id: str, package_kind: str) -> str:
+    return f"artifact://replacement-package-artifacts/{manifest_id}/{package_kind}"
+
+
 def replacement_package_namespace_authority_basis_hash(
     *,
     session_id: str,
@@ -452,11 +456,15 @@ def record_replacement_package_namespace(db: Session, payload: dict[str, Any]) -
             "replacement_artifact_manifest_id",
             "Replacement artifact manifest vectors are stale or malformed.",
         )
-    if artifact_ref != verified_refs[replacement_index]:
+    response_safe_artifact_ref = _response_safe_artifact_ref(
+        manifest_id=manifest_id,
+        package_kind=package_kind,
+    )
+    if artifact_ref != response_safe_artifact_ref:
         _raise_mismatch(
             "replacement_package_namespace_artifact_ref_mismatch",
             "artifact_ref",
-            "artifact_ref must match the server-verified manifest artifact for package_kind.",
+            "artifact_ref must match the response-safe server-verified manifest artifact for package_kind.",
         )
     if artifact_hash != verified_hashes[replacement_index]:
         _raise_mismatch(
