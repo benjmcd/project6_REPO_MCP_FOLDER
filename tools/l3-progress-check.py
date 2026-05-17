@@ -1723,6 +1723,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE_CUR
     PLANNING_DOCS
     / "673_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "674_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -6055,7 +6059,7 @@ def _check_qualitative_aps_aps_handoff_dispatch_freeze(errors: list[str]) -> Non
         "\"qualitative_aps_aps_handoff_dispatch_not_admitted\"",
         "def _aps_handoff_dispatch_summary(",
         "def aps_handoff_dispatch(",
-        "materialize_aps_handoff(db, session_id=session_id)",
+        "materialize_aps_handoff(",
         "APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE",
     ):
         if term not in workbench_text:
@@ -54878,6 +54882,169 @@ def _check_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze
                 )
 
 
+def _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `source_l3_output_package_active_authority_aps_handoff_dispatch_runtime`.",
+        "674_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF.md",
+        "673_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE_CURRENT_MAIN_SYNC.md",
+        "codex/l3-active-authority-aps-dispatch-impl",
+        "8cf6a62a53c5acea2c10787a159c09e2bff5ff7e",
+        "POST /api/v1/layer3/handoff/aps/dispatch",
+        "resolve_active_replacement_package_payload_authority",
+        "resolve_active_replacement_package_authority",
+        "active_package_authority_applied",
+        "source_output_package_ids",
+        "active_payload_refs",
+        "active refs/hashes emitted by handoff/export prepare accepted by APS handoff dispatch",
+        "session readiness stays `aps_handoff_ready` using active canonical artifact authority",
+        "existing external export/download prepare accepts the active dispatch state and projects active refs/hashes",
+        "APS handoff output is derived from active replacement artifact authority",
+        "Source `L3OutputPackage` rows, source payload refs/hashes, package ids, source payload files, and `uq_l3_output_package_session_kind` remain unchanged",
+        "caller-supplied active authority fields are submitted to APS handoff dispatch",
+        "no `ConnectorRun` or `ConnectorRunTarget` creation",
+        "Rendered proof remains limited to existing controls.",
+        "await_current_main_sync_for_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority APS handoff dispatch runtime proof term: {term}"
+            )
+
+    for blocked in (
+        "rendered activation controls",
+        "external export/download adoption",
+        "server-owned local outbox adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "package rebuild",
+        "package payload rewrite",
+        "direct source `L3OutputPackage` mutation",
+        "raw local path exposure",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+    ):
+        if blocked not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority APS handoff dispatch runtime non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority APS Handoff Dispatch Runtime Proof",
+            "674_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF.md",
+            "source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+            "codex/l3-active-authority-aps-dispatch-impl",
+            "8cf6a62a53c5acea2c10787a159c09e2bff5ff7e",
+            "aps_handoff_dispatch",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            "resolve_active_replacement_package_payload_authority",
+            "canonical payload materialization from active replacement artifact authority",
+            "read-only APS readiness summary",
+            "existing external export/download prepare compatibility after active dispatch",
+            "source `L3OutputPackage` rows unchanged",
+            "no `ConnectorRun` or `ConnectorRunTarget` creation",
+            "compatibility for existing source-intake APS dispatch test doubles",
+            "Rendered proof remains limited to existing controls",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+            "implemented_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+            "codex/l3-active-authority-aps-dispatch-impl",
+            "674_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF.md",
+            "8cf6a62a53c5acea2c10787a159c09e2bff5ff7e",
+            "aps_handoff_dispatch",
+            "active_package_authority_applied",
+            "active refs/hashes emitted by handoff/export prepare are accepted by APS handoff dispatch",
+            "existing external_export_download_prepare remains reachable after active dispatch",
+            "backend/tests/review_browser_server.py",
+            "rendered proof remains limited to existing controls",
+            "no ConnectorRun or ConnectorRunTarget creation",
+            "backend/tests/test_layer3_workbench.py",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+            "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_proof",
+            "implementation_proof_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+            "674_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF.md",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            "resolve_active_replacement_package_payload_authority",
+            "active replacement refs/hashes applied to APS handoff dispatch response state and package summary",
+            "active refs/hashes emitted by handoff/export prepare accepted by APS dispatch",
+            "session readiness uses active replacement canonical artifact authority for APS compatibility",
+            "existing external_export_download_prepare accepts the active dispatch state and projects active refs/hashes",
+            "source L3OutputPackage rows unchanged",
+            "no ConnectorRun or ConnectorRunTarget creation",
+            "backend/tests/test_layer3_workbench.py",
+            "backend/tests/review_browser_server.py",
+            "rendered proof limited to existing controls",
+            "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_summary",
+        ),
+        LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_SERVICE: (
+            "def resolve_active_replacement_package_payload_authority(",
+            "replacement_payload_refs",
+            "replacement_payload_hashes",
+        ),
+        APS_HANDOFF_SERVICE: (
+            "def _canonical_payload_from_active_authority_or_raise(",
+            "active_package_authority",
+            "active_authority_source",
+        ),
+        WORKBENCH_SERVICE: (
+            "resolve_active_replacement_package_payload_authority",
+            "aps_handoff_dispatch_active_authority_prepare_mismatch",
+            'error_prefix="external_export_download_prepare"',
+            "active_package_authority_applied",
+            "effective_payload_refs",
+            "_request_matches_ordered_values",
+            "active_package_authority=active_payload_authority",
+        ),
+        EXTERNAL_EXPORT_RESPONSE_SERVICE: (
+            "active_package_authority_applied",
+            "active_payload_refs",
+            "readiness_state.get(\"payload_refs\")",
+        ),
+        LAYER3_API: (
+            "active_package_authority_applied",
+            "active_payload_refs",
+            "active_payload_hashes",
+            "replacement_activation_basis_hash",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_aps_handoff_dispatch_applies_active_replacement_authority",
+            "test_layer3_api_aps_handoff_dispatch_active_authority_requires_matching_prepare_state",
+            "_activate_replacement_package_authority",
+            "artifact://replacement-package-artifacts/",
+            "external_export_download_prepare",
+        ),
+        LAYER3_WORKBENCH_TEST: (
+            "def fake_materialize_aps_handoff(db, *, session_id, active_package_authority=None):",
+            "assert active_package_authority is None",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority APS handoff dispatch runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -55394,6 +55561,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze(errors)
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

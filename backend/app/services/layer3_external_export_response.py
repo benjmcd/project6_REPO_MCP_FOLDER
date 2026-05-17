@@ -734,6 +734,18 @@ def external_export_download_prepare_summary(
             "generic_downstream_dispatch_enabled": False,
             "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
         }
+        for key in (
+            "active_package_authority_applied",
+            "package_replacement_activation_id",
+            "source_output_package_ids",
+            "source_payload_hashes",
+            "active_replacement_output_package_ids",
+            "active_payload_refs",
+            "active_payload_hashes",
+            "replacement_activation_basis_hash",
+        ):
+            if key in recorded_readiness:
+                summary[key] = recorded_readiness.get(key)
         if associated_cohort_external_export_download(recorded_readiness):
             summary["delivery_ui"] = recorded_readiness.get("delivery_ui") or associated_cohort_delivery_ui_state(
                 recorded_readiness
@@ -880,8 +892,10 @@ def external_export_download_prepare_response(
         "reconciliation_record_id": reconciliation_record.reconciliation_record_id,
         "output_package_ids": [package.output_package_id for package in ordered_packages],
         "package_kinds": [package.package_kind for package in ordered_packages],
-        "payload_refs": [package.payload_ref for package in ordered_packages],
-        "payload_hashes": [package.payload_hash for package in ordered_packages],
+        "payload_refs": list(readiness_state.get("payload_refs") or [package.payload_ref for package in ordered_packages]),
+        "payload_hashes": list(
+            readiness_state.get("payload_hashes") or [package.payload_hash for package in ordered_packages]
+        ),
         "package_review_submit_record_ref": readiness_state["package_review_submit_record_ref"],
         "package_review_state": readiness_state["package_review_state"],
         "prepare_record_ref": readiness_state["prepare_record_ref"],
@@ -925,6 +939,18 @@ def external_export_download_prepare_response(
             package_review_enabled=False,
         ),
     }
+    for key in (
+        "active_package_authority_applied",
+        "package_replacement_activation_id",
+        "source_output_package_ids",
+        "source_payload_hashes",
+        "active_replacement_output_package_ids",
+        "active_payload_refs",
+        "active_payload_hashes",
+        "replacement_activation_basis_hash",
+    ):
+        if key in readiness_state:
+            body[key] = readiness_state.get(key)
     body.update(cohort_readiness_identity(readiness_state))
     if associated_cohort_external_export_download(readiness_state):
         body["delivery_ui"] = associated_cohort_delivery_ui_state(readiness_state)
