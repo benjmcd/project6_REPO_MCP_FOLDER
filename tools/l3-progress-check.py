@@ -1894,6 +1894,9 @@ LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "717_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE = (
+    PLANNING_DOCS / "718_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -59724,6 +59727,116 @@ def _check_corrected_artifact_replacement_manifest_runtime_current_main_sync(
                 )
 
 
+def _check_corrected_artifact_replacement_namespace_authority_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `corrected_artifact_replacement_namespace_authority`.",
+        "718_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE.md",
+        "717_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "3d60756b94cc6d95f868db6db7d042a9a45f3c46",
+        "codex/l3-corrected-artifact-namespace-freeze",
+        "server_computed_replacement_namespace_from_corrected_artifact_manifest_authority",
+        "POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+        "backend/app/services/layer3_replacement_package_namespace.py",
+        "backend/app/api/layer3.py",
+        "L3ReplacementOutputPackage",
+        "l3_replacement_output_package",
+        "L3CorrectedPackageArtifactSet",
+        "L3ReplacementPackageSetAuthority",
+        "L3PackageSupersessionCommit",
+        "L3ReplacementPackageArtifactManifest",
+        "replacement_package_namespace_from_corrected_artifact_manifest_authority",
+        "record_replacement_package_namespace_from_corrected_artifact_manifest_authority",
+        "Runtime behavior in this freeze: `false`",
+        "unique `client_request_id` per row",
+        "deterministic per-kind row idempotency keys",
+        "current_main_sync_corrected_artifact_replacement_namespace_authority_freeze",
+        "implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE)} "
+                f"missing corrected-artifact replacement namespace authority freeze term: {term}"
+            )
+
+    for blocked in (
+        "Package replacement activation",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "connector/destination dispatch",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "rendered UI authority",
+        "caller-supplied arbitrary paths or URLs",
+        "browser-supplied refs/hashes/bytes",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE)} "
+                f"missing corrected-artifact replacement namespace authority freeze boundary term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Replacement Namespace Authority Freeze",
+            "718_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE.md",
+            "3d60756b94cc6d95f868db6db7d042a9a45f3c46",
+            "caller-supplied `source_output_package_id`",
+            "server_computed_replacement_namespace_from_corrected_artifact_manifest_authority",
+            "POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+            "deterministic per-kind row idempotency keys",
+            "current_main_sync_corrected_artifact_replacement_namespace_authority_freeze",
+            "implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "corrected_artifact_replacement_namespace_authority_freeze",
+            "implementation_entry_frozen_corrected_artifact_replacement_namespace_authority",
+            "codex/l3-corrected-artifact-namespace-freeze",
+            "718_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE.md",
+            "3d60756b94cc6d95f868db6db7d042a9a45f3c46",
+            "server_computed_replacement_namespace_from_corrected_artifact_manifest_authority",
+            "POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+            "L3ReplacementOutputPackage",
+            "deterministic per-kind row client_request_id values",
+            '"runtime_behavior_change": false',
+            "current_main_sync_corrected_artifact_replacement_namespace_authority_freeze",
+            "implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync",
+            "latest_corrected_artifact_replacement_namespace_authority_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_replacement_namespace_authority_freeze_proof",
+            "implementation_entry_freeze_corrected_artifact_replacement_namespace_authority",
+            "implementation_entry_frozen_corrected_artifact_replacement_namespace_authority",
+            "718_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE.md",
+            "3d60756b94cc6d95f868db6db7d042a9a45f3c46",
+            "server_computed_replacement_namespace_from_corrected_artifact_manifest_authority",
+            "deterministic per-kind row idempotency keys",
+            '"runtime_behavior_change": false',
+            "current_main_sync_corrected_artifact_replacement_namespace_authority_freeze",
+            "implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact replacement namespace authority "
+                    f"freeze artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -60284,6 +60397,7 @@ def main() -> int:
     _check_corrected_artifact_replacement_manifest_authority_freeze_current_main_sync(errors)
     _check_corrected_artifact_replacement_manifest_runtime_proof(errors)
     _check_corrected_artifact_replacement_manifest_runtime_current_main_sync(errors)
+    _check_corrected_artifact_replacement_namespace_authority_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
