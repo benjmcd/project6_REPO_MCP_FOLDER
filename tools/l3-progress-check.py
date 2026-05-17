@@ -1795,6 +1795,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_H
     PLANNING_DOCS
     / "691_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE = (
+    PLANNING_DOCS
+    / "692_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -56619,6 +56623,98 @@ def _check_source_l3_output_package_active_authority_local_outbox_provider_priva
                 )
 
 
+def _check_source_l3_output_package_active_authority_external_local_export_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `source_l3_output_package_active_authority_external_local_export`.",
+        "692_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE.md",
+        "691_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "96140c0474806f65132517df44d6d7e2788f0c39",
+        "Selected follow-on surface: `downstream_active_package_authority_read_adoption`.",
+        "Selected reader path: `external_local_export`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        "LAYER3_EXTERNAL_LOCAL_EXPORT_DIR",
+        "adopt_active_replacement_package_authority_for_external_local_export",
+        "Selected implementation-entry mode: `source_l3_output_package_active_authority_external_local_export`.",
+        "No runtime begins in this freeze.",
+        "existing external local export behavior remains unchanged",
+        "L3ExternalLocalExportReceipt` remains durable write/status authority",
+        "external-local-export://",
+        "no `ConnectorRun` or `ConnectorRunTarget` creation",
+        "current_main_sync_source_l3_output_package_active_authority_external_local_export_freeze",
+        "implement_source_l3_output_package_active_authority_external_local_export_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE)} "
+                f"missing source L3 output package active authority external local export freeze term: {term}"
+            )
+
+    for blocked in (
+        "rendered activation controls",
+        "package mutation/reconstruction",
+        "source expansion",
+        "RAG/vector behavior",
+        "provider-public delivery/use",
+        "real connector invocation",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE)} "
+                f"missing source L3 output package active authority external local export freeze non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority External Local Export Freeze",
+            "692_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE.md",
+            "source_l3_output_package_active_authority_external_local_export",
+            "external_local_export",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+            "adopt_active_replacement_package_authority_for_external_local_export",
+            "current_main_sync_source_l3_output_package_active_authority_external_local_export_freeze",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_external_local_export",
+            "implementation_entry_frozen_source_l3_output_package_active_authority_external_local_export",
+            "codex/l3-active-authority-external-export-freeze",
+            "692_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE.md",
+            "external_local_export",
+            "adopt_active_replacement_package_authority_for_external_local_export",
+            "current_main_sync_source_l3_output_package_active_authority_external_local_export_freeze",
+            "latest_source_l3_output_package_active_authority_external_local_export_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_external_local_export_freeze_proof",
+            "implementation_entry_freeze_source_l3_output_package_active_authority_external_local_export",
+            "692_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE.md",
+            "external_local_export",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+            "no runtime begins in this freeze",
+            "current_main_sync_source_l3_output_package_active_authority_external_local_export_freeze",
+            "latest_source_l3_output_package_active_authority_external_local_export_freeze_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority external local export freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -57153,6 +57249,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_external_local_export_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
