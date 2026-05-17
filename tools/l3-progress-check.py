@@ -1675,6 +1675,10 @@ LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE_CURRENT_MAIN_SYNC =
     PLANNING_DOCS
     / "661_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -53578,6 +53582,140 @@ def _check_rendered_replacement_package_namespace_control_freeze_current_main_sy
                 )
 
 
+def _check_rendered_replacement_package_namespace_control_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `rendered_replacement_package_namespace_control`.",
+        "661_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+        "Implementation branch: `codex/l3-rendered-namespace-control-runtime`.",
+        "Current-main checkpoint before implementation: `c3b48c0b602e9527fed3be567d7eeaab8cebbce3`.",
+        "Selected exact operator action: `record_replacement_package_namespace_row`.",
+        "Selected implementation-entry mode: `rendered_replacement_package_namespace_control`.",
+        "POST /api/v1/layer3/package/replacement-namespace/record",
+        "Owner service already live: `backend/app/services/layer3_replacement_package_namespace.py`.",
+        "Server runtime mode already live: `replacement_package_namespace_rows`.",
+        "Source gate: `131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE`.",
+        "#replacement-package-namespace-submit",
+        "#replacement-package-namespace-panel",
+        "State.replacementPackageArtifactManifest",
+        "State.replacementPackageSetAuthority",
+        "State.packageSupersessionCommit",
+        "existing source package row authority",
+        "replacementPackageNamespacePayload",
+        "renderReplacementPackageNamespacePanel",
+        "State.replacementPackageNamespace",
+        "artifact://replacement-package-artifacts/{manifest_id}/{package_kind}",
+        "replacement_package_namespace_authority_basis_hash_mismatch",
+        "await_current_main_sync_for_rendered_replacement_package_namespace_control_runtime",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF)} "
+                f"missing rendered replacement package namespace control runtime proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Replacement Package Namespace Control Runtime Proof",
+            "662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md",
+            "#replacement-package-namespace-submit",
+            "#replacement-package-namespace-panel",
+            "POST /api/v1/layer3/package/replacement-namespace/record",
+            "State.replacementPackageArtifactManifest",
+            "State.replacementPackageSetAuthority",
+            "State.packageSupersessionCommit",
+            "response-safe artifact://replacement-package-artifacts/{manifest_id}/{package_kind}",
+            "await_current_main_sync_for_rendered_replacement_package_namespace_control_runtime",
+        ),
+        MANIFEST: (
+            "rendered_replacement_package_namespace_control_runtime",
+            "rendered_replacement_package_namespace_control_runtime_implemented_branch_local",
+            "codex/l3-rendered-namespace-control-runtime",
+            "662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md",
+            '"backend_behavior_change": true',
+            '"rendered_behavior_change": true',
+            "replacement-package-namespace-submit",
+            "replacement-package-namespace-panel",
+            "replacementPackageNamespacePayload",
+            "renderReplacementPackageNamespacePanel",
+            "State.replacementPackageNamespace",
+            "response-safe artifact://replacement-package-artifacts/{manifest_id}/{package_kind}",
+            "await_current_main_sync_for_rendered_replacement_package_namespace_control_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_replacement_package_namespace_control_runtime_proof",
+            "branch_local_rendered_replacement_package_namespace_control_runtime",
+            "662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md",
+            '"backend_behavior_change": true',
+            '"rendered_behavior_change": true',
+            "replacement-package-namespace-submit",
+            "replacement-package-namespace-panel",
+            "replacementPackageNamespacePayload",
+            "renderReplacementPackageNamespacePanel",
+            "State.replacementPackageNamespace",
+            "Layer 3 workbench records rendered replacement package namespace control",
+            "replacement_package_namespace_authority_basis_hash_mismatch",
+            "artifact://replacement-package-artifacts/",
+            "await_current_main_sync_for_rendered_replacement_package_namespace_control_runtime",
+        ),
+        LAYER3_HTML: (
+            'id="replacement-package-namespace-submit"',
+            'id="replacement-package-namespace-panel"',
+            'data-rendered-mode="rendered_replacement_package_namespace_control"',
+        ),
+        LAYER3_CSS: (
+            ".replacement-package-namespace-panel",
+            ".replacement-package-namespace-grid",
+            ".replacement-package-namespace-rows",
+        ),
+        LAYER3_JS: (
+            "REPLACEMENT_PACKAGE_NAMESPACE_RENDERED_MODE = 'rendered_replacement_package_namespace_control'",
+            "REPLACEMENT_PACKAGE_NAMESPACE_OPERATOR_DECISION = 'record_replacement_package_namespace'",
+            "function replacementPackageNamespacePayload",
+            "function submitReplacementPackageNamespace",
+            "function renderReplacementPackageNamespacePanel",
+            "/package/replacement-namespace/record",
+            "replacement_package_namespace_ready",
+            "State.replacementPackageNamespace = await postJson(",
+            "safePackagePayloadRefForDisplay",
+        ),
+        LAYER3_PAGE_TEST: (
+            "replacement-package-namespace-submit",
+            "replacement-package-namespace-panel",
+            "rendered_replacement_package_namespace_control",
+            "function replacementPackageNamespacePayload",
+            "State.replacementPackageNamespace = await postJson(",
+            "'/package/replacement-namespace/record'",
+            "renderReplacementPackageNamespacePanel()",
+        ),
+        REPLACEMENT_PACKAGE_NAMESPACE_TEST: (
+            "artifact://replacement-package-artifacts/",
+            "_namespace_payload",
+            "replacement_package_namespace_scope_not_admitted",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "recordRenderedReplacementPackageNamespace",
+            "Layer 3 workbench records rendered replacement package namespace control",
+            "replacement_package_namespace_authority_basis_hash_mismatch",
+            "replacement_package_namespace_recorded",
+            "artifact://replacement-package-artifacts/",
+            "/package/replacement-namespace/record",
+            "/handoff/connector",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered replacement package namespace control runtime proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -54079,6 +54217,7 @@ def main() -> int:
     _check_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync(errors)
     _check_rendered_replacement_package_namespace_control_freeze(errors)
     _check_rendered_replacement_package_namespace_control_freeze_current_main_sync(errors)
+    _check_rendered_replacement_package_namespace_control_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
