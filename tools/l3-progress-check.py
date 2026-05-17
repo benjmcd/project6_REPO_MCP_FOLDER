@@ -1626,6 +1626,10 @@ LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF = (
     PLANNING_DOCS
     / "648_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF.md"
 )
+LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "649_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52566,6 +52570,70 @@ def _check_rendered_package_supersession_commit_control_runtime_proof(
                 )
 
 
+def _check_rendered_package_supersession_commit_control_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `rendered_package_supersession_commit_control` runtime proof.",
+        "649_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "648_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF.md",
+        "Runtime PR: `#1252`.",
+        "f375657a40d3c780cb8e771fd210040000b017f8",
+        "fe6d93eaad95c768b930b384b592d00d5697c37e",
+        "Synced result: `current_main_synced_rendered_package_supersession_commit_control_runtime`.",
+        "backend-layer3-api`: `SUCCESS` in `2m42s`",
+        "test`: `SUCCESS` in `3m8s`",
+        "PR reviewThreads totalCount: `0`.",
+        "preserves `schema_id` and `request_ref_field`",
+        "The next exact current-main posture is `freeze_rendered_replacement_package_artifact_manifest_control_after_package_supersession_commit_control_sync`.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing rendered package supersession commit control runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Package Supersession Commit Control Runtime Current-Main Sync",
+            "649_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1252`",
+            "fe6d93eaad95c768b930b384b592d00d5697c37e",
+            "current_main_synced_rendered_package_supersession_commit_control_runtime",
+            "schema_id",
+            "request_ref_field",
+            "freeze_rendered_replacement_package_artifact_manifest_control_after_package_supersession_commit_control_sync",
+        ),
+        MANIFEST: (
+            "rendered_package_supersession_commit_control_runtime_current_main_sync",
+            "current_main_synced_rendered_package_supersession_commit_control_runtime",
+            "codex/l3-rendered-supersession-commit-control-sync",
+            "backend-layer3-api passed 2m42s",
+            "test passed 3m8s",
+            "freeze_rendered_replacement_package_artifact_manifest_control_after_package_supersession_commit_control_sync",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_package_supersession_commit_control_runtime_current_main_sync_proof",
+            "current_main_sync_rendered_package_supersession_commit_control_runtime",
+            "reviewThreads totalCount 0",
+            "current_main_synced_rendered_package_supersession_commit_control_runtime",
+            "package-supersession-commit-submit",
+            "package-supersession-commit-panel",
+            "freeze_rendered_replacement_package_artifact_manifest_control_after_package_supersession_commit_control_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered package supersession commit control runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53054,6 +53122,7 @@ def main() -> int:
     _check_rendered_package_supersession_commit_control_freeze(errors)
     _check_rendered_package_supersession_commit_control_freeze_current_main_sync(errors)
     _check_rendered_package_supersession_commit_control_runtime_proof(errors)
+    _check_rendered_package_supersession_commit_control_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
