@@ -52,9 +52,9 @@ This freeze admits only a later replacement package-set authority bridge from th
 - targeted tests: `backend/tests/test_layer3_replacement_package_set_authority.py` and `backend/tests/test_layer3_api.py`;
 - response schema id: `layer3.replacement_package_set_authority.v1`;
 - request mode: `replacement_package_set_authority_from_corrected_artifact_set`;
-- operator decision: `record_replacement_package_set_authority_from_corrected_artifact_set`.
+- operator decision: `record_replacement_package_set_authority`.
 
-The later runtime must validate an existing corrected package artifact set id and corrected artifact basis hash, derive replacement package-set id/hash/kinds/payload refs/payload hashes from the corrected artifact set authority, compute the existing replacement package-set authority basis hash server-side, and record or replay an `L3ReplacementPackageSetAuthority` row.
+The later runtime must validate an existing corrected package artifact set id and corrected artifact basis hash, derive replacement package-set id/hash/kinds/payload refs/payload hashes from the corrected artifact set authority, compute the existing replacement package-set authority basis hash server-side, and record or replay an `L3ReplacementPackageSetAuthority` row using the existing table constraint-compatible operator decision.
 
 The later runtime must be idempotent: same `client_request_id` plus same corrected artifact set basis returns the same authority receipt; same `client_request_id` plus different corrected artifact set basis fails closed; same corrected artifact set basis plus a new `client_request_id` returns existing status rather than creating duplicate authority.
 

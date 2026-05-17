@@ -26975,7 +26975,7 @@
     "source_model": "L3CorrectedPackageArtifactSet",
     "source_table": "l3_corrected_package_artifact_set",
     "request_mode": "replacement_package_set_authority_from_corrected_artifact_set",
-    "operator_decision": "record_replacement_package_set_authority_from_corrected_artifact_set",
+    "operator_decision": "record_replacement_package_set_authority",
     "next_posture_after_merge": "current_main_sync_package_rebuild_from_corrected_artifact_set_entry_freeze",
     "next_posture_after_sync": "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync"
   },
@@ -26985,5 +26985,5 @@
   "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_live_behavior_change": false,
   "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_next_posture_after_merge": "current_main_sync_package_rebuild_from_corrected_artifact_set_entry_freeze",
   "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_next_posture_after_sync": "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
-  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_summary": "Doc 706 freezes the implementation-entry posture for package_rebuild_from_corrected_artifact_set. It admits only a later replacement package-set authority bridge from L3CorrectedPackageArtifactSet into the existing L3ReplacementPackageSetAuthority lane, starts no runtime in this pass, and keeps source package row mutation, package payload rewrite, namespace/activation, connector/destination dispatch, source expansion, RAG/vector, auth/security, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure blocked."
+  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_summary": "Doc 706 freezes the implementation-entry posture for package_rebuild_from_corrected_artifact_set. It admits only a later replacement package-set authority bridge from L3CorrectedPackageArtifactSet into the existing L3ReplacementPackageSetAuthority lane using the existing table constraint-compatible operator decision, starts no runtime in this pass, and keeps source package row mutation, package payload rewrite, namespace/activation, connector/destination dispatch, source expansion, RAG/vector, auth/security, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure blocked."
 }
