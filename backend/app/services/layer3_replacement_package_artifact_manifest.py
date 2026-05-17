@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.models.models import (
     L3AnalysisPlan,
+    L3CorrectedPackageArtifactSet,
     L3OutputPackage,
     L3PackageSupersessionCommit,
     L3PassRun,
@@ -43,6 +44,18 @@ REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_SOURCE_GATE = (
 )
 REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_OPERATOR_DECISION = (
     "record_replacement_package_artifact_manifest_from_authority"
+)
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_SCHEMA_ID = (
+    "layer3.replacement_package_artifact_manifest_from_corrected_artifact_set_authority.v1"
+)
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_MODE = (
+    "replacement_package_artifact_manifest_from_corrected_artifact_set_authority"
+)
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_SOURCE_GATE = (
+    "715_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC"
+)
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_OPERATOR_DECISION = (
+    "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority"
 )
 REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_STATE = "replacement_package_artifact_manifest_recorded"
 REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_STATUS = "verified"
@@ -209,6 +222,51 @@ REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_FORBIDDEN_FIELDS = frozense
 REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_ALLOWED_FIELDS = (
     REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_REQUIRED_FIELDS
     | REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_FORBIDDEN_FIELDS
+)
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_REQUIRED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "corrected_package_artifact_set_id",
+        "corrected_artifact_basis_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "package_supersession_commit_id",
+        "package_supersession_commit_basis_hash",
+        "operator_decision",
+    }
+)
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_FORBIDDEN_FIELDS = (
+    REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_FORBIDDEN_FIELDS
+    | {
+        "replacement_artifact_materialization_id",
+        "materialization_basis_hash",
+        "corrected_artifact_refs",
+        "corrected_artifact_hashes",
+        "corrected_artifact_byte_sizes",
+        "corrected_artifact_bytes",
+        "corrected_package_payloads",
+        "local_path",
+        "destination_path",
+        "destination_url",
+        "connector_run_id",
+        "connector_run_target_id",
+        "credential_id",
+        "credential_payload",
+        "auth_token",
+        "source_directory",
+        "rag_query",
+        "vector_index",
+        "frontend_state",
+        "browser_state",
+    }
+)
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_ALLOWED_FIELDS = (
+    REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_REQUIRED_FIELDS
+    | REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_FORBIDDEN_FIELDS
 )
 REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_DOWNSTREAM_UNAVAILABLE = (
     "package_mutation_reconstruction",
@@ -1269,4 +1327,330 @@ def record_replacement_package_artifact_manifest_from_authority(
     response["authority_rail"]["browser_supplied_artifact_manifest_hash_accepted"] = False
     response["authority_rail"]["browser_supplied_byte_sizes_accepted"] = False
     response["authority_rail"]["response_artifact_refs_redacted"] = True
+    return response
+
+
+def _corrected_artifact_set(
+    db: Session,
+    *,
+    corrected_id: str,
+) -> L3CorrectedPackageArtifactSet:
+    corrected = (
+        db.query(L3CorrectedPackageArtifactSet)
+        .filter(L3CorrectedPackageArtifactSet.corrected_package_artifact_set_id == corrected_id)
+        .one_or_none()
+    )
+    if corrected is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_requires_corrected_artifact_set",
+            "Corrected-artifact manifest requests require an existing corrected package artifact-set row.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["corrected_package_artifact_set_id"],
+            next_allowed_actions=["record_corrected_package_artifact_set_authority"],
+        )
+    return corrected
+
+
+def _validate_corrected_manifest_authorities(
+    *,
+    payload: dict[str, Any],
+    corrected: L3CorrectedPackageArtifactSet,
+    replacement_authority: L3ReplacementPackageSetAuthority,
+    supersession_commit: L3PackageSupersessionCommit,
+    session_id: str,
+    analysis_plan_id: str,
+    pass_run_id: str,
+    reconciliation_record_id: str,
+) -> tuple[list[str], list[str], list[str]]:
+    for authority_name, authority in (
+        ("corrected_artifact_set", corrected),
+        ("replacement_authority", replacement_authority),
+        ("supersession_commit", supersession_commit),
+    ):
+        for field, expected in (
+            ("session_id", session_id),
+            ("analysis_plan_id", analysis_plan_id),
+            ("pass_run_id", pass_run_id),
+            ("reconciliation_record_id", reconciliation_record_id),
+        ):
+            if getattr(authority, field) != expected:
+                _raise_mismatch(
+                    f"replacement_package_artifact_manifest_from_corrected_artifact_set_{authority_name}_{field}_mismatch",
+                    field,
+                    "Corrected artifact, replacement authority, and supersession lineage must match the submitted basis.",
+                )
+
+    if corrected.corrected_artifact_basis_hash != _string(payload.get("corrected_artifact_basis_hash")):
+        _raise_mismatch(
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_corrected_basis_hash_mismatch",
+            "corrected_artifact_basis_hash",
+            "Supplied corrected_artifact_basis_hash does not match corrected artifact authority.",
+        )
+    if replacement_authority.authority_basis_hash != _string(payload.get("replacement_authority_basis_hash")):
+        _raise_mismatch(
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_replacement_authority_basis_hash_mismatch",
+            "replacement_authority_basis_hash",
+            "Supplied replacement_authority_basis_hash does not match durable replacement authority.",
+        )
+    if supersession_commit.commit_basis_hash != _string(payload.get("package_supersession_commit_basis_hash")):
+        _raise_mismatch(
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_supersession_commit_basis_hash_mismatch",
+            "package_supersession_commit_basis_hash",
+            "Supplied package_supersession_commit_basis_hash does not match package supersession authority.",
+        )
+    if supersession_commit.replacement_package_set_authority_id != replacement_authority.replacement_package_set_authority_id:
+        _raise_mismatch(
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_supersession_commit_authority_mismatch",
+            "package_supersession_commit_id",
+            "package_supersession_commit_id must belong to the supplied replacement package-set authority.",
+        )
+
+    replacement_kinds = list(REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_PACKAGE_KINDS)
+    corrected_kinds = list(corrected.corrected_package_kinds_json or [])
+    corrected_refs = list(corrected.corrected_artifact_refs_json or [])
+    corrected_hashes = list(corrected.corrected_artifact_hashes_json or [])
+    corrected_byte_sizes = list(corrected.corrected_artifact_byte_sizes_json or [])
+    if (
+        corrected_kinds != replacement_kinds
+        or len(corrected_refs) != len(replacement_kinds)
+        or len(corrected_hashes) != len(replacement_kinds)
+        or len(corrected_byte_sizes) != len(replacement_kinds)
+        or not all(corrected_refs)
+        or not all(corrected_hashes)
+    ):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_corrected_vectors_incomplete",
+            "Corrected artifact-set vectors are incomplete for replacement artifact manifest authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["corrected_package_artifact_set_id"],
+            next_allowed_actions=["refresh_corrected_package_artifact_set_authority"],
+        )
+
+    vector_expectations = (
+        ("source_package_set_hash", corrected.source_package_set_hash),
+        ("replacement_package_set_id", corrected.corrected_package_set_id),
+        ("replacement_package_set_hash", corrected.corrected_package_set_hash),
+    )
+    for field, expected in vector_expectations:
+        if getattr(replacement_authority, field) != expected or getattr(supersession_commit, field) != expected:
+            _raise_mismatch(
+                f"replacement_package_artifact_manifest_from_corrected_artifact_set_{field}_mismatch",
+                field,
+                "Replacement authority and supersession commit must derive from the corrected artifact set.",
+            )
+    for field, expected_values in (
+        ("source_output_package_ids_json", list(corrected.source_output_package_ids_json or [])),
+        ("source_package_kinds_json", list(corrected.source_package_kinds_json or [])),
+        ("source_payload_refs_json", list(corrected.source_payload_refs_json or [])),
+        ("source_payload_hashes_json", list(corrected.source_payload_hashes_json or [])),
+        ("replacement_package_kinds_json", replacement_kinds),
+        ("replacement_payload_refs_json", corrected_refs),
+        ("replacement_payload_hashes_json", corrected_hashes),
+    ):
+        if list(getattr(replacement_authority, field) or []) != expected_values or list(
+            getattr(supersession_commit, field) or []
+        ) != expected_values:
+            _raise_mismatch(
+                f"replacement_package_artifact_manifest_from_corrected_artifact_set_{field}_mismatch",
+                "corrected_package_artifact_set_id",
+                "Corrected artifact, replacement authority, and supersession vectors must agree.",
+            )
+
+    return replacement_kinds, corrected_refs, corrected_hashes
+
+
+def record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+    db: Session,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    request_id = _string(payload.get("client_request_id"))
+    unknown = sorted(
+        key
+        for key in payload
+        if key not in REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_ALLOWED_FIELDS
+    )
+    forbidden = sorted(
+        key
+        for key in REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_FORBIDDEN_FIELDS
+        if key in payload
+    )
+    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    if blocked_payload_fields:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_scope_not_admitted",
+            "Corrected-artifact replacement manifest request includes non-admitted fields: "
+            + ", ".join(blocked_payload_fields)
+            + ".",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_corrected_artifact_manifest_authority_ids_only_request"],
+        )
+
+    missing = sorted(
+        field
+        for field in REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_REQUIRED_FIELDS
+        if field not in payload or payload.get(field) in (None, "", [])
+    )
+    if missing:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "missing_replacement_package_artifact_manifest_from_corrected_artifact_set_fields",
+            "Corrected-artifact replacement manifest request is missing required fields: "
+            + ", ".join(missing)
+            + ".",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_corrected_artifact_manifest_authority_request"],
+        )
+    if (
+        _string(payload.get("operator_decision"))
+        != REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_OPERATOR_DECISION
+    ):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "unsupported_replacement_package_artifact_manifest_from_corrected_artifact_set_decision",
+            "operator_decision must be record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
+
+    session_id = _string(payload.get("session_id"))
+    analysis_plan_id = _string(payload.get("analysis_plan_id"))
+    pass_run_id = _string(payload.get("pass_run_id"))
+    reconciliation_record_id = _string(payload.get("reconciliation_record_id"))
+    corrected_id = _string(payload.get("corrected_package_artifact_set_id"))
+    authority_id = _string(payload.get("replacement_package_set_authority_id"))
+    commit_id = _string(payload.get("package_supersession_commit_id"))
+
+    corrected = _corrected_artifact_set(db, corrected_id=corrected_id)
+    replacement_authority = (
+        db.query(L3ReplacementPackageSetAuthority)
+        .filter(L3ReplacementPackageSetAuthority.replacement_package_set_authority_id == authority_id)
+        .one_or_none()
+    )
+    if replacement_authority is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_requires_replacement_authority",
+            "Corrected-artifact manifest requests require an existing replacement package-set authority row.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["replacement_package_set_authority_id"],
+            next_allowed_actions=["record_replacement_package_set_authority_from_corrected_artifact_set"],
+        )
+    supersession_commit = (
+        db.query(L3PackageSupersessionCommit)
+        .filter(L3PackageSupersessionCommit.package_supersession_commit_id == commit_id)
+        .one_or_none()
+    )
+    if supersession_commit is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_requires_supersession_commit",
+            "Corrected-artifact manifest requests require existing corrected-artifact package supersession lineage.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_supersession_commit_id"],
+            next_allowed_actions=["commit_package_supersession_from_corrected_artifact_set_authority"],
+        )
+
+    replacement_package_kinds, replacement_payload_refs, replacement_payload_hashes = (
+        _validate_corrected_manifest_authorities(
+            payload=payload,
+            corrected=corrected,
+            replacement_authority=replacement_authority,
+            supersession_commit=supersession_commit,
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            reconciliation_record_id=reconciliation_record_id,
+        )
+    )
+
+    verified_refs, verified_hashes, verified_byte_sizes = _verify_replacement_artifacts(
+        replacement_payload_refs=replacement_payload_refs,
+        replacement_payload_hashes=replacement_payload_hashes,
+        source_payload_refs=list(corrected.source_payload_refs_json or []),
+    )
+    computed_manifest_hash = replacement_package_artifact_manifest_hash(
+        replacement_package_set_authority_id=authority_id,
+        package_supersession_commit_id=commit_id,
+        replacement_package_set_id=replacement_authority.replacement_package_set_id,
+        replacement_package_set_hash=replacement_authority.replacement_package_set_hash,
+        replacement_package_kinds=replacement_package_kinds,
+        replacement_payload_refs=replacement_payload_refs,
+        replacement_payload_hashes=replacement_payload_hashes,
+        verified_artifact_refs=verified_refs,
+        verified_artifact_hashes=verified_hashes,
+        verified_artifact_byte_sizes=verified_byte_sizes,
+        artifact_namespace=REPLACEMENT_PACKAGE_ARTIFACT_NAMESPACE,
+    )
+    computed_basis_hash = replacement_package_artifact_manifest_authority_basis_hash(
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        pass_run_id=pass_run_id,
+        reconciliation_record_id=reconciliation_record_id,
+        replacement_package_set_authority_id=authority_id,
+        replacement_authority_basis_hash=replacement_authority.authority_basis_hash,
+        package_supersession_commit_id=commit_id,
+        package_supersession_commit_basis_hash=supersession_commit.commit_basis_hash,
+        artifact_manifest_hash=computed_manifest_hash,
+    )
+
+    internal_payload = {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "reconciliation_record_id": reconciliation_record_id,
+        "replacement_package_set_authority_id": authority_id,
+        "package_supersession_commit_id": commit_id,
+        "package_supersession_commit_basis_hash": supersession_commit.commit_basis_hash,
+        "replacement_package_set_id": replacement_authority.replacement_package_set_id,
+        "replacement_package_set_hash": replacement_authority.replacement_package_set_hash,
+        "replacement_package_kinds": replacement_package_kinds,
+        "replacement_payload_refs": replacement_payload_refs,
+        "replacement_payload_hashes": replacement_payload_hashes,
+        "hash_algorithm": REPLACEMENT_PACKAGE_ARTIFACT_HASH_ALGORITHM,
+        "artifact_namespace": REPLACEMENT_PACKAGE_ARTIFACT_NAMESPACE,
+        "artifact_manifest_hash": computed_manifest_hash,
+        "authority_basis_hash": computed_basis_hash,
+        "operator_decision": REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_OPERATOR_DECISION,
+    }
+    result = record_replacement_package_artifact_manifest(db, internal_payload)
+    manifest = (
+        db.query(L3ReplacementPackageArtifactManifest)
+        .filter(
+            L3ReplacementPackageArtifactManifest.replacement_package_artifact_manifest_id
+            == result["replacement_package_artifact_manifest_id"]
+        )
+        .one()
+    )
+    response = _manifest_response(
+        request_id=request_id,
+        status=result["status"],
+        manifest=manifest,
+        redact_artifact_refs=True,
+    )
+    response["schema_id"] = REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_SCHEMA_ID
+    response["replacement_package_artifact_manifest_mode"] = (
+        REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_MODE
+    )
+    response["source_gate"] = REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_SOURCE_GATE
+    response["record_from_authority_operator_decision"] = (
+        REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_OPERATOR_DECISION
+    )
+    response["replacement_artifact_materialization_id"] = None
+    response["materialization_basis_hash"] = None
+    response["replacement_authority_basis_hash"] = replacement_authority.authority_basis_hash
+    response["manifest_snapshot"]["corrected_artifact_set"] = {
+        "corrected_package_artifact_set_id": corrected.corrected_package_artifact_set_id,
+        "corrected_artifact_basis_hash": corrected.corrected_artifact_basis_hash,
+        "raw_artifact_refs_exposed": False,
+    }
+    response["authority_rail"]["corrected_artifact_set_source_authority"] = True
+    response["authority_rail"]["server_verified_corrected_artifact_authority"] = True
+    response["authority_rail"]["browser_supplied_corrected_artifact_refs_accepted"] = False
+    response["authority_rail"]["browser_supplied_artifact_manifest_hash_accepted"] = False
+    response["authority_rail"]["browser_supplied_byte_sizes_accepted"] = False
+    response["authority_rail"]["response_artifact_refs_redacted"] = True
+    response["authority_rail"]["raw_artifact_refs_exposed"] = False
     return response
