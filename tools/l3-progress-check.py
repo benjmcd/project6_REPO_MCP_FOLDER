@@ -1759,6 +1759,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME
     PLANNING_DOCS
     / "682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "683_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55803,6 +55807,85 @@ def _check_source_l3_output_package_active_authority_connector_local_receipt_run
                 )
 
 
+def _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_connector_local_receipt_runtime`.",
+        "683_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md",
+        "Runtime PR: `#1287`.",
+        "codex/l3-active-authority-local-receipt-impl",
+        "1290507eff93c0a03be4bcdbfe08ba1b2e7b8529",
+        "3603115d70f53974eb464856827e8c19bf7966c5",
+        "Selected reader path now synced: `connector_local_destination_receipt`.",
+        "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+        "Synced result: `current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_runtime`.",
+        "Runtime behavior change synced: `false`.",
+        "backend-layer3-api`: `SUCCESS` in `2m45s`",
+        "test`: `SUCCESS` in `3m22s`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR latestReviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "associated-cohort APS evidence-bundle authority path",
+        "connector dispatch remains associated-cohort APS evidence-bundle only",
+        "select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority connector-local receipt runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Connector Local Receipt Runtime Current-Main Sync",
+            "PR `#1287`",
+            "3603115d70f53974eb464856827e8c19bf7966c5",
+            "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+            "codex/l3-active-authority-local-receipt-runtime-sync",
+            "683_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1287",
+            "3603115d70f53974eb464856827e8c19bf7966c5",
+            "backend-layer3-api SUCCESS 2m45s",
+            "test SUCCESS 3m22s",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync",
+            "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+            "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+            "683_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1287",
+            "reviewThreads totalCount 0",
+            "connector_local_destination_receipt",
+            "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync",
+            "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority connector-local receipt runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -56328,6 +56411,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_connector_local_receipt_freeze(errors)
     _check_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_proof(errors)
+    _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
