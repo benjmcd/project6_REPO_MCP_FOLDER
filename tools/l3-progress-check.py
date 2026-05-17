@@ -1771,6 +1771,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE
     PLANNING_DOCS
     / "685_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -56066,6 +56070,108 @@ def _check_source_l3_output_package_active_authority_server_owned_local_outbox_w
                 )
 
 
+def _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime`.",
+        "686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md",
+        "685_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC.md",
+        "codex/l3-active-authority-local-outbox-impl",
+        "1a3a0025dbe9fa4b3325523e35632be7bce7e5c3",
+        "Selected reader path: `server_owned_local_outbox_write`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+        "adopt_active_replacement_package_authority_for_server_owned_local_outbox_write",
+        "Implementation result: `proved_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime`.",
+        "Runtime behavior change: `false`",
+        "active replacement refs/hashes are carried from handoff/export prepare through APS handoff dispatch",
+        "written artifact bytes match the same-origin delivery bytes",
+        "storage://server-owned-local-outbox/",
+        "artifact://server-owned-local-outbox-source-redacted",
+        "source `L3OutputPackage` rows",
+        "`L3ServerOwnedLocalOutboxWriteReceipt.authority_snapshot_json` carries connector-local receipt authority hash",
+        "same-key replay returns the same write receipt",
+        "no `ConnectorRun` or `ConnectorRunTarget` rows are created",
+        "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort -q",
+        "await_current_main_sync_for_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority server-owned local outbox write runtime proof term: {term}"
+            )
+
+    for blocked in (
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "package rebuild",
+        "package payload rewrite",
+        "direct source `L3OutputPackage` mutation",
+        "real connector invocation",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority server-owned local outbox write runtime non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Server-Owned Local Outbox Write Runtime Proof",
+            "686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md",
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+            "codex/l3-active-authority-local-outbox-impl",
+            "1a3a0025dbe9fa4b3325523e35632be7bce7e5c3",
+            "server_owned_local_outbox_write",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+            "test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+            "proved_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+            "codex/l3-active-authority-local-outbox-impl",
+            "686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md",
+            "1a3a0025dbe9fa4b3325523e35632be7bce7e5c3",
+            "server_owned_local_outbox_write",
+            "adopt_active_replacement_package_authority_for_server_owned_local_outbox_write",
+            "test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+            "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_proof",
+            "implementation_proof_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+            "686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md",
+            "server_owned_local_outbox_write",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+            "storage://server-owned-local-outbox/",
+            "no ConnectorRun or ConnectorRunTarget rows are created",
+            "test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort",
+            "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority server-owned local outbox write runtime proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -56594,6 +56700,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze(errors)
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

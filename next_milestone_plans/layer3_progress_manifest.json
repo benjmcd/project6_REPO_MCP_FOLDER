@@ -26105,5 +26105,40 @@
   "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync_merge_commit": "fcaa7ad7a38d6a5a1556424b2e90ade6d5bb03e0",
   "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
   "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync_next_posture": "implement_source_l3_output_package_active_authority_server_owned_local_outbox_write_after_freeze_sync",
-  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync_summary": "Doc 685 records current-main sync for PR #1289 merge commit fcaa7ad7a38d6a5a1556424b2e90ade6d5bb03e0 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture implement_source_l3_output_package_active_authority_server_owned_local_outbox_write_after_freeze_sync."
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync_summary": "Doc 685 records current-main sync for PR #1289 merge commit fcaa7ad7a38d6a5a1556424b2e90ade6d5bb03e0 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture implement_source_l3_output_package_active_authority_server_owned_local_outbox_write_after_freeze_sync.",
+  "source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime": {
+    "status": "proved_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+    "runtime_branch": "codex/l3-active-authority-local-outbox-impl",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/685_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_proof": "1a3a0025dbe9fa4b3325523e35632be7bce7e5c3",
+    "reader_path": "server_owned_local_outbox_write",
+    "route": "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+    "validation_seam": "recorded server_owned_local_outbox_target, connector_local_destination_receipt, external_export_download_prepare, and load_persisted_bundle_artifact source artifact validation",
+    "operator_action": "adopt_active_replacement_package_authority_for_server_owned_local_outbox_write",
+    "runtime_behavior_change": false,
+    "changed_files": [
+      "backend/tests/test_layer3_api.py"
+    ],
+    "proof_terms": [
+      "active refs/hashes carried through fake target and server-owned local outbox write",
+      "local outbox write copies the active-authority APS bundle artifact bytes",
+      "redacted storage://server-owned-local-outbox refs remain response-safe",
+      "source L3OutputPackage rows remain unchanged",
+      "durable L3ServerOwnedLocalOutboxWriteReceipt authority snapshot omits source_artifact_ref",
+      "same-key replay returns the same write receipt",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no real connector invocation or external destination write",
+      "no raw local path response leakage"
+    ],
+    "validation": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort -q PASS"
+    ],
+    "next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime"
+  },
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_branch": "codex/l3-active-authority-local-outbox-impl",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_doc": "next_milestone_plans/Layer3_planning_docs/686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_summary": "Doc 686 proof records source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime: server_owned_local_outbox_write carries active replacement refs/hashes through fake target and local outbox write on the admitted associated-cohort APS evidence-bundle path, copies only the active-authority APS bundle artifact bytes, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, enables no real connector invocation or external destination write, leaks no raw local path, and changes no service runtime behavior."
 }
