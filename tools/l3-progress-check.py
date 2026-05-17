@@ -1575,6 +1575,10 @@ LAYER3_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "635_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_FREEZE = (
+    PLANNING_DOCS
+    / "636_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -51589,6 +51593,68 @@ def _check_package_supersession_preview_rendered_control_current_main_sync(error
                 errors.append(f"{_rel(path)} missing package supersession preview rendered control sync term: {term}")
 
 
+def _check_rendered_replacement_package_set_authority_operator_action_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local planning/control freeze for `rendered_replacement_package_set_authority_control`.",
+        "636_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_FREEZE.md",
+        "635_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+        "Current-main preflight commit: `ef936ae066f8ac6f356b5cacb56635f1d9b80420`.",
+        "Selected exact operator action: `record_replacement_package_set_authority_after_supersession_preview`.",
+        "Selected implementation-entry mode: `rendered_replacement_package_set_authority_control`.",
+        "Existing backend surface: `/api/v1/layer3/package/replacement-set/record`.",
+        "Owner service: `backend/app/services/layer3_replacement_package_set_authority.py`.",
+        "Server runtime mode: `replacement_package_set_authority`.",
+        "Operator decision: `record_replacement_package_set_authority`.",
+        "Entry decision: `freeze_only`.",
+        "The next required action after merge is `current_main_sync_rendered_replacement_package_set_authority_operator_action_freeze`.",
+        "After current-main sync, the next exact posture is `implement_rendered_replacement_package_set_authority_control_after_freeze_sync`",
+        "the exact stop posture is `replacement_package_set_authority_request_source_authority_freeze`.",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_FREEZE)} "
+                f"missing rendered replacement package-set authority freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Replacement Package-Set Authority Operator Action Freeze",
+            "636_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_FREEZE.md",
+            "record_replacement_package_set_authority_after_supersession_preview",
+            "rendered_replacement_package_set_authority_control",
+            "/api/v1/layer3/package/replacement-set/record",
+            "implement_rendered_replacement_package_set_authority_control_after_freeze_sync",
+            "replacement_package_set_authority_request_source_authority_freeze",
+        ),
+        MANIFEST: (
+            "rendered_replacement_package_set_authority_operator_action_freeze",
+            "record_replacement_package_set_authority_after_supersession_preview",
+            "rendered_replacement_package_set_authority_control",
+            "replacement_package_set_authority",
+            "current_main_sync_rendered_replacement_package_set_authority_operator_action_freeze",
+            "implement_rendered_replacement_package_set_authority_control_after_freeze_sync",
+            "replacement_package_set_authority_request_source_authority_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_replacement_package_set_authority_operator_action_freeze_proof",
+            "636_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_FREEZE.md",
+            "record_replacement_package_set_authority_after_supersession_preview",
+            "rendered_replacement_package_set_authority_control",
+            "no browser/operator path editing",
+            "implement_rendered_replacement_package_set_authority_control_after_freeze_sync",
+            "replacement_package_set_authority_request_source_authority_freeze",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered replacement package-set authority freeze term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52064,6 +52130,7 @@ def main() -> int:
     _check_package_supersession_preview_operator_action_freeze(errors)
     _check_package_supersession_preview_rendered_control(errors)
     _check_package_supersession_preview_rendered_control_current_main_sync(errors)
+    _check_rendered_replacement_package_set_authority_operator_action_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
