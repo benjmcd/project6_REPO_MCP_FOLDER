@@ -26123,5 +26123,64 @@
   "latest_rendered_replacement_package_artifact_manifest_control_freeze_branch": "codex/l3-rendered-manifest-control-admission-freeze",
   "latest_rendered_replacement_package_artifact_manifest_control_freeze_doc": "next_milestone_plans/Layer3_planning_docs/656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
   "latest_rendered_replacement_package_artifact_manifest_control_freeze_live_behavior_change": false,
-  "latest_rendered_replacement_package_artifact_manifest_control_freeze_summary": "Doc 656 proof freezes the rendered replacement package artifact manifest control against the synced server-computed record-from-authority route and blocks browser-supplied artifact refs hashes bytes paths URLs package rebuild replacement namespace rows provider-public delivery connector dispatch source expansion RAG/vector auth/security and frontend-durable authority."
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_summary": "Doc 656 proof freezes the rendered replacement package artifact manifest control against the synced server-computed record-from-authority route and blocks browser-supplied artifact refs hashes bytes paths URLs package rebuild replacement namespace rows provider-public delivery connector dispatch source expansion RAG/vector auth/security and frontend-durable authority.",
+  "rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_rendered_replacement_package_artifact_manifest_control_freeze",
+    "status": "current_main_synced_rendered_replacement_package_artifact_manifest_control_freeze",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+    "freeze_pr": "#1260",
+    "freeze_branch": "codex/l3-rendered-manifest-control-admission-freeze",
+    "freeze_branch_commit": "d4dce1de07342aebd9b39c46ea5c009ec191d579",
+    "freeze_merge_commit": "628efbc97930027a9779bebb5d6063d310f63147",
+    "current_main_checkpoint_after_merge": "628efbc97930027a9779bebb5d6063d310f63147",
+    "merge_gate": [
+      "backend-layer3-api SUCCESS 2m37s",
+      "test SUCCESS 3m17s",
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "project6-origin/main 628efbc97930027a9779bebb5d6063d310f63147",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "synced_result": "current_main_synced_rendered_replacement_package_artifact_manifest_control_freeze",
+    "proof_terms": [
+      "657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+      "656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+      "rendered_replacement_package_artifact_manifest_control",
+      "record_replacement_package_artifact_manifest_from_authority",
+      "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+      "#replacement-package-artifact-manifest-submit",
+      "#replacement-package-artifact-manifest-panel",
+      "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync"
+    ],
+    "non_admitted": [
+      "new runtime behavior in this sync",
+      "new rendered behavior in this sync",
+      "browser-supplied artifact refs",
+      "browser-supplied manifest hashes",
+      "browser-supplied byte sizes",
+      "raw local path exposure",
+      "package rebuild",
+      "package payload rewrite",
+      "replacement namespace rows",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "frontend-durable authority"
+    ],
+    "next_whole_project_posture": "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync"
+  },
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_branch": "codex/l3-rendered-manifest-control-freeze-sync",
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_live_behavior_change": false,
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_summary": "Doc 657 proof records current-main sync for PR #1260, proves the rendered replacement package artifact manifest control freeze is current-main synced, and makes implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync the next exact posture."
 }
