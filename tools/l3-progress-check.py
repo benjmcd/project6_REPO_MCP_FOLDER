@@ -1918,6 +1918,10 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION = (
     PLANNING_DOCS
     / "724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -60619,6 +60623,122 @@ def _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation
                 )
 
 
+def _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `corrected_artifact_active_authority_handoff_export_prepare_evaluation`.",
+        "725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md",
+        "#1329",
+        "codex/l3-corrected-active-handoff-eval",
+        "4568f3e001bc899eec6edc30f325ec5d1dfbef19",
+        "536a14886311360c62aabfa6906944cf9445023e",
+        "codex/l3-corrected-active-handoff-sync",
+        "current_main_synced_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+        "corrected_artifact_active_authority_handoff_export_prepare_proven",
+        "Runtime behavior introduced by evaluation: `true`",
+        "Runtime behavior in this sync: `false`",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "comments totalCount: `0`",
+        "reviews totalCount: `0`",
+        "latestReviews totalCount: `0`",
+        "reviewThreads totalCount: `0`",
+        "unresolved current reviewThreads: `0`",
+        "merge state: `CLEAN`",
+        "Layer 3 progress state check `PASS`",
+        "Layer 3 target-selection validation `PASS (frozen)`",
+        "POST /api/v1/layer3/handoff/export/prepare",
+        "resolve_active_replacement_package_authority",
+        "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC)} "
+                f"missing corrected-artifact active authority handoff/export prepare sync term: {term}"
+            )
+
+    for blocked in (
+        "Connector invocation",
+        "connector-run creation",
+        "destination write",
+        "credentials",
+        "external network egress",
+        "provider-public delivery/use",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "delivery rerun",
+        "source expansion",
+        "RAG/vector behavior",
+        "rendered UI authority",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "browser-supplied refs/hashes/bytes",
+        "raw local path exposure",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC)} "
+                f"missing corrected-artifact active authority handoff/export prepare sync blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority Handoff Export Prepare Evaluation Current-Main Sync",
+            "725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+            "#1329",
+            "4568f3e001bc899eec6edc30f325ec5d1dfbef19",
+            "536a14886311360c62aabfa6906944cf9445023e",
+            "current_main_synced_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+            "corrected_artifact_active_authority_handoff_export_prepare_proven",
+            "POST /api/v1/layer3/handoff/export/prepare",
+            "resolve_active_replacement_package_authority",
+            "reviewThreads totalCount `0`",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync",
+            "current_main_synced_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+            "codex/l3-corrected-active-handoff-sync",
+            "725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+            "#1329",
+            "4568f3e001bc899eec6edc30f325ec5d1dfbef19",
+            "536a14886311360c62aabfa6906944cf9445023e",
+            "corrected_artifact_active_authority_handoff_export_prepare_proven",
+            '"runtime_behavior_in_this_sync": false',
+            "resolve_active_replacement_package_authority",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync",
+            "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_proof",
+            "current_main_sync_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+            "current_main_synced_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+            "725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+            "4568f3e001bc899eec6edc30f325ec5d1dfbef19",
+            "536a14886311360c62aabfa6906944cf9445023e",
+            "corrected_artifact_active_authority_handoff_export_prepare_proven",
+            '"runtime_behavior_in_this_sync": false',
+            "resolve_active_replacement_package_authority",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority handoff/export prepare sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -61186,6 +61306,7 @@ def main() -> int:
     _check_corrected_artifact_replacement_activation_authority_evaluation(errors)
     _check_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation(errors)
+    _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
