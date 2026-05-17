@@ -4298,3 +4298,15 @@ Proof covers idempotent same-key replay, same-key different-basis conflict, same
 Package rebuild runtime, package payload rewrite, source `L3OutputPackage` row mutation, package activation, downstream invalidation, handoff/export rerun, provider-public delivery/use, connector/destination dispatch, `ConnectorRun`/`ConnectorRunTarget` creation, credentials, external network egress, source expansion, RAG/vector behavior, broad auth/security behavior, frontend-durable authority, browser/operator path editing, caller-supplied arbitrary paths or URLs, raw local path exposure, hidden LLM planning, and rendered UI authority remain blocked.
 
 The next exact posture after merge is `await_current_main_sync_for_operator_review_corrections_corrected_package_artifact_set_runtime`. After sync, package rebuild runtime may proceed only after current-main authority explicitly admits using the recorded corrected package artifact set as source authority.
+
+## Operator Review Corrections Corrected Package Artifact Set Runtime Current-Main Sync
+
+Current-main proof/control sync: `705_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md` records PR `#1309`, branch `codex/l3-corrected-artifact-set-runtime`, branch commit `0d42f0fd8ab8535d10696a362f8755b2bd5fed52`, and merge commit `057cf3c7b7f88d0567e41786a9e2c23f1ae5b94d` for `operator_review_corrections_corrected_package_artifact_set_runtime`.
+
+Merge gate: `backend-layer3-api` passed in `2m47s`; `test` passed in `3m50s`; PR comments/reviews/latestReviews were empty; reviewThreads totalCount was `0`; mergeability was `MERGEABLE`; merge state was `CLEAN`; post-merge `python .\tools\l3-progress-check.py` passed on `project6-origin/main` at `057cf3c7b7f88d0567e41786a9e2c23f1ae5b94d`.
+
+Current main now contains `POST /api/v1/layer3/package/corrected-artifact-set/record`, service `backend/app/services/layer3_corrected_package_artifact_set.py`, durable model/table `L3CorrectedPackageArtifactSet` / `l3_corrected_package_artifact_set`, migration `backend/alembic/versions/0033_layer3_corrected_package_artifact_set.py`, response schema id `layer3.corrected_package_artifact_set.v1`, and redacted corrected package artifact set authority for `operator_review_corrections_server_owned_corrected_package_artifact_set`.
+
+Package rebuild runtime, package payload rewrite, source `L3OutputPackage` row mutation, package activation, downstream invalidation, provider-public delivery/use, connector/destination dispatch, `ConnectorRun`/`ConnectorRunTarget` creation, credentials, external network egress, source expansion, RAG/vector behavior, auth/security behavior, frontend-durable authority, browser/operator path editing, caller-supplied arbitrary paths or URLs, raw local path exposure, hidden LLM planning, and rendered UI authority remain blocked.
+
+The next exact posture is `freeze_package_rebuild_from_corrected_artifact_set_implementation_entry_after_runtime_sync`.
