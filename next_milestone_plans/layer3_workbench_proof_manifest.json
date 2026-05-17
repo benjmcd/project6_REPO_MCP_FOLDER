@@ -25862,5 +25862,72 @@
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_branch": "codex/l3-replacement-manifest-request-authority-freeze",
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_live_behavior_change": false,
-  "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_summary": "Doc 652 proof selects the server-computed replacement package artifact manifest record-from-authority request-authority source and sets implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync as the next posture."
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_summary": "Doc 652 proof selects the server-computed replacement package artifact manifest record-from-authority request-authority source and sets implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync as the next posture.",
+  "replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_replacement_package_artifact_manifest_request_authority_source_selection",
+    "status": "current_main_synced_replacement_package_artifact_manifest_request_authority_source_selection",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+    "selection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+    "selection_freeze_pr": "#1256",
+    "selection_freeze_branch_commit": "771378280ed8a35cc8dbe87f61ce863e6e6a0c11",
+    "selection_freeze_merge_commit": "1042a20f8176938ee5987bc25bba0eb01f18e5f6",
+    "proof_gate": [
+      "backend-layer3-api SUCCESS 2m58s",
+      "test SUCCESS 3m41s",
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "project6-origin/main 1042a20f8176938ee5987bc25bba0eb01f18e5f6",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "synced_result": "current_main_synced_replacement_package_artifact_manifest_request_authority_source_selection",
+    "proof_terms": [
+      "653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+      "652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+      "server_computed_replacement_package_artifact_manifest_record_from_materialization_authority",
+      "server_computed_replacement_package_artifact_manifest_record_from_authority",
+      "record_replacement_package_artifact_manifest_from_authority",
+      "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+      "artifact_manifest_hash",
+      "authority_basis_hash",
+      "verified byte-size basis",
+      "redacted artifact refs",
+      "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync"
+    ],
+    "non_admitted": [
+      "new runtime behavior in this sync",
+      "rendered replacement artifact manifest submit control",
+      "modifying existing caller-supplied manifest record request contract",
+      "browser-supplied replacement refs",
+      "browser-supplied replacement hashes",
+      "browser-supplied artifact manifest hashes",
+      "browser-supplied authority basis hashes",
+      "browser-supplied byte sizes or artifact bytes",
+      "raw local path exposure",
+      "replacement namespace rows",
+      "package rebuild",
+      "package payload rewrite",
+      "source L3OutputPackage row mutation",
+      "downstream invalidation",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority"
+    ],
+    "next_whole_project_posture": "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync"
+  },
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_branch": "codex/l3-manifest-authority-source-freeze-sync",
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_live_behavior_change": false,
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_summary": "Doc 653 proof records current-main sync for PR #1256, proves the server-computed replacement package artifact manifest record-from-authority source is current-main synced, and makes implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync the next exact posture."
 }

@@ -24331,5 +24331,52 @@
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_branch": "codex/l3-replacement-manifest-request-authority-freeze",
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_live_behavior_change": false,
-  "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_summary": "Doc 652 selects server_computed_replacement_package_artifact_manifest_record_from_authority as the governed request-authority source after blocker sync. The future route will compute artifact_manifest_hash authority_basis_hash and verified byte-size basis server-side from materialization replacement authority and supersession commit rows, while blocking browser-supplied refs hashes bytes paths and URLs."
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_summary": "Doc 652 selects server_computed_replacement_package_artifact_manifest_record_from_authority as the governed request-authority source after blocker sync. The future route will compute artifact_manifest_hash authority_basis_hash and verified byte-size basis server-side from materialization replacement authority and supersession commit rows, while blocking browser-supplied refs hashes bytes paths and URLs.",
+  "replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync": {
+    "status": "current_main_synced_replacement_package_artifact_manifest_request_authority_source_selection",
+    "sync_branch": "codex/l3-manifest-authority-source-freeze-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+    "selection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+    "selection_freeze_pr": "#1256",
+    "selection_freeze_branch": "codex/l3-replacement-manifest-request-authority-freeze",
+    "selection_freeze_branch_commit": "771378280ed8a35cc8dbe87f61ce863e6e6a0c11",
+    "selection_freeze_merge_commit": "1042a20f8176938ee5987bc25bba0eb01f18e5f6",
+    "current_main_checkpoint_after_merge": "1042a20f8176938ee5987bc25bba0eb01f18e5f6",
+    "selected_request_authority_source_now_synced": "server_computed_replacement_package_artifact_manifest_record_from_materialization_authority",
+    "selected_implementation_entry_mode_now_synced": "server_computed_replacement_package_artifact_manifest_record_from_authority",
+    "selected_operator_action_now_synced": "record_replacement_package_artifact_manifest_from_authority",
+    "future_owner_service_now_synced": "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+    "future_route_now_synced": "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+    "checks": [
+      "backend-layer3-api passed 2m58s",
+      "test passed 3m41s"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_rendered_behavior_change_this_sync": false,
+    "next_whole_project_posture": "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync"
+  },
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_branch": "codex/l3-manifest-authority-source-freeze-sync",
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_live_behavior_change": false,
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_summary": "Doc 653 syncs PR #1256 merge commit 1042a20f8176938ee5987bc25bba0eb01f18e5f6 to current main. The server-computed replacement package artifact manifest record-from-authority source is current-main synced, and the next exact posture is implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync."
 }
