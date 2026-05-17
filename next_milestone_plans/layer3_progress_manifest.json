@@ -24158,5 +24158,65 @@
   "latest_rendered_package_supersession_commit_control_runtime_current_main_sync_branch": "codex/l3-rendered-supersession-commit-control-sync",
   "latest_rendered_package_supersession_commit_control_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/649_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_rendered_package_supersession_commit_control_runtime_current_main_sync_live_behavior_change": false,
-  "latest_rendered_package_supersession_commit_control_runtime_current_main_sync_summary": "Doc 649 syncs PR #1252 merge commit fe6d93eaad95c768b930b384b592d00d5697c37e to current main. The rendered package supersession commit control runtime is current-main synced, and the next exact posture is freeze_rendered_replacement_package_artifact_manifest_control_after_package_supersession_commit_control_sync."
+  "latest_rendered_package_supersession_commit_control_runtime_current_main_sync_summary": "Doc 649 syncs PR #1252 merge commit fe6d93eaad95c768b930b384b592d00d5697c37e to current main. The rendered package supersession commit control runtime is current-main synced, and the next exact posture is freeze_rendered_replacement_package_artifact_manifest_control_after_package_supersession_commit_control_sync.",
+  "rendered_replacement_package_artifact_manifest_control_request_authority_freeze": {
+    "status": "branch_local_freeze_replacement_package_artifact_manifest_request_authority",
+    "freeze_branch": "codex/l3-rendered-replacement-manifest-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/650_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_REQUEST_AUTHORITY_FREEZE.md",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/649_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "596d7319dd3bb06d2b973e383776286138e92d16",
+    "selected_surface": "package_mutation_reconstruction",
+    "attempted_implementation_entry_mode": "rendered_replacement_package_artifact_manifest_control",
+    "attempted_operator_action": "record_replacement_package_artifact_manifest_after_package_supersession_commit",
+    "audit_result": "rendered_replacement_package_artifact_manifest_control_blocked_by_missing_governed_manifest_request_authority",
+    "required_stop_posture": "replacement_package_artifact_manifest_request_authority_freeze",
+    "entry_decision": "freeze_only",
+    "runtime_status_this_pass": "not_implemented",
+    "missing_authority": [
+      "server-computed artifact_manifest_hash from verified replacement artifact refs hashes and byte sizes",
+      "server-computed authority_basis_hash from replacement package-set authority package supersession commit authority and artifact manifest hash",
+      "browser-safe manifest request-authority response state"
+    ],
+    "evidence": [
+      "backend/app/services/layer3_replacement_package_artifact_manifest.py requires artifact_manifest_hash and authority_basis_hash and computes manifest hash with verified_artifact_byte_sizes",
+      "backend/app/services/layer3_replacement_package_materialization.py returns replacement refs and hashes but not manifest request-authority hashes or verified byte sizes",
+      "backend/app/review_ui/static/layer3.js has no replacementPackageArtifactManifestPayload owner or governed manifest request-authority state"
+    ],
+    "blocked_surfaces": [
+      "rendered replacement artifact manifest submit control in this pass",
+      "backend route behavior change",
+      "backend DTO response model model migration or service behavior change",
+      "replacement artifact manifest recording from browser state",
+      "replacement namespace rows",
+      "package rebuild",
+      "package payload rewrite",
+      "source L3OutputPackage row mutation",
+      "downstream invalidation",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority",
+      "browser/operator path editing",
+      "caller-supplied arbitrary paths or URLs",
+      "browser file reads"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "next_required_action_after_merge": "current_main_sync_replacement_package_artifact_manifest_request_authority_freeze",
+    "next_whole_project_posture": "select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync"
+  },
+  "latest_rendered_replacement_package_artifact_manifest_control_request_authority_freeze_branch": "codex/l3-rendered-replacement-manifest-freeze",
+  "latest_rendered_replacement_package_artifact_manifest_control_request_authority_freeze_doc": "next_milestone_plans/Layer3_planning_docs/650_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_REQUEST_AUTHORITY_FREEZE.md",
+  "latest_rendered_replacement_package_artifact_manifest_control_request_authority_freeze_live_behavior_change": false,
+  "latest_rendered_replacement_package_artifact_manifest_control_request_authority_freeze_summary": "Doc 650 records that rendered_replacement_package_artifact_manifest_control is blocked by missing governed manifest request authority. The already-live manifest backend requires artifact_manifest_hash and authority_basis_hash from server-verified byte-size authority that current rendered state does not expose, so the next posture is select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync."
 }
