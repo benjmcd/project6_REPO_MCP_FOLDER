@@ -1465,6 +1465,7 @@ class Layer3ReplacementPackageNamespaceRecordRequest(BaseModel):
     public_url: Any | None = None
     signed_url: Any | None = None
     download_url: Any | None = None
+    source_expansion: Any | None = None
     source_upload: Any | None = None
     source_directory: Any | None = None
     local_directory: Any | None = None
@@ -1486,6 +1487,32 @@ class Layer3ReplacementPackageNamespaceRecordRequest(BaseModel):
     retry: Any | None = None
     rerun: Any | None = None
     cancel: Any | None = None
+
+
+class Layer3ReplacementPackageNamespaceFromCorrectedManifestRequest(
+    Layer3ReplacementPackageNamespaceRecordRequest
+):
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    corrected_package_artifact_set_id: str | None = None
+    corrected_artifact_basis_hash: str | None = None
+    replacement_authority_basis_hash: str | None = None
+    package_supersession_commit_basis_hash: str | None = None
+    replacement_artifact_manifest_authority_basis_hash: str | None = None
+    source_output_package_ids: Any | None = None
+    package_kinds: Any | None = None
+    package_schema_ids: Any | None = None
+    artifact_refs: Any | None = None
+    artifact_hashes: Any | None = None
+    authority_basis_hashes: Any | None = None
+    replacement_output_package_id: Any | None = None
+    replacement_output_package_ids: Any | None = None
+    replacement_activation_basis_hash: Any | None = None
+    replacement_namespace_rows: Any | None = None
+    namespace_row_ids: Any | None = None
+    browser_state: Any | None = None
+    frontend_state: Any | None = None
 
 
 class Layer3PackageReplacementActivationCommitRequest(BaseModel):
@@ -2898,6 +2925,36 @@ class Layer3ReplacementPackageNamespaceRecordResponse(Layer3BaseResponse):
     frontend_only_durable_state_enabled: bool
     downstream_unavailable: list[str]
     next_state: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3ReplacementPackageNamespaceSetResponse(Layer3BaseResponse):
+    replacement_package_namespace_mode: str
+    source_gate: str
+    record_from_authority_operator_decision: str
+    replacement_artifact_manifest_id: str
+    replacement_package_set_authority_id: str
+    package_supersession_commit_id: str
+    corrected_package_artifact_set_id: str
+    replacement_output_package_ids: list[str]
+    source_output_package_ids: list[str]
+    package_kinds: list[str]
+    artifact_refs: list[str]
+    artifact_hashes: list[str]
+    namespace_records: list[Layer3ReplacementPackageNamespaceRecordResponse]
+    namespace_rows_persisted: bool
+    complete_namespace_set: bool
+    server_derived_namespace_rows: bool
+    per_kind_row_idempotency_keys: bool
+    package_row_mutation_enabled: bool
+    package_payload_write_enabled: bool
+    l3_output_package_write_enabled: bool
+    replacement_activation_enabled: bool
+    connector_dispatch_enabled: bool
+    provider_public_url_enabled: bool
+    source_widening_enabled: bool
+    qualitative_hybrid_rag_execution_enabled: bool
+    frontend_only_durable_state_enabled: bool
     authority_rail: dict[str, Any]
 
 
@@ -5545,6 +5602,59 @@ REPLACEMENT_PACKAGE_NAMESPACE_RECORD_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+REPLACEMENT_PACKAGE_NAMESPACE_FROM_CORRECTED_MANIFEST_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Server-computed complete replacement namespace set from corrected-artifact manifest authority. "
+        "It accepts authority ids and basis hashes only, derives source package ids, package kinds, "
+        "schema ids, artifact refs, artifact hashes, and per-row authority basis hashes server-side, "
+        "and records L3ReplacementOutputPackage rows without mutating source packages."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "corrected_package_artifact_set_id",
+        "corrected_artifact_basis_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "package_supersession_commit_id",
+        "package_supersession_commit_basis_hash",
+        "replacement_artifact_manifest_id",
+        "replacement_artifact_manifest_authority_basis_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "corrected_package_artifact_set_id": {"type": "string"},
+        "corrected_artifact_basis_hash": {"type": "string"},
+        "replacement_package_set_authority_id": {"type": "string"},
+        "replacement_authority_basis_hash": {"type": "string"},
+        "package_supersession_commit_id": {"type": "string"},
+        "package_supersession_commit_basis_hash": {"type": "string"},
+        "replacement_artifact_manifest_id": {"type": "string"},
+        "replacement_artifact_manifest_authority_basis_hash": {"type": "string"},
+        "operator_decision": {
+            "type": "string",
+            "enum": ["record_replacement_package_namespace_from_corrected_artifact_manifest_authority"],
+        },
+        **{
+            field: _forbidden_request_field_schema()
+            for field in sorted(
+                layer3_replacement_package_namespace.REPLACEMENT_PACKAGE_NAMESPACE_FROM_CORRECTED_MANIFEST_FORBIDDEN_FIELDS
+            )
+        },
+    },
+}
+
+
 PACKAGE_REPLACEMENT_ACTIVATION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -7040,6 +7150,28 @@ def post_package_replacement_namespace_record(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_replacement_package_namespace.record_replacement_package_namespace(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+    response_model=Layer3ReplacementPackageNamespaceSetResponse,
+    openapi_extra={
+        "requestBody": _json_request_body(
+            REPLACEMENT_PACKAGE_NAMESPACE_FROM_CORRECTED_MANIFEST_REQUEST_SCHEMA
+        )
+    },
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_package_replacement_namespace_record_from_corrected_artifact_manifest_authority(
+    payload: Layer3ReplacementPackageNamespaceFromCorrectedManifestRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_replacement_package_namespace.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
             db,
             payload.model_dump(exclude_unset=True),
         )

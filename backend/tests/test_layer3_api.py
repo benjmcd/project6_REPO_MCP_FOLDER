@@ -2376,6 +2376,90 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "authority_rail",
     } <= set(namespace_schema["required"])
 
+    corrected_namespace_request_schema = spec["paths"][
+        "/api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority"
+    ]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    for key, value in (
+        layer3_api.REPLACEMENT_PACKAGE_NAMESPACE_FROM_CORRECTED_MANIFEST_REQUEST_SCHEMA.items()
+    ):
+        assert corrected_namespace_request_schema[key] == value
+    assert set(corrected_namespace_request_schema["properties"]) <= set(
+        layer3_api.Layer3ReplacementPackageNamespaceFromCorrectedManifestRequest.model_fields
+    )
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "corrected_package_artifact_set_id",
+        "corrected_artifact_basis_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "package_supersession_commit_id",
+        "package_supersession_commit_basis_hash",
+        "replacement_artifact_manifest_id",
+        "replacement_artifact_manifest_authority_basis_hash",
+        "operator_decision",
+    } == set(corrected_namespace_request_schema["required"])
+    assert corrected_namespace_request_schema["properties"]["operator_decision"]["enum"] == [
+        "record_replacement_package_namespace_from_corrected_artifact_manifest_authority"
+    ]
+    for forbidden_field in (
+        "artifact_ref",
+        "artifact_hash",
+        "authority_basis_hash",
+        "replacement_output_package_ids",
+        "public_url",
+        "destination_url",
+        "connector_run_id",
+        "source_expansion",
+        "rag_vector_index",
+    ):
+        assert corrected_namespace_request_schema["properties"][forbidden_field]["description"].startswith(
+            "Known but non-admitted"
+        )
+    corrected_namespace_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+        "post",
+    )
+    assert corrected_namespace_schema["title"] == "Layer3ReplacementPackageNamespaceSetResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "replacement_package_namespace_mode",
+        "source_gate",
+        "record_from_authority_operator_decision",
+        "replacement_artifact_manifest_id",
+        "replacement_package_set_authority_id",
+        "package_supersession_commit_id",
+        "corrected_package_artifact_set_id",
+        "replacement_output_package_ids",
+        "source_output_package_ids",
+        "package_kinds",
+        "artifact_refs",
+        "artifact_hashes",
+        "namespace_records",
+        "namespace_rows_persisted",
+        "complete_namespace_set",
+        "server_derived_namespace_rows",
+        "per_kind_row_idempotency_keys",
+        "package_row_mutation_enabled",
+        "package_payload_write_enabled",
+        "l3_output_package_write_enabled",
+        "replacement_activation_enabled",
+        "connector_dispatch_enabled",
+        "provider_public_url_enabled",
+        "source_widening_enabled",
+        "qualitative_hybrid_rag_execution_enabled",
+        "frontend_only_durable_state_enabled",
+        "authority_rail",
+    } <= set(corrected_namespace_schema["required"])
+
     activation_request_schema = spec["paths"]["/api/v1/layer3/package/replacement-activation/commit"]["post"][
         "requestBody"
     ]["content"]["application/json"]["schema"]
@@ -2809,6 +2893,10 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
             "post",
         ): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-namespace/record", "post"): ("400", "404", "409"),
+        (
+            "/api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+            "post",
+        ): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-activation/commit", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
@@ -3355,6 +3443,75 @@ def test_layer3_replacement_package_namespace_api_boundary_returns_workbench_err
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_replacement_package_namespace_boundary"]
+
+
+def test_layer3_replacement_package_namespace_from_corrected_manifest_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_corrected_manifest_namespace_boundary_error",
+            "Forced corrected-manifest namespace boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_corrected_manifest_namespace_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_replacement_package_namespace,
+        "record_replacement_package_namespace_from_corrected_artifact_manifest_authority",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post(
+        "/api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+        json={},
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_corrected_manifest_namespace_boundary_error",
+    )
+    assert body["message"] == "Forced corrected-manifest namespace boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_corrected_manifest_namespace_boundary"]
+
+
+def test_layer3_replacement_package_namespace_from_corrected_manifest_known_forbidden_field_returns_workbench_error(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+        json={
+            "client_request_id": "req-corrected-namespace-forbidden-public-url",
+            "session_id": "session-forbidden",
+            "analysis_plan_id": "plan-forbidden",
+            "pass_run_id": "pass-forbidden",
+            "reconciliation_record_id": "recon-forbidden",
+            "corrected_package_artifact_set_id": "corrected-forbidden",
+            "corrected_artifact_basis_hash": "corrected-basis-forbidden",
+            "replacement_package_set_authority_id": "authority-forbidden",
+            "replacement_authority_basis_hash": "authority-basis-forbidden",
+            "package_supersession_commit_id": "commit-forbidden",
+            "package_supersession_commit_basis_hash": "commit-basis-forbidden",
+            "replacement_artifact_manifest_id": "manifest-forbidden",
+            "replacement_artifact_manifest_authority_basis_hash": "manifest-basis-forbidden",
+            "operator_decision": "record_replacement_package_namespace_from_corrected_artifact_manifest_authority",
+            "public_url": "https://example.invalid/package",
+        },
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=400,
+        error_code="replacement_package_namespace_from_corrected_manifest_scope_not_admitted",
+    )
+    assert body["blocked_fields"] == ["public_url"]
 
 
 def test_layer3_package_replacement_activation_api_boundary_returns_workbench_error_envelope(

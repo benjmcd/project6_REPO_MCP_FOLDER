@@ -18,6 +18,7 @@ MIGRATION = BACKEND / "alembic" / "versions" / "0021_layer3_replacement_output_p
 
 from app.db.session import Base
 from app.models.models import (
+    L3CorrectedPackageArtifactSet,
     L3OutputPackage,
     L3ReplacementOutputPackage,
 )
@@ -27,7 +28,9 @@ from app.services.layer3_package_entry import PACKAGE_SCHEMA_IDS
 from app.services.layer3_workbench import Layer3WorkbenchError
 from test_layer3_replacement_package_artifact_manifest import (
     PACKAGE_KINDS,
+    _corrected_manifest_payload,
     _manifest_payload,
+    _record_corrected_manifest_authority_chain,
     _record_authority_chain,
 )
 
@@ -148,6 +151,32 @@ def _namespace_payload(
     }
 
 
+def _corrected_namespace_payload(
+    *,
+    corrected: dict,
+    authority: dict,
+    commit: dict,
+    manifest: dict,
+    request_id: str = "req-corrected-namespace",
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "session_id": "session-1",
+        "analysis_plan_id": "plan-1",
+        "pass_run_id": "pass-1",
+        "reconciliation_record_id": "recon-1",
+        "corrected_package_artifact_set_id": corrected["corrected_package_artifact_set_id"],
+        "corrected_artifact_basis_hash": corrected["corrected_artifact_basis_hash"],
+        "replacement_package_set_authority_id": authority["replacement_package_set_authority_id"],
+        "replacement_authority_basis_hash": authority["authority_basis_hash"],
+        "package_supersession_commit_id": commit["package_supersession_commit_id"],
+        "package_supersession_commit_basis_hash": commit["commit_basis_hash"],
+        "replacement_artifact_manifest_id": manifest["replacement_package_artifact_manifest_id"],
+        "replacement_artifact_manifest_authority_basis_hash": manifest["authority_basis_hash"],
+        "operator_decision": "record_replacement_package_namespace_from_corrected_artifact_manifest_authority",
+    }
+
+
 def test_replacement_package_namespace_records_separate_row_without_package_mutation(tmp_path) -> None:
     engine = create_engine(f"sqlite:///{tmp_path / 'replacement-namespace.sqlite'}", future=True)
     Base.metadata.create_all(engine)
@@ -200,6 +229,245 @@ def test_replacement_package_namespace_records_separate_row_without_package_muta
         replay = namespace_service.record_replacement_package_namespace(db, payload)
         assert replay["status"] == "already_recorded"
         assert replay["replacement_output_package_id"] == response["replacement_output_package_id"]
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_replacement_package_namespace_from_corrected_manifest_records_complete_set(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'corrected-namespace.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        source, artifacts, corrected, authority, commit = _record_corrected_manifest_authority_chain(db, tmp_path)
+        manifest = manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+            db,
+            _corrected_manifest_payload(corrected=corrected, authority=authority, commit=commit),
+        )
+        payload = _corrected_namespace_payload(
+            corrected=corrected,
+            authority=authority,
+            commit=commit,
+            manifest=manifest,
+        )
+        source_packages_before = [
+            (package.output_package_id, package.package_kind, package.payload_ref, package.payload_hash)
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind).all()
+        ]
+        files_before = {ref: Path(ref).read_bytes() for ref in artifacts["replacement_payload_refs"]}
+
+        response = namespace_service.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
+            db,
+            payload,
+        )
+
+        assert response["schema_id"] == (
+            "layer3.replacement_package_namespace_from_corrected_artifact_manifest_authority.v1"
+        )
+        assert response["status"] == "recorded"
+        assert response["complete_namespace_set"] is True
+        assert response["server_derived_namespace_rows"] is True
+        assert response["per_kind_row_idempotency_keys"] is True
+        assert response["replacement_activation_enabled"] is False
+        assert response["package_payload_write_enabled"] is False
+        assert response["l3_output_package_write_enabled"] is False
+        assert response["package_kinds"] == PACKAGE_KINDS
+        assert len(response["replacement_output_package_ids"]) == len(PACKAGE_KINDS)
+        assert all(ref.startswith("artifact://replacement-package-artifacts/") for ref in response["artifact_refs"])
+        assert response["artifact_hashes"] == artifacts["replacement_payload_hashes"]
+        assert db.query(L3ReplacementOutputPackage).count() == len(PACKAGE_KINDS)
+        assert db.query(L3OutputPackage).count() == 3
+        assert response["authority_rail"]["browser_supplied_artifact_refs_accepted"] is False
+        assert response["authority_rail"]["browser_supplied_artifact_hashes_accepted"] is False
+        assert response["authority_rail"]["source_l3_output_package_mutated"] is False
+        assert response["authority_rail"]["replacement_activation_created"] is False
+
+        source_packages_after = [
+            (package.output_package_id, package.package_kind, package.payload_ref, package.payload_hash)
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind).all()
+        ]
+        assert source_packages_after == source_packages_before
+        assert {ref: Path(ref).read_bytes() for ref in artifacts["replacement_payload_refs"]} == files_before
+
+        replay = namespace_service.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
+            db,
+            payload,
+        )
+        assert replay["status"] == "already_recorded"
+        assert replay["replacement_output_package_ids"] == response["replacement_output_package_ids"]
+
+        same_basis = namespace_service.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
+            db,
+            {**payload, "client_request_id": "req-corrected-namespace-same-basis"},
+        )
+        assert same_basis["status"] == "already_recorded"
+        assert same_basis["replacement_output_package_ids"] == response["replacement_output_package_ids"]
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_replacement_package_namespace_from_corrected_manifest_prechecks_fail_closed(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'corrected-namespace-prechecks.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        _source, _artifacts, corrected, authority, commit = _record_corrected_manifest_authority_chain(db, tmp_path)
+        manifest = manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+            db,
+            _corrected_manifest_payload(corrected=corrected, authority=authority, commit=commit),
+        )
+        payload = _corrected_namespace_payload(
+            corrected=corrected,
+            authority=authority,
+            commit=commit,
+            manifest=manifest,
+        )
+        cases = [
+            (
+                {**payload, "operator_decision": "record_replacement_package_namespace"},
+                "unsupported_replacement_package_namespace_from_corrected_manifest_decision",
+            ),
+            (
+                {**payload, "artifact_ref": "browser-ref"},
+                "replacement_package_namespace_from_corrected_manifest_scope_not_admitted",
+            ),
+            (
+                {**payload, "public_url": "https://example.invalid/package"},
+                "replacement_package_namespace_from_corrected_manifest_scope_not_admitted",
+            ),
+            (
+                {**payload, "corrected_artifact_basis_hash": "stale-corrected-basis"},
+                "replacement_package_namespace_from_corrected_manifest_corrected_basis_hash_mismatch",
+            ),
+            (
+                {**payload, "replacement_artifact_manifest_authority_basis_hash": "stale-manifest-basis"},
+                "replacement_package_namespace_from_corrected_manifest_manifest_authority_basis_hash_mismatch",
+            ),
+        ]
+        for bad_payload, expected_error in cases:
+            try:
+                namespace_service.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
+                    db,
+                    bad_payload,
+                )
+            except Layer3WorkbenchError as exc:
+                assert exc.error_code == expected_error
+            else:
+                raise AssertionError(f"expected {expected_error}")
+
+        response = namespace_service.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
+            db,
+            payload,
+        )
+        assert response["status"] == "recorded"
+        try:
+            namespace_service.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
+                db,
+                {**payload, "corrected_artifact_basis_hash": "other"},
+            )
+        except Layer3WorkbenchError as exc:
+            assert exc.error_code == "replacement_package_namespace_from_corrected_manifest_corrected_basis_hash_mismatch"
+        else:
+            raise AssertionError("expected same-key corrected basis conflict")
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_replacement_package_namespace_from_corrected_manifest_rejects_stale_corrected_set(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'corrected-namespace-stale-set.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        _source, _artifacts, corrected, authority, commit = _record_corrected_manifest_authority_chain(db, tmp_path)
+        manifest = manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+            db,
+            _corrected_manifest_payload(corrected=corrected, authority=authority, commit=commit),
+        )
+        corrected_row = (
+            db.query(L3CorrectedPackageArtifactSet)
+            .filter(
+                L3CorrectedPackageArtifactSet.corrected_package_artifact_set_id
+                == corrected["corrected_package_artifact_set_id"]
+            )
+            .one()
+        )
+        corrected_row.corrected_artifact_hashes_json = [
+            "stale-hash",
+            *corrected_row.corrected_artifact_hashes_json[1:],
+        ]
+        db.commit()
+        payload = _corrected_namespace_payload(
+            corrected=corrected,
+            authority=authority,
+            commit=commit,
+            manifest=manifest,
+        )
+
+        try:
+            namespace_service.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
+                db,
+                payload,
+            )
+        except Layer3WorkbenchError as exc:
+            assert exc.error_code == (
+                "replacement_package_namespace_from_corrected_manifest_corrected_artifact_vectors_mismatch"
+            )
+        else:
+            raise AssertionError("expected corrected artifact-set mismatch")
+        assert db.query(L3ReplacementOutputPackage).count() == 0
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_replacement_package_namespace_from_corrected_manifest_rolls_back_partial_set(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'corrected-namespace-atomic.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        _source, _artifacts, corrected, authority, commit = _record_corrected_manifest_authority_chain(db, tmp_path)
+        manifest = manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+            db,
+            _corrected_manifest_payload(corrected=corrected, authority=authority, commit=commit),
+        )
+        payload = _corrected_namespace_payload(
+            corrected=corrected,
+            authority=authority,
+            commit=commit,
+            manifest=manifest,
+        )
+        row_payloads = namespace_service._corrected_manifest_namespace_payloads(  # noqa: SLF001
+            db,
+            payload,
+            request_id=payload["client_request_id"],
+        )
+        bad_row_payloads = [dict(row_payload) for row_payload in row_payloads]
+        bad_row_payloads[1]["authority_basis_hash"] = "stale-authority-basis-hash"
+        monkeypatch.setattr(
+            namespace_service,
+            "_corrected_manifest_namespace_payloads",
+            lambda _db, _payload, *, request_id: bad_row_payloads,
+        )
+
+        try:
+            namespace_service.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
+                db,
+                payload,
+            )
+        except Layer3WorkbenchError as exc:
+            assert exc.error_code == "replacement_package_namespace_authority_basis_hash_mismatch"
+        else:
+            raise AssertionError("expected namespace-set rollback")
+        assert db.query(L3ReplacementOutputPackage).count() == 0
     finally:
         db.close()
         engine.dispose()
