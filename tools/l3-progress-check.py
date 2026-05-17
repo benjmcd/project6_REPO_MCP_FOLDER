@@ -1599,6 +1599,10 @@ LAYER3_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_CURRENT_MAIN_S
     PLANNING_DOCS
     / "641_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "642_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -51958,6 +51962,86 @@ def _check_replacement_package_set_request_source_authority_selection_current_ma
                 errors.append(f"{_rel(path)} missing replacement package-set request source selection sync term: {term}")
 
 
+def _check_replacement_package_artifact_materialization_runtime_proof(errors: list[str]) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: runtime implementation proof for `server_owned_replacement_package_artifact_materialization_request_source`.",
+        "642_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF.md",
+        "640_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE.md",
+        "641_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+        "Runtime branch: `codex/l3-replacement-materialization-source`.",
+        "Current-main checkpoint before implementation: `e98bab8ae624b41b40a9c9c0149f5304690e457c`.",
+        "Selected implementation action: `implement_server_owned_replacement_package_artifact_materialization_request_source_after_selection_sync`.",
+        "Selected operator decision: `materialize_replacement_package_artifacts_from_supersession_preview`.",
+        "backend/app/services/layer3_replacement_package_materialization.py",
+        "POST /api/v1/layer3/package/replacement-artifact/materialize",
+        "l3_replacement_package_artifact_materialization",
+        "backend/alembic/versions/0031_layer3_replacement_package_materialization.py",
+        "replacement-package-artifacts",
+        "replacement_package_set_id",
+        "replacement_payload_refs",
+        "replacement_payload_hashes",
+        "same `client_request_id` plus different basis failing closed",
+        "The next whole-project posture after this runtime proof merges is `await_current_main_sync_for_replacement_package_artifact_materialization_runtime`.",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF)} "
+                f"missing replacement package artifact materialization runtime proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package Artifact Materialization Runtime Proof",
+            "642_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF.md",
+            "backend/app/services/layer3_replacement_package_materialization.py",
+            "POST /api/v1/layer3/package/replacement-artifact/materialize",
+            "l3_replacement_package_artifact_materialization",
+            "replacement-package-artifacts",
+            "await_current_main_sync_for_replacement_package_artifact_materialization_runtime",
+        ),
+        MANIFEST: (
+            "replacement_package_artifact_materialization_runtime_proof",
+            "replacement_package_artifact_materialization_runtime_implemented_branch_local",
+            "codex/l3-replacement-materialization-source",
+            "backend/app/services/layer3_replacement_package_materialization.py",
+            "POST /api/v1/layer3/package/replacement-artifact/materialize",
+            "l3_replacement_package_artifact_materialization",
+            "backend/alembic/versions/0031_layer3_replacement_package_materialization.py",
+            "replacement-package-artifacts",
+            "test_layer3_api_replacement_package_artifact_materialization_writes_server_owned_artifacts_only",
+            "await_current_main_sync_for_replacement_package_artifact_materialization_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_artifact_materialization_runtime_proof",
+            "replacement_package_artifact_materialization_runtime_implementation",
+            "server_owned_replacement_package_artifact_materialization_from_supersession_preview",
+            "materialize_replacement_package_artifacts_from_supersession_preview",
+            "backend/app/services/layer3_replacement_package_materialization.py",
+            "POST /api/v1/layer3/package/replacement-artifact/materialize",
+            "same client_request_id different basis conflict",
+            "missing source package payload ref fail closed",
+            "await_current_main_sync_for_replacement_package_artifact_materialization_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing replacement package artifact materialization runtime proof term: {term}"
+                )
+
+    for path in (
+        ROOT / "backend" / "app" / "services" / "layer3_replacement_package_materialization.py",
+        ROOT / "backend" / "alembic" / "versions" / "0031_layer3_replacement_package_materialization.py",
+    ):
+        if not path.exists():
+            errors.append(f"{_rel(path)} missing replacement package artifact materialization runtime file")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52439,6 +52523,7 @@ def main() -> int:
     _check_replacement_package_set_authority_request_source_authority_current_main_sync(errors)
     _check_replacement_package_set_request_source_authority_selection_freeze(errors)
     _check_replacement_package_set_request_source_authority_selection_current_main_sync(errors)
+    _check_replacement_package_artifact_materialization_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
