@@ -27035,5 +27035,38 @@
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_merge_commit": "36b38332d5cbb23271e22e27cd59b0aa17903d55",
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync",
-  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_summary": "Doc 671 records current-main sync for PR #1275 and sets the next exact posture to select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync."
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_summary": "Doc 671 records current-main sync for PR #1275 and sets the next exact posture to select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync.",
+  "source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_proof": {
+    "proof_kind": "implementation_entry_freeze_source_l3_output_package_active_authority_aps_handoff_dispatch",
+    "status": "implementation_entry_frozen_source_l3_output_package_active_authority_aps_handoff_dispatch",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-active-authority-aps-dispatch-freeze",
+    "current_main_preflight_commit": "75ff03173b185d434335831ed382183d58403946",
+    "reader_path": "aps_handoff_dispatch",
+    "route": "POST /api/v1/layer3/handoff/aps/dispatch",
+    "resolver": "resolve_active_replacement_package_authority",
+    "owner_files": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/services/layer3_aps_handoff.py",
+      "backend/app/services/layer3_package_replacement_activation.py",
+      "backend/tests/test_layer3_api.py"
+    ],
+    "proof_terms": [
+      "no runtime begins in this freeze",
+      "aps_handoff_dispatch selected as next downstream active authority reader",
+      "materialize_aps_handoff currently reads source L3OutputPackage rows",
+      "future implementation must preserve source L3OutputPackage rows unchanged",
+      "future implementation must fail closed on prepare state without matching active authority",
+      "external export/download adoption remains unadmitted"
+    ],
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "next_posture": "current_main_sync_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze"
+  },
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_branch": "codex/l3-active-authority-aps-dispatch-freeze",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_doc": "next_milestone_plans/Layer3_planning_docs/672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_summary": "Doc 672 proof records an implementation-entry freeze only: aps_handoff_dispatch is selected as the next active package authority reader, no runtime begins, and downstream readers plus package mutation/rewrite/source/RAG/auth/frontend-durable surfaces remain blocked."
 }
