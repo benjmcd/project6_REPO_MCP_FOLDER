@@ -1541,6 +1541,186 @@ async function recordRenderedReplacementPackageSetAuthority(
   return { materialization, replacementAuthority };
 }
 
+async function commitRenderedPackageSupersession(
+  page,
+  sessionId,
+  approval,
+  execution,
+  commit,
+  supersessionPreview,
+  replacementAuthority,
+) {
+  const panel = page.locator('#package-supersession-commit-panel');
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_package_supersession_commit_control');
+  await expect(panel).toHaveAttribute('data-commit-state', 'package_supersession_commit_ready');
+  await expect(page.locator('#package-supersession-commit-submit')).toBeEnabled();
+
+  await page.route('**/api/v1/layer3/package/supersession/commit', async (route) => {
+    await route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.workbench_error.v1',
+        error_code: 'package_supersession_commit_basis_hash_mismatch',
+        status: 'conflict',
+        message: 'Supplied commit_basis_hash does not match current package supersession authority.',
+        blocked_fields: ['commit_basis_hash'],
+      }),
+    });
+  });
+  const rejectedCommitResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/supersession/commit')
+  ));
+  await page.locator('#package-supersession-commit-submit').click();
+  expect((await rejectedCommitResponsePromise).status()).toBe(409);
+  await expect(panel).toHaveAttribute('data-commit-state', 'package_supersession_commit_basis_hash_mismatch');
+  await expect(panel).toContainText('package_supersession_commit_basis_hash_mismatch');
+  await expect(page.locator('#package-supersession-commit-submit')).toBeEnabled();
+  await page.unroute('**/api/v1/layer3/package/supersession/commit');
+
+  const commitRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/package/supersession/commit')
+    && apiRequest.method() === 'POST'
+  ));
+  const commitResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/supersession/commit')
+  ));
+  await page.locator('#package-supersession-commit-submit').click();
+
+  const commitPayload = (await commitRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(commitPayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'commit_basis_hash',
+    'downstream_dependency_hash',
+    'operator_decision',
+    'package_supersession_preview_hash',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'replacement_authority_basis_hash',
+    'replacement_package_kinds',
+    'replacement_package_set_authority_id',
+    'replacement_package_set_hash',
+    'replacement_package_set_id',
+    'replacement_payload_hashes',
+    'replacement_payload_refs',
+    'session_id',
+    'source_output_package_ids',
+    'source_package_kinds',
+    'source_package_set_hash',
+    'source_payload_hashes',
+    'source_payload_refs',
+  ]);
+  expect(commitPayload.session_id).toBe(sessionId);
+  expect(commitPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(commitPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(commitPayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(commitPayload.package_supersession_preview_hash).toBe(
+    supersessionPreview.package_supersession_preview_hash,
+  );
+  expect(commitPayload.source_package_set_hash).toBe(supersessionPreview.package_set_hash);
+  expect(commitPayload.source_output_package_ids).toEqual(commit.output_package_ids);
+  expect(commitPayload.source_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(commitPayload.source_payload_refs).toEqual(commit.payload_refs);
+  expect(commitPayload.source_payload_hashes).toEqual(commit.payload_hashes);
+  expect(commitPayload.replacement_package_set_authority_id).toBe(
+    replacementAuthority.replacement_package_set_authority_id,
+  );
+  expect(commitPayload.replacement_package_set_id).toBe(replacementAuthority.replacement_package_set_id);
+  expect(commitPayload.replacement_package_set_hash).toBe(replacementAuthority.replacement_package_set_hash);
+  expect(commitPayload.replacement_package_kinds).toEqual(replacementAuthority.replacement_package_kinds);
+  expect(commitPayload.replacement_payload_refs).toEqual(replacementAuthority.replacement_payload_refs);
+  expect(commitPayload.replacement_payload_hashes).toEqual(replacementAuthority.replacement_payload_hashes);
+  expect(commitPayload.replacement_authority_basis_hash).toBe(replacementAuthority.authority_basis_hash);
+  expect(commitPayload.downstream_dependency_hash).toMatch(/^[a-f0-9]{64}$/);
+  expect(commitPayload.commit_basis_hash).toMatch(/^[a-f0-9]{64}$/);
+  expect(commitPayload.operator_decision).toBe('commit_package_supersession');
+  for (const forbiddenKey of [
+    'package_payload',
+    'package_variant_content',
+    'replacement_output_package_ids',
+    'replacement_package_payloads',
+    'edited_package_content',
+    'rewrite_output',
+    'rebuild_package',
+    'mutate_package',
+    'replace_package',
+    'delete_package',
+    'update_package_row',
+    'package_row_mutation',
+    'package_payload_rewrite',
+    'artifact_manifest',
+    'analysis_artifact',
+    'handoff_package',
+    'export_package',
+    'connector_key',
+    'connector_payload',
+    'destination_id',
+    'provider_public_url',
+    'public_url',
+    'signed_url',
+    'source_upload',
+    'local_directory',
+    'rag_plan',
+    'qualitative_plan',
+    'frontend_state',
+  ]) {
+    expect(commitPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  const supersessionCommit = await expectJson(await commitResponsePromise);
+  expect(supersessionCommit.schema_id).toBe('layer3.package_supersession_commit.v1');
+  expect(['committed', 'already_committed']).toContain(supersessionCommit.status);
+  expect(supersessionCommit.package_supersession_commit_id).toBeTruthy();
+  expect(supersessionCommit.session_id).toBe(sessionId);
+  expect(supersessionCommit.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(supersessionCommit.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(supersessionCommit.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(supersessionCommit.package_supersession_preview_hash).toBe(
+    supersessionPreview.package_supersession_preview_hash,
+  );
+  expect(supersessionCommit.source_package_set_hash).toBe(supersessionPreview.package_set_hash);
+  expect(supersessionCommit.source_output_package_ids).toEqual(commit.output_package_ids);
+  expect(supersessionCommit.source_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(supersessionCommit.source_payload_refs).toEqual(commit.payload_refs);
+  expect(supersessionCommit.source_payload_hashes).toEqual(commit.payload_hashes);
+  expect(supersessionCommit.replacement_package_set_authority_id).toBe(
+    replacementAuthority.replacement_package_set_authority_id,
+  );
+  expect(supersessionCommit.replacement_package_set_id).toBe(replacementAuthority.replacement_package_set_id);
+  expect(supersessionCommit.replacement_package_set_hash).toBe(replacementAuthority.replacement_package_set_hash);
+  expect(supersessionCommit.replacement_package_kinds).toEqual(replacementAuthority.replacement_package_kinds);
+  expect(supersessionCommit.replacement_payload_refs).toEqual(replacementAuthority.replacement_payload_refs);
+  expect(supersessionCommit.replacement_payload_hashes).toEqual(replacementAuthority.replacement_payload_hashes);
+  expect(supersessionCommit.replacement_authority_basis_hash).toBe(replacementAuthority.authority_basis_hash);
+  expect(supersessionCommit.downstream_dependency_hash).toBe(commitPayload.downstream_dependency_hash);
+  expect(supersessionCommit.commit_basis_hash).toBe(commitPayload.commit_basis_hash);
+  expect(supersessionCommit.operator_decision).toBe('commit_package_supersession');
+  expect(supersessionCommit.package_supersession_commit_mode).toBe('package_supersession_commit_entry');
+  expect(supersessionCommit.package_supersession_commit_record_persisted).toBe(true);
+  expect(supersessionCommit.package_row_mutation_enabled).toBe(false);
+  expect(supersessionCommit.package_payload_write_enabled).toBe(false);
+  expect(supersessionCommit.l3_output_package_write_enabled).toBe(false);
+  expect(supersessionCommit.broad_package_mutation_enabled).toBe(false);
+  expect(supersessionCommit.connector_dispatch_enabled).toBe(false);
+  expect(supersessionCommit.provider_public_url_enabled).toBe(false);
+  expect(supersessionCommit.source_widening_enabled).toBe(false);
+  expect(supersessionCommit.qualitative_hybrid_rag_execution_enabled).toBe(false);
+  expect(supersessionCommit.frontend_only_durable_state_enabled).toBe(false);
+  expect(supersessionCommit.next_state).toBe('package_supersession_commit_recorded');
+
+  await expect(panel).toHaveAttribute('data-commit-state', 'package_supersession_commit_recorded');
+  await expect(panel).toContainText('package_supersession_commit_entry');
+  await expect(panel).toContainText('package_supersession_commit_recorded');
+  await expect(panel).toContainText('redacted_local_payload_ref');
+  await expect(panel).toContainText('false');
+  await expect(page.locator('#package-supersession-commit-submit')).toBeDisabled();
+  const renderedText = await panel.textContent();
+  expect(renderedText).not.toMatch(/[A-Za-z]:\\/);
+  await expectNoDeferredRawMixedControls(page);
+  return supersessionCommit;
+}
+
 async function submitRenderedHandoffExportPrepare(
   page,
   sessionId,
@@ -4406,6 +4586,98 @@ test('Layer 3 workbench records rendered replacement package-set authority contr
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
     '/handoff/',
     '/package/supersession',
+    '/package/replacement-artifact/manifest',
+    '/package/replacement-namespace',
+    '/handoff/connector',
+    '/source/mixed-corpus/materialize',
+  ]);
+});
+
+test('Layer 3 workbench records rendered package supersession commit control', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  const status = await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+  const review = await submitRenderedResultReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    status,
+    {
+      operatorDecision: 'approved',
+      reviewNotes: 'Raw mixed rendered result review approves supersession commit lineage.',
+      packageReviewEnabled: true,
+    },
+  );
+  const packagePreview = await inspectRenderedPackagePreview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+  );
+  const commit = await commitRenderedPackageConstruction(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    packagePreview,
+  );
+  const packageSubmit = await submitRenderedPackageReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+  );
+  const supersessionPreview = await previewRenderedPackageSupersession(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    packageSubmit,
+    { proveFailure: false },
+  );
+  const replacement = await recordRenderedReplacementPackageSetAuthority(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    supersessionPreview,
+  );
+  const supersessionCommit = await commitRenderedPackageSupersession(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    supersessionPreview,
+    replacement.replacementAuthority,
+  );
+
+  expect(supersessionCommit.next_state).toBe('package_supersession_commit_recorded');
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/mutation/preview'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-artifact/materialize'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-set/record'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/supersession/commit'))).toHaveLength(2);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/handoff/',
     '/package/replacement-artifact/manifest',
     '/package/replacement-namespace',
     '/handoff/connector',

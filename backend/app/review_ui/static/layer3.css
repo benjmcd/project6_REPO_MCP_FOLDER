@@ -3524,6 +3524,11 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     border-top: 1px solid var(--border-color);
 }
 
+.package-supersession-commit-panel {
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+}
+
 .downstream-access-lifecycle-dashboard-panel {
     padding-top: 14px;
     border-top: 1px solid var(--border-color);
@@ -3551,6 +3556,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
+.package-supersession-commit-grid {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
 .downstream-access-lifecycle-grid {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
@@ -3575,6 +3584,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     grid-column: span 2;
 }
 
+.package-supersession-commit-rows {
+    grid-column: span 2;
+}
+
 .downstream-access-lifecycle-rows {
     grid-column: span 2;
 }
@@ -3596,6 +3609,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 @media (max-width: 760px) {
     .package-supersession-preview-rows,
     .replacement-package-set-authority-rows,
+    .package-supersession-commit-rows,
     .package-lifecycle-rows,
     .downstream-access-lifecycle-rows,
     .authority-matrix-review-rows,

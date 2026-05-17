@@ -202,6 +202,8 @@ def _current_downstream_dependencies(reconciliation: L3ReconciliationRecord) -> 
         dependencies.append(
             {
                 "state_key": str(spec["state_key"]),
+                "schema_id": state.get("schema_id"),
+                "request_ref_field": str(spec["request_ref_field"]),
                 "record_ref": _string(state.get(str(spec["state_ref_field"]))),
                 "state": state.get(str(spec["state_value_field"])),
                 "present": True,
