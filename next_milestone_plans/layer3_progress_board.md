@@ -4574,3 +4574,19 @@ PR `#1329` had green `backend-layer3-api` and `test` checks, comments totalCount
 No runtime behavior is introduced by this sync. Connector invocation, connector-run creation, destination write, credentials, external network egress, provider-public delivery/use, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, and raw local path exposure remain blocked.
 
 The next exact current-main posture is `select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync`.
+
+## Corrected Artifact Active Authority APS Handoff Dispatch Evaluation
+
+Evaluation proof: `726_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION.md` selects `aps_handoff_dispatch` as the next downstream active-package-authority reader after corrected-artifact handoff/export prepare sync.
+
+The evaluated branch is `codex/l3-next-reader-select` from current-main checkpoint `449793c8db30b8b07bd3a08c844ca4c27aa4d49e`.
+
+The pass proves `POST /api/v1/layer3/handoff/aps/dispatch` consumes corrected-artifact `L3PackageReplacementActivation` authority through the existing active package payload authority reader path and projects active replacement refs/hashes into the APS dispatch response, APS output package summary, reconciliation state, and session summary.
+
+The added API regression is `test_layer3_api_aps_handoff_dispatch_applies_corrected_artifact_active_authority` in `backend/tests/test_layer3_api.py`.
+
+Observed validation: `python -m pytest .\backend\tests\test_layer3_api.py::test_layer3_api_aps_handoff_dispatch_applies_corrected_artifact_active_authority -q` with `1 passed`.
+
+This pass starts no service runtime behavior change, connector invocation, connector-run creation, destination write, credentials, network egress, provider-public delivery/use, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, external export/download adoption, connector-local receipt adoption, local outbox write adoption, provider-private handoff adoption, external local export adoption, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, or raw local path exposure.
+
+The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation`.

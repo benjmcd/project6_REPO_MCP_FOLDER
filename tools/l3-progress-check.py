@@ -1922,6 +1922,10 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CUR
     PLANNING_DOCS
     / "725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION = (
+    PLANNING_DOCS
+    / "726_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -60739,6 +60743,122 @@ def _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation
                 )
 
 
+def _check_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `corrected_artifact_active_authority_aps_handoff_dispatch`.",
+        "726_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION.md",
+        "725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-next-reader-select",
+        "449793c8db30b8b07bd3a08c844ca4c27aa4d49e",
+        "Selected downstream reader path: `aps_handoff_dispatch`.",
+        "POST /api/v1/layer3/handoff/aps/dispatch",
+        "resolve_active_replacement_package_payload_authority",
+        "corrected_artifact_active_authority_aps_handoff_dispatch_proven",
+        "Runtime behavior change in this pass: `false`",
+        "Test/proof behavior change in this pass: `true`",
+        "test_layer3_api_aps_handoff_dispatch_applies_corrected_artifact_active_authority",
+        "Result observed: `1 passed`",
+        "await_current_main_sync_for_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
+        "select_next_downstream_active_package_authority_reader_after_corrected_artifact_aps_handoff_dispatch_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION)} "
+                f"missing corrected-artifact active authority APS handoff dispatch evaluation term: {term}"
+            )
+
+    for blocked in (
+        "connector invocation",
+        "destination write",
+        "credentials",
+        "external network egress",
+        "provider-public delivery/use",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "delivery rerun",
+        "external export/download adoption",
+        "connector-local receipt adoption",
+        "local outbox write adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "rendered UI authority",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "browser-supplied refs/hashes/bytes",
+        "raw local path exposure",
+    ):
+        if blocked not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION)} "
+                f"missing corrected-artifact active authority APS handoff dispatch blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority APS Handoff Dispatch Evaluation",
+            "726_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION.md",
+            "codex/l3-next-reader-select",
+            "449793c8db30b8b07bd3a08c844ca4c27aa4d49e",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            "resolve_active_replacement_package_payload_authority",
+            "test_layer3_api_aps_handoff_dispatch_applies_corrected_artifact_active_authority",
+            "`1 passed`",
+            "await_current_main_sync_for_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
+            "branch_local_corrected_artifact_active_authority_aps_handoff_dispatch_proven",
+            "codex/l3-next-reader-select",
+            "726_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION.md",
+            "449793c8db30b8b07bd3a08c844ca4c27aa4d49e",
+            "aps_handoff_dispatch",
+            '"runtime_behavior_change": false',
+            "test_layer3_api_aps_handoff_dispatch_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_aps_handoff_dispatch_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_proof",
+            "branch_local_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
+            "branch_local_corrected_artifact_active_authority_aps_handoff_dispatch_proven",
+            "726_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION.md",
+            "449793c8db30b8b07bd3a08c844ca4c27aa4d49e",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            '"runtime_behavior_change": false',
+            "real corrected-artifact API route chain reaches APS handoff dispatch",
+            "aps_handoff_dispatch applies corrected active package authority",
+            "duplicate dispatch replays as already_dispatched",
+            "await_current_main_sync_for_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_aps_handoff_dispatch_applies_corrected_artifact_active_authority",
+            "_activate_corrected_replacement_package_authority",
+            "/api/v1/layer3/handoff/aps/dispatch",
+            'assert body["active_package_authority_applied"] is True',
+            'assert body["payload_refs"] == namespace_body["artifact_refs"]',
+            'assert replay_body["status"] == "already_dispatched"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority APS handoff dispatch artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -61307,6 +61427,7 @@ def main() -> int:
     _check_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation(errors)
     _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync(errors)
+    _check_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
