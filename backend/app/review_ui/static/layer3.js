@@ -57,6 +57,10 @@ const PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE = 'rendered_package_supersession
 const PACKAGE_SUPERSESSION_COMMIT_USE_CASE = 'operator_commits_package_supersession_lineage_after_replacement_package_set_authority';
 const PACKAGE_SUPERSESSION_COMMIT_RESPONSE_AUTHORITY = 'State.packageSupersessionCommit';
 const PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION = 'commit_package_supersession';
+const REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RENDERED_MODE = 'rendered_replacement_package_artifact_manifest_control';
+const REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_USE_CASE = 'operator_records_replacement_package_artifact_manifest_from_server_computed_authority';
+const REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RESPONSE_AUTHORITY = 'State.replacementPackageArtifactManifest';
+const REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_OPERATOR_DECISION = 'record_replacement_package_artifact_manifest_from_authority';
 const CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE_MODE = 'rendered_connector_local_destination_receipt_read_only_status_surface';
 const CONNECTOR_LOCAL_RECEIPT_STATUS_USE_CASE = 'operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write';
 const CONNECTOR_LOCAL_RECEIPT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.connector_local_destination_receipt';
@@ -133,6 +137,9 @@ const State = {
     packageSupersessionCommit: null,
     packageSupersessionCommitError: null,
     packageSupersessionCommitPending: false,
+    replacementPackageArtifactManifest: null,
+    replacementPackageArtifactManifestError: null,
+    replacementPackageArtifactManifestPending: false,
     handoffExportPrepare: null,
     handoffExportPrepareError: null,
     handoffExportPreparePending: false,
@@ -233,6 +240,8 @@ const elements = {
     replacementPackageSetAuthoritySubmit: document.getElementById('replacement-package-set-authority-submit'),
     packageSupersessionCommitPanel: document.getElementById('package-supersession-commit-panel'),
     packageSupersessionCommitSubmit: document.getElementById('package-supersession-commit-submit'),
+    replacementPackageArtifactManifestPanel: document.getElementById('replacement-package-artifact-manifest-panel'),
+    replacementPackageArtifactManifestSubmit: document.getElementById('replacement-package-artifact-manifest-submit'),
     handoffExportPrepareForm: document.getElementById('handoff-export-prepare-form'),
     handoffExportPreparePanel: document.getElementById('handoff-export-prepare-panel'),
     handoffExportPrepareDecision: document.getElementById('handoff-export-prepare-decision'),
@@ -590,7 +599,7 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.externalExportDownloadPrepare?.authority_rail || State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.packageSupersessionCommit?.authority_rail || State.replacementPackageSetAuthority?.authority_rail || State.replacementPackageArtifactMaterialization?.authority_rail || State.packageSupersessionPreview?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
+    return State.externalExportDownloadPrepare?.authority_rail || State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.replacementPackageArtifactManifest?.authority_rail || State.packageSupersessionCommit?.authority_rail || State.replacementPackageSetAuthority?.authority_rail || State.replacementPackageArtifactMaterialization?.authority_rail || State.packageSupersessionPreview?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
         || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
         || State.executionStart?.authority_rail || State.executionSelection?.authority_rail
         || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
@@ -617,6 +626,7 @@ function currentDownstreamUnavailable() {
         || State.sessionSummary?.connector_local_destination_receipt?.downstream_unavailable
         || State.sessionSummary?.aps_handoff_dispatch?.downstream_unavailable
         || State.handoffExportPrepare?.downstream_unavailable
+        || State.replacementPackageArtifactManifest?.downstream_unavailable
         || State.packageSupersessionCommit?.downstream_unavailable
         || State.replacementPackageSetAuthority?.downstream_unavailable
         || State.replacementPackageArtifactMaterialization?.downstream_unavailable
@@ -659,6 +669,7 @@ function renderContext() {
         package_supersession_preview: State.packageSupersessionPreview?.next_state || State.packageSupersessionPreviewError?.error_code || 'none',
         replacement_package_set_authority: State.replacementPackageSetAuthority?.next_state || State.replacementPackageSetAuthorityError?.error_code || State.replacementPackageArtifactMaterialization?.next_state || State.replacementPackageArtifactMaterializationError?.error_code || 'none',
         package_supersession_commit: State.packageSupersessionCommit?.next_state || State.packageSupersessionCommitError?.error_code || 'none',
+        replacement_package_artifact_manifest: State.replacementPackageArtifactManifest?.next_state || State.replacementPackageArtifactManifestError?.error_code || 'none',
         handoff_export_prepare: State.handoffExportPrepare?.next_state || State.handoffExportPrepareError?.error_code || State.sessionSummary?.handoff_export_prepare?.state || 'none',
         aps_handoff_dispatch: State.apsHandoffDispatch?.next_state || State.apsHandoffDispatchError?.error_code || State.sessionSummary?.aps_handoff_dispatch?.state || 'none',
         external_export_download: State.externalExportDownloadPrepare?.next_state || State.externalExportDownloadPrepareError?.error_code || State.sessionSummary?.external_export_download?.state || 'none',
@@ -1625,6 +1636,7 @@ function canSubmitResultReview() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
+        && !replacementPackageArtifactManifestBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -1646,6 +1658,7 @@ function canInspectPackageReviewPreview() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
+        && !replacementPackageArtifactManifestBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -1854,6 +1867,10 @@ function packageSupersessionCommitState() {
     return State.packageSupersessionCommit || null;
 }
 
+function replacementPackageArtifactManifestState() {
+    return State.replacementPackageArtifactManifest || null;
+}
+
 function replacementPackageSetAuthorityBusy() {
     return Boolean(
         State.replacementPackageArtifactMaterializationPending
@@ -1865,10 +1882,21 @@ function packageSupersessionCommitBusy() {
     return Boolean(State.packageSupersessionCommitPending);
 }
 
+function replacementPackageArtifactManifestBusy() {
+    return Boolean(State.replacementPackageArtifactManifestPending);
+}
+
+function clearReplacementPackageArtifactManifestState() {
+    State.replacementPackageArtifactManifest = null;
+    State.replacementPackageArtifactManifestError = null;
+    State.replacementPackageArtifactManifestPending = false;
+}
+
 function clearPackageSupersessionCommitState() {
     State.packageSupersessionCommit = null;
     State.packageSupersessionCommitError = null;
     State.packageSupersessionCommitPending = false;
+    clearReplacementPackageArtifactManifestState();
 }
 
 function clearReplacementPackageSetAuthorityState() {
@@ -2788,6 +2816,7 @@ function canSubmitPackageSupersessionPreview() {
         && !State.packageSupersessionPreviewPending
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
+        && !replacementPackageArtifactManifestBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -2858,6 +2887,41 @@ function canSubmitPackageSupersessionCommit() {
         && !State.packageSupersessionPreviewPending
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
+        && !replacementPackageArtifactManifestBusy()
+        && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
+        && !State.externalExportDownloadDeliveryPending
+    );
+}
+
+function canSubmitReplacementPackageArtifactManifest() {
+    const authority = selectedResultAuthority();
+    const materialization = replacementPackageArtifactMaterializationState() || {};
+    const replacementAuthority = replacementPackageSetAuthorityState() || {};
+    const commit = packageSupersessionCommitState() || {};
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && materialization.replacement_artifact_materialization_id
+        && materialization.materialization_basis_hash
+        && replacementAuthority.replacement_package_set_authority_id
+        && replacementAuthority.authority_basis_hash
+        && commit.package_supersession_commit_id
+        && commit.commit_basis_hash
+        && (materialization.session_id || replacementAuthority.session_id || commit.session_id || authority.sessionId)
+        && (materialization.analysis_plan_id || replacementAuthority.analysis_plan_id || commit.analysis_plan_id || authority.analysisPlanId)
+        && (materialization.pass_run_id || replacementAuthority.pass_run_id || commit.pass_run_id || authority.passRunId)
+        && (materialization.reconciliation_record_id || replacementAuthority.reconciliation_record_id || commit.reconciliation_record_id)
+        && !replacementPackageArtifactManifestState()
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+        && !State.packageSupersessionPreviewPending
+        && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
+        && !replacementPackageArtifactManifestBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -2893,6 +2957,7 @@ function canSubmitHandoffExportPrepare() {
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
+        && !replacementPackageArtifactManifestBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -5213,6 +5278,117 @@ function renderPackageSupersessionCommitPanel() {
     `;
 }
 
+function renderReplacementPackageArtifactManifestPanel() {
+    const materialization = replacementPackageArtifactMaterializationState() || {};
+    const replacementAuthority = replacementPackageSetAuthorityState() || {};
+    const commit = packageSupersessionCommitState() || {};
+    const manifest = replacementPackageArtifactManifestState() || {};
+    const payloadRows = replacementPackageRows({
+        packageKinds: manifest.replacement_package_kinds || replacementAuthority.replacement_package_kinds || [],
+        payloadRefs: manifest.replacement_payload_refs || [],
+        payloadHashes: manifest.replacement_payload_hashes || [],
+    });
+    const verifiedRows = replacementPackageRows({
+        packageKinds: manifest.replacement_package_kinds || replacementAuthority.replacement_package_kinds || [],
+        payloadRefs: manifest.verified_artifact_refs || manifest.replacement_payload_refs || [],
+        payloadHashes: manifest.verified_artifact_hashes || manifest.replacement_payload_hashes || [],
+    });
+    const byteSizes = Array.isArray(manifest.verified_artifact_byte_sizes)
+        ? manifest.verified_artifact_byte_sizes
+        : [];
+    const byteSizeRows = byteSizes.length
+        ? byteSizes.map((size, index) => `<li><code>${escapeHtml(manifest.replacement_package_kinds?.[index] || `artifact_${index + 1}`)}</code> ${escapeHtml(size)}</li>`).join('')
+        : '<li>No verified artifact byte sizes are available.</li>';
+    const error = State.replacementPackageArtifactManifestError;
+    const stateLabel = State.replacementPackageArtifactManifestPending
+        ? 'replacement_package_artifact_manifest_recording'
+        : (
+            error?.error_code
+            || manifest.next_state
+            || (canSubmitReplacementPackageArtifactManifest()
+                ? 'replacement_package_artifact_manifest_ready'
+                : 'replacement_package_artifact_manifest_unavailable')
+        );
+    const statePill = error ? 'blocked' : (manifest.replacement_package_artifact_manifest_id ? 'ok' : 'preview');
+    const downstream = manifest.downstream_unavailable || commit.downstream_unavailable || [];
+    elements.replacementPackageArtifactManifestPanel.dataset.manifestState = stateLabel;
+    elements.replacementPackageArtifactManifestPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(statePill)}">${escapeHtml(stateLabel)}</span>
+            <span class="rail-label">${escapeHtml(REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RENDERED_MODE)}</span>
+        </div>
+        <div class="result-review-grid replacement-package-artifact-manifest-grid">
+            <section class="result-review-card">
+                <strong>Rendered Control</strong>
+                <ul>
+                    ${fieldItem('use case', REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_USE_CASE, { code: true })}
+                    ${fieldItem('response authority', REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('operator decision', REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_OPERATOR_DECISION, { code: true })}
+                    ${fieldItem('browser durable authority', false)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Basis</strong>
+                <ul>
+                    ${fieldItem('materialization id', materialization.replacement_artifact_materialization_id || manifest.replacement_artifact_materialization_id, { code: true })}
+                    ${fieldItem('materialization basis', materialization.materialization_basis_hash || manifest.materialization_basis_hash, { code: true })}
+                    ${fieldItem('replacement authority id', replacementAuthority.replacement_package_set_authority_id || manifest.replacement_package_set_authority_id, { code: true })}
+                    ${fieldItem('replacement authority basis', replacementAuthority.authority_basis_hash || manifest.replacement_authority_basis_hash, { code: true })}
+                    ${fieldItem('supersession commit id', commit.package_supersession_commit_id || manifest.package_supersession_commit_id, { code: true })}
+                    ${fieldItem('supersession commit basis', commit.commit_basis_hash || manifest.package_supersession_commit_basis_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Manifest Result</strong>
+                <ul>
+                    ${fieldItem('schema id', manifest.schema_id, { code: true })}
+                    ${fieldItem('status', manifest.status)}
+                    ${fieldItem('manifest id', manifest.replacement_package_artifact_manifest_id, { code: true })}
+                    ${fieldItem('mode', manifest.replacement_package_artifact_manifest_mode, { code: true })}
+                    ${fieldItem('source gate', manifest.source_gate, { code: true })}
+                    ${fieldItem('record-from-authority decision', manifest.record_from_authority_operator_decision, { code: true })}
+                    ${fieldItem('manifest hash', manifest.artifact_manifest_hash, { code: true })}
+                    ${fieldItem('authority basis hash', manifest.authority_basis_hash, { code: true })}
+                    ${fieldItem('next state', manifest.next_state)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Disabled Capability Flags</strong>
+                <ul>
+                    ${fieldItem('manifest record persisted', manifest.manifest_record_persisted)}
+                    ${fieldItem('artifact generation', manifest.artifact_generation_enabled)}
+                    ${fieldItem('package row mutation', manifest.package_row_mutation_enabled)}
+                    ${fieldItem('package payload write', manifest.package_payload_write_enabled)}
+                    ${fieldItem('L3 output package write', manifest.l3_output_package_write_enabled)}
+                    ${fieldItem('broad package mutation', manifest.broad_package_mutation_enabled)}
+                    ${fieldItem('connector dispatch', manifest.connector_dispatch_enabled)}
+                    ${fieldItem('provider public URL', manifest.provider_public_url_enabled)}
+                    ${fieldItem('source widening', manifest.source_widening_enabled)}
+                    ${fieldItem('qualitative/RAG execution', manifest.qualitative_hybrid_rag_execution_enabled)}
+                    ${fieldItem('frontend durable authority', manifest.frontend_only_durable_state_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card replacement-package-artifact-manifest-rows">
+                <strong>Replacement Payload Refs</strong>
+                <ul>${renderReplacementPackageRows(payloadRows)}</ul>
+            </section>
+            <section class="result-review-card replacement-package-artifact-manifest-rows">
+                <strong>Verified Artifact Refs</strong>
+                <ul>${renderReplacementPackageRows(verifiedRows)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Verified Artifact Sizes</strong>
+                <ul>${byteSizeRows}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Deferred Capabilities</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(error)}
+        </div>
+    `;
+}
+
 function renderAuthorityMatrixReviewPanel() {
     const contract = authorityMatrixContract();
     const panelState = authorityMatrixReviewState(contract);
@@ -7345,6 +7521,7 @@ function setGateControls() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
+        && !replacementPackageArtifactManifestBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -7355,6 +7532,7 @@ function setGateControls() {
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
+        && !replacementPackageArtifactManifestBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -7366,6 +7544,7 @@ function setGateControls() {
         && !recordedHandoffExportPrepare()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
+        && !replacementPackageArtifactManifestBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -7420,6 +7599,7 @@ function setGateControls() {
     elements.packageSupersessionPreviewSubmit.disabled = !canSubmitPackageSupersessionPreview();
     elements.replacementPackageSetAuthoritySubmit.disabled = !canSubmitReplacementPackageSetAuthority();
     elements.packageSupersessionCommitSubmit.disabled = !canSubmitPackageSupersessionCommit();
+    elements.replacementPackageArtifactManifestSubmit.disabled = !canSubmitReplacementPackageArtifactManifest();
     elements.packageReviewSubmitDecision.disabled = !packageReviewControlsEnabled;
     elements.packageReviewSubmitNotes.disabled = !packageReviewControlsEnabled;
     elements.packageReviewSubmit.disabled = !canSubmitPackageReview();
@@ -7465,6 +7645,7 @@ function renderAll() {
     renderPackageSupersessionPreviewPanel();
     renderReplacementPackageSetAuthorityPanel();
     renderPackageSupersessionCommitPanel();
+    renderReplacementPackageArtifactManifestPanel();
     renderDownstreamAccessLifecycleDashboardPanel();
     renderHandoffExportPreparePanel();
     renderApsHandoffDispatchPanel();
@@ -7764,6 +7945,30 @@ async function packageSupersessionCommitPayload(authority = selectedResultAuthor
         downstream_dependency_hash: payload.downstream_dependency_hash,
     });
     return payload;
+}
+
+function replacementPackageArtifactManifestPayload(authority = selectedResultAuthority()) {
+    const materialization = replacementPackageArtifactMaterializationState() || {};
+    const replacementAuthority = replacementPackageSetAuthorityState() || {};
+    const commit = packageSupersessionCommitState() || {};
+    return {
+        client_request_id: requestId(),
+        session_id: materialization.session_id || replacementAuthority.session_id || commit.session_id || authority.sessionId,
+        analysis_plan_id: materialization.analysis_plan_id || replacementAuthority.analysis_plan_id || commit.analysis_plan_id || authority.analysisPlanId,
+        pass_run_id: materialization.pass_run_id || replacementAuthority.pass_run_id || commit.pass_run_id || authority.passRunId,
+        reconciliation_record_id: (
+            materialization.reconciliation_record_id
+            || replacementAuthority.reconciliation_record_id
+            || commit.reconciliation_record_id
+        ),
+        replacement_artifact_materialization_id: materialization.replacement_artifact_materialization_id,
+        materialization_basis_hash: materialization.materialization_basis_hash,
+        replacement_package_set_authority_id: replacementAuthority.replacement_package_set_authority_id,
+        replacement_authority_basis_hash: replacementAuthority.authority_basis_hash || commit.replacement_authority_basis_hash,
+        package_supersession_commit_id: commit.package_supersession_commit_id,
+        package_supersession_commit_basis_hash: commit.commit_basis_hash,
+        operator_decision: REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_OPERATOR_DECISION,
+    };
 }
 
 function handoffExportPreparePayload(authority = selectedResultAuthority()) {
@@ -8456,6 +8661,41 @@ async function submitPackageSupersessionCommit() {
     } finally {
         State.packageSupersessionCommitPending = false;
         setBusy(elements.packageSupersessionCommitSubmit, false, 'Commit Supersession');
+        renderAll();
+    }
+}
+
+async function submitReplacementPackageArtifactManifest() {
+    if (!canSubmitReplacementPackageArtifactManifest()) return;
+    State.replacementPackageArtifactManifestPending = true;
+    State.replacementPackageArtifactManifestError = null;
+    renderAll();
+    setBusy(elements.replacementPackageArtifactManifestSubmit, true, 'Record Manifest');
+    try {
+        State.replacementPackageArtifactManifest = await postJson(
+            '/package/replacement-artifact/manifest/record-from-authority',
+            replacementPackageArtifactManifestPayload(),
+        );
+        State.replacementPackageArtifactManifestError = null;
+        addEvent('Replacement package artifact manifest recorded from server-computed authority.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.replacementPackageArtifactManifest.session_id)}`);
+            persistSessionRecoveryAnchor('replacement_package_artifact_manifest_refresh');
+        } catch (refreshError) {
+            addEvent(`Replacement package artifact manifest recorded; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.replacementPackageArtifactManifestError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'replacement_package_artifact_manifest_request_failed',
+            message: error.message,
+        };
+        addEvent(`Replacement package artifact manifest blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.replacementPackageArtifactManifestPending = false;
+        setBusy(elements.replacementPackageArtifactManifestSubmit, false, 'Record Manifest');
         renderAll();
     }
 }
@@ -9260,6 +9500,7 @@ elements.packageReviewSubmitForm.addEventListener('submit', submitPackageReview)
 elements.packageSupersessionPreviewSubmit.addEventListener('click', submitPackageSupersessionPreview);
 elements.replacementPackageSetAuthoritySubmit.addEventListener('click', submitReplacementPackageSetAuthority);
 elements.packageSupersessionCommitSubmit.addEventListener('click', submitPackageSupersessionCommit);
+elements.replacementPackageArtifactManifestSubmit.addEventListener('click', submitReplacementPackageArtifactManifest);
 elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExportPrepare);
 elements.apsHandoffDispatchForm.addEventListener('submit', submitApsHandoffDispatch);
 elements.externalExportDownloadPrepareForm.addEventListener('submit', submitExternalExportDownloadPrepare);

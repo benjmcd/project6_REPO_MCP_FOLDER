@@ -24599,5 +24599,92 @@
   "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_branch": "codex/l3-rendered-manifest-control-freeze-sync",
   "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
   "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_live_behavior_change": false,
-  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_summary": "Doc 657 syncs PR #1260 merge commit 628efbc97930027a9779bebb5d6063d310f63147 to current main. The rendered replacement package artifact manifest control freeze is current-main synced, and the next exact posture is implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync."
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_summary": "Doc 657 syncs PR #1260 merge commit 628efbc97930027a9779bebb5d6063d310f63147 to current main. The rendered replacement package artifact manifest control freeze is current-main synced, and the next exact posture is implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync.",
+  "rendered_replacement_package_artifact_manifest_control_runtime": {
+    "status": "rendered_replacement_package_artifact_manifest_control_runtime_implemented_branch_local",
+    "branch": "codex/l3-rendered-manifest-control-runtime",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/658_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_implementation": "44d5598890625ee0c4dda880ea6e3cb86a2b22aa",
+    "selected_surface": "package_mutation_reconstruction",
+    "selected_implementation_entry_mode": "rendered_replacement_package_artifact_manifest_control",
+    "selected_operator_action": "record_replacement_package_artifact_manifest_from_authority",
+    "selected_route": "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+    "rendered_submit_control": "#replacement-package-artifact-manifest-submit",
+    "rendered_status_panel": "#replacement-package-artifact-manifest-panel",
+    "rendered_mode": "rendered_replacement_package_artifact_manifest_control",
+    "response_authority": "State.replacementPackageArtifactManifest",
+    "request_payload_owner": "replacementPackageArtifactManifestPayload",
+    "render_panel_owner": "renderReplacementPackageArtifactManifestPanel",
+    "request_authority_sources": [
+      "State.replacementPackageArtifactMaterialization",
+      "State.replacementPackageSetAuthority",
+      "State.packageSupersessionCommit"
+    ],
+    "admitted_request_fields": [
+      "client_request_id",
+      "session_id",
+      "analysis_plan_id",
+      "pass_run_id",
+      "reconciliation_record_id",
+      "replacement_artifact_materialization_id",
+      "materialization_basis_hash",
+      "replacement_package_set_authority_id",
+      "replacement_authority_basis_hash",
+      "package_supersession_commit_id",
+      "package_supersession_commit_basis_hash",
+      "operator_decision"
+    ],
+    "implementation_files": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "proof": [
+      "static page assertions for button panel mode payload route renderer and CSS",
+      "headed Chromium proof for replacement package artifact manifest control",
+      "headless Chromium proof for replacement package artifact manifest control",
+      "failure-state projection for materialization_basis_hash mismatch",
+      "request allowlist proof",
+      "forbidden browser field absence proof",
+      "redacted artifact ref display proof",
+      "direct manifest record route absence proof"
+    ],
+    "backend_behavior_change": false,
+    "rendered_behavior_change": true,
+    "live_behavior_change": true,
+    "validation": [
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py -q",
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium -g \"replacement package artifact manifest\"",
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -g \"replacement package artifact manifest\""
+    ],
+    "non_admitted": [
+      "backend route changes",
+      "DTO changes",
+      "service behavior changes",
+      "model or migration changes",
+      "browser-supplied artifact refs",
+      "browser-supplied manifest hashes",
+      "browser-supplied byte sizes",
+      "raw local path exposure",
+      "package rebuild",
+      "package payload rewrite",
+      "replacement namespace rows",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "frontend-durable authority"
+    ],
+    "next_required_action_after_merge": "current_main_sync_rendered_replacement_package_artifact_manifest_control_runtime",
+    "next_whole_project_posture": "await_current_main_sync_for_rendered_replacement_package_artifact_manifest_control_runtime"
+  },
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_branch": "codex/l3-rendered-manifest-control-runtime",
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_doc": "next_milestone_plans/Layer3_planning_docs/658_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF.md",
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_live_behavior_change": true,
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_summary": "Doc 658 implements the rendered replacement package artifact manifest control over the existing server-computed record-from-authority route. The UI submits only authority ids and basis hashes from materialization replacement authority and supersession commit state, records response authority in State.replacementPackageArtifactManifest, renders redacted artifact refs and disabled side-effect flags, and leaves backend behavior replacement namespace rows package rebuild payload rewrite provider-public delivery connector dispatch source expansion RAG/vector auth/security and frontend-durable authority blocked."
 }
