@@ -4468,3 +4468,15 @@ The frozen next bridge is `server_computed_replacement_namespace_from_corrected_
 This freeze starts no runtime. Package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, and raw local path exposure remain blocked.
 
 The next exact posture after merge is `current_main_sync_corrected_artifact_replacement_namespace_authority_freeze`; after sync, the next posture is `implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync`.
+
+## Corrected Artifact Replacement Namespace Authority Freeze Current-Main Sync
+
+Current-main sync: `719_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md` records PR `#1323`, freeze branch commit `fe878b15ca86a6e68331723e1f13d353c279e73f`, and merge commit `330ed79a0976934c29e51ca87e8a751353d7c104`.
+
+Before merge, PR `#1323` had passing `backend-layer3-api` and `test` checks, no comments, no reviews, no reviewThreads, mergeability `MERGEABLE`, and merge state `CLEAN`. Post-merge current-main validation passed at `330ed79a0976934c29e51ca87e8a751353d7c104`.
+
+Current main now syncs the implementation-entry freeze for `server_computed_replacement_namespace_from_corrected_artifact_manifest_authority`, future route `POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority`, owner service `backend/app/services/layer3_replacement_package_namespace.py`, API owner `backend/app/api/layer3.py`, durable target `L3ReplacementOutputPackage`, and authority chain `L3CorrectedPackageArtifactSet` -> `L3ReplacementPackageSetAuthority` -> `L3PackageSupersessionCommit` -> `L3ReplacementPackageArtifactManifest`.
+
+This sync starts no runtime. Package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, and raw local path exposure remain blocked.
+
+The next exact current-main implementation posture is `implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync`.
