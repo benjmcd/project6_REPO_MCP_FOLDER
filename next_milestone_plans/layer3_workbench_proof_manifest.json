@@ -26996,5 +26996,44 @@
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_doc": "next_milestone_plans/Layer3_planning_docs/670_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_PROOF.md",
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_live_behavior_change": true,
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
-  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_summary": "Doc 670 proof records source_l3_output_package_active_authority_handoff_export_prepare_runtime: handoff_export_prepare adopts active replacement refs/hashes from resolve_active_replacement_package_authority for this reader only, preserves source L3OutputPackage rows, proves no ConnectorRun or ConnectorRunTarget creation, keeps active refs response-safe artifact://replacement-package-artifacts refs, blocks caller-supplied active authority fields, and changes no rendered behavior."
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_summary": "Doc 670 proof records source_l3_output_package_active_authority_handoff_export_prepare_runtime: handoff_export_prepare adopts active replacement refs/hashes from resolve_active_replacement_package_authority for this reader only, preserves source L3OutputPackage rows, proves no ConnectorRun or ConnectorRunTarget creation, keeps active refs response-safe artifact://replacement-package-artifacts refs, blocks caller-supplied active authority fields, and changes no rendered behavior.",
+  "source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+    "status": "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/670_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_PROOF.md",
+    "runtime_pr": "#1275",
+    "runtime_branch": "codex/l3-active-authority-handoff-impl",
+    "runtime_branch_commit": "9cda786716f7ebc99ba5f9f26020c123919f730d",
+    "runtime_merge_commit": "36b38332d5cbb23271e22e27cd59b0aa17903d55",
+    "current_main_checkpoint_after_merge": "36b38332d5cbb23271e22e27cd59b0aa17903d55",
+    "checks": [
+      "backend-layer3-api SUCCESS 2m44s",
+      "test SUCCESS 3m47s"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "latestReviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0"
+    ],
+    "proof_terms": [
+      "handoff_export_prepare consumes active replacement package authority",
+      "POST /api/v1/layer3/handoff/export/prepare",
+      "resolve_active_replacement_package_authority",
+      "active replacement refs/hashes projected into response state envelope and basis",
+      "source L3OutputPackage rows unchanged",
+      "caller-supplied active authority fields forbidden",
+      "no rendered behavior change in sync"
+    ],
+    "next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync"
+  },
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_branch": "codex/l3-active-authority-handoff-runtime-sync",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_pr": "#1275",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_merge_commit": "36b38332d5cbb23271e22e27cd59b0aa17903d55",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_summary": "Doc 671 records current-main sync for PR #1275 and sets the next exact posture to select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync."
 }

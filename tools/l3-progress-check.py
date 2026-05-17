@@ -1711,6 +1711,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_
     PLANNING_DOCS
     / "670_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -54540,6 +54544,118 @@ def _check_source_l3_output_package_active_authority_handoff_export_prepare_runt
                 )
 
 
+def _check_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_handoff_export_prepare_runtime`.",
+        "671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "670_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_PROOF.md",
+        "Runtime PR: `#1275`.",
+        "codex/l3-active-authority-handoff-impl",
+        "9cda786716f7ebc99ba5f9f26020c123919f730d",
+        "36b38332d5cbb23271e22e27cd59b0aa17903d55",
+        "Selected reader path now synced: `handoff_export_prepare`.",
+        "POST /api/v1/layer3/handoff/export/prepare",
+        "resolve_active_replacement_package_authority",
+        "adopt_active_replacement_package_authority_for_handoff_export_prepare",
+        "Synced result: `current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_runtime`.",
+        "`backend-layer3-api`: `SUCCESS` in `2m44s`",
+        "`test`: `SUCCESS` in `3m47s`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR latestReviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "active_package_authority_applied",
+        "source_output_package_ids",
+        "active_payload_refs",
+        "caller-forbidden on the handoff/export prepare request",
+        "Current main still does not rebind APS handoff dispatch, external export/download, server-owned local outbox, provider-private handoff, external local export",
+        "select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority handoff/export prepare runtime sync term: {term}"
+            )
+
+    for blocked in (
+        "rendered activation controls",
+        "APS handoff dispatch adoption",
+        "external export/download adoption",
+        "server-owned local outbox adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "package rebuild",
+        "package payload rewrite",
+        "direct source `L3OutputPackage` mutation",
+        "raw local path exposure",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority handoff/export prepare runtime sync non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Handoff Export Prepare Runtime Current-Main Sync",
+            "671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1275`",
+            "36b38332d5cbb23271e22e27cd59b0aa17903d55",
+            "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+            "handoff_export_prepare",
+            "artifact://replacement-package-artifacts/...",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+            "codex/l3-active-authority-handoff-runtime-sync",
+            "671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1275",
+            "36b38332d5cbb23271e22e27cd59b0aa17903d55",
+            "backend-layer3-api SUCCESS 2m44s",
+            "test SUCCESS 3m47s",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync",
+            "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+            "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+            "671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1275",
+            "active replacement refs/hashes projected into response state envelope and basis",
+            "source L3OutputPackage rows unchanged",
+            "reviewThreads totalCount 0",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_handoff_export_prepare_runtime_sync",
+            "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority handoff/export prepare runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -55053,6 +55169,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_handoff_export_prepare_freeze(errors)
     _check_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_handoff_export_prepare_runtime_proof(errors)
+    _check_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
