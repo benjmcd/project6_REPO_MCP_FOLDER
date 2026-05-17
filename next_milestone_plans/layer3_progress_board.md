@@ -4524,3 +4524,19 @@ Observed validation: `python -m pytest .\backend\tests\test_layer3_package_repla
 This pass adds no runtime behavior. Package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rebinding, delivery rerun, provider-public delivery/use, connector/destination dispatch, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
 
 The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_replacement_activation_authority_evaluation`.
+
+## Corrected Artifact Replacement Activation Authority Evaluation Current-Main Sync
+
+Current-main sync: `723_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION_CURRENT_MAIN_SYNC.md` syncs evaluation PR `#1327` for `corrected_artifact_replacement_activation_authority_evaluation`.
+
+Evaluation branch `codex/l3-corrected-artifact-activation-eval` landed branch commit `d22b2f3851f533b70ca5b0e872b2f69fbc8ceb4e` into current main at merge commit `621a2712f4d9e3106d8a5188d6cd828256949d5d`.
+
+Synced result: `current_main_synced_corrected_artifact_replacement_activation_authority_evaluation`.
+
+Current main now records `current_main_satisfies_corrected_artifact_replacement_activation_authority`: the existing activation route `POST /api/v1/layer3/package/replacement-activation/commit` activates corrected-artifact complete `L3ReplacementOutputPackage` namespace rows without a new activation runtime.
+
+PR `#1327` had green `backend-layer3-api` and `test` checks, no comments, no reviews, reviewThreads totalCount `0`, unresolved current reviewThreads `0`, mergeability `MERGEABLE`, and merge state `CLEAN`.
+
+No runtime behavior is introduced by this sync. Package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rebinding, delivery rerun, provider-public delivery/use, connector/destination dispatch, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
+
+The next exact current-main posture is `select_downstream_active_package_authority_read_adoption_after_corrected_artifact_activation_sync`.
