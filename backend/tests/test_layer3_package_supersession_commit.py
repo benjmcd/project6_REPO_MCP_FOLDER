@@ -498,6 +498,8 @@ def test_package_supersession_commit_from_corrected_artifact_authority_redacts_r
         assert response["source_gate"] == (
             "711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC"
         )
+        assert response["authority_rail"]["schema_id"] == "layer3.authority_rail.v1"
+        assert response["authority_rail"]["current_gate"] == "package"
         assert response["authority_rail"]["response_payload_refs_redacted"] is True
         assert all(ref.startswith("artifact://source-output-package/") for ref in response["source_payload_refs"])
         assert all(

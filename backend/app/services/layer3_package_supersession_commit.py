@@ -435,12 +435,16 @@ def _commit_response_from_corrected_artifact_authority(
         }
     response["commit_snapshot"] = snapshot
     response["source_gate"] = PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_SOURCE_GATE
-    response["authority_rail"] = {
-        "corrected_artifact_set_source_authority": True,
-        "server_computed_payload_refs": True,
-        "response_payload_refs_redacted": True,
-        "raw_payload_refs_exposed": False,
-    }
+    authority_rail = dict(response.get("authority_rail") or {})
+    authority_rail.update(
+        {
+            "corrected_artifact_set_source_authority": True,
+            "server_computed_payload_refs": True,
+            "response_payload_refs_redacted": True,
+            "raw_payload_refs_exposed": False,
+        }
+    )
+    response["authority_rail"] = authority_rail
     return response
 
 
