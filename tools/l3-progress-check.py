@@ -1775,6 +1775,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE
     PLANNING_DOCS
     / "686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "687_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -56172,6 +56176,83 @@ def _check_source_l3_output_package_active_authority_server_owned_local_outbox_w
                 )
 
 
+def _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime`.",
+        "687_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md",
+        "Runtime PR: `#1291`.",
+        "codex/l3-active-authority-local-outbox-impl",
+        "8be85b5f855e0bb143fc688b0ea0fc2ac783b770",
+        "f38c26f8ec4d2e69b6ac546c50d8c91b82bf80ab",
+        "Selected reader path now synced: `server_owned_local_outbox_write`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+        "Synced result: `current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime`.",
+        "Runtime behavior change synced: `false`.",
+        "backend-layer3-api`: `SUCCESS` in `2m46s`",
+        "test`: `SUCCESS` in `3m38s`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR latestReviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "select_next_active_package_authority_reader_or_rendered_activation_control_after_server_owned_local_outbox_write_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority server-owned local outbox write runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Server-Owned Local Outbox Write Runtime Current-Main Sync",
+            "PR `#1291`",
+            "f38c26f8ec4d2e69b6ac546c50d8c91b82bf80ab",
+            "current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_server_owned_local_outbox_write_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+            "codex/l3-active-authority-local-outbox-runtime-sync",
+            "687_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1291",
+            "f38c26f8ec4d2e69b6ac546c50d8c91b82bf80ab",
+            "backend-layer3-api SUCCESS 2m46s",
+            "test SUCCESS 3m38s",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_server_owned_local_outbox_write_runtime_sync",
+            "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+            "current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+            "687_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1291",
+            "reviewThreads totalCount 0",
+            "server_owned_local_outbox_write",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_server_owned_local_outbox_write_runtime_sync",
+            "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority server-owned local outbox write runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -56701,6 +56782,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze(errors)
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_proof(errors)
+    _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
