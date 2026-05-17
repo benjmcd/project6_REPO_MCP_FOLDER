@@ -25888,5 +25888,36 @@
   "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync_merge_commit": "48933bc687ee65cf0b042c80652690de6c23003c",
   "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
   "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_external_export_download_delivery_runtime_sync",
-  "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync_summary": "Doc 679 records current-main sync for PR #1283 merge commit 48933bc687ee65cf0b042c80652690de6c23003c with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_external_export_download_delivery_runtime_sync."
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync_summary": "Doc 679 records current-main sync for PR #1283 merge commit 48933bc687ee65cf0b042c80652690de6c23003c with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_external_export_download_delivery_runtime_sync.",
+  "source_l3_output_package_active_authority_connector_local_receipt_freeze": {
+    "status": "implementation_entry_frozen_source_l3_output_package_active_authority_connector_local_receipt",
+    "planning_branch": "codex/l3-active-authority-local-receipt-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/680_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/679_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_freeze": "2eadecbf74c6bf24bcb6e1ab53301f9c0a76e49c",
+    "selected_follow_on_surface": "downstream_active_package_authority_read_adoption",
+    "reader_path": "connector_local_destination_receipt",
+    "route": "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+    "validation_seam": "external_export_download_delivery authority revalidation through external_export_download_prepare and _external_export_download_prepare_payload_for_delivery",
+    "operator_action": "adopt_active_replacement_package_authority_for_connector_local_receipt",
+    "selected_implementation_entry_mode": "source_l3_output_package_active_authority_connector_local_receipt",
+    "runtime_status": "not_started_freeze_only",
+    "proof_terms": [
+      "connector_local_destination_receipt selected as next downstream active authority reader",
+      "receipt must validate recorded external_export_download_delivery and connector dispatch authority carrying active refs/hashes",
+      "source L3OutputPackage rows remain unchanged",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no server-owned local outbox adoption",
+      "no provider-private handoff adoption",
+      "no external local export adoption",
+      "no real connector invocation",
+      "no runtime begins in this freeze"
+    ],
+    "next_posture": "current_main_sync_source_l3_output_package_active_authority_connector_local_receipt_freeze"
+  },
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_branch": "codex/l3-active-authority-local-receipt-freeze",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_doc": "next_milestone_plans/Layer3_planning_docs/680_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE.md",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_connector_local_receipt_freeze",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_summary": "Doc 680 freezes the next exact package-lifecycle downstream active-authority reader: connector_local_destination_receipt through POST /api/v1/layer3/handoff/connector/local-destination/receipt. The freeze selects receipt validation over recorded external_export_download_delivery, external_export_download_prepare, and connector dispatch authority carrying active refs/hashes and source refs/hashes as distinct authority fields, starts no runtime, and keeps server-owned local outbox/provider-private handoff/external local export plus rendered controls, package mutation/source/RAG/auth/frontend-durable surfaces blocked."
 }
