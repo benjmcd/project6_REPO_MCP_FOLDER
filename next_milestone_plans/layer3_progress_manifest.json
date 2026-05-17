@@ -27174,5 +27174,52 @@
   "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_live_behavior_change": false,
   "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_next_posture_after_merge": "current_main_sync_corrected_artifact_package_rebuild_downstream_authority_freeze",
   "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_next_posture_after_sync": "implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync",
-  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_summary": "Doc 710 freezes the next corrected-artifact downstream authority bridge after evaluating current main: existing package lifecycle services are present, but the corrected-artifact path still needs a server-computed package supersession commit route that reads L3CorrectedPackageArtifactSet and L3ReplacementPackageSetAuthority without caller-supplied refs/hashes or raw path exposure. The freeze admits no runtime in this pass and keeps manifest, namespace, activation, handoff/export, connector/destination, source expansion, RAG/vector, auth/security, and frontend-durable authority blocked."
+  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_summary": "Doc 710 freezes the next corrected-artifact downstream authority bridge after evaluating current main: existing package lifecycle services are present, but the corrected-artifact path still needs a server-computed package supersession commit route that reads L3CorrectedPackageArtifactSet and L3ReplacementPackageSetAuthority without caller-supplied refs/hashes or raw path exposure. The freeze admits no runtime in this pass and keeps manifest, namespace, activation, handoff/export, connector/destination, source expansion, RAG/vector, auth/security, and frontend-durable authority blocked.",
+  "corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync": {
+    "status": "current_main_synced_corrected_artifact_package_rebuild_downstream_authority_freeze",
+    "sync_branch": "codex/l3-corrected-artifact-downstream-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/710_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE.md",
+    "freeze_pr": "#1315",
+    "freeze_branch": "codex/l3-corrected-artifact-downstream-freeze",
+    "freeze_branch_commit": "071e28e5df2274a459e9dbd57e50729057db8a82",
+    "freeze_merge_commit": "ba6910ca4a0cb49412204662f5b21895be304b1f",
+    "current_main_checkpoint_after_merge": "ba6910ca4a0cb49412204662f5b21895be304b1f",
+    "selected_surface_now_synced": "package_mutation_reconstruction",
+    "selected_package_lifecycle_action_now_synced": "rebuild_package_from_corrected_artifacts",
+    "selected_source_authority_now_synced": "operator_review_corrections_server_owned_corrected_package_artifact_set",
+    "selected_downstream_bridge_now_synced": "server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority",
+    "admitted_next_runtime_posture": "implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync",
+    "checks": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "latestReviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved current reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "git diff --check PASS"
+    ],
+    "runtime_behavior_already_merged": false,
+    "sync_live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "next_posture": "implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync"
+  },
+  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_branch": "codex/l3-corrected-artifact-downstream-sync",
+  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_status": "current_main_synced_corrected_artifact_package_rebuild_downstream_authority_freeze",
+  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_live_behavior_change": false,
+  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_next_posture": "implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync",
+  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_summary": "Doc 711 syncs PR #1315 merge commit ba6910ca4a0cb49412204662f5b21895be304b1f to current main. Current main now contains the corrected-artifact downstream authority freeze and admits the next exact runtime posture implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync, with no runtime behavior changed by the sync itself."
 }
