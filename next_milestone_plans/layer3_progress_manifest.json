@@ -24378,5 +24378,77 @@
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_branch": "codex/l3-manifest-authority-source-freeze-sync",
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_live_behavior_change": false,
-  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_summary": "Doc 653 syncs PR #1256 merge commit 1042a20f8176938ee5987bc25bba0eb01f18e5f6 to current main. The server-computed replacement package artifact manifest record-from-authority source is current-main synced, and the next exact posture is implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync."
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_summary": "Doc 653 syncs PR #1256 merge commit 1042a20f8176938ee5987bc25bba0eb01f18e5f6 to current main. The server-computed replacement package artifact manifest record-from-authority source is current-main synced, and the next exact posture is implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync.",
+  "replacement_package_artifact_manifest_record_from_authority_runtime": {
+    "status": "server_computed_replacement_package_artifact_manifest_record_from_authority_runtime_implemented",
+    "branch": "codex/l3-replacement-manifest-record-authority-runtime",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "60dba1a6c65d21d668099e5ca704e0c7438aa3a5",
+    "implemented_route": "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+    "owner_service": "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+    "api_owner": "backend/app/api/layer3.py",
+    "test_owner": "backend/tests/test_layer3_api.py",
+    "request_dto": "Layer3ReplacementPackageArtifactManifestFromAuthorityRequest",
+    "response_dto": "Layer3ReplacementPackageArtifactManifestResponse",
+    "response_schema_id": "layer3.replacement_package_artifact_manifest_from_authority.v1",
+    "accepted_request_authority_fields": [
+      "client_request_id",
+      "session_id",
+      "analysis_plan_id",
+      "pass_run_id",
+      "reconciliation_record_id",
+      "replacement_artifact_materialization_id",
+      "materialization_basis_hash",
+      "replacement_package_set_authority_id",
+      "replacement_authority_basis_hash",
+      "package_supersession_commit_id",
+      "package_supersession_commit_basis_hash",
+      "operator_decision"
+    ],
+    "server_computed_fields": [
+      "artifact_manifest_hash",
+      "authority_basis_hash",
+      "verified_artifact_byte_sizes",
+      "redacted artifact refs"
+    ],
+    "positive_proof": [
+      "OpenAPI request schema",
+      "workbench error envelope",
+      "API boundary monkeypatch",
+      "successful record from materialization authority",
+      "redacted response refs",
+      "redacted response manifest snapshot",
+      "same client_request_id replay already_recorded",
+      "same computed basis new client_request_id already_recorded",
+      "no connector-run creation",
+      "no replacement namespace row",
+      "no package row mutation"
+    ],
+    "negative_proof": [
+      "missing required fields",
+      "forbidden browser-supplied replacement refs",
+      "forbidden browser-supplied artifact_manifest_hash",
+      "forbidden browser-supplied authority_basis_hash",
+      "forbidden destination URL",
+      "unsupported operator decision",
+      "missing materialization row",
+      "stale materialization_basis_hash",
+      "stale replacement_authority_basis_hash",
+      "stale package_supersession_commit_basis_hash",
+      "tampered replacement artifact hash mismatch"
+    ],
+    "validation": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_replacement_package_artifact_manifest.py .\\backend\\app\\api\\layer3.py .\\backend\\tests\\test_layer3_api.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_package_openapi_contracts .\\backend\\tests\\test_layer3_api.py::test_layer3_json_workbench_error_openapi_contracts .\\backend\\tests\\test_layer3_api.py::test_layer3_replacement_package_artifact_manifest_from_authority_api_boundary_returns_workbench_error_envelope .\\backend\\tests\\test_layer3_api.py::test_layer3_api_replacement_package_artifact_manifest_record_from_authority_computes_and_redacts_refs .\\backend\\tests\\test_layer3_api.py::test_layer3_api_replacement_package_artifact_manifest_record_from_authority_prechecks_fail_closed -q"
+    ],
+    "live_behavior_change": true,
+    "rendered_behavior_change": false,
+    "next_required_action_after_merge": "current_main_sync_replacement_package_artifact_manifest_record_from_authority_runtime",
+    "next_whole_project_posture_after_sync": "determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail"
+  },
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_branch": "codex/l3-replacement-manifest-record-authority-runtime",
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_doc": "next_milestone_plans/Layer3_planning_docs/654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_live_behavior_change": true,
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_summary": "Doc 654 implements POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-authority. The route accepts only authority ids plus existing-row basis hashes, computes manifest and authority hashes server-side, records the durable manifest row, returns redacted artifact refs, and leaves rendered UI, replacement namespace rows, package mutation, connector dispatch, source expansion, RAG/vector, provider-public delivery/use, and auth/security blocked."
 }
