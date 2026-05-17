@@ -1611,6 +1611,10 @@ LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF = (
     PLANNING_DOCS
     / "644_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF.md"
 )
+LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "645_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52232,6 +52236,65 @@ def _check_rendered_replacement_package_set_authority_control_runtime_proof(
                 )
 
 
+def _check_rendered_replacement_package_set_authority_control_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `rendered_replacement_package_set_authority_control` runtime proof.",
+        "645_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC.md",
+        "644_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_RUNTIME_PROOF.md",
+        "Runtime PR: `#1248`.",
+        "33c5197811e19b32e3d6cda3aeb974f24dfddede",
+        "2625952499ecd0883f06171ad2a793bbb3dd005d",
+        "Synced result: `current_main_synced_rendered_replacement_package_set_authority_control_runtime`.",
+        "backend-layer3-api`: `SUCCESS` in `2m29s`",
+        "test`: `SUCCESS` in `3m19s`",
+        "PR reviewThreads totalCount: `0`.",
+        "The next exact current-main posture is `freeze_rendered_package_supersession_commit_control_after_replacement_package_set_authority_control_sync`.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC)} "
+                f"missing rendered replacement package-set authority sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Replacement Package-Set Authority Control Current-Main Sync",
+            "645_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC.md",
+            "PR `#1248`",
+            "2625952499ecd0883f06171ad2a793bbb3dd005d",
+            "current_main_synced_rendered_replacement_package_set_authority_control_runtime",
+            "freeze_rendered_package_supersession_commit_control_after_replacement_package_set_authority_control_sync",
+        ),
+        MANIFEST: (
+            "rendered_replacement_package_set_authority_control_current_main_sync",
+            "current_main_synced_rendered_replacement_package_set_authority_control_runtime",
+            "codex/l3-rendered-replacement-set-authority-control-sync",
+            "backend-layer3-api passed 2m29s",
+            "test passed 3m19s",
+            "freeze_rendered_package_supersession_commit_control_after_replacement_package_set_authority_control_sync",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_replacement_package_set_authority_control_current_main_sync_proof",
+            "current_main_sync_rendered_replacement_package_set_authority_control_runtime",
+            "reviewThreads totalCount 0",
+            "current_main_synced_rendered_replacement_package_set_authority_control_runtime",
+            "freeze_rendered_package_supersession_commit_control_after_replacement_package_set_authority_control_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered replacement package-set authority sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52716,6 +52779,7 @@ def main() -> int:
     _check_replacement_package_artifact_materialization_runtime_proof(errors)
     _check_replacement_package_artifact_materialization_runtime_current_main_sync(errors)
     _check_rendered_replacement_package_set_authority_control_runtime_proof(errors)
+    _check_rendered_replacement_package_set_authority_control_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
