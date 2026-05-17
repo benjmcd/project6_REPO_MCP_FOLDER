@@ -1847,6 +1847,10 @@ LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_PROOF 
     PLANNING_DOCS
     / "704_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_PROOF.md"
 )
+LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "705_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -58072,6 +58076,126 @@ def _check_operator_review_corrections_corrected_package_artifact_set_runtime_pr
                 )
 
 
+def _check_operator_review_corrections_corrected_package_artifact_set_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `operator_review_corrections_corrected_package_artifact_set_runtime`.",
+        "705_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "704_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_PROOF.md",
+        "Runtime PR: `#1309`.",
+        "codex/l3-corrected-artifact-set-runtime",
+        "0d42f0fd8ab8535d10696a362f8755b2bd5fed52",
+        "057cf3c7b7f88d0567e41786a9e2c23f1ae5b94d",
+        "current_main_synced_operator_review_corrections_corrected_package_artifact_set_runtime",
+        "`backend-layer3-api`: `SUCCESS` in `2m47s`",
+        "`test`: `SUCCESS` in `3m50s`",
+        "PR reviewThreads totalCount: `0`",
+        "Merge state before merge: `CLEAN`",
+        "python .\\tools\\l3-progress-check.py",
+        "POST /api/v1/layer3/package/corrected-artifact-set/record",
+        "backend/app/services/layer3_corrected_package_artifact_set.py",
+        "L3CorrectedPackageArtifactSet",
+        "l3_corrected_package_artifact_set",
+        "0033_layer3_corrected_package_artifact_set.py",
+        "layer3.corrected_package_artifact_set.v1",
+        "operator_review_corrections_server_owned_corrected_package_artifact_set",
+        "record_corrected_package_artifact_set_from_review_corrections",
+        "redacted",
+        "no raw local paths",
+        "freeze_package_rebuild_from_corrected_artifact_set_implementation_entry_after_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing operator review corrections corrected package artifact set runtime current-main sync term: {term}"
+            )
+
+    for blocked in (
+        "package rebuild runtime",
+        "package payload rewrite",
+        "source `L3OutputPackage` row mutation",
+        "package activation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "browser/operator path editing",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+        "hidden LLM planning",
+        "rendered UI authority",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing operator review corrections corrected package artifact set runtime current-main sync non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Operator Review Corrections Corrected Package Artifact Set Runtime Current-Main Sync",
+            "705_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1309",
+            "0d42f0fd8ab8535d10696a362f8755b2bd5fed52",
+            "057cf3c7b7f88d0567e41786a9e2c23f1ae5b94d",
+            "backend-layer3-api` passed in `2m47s",
+            "reviewThreads totalCount was `0`",
+            "POST /api/v1/layer3/package/corrected-artifact-set/record",
+            "backend/app/services/layer3_corrected_package_artifact_set.py",
+            "0033_layer3_corrected_package_artifact_set.py",
+            "freeze_package_rebuild_from_corrected_artifact_set_implementation_entry_after_runtime_sync",
+        ),
+        MANIFEST: (
+            "operator_review_corrections_corrected_package_artifact_set_runtime_current_main_sync",
+            "current_main_synced_operator_review_corrections_corrected_package_artifact_set_runtime",
+            "codex/l3-corrected-artifact-set-runtime-sync",
+            "705_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1309",
+            "057cf3c7b7f88d0567e41786a9e2c23f1ae5b94d",
+            "backend-layer3-api SUCCESS 2m47s",
+            "reviewThreads totalCount 0",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "POST /api/v1/layer3/package/corrected-artifact-set/record",
+            "backend/app/services/layer3_corrected_package_artifact_set.py",
+            "freeze_package_rebuild_from_corrected_artifact_set_implementation_entry_after_runtime_sync",
+            "latest_operator_review_corrections_corrected_package_artifact_set_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "operator_review_corrections_corrected_package_artifact_set_runtime_current_main_sync_proof",
+            "current_main_sync_operator_review_corrections_corrected_package_artifact_set_runtime",
+            "current_main_synced_operator_review_corrections_corrected_package_artifact_set_runtime",
+            "705_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1309",
+            "057cf3c7b7f88d0567e41786a9e2c23f1ae5b94d",
+            "backend-layer3-api SUCCESS 2m47s",
+            "reviewThreads totalCount 0",
+            "current main contains the corrected package artifact set source-authority runtime",
+            "no package rebuild runtime",
+            "freeze_package_rebuild_from_corrected_artifact_set_implementation_entry_after_runtime_sync",
+            "latest_operator_review_corrections_corrected_package_artifact_set_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing operator review corrections corrected package artifact set runtime current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -58619,6 +58743,7 @@ def main() -> int:
     _check_operator_review_corrections_corrected_package_artifact_set_entry_freeze(errors)
     _check_operator_review_corrections_corrected_package_artifact_set_entry_freeze_current_main_sync(errors)
     _check_operator_review_corrections_corrected_package_artifact_set_runtime_proof(errors)
+    _check_operator_review_corrections_corrected_package_artifact_set_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
