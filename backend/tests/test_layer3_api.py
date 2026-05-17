@@ -69,6 +69,7 @@ from app.services import (
     dataframe_io,
     layer3_connector_dispatch_entry,
     layer3_connector_local_destination_receipt,
+    layer3_corrected_package_artifact_set,
     layer3_external_local_export,
     layer3_package_mutation_entry,
     layer3_package_replacement_activation,
@@ -2105,6 +2106,71 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
     assert "replacement_authority_basis_hash" in artifact_manifest_from_authority_schema["properties"]
     assert "record_from_authority_operator_decision" in artifact_manifest_from_authority_schema["properties"]
 
+    corrected_set_request_schema = spec["paths"]["/api/v1/layer3/package/corrected-artifact-set/record"]["post"][
+        "requestBody"
+    ]["content"]["application/json"]["schema"]
+    assert corrected_set_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "source_package_set_hash",
+        "source_output_package_ids",
+        "source_package_kinds",
+        "source_payload_refs",
+        "source_payload_hashes",
+        "result_review_record_ref",
+        "reviewed_output_items_hash",
+        "package_review_preview_hash",
+        "operator_decision",
+    } == set(corrected_set_request_schema["required"])
+    assert corrected_set_request_schema["properties"]["operator_decision"]["enum"] == [
+        "record_corrected_package_artifact_set_from_review_corrections"
+    ]
+    for forbidden_field in (
+        "corrected_artifact_refs",
+        "corrected_artifact_bytes",
+        "browser_generated_diff",
+        "rebuild_package",
+        "destination_url",
+        "rag_vector_index",
+    ):
+        assert corrected_set_request_schema["properties"][forbidden_field]["description"].startswith(
+            "Known but non-admitted"
+        )
+
+    corrected_set_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/package/corrected-artifact-set/record",
+        "post",
+    )
+    assert corrected_set_schema["title"] == "Layer3CorrectedPackageArtifactSetResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "corrected_package_artifact_set_id",
+        "replacement_artifact_materialization_id",
+        "materialization_basis_hash",
+        "source_package_set_hash",
+        "result_review_record_ref",
+        "reviewed_output_items_hash",
+        "package_review_preview_hash",
+        "corrected_package_set_id",
+        "corrected_package_set_hash",
+        "corrected_artifact_refs",
+        "artifact_refs_redacted",
+        "package_rebuild_enabled",
+        "source_l3_output_package_mutation_enabled",
+        "connector_dispatch_enabled",
+        "provider_public_url_enabled",
+        "authority_rail",
+    } <= set(corrected_set_schema["required"])
+
     namespace_request_schema = spec["paths"]["/api/v1/layer3/package/replacement-namespace/record"]["post"][
         "requestBody"
     ]["content"]["application/json"]["schema"]
@@ -2601,6 +2667,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
             "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
             "post",
         ): ("400", "404", "409"),
+        ("/api/v1/layer3/package/corrected-artifact-set/record", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-namespace/record", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-activation/commit", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
@@ -2914,6 +2981,40 @@ def test_layer3_replacement_package_artifact_manifest_from_authority_api_boundar
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_replacement_artifact_manifest_from_authority_boundary"]
+
+
+def test_layer3_corrected_package_artifact_set_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_corrected_package_artifact_set_boundary_error",
+            "Forced corrected package artifact set boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_corrected_package_artifact_set_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_corrected_package_artifact_set,
+        "record_corrected_package_artifact_set",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post("/api/v1/layer3/package/corrected-artifact-set/record", json={})
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_corrected_package_artifact_set_boundary_error",
+    )
+    assert body["message"] == "Forced corrected package artifact set boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_corrected_package_artifact_set_boundary"]
 
 
 def test_layer3_replacement_package_namespace_api_boundary_returns_workbench_error_envelope(
