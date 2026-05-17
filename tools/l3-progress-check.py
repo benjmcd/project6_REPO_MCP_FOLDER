@@ -1779,6 +1779,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE
     PLANNING_DOCS
     / "687_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE = (
+    PLANNING_DOCS
+    / "688_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -56253,6 +56257,102 @@ def _check_source_l3_output_package_active_authority_server_owned_local_outbox_w
                 )
 
 
+def _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `source_l3_output_package_active_authority_local_outbox_provider_private_handoff`.",
+        "688_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE.md",
+        "687_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "80eaddb27335a560ab2275d0a901954f7d96dfd1",
+        "Selected follow-on surface: `downstream_active_package_authority_read_adoption`.",
+        "Selected reader path: `local_outbox_provider_private_handoff`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        "server_owned_local_outbox_write",
+        "connector_local_destination_receipt",
+        "adopt_active_replacement_package_authority_for_local_outbox_provider_private_handoff",
+        "Selected implementation-entry mode: `source_l3_output_package_active_authority_local_outbox_provider_private_handoff`.",
+        "No runtime begins in this freeze.",
+        "existing local-outbox provider-private handoff behavior remains unchanged",
+        "L3LocalOutboxProviderPrivateHandoffReceipt` remains durable handoff/status authority",
+        "storage://server-owned-local-outbox/",
+        "no `ConnectorRun` or `ConnectorRunTarget` creation",
+        "current_main_sync_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze",
+        "implement_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE)} "
+                f"missing source L3 output package active authority local outbox provider-private handoff freeze term: {term}"
+            )
+
+    for blocked in (
+        "external local export adoption",
+        "package rebuild",
+        "package payload rewrite",
+        "direct source `L3OutputPackage` mutation",
+        "provider-public delivery/use",
+        "real connector invocation",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw provider token exposure",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE)} "
+                f"missing source L3 output package active authority local outbox provider-private handoff freeze non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Local Outbox Provider-Private Handoff Freeze",
+            "688_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE.md",
+            "source_l3_output_package_active_authority_local_outbox_provider_private_handoff",
+            "local_outbox_provider_private_handoff",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+            "adopt_active_replacement_package_authority_for_local_outbox_provider_private_handoff",
+            "current_main_sync_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_local_outbox_provider_private_handoff",
+            "implementation_entry_frozen_source_l3_output_package_active_authority_local_outbox_provider_private_handoff",
+            "codex/l3-active-authority-provider-private-freeze",
+            "688_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE.md",
+            "local_outbox_provider_private_handoff",
+            "adopt_active_replacement_package_authority_for_local_outbox_provider_private_handoff",
+            "current_main_sync_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze",
+            "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_proof",
+            "implementation_entry_freeze_source_l3_output_package_active_authority_local_outbox_provider_private_handoff",
+            "688_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE.md",
+            "local_outbox_provider_private_handoff",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+            "no runtime begins in this freeze",
+            "current_main_sync_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze",
+            "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority local outbox provider-private handoff freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -56783,6 +56883,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
