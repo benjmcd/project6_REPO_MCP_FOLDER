@@ -26618,5 +26618,72 @@
   "latest_source_l3_output_package_replacement_activation_freeze_branch": "codex/l3-package-activation-freeze",
   "latest_source_l3_output_package_replacement_activation_freeze_doc": "next_milestone_plans/Layer3_planning_docs/664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
   "latest_source_l3_output_package_replacement_activation_freeze_live_behavior_change": false,
-  "latest_source_l3_output_package_replacement_activation_freeze_summary": "Doc 664 proof freezes source_l3_output_package_replacement_activation as the next exact package lifecycle mutating action after namespace control. It is a freeze-only proof that selects activation of a complete governed replacement namespace set as current package authority, with future proof required for idempotency, stale authority, partial-write rollback, redaction, and disabled side effects."
+  "latest_source_l3_output_package_replacement_activation_freeze_summary": "Doc 664 proof freezes source_l3_output_package_replacement_activation as the next exact package lifecycle mutating action after namespace control. It is a freeze-only proof that selects activation of a complete governed replacement namespace set as current package authority, with future proof required for idempotency, stale authority, partial-write rollback, redaction, and disabled side effects.",
+  "source_l3_output_package_replacement_activation_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_l3_output_package_replacement_activation_freeze",
+    "status": "current_main_synced_source_l3_output_package_replacement_activation_freeze",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
+    "freeze_pr": "#1268",
+    "freeze_branch": "codex/l3-package-activation-freeze",
+    "freeze_branch_commits": [
+      "f73dd8114de06a46195f86b146a8c29dad2302a8",
+      "27cc41c47b2a15225926208872230e74188d506b"
+    ],
+    "freeze_merge_commit": "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
+    "current_main_checkpoint_after_merge": "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
+    "merge_gate": [
+      "backend-layer3-api SUCCESS 2m57s",
+      "test SUCCESS 3m52s",
+      "comments empty",
+      "latestReviews one automated Codex review COMMENTED",
+      "reviewThreads totalCount 1",
+      "unresolved reviewThreads 0",
+      "resolved reviewThreads 1",
+      "outdated reviewThreads 1",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "project6-origin/main 2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "synced_result": "current_main_synced_source_l3_output_package_replacement_activation_freeze",
+    "review_correction": "27cc41c47b2a15225926208872230e74188d506b separated client_request_id from canonical replacement_activation_basis_hash and the review thread was resolved before merge",
+    "proof_terms": [
+      "665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+      "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
+      "source_l3_output_package_replacement_activation",
+      "activate_replacement_output_package_namespace",
+      "/api/v1/layer3/package/replacement-activation/commit",
+      "backend/app/services/layer3_package_replacement_activation.py",
+      "client_request_id is the idempotency key and is not part of the canonical replacement_activation_basis_hash",
+      "implement_source_l3_output_package_replacement_activation_after_freeze_sync",
+      "select_package_activation_storage_boundary_after_freeze_sync"
+    ],
+    "non_admitted": [
+      "new runtime behavior in this sync",
+      "new rendered behavior in this sync",
+      "package activation runtime",
+      "rendered activation controls",
+      "package rebuild",
+      "package payload rewrite",
+      "replacement artifact generation",
+      "downstream invalidation",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "frontend-durable authority",
+      "raw local path exposure"
+    ],
+    "next_whole_project_posture": "implement_source_l3_output_package_replacement_activation_after_freeze_sync"
+  },
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_branch": "codex/l3-package-activation-freeze-sync",
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_live_behavior_change": false,
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_summary": "Doc 665 proof records current-main sync for PR #1268, proves the source L3 output package replacement activation freeze is current-main synced, records the corrected idempotency-basis separation, and makes implement_source_l3_output_package_replacement_activation_after_freeze_sync the next exact posture."
 }
