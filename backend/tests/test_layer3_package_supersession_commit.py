@@ -22,10 +22,14 @@ from app.db.session import Base
 from app.models.models import (
     L3AnalysisPlan,
     L3AnalysisSet,
+    L3CorrectedPackageArtifactSet,
     L3OutputPackage,
+    L3PackageReplacementActivation,
     L3PackageSupersessionCommit,
     L3PassRun,
     L3ReconciliationRecord,
+    L3ReplacementOutputPackage,
+    L3ReplacementPackageArtifactManifest,
     L3ReplacementPackageSetAuthority,
     L3Session,
 )
@@ -314,6 +318,109 @@ def _commit_payload(source: dict, authority: dict, request_id: str = "req-supers
     }
 
 
+def _seed_corrected_artifact_commit_authority(db, tmp_path: Path) -> dict:
+    source = _seed_commit_source(db, tmp_path)
+    corrected_refs = []
+    corrected_hashes = []
+    corrected_sizes = []
+    for package_kind in PACKAGE_KINDS:
+        artifact_path = tmp_path / f"corrected-{package_kind}.json"
+        payload = f"corrected:{package_kind}".encode("utf-8")
+        artifact_path.write_bytes(payload)
+        corrected_refs.append(str(artifact_path))
+        corrected_hashes.append(hashlib.sha256(payload).hexdigest())
+        corrected_sizes.append(len(payload))
+    corrected_package_set_hash = authority_service.replacement_package_set_hash(
+        replacement_package_set_id="corrected-package-set-1",
+        replacement_package_kinds=PACKAGE_KINDS,
+        replacement_payload_refs=corrected_refs,
+        replacement_payload_hashes=corrected_hashes,
+    )
+    artifact_manifest_hash = stable_hash(
+        {
+            "schema_id": "test.corrected_package_artifact_manifest.v1",
+            "corrected_package_set_hash": corrected_package_set_hash,
+            "corrected_artifact_hashes": corrected_hashes,
+        }
+    )
+    corrected_basis_hash = stable_hash(
+        {
+            "schema_id": "test.corrected_artifact_basis.v1",
+            "source_package_set_hash": source["source_package_set_hash"],
+            "corrected_package_set_hash": corrected_package_set_hash,
+            "artifact_manifest_hash": artifact_manifest_hash,
+        }
+    )
+    corrected = L3CorrectedPackageArtifactSet(
+        corrected_package_artifact_set_id="corrected-set-1",
+        client_request_id="req-corrected-set",
+        session_id="session-1",
+        analysis_plan_id="plan-1",
+        pass_run_id="pass-1",
+        reconciliation_record_id="recon-1",
+        replacement_artifact_materialization_id="materialization-1",
+        materialization_basis_hash="materialization-basis-1",
+        source_package_set_hash=source["source_package_set_hash"],
+        source_output_package_ids_json=source["source_output_package_ids"],
+        source_package_kinds_json=source["source_package_kinds"],
+        source_payload_refs_json=source["source_payload_refs"],
+        source_payload_hashes_json=source["source_payload_hashes"],
+        result_review_record_ref="result-review-ref-1",
+        reviewed_output_items_hash="reviewed-items-hash-1",
+        package_review_preview_hash=PACKAGE_REVIEW_PREVIEW_HASH,
+        corrected_package_set_id="corrected-package-set-1",
+        corrected_package_set_hash=corrected_package_set_hash,
+        corrected_package_kinds_json=PACKAGE_KINDS,
+        corrected_artifact_refs_json=corrected_refs,
+        corrected_artifact_hashes_json=corrected_hashes,
+        corrected_artifact_byte_sizes_json=corrected_sizes,
+        artifact_namespace="corrected-package-artifacts",
+        artifact_manifest_hash=artifact_manifest_hash,
+        corrected_artifact_basis_hash=corrected_basis_hash,
+        audit_history_json=[],
+        authority_snapshot_json={},
+        operator_decision="record_corrected_package_artifact_set_from_review_corrections",
+        status="recorded",
+    )
+    db.add(corrected)
+    db.commit()
+    authority = authority_service.record_replacement_package_set_authority_from_corrected_artifact_set(
+        db,
+        {
+            "client_request_id": "req-from-corrected-authority",
+            "session_id": "session-1",
+            "analysis_plan_id": "plan-1",
+            "pass_run_id": "pass-1",
+            "reconciliation_record_id": "recon-1",
+            "source_package_set_hash": source["source_package_set_hash"],
+            "corrected_package_artifact_set_id": "corrected-set-1",
+            "corrected_artifact_basis_hash": corrected_basis_hash,
+            "operator_decision": "record_replacement_package_set_authority",
+        },
+    )
+    return {
+        "source": source,
+        "authority": authority,
+        "corrected_artifact_basis_hash": corrected_basis_hash,
+        "raw_corrected_refs": corrected_refs,
+    }
+
+
+def _commit_from_corrected_payload(seed: dict, request_id: str = "req-corrected-supersession-commit") -> dict:
+    return {
+        "client_request_id": request_id,
+        "session_id": "session-1",
+        "analysis_plan_id": "plan-1",
+        "pass_run_id": "pass-1",
+        "reconciliation_record_id": "recon-1",
+        "corrected_package_artifact_set_id": "corrected-set-1",
+        "corrected_artifact_basis_hash": seed["corrected_artifact_basis_hash"],
+        "replacement_package_set_authority_id": seed["authority"]["replacement_package_set_authority_id"],
+        "replacement_authority_basis_hash": seed["authority"]["authority_basis_hash"],
+        "operator_decision": "commit_package_supersession",
+    }
+
+
 def test_package_supersession_commit_concurrent_duplicate_request_records_one_lineage(tmp_path) -> None:
     engine = create_engine(
         f"sqlite:///{tmp_path / 'supersession-commit.sqlite'}",
@@ -367,4 +474,126 @@ def test_package_supersession_commit_concurrent_duplicate_request_records_one_li
         finally:
             db.close()
     finally:
+        engine.dispose()
+
+
+def test_package_supersession_commit_from_corrected_artifact_authority_redacts_refs(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'corrected-supersession-commit.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        seed = _seed_corrected_artifact_commit_authority(db, tmp_path)
+        payload = _commit_from_corrected_payload(seed)
+        packages_before = [
+            (package.output_package_id, package.payload_ref, package.payload_hash)
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.output_package_id).all()
+        ]
+
+        response = commit_service.commit_package_supersession_from_corrected_artifact_set_authority(db, payload)
+
+        assert response["schema_id"] == "layer3.package_supersession_commit.v1"
+        assert response["status"] == "committed"
+        assert response["operator_decision"] == "commit_package_supersession"
+        assert response["source_gate"] == (
+            "711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC"
+        )
+        assert response["authority_rail"]["response_payload_refs_redacted"] is True
+        assert all(ref.startswith("artifact://source-output-package/") for ref in response["source_payload_refs"])
+        assert all(
+            ref.startswith("artifact://package-supersession-commit-replacement/")
+            for ref in response["replacement_payload_refs"]
+        )
+        assert not any(raw_ref in str(response) for raw_ref in seed["raw_corrected_refs"])
+        assert response["commit_snapshot"]["source"]["raw_payload_refs_exposed"] is False
+        assert response["commit_snapshot"]["replacement"]["raw_payload_refs_exposed"] is False
+        assert response["commit_snapshot"]["corrected_artifact_set"]["raw_artifact_refs_exposed"] is False
+
+        assert db.query(L3PackageSupersessionCommit).count() == 1
+        assert db.query(L3OutputPackage).count() == 3
+        assert db.query(L3ReplacementPackageSetAuthority).count() == 1
+        assert db.query(L3ReplacementPackageArtifactManifest).count() == 0
+        assert db.query(L3ReplacementOutputPackage).count() == 0
+        assert db.query(L3PackageReplacementActivation).count() == 0
+        packages_after = [
+            (package.output_package_id, package.payload_ref, package.payload_hash)
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.output_package_id).all()
+        ]
+        assert packages_after == packages_before
+
+        replay = commit_service.commit_package_supersession_from_corrected_artifact_set_authority(db, payload)
+        assert replay["status"] == "already_committed"
+        assert replay["package_supersession_commit_id"] == response["package_supersession_commit_id"]
+        same_basis = commit_service.commit_package_supersession_from_corrected_artifact_set_authority(
+            db,
+            {**payload, "client_request_id": "req-corrected-supersession-commit-same-basis"},
+        )
+        assert same_basis["status"] == "already_committed"
+        assert same_basis["package_supersession_commit_id"] == response["package_supersession_commit_id"]
+        assert db.query(L3PackageSupersessionCommit).count() == 1
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_package_supersession_commit_from_corrected_artifact_authority_prechecks_fail_closed(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'corrected-supersession-prechecks.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        seed = _seed_corrected_artifact_commit_authority(db, tmp_path)
+        payload = _commit_from_corrected_payload(seed)
+        cases = [
+            (
+                {**payload, "replacement_payload_refs": [str(tmp_path / "forbidden.json")]},
+                "package_supersession_commit_from_corrected_artifact_set_scope_not_admitted",
+            ),
+            (
+                {**payload, "destination_url": "file:///tmp/out"},
+                "package_supersession_commit_from_corrected_artifact_set_scope_not_admitted",
+            ),
+            (
+                {**payload, "operator_decision": "record_replacement_package_set_authority"},
+                "unsupported_package_supersession_commit_from_corrected_artifact_set_decision",
+            ),
+            (
+                {**payload, "corrected_artifact_basis_hash": "stale-corrected-basis"},
+                "package_supersession_commit_corrected_artifact_basis_hash_mismatch",
+            ),
+            (
+                {**payload, "replacement_authority_basis_hash": "stale-replacement-basis"},
+                "package_supersession_commit_corrected_replacement_authority_basis_hash_mismatch",
+            ),
+            (
+                {**payload, "replacement_package_set_authority_id": "missing-authority"},
+                "package_supersession_commit_corrected_replacement_authority_not_found",
+            ),
+            (
+                {**payload, "session_id": "wrong-session"},
+                "package_supersession_commit_corrected_artifact_set_session_id_mismatch",
+            ),
+        ]
+        for bad_payload, expected_error in cases:
+            try:
+                commit_service.commit_package_supersession_from_corrected_artifact_set_authority(db, bad_payload)
+            except Layer3WorkbenchError as exc:
+                assert exc.error_code == expected_error
+            else:
+                raise AssertionError(f"expected {expected_error}")
+
+        response = commit_service.commit_package_supersession_from_corrected_artifact_set_authority(db, payload)
+        assert response["status"] == "committed"
+        try:
+            commit_service.commit_package_supersession_from_corrected_artifact_set_authority(
+                db,
+                {**payload, "client_request_id": payload["client_request_id"], "corrected_artifact_basis_hash": "other"},
+            )
+        except Layer3WorkbenchError as exc:
+            assert exc.error_code == "package_supersession_commit_corrected_artifact_basis_hash_mismatch"
+        else:
+            raise AssertionError("expected same-key different-basis conflict to fail closed")
+        assert db.query(L3PackageSupersessionCommit).count() == 1
+    finally:
+        db.close()
         engine.dispose()

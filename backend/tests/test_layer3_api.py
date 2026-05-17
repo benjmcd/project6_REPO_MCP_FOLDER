@@ -22,6 +22,7 @@ TESTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND))
 sys.path.insert(0, str(TESTS))
 
+from app.api import layer3 as layer3_api
 from app.api.deps import get_db
 from app.core.config import Settings, bootstrap_storage_tree, settings
 from app.db.session import Base
@@ -1965,6 +1966,49 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "Known but non-admitted"
     )
 
+    corrected_commit_request_schema = spec["paths"][
+        "/api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority"
+    ]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    for key, value in layer3_api.PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA.items():
+        assert corrected_commit_request_schema[key] == value
+    assert corrected_commit_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "corrected_package_artifact_set_id",
+        "corrected_artifact_basis_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "operator_decision",
+    } == set(corrected_commit_request_schema["required"])
+    assert corrected_commit_request_schema["properties"]["operator_decision"]["enum"] == [
+        "commit_package_supersession"
+    ]
+    for forbidden_field in (
+        "replacement_payload_refs",
+        "source_payload_refs",
+        "commit_basis_hash",
+        "corrected_artifact_refs",
+        "destination_url",
+        "vector_index",
+        "auth_context",
+    ):
+        assert corrected_commit_request_schema["properties"][forbidden_field]["description"].startswith(
+            "Known but non-admitted"
+        )
+
+    corrected_commit_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+        "post",
+    )
+    assert corrected_commit_schema["title"] == "Layer3PackageSupersessionCommitResponse"
+    assert "replacement_payload_refs" in corrected_commit_schema["properties"]
+    assert "commit_snapshot" in corrected_commit_schema["properties"]
+
     commit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/supersession/commit", "post")
     assert commit_schema["title"] == "Layer3PackageSupersessionCommitResponse"
     assert {
@@ -2707,6 +2751,10 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
             "post",
         ): ("400", "404", "409"),
         ("/api/v1/layer3/package/corrected-artifact-set/record", "post"): ("400", "404", "409"),
+        (
+            "/api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+            "post",
+        ): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-namespace/record", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-activation/commit", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
@@ -3088,6 +3136,43 @@ def test_layer3_replacement_package_set_from_corrected_artifact_set_api_boundary
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_replacement_from_corrected_artifact_set_boundary"]
+
+
+def test_layer3_package_supersession_commit_from_corrected_artifact_set_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_supersession_commit_from_corrected_artifact_set_boundary_error",
+            "Forced supersession commit from corrected artifact set boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_supersession_commit_from_corrected_artifact_set_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_package_supersession_commit,
+        "commit_package_supersession_from_corrected_artifact_set_authority",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post(
+        "/api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+        json={},
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_supersession_commit_from_corrected_artifact_set_boundary_error",
+    )
+    assert body["message"] == "Forced supersession commit from corrected artifact set boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_supersession_commit_from_corrected_artifact_set_boundary"]
 
 
 def test_layer3_replacement_package_namespace_api_boundary_returns_workbench_error_envelope(
