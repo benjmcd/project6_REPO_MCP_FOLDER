@@ -1831,6 +1831,10 @@ LAYER3_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE = (
     PLANNING_DOCS
     / "700_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE.md"
 )
+LAYER3_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "701_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -57551,6 +57555,119 @@ def _check_package_rebuild_corrected_artifact_source_authority_selection_freeze(
                 )
 
 
+def _check_package_rebuild_corrected_artifact_source_authority_selection_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `package_rebuild_corrected_artifact_source_authority_selection_freeze`.",
+        "701_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "700_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE.md",
+        "Freeze PR: `#1305`.",
+        "codex/l3-corrected-artifact-source-freeze",
+        "9a1abbfb6c7b096aa203cb303a5415ff9f15367d",
+        "6daf27d62049a0f9ab3b9b702a8783747653d39d",
+        "current_main_synced_operator_review_corrections_corrected_package_artifact_source_authority_selection_freeze",
+        "`backend-layer3-api`: `SUCCESS` in `2m46s`",
+        "`test`: `SUCCESS` in `3m40s`",
+        "PR reviewThreads totalCount: `0`",
+        "Merge state before merge: `CLEAN`",
+        "python .\\tools\\l3-progress-check.py",
+        "operator_review_corrections_server_owned_corrected_package_artifact_set",
+        "server_owned_corrected_package_artifact_authority",
+        "free-form review notes alone are not corrected-artifact authority",
+        "freeze_operator_review_corrections_corrected_package_artifact_set_implementation_entry_after_source_authority_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing package rebuild corrected-artifact source authority selection freeze current-main sync term: {term}"
+            )
+
+    for blocked in (
+        "runtime behavior",
+        "implementation-entry freeze",
+        "package rebuild runtime",
+        "package payload rewrite",
+        "source `L3OutputPackage` row mutation",
+        "corrected package artifact bytes",
+        "browser-supplied package bytes",
+        "browser-supplied replacement bytes",
+        "browser-generated diffs",
+        "arbitrary artifact refs",
+        "arbitrary hashes",
+        "local paths",
+        "URLs",
+        "source expansion",
+        "RAG/vector behavior",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "raw local path exposure",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing package rebuild corrected-artifact source authority selection freeze current-main sync non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Rebuild Corrected Artifact Source Authority Selection Freeze Current-Main Sync",
+            "701_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1305",
+            "9a1abbfb6c7b096aa203cb303a5415ff9f15367d",
+            "6daf27d62049a0f9ab3b9b702a8783747653d39d",
+            "backend-layer3-api` passed in `2m46s",
+            "reviewThreads totalCount was `0`",
+            "operator_review_corrections_server_owned_corrected_package_artifact_set",
+            "free-form review notes alone are not corrected-artifact authority",
+            "freeze_operator_review_corrections_corrected_package_artifact_set_implementation_entry_after_source_authority_sync",
+        ),
+        MANIFEST: (
+            "package_rebuild_corrected_artifact_source_authority_selection_freeze_current_main_sync",
+            "current_main_synced_operator_review_corrections_corrected_package_artifact_source_authority_selection_freeze",
+            "codex/l3-corrected-artifact-source-sync",
+            "701_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1305",
+            "6daf27d62049a0f9ab3b9b702a8783747653d39d",
+            "backend-layer3-api SUCCESS 2m46s",
+            "reviewThreads totalCount 0",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "freeze_operator_review_corrections_corrected_package_artifact_set_implementation_entry_after_source_authority_sync",
+            "latest_package_rebuild_corrected_artifact_source_authority_selection_freeze_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "package_rebuild_corrected_artifact_source_authority_selection_freeze_current_main_sync_proof",
+            "current_main_sync_package_rebuild_corrected_artifact_source_authority_selection_freeze",
+            "current_main_synced_operator_review_corrections_corrected_package_artifact_source_authority_selection_freeze",
+            "701_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1305",
+            "6daf27d62049a0f9ab3b9b702a8783747653d39d",
+            "backend-layer3-api SUCCESS 2m46s",
+            "reviewThreads totalCount 0",
+            "operator_review_corrections_server_owned_corrected_package_artifact_set",
+            "runtime remains blocked until a separate implementation-entry freeze",
+            "freeze_operator_review_corrections_corrected_package_artifact_set_implementation_entry_after_source_authority_sync",
+            "latest_package_rebuild_corrected_artifact_source_authority_selection_freeze_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing package rebuild corrected-artifact source authority selection freeze current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -58094,6 +58211,7 @@ def main() -> int:
     _check_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit(errors)
     _check_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit_current_main_sync(errors)
     _check_package_rebuild_corrected_artifact_source_authority_selection_freeze(errors)
+    _check_package_rebuild_corrected_artifact_source_authority_selection_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
