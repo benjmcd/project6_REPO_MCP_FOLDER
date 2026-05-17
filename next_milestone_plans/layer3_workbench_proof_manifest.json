@@ -29083,5 +29083,55 @@
   "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/723_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION_CURRENT_MAIN_SYNC.md",
   "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_replacement_activation_authority_evaluation",
   "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_next_posture": "select_downstream_active_package_authority_read_adoption_after_corrected_artifact_activation_sync",
-  "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_summary": "Doc 723 proof syncs the corrected-artifact replacement activation authority evaluation after PR #1327 and selects downstream active-package-authority read adoption as the next exact posture."
+  "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_summary": "Doc 723 proof syncs the corrected-artifact replacement activation authority evaluation after PR #1327 and selects downstream active-package-authority read adoption as the next exact posture.",
+  "corrected_artifact_active_authority_handoff_export_prepare_evaluation_proof": {
+    "proof_kind": "branch_local_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+    "status": "branch_local_corrected_artifact_active_authority_handoff_export_prepare_runtime_hardened_and_proven",
+    "evaluation_branch": "codex/l3-corrected-active-handoff-eval",
+    "evaluation_doc": "next_milestone_plans/Layer3_planning_docs/724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/723_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_evaluation": "d7513bb3e93a41b7457a76fae9b9077b4bd8ea07",
+    "selected_downstream_reader": "handoff_export_prepare",
+    "selected_route": "POST /api/v1/layer3/handoff/export/prepare",
+    "selected_resolver": "resolve_active_replacement_package_authority",
+    "runtime_behavior_change": true,
+    "test_proof_behavior_change": true,
+    "runtime_hardening": [
+      "corrected_package_set_hash uses layer3.replacement_package_set.v1 identity shape",
+      "corrected artifact-set artifact namespace aligns to replacement-package-artifacts"
+    ],
+    "proof_command": "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_handoff_export_prepare_applies_corrected_artifact_active_authority -q",
+    "observed_result": "focused proof 1 passed; full Layer 3 API suite 183 passed; adjacent corrected-artifact/replacement-chain set 5 passed; py-compile passed; Layer 3 progress state check PASS; Layer 3 target-selection validation PASS (frozen)",
+    "validation_results": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_handoff_export_prepare_applies_corrected_artifact_active_authority -q -> 1 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 183 passed",
+      "adjacent corrected-artifact/replacement-chain pytest set -> 5 passed",
+      "python -m py_compile .\\backend\\app\\services\\layer3_corrected_package_artifact_set.py .\\tools\\l3-progress-check.py -> passed",
+      "manifest JSON parse -> json ok",
+      "python .\\tools\\l3-progress-check.py -> PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen -> PASS (frozen)"
+    ],
+    "proof_coverage": [
+      "real corrected-artifact API route chain reaches replacement activation",
+      "handoff_export_prepare applies corrected active package authority",
+      "active replacement refs and hashes become effective payload refs and hashes",
+      "handoff export envelope persists active authority projection",
+      "reconciliation handoff_export_prepare state persists active authority projection",
+      "source L3OutputPackage rows are preserved",
+      "no ConnectorRun rows are created",
+      "no ConnectorRunTarget rows are created",
+      "no package payload rewrite",
+      "no source package mutation",
+      "no new handoff/export prepare file write",
+      "response-safe active artifact refs",
+      "duplicate prepare replays as already_prepared"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+    "next_posture_after_sync": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync"
+  },
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_branch": "codex/l3-corrected-active-handoff-eval",
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md",
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_status": "branch_local_corrected_artifact_active_authority_handoff_export_prepare_runtime_hardened_and_proven",
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_summary": "Doc 724 proves the corrected-artifact active package authority chain reaches handoff/export prepare through real API routes after hardening corrected artifact-set hash and namespace authority."
 }

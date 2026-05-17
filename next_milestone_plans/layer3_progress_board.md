@@ -4540,3 +4540,21 @@ PR `#1327` had green `backend-layer3-api` and `test` checks, no comments, no rev
 No runtime behavior is introduced by this sync. Package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rebinding, delivery rerun, provider-public delivery/use, connector/destination dispatch, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
 
 The next exact current-main posture is `select_downstream_active_package_authority_read_adoption_after_corrected_artifact_activation_sync`.
+
+## Corrected Artifact Active Authority Handoff Export Prepare Evaluation
+
+Evaluation/runtime-hardening proof: `724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md` selects `handoff_export_prepare` as the first downstream active-package-authority reader after corrected-artifact activation sync.
+
+The evaluated branch is `codex/l3-corrected-active-handoff-eval` from current-main checkpoint `d7513bb3e93a41b7457a76fae9b9077b4bd8ea07`.
+
+The pass proves `POST /api/v1/layer3/handoff/export/prepare` consumes corrected-artifact `L3PackageReplacementActivation` authority through the existing `resolve_active_replacement_package_authority` resolver and projects active replacement refs/hashes into the response, handoff export envelope, and persisted reconciliation state.
+
+The branch also hardens the corrected-artifact set recorder in `backend/app/services/layer3_corrected_package_artifact_set.py`: `corrected_package_set_hash` now uses the downstream-compatible `layer3.replacement_package_set.v1` identity shape, and the persisted artifact namespace now aligns with the server-owned `replacement-package-artifacts` materialization namespace. This is required for the real corrected-artifact API route chain to reach namespace recording, activation, and handoff/export prepare.
+
+The added API regression is `test_layer3_api_handoff_export_prepare_applies_corrected_artifact_active_authority` in `backend/tests/test_layer3_api.py`.
+
+Observed validation: focused proof `python -m pytest .\backend\tests\test_layer3_api.py::test_layer3_api_handoff_export_prepare_applies_corrected_artifact_active_authority -q` with `1 passed`; full Layer 3 API suite `python -m pytest .\backend\tests\test_layer3_api.py -q` with `183 passed`; adjacent corrected-artifact/replacement-chain set with `5 passed`; py-compile passed; Layer 3 progress state check `PASS`; Layer 3 target-selection validation `PASS (frozen)`.
+
+This pass starts no connector invocation, connector-run creation, destination write, credentials, network egress, provider-public delivery/use, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, or raw local path exposure.
+
+The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_handoff_export_prepare_evaluation`.
