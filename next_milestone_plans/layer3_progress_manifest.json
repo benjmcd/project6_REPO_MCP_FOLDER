@@ -26140,5 +26140,44 @@
   "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_doc": "next_milestone_plans/Layer3_planning_docs/686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md",
   "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_live_behavior_change": false,
   "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
-  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_summary": "Doc 686 proof records source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime: server_owned_local_outbox_write carries active replacement refs/hashes through fake target and local outbox write on the admitted associated-cohort APS evidence-bundle path, copies only the active-authority APS bundle artifact bytes, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, enables no real connector invocation or external destination write, leaks no raw local path, and changes no service runtime behavior."
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_summary": "Doc 686 proof records source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime: server_owned_local_outbox_write carries active replacement refs/hashes through fake target and local outbox write on the admitted associated-cohort APS evidence-bundle path, copies only the active-authority APS bundle artifact bytes, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, enables no real connector invocation or external destination write, leaks no raw local path, and changes no service runtime behavior.",
+  "source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync": {
+    "status": "current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+    "sync_branch": "codex/l3-active-authority-local-outbox-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/687_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/686_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_PROOF.md",
+    "runtime_pr": "#1291",
+    "runtime_branch": "codex/l3-active-authority-local-outbox-impl",
+    "runtime_branch_commit": "8be85b5f855e0bb143fc688b0ea0fc2ac783b770",
+    "runtime_merge_commit": "f38c26f8ec4d2e69b6ac546c50d8c91b82bf80ab",
+    "checks": [
+      "backend-layer3-api SUCCESS 2m46s",
+      "test SUCCESS 3m38s"
+    ],
+    "review_gate": [
+      "PR comments empty",
+      "PR reviews empty",
+      "PR latestReviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeable MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "synced_reader_path": "server_owned_local_outbox_write",
+    "synced_route": "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+    "synced_validation_seam": "recorded server_owned_local_outbox_target, connector_local_destination_receipt, external_export_download_prepare, and load_persisted_bundle_artifact source artifact validation",
+    "runtime_behavior_change": false,
+    "next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_server_owned_local_outbox_write_runtime_sync"
+  },
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_branch": "codex/l3-active-authority-local-outbox-runtime-sync",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/687_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_pr": "#1291",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_merge_commit": "f38c26f8ec4d2e69b6ac546c50d8c91b82bf80ab",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_server_owned_local_outbox_write_runtime_sync",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync_summary": "Doc 687 records current-main sync for PR #1291 merge commit f38c26f8ec4d2e69b6ac546c50d8c91b82bf80ab with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_server_owned_local_outbox_write_runtime_sync."
 }
