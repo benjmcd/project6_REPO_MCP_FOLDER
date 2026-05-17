@@ -1668,6 +1668,9 @@ LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_CURRENT_MA
     PLANNING_DOCS
     / "659_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE = (
+    PLANNING_DOCS / "660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -53430,6 +53433,80 @@ def _check_rendered_replacement_package_artifact_manifest_control_runtime_curren
                 )
 
 
+def _check_rendered_replacement_package_namespace_control_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze only for `rendered_replacement_package_namespace_control`.",
+        "660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md",
+        "659_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "Current-main preflight commit: `b7320cf0ab12ed2e1102b5e513cc839113bb2a37`.",
+        "Selected exact operator action: `record_replacement_package_namespace_row`.",
+        "Selected implementation-entry mode: `rendered_replacement_package_namespace_control`.",
+        "POST /api/v1/layer3/package/replacement-namespace/record",
+        "Owner service already live: `backend/app/services/layer3_replacement_package_namespace.py`.",
+        "Server runtime mode already live: `replacement_package_namespace_rows`.",
+        "Source gate: `131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE`.",
+        "one package-kind namespace row per operator submit",
+        "State.replacementPackageArtifactManifest",
+        "State.replacementPackageSetAuthority",
+        "State.packageSupersessionCommit",
+        "replacement_package_namespace_authority_basis_hash",
+        "#replacement-package-namespace-submit",
+        "#replacement-package-namespace-panel",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented_in_this_pass`.",
+        "current_main_sync_rendered_replacement_package_namespace_control_freeze",
+        "await_current_main_sync_for_rendered_replacement_package_namespace_control_freeze",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE)} "
+                f"missing rendered replacement package namespace control freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Replacement Package Namespace Control Freeze",
+            "660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md",
+            "rendered_replacement_package_namespace_control",
+            "one package-kind namespace row per operator submit",
+            "#replacement-package-namespace-submit",
+            "#replacement-package-namespace-panel",
+            "implement_rendered_replacement_package_namespace_control_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "rendered_replacement_package_namespace_control_freeze",
+            "implementation_entry_frozen_rendered_replacement_package_namespace_control",
+            "codex/l3-rendered-namespace-control-freeze",
+            "660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md",
+            "State.replacementPackageArtifactManifest",
+            "#replacement-package-namespace-submit",
+            "current_main_sync_rendered_replacement_package_namespace_control_freeze",
+            "await_current_main_sync_for_rendered_replacement_package_namespace_control_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_replacement_package_namespace_control_freeze_proof",
+            "implementation_entry_freeze_rendered_replacement_package_namespace_control",
+            "660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md",
+            "replacement_package_namespace_authority_basis_hash",
+            "State.replacementPackageNamespace",
+            "browser-supplied arbitrary artifact refs",
+            "implement_rendered_replacement_package_namespace_control_after_freeze_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered replacement package namespace control freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53929,6 +54006,7 @@ def main() -> int:
     _check_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync(errors)
     _check_rendered_replacement_package_artifact_manifest_control_runtime_proof(errors)
     _check_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync(errors)
+    _check_rendered_replacement_package_namespace_control_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
