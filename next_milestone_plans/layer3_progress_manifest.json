@@ -28008,5 +28008,44 @@
   "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_status": "branch_local_corrected_artifact_active_authority_handoff_export_prepare_runtime_hardened_and_proven",
   "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_runtime_behavior_change": true,
   "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
-  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_summary": "Doc 724 proves the corrected-artifact activation chain reaches handoff/export prepare through real API routes. It hardens corrected artifact-set hash and namespace authority so downstream corrected replacement/supersession/manifest/namespace/activation authority can be consumed by existing handoff_export_prepare active authority projection without connector runs, destination writes, package payload rewrite, source package mutation, source expansion, RAG/vector, auth/security, rendered UI, frontend-durable authority, caller paths/URLs, or raw path exposure."
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_summary": "Doc 724 proves the corrected-artifact activation chain reaches handoff/export prepare through real API routes. It hardens corrected artifact-set hash and namespace authority so downstream corrected replacement/supersession/manifest/namespace/activation authority can be consumed by existing handoff_export_prepare active authority projection without connector runs, destination writes, package payload rewrite, source package mutation, source expansion, RAG/vector, auth/security, rendered UI, frontend-durable authority, caller paths/URLs, or raw path exposure.",
+  "corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync": {
+    "status": "current_main_synced_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+    "sync_branch": "codex/l3-corrected-active-handoff-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md",
+    "evaluation_pr": "#1329",
+    "evaluation_branch": "codex/l3-corrected-active-handoff-eval",
+    "evaluation_branch_commit": "4568f3e001bc899eec6edc30f325ec5d1dfbef19",
+    "evaluation_merge_commit": "536a14886311360c62aabfa6906944cf9445023e",
+    "current_main_checkpoint_after_merge": "536a14886311360c62aabfa6906944cf9445023e",
+    "evaluation_result": "corrected_artifact_active_authority_handoff_export_prepare_proven",
+    "runtime_behavior_introduced_by_evaluation": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments_totalCount": 0,
+      "reviews_totalCount": 0,
+      "latestReviews_totalCount": 0,
+      "reviewThreads_totalCount": 0,
+      "unresolved_current_reviewThreads": 0,
+      "merge_state": "CLEAN"
+    },
+    "post_merge_validation": {
+      "python .\\tools\\l3-progress-check.py": "PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen": "PASS (frozen)"
+    },
+    "synced_runtime_route": "POST /api/v1/layer3/handoff/export/prepare",
+    "synced_reader": "resolve_active_replacement_package_authority",
+    "synced_runtime_owner": "backend/app/services/layer3_workbench.py",
+    "hardened_authority_bridge": "backend/app/services/layer3_corrected_package_artifact_set.py",
+    "next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync"
+  },
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_branch": "codex/l3-corrected-active-handoff-sync",
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_runtime_behavior_change": false,
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync",
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_summary": "Doc 725 syncs PR #1329 merge commit 536a14886311360c62aabfa6906944cf9445023e to current main. Current main now records that corrected-artifact active package authority reaches handoff_export_prepare through the existing active replacement authority reader, with no additional runtime behavior admitted by the sync. Next posture is select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync."
 }
