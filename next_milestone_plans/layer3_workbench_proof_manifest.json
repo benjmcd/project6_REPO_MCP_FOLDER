@@ -26874,5 +26874,81 @@
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_doc": "next_milestone_plans/Layer3_planning_docs/668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md",
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_live_behavior_change": false,
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_summary": "Doc 668 proof freezes one downstream active package authority reader adoption: handoff_export_prepare only, with no runtime in the freeze.",
-  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_freeze"
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+  "source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+    "status": "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/669_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+    "freeze_pr": "#1273",
+    "freeze_branch": "codex/l3-post-activation-use-surface-freeze",
+    "freeze_branch_commit": "9ccd90e15dac4f217381f9959f7a34e484e55ea7",
+    "freeze_merge_commit": "21a8bed2a56e3c283194688000a115b688226ed3",
+    "proof_terms": [
+      "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+      "source_l3_output_package_active_authority_handoff_export_prepare",
+      "handoff_export_prepare",
+      "POST /api/v1/layer3/handoff/export/prepare",
+      "resolve_active_replacement_package_authority",
+      "active replacement refs/hashes to the prepared internal export envelope for this reader only",
+      "source L3OutputPackage rows source refs/hashes and uq_l3_output_package_session_kind remain preserved"
+    ],
+    "merge_gate": {
+      "comments": "empty",
+      "reviews": "empty",
+      "latestReviews": "empty",
+      "reviewThreads_totalCount": 0,
+      "reviewThreads_unresolved": 0,
+      "mergeability_before_merge": "MERGEABLE",
+      "merge_state_before_merge": "CLEAN",
+      "checks": [
+        "backend-layer3-api SUCCESS 2m37s",
+        "test SUCCESS 3m20s"
+      ]
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS on project6-origin/main 21a8bed2a56e3c283194688000a115b688226ed3",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS on project6-origin/main 21a8bed2a56e3c283194688000a115b688226ed3"
+    ],
+    "required_sync_branch_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "next_posture": "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
+    "non_admitted": [
+      "runtime in this sync",
+      "rendered activation controls",
+      "package rebuild",
+      "package payload rewrite",
+      "direct source L3OutputPackage mutation",
+      "downstream invalidation",
+      "APS handoff dispatch adoption",
+      "external export/download adoption",
+      "server-owned local outbox adoption",
+      "provider-private handoff adoption",
+      "external local export adoption",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "credentials",
+      "external network egress",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority",
+      "caller-supplied arbitrary paths or URLs",
+      "raw local path exposure"
+    ]
+  },
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_branch": "codex/l3-active-authority-handoff-freeze-sync",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/669_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_pr": "#1273",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_merge_commit": "21a8bed2a56e3c283194688000a115b688226ed3",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_next_posture": "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_summary": "Doc 669 records current-main sync for PR #1273 and sets the next exact posture to implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync."
 }
