@@ -472,10 +472,14 @@ def resolve_active_replacement_package_authority(db: Session, *, session_id: str
     )
     if row is None:
         return None
+    activation_snapshot = row.activation_snapshot_json if isinstance(row.activation_snapshot_json, dict) else {}
+    source_snapshot = activation_snapshot.get("source") if isinstance(activation_snapshot.get("source"), dict) else {}
     return {
         "schema_id": "layer3.active_replacement_package_authority.v1",
         "session_id": row.session_id,
         "package_replacement_activation_id": row.package_replacement_activation_id,
+        "source_output_package_ids": json_clone(row.source_output_package_ids_json),
+        "source_payload_hashes": json_clone(source_snapshot.get("payload_hashes") or []),
         "package_kinds": json_clone(row.package_kinds_json),
         "replacement_output_package_ids": json_clone(row.replacement_output_package_ids_json),
         "active_artifact_refs": json_clone(row.active_artifact_refs_json),

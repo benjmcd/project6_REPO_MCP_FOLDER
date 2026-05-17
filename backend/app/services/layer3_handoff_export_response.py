@@ -41,6 +41,18 @@ def handoff_export_prepare_response(
     prepare_state: dict[str, Any],
 ) -> dict[str, Any]:
     ordered_packages = packages_in_review_order(packages)
+    output_package_ids = prepare_state.get("output_package_ids")
+    if not isinstance(output_package_ids, list):
+        output_package_ids = [package.output_package_id for package in ordered_packages]
+    package_kinds = prepare_state.get("package_kinds")
+    if not isinstance(package_kinds, list):
+        package_kinds = [package.package_kind for package in ordered_packages]
+    payload_refs = prepare_state.get("payload_refs")
+    if not isinstance(payload_refs, list):
+        payload_refs = [package.payload_ref for package in ordered_packages]
+    payload_hashes = prepare_state.get("payload_hashes")
+    if not isinstance(payload_hashes, list):
+        payload_hashes = [package.payload_hash for package in ordered_packages]
     body = {
         **base_response(HANDOFF_EXPORT_PREPARE_SCHEMA_ID, request_id=request_id, status=status),
         "session_id": session_id,
@@ -52,10 +64,10 @@ def handoff_export_prepare_response(
         "package_review_preview_hash": package_review_preview_hash,
         "construction_basis_hash": prepare_state.get("construction_basis_hash"),
         "reconciliation_record_id": reconciliation_record.reconciliation_record_id,
-        "output_package_ids": [package.output_package_id for package in ordered_packages],
-        "package_kinds": [package.package_kind for package in ordered_packages],
-        "payload_refs": [package.payload_ref for package in ordered_packages],
-        "payload_hashes": [package.payload_hash for package in ordered_packages],
+        "output_package_ids": json_clone(output_package_ids),
+        "package_kinds": json_clone(package_kinds),
+        "payload_refs": json_clone(payload_refs),
+        "payload_hashes": json_clone(payload_hashes),
         "package_review_submit_record_ref": prepare_state["package_review_submit_record_ref"],
         "package_review_state": prepare_state["package_review_state"],
         "operator_decision": prepare_state["operator_decision"],
@@ -108,6 +120,14 @@ def handoff_export_prepare_response(
         "candidate_id",
         "output_payload_ref",
         "output_payload_hash",
+        "active_package_authority_applied",
+        "package_replacement_activation_id",
+        "source_output_package_ids",
+        "source_payload_hashes",
+        "active_replacement_output_package_ids",
+        "active_payload_refs",
+        "active_payload_hashes",
+        "replacement_activation_basis_hash",
     ):
         if key in prepare_state:
             body[key] = json_clone(prepare_state[key])

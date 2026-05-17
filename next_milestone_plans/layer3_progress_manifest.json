@@ -25418,5 +25418,72 @@
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_merge_commit": "21a8bed2a56e3c283194688000a115b688226ed3",
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
   "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_next_posture": "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
-  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_summary": "Doc 669 syncs PR #1273 merge commit 21a8bed2a56e3c283194688000a115b688226ed3 to current main. The source L3 output package active authority handoff/export prepare freeze is current-main synced, and the next exact posture is implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync."
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_summary": "Doc 669 syncs PR #1273 merge commit 21a8bed2a56e3c283194688000a115b688226ed3 to current main. The source L3 output package active authority handoff/export prepare freeze is current-main synced, and the next exact posture is implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync.",
+  "source_l3_output_package_active_authority_handoff_export_prepare_runtime": {
+    "status": "implemented_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+    "branch": "codex/l3-active-authority-handoff-impl",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/670_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_PROOF.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/669_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "c6c3b51606e1afe8122cbd770e582ec8c2296c7e",
+    "selected_follow_on_surface": "downstream_active_package_authority_read_adoption",
+    "selected_reader_path": "handoff_export_prepare",
+    "selected_route": "POST /api/v1/layer3/handoff/export/prepare",
+    "selected_operator_action": "adopt_active_replacement_package_authority_for_handoff_export_prepare",
+    "selected_implementation_entry_mode": "source_l3_output_package_active_authority_handoff_export_prepare",
+    "owner_files": [
+      "backend/app/services/layer3_package_replacement_activation.py",
+      "backend/app/services/layer3_handoff_contract.py",
+      "backend/app/services/layer3_handoff_export_response.py",
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/api/layer3.py",
+      "backend/tests/test_layer3_api.py"
+    ],
+    "applied_fields": [
+      "active_package_authority_applied",
+      "package_replacement_activation_id",
+      "source_output_package_ids",
+      "source_payload_hashes",
+      "active_replacement_output_package_ids",
+      "active_payload_refs",
+      "active_payload_hashes",
+      "replacement_activation_basis_hash"
+    ],
+    "proof_terms": [
+      "unchanged no-active-authority handoff_export_prepare behavior",
+      "active replacement refs/hashes applied to prepare response envelope and state",
+      "source L3OutputPackage rows unchanged",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "response-safe artifact://replacement-package-artifacts refs",
+      "caller-supplied active authority fields fail closed"
+    ],
+    "runtime_behavior_change": true,
+    "rendered_behavior_change": false,
+    "next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+    "non_admitted": [
+      "APS dispatch adoption",
+      "external export/download adoption",
+      "local outbox adoption",
+      "provider-private handoff adoption",
+      "external local export adoption",
+      "rendered activation controls",
+      "package rebuild",
+      "package payload rewrite",
+      "source L3OutputPackage mutation",
+      "downstream invalidation",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority",
+      "caller-supplied arbitrary paths or URLs",
+      "raw local path exposure"
+    ]
+  },
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_branch": "codex/l3-active-authority-handoff-impl",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_doc": "next_milestone_plans/Layer3_planning_docs/670_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_PROOF.md",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_live_behavior_change": true,
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_handoff_export_prepare_runtime",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_runtime_summary": "Doc 670 implements source_l3_output_package_active_authority_handoff_export_prepare_runtime for handoff_export_prepare via POST /api/v1/layer3/handoff/export/prepare. It adopts active replacement refs/hashes from resolve_active_replacement_package_authority for this reader only, validates package kinds/source ids/source hashes, preserves source L3OutputPackage rows, blocks caller-supplied active fields, and leaves APS dispatch, external export/download, local outbox, provider-private handoff, external local export, rendered activation controls, package rebuild/payload rewrite, source expansion, RAG/vector, auth/security, and frontend-durable authority unadmitted. Next posture: await_current_main_sync_for_source_l3_output_package_active_authority_handoff_export_prepare_runtime."
 }
