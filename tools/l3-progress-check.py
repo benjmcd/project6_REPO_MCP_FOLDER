@@ -1890,6 +1890,10 @@ LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYN
 LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF = (
     PLANNING_DOCS / "716_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF.md"
 )
+LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "717_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -59610,6 +59614,116 @@ def _check_corrected_artifact_replacement_manifest_runtime_proof(
                 )
 
 
+def _check_corrected_artifact_replacement_manifest_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `corrected_artifact_replacement_manifest_runtime`.",
+        "717_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "716_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF.md",
+        "Runtime PR: `#1321`",
+        "7317dc621e1886e9f5103a3fa841fa1bbef1e2c7",
+        "9e8ae363994e279e6744b0f4e309f6444856880f",
+        "codex/l3-corrected-artifact-manifest-runtime-sync",
+        "corrected_artifact_replacement_manifest_from_supersession_authority",
+        "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+        "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+        "backend/app/api/layer3.py",
+        "L3ReplacementPackageArtifactManifest",
+        "L3CorrectedPackageArtifactSet",
+        "L3ReplacementPackageSetAuthority",
+        "L3PackageSupersessionCommit",
+        "replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+        "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+        "Runtime behavior already merged by the runtime PR: `true`",
+        "Runtime behavior in this sync: `false`",
+        "7 passed",
+        "16 passed, 164 deselected",
+        "evaluate_corrected_artifact_replacement_namespace_authority_after_manifest_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing corrected-artifact replacement manifest runtime current-main sync term: {term}"
+            )
+
+    for blocked in (
+        "Replacement namespace row creation",
+        "package replacement activation",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "connector/destination dispatch",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "rendered UI authority",
+        "caller-supplied arbitrary paths or URLs",
+        "browser-supplied refs/hashes/bytes",
+        "raw local path exposure",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing corrected-artifact replacement manifest runtime current-main sync boundary term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Replacement Manifest Runtime Current-Main Sync",
+            "717_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1321`",
+            "7317dc621e1886e9f5103a3fa841fa1bbef1e2c7",
+            "9e8ae363994e279e6744b0f4e309f6444856880f",
+            "corrected-artifact replacement manifest bridge",
+            "evaluate_corrected_artifact_replacement_namespace_authority_after_manifest_runtime_sync",
+        ),
+        MANIFEST: (
+            "corrected_artifact_replacement_manifest_runtime_current_main_sync",
+            "current_main_synced_corrected_artifact_replacement_manifest_runtime",
+            "codex/l3-corrected-artifact-manifest-runtime-sync",
+            "717_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC.md",
+            '"runtime_pr": "#1321"',
+            "7317dc621e1886e9f5103a3fa841fa1bbef1e2c7",
+            "9e8ae363994e279e6744b0f4e309f6444856880f",
+            "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+            '"runtime_behavior_already_merged": true',
+            '"runtime_behavior_change_in_sync": false',
+            "7 passed",
+            "16 passed, 164 deselected",
+            "evaluate_corrected_artifact_replacement_namespace_authority_after_manifest_runtime_sync",
+            "latest_corrected_artifact_replacement_manifest_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_replacement_manifest_runtime_current_main_sync_proof",
+            "current_main_sync_corrected_artifact_replacement_manifest_runtime",
+            "current_main_synced_corrected_artifact_replacement_manifest_runtime",
+            "717_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC.md",
+            '"runtime_pr": "#1321"',
+            "7317dc621e1886e9f5103a3fa841fa1bbef1e2c7",
+            "9e8ae363994e279e6744b0f4e309f6444856880f",
+            "L3ReplacementPackageArtifactManifest",
+            '"runtime_behavior_change_in_sync": false',
+            "evaluate_corrected_artifact_replacement_namespace_authority_after_manifest_runtime_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact replacement manifest runtime "
+                    f"current-main sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -60169,6 +60283,7 @@ def main() -> int:
     _check_corrected_artifact_replacement_manifest_authority_freeze(errors)
     _check_corrected_artifact_replacement_manifest_authority_freeze_current_main_sync(errors)
     _check_corrected_artifact_replacement_manifest_runtime_proof(errors)
+    _check_corrected_artifact_replacement_manifest_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
