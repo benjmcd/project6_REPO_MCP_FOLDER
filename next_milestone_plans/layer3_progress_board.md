@@ -4456,3 +4456,15 @@ Current main now contains the corrected-artifact replacement manifest bridge: `P
 This sync starts no runtime. Replacement namespace rows, package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
 
 The next exact current-main posture is `evaluate_corrected_artifact_replacement_namespace_authority_after_manifest_runtime_sync`.
+
+## Corrected Artifact Replacement Namespace Authority Freeze
+
+Implementation-entry freeze: `718_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE.md` evaluates current main after Doc `717_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC.md` at `3d60756b94cc6d95f868db6db7d042a9a45f3c46`.
+
+Current main already contains `POST /api/v1/layer3/package/replacement-namespace/record`, but that route still requires caller-supplied `source_output_package_id`, `package_kind`, `package_schema_id`, `artifact_ref`, `artifact_hash`, and `authority_basis_hash` for one row at a time. It is therefore not sufficient for the corrected-artifact end-to-end path now that `L3ReplacementPackageArtifactManifest` can be derived from corrected-artifact authority.
+
+The frozen next bridge is `server_computed_replacement_namespace_from_corrected_artifact_manifest_authority` via future route `POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority`, owned by `backend/app/services/layer3_replacement_package_namespace.py` and `backend/app/api/layer3.py`. It may later derive one complete `L3ReplacementOutputPackage` namespace set from `L3CorrectedPackageArtifactSet`, `L3ReplacementPackageSetAuthority`, `L3PackageSupersessionCommit`, and `L3ReplacementPackageArtifactManifest`, with deterministic per-kind row idempotency keys because `l3_replacement_output_package.client_request_id` is unique per row.
+
+This freeze starts no runtime. Package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, and raw local path exposure remain blocked.
+
+The next exact posture after merge is `current_main_sync_corrected_artifact_replacement_namespace_authority_freeze`; after sync, the next posture is `implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync`.
