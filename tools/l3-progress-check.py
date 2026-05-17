@@ -1823,6 +1823,10 @@ LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_A
     PLANNING_DOCS
     / "698_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT.md"
 )
+LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "699_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -57325,6 +57329,116 @@ def _check_package_rebuild_from_corrected_artifacts_implementation_entry_authori
                 )
 
 
+def _check_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit`.",
+        "699_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+        "698_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT.md",
+        "Audit PR: `#1303`.",
+        "codex/l3-package-rebuild-entry-audit",
+        "6105962eeb6b9d7f9131645abe4e6e8c1c43f68a",
+        "094bd3ea80725a207041c44e28291fd2dd5c7ec7",
+        "current_main_synced_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit",
+        "`backend-layer3-api`: `SUCCESS` in `2m48s`",
+        "`test`: `SUCCESS` in `3m28s`",
+        "PR reviewThreads totalCount: `0`",
+        "Merge state before merge: `CLEAN`",
+        "python .\\tools\\l3-progress-check.py",
+        "no governed corrected-artifact source authority exists yet",
+        "no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent",
+        "select_governed_corrected_artifact_source_authority_for_package_rebuild",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC)} "
+                f"missing package rebuild from corrected artifacts implementation-entry authority audit current-main sync term: {term}"
+            )
+
+    for blocked in (
+        "runtime behavior",
+        "implementation-entry freeze",
+        "package payload rewrite",
+        "source `L3OutputPackage` row mutation",
+        "corrected package artifact bytes",
+        "browser-supplied package bytes",
+        "browser-supplied replacement bytes",
+        "arbitrary artifact refs",
+        "arbitrary hashes",
+        "local paths",
+        "URLs",
+        "source expansion",
+        "RAG/vector behavior",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "raw local path exposure",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC)} "
+                f"missing package rebuild from corrected artifacts implementation-entry authority audit current-main sync non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Rebuild From Corrected Artifacts Implementation-Entry Authority Audit Current-Main Sync",
+            "699_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1303",
+            "6105962eeb6b9d7f9131645abe4e6e8c1c43f68a",
+            "094bd3ea80725a207041c44e28291fd2dd5c7ec7",
+            "backend-layer3-api` passed in `2m48s",
+            "reviewThreads totalCount was `0`",
+            "no governed corrected-artifact source authority exists yet",
+            "no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent",
+            "select_governed_corrected_artifact_source_authority_for_package_rebuild",
+        ),
+        MANIFEST: (
+            "package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit_current_main_sync",
+            "current_main_synced_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit",
+            "codex/l3-package-rebuild-audit-sync",
+            "699_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1303",
+            "094bd3ea80725a207041c44e28291fd2dd5c7ec7",
+            "backend-layer3-api SUCCESS 2m48s",
+            "reviewThreads totalCount 0",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "select_governed_corrected_artifact_source_authority_for_package_rebuild",
+            "latest_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit_current_main_sync_proof",
+            "current_main_sync_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit",
+            "current_main_synced_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit",
+            "699_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT_CURRENT_MAIN_SYNC.md",
+            "#1303",
+            "094bd3ea80725a207041c44e28291fd2dd5c7ec7",
+            "backend-layer3-api SUCCESS 2m48s",
+            "reviewThreads totalCount 0",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "no implementation-entry freeze or runtime is admitted",
+            "select_governed_corrected_artifact_source_authority_for_package_rebuild",
+            "latest_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing package rebuild from corrected artifacts implementation-entry authority audit current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -57866,6 +57980,7 @@ def main() -> int:
     _check_package_rebuild_from_corrected_artifacts_operator_action_freeze(errors)
     _check_package_rebuild_from_corrected_artifacts_operator_action_freeze_current_main_sync(errors)
     _check_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit(errors)
+    _check_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
