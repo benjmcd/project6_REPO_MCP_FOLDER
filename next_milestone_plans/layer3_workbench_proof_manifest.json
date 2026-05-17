@@ -28413,5 +28413,51 @@
   "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
   "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_status": "current_main_synced_corrected_artifact_package_rebuild_downstream_authority_freeze",
   "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_next_posture": "implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync",
-  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_summary": "Doc 711 proof syncs PR #1315 merge commit ba6910ca4a0cb49412204662f5b21895be304b1f and makes implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync the next exact current-main posture."
+  "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync_summary": "Doc 711 proof syncs PR #1315 merge commit ba6910ca4a0cb49412204662f5b21895be304b1f and makes implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync the next exact current-main posture.",
+  "corrected_artifact_package_supersession_commit_runtime_proof": {
+    "proof_kind": "implementation_proof_corrected_artifact_package_supersession_commit_runtime",
+    "status": "corrected_artifact_package_supersession_commit_runtime_implemented_branch_local",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "runtime_branch": "codex/l3-corrected-artifact-supersession-commit",
+    "current_main_checkpoint_before_implementation": "4ed1c54693cda3785c3c38d60993cdf49fe0f51d",
+    "route": "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+    "owner_service": "backend/app/services/layer3_package_supersession_commit.py",
+    "api_owner": "backend/app/api/layer3.py",
+    "durable_target": "L3PackageSupersessionCommit",
+    "source_authority": "L3CorrectedPackageArtifactSet",
+    "replacement_authority": "L3ReplacementPackageSetAuthority",
+    "request_mode": "package_supersession_commit_from_corrected_artifact_set_authority",
+    "operator_decision": "commit_package_supersession",
+    "proof_terms": [
+      "server-computed package supersession commit from corrected-artifact replacement authority",
+      "OpenAPI contract exposure",
+      "API error-envelope behavior",
+      "redacted source and replacement refs",
+      "redacted returned commit snapshot",
+      "same-key replay",
+      "same-basis new-key replay",
+      "stale corrected artifact basis failure",
+      "stale replacement authority basis failure",
+      "wrong session failure",
+      "forbidden caller-supplied refs and destination URL failure",
+      "no source L3OutputPackage row mutation",
+      "no replacement artifact manifest rows",
+      "no replacement namespace/output package rows",
+      "no package activation rows",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no raw local path exposure"
+    ],
+    "validation": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_package_supersession_commit.py .\\backend\\app\\api\\layer3.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_package_supersession_commit.py -q PASS 4 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"supersession_commit_from_corrected_artifact_set or openapi_contracts or package_supersession_commit_contract\" PASS 12 passed, 165 deselected"
+    ],
+    "next_posture": "await_current_main_sync_for_corrected_artifact_package_supersession_commit_runtime"
+  },
+  "latest_corrected_artifact_package_supersession_commit_runtime_branch": "codex/l3-corrected-artifact-supersession-commit",
+  "latest_corrected_artifact_package_supersession_commit_runtime_doc": "next_milestone_plans/Layer3_planning_docs/712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md",
+  "latest_corrected_artifact_package_supersession_commit_runtime_status": "corrected_artifact_package_supersession_commit_runtime_implemented_branch_local",
+  "latest_corrected_artifact_package_supersession_commit_runtime_next_posture": "await_current_main_sync_for_corrected_artifact_package_supersession_commit_runtime",
+  "latest_corrected_artifact_package_supersession_commit_runtime_summary": "Doc 712 proof records the corrected-artifact package supersession commit runtime: server-side derivation, redacted response refs/snapshot refs, service and API proof, idempotency and fail-closed negative coverage, and no adjacent manifest, namespace, activation, connector, source expansion, RAG/vector, auth/security, rendered UI, frontend-durable, package rewrite, source row mutation, caller path/URL, or raw path exposure behavior."
 }

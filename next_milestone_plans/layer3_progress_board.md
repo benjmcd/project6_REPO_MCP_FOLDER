@@ -4382,3 +4382,15 @@ Before merge, PR `#1315` had green `backend-layer3-api` and `test` checks, empty
 Current main now syncs the selected downstream bridge `server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority` for the corrected-artifact rebuild path. Runtime is still not implemented by this sync.
 
 The next exact current-main posture is `implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync`; only that server-computed package supersession commit bridge is admitted next.
+
+## Corrected Artifact Package Supersession Commit Runtime Proof
+
+Branch-local runtime proof: `712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md` implements the admitted `server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority` slice from Doc 711.
+
+The new route is `POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority`, owned by `backend/app/services/layer3_package_supersession_commit.py` and `backend/app/api/layer3.py`. It accepts only identity/basis fields, derives source/replacement refs and hashes server-side from `L3CorrectedPackageArtifactSet` and corrected-artifact `L3ReplacementPackageSetAuthority`, reuses the existing `L3PackageSupersessionCommit` persistence path, and redacts returned source/replacement refs plus returned commit snapshot refs.
+
+Targeted validation passed: `python -m py_compile .\backend\app\services\layer3_package_supersession_commit.py .\backend\app\api\layer3.py`; `python -m pytest .\backend\tests\test_layer3_package_supersession_commit.py -q` with `4 passed`; and targeted `python -m pytest .\backend\tests\test_layer3_api.py -q -k "supersession_commit_from_corrected_artifact_set or openapi_contracts or package_supersession_commit_contract"` with `12 passed, 165 deselected`.
+
+This branch starts no manifest, namespace, activation, handoff/export rerun, delivery rerun, connector/destination dispatch, credential use, network egress, source expansion, RAG/vector behavior, auth/security broadening, rendered UI authority, frontend-durable authority, package payload rewrite, source `L3OutputPackage` mutation, caller-supplied path/URL, or raw local path exposure.
+
+The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_package_supersession_commit_runtime`.

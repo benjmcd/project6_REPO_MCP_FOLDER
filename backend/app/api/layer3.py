@@ -1103,6 +1103,60 @@ class Layer3PackageSupersessionCommitRequest(BaseModel):
     security_context: Any | None = None
 
 
+class Layer3PackageSupersessionCommitFromCorrectedArtifactSetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    corrected_package_artifact_set_id: str | None = None
+    corrected_artifact_basis_hash: str | None = None
+    replacement_package_set_authority_id: str | None = None
+    replacement_authority_basis_hash: str | None = None
+    operator_decision: str | None = None
+    package_supersession_preview_hash: Any | None = None
+    source_package_set_hash: Any | None = None
+    source_output_package_ids: Any | None = None
+    source_package_kinds: Any | None = None
+    source_payload_refs: Any | None = None
+    source_payload_hashes: Any | None = None
+    replacement_package_set_id: Any | None = None
+    replacement_package_set_hash: Any | None = None
+    replacement_package_kinds: Any | None = None
+    replacement_payload_refs: Any | None = None
+    replacement_payload_hashes: Any | None = None
+    downstream_dependency_hash: Any | None = None
+    commit_basis_hash: Any | None = None
+    corrected_artifact_refs: Any | None = None
+    corrected_artifact_hashes: Any | None = None
+    corrected_artifact_bytes: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    replacement_output_package_ids: Any | None = None
+    replacement_package_payloads: Any | None = None
+    package_row_mutation: Any | None = None
+    package_payload_rewrite: Any | None = None
+    artifact_manifest: Any | None = None
+    destination_id: Any | None = None
+    destination_path: Any | None = None
+    destination_url: Any | None = None
+    connector_run_id: Any | None = None
+    connector_run_target_id: Any | None = None
+    credential_id: Any | None = None
+    credential_payload: Any | None = None
+    auth_token: Any | None = None
+    source_directory: Any | None = None
+    source_upload: Any | None = None
+    rag_query: Any | None = None
+    vector_index: Any | None = None
+    auth_context: Any | None = None
+    security_context: Any | None = None
+    frontend_state: Any | None = None
+    browser_state: Any | None = None
+
+
 class Layer3ReplacementPackageArtifactManifestRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -4972,6 +5026,47 @@ PACKAGE_SUPERSESSION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Server-computed package supersession commit from corrected-artifact replacement authority. "
+        "The caller supplies only identity and basis fields; source and replacement refs/hashes, downstream hash, "
+        "preview hash, and commit basis hash are derived server-side and raw local paths are redacted in the response."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "corrected_package_artifact_set_id",
+        "corrected_artifact_basis_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "corrected_package_artifact_set_id": {"type": "string"},
+        "corrected_artifact_basis_hash": {"type": "string"},
+        "replacement_package_set_authority_id": {"type": "string"},
+        "replacement_authority_basis_hash": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["commit_package_supersession"]},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in sorted(
+                layer3_package_supersession_commit.PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_FORBIDDEN_FIELDS
+            )
+        },
+    },
+}
+
+
 REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -6664,6 +6759,26 @@ def post_package_supersession_commit(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_package_supersession_commit.commit_package_supersession(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/package/supersession/commit-from-corrected-artifact-set-authority",
+    response_model=Layer3PackageSupersessionCommitResponse,
+    openapi_extra={
+        "requestBody": _json_request_body(PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA)
+    },
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_package_supersession_commit_from_corrected_artifact_set_authority(
+    payload: Layer3PackageSupersessionCommitFromCorrectedArtifactSetRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_package_supersession_commit.commit_package_supersession_from_corrected_artifact_set_authority(
             db,
             payload.model_dump(exclude_unset=True),
         )
