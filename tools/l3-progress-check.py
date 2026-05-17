@@ -1591,6 +1591,10 @@ LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_CURRENT_MAIN_S
     PLANNING_DOCS
     / "639_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE = (
+    PLANNING_DOCS
+    / "640_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -51836,6 +51840,63 @@ def _check_replacement_package_set_authority_request_source_authority_current_ma
                 errors.append(f"{_rel(path)} missing replacement package-set request source sync term: {term}")
 
 
+def _check_replacement_package_set_request_source_authority_selection_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze only for `server_owned_replacement_package_artifact_materialization_request_source`.",
+        "640_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE.md",
+        "639_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_CURRENT_MAIN_SYNC.md",
+        "Current-main preflight commit: `62f587b0642e9b472e2d476ece96f5c68269e718`.",
+        "Selected request-source authority: `server_owned_replacement_package_artifact_materialization_from_supersession_preview`.",
+        "Selected operator action: `materialize_replacement_package_artifacts_from_supersession_preview`.",
+        "Selected implementation-entry mode: `server_owned_replacement_package_artifact_materialization_request_source`.",
+        "Future owner service: `backend/app/services/layer3_replacement_package_materialization.py`.",
+        "Future route: `/api/v1/layer3/package/replacement-artifact/materialize`.",
+        "current manifest runtime is downstream of `L3ReplacementPackageSetAuthority` and `L3PackageSupersessionCommit`",
+        "The next required action after merge is `current_main_sync_replacement_package_set_request_source_authority_selection_freeze`.",
+        "After current-main sync, the next exact posture is `implement_server_owned_replacement_package_artifact_materialization_request_source_after_selection_sync`.",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE)} "
+                f"missing replacement package-set request source selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package-Set Request Source Authority Selection Freeze",
+            "640_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE.md",
+            "server_owned_replacement_package_artifact_materialization_from_supersession_preview",
+            "server_owned_replacement_package_artifact_materialization_request_source",
+            "backend/app/services/layer3_replacement_package_materialization.py",
+            "implement_server_owned_replacement_package_artifact_materialization_request_source_after_selection_sync",
+        ),
+        MANIFEST: (
+            "replacement_package_set_request_source_authority_selection_freeze",
+            "server_owned_replacement_package_artifact_materialization_from_supersession_preview",
+            "materialize_replacement_package_artifacts_from_supersession_preview",
+            "server_owned_replacement_package_artifact_materialization_request_source",
+            "/api/v1/layer3/package/replacement-artifact/materialize",
+            "implement_server_owned_replacement_package_artifact_materialization_request_source_after_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_set_request_source_authority_selection_freeze_proof",
+            "server_owned_replacement_package_artifact_materialization_from_supersession_preview",
+            "backend/app/services/layer3_replacement_package_materialization.py",
+            "replacement_package_set_id",
+            "no caller-supplied arbitrary paths or URLs",
+            "implement_server_owned_replacement_package_artifact_materialization_request_source_after_selection_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing replacement package-set request source selection term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52315,6 +52376,7 @@ def main() -> int:
     _check_rendered_replacement_package_set_authority_operator_action_current_main_sync(errors)
     _check_replacement_package_set_authority_request_source_authority_freeze(errors)
     _check_replacement_package_set_authority_request_source_authority_current_main_sync(errors)
+    _check_replacement_package_set_request_source_authority_selection_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
