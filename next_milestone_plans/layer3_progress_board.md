@@ -4444,3 +4444,15 @@ The runtime derives replacement refs, hashes, verified byte sizes, artifact mani
 This runtime starts no replacement namespace rows, package activation, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, or raw local path exposure.
 
 The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_replacement_manifest_runtime`.
+
+## Corrected Artifact Replacement Manifest Runtime Current-Main Sync
+
+Current-main sync: `717_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_CURRENT_MAIN_SYNC.md` records PR `#1321`, runtime branch commit `7317dc621e1886e9f5103a3fa841fa1bbef1e2c7`, and merge commit `9e8ae363994e279e6744b0f4e309f6444856880f`.
+
+Before merge, PR `#1321` had passing `backend-layer3-api` and `test` checks, no comments, no reviews, no reviewThreads, mergeability `MERGEABLE`, and merge state `CLEAN`. Post-merge current-main validation passed at `9e8ae363994e279e6744b0f4e309f6444856880f`.
+
+Current main now contains the corrected-artifact replacement manifest bridge: `POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority`, owned by `backend/app/services/layer3_replacement_package_artifact_manifest.py` and `backend/app/api/layer3.py`, with durable target `L3ReplacementPackageArtifactManifest`, source authority `L3CorrectedPackageArtifactSet`, replacement authority `L3ReplacementPackageSetAuthority`, supersession authority `L3PackageSupersessionCommit`, request mode `replacement_package_artifact_manifest_from_corrected_artifact_set_authority`, and operator decision `record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority`.
+
+This sync starts no runtime. Replacement namespace rows, package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
+
+The next exact current-main posture is `evaluate_corrected_artifact_replacement_namespace_authority_after_manifest_runtime_sync`.
