@@ -4372,3 +4372,13 @@ Doc 710 freezes only the later server-computed package supersession commit bridg
 This branch starts no runtime. Package payload rewrite, source `L3OutputPackage` mutation, replacement artifact manifest recording, replacement namespace row creation, package activation, downstream invalidation, provider-public delivery/use, connector/destination dispatch, credentials, external network egress, source expansion, RAG/vector behavior, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, raw local path exposure, hidden LLM planning, and rendered UI authority remain blocked.
 
 The next exact posture after merge is `current_main_sync_corrected_artifact_package_rebuild_downstream_authority_freeze`; after sync, the next posture is `implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync`.
+
+## Corrected Artifact Package Rebuild Downstream Authority Freeze Current-Main Sync
+
+Current-main sync: `711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md` records PR `#1315` merged Doc 710 at merge commit `ba6910ca4a0cb49412204662f5b21895be304b1f`.
+
+Before merge, PR `#1315` had green `backend-layer3-api` and `test` checks, empty comments/reviews/latestReviews, reviewThreads totalCount `0`, mergeability `MERGEABLE`, and merge state `CLEAN`. Post-merge local JSON validation, `l3-progress-check.py`, `l3-target-selection-validate.py --expect frozen`, and `git diff --check` passed on current main.
+
+Current main now syncs the selected downstream bridge `server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority` for the corrected-artifact rebuild path. Runtime is still not implemented by this sync.
+
+The next exact current-main posture is `implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync`; only that server-computed package supersession commit bridge is admitted next.
