@@ -29232,5 +29232,42 @@
   "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/727_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION_CURRENT_MAIN_SYNC.md",
   "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
   "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_aps_handoff_dispatch_sync",
-  "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_current_main_sync_summary": "Doc 727 proof syncs corrected-artifact active authority APS handoff dispatch evaluation after PR #1331 and selects the next downstream active-package-authority reader after APS handoff dispatch."
+  "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_current_main_sync_summary": "Doc 727 proof syncs corrected-artifact active authority APS handoff dispatch evaluation after PR #1331 and selects the next downstream active-package-authority reader after APS handoff dispatch.",
+  "corrected_artifact_active_authority_external_export_download_prepare_evaluation_proof": {
+    "proof_kind": "branch_local_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+    "status": "branch_local_corrected_artifact_active_authority_external_export_download_prepare_proven",
+    "evaluation_branch": "codex/l3-corrected-download-prepare",
+    "evaluation_doc": "next_milestone_plans/Layer3_planning_docs/728_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/727_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_evaluation": "77b9419670c1b83e95103d3ccb10573a0b64fe51",
+    "selected_downstream_reader": "external_export_download_prepare",
+    "selected_route": "POST /api/v1/layer3/handoff/export/download/prepare",
+    "selected_reader_source": "resolve_active_replacement_package_payload_authority",
+    "runtime_behavior_change": false,
+    "test_proof_behavior_change": true,
+    "proof_command": "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_external_export_download_prepare_applies_corrected_artifact_active_authority -q",
+    "observed_result": "1 passed",
+    "proof_coverage": [
+      "real corrected-artifact API route chain reaches external export/download prepare",
+      "handoff_export_prepare and aps_handoff_dispatch project corrected active package authority before download prepare",
+      "external_export_download_prepare applies corrected active package authority",
+      "active replacement refs and hashes become external export/download prepare payload refs and hashes",
+      "reconciliation external_export_download_prepare state persists active authority projection",
+      "session summary projects prepared active authority",
+      "source L3OutputPackage rows are preserved",
+      "no AnalysisArtifact rows are created",
+      "no ConnectorRun rows are created",
+      "no ConnectorRunTarget rows are created",
+      "no package payload rewrite",
+      "response-safe active artifact refs",
+      "duplicate prepare replays as already_prepared"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+    "next_posture_after_sync": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_prepare_sync"
+  },
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_branch": "codex/l3-corrected-download-prepare",
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/728_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION.md",
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_status": "branch_local_corrected_artifact_active_authority_external_export_download_prepare_proven",
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_summary": "Doc 728 proves the corrected-artifact active package authority chain reaches external export/download prepare through real API routes after APS dispatch."
 }
