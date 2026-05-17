@@ -25995,5 +25995,44 @@
   "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_doc": "next_milestone_plans/Layer3_planning_docs/682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md",
   "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_live_behavior_change": false,
   "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_connector_local_receipt_runtime",
-  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_summary": "Doc 682 proof records source_l3_output_package_active_authority_connector_local_receipt_runtime: connector_local_destination_receipt carries active replacement refs/hashes through connector dispatch record and connector-local receipt on the admitted associated-cohort APS evidence-bundle path, accepts the active-authority APS bundle artifact hash and size, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, enables no external connector invocation or destination write, leaks no download/public/signed URL or local path, writes no additional files, and changes no service runtime behavior."
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_summary": "Doc 682 proof records source_l3_output_package_active_authority_connector_local_receipt_runtime: connector_local_destination_receipt carries active replacement refs/hashes through connector dispatch record and connector-local receipt on the admitted associated-cohort APS evidence-bundle path, accepts the active-authority APS bundle artifact hash and size, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, enables no external connector invocation or destination write, leaks no download/public/signed URL or local path, writes no additional files, and changes no service runtime behavior.",
+  "source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync": {
+    "status": "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+    "sync_branch": "codex/l3-active-authority-local-receipt-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/683_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md",
+    "runtime_pr": "#1287",
+    "runtime_branch": "codex/l3-active-authority-local-receipt-impl",
+    "runtime_branch_commit": "1290507eff93c0a03be4bcdbfe08ba1b2e7b8529",
+    "runtime_merge_commit": "3603115d70f53974eb464856827e8c19bf7966c5",
+    "checks": [
+      "backend-layer3-api SUCCESS 2m45s",
+      "test SUCCESS 3m22s"
+    ],
+    "review_gate": [
+      "PR comments empty",
+      "PR reviews empty",
+      "PR latestReviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeable MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "synced_reader_path": "connector_local_destination_receipt",
+    "synced_route": "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+    "synced_validation_seam": "external_export_download_delivery authority revalidation through external_export_download_prepare and _external_export_download_prepare_payload_for_delivery",
+    "runtime_behavior_change": false,
+    "next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync"
+  },
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_branch": "codex/l3-active-authority-local-receipt-runtime-sync",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/683_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_pr": "#1287",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_merge_commit": "3603115d70f53974eb464856827e8c19bf7966c5",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_summary": "Doc 683 records current-main sync for PR #1287 merge commit 3603115d70f53974eb464856827e8c19bf7966c5 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync."
 }
