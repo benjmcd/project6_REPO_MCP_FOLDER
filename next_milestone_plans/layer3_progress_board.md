@@ -4238,3 +4238,13 @@ Merge gate: `backend-layer3-api` passed in `2m48s`; `test` passed in `3m28s`; PR
 Current main now syncs the implementation-entry audit result for `rebuild_package_from_corrected_artifacts`: no governed corrected-artifact source authority exists yet, `rebuild_package` remains forbidden across package and downstream surfaces, no implementation-entry freeze or runtime is admitted, and runtime remains blocked at `no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent`.
 
 The next exact posture is `select_governed_corrected_artifact_source_authority_for_package_rebuild`. The next decision should name exactly one corrected-artifact authority source before any package rebuild runtime is frozen.
+
+## Package Rebuild Corrected Artifact Source Authority Selection Freeze
+
+Branch-local corrected-artifact source authority selection freeze: `700_PACKAGE_REBUILD_CORRECTED_ARTIFACT_SOURCE_AUTHORITY_SELECTION_FREEZE.md` selects `operator_review_corrections_server_owned_corrected_package_artifact_set` as the governed source authority for `rebuild_package_from_corrected_artifacts`, starting from current-main preflight commit `389ca519549ae86e7addfc1b1375d9c37315cd7d`.
+
+The selected source class is `server_owned_corrected_package_artifact_authority`. The selected implementation-entry posture is `freeze_operator_review_corrections_corrected_package_artifact_set_implementation_entry_after_source_authority_sync`. This freeze is planning/control only: entry decision `source_authority_selection_freeze_only`, runtime status `not_implemented_in_this_pass`.
+
+The selection preserves the current-main audit boundary: execution result review notes and reviewed output items exist, but free-form review notes alone are not corrected-artifact authority. The future source must be server-owned, derived from existing Layer 3 package/review authority, and define corrected artifact refs, hashes, byte sizes, artifact namespace, manifest hash, corrected-artifact basis hash, idempotency, stale/duplicate failure lifecycle, all-or-nothing artifact writes, and response redaction without raw local paths.
+
+The next exact posture after merge is `current_main_sync_operator_review_corrections_corrected_package_artifact_source_authority_selection_freeze`; after sync, the next posture is `freeze_operator_review_corrections_corrected_package_artifact_set_implementation_entry_after_source_authority_sync`. Package rebuild runtime, package payload rewrite, browser-supplied package bytes, arbitrary paths/URLs, source expansion, RAG/vector behavior, connector/destination dispatch, provider-public delivery/use, credentials, external network egress, auth/security behavior, full mockup activation, and frontend-durable authority remain blocked.
