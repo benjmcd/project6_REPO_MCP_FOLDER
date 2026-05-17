@@ -1993,6 +1993,39 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "Known but non-admitted"
     )
 
+    artifact_manifest_from_authority_request_schema = spec["paths"][
+        "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority"
+    ]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert artifact_manifest_from_authority_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "replacement_artifact_materialization_id",
+        "materialization_basis_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "package_supersession_commit_id",
+        "package_supersession_commit_basis_hash",
+        "operator_decision",
+    } == set(artifact_manifest_from_authority_request_schema["required"])
+    assert artifact_manifest_from_authority_request_schema["properties"]["operator_decision"]["enum"] == [
+        "record_replacement_package_artifact_manifest_from_authority"
+    ]
+    for forbidden_field in (
+        "replacement_payload_refs",
+        "replacement_payload_hashes",
+        "artifact_manifest_hash",
+        "authority_basis_hash",
+        "verified_artifact_byte_sizes",
+        "destination_url",
+    ):
+        assert artifact_manifest_from_authority_request_schema["properties"][forbidden_field][
+            "description"
+        ].startswith("Known but non-admitted")
+
     artifact_manifest_schema = _openapi_response_schema(
         spec,
         "/api/v1/layer3/package/replacement-artifact/manifest/record",
@@ -2044,6 +2077,16 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "next_state",
         "authority_rail",
     } <= set(artifact_manifest_schema["required"])
+    artifact_manifest_from_authority_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+        "post",
+    )
+    assert artifact_manifest_from_authority_schema["title"] == "Layer3ReplacementPackageArtifactManifestResponse"
+    assert "replacement_artifact_materialization_id" in artifact_manifest_from_authority_schema["properties"]
+    assert "materialization_basis_hash" in artifact_manifest_from_authority_schema["properties"]
+    assert "replacement_authority_basis_hash" in artifact_manifest_from_authority_schema["properties"]
+    assert "record_from_authority_operator_decision" in artifact_manifest_from_authority_schema["properties"]
 
     namespace_request_schema = spec["paths"]["/api/v1/layer3/package/replacement-namespace/record"]["post"][
         "requestBody"
@@ -2465,6 +2508,10 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/package/mutation/preview", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-artifact/materialize", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-artifact/manifest/record", "post"): ("400", "404", "409"),
+        (
+            "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+            "post",
+        ): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-namespace/record", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
@@ -2743,6 +2790,40 @@ def test_layer3_replacement_package_artifact_manifest_api_boundary_returns_workb
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_replacement_artifact_manifest_boundary"]
+
+
+def test_layer3_replacement_package_artifact_manifest_from_authority_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_replacement_artifact_manifest_from_authority_boundary_error",
+            "Forced replacement artifact manifest from-authority boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_replacement_artifact_manifest_from_authority_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_replacement_package_artifact_manifest,
+        "record_replacement_package_artifact_manifest_from_authority",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post("/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority", json={})
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_replacement_artifact_manifest_from_authority_boundary_error",
+    )
+    assert body["message"] == "Forced replacement artifact manifest from-authority boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_replacement_artifact_manifest_from_authority_boundary"]
 
 
 def test_layer3_replacement_package_namespace_api_boundary_returns_workbench_error_envelope(
@@ -3827,6 +3908,33 @@ def _package_supersession_commit_payload(
         "downstream_dependency_hash": downstream_dependency_hash,
         "commit_basis_hash": commit_basis_hash,
         "operator_decision": "commit_package_supersession",
+    }
+
+
+def _replacement_package_artifact_manifest_from_authority_payload(
+    *,
+    request_id: str,
+    session_id: str,
+    approval_body: dict,
+    selection_body: dict,
+    commit_body: dict,
+    materialization_body: dict,
+    replacement_authority_body: dict,
+    supersession_commit_body: dict,
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "replacement_artifact_materialization_id": materialization_body["replacement_artifact_materialization_id"],
+        "materialization_basis_hash": materialization_body["materialization_basis_hash"],
+        "replacement_package_set_authority_id": replacement_authority_body["replacement_package_set_authority_id"],
+        "replacement_authority_basis_hash": replacement_authority_body["authority_basis_hash"],
+        "package_supersession_commit_id": supersession_commit_body["package_supersession_commit_id"],
+        "package_supersession_commit_basis_hash": supersession_commit_body["commit_basis_hash"],
+        "operator_decision": "record_replacement_package_artifact_manifest_from_authority",
     }
 
 
@@ -13413,6 +13521,377 @@ def test_layer3_api_package_supersession_commit_prechecks_fail_closed(
         assert db.query(L3ReplacementPackageSetAuthority).count() == 1
     finally:
         db.close()
+
+
+def test_layer3_api_replacement_package_artifact_manifest_record_from_authority_computes_and_redacts_refs(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        _preview_body,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(client, tmp_path, request_id="api-manifest-from-authority-success")
+    preview_payload = _package_supersession_preview_payload(
+        request_id="api-manifest-from-authority-success-preview",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=_start_body,
+        review_body=_review_body,
+        commit_body=commit_body,
+    )
+    preview = client.post("/api/v1/layer3/package/mutation/preview", json=preview_payload)
+    assert preview.status_code == 200, preview.json()
+    materialization_payload = _replacement_package_artifact_materialization_payload(
+        request_id="api-manifest-from-authority-success-materialize",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        supersession_preview_body=preview.json(),
+    )
+    materialization = client.post(
+        "/api/v1/layer3/package/replacement-artifact/materialize",
+        json=materialization_payload,
+    )
+    assert materialization.status_code == 200, materialization.json()
+    materialization_body = materialization.json()
+    replacement_authority_payload = _replacement_package_set_authority_payload(
+        request_id="api-manifest-from-authority-success-authority",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        source_package_set_hash=materialization_body["source_package_set_hash"],
+        materialization_body=materialization_body,
+    )
+    replacement_authority = client.post(
+        "/api/v1/layer3/package/replacement-set/record",
+        json=replacement_authority_payload,
+    )
+    assert replacement_authority.status_code == 200, replacement_authority.json()
+    supersession_commit_payload = _package_supersession_commit_payload(
+        request_id="api-manifest-from-authority-success-commit",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        supersession_preview_body=preview.json(),
+        replacement_authority_body=replacement_authority.json(),
+    )
+    supersession_commit = client.post("/api/v1/layer3/package/supersession/commit", json=supersession_commit_payload)
+    assert supersession_commit.status_code == 200, supersession_commit.json()
+    payload = _replacement_package_artifact_manifest_from_authority_payload(
+        request_id="api-manifest-from-authority-success-record",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        materialization_body=materialization_body,
+        replacement_authority_body=replacement_authority.json(),
+        supersession_commit_body=supersession_commit.json(),
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "replacement_materializations": db.query(L3ReplacementPackageArtifactMaterialization).count(),
+            "replacement_authorities": db.query(L3ReplacementPackageSetAuthority).count(),
+            "supersession_commits": db.query(L3PackageSupersessionCommit).count(),
+            "replacement_manifests": db.query(L3ReplacementPackageArtifactManifest).count(),
+            "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+    finally:
+        db.close()
+
+    record = client.post(
+        "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+        json=payload,
+    )
+    assert record.status_code == 200, record.json()
+    body = record.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.replacement_package_artifact_manifest_from_authority.v1"
+    assert body["status"] == "recorded"
+    assert body["replacement_artifact_materialization_id"] == materialization_body["replacement_artifact_materialization_id"]
+    assert body["materialization_basis_hash"] == materialization_body["materialization_basis_hash"]
+    assert body["replacement_package_set_authority_id"] == replacement_authority.json()["replacement_package_set_authority_id"]
+    assert body["replacement_authority_basis_hash"] == replacement_authority.json()["authority_basis_hash"]
+    assert body["package_supersession_commit_id"] == supersession_commit.json()["package_supersession_commit_id"]
+    assert body["package_supersession_commit_basis_hash"] == supersession_commit.json()["commit_basis_hash"]
+    assert body["operator_decision"] == "record_replacement_package_artifact_manifest"
+    assert body["record_from_authority_operator_decision"] == "record_replacement_package_artifact_manifest_from_authority"
+    assert body["replacement_package_artifact_manifest_mode"] == (
+        "server_computed_replacement_package_artifact_manifest_record_from_authority"
+    )
+    assert body["source_gate"] == "652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE"
+    assert body["replacement_payload_refs"] == body["verified_artifact_refs"]
+    assert body["replacement_payload_refs"] != materialization_body["replacement_payload_refs"]
+    assert all(ref.startswith(f"artifact://replacement-package-artifacts/{body['replacement_package_artifact_manifest_id']}/") for ref in body["replacement_payload_refs"])
+    assert not any(Path(ref).is_absolute() for ref in body["replacement_payload_refs"])
+    assert body["manifest_snapshot"]["replacement"]["payload_refs"] == body["replacement_payload_refs"]
+    assert body["manifest_snapshot"]["verified_artifacts"]["refs"] == body["verified_artifact_refs"]
+    assert body["replacement_payload_hashes"] == materialization_body["replacement_payload_hashes"]
+    assert body["verified_artifact_hashes"] == materialization_body["replacement_payload_hashes"]
+    assert len(body["verified_artifact_byte_sizes"]) == 3
+    assert body["manifest_record_persisted"] is True
+    assert body["artifact_generation_enabled"] is False
+    assert body["package_row_mutation_enabled"] is False
+    assert body["package_payload_write_enabled"] is False
+    assert body["l3_output_package_write_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["provider_public_url_enabled"] is False
+    assert body["source_widening_enabled"] is False
+    assert body["qualitative_hybrid_rag_execution_enabled"] is False
+    assert body["authority_rail"]["server_computed_from_authority"] is True
+    assert body["authority_rail"]["server_verified_materialization_authority"] is True
+    assert body["authority_rail"]["browser_replacement_refs_accepted"] is False
+    assert body["authority_rail"]["browser_replacement_hashes_accepted"] is False
+    assert body["authority_rail"]["browser_manifest_hashes_accepted"] is False
+    assert body["authority_rail"]["browser_supplied_byte_sizes_accepted"] is False
+    assert body["authority_rail"]["response_artifact_refs_redacted"] is True
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "replacement_materializations": db.query(L3ReplacementPackageArtifactMaterialization).count(),
+            "replacement_authorities": db.query(L3ReplacementPackageSetAuthority).count(),
+            "supersession_commits": db.query(L3PackageSupersessionCommit).count(),
+            "replacement_manifests": db.query(L3ReplacementPackageArtifactManifest).count(),
+            "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+        } == {**counts_before, "replacement_manifests": counts_before["replacement_manifests"] + 1}
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        manifest_row = db.query(L3ReplacementPackageArtifactManifest).one()
+        assert manifest_row.replacement_package_artifact_manifest_id == body["replacement_package_artifact_manifest_id"]
+        assert manifest_row.replacement_payload_refs_json == materialization_body["replacement_payload_refs"]
+        assert manifest_row.verified_artifact_refs_json == materialization_body["replacement_payload_refs"]
+        assert body["artifact_manifest_hash"] == (
+            layer3_replacement_package_artifact_manifest.replacement_package_artifact_manifest_hash(
+                replacement_package_set_authority_id=replacement_authority.json()["replacement_package_set_authority_id"],
+                package_supersession_commit_id=supersession_commit.json()["package_supersession_commit_id"],
+                replacement_package_set_id=replacement_authority.json()["replacement_package_set_id"],
+                replacement_package_set_hash=replacement_authority.json()["replacement_package_set_hash"],
+                replacement_package_kinds=replacement_authority.json()["replacement_package_kinds"],
+                replacement_payload_refs=manifest_row.replacement_payload_refs_json,
+                replacement_payload_hashes=manifest_row.replacement_payload_hashes_json,
+                verified_artifact_refs=manifest_row.verified_artifact_refs_json,
+                verified_artifact_hashes=manifest_row.verified_artifact_hashes_json,
+                verified_artifact_byte_sizes=manifest_row.verified_artifact_byte_sizes_json,
+                artifact_namespace="replacement-package-artifacts",
+            )
+        )
+    finally:
+        db.close()
+
+    replay = client.post(
+        "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+        json=payload,
+    )
+    assert replay.status_code == 200, replay.json()
+    assert replay.json()["status"] == "already_recorded"
+    assert replay.json()["replacement_package_artifact_manifest_id"] == body["replacement_package_artifact_manifest_id"]
+    assert replay.json()["replacement_payload_refs"] == body["replacement_payload_refs"]
+
+    same_basis = client.post(
+        "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+        json={**payload, "client_request_id": "api-manifest-from-authority-success-same-basis"},
+    )
+    assert same_basis.status_code == 200, same_basis.json()
+    assert same_basis.json()["status"] == "already_recorded"
+    assert same_basis.json()["replacement_package_artifact_manifest_id"] == body["replacement_package_artifact_manifest_id"]
+
+
+def test_layer3_api_replacement_package_artifact_manifest_record_from_authority_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+        json={"client_request_id": "api-manifest-from-authority-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) >= {
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "replacement_artifact_materialization_id",
+        "materialization_basis_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "package_supersession_commit_id",
+        "package_supersession_commit_basis_hash",
+        "operator_decision",
+    }
+
+    (
+        session_id,
+        _preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(client, tmp_path, request_id="api-manifest-from-authority-prechecks")
+    preview_payload = _package_supersession_preview_payload(
+        request_id="api-manifest-from-authority-prechecks-preview",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+    )
+    preview = client.post("/api/v1/layer3/package/mutation/preview", json=preview_payload)
+    assert preview.status_code == 200, preview.json()
+    materialization_payload = _replacement_package_artifact_materialization_payload(
+        request_id="api-manifest-from-authority-prechecks-materialize",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        supersession_preview_body=preview.json(),
+    )
+    materialization = client.post(
+        "/api/v1/layer3/package/replacement-artifact/materialize",
+        json=materialization_payload,
+    )
+    assert materialization.status_code == 200, materialization.json()
+    materialization_body = materialization.json()
+    replacement_authority_payload = _replacement_package_set_authority_payload(
+        request_id="api-manifest-from-authority-prechecks-authority",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        source_package_set_hash=materialization_body["source_package_set_hash"],
+        materialization_body=materialization_body,
+    )
+    replacement_authority = client.post(
+        "/api/v1/layer3/package/replacement-set/record",
+        json=replacement_authority_payload,
+    )
+    assert replacement_authority.status_code == 200, replacement_authority.json()
+    supersession_commit_payload = _package_supersession_commit_payload(
+        request_id="api-manifest-from-authority-prechecks-commit",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        supersession_preview_body=preview.json(),
+        replacement_authority_body=replacement_authority.json(),
+    )
+    supersession_commit = client.post("/api/v1/layer3/package/supersession/commit", json=supersession_commit_payload)
+    assert supersession_commit.status_code == 200, supersession_commit.json()
+    base_payload = _replacement_package_artifact_manifest_from_authority_payload(
+        request_id="api-manifest-from-authority-prechecks-record",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        materialization_body=materialization_body,
+        replacement_authority_body=replacement_authority.json(),
+        supersession_commit_body=supersession_commit.json(),
+    )
+    cases = [
+        (
+            {**base_payload, "replacement_payload_refs": materialization_body["replacement_payload_refs"]},
+            400,
+            "replacement_package_artifact_manifest_from_authority_scope_not_admitted",
+        ),
+        (
+            {**base_payload, "artifact_manifest_hash": "0" * 64},
+            400,
+            "replacement_package_artifact_manifest_from_authority_scope_not_admitted",
+        ),
+        (
+            {**base_payload, "authority_basis_hash": "0" * 64},
+            400,
+            "replacement_package_artifact_manifest_from_authority_scope_not_admitted",
+        ),
+        (
+            {**base_payload, "destination_url": "https://example.invalid/replacement.json"},
+            400,
+            "replacement_package_artifact_manifest_from_authority_scope_not_admitted",
+        ),
+        (
+            {**base_payload, "operator_decision": "record_replacement_package_artifact_manifest"},
+            400,
+            "unsupported_replacement_package_artifact_manifest_from_authority_decision",
+        ),
+        (
+            {**base_payload, "materialization_basis_hash": "stale-materialization-basis-hash"},
+            409,
+            "replacement_package_artifact_manifest_from_authority_materialization_basis_hash_mismatch",
+        ),
+        (
+            {**base_payload, "replacement_authority_basis_hash": "stale-replacement-authority-basis-hash"},
+            409,
+            "replacement_package_artifact_manifest_from_authority_replacement_authority_basis_hash_mismatch",
+        ),
+        (
+            {**base_payload, "package_supersession_commit_basis_hash": "stale-commit-basis-hash"},
+            409,
+            "replacement_package_artifact_manifest_from_authority_package_supersession_commit_basis_hash_mismatch",
+        ),
+        (
+            {**base_payload, "replacement_artifact_materialization_id": "missing-materialization"},
+            409,
+            "replacement_package_artifact_manifest_from_authority_requires_materialization",
+        ),
+    ]
+    for payload, expected_status, expected_error in cases:
+        response = client.post(
+            "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+            json=payload,
+        )
+        assert response.status_code == expected_status, response.json()
+        assert response.json()["error_code"] == expected_error
+
+    tampered_path = Path(materialization_body["replacement_payload_refs"][0])
+    tampered_path.write_text('{"tampered": true}', encoding="utf-8")
+    tampered = client.post(
+        "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+        json={**base_payload, "client_request_id": "api-manifest-from-authority-prechecks-tampered"},
+    )
+    assert tampered.status_code == 409, tampered.json()
+    assert tampered.json()["error_code"] == "replacement_package_artifact_manifest_payload_hash_mismatch"
 
 
 def test_layer3_api_package_supersession_preview_detects_downstream_dependencies(
