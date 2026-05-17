@@ -1642,6 +1642,10 @@ LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_
     PLANNING_DOCS
     / "652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52853,6 +52857,69 @@ def _check_replacement_package_artifact_manifest_request_authority_source_select
                 )
 
 
+def _check_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `server_computed_replacement_package_artifact_manifest_record_from_authority` request-authority source selection.",
+        "653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+        "652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+        "Selection freeze PR: `#1256`.",
+        "771378280ed8a35cc8dbe87f61ce863e6e6a0c11",
+        "1042a20f8176938ee5987bc25bba0eb01f18e5f6",
+        "Synced result: `current_main_synced_replacement_package_artifact_manifest_request_authority_source_selection`.",
+        "backend-layer3-api`: `SUCCESS` in `2m58s`",
+        "test`: `SUCCESS` in `3m41s`",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "The next exact current-main posture is `implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync`.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC)} "
+                f"missing replacement artifact manifest request authority source selection sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package Artifact Manifest Request Authority Source Selection Current-Main Sync",
+            "653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+            "PR `#1256`",
+            "1042a20f8176938ee5987bc25bba0eb01f18e5f6",
+            "current_main_synced_replacement_package_artifact_manifest_request_authority_source_selection",
+            "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync",
+        ),
+        MANIFEST: (
+            "replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync",
+            "current_main_synced_replacement_package_artifact_manifest_request_authority_source_selection",
+            "codex/l3-manifest-authority-source-freeze-sync",
+            "653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+            "backend-layer3-api passed 2m58s",
+            "test passed 3m41s",
+            "reviewThreads totalCount 0",
+            "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_proof",
+            "current_main_sync_replacement_package_artifact_manifest_request_authority_source_selection",
+            "reviewThreads totalCount 0",
+            "current_main_synced_replacement_package_artifact_manifest_request_authority_source_selection",
+            "redacted artifact refs",
+            "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing replacement artifact manifest request authority source selection sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53345,6 +53412,7 @@ def main() -> int:
     _check_rendered_replacement_package_artifact_manifest_control_request_authority_freeze(errors)
     _check_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync(errors)
     _check_replacement_package_artifact_manifest_request_authority_source_selection_freeze(errors)
+    _check_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
