@@ -24264,5 +24264,72 @@
   "latest_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_branch": "codex/l3-replacement-manifest-authority-freeze-sync",
   "latest_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
   "latest_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_live_behavior_change": false,
-  "latest_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_summary": "Doc 651 syncs PR #1254 merge commit b6ad21f949c842911dc95b2088f35d2e5433f573 to current main. The replacement package artifact manifest request-authority freeze is current-main synced, and the next exact posture is select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync."
+  "latest_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_summary": "Doc 651 syncs PR #1254 merge commit b6ad21f949c842911dc95b2088f35d2e5433f573 to current main. The replacement package artifact manifest request-authority freeze is current-main synced, and the next exact posture is select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync.",
+  "replacement_package_artifact_manifest_request_authority_source_selection_freeze": {
+    "status": "branch_local_freeze_server_computed_replacement_package_artifact_manifest_record_from_authority",
+    "freeze_branch": "codex/l3-replacement-manifest-request-authority-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "d300b8b4a18f47ff14e78fb5159979859c4ae735",
+    "selected_surface": "package_mutation_reconstruction",
+    "selected_request_authority_source": "server_computed_replacement_package_artifact_manifest_record_from_materialization_authority",
+    "selected_operator_action": "record_replacement_package_artifact_manifest_from_authority",
+    "selected_implementation_entry_mode": "server_computed_replacement_package_artifact_manifest_record_from_authority",
+    "future_owner_service": "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+    "future_route": "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+    "entry_decision": "freeze_only",
+    "runtime_status_this_pass": "not_implemented",
+    "selected_over_prepare_helper_reason": "direct server-computed record-from-authority avoids a second browser echo step for raw replacement refs hashes or manifest hashes",
+    "future_request_authority_inputs": [
+      "replacement_artifact_materialization_id",
+      "materialization_basis_hash",
+      "replacement_package_set_authority_id",
+      "replacement_authority_basis_hash",
+      "package_supersession_commit_id",
+      "package_supersession_commit_basis_hash"
+    ],
+    "future_server_computed_outputs": [
+      "artifact_manifest_hash",
+      "authority_basis_hash",
+      "verified_artifact_byte_sizes",
+      "redacted_artifact_refs"
+    ],
+    "blocked_surfaces": [
+      "implementation in this pass",
+      "rendered UI control in this pass",
+      "browser-supplied replacement refs",
+      "browser-supplied replacement hashes",
+      "browser-supplied artifact manifest hashes",
+      "browser-supplied authority basis hashes",
+      "browser-supplied byte sizes or artifact bytes",
+      "raw local path exposure",
+      "package rebuild",
+      "package payload rewrite",
+      "source L3OutputPackage row mutation",
+      "replacement namespace rows",
+      "downstream invalidation",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "next_required_action_after_merge": "current_main_sync_replacement_package_artifact_manifest_request_authority_source_selection_freeze",
+    "next_whole_project_posture": "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync"
+  },
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_branch": "codex/l3-replacement-manifest-request-authority-freeze",
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_live_behavior_change": false,
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_freeze_summary": "Doc 652 selects server_computed_replacement_package_artifact_manifest_record_from_authority as the governed request-authority source after blocker sync. The future route will compute artifact_manifest_hash authority_basis_hash and verified byte-size basis server-side from materialization replacement authority and supersession commit rows, while blocking browser-supplied refs hashes bytes paths and URLs."
 }
