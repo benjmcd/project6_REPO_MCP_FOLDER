@@ -4851,6 +4851,225 @@ def _activate_replacement_package_authority(
     }
 
 
+def _activate_corrected_replacement_package_authority(
+    client: TestClient,
+    *,
+    request_id: str,
+    session_id: str,
+    approval_body: dict,
+    selection_body: dict,
+    start_body: dict,
+    review_body: dict,
+    commit_body: dict,
+    submit_body: dict,
+) -> dict:
+    preview = client.post(
+        "/api/v1/layer3/package/mutation/preview",
+        json=_package_supersession_preview_payload(
+            request_id=f"{request_id}-preview",
+            session_id=session_id,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert preview.status_code == 200, preview.json()
+    preview_body = preview.json()
+
+    materialization = client.post(
+        "/api/v1/layer3/package/replacement-artifact/materialize",
+        json=_replacement_package_artifact_materialization_payload(
+            request_id=f"{request_id}-materialize",
+            session_id=session_id,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            commit_body=commit_body,
+            supersession_preview_body=preview_body,
+        ),
+    )
+    assert materialization.status_code == 200, materialization.json()
+    materialization_body = materialization.json()
+
+    reviewed_output_items_hash = layer3_corrected_package_artifact_set.stable_hash(
+        {
+            "schema_id": "layer3.corrected_package_artifact_set_reviewed_items.v1",
+            "reviewed_output_items": review_body.get("reviewed_output_items") or [],
+        }
+    )
+    corrected = client.post(
+        "/api/v1/layer3/package/corrected-artifact-set/record",
+        json={
+            "client_request_id": f"{request_id}-corrected",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": selection_body["pass_run_ids"][0],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "source_package_set_hash": materialization_body["source_package_set_hash"],
+            "source_output_package_ids": [
+                package["output_package_id"] for package in commit_body["output_packages"]
+            ],
+            "source_package_kinds": commit_body["package_kinds"],
+            "source_payload_refs": commit_body["payload_refs"],
+            "source_payload_hashes": commit_body["payload_hashes"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "reviewed_output_items_hash": reviewed_output_items_hash,
+            "package_review_preview_hash": commit_body["package_review_preview_hash"],
+            "operator_decision": "record_corrected_package_artifact_set_from_review_corrections",
+            "package_supersession_preview_hash": preview_body["package_supersession_preview_hash"],
+            "replacement_artifact_materialization_id": materialization_body[
+                "replacement_artifact_materialization_id"
+            ],
+            "materialization_basis_hash": materialization_body["materialization_basis_hash"],
+        },
+    )
+    assert corrected.status_code == 200, corrected.json()
+    corrected_body = corrected.json()
+
+    replacement_authority = client.post(
+        "/api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+        json={
+            "client_request_id": f"{request_id}-authority",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": selection_body["pass_run_ids"][0],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "source_package_set_hash": corrected_body["source_package_set_hash"],
+            "corrected_package_artifact_set_id": corrected_body["corrected_package_artifact_set_id"],
+            "corrected_artifact_basis_hash": corrected_body["corrected_artifact_basis_hash"],
+            "operator_decision": "record_replacement_package_set_authority",
+        },
+    )
+    assert replacement_authority.status_code == 200, replacement_authority.json()
+    replacement_authority_body = replacement_authority.json()
+
+    supersession_commit = client.post(
+        "/api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+        json={
+            "client_request_id": f"{request_id}-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": selection_body["pass_run_ids"][0],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "corrected_package_artifact_set_id": corrected_body["corrected_package_artifact_set_id"],
+            "corrected_artifact_basis_hash": corrected_body["corrected_artifact_basis_hash"],
+            "replacement_package_set_authority_id": replacement_authority_body[
+                "replacement_package_set_authority_id"
+            ],
+            "replacement_authority_basis_hash": replacement_authority_body["authority_basis_hash"],
+            "operator_decision": "commit_package_supersession",
+        },
+    )
+    assert supersession_commit.status_code == 200, supersession_commit.json()
+    supersession_commit_body = supersession_commit.json()
+
+    manifest = client.post(
+        "/api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+        json={
+            "client_request_id": f"{request_id}-manifest",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": selection_body["pass_run_ids"][0],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "corrected_package_artifact_set_id": corrected_body["corrected_package_artifact_set_id"],
+            "corrected_artifact_basis_hash": corrected_body["corrected_artifact_basis_hash"],
+            "replacement_package_set_authority_id": replacement_authority_body[
+                "replacement_package_set_authority_id"
+            ],
+            "replacement_authority_basis_hash": replacement_authority_body["authority_basis_hash"],
+            "package_supersession_commit_id": supersession_commit_body["package_supersession_commit_id"],
+            "package_supersession_commit_basis_hash": supersession_commit_body["commit_basis_hash"],
+            "operator_decision": "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+        },
+    )
+    assert manifest.status_code == 200, manifest.json()
+    manifest_body = manifest.json()
+
+    namespace = client.post(
+        "/api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+        json={
+            "client_request_id": f"{request_id}-namespace",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": selection_body["pass_run_ids"][0],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "corrected_package_artifact_set_id": corrected_body["corrected_package_artifact_set_id"],
+            "corrected_artifact_basis_hash": corrected_body["corrected_artifact_basis_hash"],
+            "replacement_package_set_authority_id": replacement_authority_body[
+                "replacement_package_set_authority_id"
+            ],
+            "replacement_authority_basis_hash": replacement_authority_body["authority_basis_hash"],
+            "package_supersession_commit_id": supersession_commit_body["package_supersession_commit_id"],
+            "package_supersession_commit_basis_hash": supersession_commit_body["commit_basis_hash"],
+            "replacement_artifact_manifest_id": manifest_body["replacement_package_artifact_manifest_id"],
+            "replacement_artifact_manifest_authority_basis_hash": manifest_body["authority_basis_hash"],
+            "operator_decision": "record_replacement_package_namespace_from_corrected_artifact_manifest_authority",
+        },
+    )
+    assert namespace.status_code == 200, namespace.json()
+    namespace_body = namespace.json()
+
+    replacement_activation_basis_hash = (
+        layer3_package_replacement_activation.package_replacement_activation_basis_hash(
+            session_id=session_id,
+            source_output_package_ids=[
+                package["output_package_id"] for package in commit_body["output_packages"]
+            ],
+            source_package_kinds=commit_body["package_kinds"],
+            source_payload_hashes=commit_body["payload_hashes"],
+            replacement_output_package_ids=namespace_body["replacement_output_package_ids"],
+            replacement_namespace_basis_hashes=[
+                row["authority_basis_hash"] for row in namespace_body["namespace_records"]
+            ],
+            active_artifact_refs=namespace_body["artifact_refs"],
+            active_artifact_hashes=namespace_body["artifact_hashes"],
+            replacement_artifact_manifest_id=manifest_body["replacement_package_artifact_manifest_id"],
+            replacement_artifact_manifest_authority_basis_hash=manifest_body["authority_basis_hash"],
+            replacement_artifact_manifest_hash=manifest_body["artifact_manifest_hash"],
+            replacement_package_set_authority_id=replacement_authority_body[
+                "replacement_package_set_authority_id"
+            ],
+            replacement_package_set_authority_basis_hash=replacement_authority_body["authority_basis_hash"],
+            package_supersession_commit_id=supersession_commit_body["package_supersession_commit_id"],
+            package_supersession_commit_basis_hash=supersession_commit_body["commit_basis_hash"],
+            package_kinds=commit_body["package_kinds"],
+            operator_decision="activate_replacement_output_package_namespace",
+        )
+    )
+    activation = client.post(
+        "/api/v1/layer3/package/replacement-activation/commit",
+        json={
+            "client_request_id": f"{request_id}-activation",
+            "session_id": session_id,
+            "replacement_artifact_manifest_id": manifest_body["replacement_package_artifact_manifest_id"],
+            "replacement_package_set_authority_id": replacement_authority_body[
+                "replacement_package_set_authority_id"
+            ],
+            "package_supersession_commit_id": supersession_commit_body["package_supersession_commit_id"],
+            "replacement_output_package_ids": namespace_body["replacement_output_package_ids"],
+            "source_output_package_ids": [
+                package["output_package_id"] for package in commit_body["output_packages"]
+            ],
+            "package_kinds": commit_body["package_kinds"],
+            "replacement_activation_basis_hash": replacement_activation_basis_hash,
+            "operator_decision": "activate_replacement_output_package_namespace",
+        },
+    )
+    assert activation.status_code == 200, activation.json()
+    return {
+        "preview_body": preview_body,
+        "materialization_body": materialization_body,
+        "corrected_body": corrected_body,
+        "replacement_authority_body": replacement_authority_body,
+        "supersession_commit_body": supersession_commit_body,
+        "manifest_body": manifest_body,
+        "namespace_body": namespace_body,
+        "activation_body": activation.json(),
+    }
+
+
 def _handoff_export_prepare_payload(
     *,
     request_id: str,
@@ -11451,6 +11670,164 @@ def test_layer3_api_handoff_export_prepare_applies_active_replacement_authority(
     assert duplicate_body["status"] == "already_prepared"
     assert duplicate_body["prepare_record_ref"] == body["prepare_record_ref"]
     assert duplicate_body["payload_refs"] == activation_body["active_artifact_refs"]
+    assert duplicate_body["active_package_authority_applied"] is True
+
+
+def test_layer3_api_handoff_export_prepare_applies_corrected_artifact_active_authority(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_payload,
+        submit_body,
+    ) = _submit_quant_package_review(
+        client,
+        tmp_path,
+        request_id="api-handoff-corrected-active-authority-success",
+    )
+    activation_chain = _activate_corrected_replacement_package_authority(
+        client,
+        request_id="api-handoff-corrected-active-authority-success",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+    )
+    corrected_body = activation_chain["corrected_body"]
+    namespace_body = activation_chain["namespace_body"]
+    activation_body = activation_chain["activation_body"]
+    payload = _handoff_export_prepare_payload(
+        request_id="api-handoff-corrected-active-authority-success-prepare",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+    )
+
+    def files_under_tmp() -> list[str]:
+        return sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file())
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "replacement_activations": db.query(L3PackageReplacementActivation).count(),
+            "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    prepare = client.post("/api/v1/layer3/handoff/export/prepare", json=payload)
+    assert prepare.status_code == 200, prepare.json()
+    body = prepare.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.handoff_export_prepare.v1"
+    assert body["status"] == "prepared"
+    assert body["handoff_export_state"] == "handoff_export_prepared"
+    assert body["output_package_ids"] == payload["output_package_ids"]
+    assert body["package_kinds"] == commit_body["package_kinds"]
+    assert body["payload_refs"] == activation_body["active_artifact_refs"]
+    assert body["payload_hashes"] == activation_body["active_artifact_hashes"]
+    assert body["active_package_authority_applied"] is True
+    assert body["package_replacement_activation_id"] == activation_body["package_replacement_activation_id"]
+    assert body["source_output_package_ids"] == payload["output_package_ids"]
+    assert body["source_payload_hashes"] == commit_body["payload_hashes"]
+    assert body["active_replacement_output_package_ids"] == namespace_body["replacement_output_package_ids"]
+    assert body["active_payload_refs"] == namespace_body["artifact_refs"]
+    assert body["active_payload_hashes"] == namespace_body["artifact_hashes"]
+    assert body["replacement_activation_basis_hash"] == activation_body["replacement_activation_basis_hash"]
+    assert all(ref.startswith("artifact://replacement-package-artifacts/") for ref in body["active_payload_refs"])
+    assert str(tmp_path) not in json.dumps(body["active_payload_refs"], sort_keys=True)
+
+    envelope = body["handoff_export_envelope"]
+    assert envelope["payload_refs"] == namespace_body["artifact_refs"]
+    assert envelope["payload_hashes"] == namespace_body["artifact_hashes"]
+    assert envelope["active_package_authority_applied"] is True
+    assert envelope["package_replacement_activation_id"] == activation_body["package_replacement_activation_id"]
+    assert envelope["source_output_package_ids"] == payload["output_package_ids"]
+    assert envelope["source_payload_hashes"] == commit_body["payload_hashes"]
+    assert envelope["active_replacement_output_package_ids"] == namespace_body["replacement_output_package_ids"]
+    assert envelope["active_payload_refs"] == namespace_body["artifact_refs"]
+    assert envelope["active_payload_hashes"] == namespace_body["artifact_hashes"]
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "replacement_activations": db.query(L3PackageReplacementActivation).count(),
+            "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+        } == counts_before
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        prepare_state = reconciliation.summary_json["handoff_export_prepare"]
+        assert prepare_state["payload_refs"] == namespace_body["artifact_refs"]
+        assert prepare_state["payload_hashes"] == namespace_body["artifact_hashes"]
+        assert prepare_state["active_package_authority_applied"] is True
+        assert prepare_state["package_replacement_activation_id"] == activation_body[
+            "package_replacement_activation_id"
+        ]
+        assert prepare_state["source_output_package_ids"] == payload["output_package_ids"]
+        assert prepare_state["active_replacement_output_package_ids"] == namespace_body[
+            "replacement_output_package_ids"
+        ]
+        assert corrected_body["corrected_artifact_refs"]
+        assert str(tmp_path) not in json.dumps(prepare_state["active_payload_refs"], sort_keys=True)
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+
+    duplicate = client.post("/api/v1/layer3/handoff/export/prepare", json=payload)
+    assert duplicate.status_code == 200, duplicate.json()
+    duplicate_body = duplicate.json()
+    assert duplicate_body["status"] == "already_prepared"
+    assert duplicate_body["prepare_record_ref"] == body["prepare_record_ref"]
+    assert duplicate_body["payload_refs"] == namespace_body["artifact_refs"]
     assert duplicate_body["active_package_authority_applied"] is True
 
 
