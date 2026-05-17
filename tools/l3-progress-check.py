@@ -1872,6 +1872,10 @@ LAYER3_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MA
     PLANNING_DOCS
     / "711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -58982,6 +58986,144 @@ def _check_corrected_artifact_package_rebuild_downstream_authority_freeze_curren
                 )
 
 
+def _check_corrected_artifact_package_supersession_commit_runtime_proof(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: implementation proof for `server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority`.",
+        "712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md",
+        "711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-artifact-supersession-commit",
+        "4ed1c54693cda3785c3c38d60993cdf49fe0f51d",
+        "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+        "backend/app/services/layer3_package_supersession_commit.py",
+        "backend/app/api/layer3.py",
+        "L3PackageSupersessionCommit",
+        "L3CorrectedPackageArtifactSet",
+        "L3ReplacementPackageSetAuthority",
+        "package_supersession_commit_from_corrected_artifact_set_authority",
+        "commit_package_supersession",
+        "layer3.package_supersession_commit.v1",
+        "Runtime behavior change: `true`",
+        "derives source package refs/hashes, replacement refs/hashes, downstream dependency hash",
+        "redacts source and replacement refs",
+        "redacts the returned `commit_snapshot` payload refs",
+        "test_layer3_package_supersession_commit.py`: `4 passed`",
+        "targeted `test_layer3_api.py`: `12 passed, 165 deselected`",
+        "await_current_main_sync_for_corrected_artifact_package_supersession_commit_runtime",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF)} "
+                f"missing corrected-artifact package supersession commit runtime proof term: {term}"
+            )
+
+    for blocked in (
+        "generate replacement artifacts",
+        "rewrite package payloads",
+        "mutate source `L3OutputPackage` rows",
+        "record replacement artifact manifests",
+        "record replacement namespace rows",
+        "activate packages",
+        "invalidate downstream artifacts",
+        "re-run handoff/export or delivery",
+        "create `ConnectorRun` or `ConnectorRunTarget` rows",
+        "use credentials",
+        "perform network egress",
+        "provider-public delivery/use",
+        "source expansion",
+        "RAG/vector",
+        "auth/security",
+        "full mockup",
+        "frontend-durable authority",
+        "rendered controls",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local paths",
+    ):
+        if blocked not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF)} "
+                f"missing corrected-artifact package supersession commit runtime boundary term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Package Supersession Commit Runtime Proof",
+            "712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md",
+            "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+            "L3PackageSupersessionCommit",
+            "4 passed",
+            "12 passed, 165 deselected",
+            "await_current_main_sync_for_corrected_artifact_package_supersession_commit_runtime",
+        ),
+        MANIFEST: (
+            "corrected_artifact_package_supersession_commit_runtime",
+            "corrected_artifact_package_supersession_commit_runtime_implemented_branch_local",
+            "codex/l3-corrected-artifact-supersession-commit",
+            "712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md",
+            "4ed1c54693cda3785c3c38d60993cdf49fe0f51d",
+            "server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority",
+            "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+            "redacted returned commit snapshot",
+            "no raw local path exposure",
+            "await_current_main_sync_for_corrected_artifact_package_supersession_commit_runtime",
+            "latest_corrected_artifact_package_supersession_commit_runtime_summary",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_package_supersession_commit_runtime_proof",
+            "implementation_proof_corrected_artifact_package_supersession_commit_runtime",
+            "corrected_artifact_package_supersession_commit_runtime_implemented_branch_local",
+            "712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md",
+            "OpenAPI contract exposure",
+            "API error-envelope behavior",
+            "redacted source and replacement refs",
+            "redacted returned commit snapshot",
+            "no ConnectorRun or ConnectorRunTarget creation",
+            "no raw local path exposure",
+            "await_current_main_sync_for_corrected_artifact_package_supersession_commit_runtime",
+            "latest_corrected_artifact_package_supersession_commit_runtime_summary",
+        ),
+        PACKAGE_SUPERSESSION_COMMIT_SERVICE: (
+            "PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_MODE",
+            "commit_package_supersession_from_corrected_artifact_set_authority",
+            "PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_ALLOWED_FIELDS",
+            "_commit_response_from_corrected_artifact_authority",
+            "artifact://package-supersession-commit-replacement/",
+            "raw_payload_refs_exposed",
+            "package_supersession_commit_corrected_artifact_basis_hash_mismatch",
+            "package_supersession_commit_corrected_replacement_authority_basis_hash_mismatch",
+        ),
+        LAYER3_API: (
+            "Layer3PackageSupersessionCommitFromCorrectedArtifactSetRequest",
+            "PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA",
+            "/package/supersession/commit-from-corrected-artifact-set-authority",
+            "commit_package_supersession_from_corrected_artifact_set_authority",
+        ),
+        PACKAGE_SUPERSESSION_COMMIT_TEST: (
+            "test_package_supersession_commit_from_corrected_artifact_authority_redacts_refs",
+            "test_package_supersession_commit_from_corrected_artifact_authority_prechecks_fail_closed",
+            "artifact://package-supersession-commit-replacement/",
+            "package_supersession_commit_from_corrected_artifact_set_scope_not_admitted",
+            "package_supersession_commit_corrected_artifact_basis_hash_mismatch",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_package_supersession_commit_from_corrected_artifact_set_api_boundary_returns_workbench_error_envelope",
+            "/api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+            "PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact package supersession commit runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -59536,6 +59678,7 @@ def main() -> int:
     _check_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync(errors)
     _check_corrected_artifact_package_rebuild_downstream_authority_freeze(errors)
     _check_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync(errors)
+    _check_corrected_artifact_package_supersession_commit_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
