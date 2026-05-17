@@ -15,7 +15,7 @@ Freeze branch: `codex/l3-package-activation-freeze`.
 Freeze branch commits:
 
 - `f73dd8114de06a46195f86b146a8c29dad2302a8`
-- `27cc41c47b2a15225926208872230e74188d506b`
+- `27cc41c4667a99c1d2c501d4382ab662536fd5c0`
 
 Freeze merge commit: `2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a`.
 
@@ -60,7 +60,7 @@ Review/comment gate:
 Review correction:
 
 - Automated review found that `replacement_activation_basis_hash` originally included `client_request_id` while the idempotency contract required same-basis replay with a new request id.
-- Commit `27cc41c47b2a15225926208872230e74188d506b` corrected the freeze so `client_request_id` is the idempotency key and is not part of the canonical `replacement_activation_basis_hash`.
+- Commit `27cc41c4667a99c1d2c501d4382ab662536fd5c0` corrected the freeze so `client_request_id` is the idempotency key and is not part of the canonical `replacement_activation_basis_hash`.
 - The review thread was resolved before merge.
 
 ## Current-Main Validation

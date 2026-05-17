@@ -53902,7 +53902,7 @@ def _check_source_l3_output_package_replacement_activation_freeze_current_main_s
         "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
         "Freeze PR: `#1268`.",
         "f73dd8114de06a46195f86b146a8c29dad2302a8",
-        "27cc41c47b2a15225926208872230e74188d506b",
+        "27cc41c4667a99c1d2c501d4382ab662536fd5c0",
         "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
         "Synced result: `current_main_synced_source_l3_output_package_replacement_activation_freeze`.",
         "backend-layer3-api`: `SUCCESS` in `2m57s`",
