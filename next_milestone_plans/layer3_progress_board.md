@@ -4420,3 +4420,15 @@ Doc 714 freezes only the later server-computed manifest bridge: `POST /api/v1/la
 This branch starts no runtime. Replacement namespace rows, package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
 
 The next exact posture after merge is `current_main_sync_corrected_artifact_replacement_manifest_authority_freeze`; after sync, the next posture is `implement_corrected_artifact_replacement_manifest_from_supersession_authority_after_freeze_sync`.
+
+## Corrected Artifact Replacement Manifest Authority Freeze Current-Main Sync
+
+Current-main sync: `715_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md` records PR `#1319`, freeze branch commit `b89a183ab15b0c82c649ff044ef7442fa61666be`, and merge commit `7263cec5d8cadf5de6ff7bfb00196971f1248ed5`.
+
+Before merge, PR `#1319` had passing `backend-layer3-api` and `test` checks, no comments, no reviews, no reviewThreads, and mergeability `MERGEABLE`. Post-merge current-main validation passed at `7263cec5d8cadf5de6ff7bfb00196971f1248ed5`.
+
+Current main now contains the freeze for `POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority`, owned by `backend/app/services/layer3_replacement_package_artifact_manifest.py` and `backend/app/api/layer3.py`, with durable target `L3ReplacementPackageArtifactManifest`, source authority `L3CorrectedPackageArtifactSet`, replacement authority `L3ReplacementPackageSetAuthority`, supersession authority `L3PackageSupersessionCommit`, request mode `replacement_package_artifact_manifest_from_corrected_artifact_set_authority`, and operator decision `record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority`.
+
+This sync starts no runtime. Replacement namespace rows, package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
+
+The next exact current-main implementation posture is `implement_corrected_artifact_replacement_manifest_from_supersession_authority_after_freeze_sync`.
