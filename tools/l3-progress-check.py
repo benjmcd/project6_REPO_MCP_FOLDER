@@ -1583,6 +1583,10 @@ LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_CURRENT_MAIN_S
     PLANNING_DOCS
     / "637_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_FREEZE = (
+    PLANNING_DOCS
+    / "638_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -51718,6 +51722,59 @@ def _check_rendered_replacement_package_set_authority_operator_action_current_ma
                 errors.append(f"{_rel(path)} missing rendered replacement package-set authority sync term: {term}")
 
 
+def _check_replacement_package_set_authority_request_source_authority_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local blocker/freeze for `replacement_package_set_authority_request_source_authority_freeze`.",
+        "638_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_FREEZE.md",
+        "637_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_ACTION_CURRENT_MAIN_SYNC.md",
+        "Current-main preflight commit: `fda325cc76ad971c521a5a696cb4e3535153de84`.",
+        "Audit result: `rendered_replacement_package_set_authority_control_blocked_by_missing_governed_replacement_request_source`.",
+        "Required stop posture: `replacement_package_set_authority_request_source_authority_freeze`.",
+        "The next required action after merge is `current_main_sync_replacement_package_set_authority_request_source_authority_freeze`.",
+        "After current-main sync, the next exact posture is `select_one_governed_replacement_package_set_request_source_authority_after_blocker_sync`.",
+        "It has no rendered replacement package-set authority state, no replacement request-source authority, and no `replacement_package_set_authority` request builder.",
+        "That proves backend contract shape and guardrails, not live rendered server authority for replacement request fields.",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_FREEZE)} "
+                f"missing replacement package-set request source freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package-Set Authority Request Source Authority Freeze",
+            "638_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_FREEZE.md",
+            "rendered_replacement_package_set_authority_control_blocked_by_missing_governed_replacement_request_source",
+            "tests fabricate those fields for API proof",
+            "select_one_governed_replacement_package_set_request_source_authority_after_blocker_sync",
+        ),
+        MANIFEST: (
+            "replacement_package_set_authority_request_source_authority_freeze",
+            "rendered_replacement_package_set_authority_control_blocked_by_missing_governed_replacement_request_source",
+            "replacement_package_set_id",
+            "backend tests fabricate replacement refs/hashes for contract proof only",
+            "select_one_governed_replacement_package_set_request_source_authority_after_blocker_sync",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_set_authority_request_source_authority_freeze_proof",
+            "638_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_FREEZE.md",
+            "missing governed replacement package-set request source authority",
+            "no replacement_package_set_authority request builder",
+            "no browser/operator path editing",
+            "select_one_governed_replacement_package_set_request_source_authority_after_blocker_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing replacement package-set request source freeze term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52195,6 +52252,7 @@ def main() -> int:
     _check_package_supersession_preview_rendered_control_current_main_sync(errors)
     _check_rendered_replacement_package_set_authority_operator_action_freeze(errors)
     _check_rendered_replacement_package_set_authority_operator_action_current_main_sync(errors)
+    _check_replacement_package_set_authority_request_source_authority_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
