@@ -4334,3 +4334,17 @@ Current main now syncs the implementation-entry freeze for the corrected-artifac
 This sync admits no runtime behavior by itself. Source `L3OutputPackage` row mutation, package payload rewrite, package activation, replacement namespace row creation, replacement artifact manifest recording, package supersession commit, downstream invalidation, provider-public delivery/use, connector/destination dispatch, `ConnectorRun`/`ConnectorRunTarget` creation, credentials, external network egress, source expansion, RAG/vector behavior, auth/security behavior, frontend-durable authority, browser/operator path editing, caller-supplied arbitrary paths or URLs, raw local path exposure, hidden LLM planning, and rendered UI authority remain blocked.
 
 The next exact posture is `implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync`.
+
+## Replacement Package Set Authority From Corrected Artifact Set Runtime Proof
+
+Branch-local implementation proof: `708_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_PROOF.md` implements `replacement_package_set_authority_from_corrected_artifact_set_runtime` from current-main checkpoint `94886ea4b787ea1696f97ff1e31aca49a7891379` on branch `codex/l3-corrected-artifact-replacement-authority-runtime`.
+
+The implemented runtime slice is `POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set`, owner service `backend/app/services/layer3_replacement_package_set_authority.py`, API owner `backend/app/api/layer3.py`, durable target `L3ReplacementPackageSetAuthority` / `l3_replacement_package_set_authority`, and source authority `L3CorrectedPackageArtifactSet` / `l3_corrected_package_artifact_set`.
+
+This runtime validates the corrected artifact set id and basis, derives replacement package-set identity and payload vectors server-side from `L3CorrectedPackageArtifactSet`, records or replays `L3ReplacementPackageSetAuthority` using request mode `replacement_package_set_authority_from_corrected_artifact_set` and operator decision `record_replacement_package_set_authority`, and redacts source/replacement payload refs in the API response so raw local paths are not exposed.
+
+Proof covers idempotent same-key replay, same-basis new-key replay, stale corrected artifact basis hash, missing corrected artifact set, wrong session/source basis, forbidden package bytes/replacement refs/destination/RAG/auth fields, OpenAPI exposure, API error envelope behavior, no source `L3OutputPackage` mutation, no replacement artifact manifest rows, no replacement namespace rows, and no package activation rows.
+
+Package payload rewrite, source `L3OutputPackage` row mutation, package activation, replacement namespace row creation, replacement artifact manifest recording, package supersession commit, downstream invalidation, provider-public delivery/use, connector/destination dispatch, `ConnectorRun`/`ConnectorRunTarget` creation, credentials, external network egress, source expansion, RAG/vector behavior, auth/security behavior, frontend-durable authority, browser/operator path editing, caller-supplied arbitrary paths or URLs, raw local path exposure, hidden LLM planning, and rendered UI authority remain blocked.
+
+The next exact posture after merge is `await_current_main_sync_for_replacement_package_set_authority_from_corrected_artifact_set_runtime`.
