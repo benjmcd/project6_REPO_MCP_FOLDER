@@ -24929,5 +24929,50 @@
   "latest_rendered_replacement_package_namespace_control_runtime_branch": "codex/l3-rendered-namespace-control-runtime",
   "latest_rendered_replacement_package_namespace_control_runtime_doc": "next_milestone_plans/Layer3_planning_docs/662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md",
   "latest_rendered_replacement_package_namespace_control_runtime_live_behavior_change": true,
-  "latest_rendered_replacement_package_namespace_control_runtime_summary": "Doc 662 implements the rendered replacement package namespace control over the existing replacement namespace route. The UI submits one package-kind namespace row from manifest, replacement authority, supersession commit, and source package row authority, stores response authority in State.replacementPackageNamespace, validates response-safe artifact refs while preserving server-held hash verification, and leaves package rebuild payload rewrite source row mutation provider-public delivery connector dispatch source expansion RAG/vector auth/security and frontend-durable authority blocked."
+  "latest_rendered_replacement_package_namespace_control_runtime_summary": "Doc 662 implements the rendered replacement package namespace control over the existing replacement namespace route. The UI submits one package-kind namespace row from manifest, replacement authority, supersession commit, and source package row authority, stores response authority in State.replacementPackageNamespace, validates response-safe artifact refs while preserving server-held hash verification, and leaves package rebuild payload rewrite source row mutation provider-public delivery connector dispatch source expansion RAG/vector auth/security and frontend-durable authority blocked.",
+  "rendered_replacement_package_namespace_control_runtime_current_main_sync": {
+    "status": "current_main_synced_rendered_replacement_package_namespace_control_runtime",
+    "sync_branch": "codex/l3-rendered-namespace-control-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md",
+    "runtime_pr": "#1266",
+    "runtime_branch": "codex/l3-rendered-namespace-control-runtime",
+    "runtime_branch_commit": "1d5224f7c4996d2b04f6c68c13d00fdf77518874",
+    "runtime_merge_commit": "d10b4ccfa123a9cbf268943b8b365ae539a6369e",
+    "current_main_checkpoint_after_merge": "d10b4ccfa123a9cbf268943b8b365ae539a6369e",
+    "selected_implementation_entry_mode_now_synced": "rendered_replacement_package_namespace_control",
+    "selected_operator_action_now_synced": "record_replacement_package_namespace_row",
+    "selected_route_now_synced": "/api/v1/layer3/package/replacement-namespace/record",
+    "checks": [
+      "backend-layer3-api passed 2m42s",
+      "test passed 3m28s"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_rendered_behavior_change_this_sync": false,
+    "next_whole_project_posture": "select_next_package_lifecycle_mutating_action_after_namespace_control_runtime_sync"
+  },
+  "latest_rendered_replacement_package_namespace_control_runtime_current_main_sync_branch": "codex/l3-rendered-namespace-control-runtime-sync",
+  "latest_rendered_replacement_package_namespace_control_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_rendered_replacement_package_namespace_control_runtime_current_main_sync_live_behavior_change": false,
+  "latest_rendered_replacement_package_namespace_control_runtime_current_main_sync_summary": "Doc 663 syncs PR #1266 merge commit d10b4ccfa123a9cbf268943b8b365ae539a6369e to current main. The rendered replacement package namespace control runtime is current-main synced, and the next exact posture is select_next_package_lifecycle_mutating_action_after_namespace_control_runtime_sync."
 }
