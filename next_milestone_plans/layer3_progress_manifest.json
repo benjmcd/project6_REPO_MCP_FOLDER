@@ -24554,5 +24554,50 @@
   "latest_rendered_replacement_package_artifact_manifest_control_freeze_branch": "codex/l3-rendered-manifest-control-admission-freeze",
   "latest_rendered_replacement_package_artifact_manifest_control_freeze_doc": "next_milestone_plans/Layer3_planning_docs/656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
   "latest_rendered_replacement_package_artifact_manifest_control_freeze_live_behavior_change": false,
-  "latest_rendered_replacement_package_artifact_manifest_control_freeze_summary": "Doc 656 freezes the rendered replacement package artifact manifest control after the record-from-authority runtime sync. The future control may submit only authority ids and existing-row basis hashes from materialization replacement authority and supersession commit state to the server-computed record-from-authority route, with no runtime implementation in this pass."
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_summary": "Doc 656 freezes the rendered replacement package artifact manifest control after the record-from-authority runtime sync. The future control may submit only authority ids and existing-row basis hashes from materialization replacement authority and supersession commit state to the server-computed record-from-authority route, with no runtime implementation in this pass.",
+  "rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync": {
+    "status": "current_main_synced_rendered_replacement_package_artifact_manifest_control_freeze",
+    "sync_branch": "codex/l3-rendered-manifest-control-freeze-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+    "freeze_pr": "#1260",
+    "freeze_branch": "codex/l3-rendered-manifest-control-admission-freeze",
+    "freeze_branch_commit": "d4dce1de07342aebd9b39c46ea5c009ec191d579",
+    "freeze_merge_commit": "628efbc97930027a9779bebb5d6063d310f63147",
+    "current_main_checkpoint_after_merge": "628efbc97930027a9779bebb5d6063d310f63147",
+    "selected_implementation_entry_mode_now_synced": "rendered_replacement_package_artifact_manifest_control",
+    "selected_operator_action_now_synced": "record_replacement_package_artifact_manifest_from_authority",
+    "selected_route_now_synced": "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+    "checks": [
+      "backend-layer3-api passed 2m37s",
+      "test passed 3m17s"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_rendered_behavior_change_this_sync": false,
+    "next_whole_project_posture": "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync"
+  },
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_branch": "codex/l3-rendered-manifest-control-freeze-sync",
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_live_behavior_change": false,
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_summary": "Doc 657 syncs PR #1260 merge commit 628efbc97930027a9779bebb5d6063d310f63147 to current main. The rendered replacement package artifact manifest control freeze is current-main synced, and the next exact posture is implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync."
 }
