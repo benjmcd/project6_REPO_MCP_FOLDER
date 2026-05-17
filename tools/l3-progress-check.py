@@ -1653,6 +1653,9 @@ LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRE
     PLANNING_DOCS
     / "655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE = (
+    PLANNING_DOCS / "656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -53088,6 +53091,77 @@ def _check_replacement_package_artifact_manifest_record_from_authority_runtime_c
                 )
 
 
+def _check_rendered_replacement_package_artifact_manifest_control_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze only for `rendered_replacement_package_artifact_manifest_control_from_authority`.",
+        "656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+        "655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "Current-main preflight commit: `d9cf08c7b3c584904e21f9b3bf784bb6845f4352`.",
+        "Selected implementation-entry mode: `rendered_replacement_package_artifact_manifest_control`.",
+        "Selected operator action: `record_replacement_package_artifact_manifest_from_authority`.",
+        "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+        "State.replacementPackageArtifactMaterialization.materialization_basis_hash",
+        "State.replacementPackageSetAuthority.authority_basis_hash",
+        "State.packageSupersessionCommit.commit_basis_hash",
+        "#replacement-package-artifact-manifest-submit",
+        "#replacement-package-artifact-manifest-panel",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented_in_this_pass`.",
+        "current_main_sync_rendered_replacement_package_artifact_manifest_control_freeze",
+        "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE)} "
+                f"missing rendered replacement package artifact manifest control freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Replacement Package Artifact Manifest Control Freeze",
+            "656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+            "rendered_replacement_package_artifact_manifest_control",
+            "State.replacementPackageArtifactMaterialization",
+            "State.replacementPackageSetAuthority",
+            "State.packageSupersessionCommit",
+            "#replacement-package-artifact-manifest-submit",
+            "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "rendered_replacement_package_artifact_manifest_control_freeze",
+            "implementation_entry_frozen_rendered_replacement_package_artifact_manifest_control",
+            "codex/l3-rendered-manifest-control-admission-freeze",
+            "656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+            "State.replacementPackageArtifactMaterialization",
+            "#replacement-package-artifact-manifest-submit",
+            "current_main_sync_rendered_replacement_package_artifact_manifest_control_freeze",
+            "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_replacement_package_artifact_manifest_control_freeze_proof",
+            "implementation_entry_freeze_rendered_replacement_package_artifact_manifest_control",
+            "656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+            "State.packageSupersessionCommit.commit_basis_hash",
+            "Layer3ReplacementPackageArtifactManifestFromAuthorityRequest",
+            "redacted artifact refs",
+            "browser-supplied artifact refs",
+            "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered replacement package artifact manifest control freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53583,6 +53657,7 @@ def main() -> int:
     _check_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync(errors)
     _check_replacement_package_artifact_manifest_record_from_authority_runtime(errors)
     _check_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync(errors)
+    _check_rendered_replacement_package_artifact_manifest_control_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
