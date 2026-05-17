@@ -1703,6 +1703,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE =
     PLANNING_DOCS
     / "668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "669_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -54314,6 +54318,86 @@ def _check_source_l3_output_package_active_authority_handoff_export_prepare_free
                 )
 
 
+def _check_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_handoff_export_prepare_freeze`.",
+        "669_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC.md",
+        "668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+        "Freeze PR: `#1273`.",
+        "codex/l3-post-activation-use-surface-freeze",
+        "9ccd90e15dac4f217381f9959f7a34e484e55ea7",
+        "21a8bed2a56e3c283194688000a115b688226ed3",
+        "Selected follow-on surface now synced: `downstream_active_package_authority_read_adoption`.",
+        "Selected reader path now synced: `handoff_export_prepare`.",
+        "POST /api/v1/layer3/handoff/export/prepare",
+        "resolve_active_replacement_package_authority",
+        "adopt_active_replacement_package_authority_for_handoff_export_prepare",
+        "Synced result: `current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_freeze`.",
+        "backend-layer3-api`: `SUCCESS` in `2m37s`",
+        "test`: `SUCCESS` in `3m20s`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR latestReviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "source `L3OutputPackage` rows, source refs/hashes, and `uq_l3_output_package_session_kind`",
+        "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority handoff/export prepare freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Handoff Export Prepare Freeze Current-Main Sync",
+            "669_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1273`",
+            "21a8bed2a56e3c283194688000a115b688226ed3",
+            "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+            "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+            "codex/l3-active-authority-handoff-freeze-sync",
+            "669_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1273",
+            "21a8bed2a56e3c283194688000a115b688226ed3",
+            "backend-layer3-api SUCCESS 2m37s",
+            "test SUCCESS 3m20s",
+            "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+            "current_main_synced_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+            "669_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1273",
+            "active replacement refs/hashes to the prepared internal export envelope for this reader only",
+            "source L3OutputPackage rows source refs/hashes and uq_l3_output_package_session_kind remain preserved",
+            "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority handoff/export prepare freeze sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -54825,6 +54909,7 @@ def main() -> int:
     _check_source_l3_output_package_replacement_activation_runtime_proof(errors)
     _check_source_l3_output_package_replacement_activation_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_handoff_export_prepare_freeze(errors)
+    _check_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
