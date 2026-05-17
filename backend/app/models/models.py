@@ -1354,6 +1354,62 @@ class L3ReplacementOutputPackage(Base):
     package_supersession_commit: Mapped[L3PackageSupersessionCommit] = relationship()
 
 
+class L3PackageReplacementActivation(Base):
+    __tablename__ = "l3_package_replacement_activation"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_package_replacement_activation_client_request"),
+        UniqueConstraint(
+            "replacement_activation_basis_hash",
+            name="uq_l3_package_replacement_activation_basis_hash",
+        ),
+        UniqueConstraint("session_id", name="uq_l3_package_replacement_activation_session"),
+        CheckConstraint(
+            "operator_decision = 'activate_replacement_output_package_namespace'",
+            name="ck_l3_package_replacement_activation_operator_decision",
+        ),
+        CheckConstraint("status = 'activated'", name="ck_l3_package_replacement_activation_status"),
+        Index("ix_l3_package_replacement_activation_manifest", "replacement_artifact_manifest_id"),
+        Index("ix_l3_package_replacement_activation_replacement_set", "replacement_package_set_authority_id"),
+        Index("ix_l3_package_replacement_activation_supersession_commit", "package_supersession_commit_id"),
+    )
+
+    package_replacement_activation_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    replacement_artifact_manifest_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_replacement_package_artifact_manifest.replacement_package_artifact_manifest_id"),
+        nullable=False,
+    )
+    replacement_package_set_authority_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_replacement_package_set_authority.replacement_package_set_authority_id"),
+        nullable=False,
+    )
+    package_supersession_commit_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_package_supersession_commit.package_supersession_commit_id"),
+        nullable=False,
+    )
+    replacement_output_package_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    source_output_package_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    package_kinds_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    active_artifact_refs_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    active_artifact_hashes_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    replacement_activation_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    activation_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    operator_decision: Mapped[str] = mapped_column(String(96), nullable=False)
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default="activated")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    session: Mapped[L3Session] = relationship()
+    replacement_artifact_manifest: Mapped[L3ReplacementPackageArtifactManifest] = relationship()
+    replacement_package_set_authority: Mapped[L3ReplacementPackageSetAuthority] = relationship()
+    package_supersession_commit: Mapped[L3PackageSupersessionCommit] = relationship()
+
+
 class L3SourceIntakeRecord(Base):
     __tablename__ = "l3_source_intake_record"
     __table_args__ = (

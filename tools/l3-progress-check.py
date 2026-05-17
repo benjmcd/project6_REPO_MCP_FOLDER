@@ -1691,11 +1691,24 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC 
     PLANNING_DOCS
     / "665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
 LAYER3_EXTERNAL_LOCAL_EXPORT_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0030_layer3_external_local_export.py"
+)
+LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0032_layer3_package_replacement_activation.py"
+)
+LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_package_replacement_activation.py"
+)
+LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_package_replacement_activation.py"
 )
 LAYER3_CORE_CONFIG = ROOT / "backend" / "app" / "core" / "config.py"
 LAYER3_TARGET_SELECTION_VALIDATOR_CLI = ROOT / "tools" / "l3-target-selection-validate.py"
@@ -53965,6 +53978,133 @@ def _check_source_l3_output_package_replacement_activation_freeze_current_main_s
                 )
 
 
+def _check_source_l3_output_package_replacement_activation_runtime_proof(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `source_l3_output_package_replacement_activation_runtime`.",
+        "666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+        "665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "codex/l3-package-activation-runtime",
+        "a06a1a71f9612b5785ec3021461c23a2d3bbfc9e",
+        "POST /api/v1/layer3/package/replacement-activation/commit",
+        "backend/app/services/layer3_package_replacement_activation.py",
+        "L3PackageReplacementActivation",
+        "l3_package_replacement_activation",
+        "0032_layer3_package_replacement_activation.py",
+        "package_replacement_activation_basis_hash",
+        "resolve_active_replacement_package_authority",
+        "client_request_id` is the idempotency key and remains outside canonical `replacement_activation_basis_hash`",
+        "activation_snapshot` omits raw local paths",
+        "source_l3_output_package_mutated` is false",
+        "await_current_main_sync_for_source_l3_output_package_replacement_activation_runtime",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF)} "
+                f"missing source L3 output package replacement activation runtime term: {term}"
+            )
+
+    for blocked in (
+        "package rebuild",
+        "package payload rewrite",
+        "downstream handoff/export re-binding",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+    ):
+        if blocked not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF)} "
+                f"missing source L3 output package replacement activation non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_SERVICE: (
+            'PACKAGE_REPLACEMENT_ACTIVATION_OPERATOR_DECISION = "activate_replacement_output_package_namespace"',
+            'PACKAGE_REPLACEMENT_ACTIVATION_SOURCE_GATE = "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE"',
+            "def package_replacement_activation_basis_hash",
+            "def resolve_active_replacement_package_authority",
+            "L3PackageReplacementActivation",
+            "raw_local_paths_exposed",
+            "source_l3_output_package_mutated",
+            "downstream_handoff_rebinding_enabled",
+        ),
+        LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_MIGRATION: (
+            "l3_package_replacement_activation",
+            "uq_l3_package_replacement_activation_client_request",
+            "uq_l3_package_replacement_activation_basis",
+            "uq_l3_package_replacement_activation_session",
+        ),
+        MODELS: (
+            "class L3PackageReplacementActivation",
+            "l3_package_replacement_activation",
+        ),
+        LAYER3_API: (
+            "Layer3PackageReplacementActivationCommitRequest",
+            "Layer3PackageReplacementActivationCommitResponse",
+            '"/package/replacement-activation/commit"',
+        ),
+        LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_TEST: (
+            "test_package_replacement_activation_selects_namespace_without_package_mutation",
+            "test_package_replacement_activation_requires_complete_namespace_set",
+            "same_request_replay",
+            "same_basis_new_request",
+        ),
+        LAYER3_API_TEST: (
+            "/api/v1/layer3/package/replacement-activation/commit",
+            "activation_request_schema",
+            "Layer3PackageReplacementActivationCommitResponse",
+            "test_layer3_package_replacement_activation_api_boundary_returns_workbench_error_envelope",
+        ),
+        BOARD: (
+            "## Source L3 Output Package Replacement Activation Runtime Proof",
+            "666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+            "codex/l3-package-activation-runtime",
+            "POST /api/v1/layer3/package/replacement-activation/commit",
+            "resolve_active_replacement_package_authority",
+            "await_current_main_sync_for_source_l3_output_package_replacement_activation_runtime",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_replacement_activation_runtime",
+            "branch_local_runtime_proof_source_l3_output_package_replacement_activation",
+            "666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+            "codex/l3-package-activation-runtime",
+            "a06a1a71f9612b5785ec3021461c23a2d3bbfc9e",
+            "backend/app/services/layer3_package_replacement_activation.py",
+            "client_request_id is the idempotency key and is not part of the canonical replacement_activation_basis_hash",
+            "raw local paths excluded from activation_snapshot",
+            "await_current_main_sync_for_source_l3_output_package_replacement_activation_runtime",
+            "latest_source_l3_output_package_replacement_activation_runtime_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_replacement_activation_runtime_proof",
+            "branch_local_runtime_proof_source_l3_output_package_replacement_activation",
+            "666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+            "codex/l3-package-activation-runtime",
+            "POST /api/v1/layer3/package/replacement-activation/commit",
+            "package_replacement_activation_basis_hash",
+            "resolve_active_replacement_package_authority",
+            "raw local paths excluded from activation_snapshot",
+            "disabled side-effect flags",
+            "latest_source_l3_output_package_replacement_activation_runtime_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package replacement activation runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -54113,6 +54253,7 @@ def main() -> int:
         REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION,
         PACKAGE_SUPERSESSION_COMMIT_MIGRATION,
         REPLACEMENT_PACKAGE_NAMESPACE_MIGRATION,
+        LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_MIGRATION,
         LAYER3_API,
         MODELS,
         GATE_B_STATE_SERVICE,
@@ -54152,6 +54293,7 @@ def main() -> int:
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
         PACKAGE_SUPERSESSION_COMMIT_SERVICE,
         REPLACEMENT_PACKAGE_NAMESPACE_SERVICE,
+        LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_SERVICE,
         AUTHORITY_MATRIX_CONTRACT_SERVICE,
         LAYER3_HTML,
         LAYER3_CSS,
@@ -54170,6 +54312,7 @@ def main() -> int:
         REPLACEMENT_PACKAGE_SET_AUTHORITY_TEST,
         PACKAGE_SUPERSESSION_COMMIT_TEST,
         REPLACEMENT_PACKAGE_NAMESPACE_TEST,
+        LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_TEST,
         SIGNED_REFERENCE_STATE_SERVICE,
         SIGNED_REFERENCE_STATE_TEST,
         LAYER3_API_TEST,
@@ -54470,6 +54613,7 @@ def main() -> int:
     _check_rendered_replacement_package_namespace_control_runtime_current_main_sync(errors)
     _check_source_l3_output_package_replacement_activation_freeze(errors)
     _check_source_l3_output_package_replacement_activation_freeze_current_main_sync(errors)
+    _check_source_l3_output_package_replacement_activation_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

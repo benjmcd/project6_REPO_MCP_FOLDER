@@ -70,6 +70,7 @@ from app.services import (
     layer3_connector_local_destination_receipt,
     layer3_external_local_export,
     layer3_package_mutation_entry,
+    layer3_package_replacement_activation,
     layer3_package_supersession_commit,
     layer3_pass_entry as layer3_pass_entry_module,
     layer3_local_outbox_provider_private_handoff,
@@ -2161,6 +2162,78 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "authority_rail",
     } <= set(namespace_schema["required"])
 
+    activation_request_schema = spec["paths"]["/api/v1/layer3/package/replacement-activation/commit"]["post"][
+        "requestBody"
+    ]["content"]["application/json"]["schema"]
+    assert activation_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "replacement_artifact_manifest_id",
+        "replacement_package_set_authority_id",
+        "package_supersession_commit_id",
+        "replacement_output_package_ids",
+        "source_output_package_ids",
+        "package_kinds",
+        "replacement_activation_basis_hash",
+        "operator_decision",
+    } == set(activation_request_schema["required"])
+    assert activation_request_schema["properties"]["operator_decision"]["enum"] == [
+        "activate_replacement_output_package_namespace"
+    ]
+    assert activation_request_schema["properties"]["destination_url"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert activation_request_schema["properties"]["runtime_db_write"]["description"].startswith(
+        "Known but non-admitted"
+    )
+
+    activation_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/package/replacement-activation/commit",
+        "post",
+    )
+    assert activation_schema["title"] == "Layer3PackageReplacementActivationCommitResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "package_replacement_activation_id",
+        "session_id",
+        "replacement_artifact_manifest_id",
+        "replacement_package_set_authority_id",
+        "package_supersession_commit_id",
+        "replacement_output_package_ids",
+        "source_output_package_ids",
+        "package_kinds",
+        "active_artifact_refs",
+        "active_artifact_hashes",
+        "replacement_activation_basis_hash",
+        "activation_snapshot",
+        "operator_decision",
+        "package_replacement_activation_mode",
+        "source_gate",
+        "activation_receipt_persisted",
+        "package_activation_state_persisted",
+        "source_l3_output_package_mutated",
+        "package_row_mutation_enabled",
+        "package_payload_write_enabled",
+        "package_payload_rewrite_enabled",
+        "downstream_handoff_rebinding_enabled",
+        "source_widening_enabled",
+        "connector_dispatch_enabled",
+        "provider_public_url_enabled",
+        "qualitative_hybrid_rag_execution_enabled",
+        "frontend_only_durable_state_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "created_at",
+        "updated_at",
+        "authority_rail",
+    } <= set(activation_schema["required"])
+
     record_request_schema = spec["paths"]["/api/v1/layer3/handoff/connector/record"]["post"]["requestBody"][
         "content"
     ]["application/json"]["schema"]
@@ -2513,6 +2586,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
             "post",
         ): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-namespace/record", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/package/replacement-activation/commit", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/prepare", "post"): ("400", "404", "409"),
@@ -2858,6 +2932,40 @@ def test_layer3_replacement_package_namespace_api_boundary_returns_workbench_err
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_replacement_package_namespace_boundary"]
+
+
+def test_layer3_package_replacement_activation_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_package_replacement_activation_boundary_error",
+            "Forced package replacement activation boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_package_replacement_activation_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_package_replacement_activation,
+        "commit_package_replacement_activation",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post("/api/v1/layer3/package/replacement-activation/commit", json={})
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_package_replacement_activation_boundary_error",
+    )
+    assert body["message"] == "Forced package replacement activation boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_package_replacement_activation_boundary"]
 
 
 def test_layer3_package_supersession_preview_api_boundary_returns_workbench_error_envelope(
