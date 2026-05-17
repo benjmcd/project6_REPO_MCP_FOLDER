@@ -1851,6 +1851,9 @@ LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURREN
     PLANNING_DOCS
     / "705_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE = (
+    PLANNING_DOCS / "706_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -58196,6 +58199,124 @@ def _check_operator_review_corrections_corrected_package_artifact_set_runtime_cu
                 )
 
 
+def _check_package_rebuild_from_corrected_artifact_set_entry_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE, errors)
+    for term in (
+        "Status: implementation-entry freeze for `package_rebuild_from_corrected_artifact_set`.",
+        "706_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE.md",
+        "705_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "codex/l3-package-rebuild-corrected-set-freeze",
+        "8168dc2306b2e3f9cf05398ed7ed3be918b80f57",
+        "package_mutation_reconstruction",
+        "rebuild_package_from_corrected_artifacts",
+        "operator_review_corrections_server_owned_corrected_package_artifact_set",
+        "freeze_package_rebuild_from_corrected_artifact_set_implementation_entry_after_runtime_sync",
+        "freeze_replacement_package_set_authority_from_corrected_artifact_set_only",
+        "not_implemented_in_this_pass",
+        "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+        "backend/app/services/layer3_replacement_package_set_authority.py",
+        "backend/app/api/layer3.py",
+        "L3ReplacementPackageSetAuthority",
+        "l3_replacement_package_set_authority",
+        "L3CorrectedPackageArtifactSet",
+        "l3_corrected_package_artifact_set",
+        "replacement_package_set_authority_from_corrected_artifact_set",
+        "record_replacement_package_set_authority_from_corrected_artifact_set",
+        "same `client_request_id` plus same corrected artifact set basis",
+        "same `client_request_id` plus different corrected artifact set basis",
+        "same corrected artifact set basis plus a new `client_request_id`",
+        "missing corrected artifact set authority",
+        "stale corrected artifact basis hash",
+        "current_main_sync_package_rebuild_from_corrected_artifact_set_entry_freeze",
+        "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE)} "
+                f"missing package rebuild from corrected artifact set entry freeze term: {term}"
+            )
+
+    for blocked in (
+        "runtime implementation in this pass",
+        "source `L3OutputPackage` row mutation",
+        "package payload rewrite",
+        "package activation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "replacement namespace row creation",
+        "replacement artifact manifest recording",
+        "package supersession commit",
+        "connector/destination dispatch",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "credentials",
+        "external network egress",
+        "provider-public delivery/use",
+        "raw public URL exposure",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "browser/operator path editing",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+        "hidden LLM planning",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE)} "
+                f"missing package rebuild from corrected artifact set entry freeze non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Rebuild From Corrected Artifact Set Entry Freeze",
+            "706_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE.md",
+            "codex/l3-package-rebuild-corrected-set-freeze",
+            "8168dc2306b2e3f9cf05398ed7ed3be918b80f57",
+            "freeze_replacement_package_set_authority_from_corrected_artifact_set_only",
+            "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+            "backend/app/services/layer3_replacement_package_set_authority.py",
+            "L3ReplacementPackageSetAuthority",
+            "L3CorrectedPackageArtifactSet",
+            "current_main_sync_package_rebuild_from_corrected_artifact_set_entry_freeze",
+            "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
+        ),
+        MANIFEST: (
+            "package_rebuild_from_corrected_artifact_set_entry_freeze",
+            "branch_local_freeze_package_rebuild_from_corrected_artifact_set_entry",
+            "codex/l3-package-rebuild-corrected-set-freeze",
+            "706_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE.md",
+            "8168dc2306b2e3f9cf05398ed7ed3be918b80f57",
+            "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+            "backend/app/services/layer3_replacement_package_set_authority.py",
+            "record_replacement_package_set_authority_from_corrected_artifact_set",
+            "current_main_sync_package_rebuild_from_corrected_artifact_set_entry_freeze",
+            "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
+            "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "package_rebuild_from_corrected_artifact_set_entry_freeze_proof",
+            "planning_control_freeze_package_rebuild_from_corrected_artifact_set_entry",
+            "branch_local_freeze_package_rebuild_from_corrected_artifact_set_entry",
+            "706_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE.md",
+            "freeze_replacement_package_set_authority_from_corrected_artifact_set_only",
+            "derive replacement package-set id/hash/kinds/payload refs/payload hashes from corrected artifact set authority",
+            "no source L3OutputPackage row mutation",
+            "no raw local path exposure",
+            "current_main_sync_package_rebuild_from_corrected_artifact_set_entry_freeze",
+            "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
+            "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing package rebuild from corrected artifact set entry freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -58744,6 +58865,7 @@ def main() -> int:
     _check_operator_review_corrections_corrected_package_artifact_set_entry_freeze_current_main_sync(errors)
     _check_operator_review_corrections_corrected_package_artifact_set_runtime_proof(errors)
     _check_operator_review_corrections_corrected_package_artifact_set_runtime_current_main_sync(errors)
+    _check_package_rebuild_from_corrected_artifact_set_entry_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
