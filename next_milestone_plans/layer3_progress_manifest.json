@@ -25068,7 +25068,7 @@
     "freeze_branch": "codex/l3-package-activation-freeze",
     "freeze_branch_commits": [
       "f73dd8114de06a46195f86b146a8c29dad2302a8",
-      "27cc41c47b2a15225926208872230e74188d506b"
+      "27cc41c4667a99c1d2c501d4382ab662536fd5c0"
     ],
     "freeze_merge_commit": "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
     "current_main_checkpoint_after_merge": "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
@@ -25089,7 +25089,7 @@
       "mergeability MERGEABLE",
       "merge state CLEAN"
     ],
-    "review_correction": "27cc41c47b2a15225926208872230e74188d506b separated client_request_id from canonical replacement_activation_basis_hash",
+    "review_correction": "27cc41c4667a99c1d2c501d4382ab662536fd5c0 separated client_request_id from canonical replacement_activation_basis_hash",
     "post_merge_validation": [
       "python .\\tools\\l3-progress-check.py PASS",
       "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
