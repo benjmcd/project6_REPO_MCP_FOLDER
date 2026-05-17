@@ -25713,5 +25713,37 @@
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_doc": "next_milestone_plans/Layer3_planning_docs/674_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF.md",
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_live_behavior_change": true,
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
-  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_summary": "Doc 674 implements source_l3_output_package_active_authority_aps_handoff_dispatch_runtime for aps_handoff_dispatch via POST /api/v1/layer3/handoff/aps/dispatch. It uses resolve_active_replacement_package_payload_authority over resolve_active_replacement_package_authority so APS dispatch can consume active replacement refs/hashes and canonical payload authority for this reader only, accepts active refs/hashes emitted by handoff/export prepare, keeps session readiness ready from active canonical artifact authority, preserves existing external_export_download_prepare compatibility after active dispatch, preserves source L3OutputPackage rows, blocks caller-supplied active fields, proves no ConnectorRun or ConnectorRunTarget creation, preserves source-intake APS dispatch test double compatibility, and keeps rendered proof limited to existing controls while validating refreshed status for the existing APS handoff path. Rendered activation controls, new external export/download adoption, local outbox, provider-private handoff, external local export, package rebuild/payload rewrite, source expansion, RAG/vector, auth/security, and frontend-durable authority remain unadmitted. Next posture: await_current_main_sync_for_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime."
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_summary": "Doc 674 implements source_l3_output_package_active_authority_aps_handoff_dispatch_runtime for aps_handoff_dispatch via POST /api/v1/layer3/handoff/aps/dispatch. It uses resolve_active_replacement_package_payload_authority over resolve_active_replacement_package_authority so APS dispatch can consume active replacement refs/hashes and canonical payload authority for this reader only, accepts active refs/hashes emitted by handoff/export prepare, keeps session readiness ready from active canonical artifact authority, preserves existing external_export_download_prepare compatibility after active dispatch, preserves source L3OutputPackage rows, blocks caller-supplied active fields, proves no ConnectorRun or ConnectorRunTarget creation, preserves source-intake APS dispatch test double compatibility, and keeps rendered proof limited to existing controls while validating refreshed status for the existing APS handoff path. Rendered activation controls, new external export/download adoption, local outbox, provider-private handoff, external local export, package rebuild/payload rewrite, source expansion, RAG/vector, auth/security, and frontend-durable authority remain unadmitted. Next posture: await_current_main_sync_for_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime.",
+  "source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync": {
+    "status": "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+    "sync_branch": "codex/l3-active-authority-aps-dispatch-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_pr": "#1279",
+    "runtime_branch": "codex/l3-active-authority-aps-dispatch-impl",
+    "runtime_branch_commit": "fa2a3650b0ddf1d05ef33604e565c8de197d15c4",
+    "runtime_merge_commit": "e3bd196aa4bb3d40e1948e998a9d97ebc6eef8b9",
+    "checks": [
+      "backend-layer3-api SUCCESS 2m50s",
+      "test SUCCESS 3m34s"
+    ],
+    "review_gate": [
+      "PR comments empty",
+      "latestReviews one COMMENTED automated Codex review",
+      "reviewThreads totalCount 3",
+      "unresolved reviewThreads 3",
+      "outdated unresolved reviewThreads 2",
+      "unresolved non-outdated reviewThreads 1",
+      "remaining non-outdated thread Preserve source refs for external readiness addressed by code and validation but not resolved/commented"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync"
+  },
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_branch": "codex/l3-active-authority-aps-dispatch-runtime-sync",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_summary": "Doc 675 records current-main sync for PR #1279 merge commit e3bd196aa4bb3d40e1948e998a9d97ebc6eef8b9 with green backend-layer3-api and test checks, empty PR comments, one COMMENTED automated Codex latestReview, three unresolved reviewThreads of which two are outdated and one non-outdated Preserve source refs for external readiness thread was addressed by code/validation but not resolved/commented, post-merge progress validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync."
 }

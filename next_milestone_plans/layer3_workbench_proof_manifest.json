@@ -27159,5 +27159,30 @@
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_doc": "next_milestone_plans/Layer3_planning_docs/674_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF.md",
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_live_behavior_change": true,
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
-  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_summary": "Doc 674 proof records source_l3_output_package_active_authority_aps_handoff_dispatch_runtime: aps_handoff_dispatch uses resolve_active_replacement_package_payload_authority so active replacement refs/hashes and canonical payload authority are applied for this reader only, accepts active refs/hashes emitted by handoff/export prepare, keeps session readiness ready from active canonical artifact authority, preserves existing external_export_download_prepare compatibility after active dispatch, preserves source L3OutputPackage rows, proves no ConnectorRun or ConnectorRunTarget creation, keeps active refs response-safe artifact://replacement-package-artifacts refs, blocks caller-supplied active authority fields, preserves source-intake APS dispatch test double compatibility, and keeps rendered proof limited to existing controls while validating refreshed status for the existing APS handoff path."
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_summary": "Doc 674 proof records source_l3_output_package_active_authority_aps_handoff_dispatch_runtime: aps_handoff_dispatch uses resolve_active_replacement_package_payload_authority so active replacement refs/hashes and canonical payload authority are applied for this reader only, accepts active refs/hashes emitted by handoff/export prepare, keeps session readiness ready from active canonical artifact authority, preserves existing external_export_download_prepare compatibility after active dispatch, preserves source L3OutputPackage rows, proves no ConnectorRun or ConnectorRunTarget creation, keeps active refs response-safe artifact://replacement-package-artifacts refs, blocks caller-supplied active authority fields, preserves source-intake APS dispatch test double compatibility, and keeps rendered proof limited to existing controls while validating refreshed status for the existing APS handoff path.",
+  "source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_proof": {
+    "proof_kind": "source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync",
+    "status": "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+    "sync_branch": "codex/l3-active-authority-aps-dispatch-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_pr": "#1279",
+    "runtime_merge_commit": "e3bd196aa4bb3d40e1948e998a9d97ebc6eef8b9",
+    "proof_terms": [
+      "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+      "backend-layer3-api SUCCESS 2m50s",
+      "test SUCCESS 3m34s",
+      "reviewThreads totalCount 3",
+      "unresolved non-outdated reviewThreads 1",
+      "Preserve source refs for external readiness",
+      "addressed by code and validation but not resolved/commented",
+      "POST /api/v1/layer3/handoff/aps/dispatch",
+      "resolve_active_replacement_package_payload_authority",
+      "existing external export/download prepare accepts the active APS dispatch state",
+      "select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync"
+    ],
+    "next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync"
+  },
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_branch": "codex/l3-active-authority-aps-dispatch-runtime-sync",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_summary": "Doc 675 proof entry records current-main sync for PR #1279 merge commit e3bd196aa4bb3d40e1948e998a9d97ebc6eef8b9 with green backend-layer3-api and test checks, empty PR comments, one COMMENTED automated Codex latestReview, three unresolved reviewThreads of which two are outdated and one non-outdated Preserve source refs for external readiness thread was addressed by code/validation but not resolved/commented, post-merge progress validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync."
 }
