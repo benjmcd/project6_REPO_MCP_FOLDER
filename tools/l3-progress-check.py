@@ -1876,6 +1876,10 @@ LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF = (
     PLANNING_DOCS
     / "712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md"
 )
+LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -59124,6 +59128,133 @@ def _check_corrected_artifact_package_supersession_commit_runtime_proof(
                 )
 
 
+def _check_corrected_artifact_package_supersession_commit_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `corrected_artifact_package_supersession_commit_runtime`.",
+        "713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md",
+        "Runtime PR: `#1317`",
+        "410ee98d4342887858df30b9b237a31a425d5907",
+        "0c27602358854f778d157ece163549bd1724df1f",
+        "codex/l3-corrected-artifact-supersession-sync",
+        "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+        "backend/app/services/layer3_package_supersession_commit.py",
+        "backend/app/api/layer3.py",
+        "L3PackageSupersessionCommit",
+        "L3CorrectedPackageArtifactSet",
+        "L3ReplacementPackageSetAuthority",
+        "package_supersession_commit_from_corrected_artifact_set_authority",
+        "commit_package_supersession",
+        "Review-fix behavior change in this sync: `true`",
+        "schema-advertised known forbidden field",
+        "standard `layer3.authority_rail.v1` fields",
+        "evaluate_corrected_artifact_replacement_artifact_manifest_authority_after_supersession_commit_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing corrected-artifact package supersession commit runtime current-main sync term: {term}"
+            )
+
+    for blocked in (
+        "Replacement artifact manifest recording from corrected-artifact supersession authority",
+        "replacement namespace row creation",
+        "package replacement activation",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "connector/destination dispatch",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector",
+        "auth/security",
+        "full mockup activation",
+        "frontend-durable authority",
+        "rendered UI authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing corrected-artifact package supersession commit runtime current-main sync boundary term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Package Supersession Commit Runtime Current-Main Sync",
+            "713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1317`",
+            "410ee98d4342887858df30b9b237a31a425d5907",
+            "0c27602358854f778d157ece163549bd1724df1f",
+            "schema-advertised known forbidden field",
+            "standard `layer3.authority_rail.v1` fields",
+            "evaluate_corrected_artifact_replacement_artifact_manifest_authority_after_supersession_commit_runtime_sync",
+        ),
+        MANIFEST: (
+            "corrected_artifact_package_supersession_commit_runtime_current_main_sync",
+            "current_main_synced_corrected_artifact_package_supersession_commit_runtime",
+            "codex/l3-corrected-artifact-supersession-sync",
+            "713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            '"runtime_pr": "#1317"',
+            "410ee98d4342887858df30b9b237a31a425d5907",
+            "0c27602358854f778d157ece163549bd1724df1f",
+            '"review_fix_behavior_change": true',
+            "schema-advertised known forbidden fields now reach the Layer 3 workbench error envelope",
+            "preserves the standard authority rail",
+            "evaluate_corrected_artifact_replacement_artifact_manifest_authority_after_supersession_commit_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_package_supersession_commit_runtime_current_main_sync_proof",
+            "current_main_sync_corrected_artifact_package_supersession_commit_runtime",
+            "current_main_synced_corrected_artifact_package_supersession_commit_runtime",
+            "713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            '"runtime_pr": "#1317"',
+            "410ee98d4342887858df30b9b237a31a425d5907",
+            "0c27602358854f778d157ece163549bd1724df1f",
+            '"review_fix_behavior_change": true',
+            "schema-advertised known forbidden fields reach the Layer 3 workbench error envelope",
+            "preserves the standard authority rail",
+            "evaluate_corrected_artifact_replacement_artifact_manifest_authority_after_supersession_commit_runtime_sync",
+        ),
+        LAYER3_API: (
+            "public_url: Any | None = None",
+            "connector_key: Any | None = None",
+            "local_directory: Any | None = None",
+            "hidden_llm_plan: Any | None = None",
+        ),
+        PACKAGE_SUPERSESSION_COMMIT_SERVICE: (
+            'authority_rail = dict(response.get("authority_rail") or {})',
+            "authority_rail.update",
+            "response_payload_refs_redacted",
+        ),
+        PACKAGE_SUPERSESSION_COMMIT_TEST: (
+            'response["authority_rail"]["schema_id"] == "layer3.authority_rail.v1"',
+            'response["authority_rail"]["current_gate"] == "package"',
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_package_supersession_commit_from_corrected_artifact_set_known_forbidden_field_returns_workbench_error",
+            "Layer3PackageSupersessionCommitFromCorrectedArtifactSetRequest.model_fields",
+            '"public_url": "https://example.invalid/package"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact package supersession commit runtime "
+                    f"current-main sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -59679,6 +59810,7 @@ def main() -> int:
     _check_corrected_artifact_package_rebuild_downstream_authority_freeze(errors)
     _check_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync(errors)
     _check_corrected_artifact_package_supersession_commit_runtime_proof(errors)
+    _check_corrected_artifact_package_supersession_commit_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

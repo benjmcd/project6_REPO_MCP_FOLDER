@@ -4394,3 +4394,17 @@ Targeted validation passed: `python -m py_compile .\backend\app\services\layer3_
 This branch starts no manifest, namespace, activation, handoff/export rerun, delivery rerun, connector/destination dispatch, credential use, network egress, source expansion, RAG/vector behavior, auth/security broadening, rendered UI authority, frontend-durable authority, package payload rewrite, source `L3OutputPackage` mutation, caller-supplied path/URL, or raw local path exposure.
 
 The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_package_supersession_commit_runtime`.
+
+## Corrected Artifact Package Supersession Commit Runtime Current-Main Sync
+
+Current-main sync: `713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md` records PR `#1317`, branch `codex/l3-corrected-artifact-supersession-commit`, branch commit `410ee98d4342887858df30b9b237a31a425d5907`, and merge commit `0c27602358854f778d157ece163549bd1724df1f` for `corrected_artifact_package_supersession_commit_runtime`.
+
+Before merge, PR `#1317` had green `backend-layer3-api` and `test` checks, empty comments/reviews/latestReviews, reviewThreads totalCount `0`, unresolved current reviewThreads `0`, and mergeability `MERGEABLE`. Post-merge local JSON validation, `l3-progress-check.py`, `l3-target-selection-validate.py --expect frozen`, and `git diff --check` passed on current main at `0c27602358854f778d157ece163549bd1724df1f`.
+
+Current main now contains `POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority`, service `backend/app/services/layer3_package_supersession_commit.py`, API owner `backend/app/api/layer3.py`, durable target `L3PackageSupersessionCommit`, source authority `L3CorrectedPackageArtifactSet`, replacement authority `L3ReplacementPackageSetAuthority`, request mode `package_supersession_commit_from_corrected_artifact_set_authority`, and operator decision `commit_package_supersession`.
+
+This sync also fixes the two post-merge automated review findings on PR `#1317`: every schema-advertised known forbidden field is now declared by the request model so known forbidden inputs return the Layer 3 workbench error envelope, and the corrected-artifact response now preserves the standard `layer3.authority_rail.v1` fields while adding custom corrected-artifact flags.
+
+This sync admits no new capability beyond those review fixes. Replacement artifact manifest recording from corrected-artifact supersession authority, replacement namespace row creation, package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
+
+The next exact current-main posture is `evaluate_corrected_artifact_replacement_artifact_manifest_authority_after_supersession_commit_runtime_sync`.
