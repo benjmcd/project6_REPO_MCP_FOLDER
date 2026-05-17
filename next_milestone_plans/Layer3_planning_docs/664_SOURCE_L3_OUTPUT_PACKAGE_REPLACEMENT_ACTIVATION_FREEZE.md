@@ -71,7 +71,9 @@ Required values:
 
 - `operator_decision`: `activate_replacement_output_package_namespace`
 - `package_kinds`: the complete package-kind set expected by current package authority
-- `replacement_activation_basis_hash`: server-verifiable basis over the source package rows, replacement namespace rows, replacement artifact manifest, replacement package-set authority, package supersession commit, package kinds, operator decision, and client request id
+- `replacement_activation_basis_hash`: server-verifiable canonical basis over the source package rows, replacement namespace rows, replacement artifact manifest, replacement package-set authority, package supersession commit, package kinds, and operator decision
+
+The `client_request_id` is the idempotency key and must remain outside the canonical activation basis. This preserves same-basis replay with a new request id while still making same-key/different-basis conflicts fail closed.
 
 Forbidden request fields include:
 

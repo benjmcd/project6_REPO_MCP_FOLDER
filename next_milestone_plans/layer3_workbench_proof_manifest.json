@@ -26570,6 +26570,7 @@
       "current_main_sync_source_l3_output_package_replacement_activation_freeze",
       "implement_source_l3_output_package_replacement_activation_after_freeze_sync"
     ],
+    "idempotency_basis_separation": "client_request_id is the idempotency key and is not part of the canonical replacement_activation_basis_hash",
     "future_required_proof": [
       "complete replacement namespace activation success proof",
       "same client_request_id same basis replay proof",

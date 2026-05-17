@@ -25005,6 +25005,7 @@
       "replacement_activation_basis_hash",
       "operator_decision"
     ],
+    "idempotency_basis_separation": "client_request_id is the idempotency key and is not part of the canonical replacement_activation_basis_hash",
     "entry_decision": "freeze_only",
     "runtime_status": "not_implemented_in_this_pass",
     "validation": [
