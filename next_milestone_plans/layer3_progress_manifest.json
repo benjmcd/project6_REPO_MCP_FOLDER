@@ -25175,5 +25175,85 @@
   "latest_source_l3_output_package_replacement_activation_runtime_branch": "codex/l3-package-activation-runtime",
   "latest_source_l3_output_package_replacement_activation_runtime_doc": "next_milestone_plans/Layer3_planning_docs/666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
   "latest_source_l3_output_package_replacement_activation_runtime_live_behavior_change": true,
-  "latest_source_l3_output_package_replacement_activation_runtime_summary": "Doc 666 implements the backend/API source_l3_output_package_replacement_activation runtime on branch codex/l3-package-activation-runtime. It adds POST /api/v1/layer3/package/replacement-activation/commit, service backend/app/services/layer3_package_replacement_activation.py, model L3PackageReplacementActivation, table l3_package_replacement_activation, and migration 0032_layer3_package_replacement_activation.py. The storage boundary is a dedicated activation table preserving L3OutputPackage rows and uq_l3_output_package_session_kind; client_request_id remains outside canonical replacement_activation_basis_hash. The next posture is await_current_main_sync_for_source_l3_output_package_replacement_activation_runtime."
+  "latest_source_l3_output_package_replacement_activation_runtime_summary": "Doc 666 implements the backend/API source_l3_output_package_replacement_activation runtime on branch codex/l3-package-activation-runtime. It adds POST /api/v1/layer3/package/replacement-activation/commit, service backend/app/services/layer3_package_replacement_activation.py, model L3PackageReplacementActivation, table l3_package_replacement_activation, and migration 0032_layer3_package_replacement_activation.py. The storage boundary is a dedicated activation table preserving L3OutputPackage rows and uq_l3_output_package_session_kind; client_request_id remains outside canonical replacement_activation_basis_hash. The next posture is await_current_main_sync_for_source_l3_output_package_replacement_activation_runtime.",
+  "source_l3_output_package_replacement_activation_runtime_current_main_sync": {
+    "status": "current_main_synced_source_l3_output_package_replacement_activation_runtime",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+    "runtime_pr": "#1271",
+    "runtime_branch": "codex/l3-package-activation-runtime",
+    "runtime_branch_commit": "7b2bf2241fefac6f03029f9bb6e9d95b58eba391",
+    "runtime_merge_commit": "ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+    "current_main_checkpoint_after_merge": "ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+    "selected_surface": "package_mutation_reconstruction",
+    "selected_package_lifecycle_action": "activate_replacement_output_package_namespace",
+    "selected_implementation_entry_mode": "source_l3_output_package_replacement_activation",
+    "synced_route": "POST /api/v1/layer3/package/replacement-activation/commit",
+    "synced_owner_service": "backend/app/services/layer3_package_replacement_activation.py",
+    "synced_durable_state_model": "L3PackageReplacementActivation",
+    "synced_durable_state_table": "l3_package_replacement_activation",
+    "synced_migration": "backend/alembic/versions/0032_layer3_package_replacement_activation.py",
+    "synced_resolver": "resolve_active_replacement_package_authority",
+    "storage_boundary": "dedicated_activation_table_preserving_source_l3_output_package_rows_payload_refs_payload_hashes_and_uq_l3_output_package_session_kind",
+    "idempotency_boundary": "client_request_id is the idempotency key and is not part of canonical replacement_activation_basis_hash",
+    "merge_gate": {
+      "comments": "empty",
+      "reviews": "empty",
+      "latestReviews": "empty",
+      "reviewThreads_totalCount": 0,
+      "reviewThreads_unresolved": 0,
+      "mergeability_before_merge": "MERGEABLE",
+      "merge_state_before_merge": "CLEAN",
+      "checks": [
+        "backend-layer3-api SUCCESS 2m24s",
+        "test SUCCESS 3m37s"
+      ]
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS on project6-origin/main ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS on project6-origin/main ea01ebd6840bca750f1de2ca716b205f6dcb6896"
+    ],
+    "required_sync_branch_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "next_posture": "select_post_activation_package_lifecycle_use_surface_after_runtime_sync",
+    "next_surface_options": [
+      "rendered activation controls for the existing backend/API activation runtime",
+      "downstream active-package-authority read adoption for a named reader path",
+      "separately frozen package rebuild/payload rewrite action if activation by indirection is insufficient"
+    ],
+    "non_admitted": [
+      "rendered activation controls",
+      "package rebuild",
+      "package payload rewrite",
+      "direct source L3OutputPackage mutation",
+      "downstream invalidation",
+      "downstream handoff/export re-binding",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "raw public URL exposure",
+      "connector/destination dispatch",
+      "ConnectorRun creation",
+      "ConnectorRunTarget creation",
+      "credentials",
+      "external network egress",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority",
+      "caller-supplied arbitrary paths or URLs"
+    ]
+  },
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_pr": "#1271",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_merge_commit": "ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_replacement_activation_runtime",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_next_posture": "select_post_activation_package_lifecycle_use_surface_after_runtime_sync",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_summary": "Doc 667 syncs PR #1271 on current main: source_l3_output_package_replacement_activation_runtime is merged at ea01ebd6840bca750f1de2ca716b205f6dcb6896 with backend-layer3-api/test checks passing, empty comments/reviews, zero reviewThreads, and next posture select_post_activation_package_lifecycle_use_surface_after_runtime_sync."
 }
