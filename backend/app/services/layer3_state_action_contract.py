@@ -181,6 +181,25 @@ STATE_ACTION_ADMITTED_CAPABILITIES = (
         ],
     },
     {
+        "capability": "source_l3_output_package_replacement_activation",
+        "admitted": True,
+        "source_gate": "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE",
+        "scope": "durable activation receipt selecting one complete replacement namespace set as active package authority with no source package row mutation or payload rewrite",
+        "owner_service": "backend/app/services/layer3_package_replacement_activation.py",
+        "blocked_downstream": [
+            "source_l3_output_package_row_mutation",
+            "package_payload_rewrite",
+            "downstream_handoff_rebinding",
+            "provider_public_url",
+            "connector_destination_dispatch",
+            "local_upload_or_directory_source_expansion",
+            "broad_qualitative_execution",
+            "hybrid_execution",
+            "rag_vector_retrieval",
+            "full_mockup_activation",
+        ],
+    },
+    {
         "capability": "plan_revision_recovery_preview_refresh_entry",
         "admitted": True,
         "source_gate": "134_PLAN_REVISION_RECOVERY_ENTRY_FREEZE",
@@ -319,6 +338,7 @@ def build_state_action_contract(
     package_supersession_commit_operator_decision: str,
     replacement_package_artifact_manifest_operator_decision: str,
     replacement_package_namespace_operator_decision: str,
+    package_replacement_activation_operator_decision: str,
     terminal_pass_statuses: Iterable[str],
 ) -> dict[str, Any]:
     state_action_matrix = _clone_json(state_model["states"])
@@ -363,6 +383,7 @@ def build_state_action_contract(
             "package_supersession_commit": [package_supersession_commit_operator_decision],
             "replacement_package_artifact_manifest": [replacement_package_artifact_manifest_operator_decision],
             "replacement_package_namespace": [replacement_package_namespace_operator_decision],
+            "package_replacement_activation": [package_replacement_activation_operator_decision],
         },
         "terminal_pass_statuses": sorted(terminal_pass_statuses),
         "admitted_capabilities": _clone_json(STATE_ACTION_ADMITTED_CAPABILITIES),
