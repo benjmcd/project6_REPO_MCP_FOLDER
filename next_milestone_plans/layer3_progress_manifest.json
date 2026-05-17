@@ -25815,5 +25815,39 @@
   "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync_merge_commit": "f503e98df92c229ae6d27b0e55aca8a45db93182",
   "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
   "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync_next_posture": "implement_source_l3_output_package_active_authority_external_export_download_delivery_after_freeze_sync",
-  "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync_summary": "Doc 677 records current-main sync for PR #1281 merge commit f503e98df92c229ae6d27b0e55aca8a45db93182 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress validation, and next posture implement_source_l3_output_package_active_authority_external_export_download_delivery_after_freeze_sync."
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync_summary": "Doc 677 records current-main sync for PR #1281 merge commit f503e98df92c229ae6d27b0e55aca8a45db93182 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress validation, and next posture implement_source_l3_output_package_active_authority_external_export_download_delivery_after_freeze_sync.",
+  "source_l3_output_package_active_authority_external_export_download_delivery_runtime": {
+    "status": "proved_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+    "runtime_branch": "codex/l3-active-authority-export-delivery-impl",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/678_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/677_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_proof": "5d22eb1b3a61dd7c3fbf3c117aa8686507f6ff76",
+    "reader_path": "external_export_download_deliver",
+    "route": "POST /api/v1/layer3/handoff/export/download/deliver",
+    "validation_seam": "external_export_download_prepare through _external_export_download_prepare_payload_for_delivery",
+    "operator_action": "adopt_active_replacement_package_authority_for_external_export_download_delivery",
+    "runtime_behavior_change": false,
+    "changed_files": [
+      "backend/tests/test_layer3_api.py"
+    ],
+    "proof_terms": [
+      "active refs/hashes carried through external export/download delivery",
+      "delivery streams only recorded readiness APS bundle artifact",
+      "same-key replay returns same artifact bytes",
+      "source L3OutputPackage rows remain unchanged",
+      "external export/download readiness state remains unchanged by delivery",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no download_url public_url signed_url connector_run_id response leakage",
+      "no additional files written by delivery"
+    ],
+    "validation": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_aps_handoff_dispatch_applies_active_replacement_authority -q PASS"
+    ],
+    "next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_external_export_download_delivery_runtime"
+  },
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_branch": "codex/l3-active-authority-export-delivery-impl",
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_doc": "next_milestone_plans/Layer3_planning_docs/678_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF.md",
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_summary": "Doc 678 proof records source_l3_output_package_active_authority_external_export_download_delivery_runtime: external_export_download_deliver carries active replacement refs/hashes through delivery over recorded readiness, streams only the authorized APS bundle artifact, preserves source L3OutputPackage rows and readiness state, creates no ConnectorRun or ConnectorRunTarget rows, leaks no download/public/signed URL or connector_run_id headers, writes no additional files, and changes no service runtime behavior."
 }
