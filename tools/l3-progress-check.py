@@ -1727,6 +1727,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PR
     PLANNING_DOCS
     / "674_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55042,6 +55046,84 @@ def _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtim
             if term not in text:
                 errors.append(
                     f"{_rel(path)} missing source L3 output package active authority APS handoff dispatch runtime term: {term}"
+            )
+
+
+def _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_aps_handoff_dispatch_runtime`.",
+        "675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "674_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_PROOF.md",
+        "#1279",
+        "fa2a3650",
+        "e3bd196aa4bb3d40e1948e998a9d97ebc6eef8b9",
+        "backend-layer3-api`: `SUCCESS` in `2m50s`",
+        "test`: `SUCCESS` in `3m34s`",
+        "PR reviewThreads totalCount: `3`",
+        "PR unresolved non-outdated reviewThreads: `1`",
+        "Preserve source refs for external readiness",
+        "addressed by the merged code and validation",
+        "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+        "POST /api/v1/layer3/handoff/aps/dispatch",
+        "resolve_active_replacement_package_payload_authority",
+        "existing external export/download prepare accepts the active APS dispatch state",
+        "select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority APS handoff dispatch runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority APS Handoff Dispatch Runtime Current-Main Sync",
+            "675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1279",
+            "e3bd196aa4bb3d40e1948e998a9d97ebc6eef8b9",
+            "backend-layer3-api` passed in `2m50s`",
+            "test` passed in `3m34s`",
+            "reviewThreads totalCount was `3`",
+            "unresolved non-outdated reviewThreads were `1`",
+            "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+            "codex/l3-active-authority-aps-dispatch-runtime-sync",
+            "675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1279",
+            "e3bd196aa4bb3d40e1948e998a9d97ebc6eef8b9",
+            "backend-layer3-api SUCCESS 2m50s",
+            "test SUCCESS 3m34s",
+            "unresolved non-outdated reviewThreads 1",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync",
+            "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_proof",
+            "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime",
+            "675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1279",
+            "reviewThreads totalCount 3",
+            "unresolved non-outdated reviewThreads 1",
+            "Preserve source refs for external readiness",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync",
+            "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority APS handoff dispatch runtime sync term: {term}"
                 )
 
 
@@ -55562,6 +55644,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze(errors)
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_proof(errors)
+    _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
