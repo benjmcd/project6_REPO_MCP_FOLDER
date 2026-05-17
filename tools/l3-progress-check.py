@@ -1695,6 +1695,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF = (
     PLANNING_DOCS
     / "666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -54105,6 +54109,107 @@ def _check_source_l3_output_package_replacement_activation_runtime_proof(
                 )
 
 
+def _check_source_l3_output_package_replacement_activation_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_replacement_activation_runtime`.",
+        "667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+        "Runtime PR: `#1271`.",
+        "codex/l3-package-activation-runtime",
+        "7b2bf2241fefac6f03029f9bb6e9d95b58eba391",
+        "ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+        "Synced result: `current_main_synced_source_l3_output_package_replacement_activation_runtime`.",
+        "backend-layer3-api`: `SUCCESS` in `2m24s`",
+        "test`: `SUCCESS` in `3m37s`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR latestReviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "POST /api/v1/layer3/package/replacement-activation/commit",
+        "L3PackageReplacementActivation",
+        "l3_package_replacement_activation",
+        "resolve_active_replacement_package_authority",
+        "client_request_id` is the idempotency key and is not part of canonical `replacement_activation_basis_hash`",
+        "Existing handoff/export readers are not rebound by this sync.",
+        "select_post_activation_package_lifecycle_use_surface_after_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package replacement activation runtime sync term: {term}"
+            )
+
+    for blocked in (
+        "rendered activation controls",
+        "package rebuild",
+        "package payload rewrite",
+        "downstream handoff/export re-binding",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package replacement activation runtime sync non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Replacement Activation Runtime Current-Main Sync",
+            "667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1271`",
+            "ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+            "current_main_synced_source_l3_output_package_replacement_activation_runtime",
+            "resolve_active_replacement_package_authority",
+            "select_post_activation_package_lifecycle_use_surface_after_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_replacement_activation_runtime_current_main_sync",
+            "current_main_synced_source_l3_output_package_replacement_activation_runtime",
+            "667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1271",
+            "7b2bf2241fefac6f03029f9bb6e9d95b58eba391",
+            "ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+            "backend-layer3-api SUCCESS 2m24s",
+            "test SUCCESS 3m37s",
+            "reviewThreads_totalCount",
+            "select_post_activation_package_lifecycle_use_surface_after_runtime_sync",
+            "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_replacement_activation_runtime_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_replacement_activation_runtime",
+            "current_main_synced_source_l3_output_package_replacement_activation_runtime",
+            "667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1271",
+            "resolve_active_replacement_package_authority",
+            "source L3OutputPackage rows not mutated",
+            "existing handoff/export readers are not rebound by this sync",
+            "select_post_activation_package_lifecycle_use_surface_after_runtime_sync",
+            "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package replacement activation runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -54614,6 +54719,7 @@ def main() -> int:
     _check_source_l3_output_package_replacement_activation_freeze(errors)
     _check_source_l3_output_package_replacement_activation_freeze_current_main_sync(errors)
     _check_source_l3_output_package_replacement_activation_runtime_proof(errors)
+    _check_source_l3_output_package_replacement_activation_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
