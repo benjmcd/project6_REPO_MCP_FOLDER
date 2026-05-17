@@ -804,6 +804,9 @@ def _workbench_state_action_contract() -> dict[str, Any]:
         external_export_download_delivery_operator_decision=EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
         connector_dispatch_record_operator_decision="record_internal_connector_dispatch",
         package_supersession_preview_operator_decision="preview_package_supersession",
+        replacement_package_artifact_materialization_operator_decision=(
+            "materialize_replacement_package_artifacts_from_supersession_preview"
+        ),
         replacement_package_set_authority_operator_decision="record_replacement_package_set_authority",
         package_supersession_commit_operator_decision="commit_package_supersession",
         replacement_package_artifact_manifest_operator_decision="record_replacement_package_artifact_manifest",
