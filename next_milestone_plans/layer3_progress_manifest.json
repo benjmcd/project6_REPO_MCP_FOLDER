@@ -25745,5 +25745,36 @@
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_live_behavior_change": false,
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync",
-  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_summary": "Doc 675 records current-main sync for PR #1279 merge commit e3bd196aa4bb3d40e1948e998a9d97ebc6eef8b9 with green backend-layer3-api and test checks, empty PR comments, one COMMENTED automated Codex latestReview, three unresolved reviewThreads of which two are outdated and one non-outdated Preserve source refs for external readiness thread was addressed by code/validation but not resolved/commented, post-merge progress validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync."
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync_summary": "Doc 675 records current-main sync for PR #1279 merge commit e3bd196aa4bb3d40e1948e998a9d97ebc6eef8b9 with green backend-layer3-api and test checks, empty PR comments, one COMMENTED automated Codex latestReview, three unresolved reviewThreads of which two are outdated and one non-outdated Preserve source refs for external readiness thread was addressed by code/validation but not resolved/commented, post-merge progress validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_aps_handoff_dispatch_runtime_sync.",
+  "source_l3_output_package_active_authority_external_export_download_delivery_freeze": {
+    "status": "implementation_entry_frozen_source_l3_output_package_active_authority_external_export_download_delivery",
+    "planning_branch": "codex/l3-active-authority-next-reader-selection",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/676_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_freeze": "7b7e813cc51a74bb95fc959a743aff8dce4e35ab",
+    "selected_follow_on_surface": "downstream_active_package_authority_read_adoption",
+    "reader_path": "external_export_download_deliver",
+    "route": "POST /api/v1/layer3/handoff/export/download/deliver",
+    "validation_seam": "external_export_download_prepare through _external_export_download_prepare_payload_for_delivery",
+    "operator_action": "adopt_active_replacement_package_authority_for_external_export_download_delivery",
+    "selected_implementation_entry_mode": "source_l3_output_package_active_authority_external_export_download_delivery",
+    "runtime_status": "not_started_freeze_only",
+    "proof_terms": [
+      "external_export_download_deliver selected as next downstream active authority reader",
+      "delivery must validate recorded external_export_download_prepare readiness carrying active refs/hashes",
+      "source L3OutputPackage rows remain unchanged",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no connector-local receipt adoption",
+      "no local outbox adoption",
+      "no provider-private handoff adoption",
+      "no external local export adoption",
+      "no runtime begins in this freeze"
+    ],
+    "next_posture": "current_main_sync_source_l3_output_package_active_authority_external_export_download_delivery_freeze"
+  },
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_branch": "codex/l3-active-authority-next-reader-selection",
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_doc": "next_milestone_plans/Layer3_planning_docs/676_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+  "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_summary": "Doc 676 freezes the next exact package-lifecycle downstream active-authority reader: external_export_download_deliver through POST /api/v1/layer3/handoff/export/download/deliver. The freeze selects delivery validation over recorded external_export_download_prepare readiness carrying active refs/hashes and source refs/hashes as distinct authority fields, starts no runtime, and keeps rendered activation controls, connector-local receipt adoption, local outbox, provider-private handoff, external local export, package rebuild/payload rewrite, source expansion, RAG/vector, auth/security, provider-public delivery/use, connector/destination dispatch, and frontend-durable authority blocked."
 }
