@@ -24686,5 +24686,50 @@
   "latest_rendered_replacement_package_artifact_manifest_control_runtime_branch": "codex/l3-rendered-manifest-control-runtime",
   "latest_rendered_replacement_package_artifact_manifest_control_runtime_doc": "next_milestone_plans/Layer3_planning_docs/658_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF.md",
   "latest_rendered_replacement_package_artifact_manifest_control_runtime_live_behavior_change": true,
-  "latest_rendered_replacement_package_artifact_manifest_control_runtime_summary": "Doc 658 implements the rendered replacement package artifact manifest control over the existing server-computed record-from-authority route. The UI submits only authority ids and basis hashes from materialization replacement authority and supersession commit state, records response authority in State.replacementPackageArtifactManifest, renders redacted artifact refs and disabled side-effect flags, and leaves backend behavior replacement namespace rows package rebuild payload rewrite provider-public delivery connector dispatch source expansion RAG/vector auth/security and frontend-durable authority blocked."
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_summary": "Doc 658 implements the rendered replacement package artifact manifest control over the existing server-computed record-from-authority route. The UI submits only authority ids and basis hashes from materialization replacement authority and supersession commit state, records response authority in State.replacementPackageArtifactManifest, renders redacted artifact refs and disabled side-effect flags, and leaves backend behavior replacement namespace rows package rebuild payload rewrite provider-public delivery connector dispatch source expansion RAG/vector auth/security and frontend-durable authority blocked.",
+  "rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync": {
+    "status": "current_main_synced_rendered_replacement_package_artifact_manifest_control_runtime",
+    "sync_branch": "codex/l3-rendered-manifest-control-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/659_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/658_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF.md",
+    "runtime_pr": "#1262",
+    "runtime_branch": "codex/l3-rendered-manifest-control-runtime",
+    "runtime_branch_commit": "1b7f3af8006dd964732e1c99f51d13de90d7fe6e",
+    "runtime_merge_commit": "669d80788e86f1aecf293b55de830a2f77d9df97",
+    "current_main_checkpoint_after_merge": "669d80788e86f1aecf293b55de830a2f77d9df97",
+    "selected_implementation_entry_mode_now_synced": "rendered_replacement_package_artifact_manifest_control",
+    "selected_operator_action_now_synced": "record_replacement_package_artifact_manifest_from_authority",
+    "selected_route_now_synced": "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+    "checks": [
+      "backend-layer3-api passed 2m39s",
+      "test passed 3m32s"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_rendered_behavior_change_this_sync": false,
+    "next_whole_project_posture": "freeze_rendered_replacement_package_namespace_control_after_manifest_control_runtime_sync"
+  },
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync_branch": "codex/l3-rendered-manifest-control-runtime-sync",
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/659_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync_live_behavior_change": false,
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync_summary": "Doc 659 syncs PR #1262 merge commit 669d80788e86f1aecf293b55de830a2f77d9df97 to current main. The rendered replacement package artifact manifest control runtime is current-main synced, and the next exact posture is freeze_rendered_replacement_package_namespace_control_after_manifest_control_runtime_sync."
 }
