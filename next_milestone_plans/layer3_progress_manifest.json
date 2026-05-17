@@ -26326,5 +26326,37 @@
   "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_merge_commit": "cfc3c4a652293a1757b236d73af97fe446e4ecf1",
   "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
   "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync",
-  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_summary": "Doc 691 records current-main sync for PR #1295 merge commit cfc3c4a652293a1757b236d73af97fe446e4ecf1 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync."
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_summary": "Doc 691 records current-main sync for PR #1295 merge commit cfc3c4a652293a1757b236d73af97fe446e4ecf1 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync.",
+  "source_l3_output_package_active_authority_external_local_export_freeze": {
+    "status": "implementation_entry_frozen_source_l3_output_package_active_authority_external_local_export",
+    "planning_branch": "codex/l3-active-authority-external-export-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/692_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/691_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_freeze": "96140c0474806f65132517df44d6d7e2788f0c39",
+    "selected_follow_on_surface": "downstream_active_package_authority_read_adoption",
+    "reader_path": "external_local_export",
+    "route": "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+    "validation_seam": "recorded local_outbox_provider_private_handoff where present, server_owned_local_outbox_write, server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, external_export_download_prepare, local outbox artifact and manifest hash/size validation, and LAYER3_EXTERNAL_LOCAL_EXPORT_DIR target authority",
+    "operator_action": "adopt_active_replacement_package_authority_for_external_local_export",
+    "selected_implementation_entry_mode": "source_l3_output_package_active_authority_external_local_export",
+    "runtime_status": "not_started_freeze_only",
+    "proof_terms": [
+      "external_local_export selected as next downstream active authority reader",
+      "external local export must validate provider-private handoff when present, server-owned local outbox write, fake-target, connector-local receipt, connector dispatch, and export readiness authority carrying active refs/hashes",
+      "source L3OutputPackage rows remain unchanged",
+      "redacted external-local-export:// refs remain response-safe",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no rendered activation controls",
+      "no package mutation or reconstruction",
+      "no provider-public delivery/use",
+      "no real connector invocation",
+      "no runtime begins in this freeze"
+    ],
+    "next_posture": "current_main_sync_source_l3_output_package_active_authority_external_local_export_freeze"
+  },
+  "latest_source_l3_output_package_active_authority_external_local_export_freeze_branch": "codex/l3-active-authority-external-export-freeze",
+  "latest_source_l3_output_package_active_authority_external_local_export_freeze_doc": "next_milestone_plans/Layer3_planning_docs/692_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE.md",
+  "latest_source_l3_output_package_active_authority_external_local_export_freeze_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_external_local_export_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_external_local_export_freeze",
+  "latest_source_l3_output_package_active_authority_external_local_export_freeze_summary": "Doc 692 freezes the next exact package-lifecycle downstream active-authority reader: external_local_export through POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write. The freeze selects validation over provider-private handoff where present, server_owned_local_outbox_write, server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, external_export_download_prepare, local outbox artifact and manifest authority carrying active refs/hashes, and LAYER3_EXTERNAL_LOCAL_EXPORT_DIR target authority; starts no runtime; and keeps rendered controls, package mutation/source/RAG/auth/frontend-durable surfaces blocked."
 }
