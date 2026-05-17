@@ -1803,6 +1803,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE_CU
     PLANNING_DOCS
     / "693_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -56797,6 +56801,110 @@ def _check_source_l3_output_package_active_authority_external_local_export_freez
                 )
 
 
+def _check_source_l3_output_package_active_authority_external_local_export_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `source_l3_output_package_active_authority_external_local_export_runtime`.",
+        "694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md",
+        "693_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE_CURRENT_MAIN_SYNC.md",
+        "91a5d2cc544976c25355dae05f8f09743cdf3587",
+        "Selected reader path: `external_local_export`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        "adopt_active_replacement_package_authority_for_external_local_export",
+        "Implementation result: `proved_source_l3_output_package_active_authority_external_local_export_runtime`.",
+        "Runtime behavior change: `false`",
+        "Changed runtime/service files: none.",
+        "backend/tests/test_layer3_api.py",
+        "active replacement refs/hashes from handoff/export prepare through APS handoff dispatch",
+        "local-outbox provider-private handoff, and external local export",
+        "no `ConnectorRun`, `ConnectorRunTarget`, provider-private signed URL receipt, provider-public delivery state",
+        "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort -q",
+        "await_current_main_sync_for_source_l3_output_package_active_authority_external_local_export_runtime",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority external local export runtime proof term: {term}"
+            )
+
+    for blocked in (
+        "rendered activation controls",
+        "package mutation/reconstruction",
+        "source expansion",
+        "RAG/vector behavior",
+        "provider-public delivery/use",
+        "real connector invocation",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority external local export runtime proof non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority External Local Export Runtime Proof",
+            "694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md",
+            "source_l3_output_package_active_authority_external_local_export_runtime",
+            "codex/l3-active-authority-external-export-impl",
+            "external_local_export",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+            "test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_external_local_export_runtime",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_external_local_export_runtime",
+            "proved_source_l3_output_package_active_authority_external_local_export_runtime",
+            "codex/l3-active-authority-external-export-impl",
+            "694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md",
+            "91a5d2cc544976c25355dae05f8f09743cdf3587",
+            "external_local_export",
+            "adopt_active_replacement_package_authority_for_external_local_export",
+            "test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_external_local_export_runtime",
+            "latest_source_l3_output_package_active_authority_external_local_export_runtime_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_external_local_export_runtime_proof",
+            "implementation_proof_source_l3_output_package_active_authority_external_local_export_runtime",
+            "694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md",
+            "external_local_export",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+            "no ConnectorRun or ConnectorRunTarget rows are created",
+            "test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort",
+            "latest_source_l3_output_package_active_authority_external_local_export_runtime_summary",
+        ),
+        LAYER3_API_TEST: (
+            'json=_external_local_export_payload(',
+            '"/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write"',
+            'external_export_body["external_artifact_hash"] == readiness_body["source_artifact_hash"]',
+            'external_row.authority_snapshot_json["provider_private_handoff_authority_basis_hash"]',
+            'assert source_packages_after_external == source_packages_before_external',
+            'db.query(ConnectorRun).count()',
+            'db.query(ConnectorRunTarget).count()',
+            'external_export_replay.json()["status"] == "already_recorded"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority external local export runtime proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -57333,6 +57441,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_external_local_export_freeze(errors)
     _check_source_l3_output_package_active_authority_external_local_export_freeze_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_external_local_export_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
