@@ -25058,5 +25058,56 @@
   "latest_source_l3_output_package_replacement_activation_freeze_branch": "codex/l3-package-activation-freeze",
   "latest_source_l3_output_package_replacement_activation_freeze_doc": "next_milestone_plans/Layer3_planning_docs/664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
   "latest_source_l3_output_package_replacement_activation_freeze_live_behavior_change": false,
-  "latest_source_l3_output_package_replacement_activation_freeze_summary": "Doc 664 freezes source_l3_output_package_replacement_activation as the next exact package lifecycle mutating action after the rendered replacement package namespace control runtime sync. The future slice may activate one complete already-governed replacement namespace set as current package authority using existing replacement namespace, manifest, package-set authority, supersession commit, and source package authority only. No runtime begins in this pass, and package rebuild payload rewrite downstream invalidation re-delivery provider-public delivery connector dispatch source expansion RAG/vector auth/security and frontend-durable authority remain blocked."
+  "latest_source_l3_output_package_replacement_activation_freeze_summary": "Doc 664 freezes source_l3_output_package_replacement_activation as the next exact package lifecycle mutating action after the rendered replacement package namespace control runtime sync. The future slice may activate one complete already-governed replacement namespace set as current package authority using existing replacement namespace, manifest, package-set authority, supersession commit, and source package authority only. No runtime begins in this pass, and package rebuild payload rewrite downstream invalidation re-delivery provider-public delivery connector dispatch source expansion RAG/vector auth/security and frontend-durable authority remain blocked.",
+  "source_l3_output_package_replacement_activation_freeze_current_main_sync": {
+    "status": "current_main_synced_source_l3_output_package_replacement_activation_freeze",
+    "sync_branch": "codex/l3-package-activation-freeze-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
+    "freeze_pr": "#1268",
+    "freeze_branch": "codex/l3-package-activation-freeze",
+    "freeze_branch_commits": [
+      "f73dd8114de06a46195f86b146a8c29dad2302a8",
+      "27cc41c47b2a15225926208872230e74188d506b"
+    ],
+    "freeze_merge_commit": "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
+    "current_main_checkpoint_after_merge": "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
+    "selected_implementation_entry_mode_now_synced": "source_l3_output_package_replacement_activation",
+    "selected_package_lifecycle_action_now_synced": "activate_replacement_output_package_namespace",
+    "selected_future_route_now_synced": "/api/v1/layer3/package/replacement-activation/commit",
+    "checks": [
+      "backend-layer3-api passed 2m57s",
+      "test passed 3m52s"
+    ],
+    "review_gate": [
+      "comments empty",
+      "latestReviews one automated Codex review COMMENTED",
+      "reviewThreads totalCount 1",
+      "unresolved reviewThreads 0",
+      "resolved reviewThreads 1",
+      "outdated reviewThreads 1",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "review_correction": "27cc41c47b2a15225926208872230e74188d506b separated client_request_id from canonical replacement_activation_basis_hash",
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_rendered_behavior_change_this_sync": false,
+    "next_whole_project_posture": "implement_source_l3_output_package_replacement_activation_after_freeze_sync"
+  },
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_branch": "codex/l3-package-activation-freeze-sync",
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_live_behavior_change": false,
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_summary": "Doc 665 syncs PR #1268 merge commit 2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a to current main. The source L3 output package replacement activation freeze is current-main synced, the review-thread correction keeps client_request_id outside canonical replacement_activation_basis_hash, and the next exact posture is implement_source_l3_output_package_replacement_activation_after_freeze_sync."
 }
