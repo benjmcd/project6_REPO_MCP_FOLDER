@@ -26985,5 +26985,55 @@
   "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_live_behavior_change": false,
   "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_next_posture_after_merge": "current_main_sync_package_rebuild_from_corrected_artifact_set_entry_freeze",
   "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_next_posture_after_sync": "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
-  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_summary": "Doc 706 freezes the implementation-entry posture for package_rebuild_from_corrected_artifact_set. It admits only a later replacement package-set authority bridge from L3CorrectedPackageArtifactSet into the existing L3ReplacementPackageSetAuthority lane using the existing table constraint-compatible operator decision, starts no runtime in this pass, and keeps source package row mutation, package payload rewrite, namespace/activation, connector/destination dispatch, source expansion, RAG/vector, auth/security, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure blocked."
+  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_summary": "Doc 706 freezes the implementation-entry posture for package_rebuild_from_corrected_artifact_set. It admits only a later replacement package-set authority bridge from L3CorrectedPackageArtifactSet into the existing L3ReplacementPackageSetAuthority lane using the existing table constraint-compatible operator decision, starts no runtime in this pass, and keeps source package row mutation, package payload rewrite, namespace/activation, connector/destination dispatch, source expansion, RAG/vector, auth/security, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure blocked.",
+  "package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync": {
+    "status": "current_main_synced_package_rebuild_from_corrected_artifact_set_entry_freeze",
+    "sync_branch": "codex/l3-package-rebuild-corrected-set-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/707_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/706_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE.md",
+    "freeze_pr": "#1311",
+    "freeze_branch": "codex/l3-package-rebuild-corrected-set-freeze",
+    "freeze_branch_commit": "f5c9f5a87701a9687cecfda2618635123530bfa7",
+    "freeze_merge_commit": "516256f66c78e6a47bc35e49d9e033d86fc1f96d",
+    "checks": [
+      "backend-layer3-api SUCCESS 2m52s",
+      "test SUCCESS 3m35s"
+    ],
+    "review_gate": [
+      "PR comments empty",
+      "PR latestReviews contained one COMMENTED automated review on initial freeze commit",
+      "PR reviewThreads totalCount 1",
+      "unresolved current reviewThreads 0",
+      "actionable thread fixed outdated and resolved",
+      "mergeable MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "selected_surface": "package_mutation_reconstruction",
+    "selected_package_lifecycle_action": "rebuild_package_from_corrected_artifacts",
+    "selected_source_authority": "operator_review_corrections_server_owned_corrected_package_artifact_set",
+    "implementation_entry_decision": "freeze_replacement_package_set_authority_from_corrected_artifact_set_only",
+    "admitted_later_route": "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+    "admitted_later_service": "backend/app/services/layer3_replacement_package_set_authority.py",
+    "admitted_later_model": "L3ReplacementPackageSetAuthority",
+    "admitted_later_table": "l3_replacement_package_set_authority",
+    "source_model": "L3CorrectedPackageArtifactSet",
+    "source_table": "l3_corrected_package_artifact_set",
+    "request_mode": "replacement_package_set_authority_from_corrected_artifact_set",
+    "operator_decision": "record_replacement_package_set_authority",
+    "runtime_behavior_change": false,
+    "runtime_status": "not_implemented",
+    "next_posture": "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync"
+  },
+  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_branch": "codex/l3-package-rebuild-corrected-set-sync",
+  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/707_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_pr": "#1311",
+  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_merge_commit": "516256f66c78e6a47bc35e49d9e033d86fc1f96d",
+  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_status": "current_main_synced_package_rebuild_from_corrected_artifact_set_entry_freeze",
+  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_next_posture": "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
+  "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_summary": "Doc 707 records current-main sync for PR #1311 merge commit 516256f66c78e6a47bc35e49d9e033d86fc1f96d, green checks, a fixed/outdated/resolved automated review thread, post-merge progress validation, and next posture implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync. Current main now admits only the later bounded replacement package-set authority bridge from corrected artifact set authority."
 }

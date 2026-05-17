@@ -1854,6 +1854,9 @@ LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_RUNTIME_CURREN
 LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE = (
     PLANNING_DOCS / "706_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE.md"
 )
+LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "707_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -58319,6 +58322,151 @@ def _check_package_rebuild_from_corrected_artifact_set_entry_freeze(errors: list
                 )
 
 
+def _check_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `package_rebuild_from_corrected_artifact_set_entry_freeze`.",
+        "707_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "706_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE.md",
+        "PR `#1311`",
+        "codex/l3-package-rebuild-corrected-set-freeze",
+        "f5c9f5a87701a9687cecfda2618635123530bfa7",
+        "516256f66c78e6a47bc35e49d9e033d86fc1f96d",
+        "codex/l3-package-rebuild-corrected-set-sync",
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "PR comments before merge: empty",
+        "one `COMMENTED` automated review",
+        "PR reviewThreads totalCount before merge: `1`",
+        "unresolved current reviewThreads before merge: `0`",
+        "fixed by commit `f5c9f5a87701a9687cecfda2618635123530bfa7`, marked outdated, and explicitly resolved",
+        "mergeability: `MERGEABLE`",
+        "merge state: `CLEAN`",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "package_mutation_reconstruction",
+        "rebuild_package_from_corrected_artifacts",
+        "operator_review_corrections_server_owned_corrected_package_artifact_set",
+        "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+        "backend/app/services/layer3_replacement_package_set_authority.py",
+        "backend/app/api/layer3.py",
+        "L3ReplacementPackageSetAuthority",
+        "l3_replacement_package_set_authority",
+        "L3CorrectedPackageArtifactSet",
+        "l3_corrected_package_artifact_set",
+        "replacement_package_set_authority_from_corrected_artifact_set",
+        "record_replacement_package_set_authority",
+        "existing table constraint-compatible value",
+        "runtime behavior by itself",
+        "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing package rebuild from corrected artifact set entry freeze current-main sync term: {term}"
+            )
+
+    for blocked in (
+        "direct source `L3OutputPackage` row mutation",
+        "package payload rewrite",
+        "package activation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "replacement namespace row creation",
+        "replacement artifact manifest recording",
+        "package supersession commit",
+        "connector/destination dispatch",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "credentials",
+        "external network egress",
+        "provider-public delivery/use",
+        "raw public URL exposure",
+        "source expansion",
+        "RAG/vector behavior",
+        "broad qualitative/hybrid execution",
+        "full mockup activation",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "browser/operator path editing",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+        "hidden LLM planning",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing package rebuild from corrected artifact set entry freeze current-main sync boundary term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Rebuild From Corrected Artifact Set Entry Freeze Current-Main Sync",
+            "707_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1311`",
+            "f5c9f5a87701a9687cecfda2618635123530bfa7",
+            "516256f66c78e6a47bc35e49d9e033d86fc1f96d",
+            "unresolved current reviewThreads was `0`",
+            "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+            "backend/app/services/layer3_replacement_package_set_authority.py",
+            "L3ReplacementPackageSetAuthority",
+            "L3CorrectedPackageArtifactSet",
+            "record_replacement_package_set_authority",
+            "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
+        ),
+        MANIFEST: (
+            "package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync",
+            "current_main_synced_package_rebuild_from_corrected_artifact_set_entry_freeze",
+            "codex/l3-package-rebuild-corrected-set-sync",
+            "707_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1311",
+            "f5c9f5a87701a9687cecfda2618635123530bfa7",
+            "516256f66c78e6a47bc35e49d9e033d86fc1f96d",
+            "backend-layer3-api SUCCESS 2m52s",
+            "test SUCCESS 3m35s",
+            "PR reviewThreads totalCount 1",
+            "unresolved current reviewThreads 0",
+            "actionable thread fixed outdated and resolved",
+            "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+            "backend/app/services/layer3_replacement_package_set_authority.py",
+            "record_replacement_package_set_authority",
+            "not_implemented",
+            "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
+            "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_proof",
+            "current_main_sync_package_rebuild_from_corrected_artifact_set_entry_freeze",
+            "current_main_synced_package_rebuild_from_corrected_artifact_set_entry_freeze",
+            "707_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1311",
+            "f5c9f5a87701a9687cecfda2618635123530bfa7",
+            "516256f66c78e6a47bc35e49d9e033d86fc1f96d",
+            "reviewThreads totalCount 1",
+            "unresolved current reviewThreads 0",
+            "actionable thread fixed outdated and resolved",
+            "current main syncs the corrected-artifact package rebuild entry freeze",
+            "existing table constraint-compatible operator decision",
+            "no runtime behavior in this sync",
+            "no raw local path exposure",
+            "implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync",
+            "latest_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing package rebuild from corrected artifact set entry freeze "
+                    f"current-main sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -58868,6 +59016,7 @@ def main() -> int:
     _check_operator_review_corrections_corrected_package_artifact_set_runtime_proof(errors)
     _check_operator_review_corrections_corrected_package_artifact_set_runtime_current_main_sync(errors)
     _check_package_rebuild_from_corrected_artifact_set_entry_freeze(errors)
+    _check_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
