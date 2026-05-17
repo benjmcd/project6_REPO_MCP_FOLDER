@@ -19,6 +19,7 @@ from app.services import (
     layer3_raw_mixed_bridge,
     layer3_raw_mixed_materialization,
     layer3_local_outbox_provider_private_handoff,
+    layer3_replacement_package_materialization,
     layer3_replacement_package_namespace,
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_set_authority,
@@ -93,6 +94,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     internal_fake_local_destination_receipt_endpoint: str
     package_supersession_preview_admitted: bool
     package_supersession_preview_endpoint: str
+    replacement_package_artifact_materialization_admitted: bool
+    replacement_package_artifact_materialization_endpoint: str
     replacement_package_set_authority_admitted: bool
     replacement_package_set_authority_endpoint: str
     package_supersession_commit_admitted: bool
@@ -744,6 +747,78 @@ class Layer3PackageSupersessionPreviewRequest(BaseModel):
     package_review_amendment: Any | None = None
     handoff_export_amendment: Any | None = None
     aps_handoff_amendment: Any | None = None
+    retry: Any | None = None
+    rerun: Any | None = None
+    cancel: Any | None = None
+
+
+class Layer3ReplacementPackageArtifactMaterializationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    package_supersession_preview_hash: str | None = None
+    source_package_set_hash: str | None = None
+    source_output_package_ids: list[str] | None = None
+    source_package_kinds: list[str] | None = None
+    source_payload_refs: list[str] | None = None
+    source_payload_hashes: list[str] | None = None
+    operator_decision: str | None = None
+    replacement_package_set_id: Any | None = None
+    replacement_package_set_hash: Any | None = None
+    replacement_package_kinds: Any | None = None
+    replacement_payload_refs: Any | None = None
+    replacement_payload_hashes: Any | None = None
+    authority_basis_hash: Any | None = None
+    materialization_basis_hash: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    replacement_package_payloads: Any | None = None
+    replacement_package_payload_bytes: Any | None = None
+    edited_package_content: Any | None = None
+    artifact_bytes: Any | None = None
+    generate_artifact: Any | None = None
+    rewrite_output: Any | None = None
+    rebuild_package: Any | None = None
+    mutate_package: Any | None = None
+    replace_package: Any | None = None
+    delete_package: Any | None = None
+    update_package_row: Any | None = None
+    update_payload_ref: Any | None = None
+    update_payload_hash: Any | None = None
+    replacement_package_set_authority_id: Any | None = None
+    package_supersession_commit: Any | None = None
+    package_supersession_commit_id: Any | None = None
+    replacement_output_package_ids: Any | None = None
+    package_row_mutation: Any | None = None
+    package_payload_write: Any | None = None
+    package_payload_rewrite: Any | None = None
+    artifact_manifest: Any | None = None
+    analysis_artifact: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    connector_key: Any | None = None
+    connector_run_id: Any | None = None
+    connector_payload: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    download_url: Any | None = None
+    source_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_vector_index: Any | None = None
+    runtime_db_write: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_planning: Any | None = None
+    schema_migration: Any | None = None
+    approved_plan_supersession: Any | None = None
     retry: Any | None = None
     rerun: Any | None = None
     cancel: Any | None = None
@@ -2182,6 +2257,52 @@ class Layer3ReplacementPackageSetAuthorityResponse(Layer3BaseResponse):
     frontend_only_durable_state_enabled: bool
     downstream_unavailable: list[str]
     next_state: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3ReplacementPackageArtifactMaterializationResponse(Layer3BaseResponse):
+    replacement_artifact_materialization_id: str
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    reconciliation_record_id: str
+    package_supersession_preview_hash: str
+    source_package_set_hash: str
+    source_output_package_ids: list[str]
+    source_package_kinds: list[str]
+    source_payload_refs: list[str]
+    source_payload_hashes: list[str]
+    replacement_package_set_id: str
+    replacement_package_set_hash: str
+    replacement_package_kinds: list[str]
+    replacement_payload_refs: list[str]
+    replacement_payload_hashes: list[str]
+    authority_basis_hash: str
+    materialization_basis_hash: str
+    materialization_snapshot: dict[str, Any]
+    operator_decision: str
+    replacement_package_artifact_materialization_mode: str
+    source_gate: str
+    artifact_namespace: str
+    hash_algorithm: str
+    materialization_record_persisted: bool
+    artifact_write_enabled: bool
+    package_row_mutation_enabled: bool
+    source_l3_output_package_mutation_enabled: bool
+    source_package_payload_rewrite_enabled: bool
+    replacement_package_set_authority_record_enabled: bool
+    package_supersession_commit_enabled: bool
+    replacement_artifact_manifest_record_enabled: bool
+    replacement_namespace_record_enabled: bool
+    source_widening_enabled: bool
+    connector_dispatch_enabled: bool
+    provider_public_url_enabled: bool
+    qualitative_hybrid_rag_execution_enabled: bool
+    frontend_only_durable_state_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    created_at: str | None
+    updated_at: str | None
     authority_rail: dict[str, Any]
 
 
@@ -4102,6 +4223,106 @@ PACKAGE_SUPERSESSION_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Server-owned replacement package artifact materialization from package supersession preview authority. "
+        "It writes only deterministic replacement artifacts under the server-owned replacement-package-artifacts "
+        "namespace and returns computed replacement package-set request fields."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "package_supersession_preview_hash",
+        "source_package_set_hash",
+        "source_output_package_ids",
+        "source_package_kinds",
+        "source_payload_refs",
+        "source_payload_hashes",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "package_supersession_preview_hash": {"type": "string"},
+        "source_package_set_hash": {"type": "string"},
+        "source_output_package_ids": {"type": "array", "items": {"type": "string"}},
+        "source_package_kinds": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
+        },
+        "source_payload_refs": {"type": "array", "items": {"type": "string"}},
+        "source_payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "operator_decision": {
+            "type": "string",
+            "enum": ["materialize_replacement_package_artifacts_from_supersession_preview"],
+        },
+        "replacement_package_set_id": _forbidden_request_field_schema(),
+        "replacement_package_set_hash": _forbidden_request_field_schema(),
+        "replacement_package_kinds": _forbidden_request_field_schema(),
+        "replacement_payload_refs": _forbidden_request_field_schema(),
+        "replacement_payload_hashes": _forbidden_request_field_schema(),
+        "authority_basis_hash": _forbidden_request_field_schema(),
+        "materialization_basis_hash": _forbidden_request_field_schema(),
+        "package_payload": _forbidden_request_field_schema(),
+        "package_variant_content": _forbidden_request_field_schema(),
+        "replacement_package_payloads": _forbidden_request_field_schema(),
+        "replacement_package_payload_bytes": _forbidden_request_field_schema(),
+        "edited_package_content": _forbidden_request_field_schema(),
+        "artifact_bytes": _forbidden_request_field_schema(),
+        "generate_artifact": _forbidden_request_field_schema(),
+        "rewrite_output": _forbidden_request_field_schema(),
+        "rebuild_package": _forbidden_request_field_schema(),
+        "mutate_package": _forbidden_request_field_schema(),
+        "replace_package": _forbidden_request_field_schema(),
+        "delete_package": _forbidden_request_field_schema(),
+        "update_package_row": _forbidden_request_field_schema(),
+        "update_payload_ref": _forbidden_request_field_schema(),
+        "update_payload_hash": _forbidden_request_field_schema(),
+        "replacement_package_set_authority_id": _forbidden_request_field_schema(),
+        "package_supersession_commit": _forbidden_request_field_schema(),
+        "package_supersession_commit_id": _forbidden_request_field_schema(),
+        "replacement_output_package_ids": _forbidden_request_field_schema(),
+        "package_row_mutation": _forbidden_request_field_schema(),
+        "package_payload_write": _forbidden_request_field_schema(),
+        "package_payload_rewrite": _forbidden_request_field_schema(),
+        "artifact_manifest": _forbidden_request_field_schema(),
+        "analysis_artifact": _forbidden_request_field_schema(),
+        "handoff": _forbidden_request_field_schema(),
+        "export": _forbidden_request_field_schema(),
+        "connector_key": _forbidden_request_field_schema(),
+        "connector_run_id": _forbidden_request_field_schema(),
+        "connector_payload": _forbidden_request_field_schema(),
+        "destination_id": _forbidden_request_field_schema(),
+        "destination_url": _forbidden_request_field_schema(),
+        "provider_public_url": _forbidden_request_field_schema(),
+        "public_url": _forbidden_request_field_schema(),
+        "signed_url": _forbidden_request_field_schema(),
+        "download_url": _forbidden_request_field_schema(),
+        "source_upload": _forbidden_request_field_schema(),
+        "local_directory": _forbidden_request_field_schema(),
+        "rag_vector_index": _forbidden_request_field_schema(),
+        "runtime_db_write": _forbidden_request_field_schema(),
+        "qualitative_plan": _forbidden_request_field_schema(),
+        "hybrid_execution": _forbidden_request_field_schema(),
+        "rag_execution": _forbidden_request_field_schema(),
+        "hidden_llm_planning": _forbidden_request_field_schema(),
+        "schema_migration": _forbidden_request_field_schema(),
+        "approved_plan_supersession": _forbidden_request_field_schema(),
+        "retry": _forbidden_request_field_schema(),
+        "rerun": _forbidden_request_field_schema(),
+        "cancel": _forbidden_request_field_schema(),
+    },
+}
+
+
 REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -5695,6 +5916,24 @@ def post_package_mutation_preview(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_package_mutation_entry.preview_package_supersession(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/package/replacement-artifact/materialize",
+    response_model=Layer3ReplacementPackageArtifactMaterializationResponse,
+    openapi_extra={"requestBody": _json_request_body(REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_package_replacement_artifact_materialize(
+    payload: Layer3ReplacementPackageArtifactMaterializationRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_replacement_package_materialization.materialize_replacement_package_artifacts(
             db,
             payload.model_dump(exclude_unset=True),
         )
