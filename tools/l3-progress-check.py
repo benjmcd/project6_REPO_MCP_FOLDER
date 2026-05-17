@@ -1615,6 +1615,9 @@ LAYER3_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "645_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE = (
+    PLANNING_DOCS / "646_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52295,6 +52298,71 @@ def _check_rendered_replacement_package_set_authority_control_current_main_sync(
                 )
 
 
+def _check_rendered_package_supersession_commit_control_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze for `rendered_package_supersession_commit_control`.",
+        "646_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE.md",
+        "645_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC.md",
+        "Current-main preflight commit: `3403cf120b4565df637e1c7391afdf3bbde93a79`.",
+        "Selected exact operator action: `commit_package_supersession_after_replacement_package_set_authority`.",
+        "Selected implementation-entry mode: `rendered_package_supersession_commit_control`.",
+        "Existing backend surface: `/api/v1/layer3/package/supersession/commit`.",
+        "Owner service: `backend/app/services/layer3_package_supersession_commit.py`.",
+        "Server runtime mode: `package_supersession_commit_entry`.",
+        "Source gate: `126_PACKAGE_COMMIT_FREEZE`.",
+        "Operator decision: `commit_package_supersession`.",
+        "Entry decision: `freeze_only`.",
+        "Runtime status in this pass: `not_implemented`.",
+        "The next required action after merge is `current_main_sync_rendered_package_supersession_commit_control_freeze`.",
+        "After current-main sync, the next exact posture is `implement_rendered_package_supersession_commit_control_after_freeze_sync`",
+        "the exact stop posture is `package_supersession_commit_request_authority_freeze`.",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE)} "
+                f"missing rendered package supersession commit control freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Package Supersession Commit Control Freeze",
+            "646_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE.md",
+            "commit_package_supersession_after_replacement_package_set_authority",
+            "rendered_package_supersession_commit_control",
+            "/api/v1/layer3/package/supersession/commit",
+            "implement_rendered_package_supersession_commit_control_after_freeze_sync",
+            "package_supersession_commit_request_authority_freeze",
+        ),
+        MANIFEST: (
+            "rendered_package_supersession_commit_control_freeze",
+            "branch_local_freeze_rendered_package_supersession_commit_control",
+            "codex/l3-supersession-commit-control-freeze",
+            "commit_package_supersession_after_replacement_package_set_authority",
+            "rendered_package_supersession_commit_control",
+            "current_main_sync_rendered_package_supersession_commit_control_freeze",
+            "implement_rendered_package_supersession_commit_control_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_package_supersession_commit_control_freeze_proof",
+            "branch_local_rendered_package_supersession_commit_control_freeze",
+            "646_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE.md",
+            "POST /api/v1/layer3/package/supersession/commit",
+            "current_main_sync_rendered_package_supersession_commit_control_freeze",
+            "implement_rendered_package_supersession_commit_control_after_freeze_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered package supersession commit control freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52780,6 +52848,7 @@ def main() -> int:
     _check_replacement_package_artifact_materialization_runtime_current_main_sync(errors)
     _check_rendered_replacement_package_set_authority_control_runtime_proof(errors)
     _check_rendered_replacement_package_set_authority_control_current_main_sync(errors)
+    _check_rendered_package_supersession_commit_control_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
