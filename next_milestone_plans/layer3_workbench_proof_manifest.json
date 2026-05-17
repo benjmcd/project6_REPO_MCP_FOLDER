@@ -26354,5 +26354,66 @@
   "latest_rendered_replacement_package_namespace_control_freeze_branch": "codex/l3-rendered-namespace-control-freeze",
   "latest_rendered_replacement_package_namespace_control_freeze_doc": "next_milestone_plans/Layer3_planning_docs/660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md",
   "latest_rendered_replacement_package_namespace_control_freeze_live_behavior_change": false,
-  "latest_rendered_replacement_package_namespace_control_freeze_summary": "Doc 660 proof freezes the rendered replacement package namespace control against the existing replacement namespace route and blocks runtime implementation, package rebuild, payload rewrite, source L3OutputPackage mutation, provider-public delivery, connector dispatch, source expansion, RAG/vector, auth/security, and frontend-durable authority."
+  "latest_rendered_replacement_package_namespace_control_freeze_summary": "Doc 660 proof freezes the rendered replacement package namespace control against the existing replacement namespace route and blocks runtime implementation, package rebuild, payload rewrite, source L3OutputPackage mutation, provider-public delivery, connector dispatch, source expansion, RAG/vector, auth/security, and frontend-durable authority.",
+  "rendered_replacement_package_namespace_control_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_rendered_replacement_package_namespace_control_freeze",
+    "status": "current_main_synced_rendered_replacement_package_namespace_control_freeze",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/661_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md",
+    "freeze_pr": "#1264",
+    "freeze_branch": "codex/l3-rendered-namespace-control-freeze",
+    "freeze_branch_commit": "28f20220558122d36a11b61cedc44ade73779d0b",
+    "freeze_merge_commit": "82b6bdd95ce0fe8d1be8abac9e56e67debacc63b",
+    "current_main_checkpoint_after_merge": "82b6bdd95ce0fe8d1be8abac9e56e67debacc63b",
+    "merge_gate": [
+      "backend-layer3-api SUCCESS 2m24s",
+      "test SUCCESS 3m16s",
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "project6-origin/main 82b6bdd95ce0fe8d1be8abac9e56e67debacc63b",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "synced_result": "current_main_synced_rendered_replacement_package_namespace_control_freeze",
+    "proof_terms": [
+      "661_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+      "660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md",
+      "rendered_replacement_package_namespace_control",
+      "record_replacement_package_namespace_row",
+      "/api/v1/layer3/package/replacement-namespace/record",
+      "#replacement-package-namespace-submit",
+      "#replacement-package-namespace-panel",
+      "State.replacementPackageNamespace",
+      "implement_rendered_replacement_package_namespace_control_after_freeze_sync"
+    ],
+    "non_admitted": [
+      "new runtime behavior in this sync",
+      "new rendered behavior in this sync",
+      "package rebuild",
+      "package payload rewrite",
+      "source L3OutputPackage row mutation",
+      "downstream invalidation",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "frontend-durable authority",
+      "browser-supplied arbitrary artifact refs",
+      "browser-supplied arbitrary hashes",
+      "raw local path exposure"
+    ],
+    "next_whole_project_posture": "implement_rendered_replacement_package_namespace_control_after_freeze_sync"
+  },
+  "latest_rendered_replacement_package_namespace_control_freeze_current_main_sync_branch": "codex/l3-rendered-namespace-control-freeze-sync",
+  "latest_rendered_replacement_package_namespace_control_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/661_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_rendered_replacement_package_namespace_control_freeze_current_main_sync_live_behavior_change": false,
+  "latest_rendered_replacement_package_namespace_control_freeze_current_main_sync_summary": "Doc 661 proof records current-main sync for PR #1264, proves the rendered replacement package namespace control freeze is current-main synced, and makes implement_rendered_replacement_package_namespace_control_after_freeze_sync the next exact posture."
 }
