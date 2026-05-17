@@ -4480,3 +4480,15 @@ Current main now syncs the implementation-entry freeze for `server_computed_repl
 This sync starts no runtime. Package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, delivery rerun, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, and raw local path exposure remain blocked.
 
 The next exact current-main implementation posture is `implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync`.
+
+## Corrected Artifact Replacement Namespace Runtime Proof
+
+Runtime proof: `720_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_PROOF.md` implements exactly `POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority` on branch `codex/l3-corrected-artifact-namespace-runtime` from current-main checkpoint `3232c2ad9b046091089eb15d3e98fbcb200e39e0`.
+
+The new bridge is owned by `backend/app/services/layer3_replacement_package_namespace.py` and `backend/app/api/layer3.py`. It records the existing durable target `L3ReplacementOutputPackage` / `l3_replacement_output_package` from `L3CorrectedPackageArtifactSet`, corrected-artifact `L3ReplacementPackageSetAuthority`, corrected-artifact `L3PackageSupersessionCommit`, and corrected-artifact `L3ReplacementPackageArtifactManifest`, using request mode `replacement_package_namespace_from_corrected_artifact_manifest_authority` and operator decision `record_replacement_package_namespace_from_corrected_artifact_manifest_authority`.
+
+The runtime derives source output package ids, package kinds, canonical package schema ids, response-safe artifact refs, verified artifact hashes, stable authority basis hashes, and deterministic per-kind row idempotency keys server-side. It records or replays the complete namespace set without source `L3OutputPackage` mutation, package payload rewrite, artifact file rewrite, package activation, connector/destination dispatch, credentials, network egress, source expansion, RAG/vector behavior, auth/security broadening, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, or raw local path exposure.
+
+Targeted validation passed: `python -m py_compile .\backend\app\services\layer3_replacement_package_namespace.py .\backend\app\api\layer3.py`; `python -m pytest .\backend\tests\test_layer3_replacement_package_namespace.py -q` with `6 passed`; targeted `python -m pytest .\backend\tests\test_layer3_api.py -q -k "package_openapi_contracts or json_workbench_error_openapi_contracts or replacement_package_namespace_from_corrected_manifest"` with `4 passed, 178 deselected`; and full `python -m pytest .\backend\tests\test_layer3_api.py -q` with `182 passed`.
+
+The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_replacement_namespace_runtime`.
