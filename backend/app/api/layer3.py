@@ -1321,6 +1321,98 @@ class Layer3ReplacementPackageArtifactManifestFromAuthorityRequest(BaseModel):
     cancel: Any | None = None
 
 
+class Layer3ReplacementPackageArtifactManifestFromCorrectedArtifactSetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    corrected_package_artifact_set_id: str | None = None
+    corrected_artifact_basis_hash: str | None = None
+    replacement_package_set_authority_id: str | None = None
+    replacement_authority_basis_hash: str | None = None
+    package_supersession_commit_id: str | None = None
+    package_supersession_commit_basis_hash: str | None = None
+    operator_decision: str | None = None
+    replacement_artifact_materialization_id: Any | None = None
+    materialization_basis_hash: Any | None = None
+    replacement_package_set_id: Any | None = None
+    replacement_package_set_hash: Any | None = None
+    replacement_package_kinds: Any | None = None
+    replacement_payload_refs: Any | None = None
+    replacement_payload_hashes: Any | None = None
+    verified_artifact_refs: Any | None = None
+    verified_artifact_hashes: Any | None = None
+    verified_artifact_byte_sizes: Any | None = None
+    corrected_artifact_refs: Any | None = None
+    corrected_artifact_hashes: Any | None = None
+    corrected_artifact_byte_sizes: Any | None = None
+    corrected_artifact_bytes: Any | None = None
+    corrected_package_payloads: Any | None = None
+    hash_algorithm: Any | None = None
+    artifact_namespace: Any | None = None
+    artifact_manifest_hash: Any | None = None
+    authority_basis_hash: Any | None = None
+    manifest_snapshot: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    replacement_package_payloads: Any | None = None
+    replacement_package_payload_bytes: Any | None = None
+    edited_package_content: Any | None = None
+    artifact_bytes: Any | None = None
+    generate_artifact: Any | None = None
+    rewrite_output: Any | None = None
+    rebuild_package: Any | None = None
+    mutate_package: Any | None = None
+    replace_package: Any | None = None
+    delete_package: Any | None = None
+    update_package_row: Any | None = None
+    update_payload_ref: Any | None = None
+    update_payload_hash: Any | None = None
+    replacement_output_package_ids: Any | None = None
+    package_row_mutation: Any | None = None
+    package_payload_write: Any | None = None
+    package_payload_rewrite: Any | None = None
+    analysis_artifact: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    connector_key: Any | None = None
+    connector_run_id: Any | None = None
+    connector_run_target_id: Any | None = None
+    connector_payload: Any | None = None
+    destination_id: Any | None = None
+    destination_path: Any | None = None
+    destination_url: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    download_url: Any | None = None
+    source_upload: Any | None = None
+    source_directory: Any | None = None
+    local_path: Any | None = None
+    local_directory: Any | None = None
+    rag_query: Any | None = None
+    vector_index: Any | None = None
+    rag_vector_index: Any | None = None
+    runtime_db_write: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_planning: Any | None = None
+    schema_migration: Any | None = None
+    approved_plan_supersession: Any | None = None
+    retry: Any | None = None
+    rerun: Any | None = None
+    cancel: Any | None = None
+    credential_id: Any | None = None
+    credential_payload: Any | None = None
+    auth_token: Any | None = None
+    frontend_state: Any | None = None
+    browser_state: Any | None = None
+
+
 class Layer3ReplacementPackageNamespaceRecordRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -5236,6 +5328,56 @@ REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_REQUEST_SCHEMA: dict[str, A
 }
 
 
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Server-computed replacement package artifact manifest record from corrected artifact-set, "
+        "corrected-artifact replacement package-set authority, and corrected-artifact supersession commit rows. "
+        "It accepts authority ids only, computes manifest hashes and byte-size basis server-side, and returns "
+        "redacted artifact refs. Successful responses use schema_id "
+        "layer3.replacement_package_artifact_manifest_from_corrected_artifact_set_authority.v1."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "corrected_package_artifact_set_id",
+        "corrected_artifact_basis_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "package_supersession_commit_id",
+        "package_supersession_commit_basis_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "corrected_package_artifact_set_id": {"type": "string"},
+        "corrected_artifact_basis_hash": {"type": "string"},
+        "replacement_package_set_authority_id": {"type": "string"},
+        "replacement_authority_basis_hash": {"type": "string"},
+        "package_supersession_commit_id": {"type": "string"},
+        "package_supersession_commit_basis_hash": {"type": "string"},
+        "operator_decision": {
+            "type": "string",
+            "enum": ["record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority"],
+        },
+        **{
+            field: _forbidden_request_field_schema()
+            for field in sorted(
+                layer3_replacement_package_artifact_manifest.REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_FORBIDDEN_FIELDS
+            )
+        },
+    },
+}
+
+
 CORRECTED_PACKAGE_ARTIFACT_SET_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -6840,6 +6982,28 @@ def post_package_replacement_artifact_manifest_record_from_authority(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_replacement_package_artifact_manifest.record_replacement_package_artifact_manifest_from_authority(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+    response_model=Layer3ReplacementPackageArtifactManifestResponse,
+    openapi_extra={
+        "requestBody": _json_request_body(
+            REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA
+        )
+    },
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_package_replacement_artifact_manifest_record_from_corrected_artifact_set_authority(
+    payload: Layer3ReplacementPackageArtifactManifestFromCorrectedArtifactSetRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_replacement_package_artifact_manifest.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
             db,
             payload.model_dump(exclude_unset=True),
         )

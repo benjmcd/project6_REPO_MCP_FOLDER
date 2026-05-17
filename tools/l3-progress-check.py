@@ -1887,6 +1887,9 @@ LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYN
     PLANNING_DOCS
     / "715_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF = (
+    PLANNING_DOCS / "716_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -59480,6 +59483,133 @@ def _check_corrected_artifact_replacement_manifest_authority_freeze_current_main
                 )
 
 
+def _check_corrected_artifact_replacement_manifest_runtime_proof(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: implementation proof for `corrected_artifact_replacement_manifest_from_supersession_authority`.",
+        "716_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF.md",
+        "715_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "8f57d3e5e82f199f48dceea86ce146b6c653f6c8",
+        "codex/l3-corrected-artifact-manifest-runtime",
+        "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+        "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+        "backend/app/api/layer3.py",
+        "L3ReplacementPackageArtifactManifest",
+        "L3CorrectedPackageArtifactSet",
+        "L3ReplacementPackageSetAuthority",
+        "L3PackageSupersessionCommit",
+        "replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+        "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+        "layer3.replacement_package_artifact_manifest_from_corrected_artifact_set_authority.v1",
+        "Runtime behavior change: `true`",
+        "2 passed, 5 deselected",
+        "16 passed, 164 deselected",
+        "await_current_main_sync_for_corrected_artifact_replacement_manifest_runtime",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF)} "
+                f"missing corrected-artifact replacement manifest runtime proof term: {term}"
+            )
+
+    for blocked in (
+        "replacement namespace rows",
+        "activate packages",
+        "rewrite package payloads",
+        "mutate source `L3OutputPackage` rows",
+        "connector",
+        "`ConnectorRun`",
+        "`ConnectorRunTarget`",
+        "credentials",
+        "network egress",
+        "source expansion",
+        "RAG/vector",
+        "auth/security",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "browser-supplied refs/hashes/bytes",
+        "raw local paths",
+    ):
+        if blocked not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF)} "
+                f"missing corrected-artifact replacement manifest runtime boundary term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Replacement Manifest Runtime Proof",
+            "716_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF.md",
+            "codex/l3-corrected-artifact-manifest-runtime",
+            "8f57d3e5e82f199f48dceea86ce146b6c653f6c8",
+            "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+            "layer3.replacement_package_artifact_manifest_from_corrected_artifact_set_authority.v1",
+            "await_current_main_sync_for_corrected_artifact_replacement_manifest_runtime",
+        ),
+        MANIFEST: (
+            "corrected_artifact_replacement_manifest_runtime_proof",
+            "implemented_corrected_artifact_replacement_manifest_runtime",
+            "codex/l3-corrected-artifact-manifest-runtime",
+            "716_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF.md",
+            "8f57d3e5e82f199f48dceea86ce146b6c653f6c8",
+            "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+            "layer3.replacement_package_artifact_manifest_from_corrected_artifact_set_authority.v1",
+            '"runtime_behavior_change": true',
+            "2 passed, 5 deselected",
+            "16 passed, 164 deselected",
+            "await_current_main_sync_for_corrected_artifact_replacement_manifest_runtime",
+            "latest_corrected_artifact_replacement_manifest_runtime_proof_summary",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_replacement_manifest_runtime_proof",
+            "runtime_proof_corrected_artifact_replacement_manifest_from_supersession_authority",
+            "implemented_corrected_artifact_replacement_manifest_runtime",
+            "716_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF.md",
+            "8f57d3e5e82f199f48dceea86ce146b6c653f6c8",
+            "server-computed replacement artifact manifest from corrected artifact set authority",
+            "redacted artifact://replacement-package-artifacts response refs",
+            "tampered corrected artifact hash failure",
+            '"runtime_behavior_change": true',
+            "await_current_main_sync_for_corrected_artifact_replacement_manifest_runtime",
+        ),
+        LAYER3_API: (
+            "Layer3ReplacementPackageArtifactManifestFromCorrectedArtifactSetRequest",
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA",
+            "/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+            "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_replacement_artifact_manifest_from_corrected_artifact_set_api_boundary_returns_workbench_error_envelope",
+            "test_layer3_replacement_artifact_manifest_from_corrected_artifact_set_known_forbidden_field_returns_workbench_error",
+            "Layer3ReplacementPackageArtifactManifestFromCorrectedArtifactSetRequest.model_fields",
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA",
+        ),
+        REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_SERVICE: (
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_SCHEMA_ID",
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_CORRECTED_ARTIFACT_SET_REQUIRED_FIELDS",
+            "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+            "server_verified_corrected_artifact_authority",
+        ),
+        REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_TEST: (
+            "test_replacement_package_artifact_manifest_from_corrected_artifact_set_records_redacted_manifest",
+            "test_replacement_package_artifact_manifest_from_corrected_artifact_set_prechecks_fail_closed",
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+            "tampered corrected artifact hash rejection",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact replacement manifest runtime proof artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -60038,6 +60168,7 @@ def main() -> int:
     _check_corrected_artifact_package_supersession_commit_runtime_current_main_sync(errors)
     _check_corrected_artifact_replacement_manifest_authority_freeze(errors)
     _check_corrected_artifact_replacement_manifest_authority_freeze_current_main_sync(errors)
+    _check_corrected_artifact_replacement_manifest_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
