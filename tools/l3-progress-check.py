@@ -1638,6 +1638,10 @@ LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MA
     PLANNING_DOCS
     / "651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE = (
+    PLANNING_DOCS
+    / "652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52774,6 +52778,81 @@ def _check_replacement_package_artifact_manifest_request_authority_freeze_curren
                 )
 
 
+def _check_replacement_package_artifact_manifest_request_authority_source_selection_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze only for `server_computed_replacement_package_artifact_manifest_record_from_authority`.",
+        "652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+        "651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "Current-main preflight commit: `d300b8b4a18f47ff14e78fb5159979859c4ae735`.",
+        "Selected request-authority source: `server_computed_replacement_package_artifact_manifest_record_from_materialization_authority`.",
+        "Selected operator action: `record_replacement_package_artifact_manifest_from_authority`.",
+        "Selected implementation-entry mode: `server_computed_replacement_package_artifact_manifest_record_from_authority`.",
+        "Future route: `/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority`.",
+        "`replacement_artifact_materialization_id`",
+        "`materialization_basis_hash`",
+        "`replacement_package_set_authority_id`",
+        "`replacement_authority_basis_hash`",
+        "`package_supersession_commit_id`",
+        "`package_supersession_commit_basis_hash`",
+        "`artifact_manifest_hash`",
+        "`authority_basis_hash`",
+        "`verified_artifact_byte_sizes`",
+        "`redacted_artifact_refs`",
+        "After current-main sync, the next exact posture is `implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync`.",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE)} "
+                f"missing replacement artifact manifest request authority source selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package Artifact Manifest Request Authority Source Selection Freeze",
+            "652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+            "server_computed_replacement_package_artifact_manifest_record_from_authority",
+            "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+            "artifact_manifest_hash",
+            "authority_basis_hash",
+            "verified byte-size basis",
+            "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync",
+        ),
+        MANIFEST: (
+            "replacement_package_artifact_manifest_request_authority_source_selection_freeze",
+            "branch_local_freeze_server_computed_replacement_package_artifact_manifest_record_from_authority",
+            "codex/l3-replacement-manifest-request-authority-freeze",
+            "652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+            "server_computed_replacement_package_artifact_manifest_record_from_materialization_authority",
+            "record_replacement_package_artifact_manifest_from_authority",
+            "replacement_artifact_materialization_id",
+            "verified_artifact_byte_sizes",
+            "current_main_sync_replacement_package_artifact_manifest_request_authority_source_selection_freeze",
+            "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_artifact_manifest_request_authority_source_selection_freeze_proof",
+            "branch_local_replacement_package_artifact_manifest_request_authority_source_selection_freeze",
+            "652_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_FREEZE.md",
+            "replacement_artifact_materialization_id",
+            "materialization_basis_hash",
+            "redacted_artifact_refs",
+            "implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing replacement artifact manifest request authority source selection freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53265,6 +53344,7 @@ def main() -> int:
     _check_rendered_package_supersession_commit_control_runtime_current_main_sync(errors)
     _check_rendered_replacement_package_artifact_manifest_control_request_authority_freeze(errors)
     _check_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync(errors)
+    _check_replacement_package_artifact_manifest_request_authority_source_selection_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
