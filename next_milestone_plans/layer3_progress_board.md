@@ -3668,3 +3668,13 @@ The runtime adds service `backend/app/services/layer3_replacement_package_materi
 Targeted proof covers success, deterministic artifact write, same-key replay, same-key conflict, same-basis/new-key replay, stale preview/source/hash failure, missing source payload ref failure, forbidden browser payload/ref/path fields, OpenAPI/readiness/error envelopes, unchanged source `L3OutputPackage` rows and source payload files, and no replacement authority, supersession commit, manifest, namespace, ConnectorRun, or ConnectorRunTarget side effects.
 
 The next exact posture after merge is `await_current_main_sync_for_replacement_package_artifact_materialization_runtime`. Rendered replacement package-set authority control may resume only after current-main sync proves this runtime is merged.
+
+## Replacement Package Artifact Materialization Runtime Current-Main Sync
+
+Current-main proof/control sync: PR `#1246` merged `642_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF.md` at merge commit `afb3d0ff5675d2b506fcef73d41f076302620fb4`.
+
+The sync doc `643_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` passed in `2m47s`, `test` passed in `3m4s`, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and post-merge `project6-origin/main` progress and target-selection checks passed. The runtime is now current-main synced as `current_main_synced_replacement_package_artifact_materialization_runtime`.
+
+The materialization runtime now supplies governed replacement package-set request fields from `POST /api/v1/layer3/package/replacement-artifact/materialize`, service `backend/app/services/layer3_replacement_package_materialization.py`, table `l3_replacement_package_artifact_materialization`, and namespace `replacement-package-artifacts`.
+
+The next exact posture is `implement_rendered_replacement_package_set_authority_control_after_materialization_runtime_sync`. No runtime begins in this sync, and package supersession commit control, package row mutation, source `L3OutputPackage` mutation, source expansion, RAG/vector behavior, provider-public delivery/use, connector/destination dispatch, auth/security behavior, full mockup activation, and frontend-durable authority remain blocked.
