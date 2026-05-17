@@ -24731,5 +24731,58 @@
   "latest_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync_branch": "codex/l3-rendered-manifest-control-runtime-sync",
   "latest_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/659_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync_live_behavior_change": false,
-  "latest_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync_summary": "Doc 659 syncs PR #1262 merge commit 669d80788e86f1aecf293b55de830a2f77d9df97 to current main. The rendered replacement package artifact manifest control runtime is current-main synced, and the next exact posture is freeze_rendered_replacement_package_namespace_control_after_manifest_control_runtime_sync."
+  "latest_rendered_replacement_package_artifact_manifest_control_runtime_current_main_sync_summary": "Doc 659 syncs PR #1262 merge commit 669d80788e86f1aecf293b55de830a2f77d9df97 to current main. The rendered replacement package artifact manifest control runtime is current-main synced, and the next exact posture is freeze_rendered_replacement_package_namespace_control_after_manifest_control_runtime_sync.",
+  "rendered_replacement_package_namespace_control_freeze": {
+    "status": "implementation_entry_frozen_rendered_replacement_package_namespace_control",
+    "branch": "codex/l3-rendered-namespace-control-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/659_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "b7320cf0ab12ed2e1102b5e513cc839113bb2a37",
+    "selected_surface": "package_mutation_reconstruction",
+    "selected_implementation_entry_mode": "rendered_replacement_package_namespace_control",
+    "selected_operator_action": "record_replacement_package_namespace_row",
+    "selected_route": "/api/v1/layer3/package/replacement-namespace/record",
+    "owner_service": "backend/app/services/layer3_replacement_package_namespace.py",
+    "server_runtime_mode": "replacement_package_namespace_rows",
+    "source_gate": "131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE",
+    "future_rendered_submit_control": "#replacement-package-namespace-submit",
+    "future_rendered_status_panel": "#replacement-package-namespace-panel",
+    "future_response_authority": "State.replacementPackageNamespace",
+    "future_request_authority_sources": [
+      "State.replacementPackageArtifactManifest",
+      "State.replacementPackageSetAuthority",
+      "State.packageSupersessionCommit",
+      "existing source package row authority"
+    ],
+    "future_request_fields": [
+      "client_request_id",
+      "session_id",
+      "replacement_artifact_manifest_id",
+      "replacement_package_set_authority_id",
+      "package_supersession_commit_id",
+      "source_output_package_id",
+      "package_kind",
+      "package_schema_id",
+      "artifact_ref",
+      "artifact_hash",
+      "authority_basis_hash",
+      "operator_decision"
+    ],
+    "entry_decision": "freeze_only",
+    "runtime_status": "not_implemented_in_this_pass",
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "next_required_action_after_merge": "current_main_sync_rendered_replacement_package_namespace_control_freeze",
+    "next_whole_project_posture": "await_current_main_sync_for_rendered_replacement_package_namespace_control_freeze"
+  },
+  "latest_rendered_replacement_package_namespace_control_freeze_branch": "codex/l3-rendered-namespace-control-freeze",
+  "latest_rendered_replacement_package_namespace_control_freeze_doc": "next_milestone_plans/Layer3_planning_docs/660_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_FREEZE.md",
+  "latest_rendered_replacement_package_namespace_control_freeze_live_behavior_change": false,
+  "latest_rendered_replacement_package_namespace_control_freeze_summary": "Doc 660 freezes the rendered replacement package namespace control after the rendered manifest control runtime sync. The future control may submit one package-kind namespace row per operator submit to the existing replacement namespace route using only manifest, replacement package-set authority, package supersession commit, and existing source package row authority, with no runtime implementation in this pass."
 }
