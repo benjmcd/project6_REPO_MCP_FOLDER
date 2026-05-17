@@ -27909,5 +27909,44 @@
   "latest_corrected_artifact_replacement_activation_authority_evaluation_status": "branch_local_current_main_satisfied_corrected_artifact_replacement_activation_authority",
   "latest_corrected_artifact_replacement_activation_authority_evaluation_runtime_behavior_change": false,
   "latest_corrected_artifact_replacement_activation_authority_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_replacement_activation_authority_evaluation",
-  "latest_corrected_artifact_replacement_activation_authority_evaluation_summary": "Doc 722 proves current main already satisfies corrected-artifact replacement activation authority: the existing package replacement activation runtime can activate corrected-artifact L3ReplacementOutputPackage namespace rows, with 5 focused activation tests passing and no new runtime behavior admitted. Next posture is await_current_main_sync_for_corrected_artifact_replacement_activation_authority_evaluation."
+  "latest_corrected_artifact_replacement_activation_authority_evaluation_summary": "Doc 722 proves current main already satisfies corrected-artifact replacement activation authority: the existing package replacement activation runtime can activate corrected-artifact L3ReplacementOutputPackage namespace rows, with 5 focused activation tests passing and no new runtime behavior admitted. Next posture is await_current_main_sync_for_corrected_artifact_replacement_activation_authority_evaluation.",
+  "corrected_artifact_replacement_activation_authority_evaluation_current_main_sync": {
+    "status": "current_main_synced_corrected_artifact_replacement_activation_authority_evaluation",
+    "sync_branch": "codex/l3-corrected-artifact-activation-eval-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/723_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/722_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION.md",
+    "evaluation_pr": "#1327",
+    "evaluation_branch": "codex/l3-corrected-artifact-activation-eval",
+    "evaluation_branch_commit": "d22b2f3851f533b70ca5b0e872b2f69fbc8ceb4e",
+    "evaluation_merge_commit": "621a2712f4d9e3106d8a5188d6cd828256949d5d",
+    "current_main_checkpoint_after_merge": "621a2712f4d9e3106d8a5188d6cd828256949d5d",
+    "evaluation_result": "current_main_satisfies_corrected_artifact_replacement_activation_authority",
+    "runtime_behavior_introduced_by_evaluation": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": [],
+      "reviews": [],
+      "latestReviews": [],
+      "reviewThreads_totalCount": 0,
+      "unresolved_current_reviewThreads": 0,
+      "mergeability": "MERGEABLE",
+      "merge_state": "CLEAN"
+    },
+    "post_merge_validation": {
+      "python .\\tools\\l3-progress-check.py": "PASS"
+    },
+    "satisfied_runtime_route": "POST /api/v1/layer3/package/replacement-activation/commit",
+    "satisfied_runtime_owner": "backend/app/services/layer3_package_replacement_activation.py",
+    "durable_state": "L3PackageReplacementActivation",
+    "corrected_namespace_target": "L3ReplacementOutputPackage",
+    "next_posture": "select_downstream_active_package_authority_read_adoption_after_corrected_artifact_activation_sync"
+  },
+  "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_branch": "codex/l3-corrected-artifact-activation-eval-sync",
+  "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/723_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_replacement_activation_authority_evaluation",
+  "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_runtime_behavior_change": false,
+  "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_next_posture": "select_downstream_active_package_authority_read_adoption_after_corrected_artifact_activation_sync",
+  "latest_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync_summary": "Doc 723 syncs PR #1327 merge commit 621a2712f4d9e3106d8a5188d6cd828256949d5d to current main. Current main now records that corrected-artifact replacement activation authority is satisfied by the existing activation runtime, with no new runtime behavior admitted. Next posture is select_downstream_active_package_authority_read_adoption_after_corrected_artifact_activation_sync."
 }
