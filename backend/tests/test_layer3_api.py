@@ -12646,6 +12646,186 @@ def test_layer3_api_connector_local_receipt_applies_active_replacement_authority
         provider_private_body["provider_private_handoff_receipt_id"]
     )
 
+    external_export_payload = _external_local_export_payload(
+        request_id=f"{request_id}-external-local-export",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+        provider_private_body=provider_private_body,
+    )
+    db = client.layer3_session_factory()
+    try:
+        external_counts_before = {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
+            "handoff_audit_events": db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count(),
+            "external_receipts": db.query(L3ExternalLocalExportReceipt).count(),
+            "external_audit_events": db.query(L3ExternalLocalExportAuditEvent).count(),
+            "provider_private_signed_url_receipts": db.query(L3ProviderPrivateSignedUrlReceipt).count(),
+            "packages": db.query(L3OutputPackage).count(),
+        }
+        source_packages_before_external = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id.in_(dispatch_payload["output_package_ids"]))
+            .order_by(L3OutputPackage.package_kind.asc())
+            .all()
+        ]
+    finally:
+        db.close()
+
+    external_export = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json=external_export_payload,
+    )
+    assert external_export.status_code == 200, external_export.json()
+    external_export_body = external_export.json()
+    assert external_export_body["status"] == "written"
+    assert external_export_body["external_local_export_state"] == "external_local_export_written"
+    assert external_export_body["server_owned_local_outbox_write_receipt_id"] == (
+        write_body["server_owned_local_outbox_write_receipt_id"]
+    )
+    assert external_export_body["provider_private_handoff_receipt_id"] == (
+        provider_private_body["provider_private_handoff_receipt_id"]
+    )
+    assert external_export_body["connector_local_destination_receipt_id"] == (
+        local_receipt_body["connector_local_destination_receipt_id"]
+    )
+    assert external_export_body["connector_dispatch_record_ref"] == connector_body["connector_dispatch_record_ref"]
+    assert external_export_body["external_export_download_record_ref"] == (
+        readiness_body["external_export_download_record_ref"]
+    )
+    assert external_export_body["target_identity"] == "server_configured_external_local_export_directory"
+    assert external_export_body["dispatch_mode"] == "server_configured_external_local_export_directory_write"
+    assert external_export_body["external_artifact_ref"].startswith("external-local-export://")
+    assert external_export_body["external_manifest_ref"].startswith("external-local-export://")
+    assert external_export_body["external_artifact_hash"] == write_body["outbox_artifact_hash"]
+    assert external_export_body["external_artifact_hash"] == readiness_body["source_artifact_hash"]
+    assert external_export_body["external_artifact_size_bytes"] == readiness_body["source_artifact_size_bytes"]
+    assert external_export_body["source_outbox_artifact_hash"] == write_body["outbox_artifact_hash"]
+    assert external_export_body["server_configured_external_local_export_write_performed"] is True
+    assert external_export_body["real_connector_invocation_enabled"] is False
+    assert external_export_body["connector_run_created"] is False
+    assert external_export_body["connector_run_target_created"] is False
+    assert external_export_body["provider_public_delivery_enabled"] is False
+    assert external_export_body["package_mutation_enabled"] is False
+    assert external_export_body["source_expansion_enabled"] is False
+    assert external_export_body["rag_vector_enabled"] is False
+    external_response_text = json.dumps(external_export_body, sort_keys=True)
+    assert str(Path(settings.storage_dir)) not in external_response_text
+    assert str(Path(settings.layer3_external_local_export_dir)) not in external_response_text
+    assert readiness_body["source_artifact_ref"] not in external_response_text
+
+    external_root = Path(settings.layer3_external_local_export_dir).resolve()
+    external_artifact_path = (
+        external_root / external_export_body["external_local_export_receipt_id"] / "artifact.json"
+    )
+    external_manifest_path = (
+        external_root / external_export_body["external_local_export_receipt_id"] / "manifest.json"
+    )
+    external_artifact_path.resolve().relative_to(external_root)
+    external_manifest_path.resolve().relative_to(external_root)
+    with pytest.raises(ValueError):
+        external_artifact_path.resolve().relative_to(Path(settings.storage_dir).resolve())
+    with pytest.raises(ValueError):
+        external_artifact_path.resolve().relative_to(Path(settings.layer3_local_outbox_dir).resolve())
+    assert external_artifact_path.read_bytes() == expected_delivery_bytes
+    assert hashlib.sha256(external_artifact_path.read_bytes()).hexdigest() == (
+        readiness_body["source_artifact_hash"]
+    )
+    assert hashlib.sha256(external_manifest_path.read_bytes()).hexdigest() == (
+        external_export_body["external_manifest_hash"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
+            "handoff_audit_events": db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count(),
+            "external_receipts": db.query(L3ExternalLocalExportReceipt).count(),
+            "external_audit_events": db.query(L3ExternalLocalExportAuditEvent).count(),
+            "provider_private_signed_url_receipts": db.query(L3ProviderPrivateSignedUrlReceipt).count(),
+            "packages": db.query(L3OutputPackage).count(),
+        } == {
+            **external_counts_before,
+            "external_receipts": external_counts_before["external_receipts"] + 1,
+            "external_audit_events": external_counts_before["external_audit_events"] + 1,
+        }
+        source_packages_after_external = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id.in_(dispatch_payload["output_package_ids"]))
+            .order_by(L3OutputPackage.package_kind.asc())
+            .all()
+        ]
+        assert source_packages_after_external == source_packages_before_external
+        external_row = (
+            db.query(L3ExternalLocalExportReceipt)
+            .filter(
+                L3ExternalLocalExportReceipt.external_local_export_receipt_id
+                == external_export_body["external_local_export_receipt_id"]
+            )
+            .one()
+        )
+        provider_row = (
+            db.query(L3LocalOutboxProviderPrivateHandoffReceipt)
+            .filter(
+                L3LocalOutboxProviderPrivateHandoffReceipt.provider_private_handoff_receipt_id
+                == provider_private_body["provider_private_handoff_receipt_id"]
+            )
+            .one()
+        )
+        assert external_row.authority_basis_hash == external_export_body["authority_basis_hash"]
+        assert external_row.authority_snapshot_json["server_owned_local_outbox_write_authority_basis_hash"] == (
+            write_body["authority_basis_hash"]
+        )
+        assert external_row.authority_snapshot_json["provider_private_handoff_authority_basis_hash"] == (
+            provider_row.authority_basis_hash
+        )
+        assert "source_artifact_ref" not in external_row.authority_snapshot_json
+        assert "destination_path" not in external_row.authority_snapshot_json
+    finally:
+        db.close()
+
+    external_export_replay = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        json=external_export_payload,
+    )
+    assert external_export_replay.status_code == 200, external_export_replay.json()
+    assert external_export_replay.json()["status"] == "already_recorded"
+    assert external_export_replay.json()["external_local_export_receipt_id"] == (
+        external_export_body["external_local_export_receipt_id"]
+    )
+
 
 def test_layer3_api_aps_handoff_dispatch_active_authority_requires_matching_prepare_state(
     client: TestClient,
