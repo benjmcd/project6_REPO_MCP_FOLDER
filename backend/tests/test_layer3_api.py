@@ -13089,8 +13089,13 @@ def test_layer3_api_package_supersession_commit_records_lineage_without_package_
         review_body,
         _package_preview_body,
         commit_body,
-        _commit_payload,
-    ) = _construct_quant_package_set(client, tmp_path, request_id="api-package-supersession-commit-success")
+        _submit_payload,
+        submit_body,
+    ) = _submit_quant_package_review(
+        client,
+        tmp_path,
+        request_id="api-package-supersession-commit-success",
+    )
     preview_payload = _package_supersession_preview_payload(
         request_id="api-package-supersession-commit-success-preview",
         session_id=session_id,
@@ -13099,9 +13104,20 @@ def test_layer3_api_package_supersession_commit_records_lineage_without_package_
         start_body=start_body,
         review_body=review_body,
         commit_body=commit_body,
+        submit_body=submit_body,
     )
     preview = client.post("/api/v1/layer3/package/mutation/preview", json=preview_payload)
     assert preview.status_code == 200, preview.json()
+    assert preview.json()["downstream_dependencies"] == [
+        {
+            "state_key": "package_review_submit",
+            "schema_id": "layer3.package_review_submit_state.v1",
+            "request_ref_field": "package_review_submit_record_ref",
+            "record_ref": submit_body["submit_record_ref"],
+            "state": "package_review_approved",
+            "present": True,
+        }
+    ]
     authority_payload = _replacement_package_set_authority_payload(
         request_id="api-package-supersession-commit-success-authority",
         session_id=session_id,

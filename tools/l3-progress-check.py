@@ -1622,6 +1622,10 @@ LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "647_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "648_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52426,6 +52430,142 @@ def _check_rendered_package_supersession_commit_control_freeze_current_main_sync
                 )
 
 
+def _check_rendered_package_supersession_commit_control_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `rendered_package_supersession_commit_control`.",
+        "647_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+        "Implementation branch: `codex/l3-rendered-supersession-commit-control`.",
+        "Current-main checkpoint before implementation: `9296983bd9d7ae0d775c74cd11db9d13b61470f7`.",
+        "Selected exact operator action: `commit_package_supersession_after_replacement_package_set_authority`.",
+        "Selected implementation-entry mode: `rendered_package_supersession_commit_control`.",
+        "Existing commit surface: `/api/v1/layer3/package/supersession/commit`.",
+        "Owner service: `backend/app/services/layer3_package_supersession_commit.py`.",
+        "Server runtime mode already live: `package_supersession_commit_entry`.",
+        "Source gate: `126_PACKAGE_COMMIT_FREEZE`.",
+        "packageSupersessionCommitPayload",
+        "stableHash",
+        "renderPackageSupersessionCommitPanel",
+        "Backend service behavior changed only to align",
+        "preserving `schema_id` and `request_ref_field`",
+        "redacted_local_payload_ref",
+        "Layer 3 workbench records rendered package supersession commit control",
+        "The next exact posture is `await_current_main_sync_for_rendered_package_supersession_commit_control`.",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF)} "
+                f"missing rendered package supersession commit control runtime proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Package Supersession Commit Control Runtime Proof",
+            "648_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF.md",
+            "#package-supersession-commit-submit",
+            "#package-supersession-commit-panel",
+            "POST /api/v1/layer3/package/supersession/commit",
+            "stableHash",
+            "backend/app/services/layer3_package_supersession_commit.py",
+            "service guardrail alignment",
+            "request_ref_field",
+            "await_current_main_sync_for_rendered_package_supersession_commit_control",
+        ),
+        MANIFEST: (
+            "rendered_package_supersession_commit_control_runtime",
+            "rendered_package_supersession_commit_control_runtime_implemented_branch_local",
+            "codex/l3-rendered-supersession-commit-control",
+            "648_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF.md",
+            '"backend_behavior_change": true',
+            "backend_behavior_change_scope",
+            "downstream dependency projection alignment",
+            "package-supersession-commit-submit",
+            "package-supersession-commit-panel",
+            "packageSupersessionCommitPayload",
+            "stableHash",
+            "renderPackageSupersessionCommitPanel",
+            "await_current_main_sync_for_rendered_package_supersession_commit_control",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_package_supersession_commit_control_runtime_proof",
+            "branch_local_rendered_package_supersession_commit_control_runtime",
+            "648_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_RUNTIME_PROOF.md",
+            '"backend_behavior_change": true',
+            "backend_behavior_change_scope",
+            "downstream dependency projection alignment",
+            "package-supersession-commit-submit",
+            "package-supersession-commit-panel",
+            "packageSupersessionCommitPayload",
+            "stableHash",
+            "renderPackageSupersessionCommitPanel",
+            "Layer 3 workbench records rendered package supersession commit control",
+            "await_current_main_sync_for_rendered_package_supersession_commit_control",
+        ),
+        LAYER3_HTML: (
+            'id="package-supersession-commit-submit"',
+            'id="package-supersession-commit-panel"',
+            'data-rendered-mode="rendered_package_supersession_commit_control"',
+        ),
+        LAYER3_CSS: (
+            ".package-supersession-commit-panel",
+            ".package-supersession-commit-grid",
+            ".package-supersession-commit-rows",
+        ),
+        LAYER3_JS: (
+            "PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE = 'rendered_package_supersession_commit_control'",
+            "PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION = 'commit_package_supersession'",
+            "function stableHash",
+            "window.crypto.subtle.digest('SHA-256'",
+            "function packageSupersessionCommitPayload",
+            "function submitPackageSupersessionCommit",
+            "function renderPackageSupersessionCommitPanel",
+            "/package/supersession/commit",
+            "package_supersession_commit_ready",
+            "safePackagePayloadRefForDisplay",
+        ),
+        LAYER3_PAGE_TEST: (
+            "package-supersession-commit-submit",
+            "package-supersession-commit-panel",
+            "rendered_package_supersession_commit_control",
+            "function stableHash",
+            "function packageSupersessionCommitPayload",
+            "State.packageSupersessionCommit = await postJson(",
+            "'/package/supersession/commit'",
+            "renderPackageSupersessionCommitPanel()",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "commitRenderedPackageSupersession",
+            "Layer 3 workbench records rendered package supersession commit control",
+            "package_supersession_commit_basis_hash_mismatch",
+            "package_supersession_commit_recorded",
+            "redacted_local_payload_ref",
+            "/package/supersession/commit",
+        ),
+        PACKAGE_SUPERSESSION_COMMIT_SERVICE: (
+            '"schema_id": state.get("schema_id")',
+            '"request_ref_field": str(spec["request_ref_field"])',
+            "package_supersession_commit_downstream_dependency_hash_mismatch",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_package_supersession_commit_records_lineage_without_package_mutation",
+            '"request_ref_field": "package_review_submit_record_ref"',
+            "submit_body[\"submit_record_ref\"]",
+            "package_supersession_commit_downstream_dependency_hash_mismatch",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered package supersession commit control runtime proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52913,6 +53053,7 @@ def main() -> int:
     _check_rendered_replacement_package_set_authority_control_current_main_sync(errors)
     _check_rendered_package_supersession_commit_control_freeze(errors)
     _check_rendered_package_supersession_commit_control_freeze_current_main_sync(errors)
+    _check_rendered_package_supersession_commit_control_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
