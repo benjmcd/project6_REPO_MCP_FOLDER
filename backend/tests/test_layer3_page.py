@@ -113,6 +113,8 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="replacement-package-set-authority-submit"' in response.text
     assert 'id="package-supersession-commit-submit"' in response.text
     assert 'id="replacement-package-artifact-manifest-submit"' in response.text
+    assert 'id="replacement-package-namespace-submit"' in response.text
+    assert 'id="replacement-package-namespace-panel"' in response.text
     assert 'id="package-review-submit-form"' in response.text
     assert 'id="package-supersession-preview-panel"' in response.text
     assert 'data-rendered-mode="rendered_package_supersession_preview_control"' in response.text
@@ -366,6 +368,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".replacement-package-artifact-manifest-panel" in css.text
     assert ".replacement-package-artifact-manifest-grid" in css.text
     assert ".replacement-package-artifact-manifest-rows" in css.text
+    assert ".replacement-package-namespace-panel" in css.text
+    assert ".replacement-package-namespace-grid" in css.text
+    assert ".replacement-package-namespace-rows" in css.text
     assert ".layer3-e2e-governance-lifecycle-panel" in css.text
     assert ".layer3-e2e-governance-lifecycle-rows" in css.text
     assert ".downstream-access-lifecycle-dashboard-panel" in css.text
@@ -473,6 +478,9 @@ def test_layer3_static_assets_are_mounted() -> None:
         "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_OPERATOR_DECISION = "
         "'record_replacement_package_artifact_manifest_from_authority'"
     ) in js.text
+    assert "REPLACEMENT_PACKAGE_NAMESPACE_RENDERED_MODE = 'rendered_replacement_package_namespace_control'" in js.text
+    assert "REPLACEMENT_PACKAGE_NAMESPACE_RESPONSE_AUTHORITY = 'State.replacementPackageNamespace'" in js.text
+    assert "REPLACEMENT_PACKAGE_NAMESPACE_OPERATOR_DECISION = 'record_replacement_package_namespace'" in js.text
     assert "function stableHash" in js.text
     assert "window.crypto.subtle.digest('SHA-256'" in js.text
     assert "function packageSupersessionCommitPayload" in js.text
@@ -481,10 +489,15 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function replacementPackageArtifactManifestPayload" in js.text
     assert "State.replacementPackageArtifactManifest = await postJson(" in js.text
     assert "'/package/replacement-artifact/manifest/record-from-authority'" in js.text
+    assert "function replacementPackageNamespacePayload" in js.text
+    assert "State.replacementPackageNamespace = await postJson(" in js.text
+    assert "'/package/replacement-namespace/record'" in js.text
     assert "package_supersession_commit_ready" in js.text
     assert "replacement_package_artifact_manifest_ready" in js.text
+    assert "replacement_package_namespace_ready" in js.text
     assert "renderPackageSupersessionCommitPanel()" in js.text
     assert "renderReplacementPackageArtifactManifestPanel()" in js.text
+    assert "renderReplacementPackageNamespacePanel()" in js.text
     assert "postJson('/handoff/export/prepare'" in js.text
     assert "postJson('/handoff/aps/dispatch'" in js.text
     assert "postJson('/handoff/export/download/prepare'" in js.text

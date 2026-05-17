@@ -107,7 +107,10 @@ def _namespace_payload(
     index = PACKAGE_KINDS.index(package_kind)
     source_output_package_id = source["source_output_package_ids"][index]
     package_schema_id = PACKAGE_SCHEMA_IDS[package_kind]
-    artifact_ref = manifest["verified_artifact_refs"][index]
+    artifact_ref = (
+        f"artifact://replacement-package-artifacts/"
+        f"{manifest['replacement_package_artifact_manifest_id']}/{package_kind}"
+    )
     artifact_hash = manifest["verified_artifact_hashes"][index]
     authority_basis_hash = namespace_service.replacement_package_namespace_authority_basis_hash(
         session_id="session-1",
