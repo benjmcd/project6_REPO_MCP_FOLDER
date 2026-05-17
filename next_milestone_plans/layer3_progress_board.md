@@ -4492,3 +4492,19 @@ The runtime derives source output package ids, package kinds, canonical package 
 Targeted validation passed: `python -m py_compile .\backend\app\services\layer3_replacement_package_namespace.py .\backend\app\api\layer3.py`; `python -m pytest .\backend\tests\test_layer3_replacement_package_namespace.py -q` with `6 passed`; targeted `python -m pytest .\backend\tests\test_layer3_api.py -q -k "package_openapi_contracts or json_workbench_error_openapi_contracts or replacement_package_namespace_from_corrected_manifest"` with `4 passed, 178 deselected`; and full `python -m pytest .\backend\tests\test_layer3_api.py -q` with `182 passed`.
 
 The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_replacement_namespace_runtime`.
+
+## Corrected Artifact Replacement Namespace Runtime Current-Main Sync
+
+Current-main sync: `721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1325` for `corrected_artifact_replacement_namespace_runtime`.
+
+Runtime branch `codex/l3-corrected-artifact-namespace-runtime` landed branch commit `2c4b7d9d126c7fdb0b6d74925d5faefd13b3c18e` into current main at merge commit `c73f1ee92eb12450718b9fb4cd83fdde567c5431`.
+
+The synced current-main route is `POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority`, owned by `backend/app/services/layer3_replacement_package_namespace.py` and `backend/app/api/layer3.py`, with durable target `L3ReplacementOutputPackage` / `l3_replacement_output_package`.
+
+Before merge, PR `#1325` had green `backend-layer3-api` and `test` checks, merge state `CLEAN`, and `3` automated reviewThreads resolved with `0` unresolved current reviewThreads. The addressed issues were atomic complete-set recording, corrected artifact-set vector binding, and the `source_expansion` forbidden request/schema boundary.
+
+Observed validation for the runtime/sync lane includes `python -m pytest .\backend\tests\test_layer3_replacement_package_namespace.py -q` with `8 passed`, targeted `python -m pytest .\backend\tests\test_layer3_api.py -q -k "external_export_download_openapi_contracts or package_openapi_contracts or replacement_package_namespace_from_corrected_manifest"` with `4 passed, 178 deselected`, and full `python -m pytest .\backend\tests\test_layer3_api.py -q` with `182 passed`.
+
+No runtime behavior is introduced by this sync. Package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, connector/destination dispatch, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
+
+The next exact current-main posture is `evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync`.
