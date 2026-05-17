@@ -4208,3 +4208,13 @@ Current main already proves package supersession preview, server-owned replaceme
 This freeze is planning/control only: selected surface `package_mutation_reconstruction`, selected package lifecycle action `rebuild_package_from_corrected_artifacts`, selected implementation-entry posture `audit_rebuild_package_from_corrected_artifacts_implementation_entry_after_operator_action_sync`, entry decision `freeze_only`, runtime status `not_implemented_in_this_pass`.
 
 The next exact posture after merge is `current_main_sync_package_rebuild_from_corrected_artifacts_operator_action_freeze`; after sync, the next posture is `audit_rebuild_package_from_corrected_artifacts_implementation_entry_after_operator_action_sync`. Runtime remains blocked until that audit proves a governed corrected-artifact authority source and exact owner files/routes without package payload rewrite, browser-supplied bytes, arbitrary refs/hashes/paths, source expansion, RAG/vector behavior, connector/destination dispatch, provider-public delivery/use, or auth/security broadening.
+
+## Package Rebuild From Corrected Artifacts Operator Action Freeze Current-Main Sync
+
+Current-main proof/control sync: `697_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE_CURRENT_MAIN_SYNC.md` records PR `#1301`, branch `codex/l3-package-rebuild-action-freeze`, branch commit `b71cbcabfbc2e810a0de8b2b0d2db29addeac806`, and merge commit `73148b40b1bc567b2f6b1946a8852bae001be580` for `package_rebuild_from_corrected_artifacts_operator_action_freeze`.
+
+Merge gate: `backend-layer3-api` passed in `2m48s`; `test` passed in `3m33s`; PR comments/reviews/latestReviews were empty; reviewThreads totalCount was `0`; mergeability was `MERGEABLE`; merge state was `CLEAN`; post-merge `python .\tools\l3-progress-check.py` and `python .\tools\l3-target-selection-validate.py --expect frozen` passed on `project6-origin/main` at `73148b40b1bc567b2f6b1946a8852bae001be580`.
+
+Current main now syncs the selection of `rebuild_package_from_corrected_artifacts` as the next exact package mutation/reconstruction operator action. It does not admit runtime: `rebuild_package` remains forbidden across current package/downstream surfaces, and the next pass must audit whether a governed corrected-artifact authority source and exact owner files/routes exist.
+
+The next exact posture is `audit_rebuild_package_from_corrected_artifacts_implementation_entry_after_operator_action_sync`. If current-main evidence cannot prove corrected-artifact authority, the required stop posture is `no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent`; runtime remains blocked until a separate implementation-entry freeze exists.
