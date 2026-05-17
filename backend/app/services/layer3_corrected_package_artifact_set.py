@@ -37,7 +37,7 @@ CORRECTED_PACKAGE_ARTIFACT_SET_OPERATOR_DECISION = (
 )
 CORRECTED_PACKAGE_ARTIFACT_SET_STATE = "corrected_package_artifact_set_recorded"
 CORRECTED_PACKAGE_ARTIFACT_SET_STATUS = "recorded"
-CORRECTED_PACKAGE_ARTIFACT_NAMESPACE = "corrected-package-artifacts"
+CORRECTED_PACKAGE_ARTIFACT_NAMESPACE = "replacement-package-artifacts"
 CORRECTED_PACKAGE_ARTIFACT_HASH_ALGORITHM = "sha256"
 
 CORRECTED_PACKAGE_ARTIFACT_SET_PACKAGE_KINDS = (
@@ -276,22 +276,22 @@ def corrected_package_set_hash(
     corrected_artifact_hashes: list[str],
     corrected_artifact_byte_sizes: list[int],
 ) -> str:
+    # Corrected artifact sets become replacement package-set authority, so this
+    # identity must match the downstream replacement package-set hash contract.
     return stable_hash(
         {
-            "schema_id": "layer3.corrected_package_artifact_set_identity.v1",
-            "corrected_package_set_id": corrected_package_set_id,
-            "corrected_artifacts": [
+            "schema_id": "layer3.replacement_package_set.v1",
+            "replacement_package_set_id": corrected_package_set_id,
+            "replacement_packages": [
                 {
                     "package_kind": package_kind,
-                    "artifact_ref": artifact_ref,
-                    "artifact_hash": artifact_hash,
-                    "artifact_byte_size": artifact_byte_size,
+                    "payload_ref": artifact_ref,
+                    "payload_hash": artifact_hash,
                 }
-                for package_kind, artifact_ref, artifact_hash, artifact_byte_size in zip(
+                for package_kind, artifact_ref, artifact_hash in zip(
                     corrected_package_kinds,
                     corrected_artifact_refs,
                     corrected_artifact_hashes,
-                    corrected_artifact_byte_sizes,
                 )
             ],
         }

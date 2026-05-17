@@ -1914,6 +1914,10 @@ LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION_CURRENT_MA
     PLANNING_DOCS
     / "723_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION = (
+    PLANNING_DOCS
+    / "724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -60474,6 +60478,147 @@ def _check_corrected_artifact_replacement_activation_authority_evaluation_curren
                 )
 
 
+def _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime hardening and proof for `corrected_artifact_active_authority_handoff_export_prepare`.",
+        "724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md",
+        "723_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-active-handoff-eval",
+        "d7513bb3e93a41b7457a76fae9b9077b4bd8ea07",
+        "Selected downstream reader path: `handoff_export_prepare`.",
+        "POST /api/v1/layer3/handoff/export/prepare",
+        "resolve_active_replacement_package_authority",
+        "corrected_artifact_active_authority_handoff_export_prepare_proven",
+        "Runtime behavior change in this pass: `true`",
+        "Test/proof behavior change in this pass: `true`",
+        "corrected_package_set_hash` now uses the downstream-compatible `layer3.replacement_package_set.v1`",
+        "CORRECTED_PACKAGE_ARTIFACT_NAMESPACE` is aligned to `replacement-package-artifacts`",
+        "test_layer3_api_handoff_export_prepare_applies_corrected_artifact_active_authority",
+        "Result observed: `1 passed`",
+        "Additional results observed: `183 passed`; `5 passed`; py-compile passed; Layer 3 progress state check: `PASS`; Layer 3 target-selection validation: `PASS (frozen)`.",
+        "await_current_main_sync_for_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+        "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION)} "
+                f"missing corrected-artifact active authority handoff/export prepare evaluation term: {term}"
+            )
+
+    for blocked in (
+        "connector invocation",
+        "connector run target",
+        "destination write",
+        "credentials",
+        "external network egress",
+        "provider-public delivery/use",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "delivery rerun",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "rendered UI authority",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "browser-supplied refs/hashes/bytes",
+        "raw local path exposure",
+    ):
+        if blocked not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION)} "
+                f"missing corrected-artifact active authority handoff/export prepare blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority Handoff Export Prepare Evaluation",
+            "724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md",
+            "codex/l3-corrected-active-handoff-eval",
+            "d7513bb3e93a41b7457a76fae9b9077b4bd8ea07",
+            "POST /api/v1/layer3/handoff/export/prepare",
+            "resolve_active_replacement_package_authority",
+            "corrected_package_set_hash` now uses the downstream-compatible `layer3.replacement_package_set.v1`",
+            "replacement-package-artifacts",
+            "test_layer3_api_handoff_export_prepare_applies_corrected_artifact_active_authority",
+            "`1 passed`",
+            "`183 passed`",
+            "`5 passed`",
+            "Layer 3 progress state check `PASS`",
+            "Layer 3 target-selection validation `PASS (frozen)`",
+            "await_current_main_sync_for_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+            "branch_local_corrected_artifact_active_authority_handoff_export_prepare_runtime_hardened_and_proven",
+            "codex/l3-corrected-active-handoff-eval",
+            "724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md",
+            "d7513bb3e93a41b7457a76fae9b9077b4bd8ea07",
+            "handoff_export_prepare",
+            '"runtime_behavior_change": true',
+            "corrected_package_set_hash uses layer3.replacement_package_set.v1 identity shape",
+            "corrected artifact-set artifact namespace aligns to replacement-package-artifacts",
+            "test_layer3_api_handoff_export_prepare_applies_corrected_artifact_active_authority",
+            "focused proof 1 passed",
+            "full Layer 3 API suite 183 passed",
+            "adjacent corrected-artifact/replacement-chain set 5 passed",
+            "Layer 3 progress state check PASS",
+            "Layer 3 target-selection validation PASS (frozen)",
+            "await_current_main_sync_for_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_handoff_export_prepare_evaluation_proof",
+            "branch_local_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+            "branch_local_corrected_artifact_active_authority_handoff_export_prepare_runtime_hardened_and_proven",
+            "724_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION.md",
+            "d7513bb3e93a41b7457a76fae9b9077b4bd8ea07",
+            "POST /api/v1/layer3/handoff/export/prepare",
+            '"runtime_behavior_change": true',
+            "real corrected-artifact API route chain reaches replacement activation",
+            "handoff_export_prepare applies corrected active package authority",
+            "duplicate prepare replays as already_prepared",
+            "full Layer 3 API suite 183 passed",
+            "adjacent corrected-artifact/replacement-chain set 5 passed",
+            "Layer 3 progress state check PASS",
+            "Layer 3 target-selection validation PASS (frozen)",
+            "await_current_main_sync_for_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
+        ),
+        LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE: (
+            'CORRECTED_PACKAGE_ARTIFACT_NAMESPACE = "replacement-package-artifacts"',
+            '"schema_id": "layer3.replacement_package_set.v1"',
+            '"replacement_package_set_id": corrected_package_set_id',
+            '"replacement_packages":',
+            '"payload_ref": artifact_ref',
+            '"payload_hash": artifact_hash',
+        ),
+        LAYER3_API_TEST: (
+            "_activate_corrected_replacement_package_authority",
+            "test_layer3_api_handoff_export_prepare_applies_corrected_artifact_active_authority",
+            "/api/v1/layer3/package/corrected-artifact-set/record",
+            "/api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+            "/api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+            'assert body["active_package_authority_applied"] is True',
+            'assert body["payload_refs"] == activation_body["active_artifact_refs"]',
+            'assert duplicate_body["status"] == "already_prepared"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority handoff/export prepare artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -61040,6 +61185,7 @@ def main() -> int:
     _check_corrected_artifact_replacement_namespace_runtime_current_main_sync(errors)
     _check_corrected_artifact_replacement_activation_authority_evaluation(errors)
     _check_corrected_artifact_replacement_activation_authority_evaluation_current_main_sync(errors)
+    _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
