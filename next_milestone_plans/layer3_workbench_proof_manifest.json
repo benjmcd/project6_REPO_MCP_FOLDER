@@ -28622,5 +28622,52 @@
   "latest_corrected_artifact_replacement_manifest_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/715_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
   "latest_corrected_artifact_replacement_manifest_authority_freeze_current_main_sync_status": "current_main_synced_corrected_artifact_replacement_manifest_authority_freeze",
   "latest_corrected_artifact_replacement_manifest_authority_freeze_current_main_sync_next_posture": "implement_corrected_artifact_replacement_manifest_from_supersession_authority_after_freeze_sync",
-  "latest_corrected_artifact_replacement_manifest_authority_freeze_current_main_sync_summary": "Doc 715 proof syncs PR #1319 merge commit 7263cec5d8cadf5de6ff7bfb00196971f1248ed5 to current main and makes implement_corrected_artifact_replacement_manifest_from_supersession_authority_after_freeze_sync the next exact implementation posture."
+  "latest_corrected_artifact_replacement_manifest_authority_freeze_current_main_sync_summary": "Doc 715 proof syncs PR #1319 merge commit 7263cec5d8cadf5de6ff7bfb00196971f1248ed5 to current main and makes implement_corrected_artifact_replacement_manifest_from_supersession_authority_after_freeze_sync the next exact implementation posture.",
+  "corrected_artifact_replacement_manifest_runtime_proof": {
+    "proof_kind": "runtime_proof_corrected_artifact_replacement_manifest_from_supersession_authority",
+    "status": "implemented_corrected_artifact_replacement_manifest_runtime",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/716_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/715_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "runtime_branch": "codex/l3-corrected-artifact-manifest-runtime",
+    "current_main_checkpoint_before_implementation": "8f57d3e5e82f199f48dceea86ce146b6c653f6c8",
+    "selected_downstream_authority_bridge": "corrected_artifact_replacement_manifest_from_supersession_authority",
+    "runtime_route": "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+    "owner_service": "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+    "api_owner": "backend/app/api/layer3.py",
+    "durable_target": "L3ReplacementPackageArtifactManifest",
+    "required_source_authority": "L3CorrectedPackageArtifactSet",
+    "required_replacement_authority": "L3ReplacementPackageSetAuthority",
+    "required_supersession_authority": "L3PackageSupersessionCommit",
+    "request_mode": "replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+    "operator_decision": "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+    "response_schema_id": "layer3.replacement_package_artifact_manifest_from_corrected_artifact_set_authority.v1",
+    "validation": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_replacement_package_artifact_manifest.py .\\backend\\app\\api\\layer3.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_replacement_package_artifact_manifest.py -q -k \"corrected_artifact_set\" PASS 2 passed, 5 deselected",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"corrected_artifact_set or openapi_contracts or workbench_error_responses\" PASS 16 passed, 164 deselected"
+    ],
+    "proof_terms": [
+      "server-computed replacement artifact manifest from corrected artifact set authority",
+      "derive replacement artifact refs and hashes server-side",
+      "redacted artifact://replacement-package-artifacts response refs",
+      "same-key replay",
+      "same-basis/new-key replay",
+      "stale corrected artifact basis failure",
+      "stale replacement authority basis failure",
+      "stale supersession commit basis failure",
+      "tampered corrected artifact hash failure",
+      "no replacement namespace rows",
+      "no package replacement activation rows",
+      "no source L3OutputPackage mutation",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no raw local path exposure"
+    ],
+    "runtime_behavior_change": true,
+    "next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_replacement_manifest_runtime"
+  },
+  "latest_corrected_artifact_replacement_manifest_runtime_proof_branch": "codex/l3-corrected-artifact-manifest-runtime",
+  "latest_corrected_artifact_replacement_manifest_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/716_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_RUNTIME_PROOF.md",
+  "latest_corrected_artifact_replacement_manifest_runtime_proof_status": "implemented_corrected_artifact_replacement_manifest_runtime",
+  "latest_corrected_artifact_replacement_manifest_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_replacement_manifest_runtime",
+  "latest_corrected_artifact_replacement_manifest_runtime_proof_summary": "Doc 716 proof implements the corrected-artifact replacement manifest route from corrected artifact set, replacement authority, and supersession commit authority while preserving redacted response refs and blocking namespace, activation, connector/destination, source expansion, RAG/vector, auth/security, rendered UI, frontend-durable authority, caller-supplied paths/URLs, and raw path exposure."
 }
