@@ -1649,6 +1649,10 @@ LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_
 LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME = (
     PLANNING_DOCS / "654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -53018,6 +53022,72 @@ def _check_replacement_package_artifact_manifest_record_from_authority_runtime(
                 )
 
 
+def _check_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `server_computed_replacement_package_artifact_manifest_record_from_authority_runtime`.",
+        "655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
+        "Runtime PR: `#1258`.",
+        "b59ab3be7897ae2eda5379dab53d61aa2644a2fc",
+        "d559d42d99d50314007e5f7daa73d60cb9f8592c",
+        "Synced result: `current_main_synced_replacement_package_artifact_manifest_record_from_authority_runtime`.",
+        "backend-layer3-api`: `SUCCESS` in `2m40s`",
+        "test`: `SUCCESS` in `3m4s`",
+        "PR reviewThreads totalCount: `0`.",
+        "Merge state before merge: `CLEAN`.",
+        "determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing replacement artifact manifest record-from-authority runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package Artifact Manifest Record-From-Authority Runtime Current-Main Sync",
+            "655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1258`",
+            "d559d42d99d50314007e5f7daa73d60cb9f8592c",
+            "current_main_synced_replacement_package_artifact_manifest_record_from_authority_runtime",
+            "determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail",
+        ),
+        MANIFEST: (
+            "replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync",
+            "current_main_synced_replacement_package_artifact_manifest_record_from_authority_runtime",
+            "codex/l3-manifest-record-authority-runtime-sync",
+            "655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1258",
+            "d559d42d99d50314007e5f7daa73d60cb9f8592c",
+            "backend-layer3-api passed 2m40s",
+            "test passed 3m4s",
+            "determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_proof",
+            "current_main_sync_replacement_package_artifact_manifest_record_from_authority_runtime",
+            "current_main_synced_replacement_package_artifact_manifest_record_from_authority_runtime",
+            "655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "reviewThreads totalCount 0",
+            "layer3.replacement_package_artifact_manifest_from_authority.v1",
+            "redacted artifact refs",
+            "determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing replacement artifact manifest record-from-authority runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53512,6 +53582,7 @@ def main() -> int:
     _check_replacement_package_artifact_manifest_request_authority_source_selection_freeze(errors)
     _check_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync(errors)
     _check_replacement_package_artifact_manifest_record_from_authority_runtime(errors)
+    _check_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
