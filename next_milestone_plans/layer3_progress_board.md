@@ -4310,3 +4310,15 @@ Current main now contains `POST /api/v1/layer3/package/corrected-artifact-set/re
 Package rebuild runtime, package payload rewrite, source `L3OutputPackage` row mutation, package activation, downstream invalidation, provider-public delivery/use, connector/destination dispatch, `ConnectorRun`/`ConnectorRunTarget` creation, credentials, external network egress, source expansion, RAG/vector behavior, auth/security behavior, frontend-durable authority, browser/operator path editing, caller-supplied arbitrary paths or URLs, raw local path exposure, hidden LLM planning, and rendered UI authority remain blocked.
 
 The next exact posture is `freeze_package_rebuild_from_corrected_artifact_set_implementation_entry_after_runtime_sync`.
+
+## Package Rebuild From Corrected Artifact Set Entry Freeze
+
+Branch-local implementation-entry freeze: `706_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE.md` freezes `package_rebuild_from_corrected_artifact_set`, starting from current-main preflight commit `8168dc2306b2e3f9cf05398ed7ed3be918b80f57` on branch `codex/l3-package-rebuild-corrected-set-freeze`.
+
+The selected surface remains `package_mutation_reconstruction`, the selected package lifecycle action remains `rebuild_package_from_corrected_artifacts`, and the selected source authority is `operator_review_corrections_server_owned_corrected_package_artifact_set`. The implementation-entry decision is `freeze_replacement_package_set_authority_from_corrected_artifact_set_only`.
+
+This freeze admits only a later replacement package-set authority bridge: `POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set`, owner service `backend/app/services/layer3_replacement_package_set_authority.py`, durable target `L3ReplacementPackageSetAuthority` / `l3_replacement_package_set_authority`, source `L3CorrectedPackageArtifactSet` / `l3_corrected_package_artifact_set`, request mode `replacement_package_set_authority_from_corrected_artifact_set`, and existing constraint-compatible operator decision `record_replacement_package_set_authority`.
+
+This branch starts no runtime. Source `L3OutputPackage` row mutation, package payload rewrite, package activation, replacement namespace row creation, replacement artifact manifest recording, package supersession commit, downstream invalidation, provider-public delivery/use, connector/destination dispatch, `ConnectorRun`/`ConnectorRunTarget` creation, credentials, external network egress, source expansion, RAG/vector behavior, auth/security behavior, frontend-durable authority, browser/operator path editing, caller-supplied arbitrary paths or URLs, raw local path exposure, hidden LLM planning, and rendered UI authority remain blocked.
+
+The next exact posture after merge is `current_main_sync_package_rebuild_from_corrected_artifact_set_entry_freeze`; after sync, the next posture is `implement_replacement_package_set_authority_from_corrected_artifact_set_after_entry_freeze_sync`.
