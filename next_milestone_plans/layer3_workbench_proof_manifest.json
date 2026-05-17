@@ -25481,5 +25481,52 @@
   "latest_rendered_replacement_package_set_authority_control_current_main_sync_branch": "codex/l3-rendered-replacement-set-authority-control-sync",
   "latest_rendered_replacement_package_set_authority_control_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/645_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC.md",
   "latest_rendered_replacement_package_set_authority_control_current_main_sync_live_behavior_change": false,
-  "latest_rendered_replacement_package_set_authority_control_current_main_sync_summary": "Doc 645 proof records current-main sync for PR #1248, proves the rendered replacement package-set authority control is current-main synced, and makes freeze_rendered_package_supersession_commit_control_after_replacement_package_set_authority_control_sync the next exact posture."
+  "latest_rendered_replacement_package_set_authority_control_current_main_sync_summary": "Doc 645 proof records current-main sync for PR #1248, proves the rendered replacement package-set authority control is current-main synced, and makes freeze_rendered_package_supersession_commit_control_after_replacement_package_set_authority_control_sync the next exact posture.",
+  "rendered_package_supersession_commit_control_freeze_proof": {
+    "proof_kind": "branch_local_rendered_package_supersession_commit_control_freeze",
+    "status": "branch_local_freeze_rendered_package_supersession_commit_control",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/646_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE.md",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/645_RENDERED_REPLACEMENT_PACKAGE_SET_AUTHORITY_CONTROL_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "3403cf120b4565df637e1c7391afdf3bbde93a79",
+    "selected_operator_action": "commit_package_supersession_after_replacement_package_set_authority",
+    "selected_implementation_entry_mode": "rendered_package_supersession_commit_control",
+    "existing_backend_surface": "POST /api/v1/layer3/package/supersession/commit",
+    "owner_service": "backend/app/services/layer3_package_supersession_commit.py",
+    "server_runtime_mode": "package_supersession_commit_entry",
+    "proof_terms": [
+      "646_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE.md",
+      "commit_package_supersession_after_replacement_package_set_authority",
+      "rendered_package_supersession_commit_control",
+      "POST /api/v1/layer3/package/supersession/commit",
+      "backend/app/services/layer3_package_supersession_commit.py",
+      "package_supersession_commit_entry",
+      "126_PACKAGE_COMMIT_FREEZE",
+      "commit_package_supersession",
+      "current_main_sync_rendered_package_supersession_commit_control_freeze",
+      "implement_rendered_package_supersession_commit_control_after_freeze_sync",
+      "package_supersession_commit_request_authority_freeze"
+    ],
+    "non_admitted": [
+      "runtime implementation in this freeze",
+      "package rebuild",
+      "package payload rewrite",
+      "source L3OutputPackage row mutation",
+      "replacement output package namespace rows",
+      "replacement artifact manifest recording",
+      "downstream invalidation",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority"
+    ],
+    "next_whole_project_posture": "implement_rendered_package_supersession_commit_control_after_freeze_sync"
+  },
+  "latest_rendered_package_supersession_commit_control_freeze_branch": "codex/l3-supersession-commit-control-freeze",
+  "latest_rendered_package_supersession_commit_control_freeze_doc": "next_milestone_plans/Layer3_planning_docs/646_RENDERED_PACKAGE_SUPERSESSION_COMMIT_CONTROL_FREEZE.md",
+  "latest_rendered_package_supersession_commit_control_freeze_live_behavior_change": false,
+  "latest_rendered_package_supersession_commit_control_freeze_summary": "Doc 646 proof records the branch-local freeze for rendered_package_supersession_commit_control and makes current_main_sync_rendered_package_supersession_commit_control_freeze the next required action after merge."
 }
