@@ -1839,6 +1839,10 @@ LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE =
     PLANNING_DOCS
     / "702_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE.md"
 )
+LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "703_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -57805,6 +57809,128 @@ def _check_operator_review_corrections_corrected_package_artifact_set_entry_free
                 )
 
 
+def _check_operator_review_corrections_corrected_package_artifact_set_entry_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `operator_review_corrections_corrected_package_artifact_set_entry_freeze`.",
+        "703_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "702_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE.md",
+        "Freeze PR: `#1307`.",
+        "codex/l3-corrected-artifact-source-entry-freeze",
+        "ba5101df1f34c12a4da525062eb341ea5ebe4fec",
+        "b980d40dd930dfb0d1e5e0d355c24fd079b09039",
+        "current_main_synced_operator_review_corrections_corrected_package_artifact_set_entry_freeze",
+        "`backend-layer3-api`: `SUCCESS` in `2m42s`",
+        "`test`: `SUCCESS` in `3m35s`",
+        "PR reviewThreads totalCount: `0`",
+        "Merge state before merge: `CLEAN`",
+        "python .\\tools\\l3-progress-check.py",
+        "operator_review_corrections_server_owned_corrected_package_artifact_set",
+        "freeze_runtime_entry_for_corrected_package_artifact_source_authority_only",
+        "POST /api/v1/layer3/package/corrected-artifact-set/record",
+        "backend/app/services/layer3_corrected_package_artifact_set.py",
+        "L3CorrectedPackageArtifactSet",
+        "l3_corrected_package_artifact_set",
+        "allowlist-only request authority",
+        "server-side derivation or validation",
+        "idempotent receipt/status behavior",
+        "fail-closed stale/mismatch/duplicate/conflict lifecycle",
+        "implement_operator_review_corrections_corrected_package_artifact_set_after_entry_freeze_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing operator review corrections corrected package artifact set entry freeze current-main sync term: {term}"
+            )
+
+    for blocked in (
+        "no runtime behavior",
+        "backend code",
+        "package rebuild runtime",
+        "package payload rewrite",
+        "source `L3OutputPackage` row mutation",
+        "package activation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "provider-public delivery/use",
+        "raw public URL exposure",
+        "connector/destination dispatch",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "browser/operator path editing",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+        "hidden LLM planning",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing operator review corrections corrected package artifact set entry freeze current-main sync non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Operator Review Corrections Corrected Package Artifact Set Entry Freeze Current-Main Sync",
+            "703_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1307",
+            "ba5101df1f34c12a4da525062eb341ea5ebe4fec",
+            "b980d40dd930dfb0d1e5e0d355c24fd079b09039",
+            "backend-layer3-api` passed in `2m42s",
+            "reviewThreads totalCount was `0`",
+            "POST /api/v1/layer3/package/corrected-artifact-set/record",
+            "backend/app/services/layer3_corrected_package_artifact_set.py",
+            "L3CorrectedPackageArtifactSet",
+            "implement_operator_review_corrections_corrected_package_artifact_set_after_entry_freeze_sync",
+        ),
+        MANIFEST: (
+            "operator_review_corrections_corrected_package_artifact_set_entry_freeze_current_main_sync",
+            "current_main_synced_operator_review_corrections_corrected_package_artifact_set_entry_freeze",
+            "codex/l3-corrected-artifact-entry-sync",
+            "703_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1307",
+            "b980d40dd930dfb0d1e5e0d355c24fd079b09039",
+            "backend-layer3-api SUCCESS 2m42s",
+            "reviewThreads totalCount 0",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "POST /api/v1/layer3/package/corrected-artifact-set/record",
+            "backend/app/services/layer3_corrected_package_artifact_set.py",
+            "implement_operator_review_corrections_corrected_package_artifact_set_after_entry_freeze_sync",
+            "latest_operator_review_corrections_corrected_package_artifact_set_entry_freeze_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "operator_review_corrections_corrected_package_artifact_set_entry_freeze_current_main_sync_proof",
+            "current_main_sync_operator_review_corrections_corrected_package_artifact_set_entry_freeze",
+            "current_main_synced_operator_review_corrections_corrected_package_artifact_set_entry_freeze",
+            "703_OPERATOR_REVIEW_CORRECTIONS_CORRECTED_PACKAGE_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1307",
+            "b980d40dd930dfb0d1e5e0d355c24fd079b09039",
+            "backend-layer3-api SUCCESS 2m42s",
+            "reviewThreads totalCount 0",
+            "current main freezes the implementation-entry posture",
+            "no package rebuild runtime",
+            "implement_operator_review_corrections_corrected_package_artifact_set_after_entry_freeze_sync",
+            "latest_operator_review_corrections_corrected_package_artifact_set_entry_freeze_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing operator review corrections corrected package artifact set entry freeze current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -58350,6 +58476,7 @@ def main() -> int:
     _check_package_rebuild_corrected_artifact_source_authority_selection_freeze(errors)
     _check_package_rebuild_corrected_artifact_source_authority_selection_freeze_current_main_sync(errors)
     _check_operator_review_corrections_corrected_package_artifact_set_entry_freeze(errors)
+    _check_operator_review_corrections_corrected_package_artifact_set_entry_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
