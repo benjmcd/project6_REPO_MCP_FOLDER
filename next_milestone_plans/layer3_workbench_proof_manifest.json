@@ -28890,5 +28890,61 @@
   "latest_corrected_artifact_replacement_namespace_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/719_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
   "latest_corrected_artifact_replacement_namespace_authority_freeze_current_main_sync_status": "current_main_synced_corrected_artifact_replacement_namespace_authority_freeze",
   "latest_corrected_artifact_replacement_namespace_authority_freeze_current_main_sync_next_posture": "implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync",
-  "latest_corrected_artifact_replacement_namespace_authority_freeze_current_main_sync_summary": "Doc 719 proof syncs the corrected-artifact replacement namespace authority freeze to current main after PR #1323, with green checks, empty comments/reviews/reviewThreads, post-merge validation, and next posture implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync."
+  "latest_corrected_artifact_replacement_namespace_authority_freeze_current_main_sync_summary": "Doc 719 proof syncs the corrected-artifact replacement namespace authority freeze to current main after PR #1323, with green checks, empty comments/reviews/reviewThreads, post-merge validation, and next posture implement_server_computed_replacement_namespace_from_corrected_artifact_manifest_authority_after_freeze_sync.",
+  "corrected_artifact_replacement_namespace_runtime_proof": {
+    "proof_kind": "branch_local_corrected_artifact_replacement_namespace_runtime",
+    "status": "branch_local_corrected_artifact_replacement_namespace_runtime_implemented",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/720_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_PROOF.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/719_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "runtime_branch": "codex/l3-corrected-artifact-namespace-runtime",
+    "current_main_checkpoint_before_runtime": "3232c2ad9b046091089eb15d3e98fbcb200e39e0",
+    "implemented_runtime": "server_computed_replacement_namespace_from_corrected_artifact_manifest_authority",
+    "runtime_route": "POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+    "owner_service": "backend/app/services/layer3_replacement_package_namespace.py",
+    "api_owner": "backend/app/api/layer3.py",
+    "durable_target": "L3ReplacementOutputPackage",
+    "durable_table": "l3_replacement_output_package",
+    "source_authority": "L3CorrectedPackageArtifactSet",
+    "replacement_authority": "L3ReplacementPackageSetAuthority",
+    "supersession_authority": "L3PackageSupersessionCommit",
+    "manifest_authority": "L3ReplacementPackageArtifactManifest",
+    "runtime_behavior_change": true,
+    "schema_id": "layer3.replacement_package_namespace_from_corrected_artifact_manifest_authority.v1",
+    "request_mode": "replacement_package_namespace_from_corrected_artifact_manifest_authority",
+    "operator_decision": "record_replacement_package_namespace_from_corrected_artifact_manifest_authority",
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_replacement_package_namespace.py .\\backend\\app\\api\\layer3.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_replacement_package_namespace.py -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"package_openapi_contracts or json_workbench_error_openapi_contracts or replacement_package_namespace_from_corrected_manifest\"",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q"
+    ],
+    "proof_results": [
+      "py_compile passed",
+      "backend/tests/test_layer3_replacement_package_namespace.py 6 passed",
+      "backend/tests/test_layer3_api.py targeted 4 passed, 178 deselected",
+      "backend/tests/test_layer3_api.py 182 passed"
+    ],
+    "negative_proof": [
+      "replacement_package_namespace_from_corrected_manifest_scope_not_admitted",
+      "unsupported_replacement_package_namespace_from_corrected_manifest_decision",
+      "replacement_package_namespace_from_corrected_manifest_corrected_basis_hash_mismatch",
+      "replacement_package_namespace_from_corrected_manifest_manifest_authority_basis_hash_mismatch",
+      "no source L3OutputPackage mutation",
+      "no package payload rewrite",
+      "no artifact file rewrite",
+      "no package activation",
+      "no connector dispatch",
+      "no provider-public URL",
+      "no source expansion",
+      "no RAG/vector behavior",
+      "no frontend-only durable authority",
+      "no raw local path exposure"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_replacement_namespace_runtime"
+  },
+  "latest_corrected_artifact_replacement_namespace_runtime_branch": "codex/l3-corrected-artifact-namespace-runtime",
+  "latest_corrected_artifact_replacement_namespace_runtime_doc": "next_milestone_plans/Layer3_planning_docs/720_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_PROOF.md",
+  "latest_corrected_artifact_replacement_namespace_runtime_status": "branch_local_corrected_artifact_replacement_namespace_runtime_implemented",
+  "latest_corrected_artifact_replacement_namespace_runtime_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_replacement_namespace_runtime",
+  "latest_corrected_artifact_replacement_namespace_runtime_summary": "Doc 720 proof implements the corrected-artifact replacement namespace runtime, proving server-derived complete namespace rows from corrected-artifact manifest authority, deterministic per-kind row idempotency keys, same-basis replay, API route/error contracts, and blocked activation, payload rewrite, source mutation, connector/destination, source expansion, RAG/vector, auth/security, rendered UI, frontend-durable authority, caller paths/URLs, and raw path exposure."
 }
