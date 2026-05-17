@@ -111,11 +111,14 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="package-construction-commit"' in response.text
     assert 'id="package-supersession-preview-submit"' in response.text
     assert 'id="replacement-package-set-authority-submit"' in response.text
+    assert 'id="package-supersession-commit-submit"' in response.text
     assert 'id="package-review-submit-form"' in response.text
     assert 'id="package-supersession-preview-panel"' in response.text
     assert 'data-rendered-mode="rendered_package_supersession_preview_control"' in response.text
     assert 'id="replacement-package-set-authority-panel"' in response.text
     assert 'data-rendered-mode="rendered_replacement_package_set_authority_control"' in response.text
+    assert 'id="package-supersession-commit-panel"' in response.text
+    assert 'data-rendered-mode="rendered_package_supersession_commit_control"' in response.text
     assert 'id="package-review-submit-decision"' in response.text
     assert 'id="package-review-submit-notes"' in response.text
     assert 'id="package-review-submit"' in response.text
@@ -354,6 +357,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".replacement-package-set-authority-panel" in css.text
     assert ".replacement-package-set-authority-grid" in css.text
     assert ".replacement-package-set-authority-rows" in css.text
+    assert ".package-supersession-commit-panel" in css.text
+    assert ".package-supersession-commit-grid" in css.text
+    assert ".package-supersession-commit-rows" in css.text
     assert ".layer3-e2e-governance-lifecycle-panel" in css.text
     assert ".layer3-e2e-governance-lifecycle-rows" in css.text
     assert ".downstream-access-lifecycle-dashboard-panel" in css.text
@@ -454,6 +460,15 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "payload.reviewed_output_items = reviewedOutputItems" in js.text
     assert "postJson('/package/review/commit'" in js.text
     assert "postJson('/package/review/submit'" in js.text
+    assert "PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE = 'rendered_package_supersession_commit_control'" in js.text
+    assert "PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION = 'commit_package_supersession'" in js.text
+    assert "function stableHash" in js.text
+    assert "window.crypto.subtle.digest('SHA-256'" in js.text
+    assert "function packageSupersessionCommitPayload" in js.text
+    assert "State.packageSupersessionCommit = await postJson(" in js.text
+    assert "'/package/supersession/commit'" in js.text
+    assert "package_supersession_commit_ready" in js.text
+    assert "renderPackageSupersessionCommitPanel()" in js.text
     assert "postJson('/handoff/export/prepare'" in js.text
     assert "postJson('/handoff/aps/dispatch'" in js.text
     assert "postJson('/handoff/export/download/prepare'" in js.text
