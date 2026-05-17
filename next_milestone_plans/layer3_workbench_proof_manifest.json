@@ -27692,5 +27692,37 @@
   "latest_source_l3_output_package_active_authority_external_local_export_freeze_current_main_sync_merge_commit": "aba49b1d045aecac2205bea758e9484604216096",
   "latest_source_l3_output_package_active_authority_external_local_export_freeze_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_external_local_export_freeze",
   "latest_source_l3_output_package_active_authority_external_local_export_freeze_current_main_sync_next_posture": "implement_source_l3_output_package_active_authority_external_local_export_after_freeze_sync",
-  "latest_source_l3_output_package_active_authority_external_local_export_freeze_current_main_sync_summary": "Doc 693 proof records current-main sync for PR #1297 merge commit aba49b1d045aecac2205bea758e9484604216096 with green backend-layer3-api and test checks, zero reviewThreads, post-merge progress and target-selection validation, and next posture implement_source_l3_output_package_active_authority_external_local_export_after_freeze_sync."
+  "latest_source_l3_output_package_active_authority_external_local_export_freeze_current_main_sync_summary": "Doc 693 proof records current-main sync for PR #1297 merge commit aba49b1d045aecac2205bea758e9484604216096 with green backend-layer3-api and test checks, zero reviewThreads, post-merge progress and target-selection validation, and next posture implement_source_l3_output_package_active_authority_external_local_export_after_freeze_sync.",
+  "source_l3_output_package_active_authority_external_local_export_runtime_proof": {
+    "proof_kind": "implementation_proof_source_l3_output_package_active_authority_external_local_export_runtime",
+    "status": "proved_source_l3_output_package_active_authority_external_local_export_runtime",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/693_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_FREEZE_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-active-authority-external-export-impl",
+    "reader_path": "external_local_export",
+    "route": "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+    "validation_seam": "recorded local_outbox_provider_private_handoff, server_owned_local_outbox_write, server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, external_export_download_prepare, local outbox artifact and manifest hash/size validation, and LAYER3_EXTERNAL_LOCAL_EXPORT_DIR target authority",
+    "runtime_behavior_change": false,
+    "proof_terms": [
+      "active replacement refs/hashes carried from handoff/export prepare through APS handoff dispatch, external export/download prepare, external export/download delivery, connector dispatch, connector-local receipt, fake target, server-owned local outbox write, local-outbox provider-private handoff, and external local export",
+      "external local export writes only durable local outbox artifact and manifest bytes authorized by recorded active-authority local outbox write and provider-private handoff state",
+      "redacted external-local-export:// refs remain response-safe",
+      "source L3OutputPackage rows remain unchanged",
+      "L3ExternalLocalExportReceipt authority snapshot omits source_artifact_ref and destination_path",
+      "same-key replay returns the same external local export receipt",
+      "no ConnectorRun or ConnectorRunTarget rows are created",
+      "no provider-private signed URL receipt or provider-public delivery state is created",
+      "no real connector invocation or external provider/object-store write is enabled",
+      "no raw local path, source artifact ref, configured export path, provider token, or provider object key response leakage"
+    ],
+    "validation": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort -q PASS"
+    ],
+    "next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_external_local_export_runtime"
+  },
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_branch": "codex/l3-active-authority-external-export-impl",
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_doc": "next_milestone_plans/Layer3_planning_docs/694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md",
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_external_local_export_runtime",
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_summary": "Doc 694 proof records source_l3_output_package_active_authority_external_local_export_runtime: external_local_export carries active replacement refs/hashes through local outbox provider-private handoff into external local export on the admitted associated-cohort APS evidence-bundle path, writes only durable local outbox artifact and manifest bytes authorized by active-authority local outbox write and provider-private handoff state, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, creates no provider-private signed URL receipt or provider-public delivery state, enables no real connector invocation or external provider/object-store write, leaks no raw local path/source artifact ref/configured export path/provider token/provider object key, and changes no service runtime behavior."
 }
