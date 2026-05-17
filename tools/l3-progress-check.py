@@ -1783,6 +1783,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_H
     PLANNING_DOCS
     / "688_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "689_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -56353,6 +56357,84 @@ def _check_source_l3_output_package_active_authority_local_outbox_provider_priva
                 )
 
 
+def _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze`.",
+        "689_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE_CURRENT_MAIN_SYNC.md",
+        "688_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE.md",
+        "Freeze PR: `#1293`.",
+        "codex/l3-active-authority-provider-private-freeze",
+        "f3ba77e6d900e6040a32ad2debc71e138e173d93",
+        "7ce54f78b1cb0dc39585b802bbdbe9ce6a02464a",
+        "Selected reader path now synced: `local_outbox_provider_private_handoff`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        "adopt_active_replacement_package_authority_for_local_outbox_provider_private_handoff",
+        "Synced result: `current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze`.",
+        "Runtime behavior change synced: `false`.",
+        "backend-layer3-api`: `SUCCESS` in `2m56s`",
+        "test`: `SUCCESS` in `3m28s`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR latestReviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "implement_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_after_freeze_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority local outbox provider-private handoff freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Local Outbox Provider-Private Handoff Freeze Current-Main Sync",
+            "PR `#1293`",
+            "7ce54f78b1cb0dc39585b802bbdbe9ce6a02464a",
+            "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze",
+            "implement_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze",
+            "codex/l3-active-authority-provider-private-freeze-sync",
+            "689_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1293",
+            "7ce54f78b1cb0dc39585b802bbdbe9ce6a02464a",
+            "backend-layer3-api SUCCESS 2m56s",
+            "test SUCCESS 3m28s",
+            "implement_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze",
+            "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze",
+            "689_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1293",
+            "reviewThreads totalCount 0",
+            "local_outbox_provider_private_handoff",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+            "implement_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority local outbox provider-private handoff freeze sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -56884,6 +56966,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze(errors)
+    _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
