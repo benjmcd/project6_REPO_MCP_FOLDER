@@ -26725,5 +26725,81 @@
   "latest_source_l3_output_package_replacement_activation_runtime_branch": "codex/l3-package-activation-runtime",
   "latest_source_l3_output_package_replacement_activation_runtime_doc": "next_milestone_plans/Layer3_planning_docs/666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
   "latest_source_l3_output_package_replacement_activation_runtime_live_behavior_change": true,
-  "latest_source_l3_output_package_replacement_activation_runtime_summary": "Doc 666 proof records the backend/API source_l3_output_package_replacement_activation runtime: dedicated L3PackageReplacementActivation state, POST /api/v1/layer3/package/replacement-activation/commit, response-safe artifact refs, raw local paths excluded from activation_snapshot, idempotent same-basis replay, stale authority and incomplete namespace fail-closed tests, and disabled side-effect flags."
+  "latest_source_l3_output_package_replacement_activation_runtime_summary": "Doc 666 proof records the backend/API source_l3_output_package_replacement_activation runtime: dedicated L3PackageReplacementActivation state, POST /api/v1/layer3/package/replacement-activation/commit, response-safe artifact refs, raw local paths excluded from activation_snapshot, idempotent same-basis replay, stale authority and incomplete namespace fail-closed tests, and disabled side-effect flags.",
+  "source_l3_output_package_replacement_activation_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_l3_output_package_replacement_activation_runtime",
+    "status": "current_main_synced_source_l3_output_package_replacement_activation_runtime",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+    "runtime_pr": "#1271",
+    "runtime_branch": "codex/l3-package-activation-runtime",
+    "runtime_branch_commit": "7b2bf2241fefac6f03029f9bb6e9d95b58eba391",
+    "runtime_merge_commit": "ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+    "proof_terms": [
+      "current_main_synced_source_l3_output_package_replacement_activation_runtime",
+      "POST /api/v1/layer3/package/replacement-activation/commit",
+      "backend/app/services/layer3_package_replacement_activation.py",
+      "L3PackageReplacementActivation",
+      "l3_package_replacement_activation",
+      "0032_layer3_package_replacement_activation.py",
+      "resolve_active_replacement_package_authority",
+      "client_request_id is the idempotency key and is not part of canonical replacement_activation_basis_hash",
+      "source L3OutputPackage rows not mutated",
+      "existing handoff/export readers are not rebound by this sync"
+    ],
+    "merge_gate": {
+      "comments": "empty",
+      "reviews": "empty",
+      "latestReviews": "empty",
+      "reviewThreads_totalCount": 0,
+      "reviewThreads_unresolved": 0,
+      "mergeability_before_merge": "MERGEABLE",
+      "merge_state_before_merge": "CLEAN",
+      "checks": [
+        "backend-layer3-api SUCCESS 2m24s",
+        "test SUCCESS 3m37s"
+      ]
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS on project6-origin/main ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS on project6-origin/main ea01ebd6840bca750f1de2ca716b205f6dcb6896"
+    ],
+    "required_sync_branch_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "next_posture": "select_post_activation_package_lifecycle_use_surface_after_runtime_sync",
+    "non_admitted": [
+      "rendered activation controls",
+      "package rebuild",
+      "package payload rewrite",
+      "direct source L3OutputPackage mutation",
+      "downstream invalidation",
+      "downstream handoff/export re-binding",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "raw public URL exposure",
+      "connector/destination dispatch",
+      "ConnectorRun creation",
+      "ConnectorRunTarget creation",
+      "credentials",
+      "external network egress",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority",
+      "caller-supplied arbitrary paths or URLs"
+    ]
+  },
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_pr": "#1271",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_merge_commit": "ea01ebd6840bca750f1de2ca716b205f6dcb6896",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_replacement_activation_runtime",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_next_posture": "select_post_activation_package_lifecycle_use_surface_after_runtime_sync",
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_summary": "Doc 667 records current-main sync for merged PR #1271 and leaves the next exact posture as select_post_activation_package_lifecycle_use_surface_after_runtime_sync."
 }
