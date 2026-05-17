@@ -1880,6 +1880,9 @@ LAYER3_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC 
     PLANNING_DOCS
     / "713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE = (
+    PLANNING_DOCS / "714_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -59255,6 +59258,115 @@ def _check_corrected_artifact_package_supersession_commit_runtime_current_main_s
                 )
 
 
+def _check_corrected_artifact_replacement_manifest_authority_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze for `corrected_artifact_replacement_manifest_from_supersession_authority`.",
+        "714_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE.md",
+        "713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "6884a545d5ea66286af40425be5cfb47027f1ccb",
+        "codex/l3-corrected-artifact-manifest-freeze",
+        "package_mutation_reconstruction",
+        "rebuild_package_from_corrected_artifacts",
+        "operator_review_corrections_server_owned_corrected_package_artifact_set",
+        "corrected_artifact_replacement_manifest_from_supersession_authority",
+        "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+        "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+        "backend/app/api/layer3.py",
+        "backend/tests/test_layer3_api.py",
+        "L3ReplacementPackageArtifactManifest",
+        "L3CorrectedPackageArtifactSet",
+        "L3ReplacementPackageSetAuthority",
+        "L3PackageSupersessionCommit",
+        "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+        "replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+        "Runtime behavior in this pass: `false`",
+        "current_main_sync_corrected_artifact_replacement_manifest_authority_freeze",
+        "implement_corrected_artifact_replacement_manifest_from_supersession_authority_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE)} "
+                f"missing corrected-artifact replacement manifest authority freeze term: {term}"
+            )
+
+    for blocked in (
+        "replacement namespace row creation",
+        "package replacement activation",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "connector/destination dispatch",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector",
+        "auth/security",
+        "full mockup activation",
+        "frontend-durable authority",
+        "rendered UI authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE)} "
+                f"missing corrected-artifact replacement manifest authority freeze boundary term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Replacement Manifest Authority Freeze",
+            "714_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE.md",
+            "materialization-gated",
+            "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+            "current_main_sync_corrected_artifact_replacement_manifest_authority_freeze",
+            "implement_corrected_artifact_replacement_manifest_from_supersession_authority_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "corrected_artifact_replacement_manifest_authority_freeze",
+            "implementation_entry_frozen_corrected_artifact_replacement_manifest_authority",
+            "codex/l3-corrected-artifact-manifest-freeze",
+            "714_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE.md",
+            "6884a545d5ea66286af40425be5cfb47027f1ccb",
+            "existing_materialization_gated_manifest_route_not_sufficient_for_corrected_artifact_authority",
+            "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+            "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+            "current_main_sync_corrected_artifact_replacement_manifest_authority_freeze",
+            "implement_corrected_artifact_replacement_manifest_from_supersession_authority_after_freeze_sync",
+            "latest_corrected_artifact_replacement_manifest_authority_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_replacement_manifest_authority_freeze_proof",
+            "implementation_entry_freeze_corrected_artifact_replacement_manifest_authority",
+            "implementation_entry_frozen_corrected_artifact_replacement_manifest_authority",
+            "codex/l3-corrected-artifact-manifest-freeze",
+            "714_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE.md",
+            "6884a545d5ea66286af40425be5cfb47027f1ccb",
+            "existing materialization-gated manifest route not sufficient for corrected artifact authority",
+            "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-corrected-artifact-set-authority",
+            "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+            "current_main_sync_corrected_artifact_replacement_manifest_authority_freeze",
+            "implement_corrected_artifact_replacement_manifest_from_supersession_authority_after_freeze_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact replacement manifest authority "
+                    f"freeze artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -59811,6 +59923,7 @@ def main() -> int:
     _check_corrected_artifact_package_rebuild_downstream_authority_freeze_current_main_sync(errors)
     _check_corrected_artifact_package_supersession_commit_runtime_proof(errors)
     _check_corrected_artifact_package_supersession_commit_runtime_current_main_sync(errors)
+    _check_corrected_artifact_replacement_manifest_authority_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
