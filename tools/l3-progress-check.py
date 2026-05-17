@@ -1860,6 +1860,10 @@ LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACT_SET_ENTRY_FREEZE_CURRENT_MAIN_SYN
 LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_PROOF = (
     PLANNING_DOCS / "708_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_PROOF.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "709_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -58620,6 +58624,112 @@ def _check_replacement_package_set_authority_from_corrected_artifact_set_runtime
                 )
 
 
+def _check_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `replacement_package_set_authority_from_corrected_artifact_set_runtime`.",
+        "709_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "708_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_PROOF.md",
+        "#1313",
+        "codex/l3-corrected-artifact-replacement-authority-runtime",
+        "2df2913a81245dca2c23e39555c2c08060e0af5d",
+        "73e102d87788bd9b376ea4d2effab40e853f48b1",
+        "codex/l3-corrected-artifact-replacement-authority-runtime-sync",
+        "implemented_and_current_main_synced",
+        "backend-layer3-api",
+        "test",
+        "PR reviewThreads totalCount before merge: `0`",
+        "unresolved current reviewThreads before merge: `0`",
+        "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+        "backend/app/services/layer3_replacement_package_set_authority.py",
+        "backend/app/api/layer3.py",
+        "L3ReplacementPackageSetAuthority",
+        "L3CorrectedPackageArtifactSet",
+        "replacement_package_set_authority_from_corrected_artifact_set",
+        "record_replacement_package_set_authority",
+        "redacted source/replacement payload refs",
+        "no raw local paths",
+        "evaluate_corrected_artifact_package_rebuild_downstream_existing_authority_after_replacement_authority_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing replacement package set authority from corrected artifact set runtime sync term: {term}"
+            )
+
+    for blocked in (
+        "Direct source `L3OutputPackage` row mutation",
+        "package payload rewrite",
+        "package activation",
+        "replacement namespace row creation",
+        "replacement artifact manifest recording",
+        "package supersession commit",
+        "connector/destination dispatch",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+        "rendered UI authority",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing replacement package set authority from corrected artifact set runtime sync boundary term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package Set Authority From Corrected Artifact Set Runtime Current-Main Sync",
+            "709_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1313",
+            "73e102d87788bd9b376ea4d2effab40e853f48b1",
+            "reviewThreads totalCount was `0`",
+            "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+            "evaluate_corrected_artifact_package_rebuild_downstream_existing_authority_after_replacement_authority_runtime_sync",
+        ),
+        MANIFEST: (
+            "replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync",
+            "current_main_synced_replacement_package_set_authority_from_corrected_artifact_set_runtime",
+            "codex/l3-corrected-artifact-replacement-authority-runtime-sync",
+            "709_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1313",
+            "73e102d87788bd9b376ea4d2effab40e853f48b1",
+            "runtime_behavior_already_merged",
+            "evaluate_corrected_artifact_package_rebuild_downstream_existing_authority_after_replacement_authority_runtime_sync",
+            "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync_proof",
+            "current_main_sync_replacement_package_set_authority_from_corrected_artifact_set_runtime",
+            "current_main_synced_replacement_package_set_authority_from_corrected_artifact_set_runtime",
+            "709_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "reviewThreads totalCount 0",
+            "redacted source/replacement payload refs",
+            "no raw local path exposure",
+            "evaluate_corrected_artifact_package_rebuild_downstream_existing_authority_after_replacement_authority_runtime_sync",
+            "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing replacement package set authority from corrected artifact set "
+                    f"runtime current-main sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -59171,6 +59281,7 @@ def main() -> int:
     _check_package_rebuild_from_corrected_artifact_set_entry_freeze(errors)
     _check_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync(errors)
     _check_replacement_package_set_authority_from_corrected_artifact_set_runtime_proof(errors)
+    _check_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
