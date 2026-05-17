@@ -26483,5 +26483,66 @@
   "latest_rendered_replacement_package_namespace_control_runtime_branch": "codex/l3-rendered-namespace-control-runtime",
   "latest_rendered_replacement_package_namespace_control_runtime_doc": "next_milestone_plans/Layer3_planning_docs/662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md",
   "latest_rendered_replacement_package_namespace_control_runtime_live_behavior_change": true,
-  "latest_rendered_replacement_package_namespace_control_runtime_summary": "Doc 662 proof records rendered replacement package namespace control runtime over the existing replacement namespace route, with request allowlist, forbidden browser field absence, failure-state projection, response-safe artifact ref validation, redacted artifact display, headed/headless E2E proof, and no package rebuild payload rewrite source row mutation provider-public delivery connector dispatch source expansion RAG/vector auth/security or frontend-durable authority."
+  "latest_rendered_replacement_package_namespace_control_runtime_summary": "Doc 662 proof records rendered replacement package namespace control runtime over the existing replacement namespace route, with request allowlist, forbidden browser field absence, failure-state projection, response-safe artifact ref validation, redacted artifact display, headed/headless E2E proof, and no package rebuild payload rewrite source row mutation provider-public delivery connector dispatch source expansion RAG/vector auth/security or frontend-durable authority.",
+  "rendered_replacement_package_namespace_control_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_rendered_replacement_package_namespace_control_runtime",
+    "status": "current_main_synced_rendered_replacement_package_namespace_control_runtime",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md",
+    "runtime_pr": "#1266",
+    "runtime_branch": "codex/l3-rendered-namespace-control-runtime",
+    "runtime_branch_commit": "1d5224f7c4996d2b04f6c68c13d00fdf77518874",
+    "runtime_merge_commit": "d10b4ccfa123a9cbf268943b8b365ae539a6369e",
+    "current_main_checkpoint_after_merge": "d10b4ccfa123a9cbf268943b8b365ae539a6369e",
+    "merge_gate": [
+      "backend-layer3-api SUCCESS 2m42s",
+      "test SUCCESS 3m28s",
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "project6-origin/main d10b4ccfa123a9cbf268943b8b365ae539a6369e",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "synced_result": "current_main_synced_rendered_replacement_package_namespace_control_runtime",
+    "proof_terms": [
+      "663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+      "662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md",
+      "rendered_replacement_package_namespace_control",
+      "record_replacement_package_namespace_row",
+      "/api/v1/layer3/package/replacement-namespace/record",
+      "#replacement-package-namespace-submit",
+      "#replacement-package-namespace-panel",
+      "State.replacementPackageNamespace",
+      "select_next_package_lifecycle_mutating_action_after_namespace_control_runtime_sync"
+    ],
+    "non_admitted": [
+      "new runtime behavior in this sync",
+      "new rendered behavior in this sync",
+      "package rebuild",
+      "package payload rewrite",
+      "source L3OutputPackage row mutation",
+      "downstream invalidation",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "frontend-durable authority",
+      "browser-supplied arbitrary artifact refs",
+      "browser-supplied arbitrary hashes",
+      "raw local path exposure"
+    ],
+    "next_whole_project_posture": "select_next_package_lifecycle_mutating_action_after_namespace_control_runtime_sync"
+  },
+  "latest_rendered_replacement_package_namespace_control_runtime_current_main_sync_branch": "codex/l3-rendered-namespace-control-runtime-sync",
+  "latest_rendered_replacement_package_namespace_control_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_rendered_replacement_package_namespace_control_runtime_current_main_sync_live_behavior_change": false,
+  "latest_rendered_replacement_package_namespace_control_runtime_current_main_sync_summary": "Doc 663 proof records current-main sync for PR #1266, proves the rendered replacement package namespace control runtime is current-main synced, and makes select_next_package_lifecycle_mutating_action_after_namespace_control_runtime_sync the next exact posture."
 }

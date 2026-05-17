@@ -1679,6 +1679,10 @@ LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF = (
     PLANNING_DOCS
     / "662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md"
 )
+LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -53716,6 +53720,74 @@ def _check_rendered_replacement_package_namespace_control_runtime_proof(
                 )
 
 
+def _check_rendered_replacement_package_namespace_control_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `rendered_replacement_package_namespace_control_runtime`.",
+        "663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "662_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_PROOF.md",
+        "Runtime PR: `#1266`.",
+        "1d5224f7c4996d2b04f6c68c13d00fdf77518874",
+        "d10b4ccfa123a9cbf268943b8b365ae539a6369e",
+        "Synced result: `current_main_synced_rendered_replacement_package_namespace_control_runtime`.",
+        "backend-layer3-api`: `SUCCESS` in `2m42s`",
+        "test`: `SUCCESS` in `3m28s`",
+        "PR reviewThreads totalCount: `0`.",
+        "Merge state before merge: `CLEAN`.",
+        "State.replacementPackageNamespace",
+        "artifact://replacement-package-artifacts/{manifest_id}/{package_kind}",
+        "select_next_package_lifecycle_mutating_action_after_namespace_control_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing rendered replacement package namespace control runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Replacement Package Namespace Control Runtime Current-Main Sync",
+            "663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1266`",
+            "d10b4ccfa123a9cbf268943b8b365ae539a6369e",
+            "current_main_synced_rendered_replacement_package_namespace_control_runtime",
+            "select_next_package_lifecycle_mutating_action_after_namespace_control_runtime_sync",
+        ),
+        MANIFEST: (
+            "rendered_replacement_package_namespace_control_runtime_current_main_sync",
+            "current_main_synced_rendered_replacement_package_namespace_control_runtime",
+            "codex/l3-rendered-namespace-control-runtime-sync",
+            "663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1266",
+            "d10b4ccfa123a9cbf268943b8b365ae539a6369e",
+            "backend-layer3-api passed 2m42s",
+            "test passed 3m28s",
+            "select_next_package_lifecycle_mutating_action_after_namespace_control_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_replacement_package_namespace_control_runtime_current_main_sync_proof",
+            "current_main_sync_rendered_replacement_package_namespace_control_runtime",
+            "current_main_synced_rendered_replacement_package_namespace_control_runtime",
+            "663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "reviewThreads totalCount 0",
+            "#replacement-package-namespace-submit",
+            "State.replacementPackageNamespace",
+            "select_next_package_lifecycle_mutating_action_after_namespace_control_runtime_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered replacement package namespace control runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -54218,6 +54290,7 @@ def main() -> int:
     _check_rendered_replacement_package_namespace_control_freeze(errors)
     _check_rendered_replacement_package_namespace_control_freeze_current_main_sync(errors)
     _check_rendered_replacement_package_namespace_control_runtime_proof(errors)
+    _check_rendered_replacement_package_namespace_control_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
