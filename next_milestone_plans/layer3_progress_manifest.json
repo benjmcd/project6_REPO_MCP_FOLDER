@@ -26251,5 +26251,41 @@
   "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync_merge_commit": "7ce54f78b1cb0dc39585b802bbdbe9ce6a02464a",
   "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze",
   "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync_next_posture": "implement_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_after_freeze_sync",
-  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync_summary": "Doc 689 records current-main sync for PR #1293 merge commit 7ce54f78b1cb0dc39585b802bbdbe9ce6a02464a with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture implement_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_after_freeze_sync."
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync_summary": "Doc 689 records current-main sync for PR #1293 merge commit 7ce54f78b1cb0dc39585b802bbdbe9ce6a02464a with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture implement_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_after_freeze_sync.",
+  "source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime": {
+    "status": "proved_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
+    "runtime_branch": "codex/l3-active-authority-provider-private-impl",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/690_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_PROOF.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/689_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_proof": "fe3a736d62cb825fd951916824ae8b2d2ec33206",
+    "reader_path": "local_outbox_provider_private_handoff",
+    "route": "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+    "validation_seam": "recorded server_owned_local_outbox_write, server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, external_export_download_prepare, and local outbox artifact hash/size validation",
+    "operator_action": "adopt_active_replacement_package_authority_for_local_outbox_provider_private_handoff",
+    "runtime_behavior_change": false,
+    "changed_files": [
+      "backend/tests/test_layer3_api.py"
+    ],
+    "proof_terms": [
+      "active refs/hashes carried through local outbox write and local-outbox provider-private handoff",
+      "provider-private handoff derives provider artifact authority from durable local outbox write artifact ref/hash/size and authority basis",
+      "redacted storage://server-owned-local-outbox refs remain response-safe",
+      "source L3OutputPackage rows remain unchanged",
+      "durable L3LocalOutboxProviderPrivateHandoffReceipt authority snapshot omits source_artifact_ref and provider_private_signed_url_token",
+      "same-key replay returns the same provider-private handoff receipt",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no provider-private signed URL receipt or provider-public delivery state",
+      "no real connector invocation or external destination write",
+      "no raw local path, source artifact ref, fake provider token, or provider signature response leakage"
+    ],
+    "validation": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort -q PASS"
+    ],
+    "next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime"
+  },
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_branch": "codex/l3-active-authority-provider-private-impl",
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_doc": "next_milestone_plans/Layer3_planning_docs/690_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_PROOF.md",
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_summary": "Doc 690 proof records source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime: local_outbox_provider_private_handoff carries active replacement refs/hashes through local outbox write into provider-private handoff on the admitted associated-cohort APS evidence-bundle path, derives provider artifact authority from durable local outbox write artifact ref/hash/size and authority basis, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, creates no provider-private signed URL receipt or provider-public delivery state, enables no real connector invocation or external destination write, leaks no raw local path/source artifact ref/provider token/signature, and changes no service runtime behavior."
 }
