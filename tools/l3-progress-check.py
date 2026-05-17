@@ -1743,6 +1743,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVE
     PLANNING_DOCS
     / "678_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "679_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55420,6 +55424,83 @@ def _check_source_l3_output_package_active_authority_external_export_download_de
                 )
 
 
+def _check_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_external_export_download_delivery_runtime`.",
+        "679_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "678_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF.md",
+        "#1283",
+        "c11665612a10426ca83f6976f44264e0f98f8671",
+        "48933bc687ee65cf0b042c80652690de6c23003c",
+        "backend-layer3-api`: `SUCCESS` in `2m42s`",
+        "test`: `SUCCESS` in `3m26s`",
+        "PR reviewThreads totalCount: `0`",
+        "PR unresolved reviewThreads: `0`",
+        "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+        "external_export_download_deliver",
+        "POST /api/v1/layer3/handoff/export/download/deliver",
+        "_external_export_download_prepare_payload_for_delivery",
+        "No service runtime code changed.",
+        "select_next_active_package_authority_reader_or_rendered_activation_control_after_external_export_download_delivery_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority external export/download delivery runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority External Export Download Delivery Runtime Current-Main Sync",
+            "679_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1283",
+            "48933bc687ee65cf0b042c80652690de6c23003c",
+            "backend-layer3-api` passed in `2m42s`",
+            "test` passed in `3m26s`",
+            "reviewThreads totalCount was `0`",
+            "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_external_export_download_delivery_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "codex/l3-active-authority-export-delivery-runtime-sync",
+            "679_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1283",
+            "48933bc687ee65cf0b042c80652690de6c23003c",
+            "backend-layer3-api SUCCESS 2m42s",
+            "test SUCCESS 3m26s",
+            "reviewThreads totalCount 0",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_external_export_download_delivery_runtime_sync",
+            "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "679_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1283",
+            "reviewThreads totalCount 0",
+            "external_export_download_deliver",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_external_export_download_delivery_runtime_sync",
+            "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority external export/download delivery runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -55941,6 +56022,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_external_export_download_delivery_freeze(errors)
     _check_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_external_export_download_delivery_runtime_proof(errors)
+    _check_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
