@@ -3529,6 +3529,11 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     border-top: 1px solid var(--border-color);
 }
 
+.replacement-package-artifact-manifest-panel {
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+}
+
 .downstream-access-lifecycle-dashboard-panel {
     padding-top: 14px;
     border-top: 1px solid var(--border-color);
@@ -3560,6 +3565,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
+.replacement-package-artifact-manifest-grid {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
 .downstream-access-lifecycle-grid {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
@@ -3588,6 +3597,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     grid-column: span 2;
 }
 
+.replacement-package-artifact-manifest-rows {
+    grid-column: span 2;
+}
+
 .downstream-access-lifecycle-rows {
     grid-column: span 2;
 }
@@ -3610,6 +3623,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     .package-supersession-preview-rows,
     .replacement-package-set-authority-rows,
     .package-supersession-commit-rows,
+    .replacement-package-artifact-manifest-rows,
     .package-lifecycle-rows,
     .downstream-access-lifecycle-rows,
     .authority-matrix-review-rows,
