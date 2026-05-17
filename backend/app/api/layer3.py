@@ -2681,6 +2681,14 @@ class Layer3ApsHandoffDispatchResponse(Layer3BaseResponse):
     source_shape: str | None = None
     source_dataset_version_ids: list[str] | None = None
     package_review_submit_schema_id: str | None = None
+    active_package_authority_applied: bool | None = None
+    package_replacement_activation_id: str | None = None
+    source_output_package_ids: list[str] | None = None
+    source_payload_hashes: list[str] | None = None
+    active_replacement_output_package_ids: list[str] | None = None
+    active_payload_refs: list[str] | None = None
+    active_payload_hashes: list[str] | None = None
+    replacement_activation_basis_hash: str | None = None
     content_id: str | None = None
     content_contract_id: str | None = None
     chunking_contract_id: str | None = None
@@ -2733,6 +2741,14 @@ class Layer3ExternalExportDownloadPrepareResponse(Layer3BaseResponse):
     package_kinds: list[str]
     payload_refs: list[str]
     payload_hashes: list[str]
+    active_package_authority_applied: bool | None = None
+    package_replacement_activation_id: str | None = None
+    source_output_package_ids: list[str] | None = None
+    source_payload_hashes: list[str] | None = None
+    active_replacement_output_package_ids: list[str] | None = None
+    active_payload_refs: list[str] | None = None
+    active_payload_hashes: list[str] | None = None
+    replacement_activation_basis_hash: str | None = None
     package_review_submit_record_ref: str
     package_review_state: str
     prepare_record_ref: str

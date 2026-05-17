@@ -643,7 +643,8 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
         lambda db, *, session_id: type("Compat", (), {"compatible": True, "blocked_reason": None})(),
     )
 
-    def fake_materialize_aps_handoff(db, *, session_id):
+    def fake_materialize_aps_handoff(db, *, session_id, active_package_authority=None):
+        assert active_package_authority is None
         bundle_ref = Path(settings.storage_dir) / "source-intake-aps-bundle.json"
         bundle_ref.write_text(json.dumps({"bundle_id": "source-intake-aps-bundle"}), encoding="utf-8")
         output_package = L3OutputPackage(
