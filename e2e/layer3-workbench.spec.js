@@ -1721,6 +1721,175 @@ async function commitRenderedPackageSupersession(
   return supersessionCommit;
 }
 
+async function recordRenderedReplacementPackageArtifactManifest(
+  page,
+  sessionId,
+  approval,
+  execution,
+  commit,
+  replacement,
+  supersessionCommit,
+) {
+  const panel = page.locator('#replacement-package-artifact-manifest-panel');
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_replacement_package_artifact_manifest_control');
+  await expect(panel).toHaveAttribute('data-manifest-state', 'replacement_package_artifact_manifest_ready');
+  await expect(page.locator('#replacement-package-artifact-manifest-submit')).toBeEnabled();
+
+  await page.route('**/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority', async (route) => {
+    await route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.workbench_error.v1',
+        error_code: 'replacement_package_artifact_manifest_from_authority_materialization_basis_hash_mismatch',
+        status: 'conflict',
+        message: 'Supplied materialization_basis_hash does not match current materialization authority.',
+        blocked_fields: ['materialization_basis_hash'],
+      }),
+    });
+  });
+  const rejectedManifestResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority')
+  ));
+  await page.locator('#replacement-package-artifact-manifest-submit').click();
+  expect((await rejectedManifestResponsePromise).status()).toBe(409);
+  await expect(panel).toHaveAttribute(
+    'data-manifest-state',
+    'replacement_package_artifact_manifest_from_authority_materialization_basis_hash_mismatch',
+  );
+  await expect(panel).toContainText('replacement_package_artifact_manifest_from_authority_materialization_basis_hash_mismatch');
+  await expect(page.locator('#replacement-package-artifact-manifest-submit')).toBeEnabled();
+  await page.unroute('**/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority');
+
+  const manifestRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority')
+    && apiRequest.method() === 'POST'
+  ));
+  const manifestResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority')
+  ));
+  await page.locator('#replacement-package-artifact-manifest-submit').click();
+
+  const manifestPayload = (await manifestRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(manifestPayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'materialization_basis_hash',
+    'operator_decision',
+    'package_supersession_commit_basis_hash',
+    'package_supersession_commit_id',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'replacement_artifact_materialization_id',
+    'replacement_authority_basis_hash',
+    'replacement_package_set_authority_id',
+    'session_id',
+  ]);
+  expect(manifestPayload.session_id).toBe(sessionId);
+  expect(manifestPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(manifestPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(manifestPayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(manifestPayload.replacement_artifact_materialization_id).toBe(
+    replacement.materialization.replacement_artifact_materialization_id,
+  );
+  expect(manifestPayload.materialization_basis_hash).toBe(replacement.materialization.materialization_basis_hash);
+  expect(manifestPayload.replacement_package_set_authority_id).toBe(
+    replacement.replacementAuthority.replacement_package_set_authority_id,
+  );
+  expect(manifestPayload.replacement_authority_basis_hash).toBe(replacement.replacementAuthority.authority_basis_hash);
+  expect(manifestPayload.package_supersession_commit_id).toBe(supersessionCommit.package_supersession_commit_id);
+  expect(manifestPayload.package_supersession_commit_basis_hash).toBe(supersessionCommit.commit_basis_hash);
+  expect(manifestPayload.operator_decision).toBe('record_replacement_package_artifact_manifest_from_authority');
+  for (const forbiddenKey of [
+    'replacement_package_set_id',
+    'replacement_package_set_hash',
+    'replacement_package_kinds',
+    'replacement_payload_refs',
+    'replacement_payload_hashes',
+    'verified_artifact_refs',
+    'verified_artifact_hashes',
+    'verified_artifact_byte_sizes',
+    'artifact_manifest_hash',
+    'authority_basis_hash',
+    'manifest_snapshot',
+    'package_payload',
+    'replacement_package_payloads',
+    'package_payload_rewrite',
+    'replacement_output_package_ids',
+    'destination_url',
+    'connector_run_id',
+    'connector_payload',
+    'provider_public_url',
+    'public_url',
+    'signed_url',
+    'source_upload',
+    'local_directory',
+    'rag_vector_index',
+    'frontend_state',
+  ]) {
+    expect(manifestPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  const manifest = await expectJson(await manifestResponsePromise);
+  expect(manifest.schema_id).toBe('layer3.replacement_package_artifact_manifest_from_authority.v1');
+  expect(['recorded', 'already_recorded']).toContain(manifest.status);
+  expect(manifest.replacement_package_artifact_manifest_id).toBeTruthy();
+  expect(manifest.replacement_artifact_materialization_id).toBe(
+    replacement.materialization.replacement_artifact_materialization_id,
+  );
+  expect(manifest.materialization_basis_hash).toBe(replacement.materialization.materialization_basis_hash);
+  expect(manifest.replacement_package_set_authority_id).toBe(
+    replacement.replacementAuthority.replacement_package_set_authority_id,
+  );
+  expect(manifest.replacement_authority_basis_hash).toBe(replacement.replacementAuthority.authority_basis_hash);
+  expect(manifest.package_supersession_commit_id).toBe(supersessionCommit.package_supersession_commit_id);
+  expect(manifest.package_supersession_commit_basis_hash).toBe(supersessionCommit.commit_basis_hash);
+  expect(manifest.operator_decision).toBe('record_replacement_package_artifact_manifest');
+  expect(manifest.record_from_authority_operator_decision).toBe(
+    'record_replacement_package_artifact_manifest_from_authority',
+  );
+  expect(manifest.replacement_package_artifact_manifest_mode).toBe(
+    'server_computed_replacement_package_artifact_manifest_record_from_authority',
+  );
+  expect(manifest.replacement_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(manifest.replacement_payload_hashes).toEqual(replacement.replacementAuthority.replacement_payload_hashes);
+  expect(manifest.verified_artifact_hashes).toEqual(replacement.replacementAuthority.replacement_payload_hashes);
+  expect(manifest.verified_artifact_byte_sizes).toHaveLength(3);
+  expect(manifest.replacement_payload_refs).toEqual(manifest.verified_artifact_refs);
+  expect(manifest.replacement_payload_refs).not.toEqual(replacement.replacementAuthority.replacement_payload_refs);
+  for (const ref of manifest.replacement_payload_refs) {
+    expect(ref).toContain(`artifact://replacement-package-artifacts/${manifest.replacement_package_artifact_manifest_id}/`);
+    expect(ref).not.toMatch(/[A-Za-z]:\\/);
+  }
+  expect(manifest.artifact_manifest_hash).toMatch(/^[a-f0-9]{64}$/);
+  expect(manifest.authority_basis_hash).toMatch(/^[a-f0-9]{64}$/);
+  expect(manifest.manifest_record_persisted).toBe(true);
+  expect(manifest.artifact_generation_enabled).toBe(false);
+  expect(manifest.package_row_mutation_enabled).toBe(false);
+  expect(manifest.package_payload_write_enabled).toBe(false);
+  expect(manifest.l3_output_package_write_enabled).toBe(false);
+  expect(manifest.broad_package_mutation_enabled).toBe(false);
+  expect(manifest.connector_dispatch_enabled).toBe(false);
+  expect(manifest.provider_public_url_enabled).toBe(false);
+  expect(manifest.source_widening_enabled).toBe(false);
+  expect(manifest.qualitative_hybrid_rag_execution_enabled).toBe(false);
+  expect(manifest.frontend_only_durable_state_enabled).toBe(false);
+  expect(manifest.next_state).toBe('replacement_package_artifact_manifest_recorded');
+
+  await expect(panel).toHaveAttribute('data-manifest-state', 'replacement_package_artifact_manifest_recorded');
+  await expect(panel).toContainText('layer3.replacement_package_artifact_manifest_from_authority.v1');
+  await expect(panel).toContainText('server_computed_replacement_package_artifact_manifest_record_from_authority');
+  await expect(panel).toContainText('record_replacement_package_artifact_manifest_from_authority');
+  await expect(panel).toContainText('artifact://replacement-package-artifacts/');
+  await expect(panel).toContainText('false');
+  await expect(page.locator('#replacement-package-artifact-manifest-submit')).toBeDisabled();
+  const renderedText = await panel.textContent();
+  expect(renderedText).not.toMatch(/[A-Za-z]:\\/);
+  expect(renderedText).not.toContain('file://');
+  await expectNoDeferredRawMixedControls(page);
+  return manifest;
+}
+
 async function submitRenderedHandoffExportPrepare(
   page,
   sessionId,
@@ -4679,6 +4848,110 @@ test('Layer 3 workbench records rendered package supersession commit control', a
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
     '/handoff/',
     '/package/replacement-artifact/manifest',
+    '/package/replacement-namespace',
+    '/handoff/connector',
+    '/source/mixed-corpus/materialize',
+  ]);
+});
+
+test('Layer 3 workbench records rendered replacement package artifact manifest control', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  const status = await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+  const review = await submitRenderedResultReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    status,
+    {
+      operatorDecision: 'approved',
+      reviewNotes: 'Raw mixed rendered result review approves replacement package artifact manifest recording.',
+      packageReviewEnabled: true,
+    },
+  );
+  const packagePreview = await inspectRenderedPackagePreview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+  );
+  const commit = await commitRenderedPackageConstruction(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    packagePreview,
+  );
+  const packageSubmit = await submitRenderedPackageReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+  );
+  const supersessionPreview = await previewRenderedPackageSupersession(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    packageSubmit,
+    { proveFailure: false },
+  );
+  const replacement = await recordRenderedReplacementPackageSetAuthority(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    supersessionPreview,
+  );
+  const supersessionCommit = await commitRenderedPackageSupersession(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    supersessionPreview,
+    replacement.replacementAuthority,
+  );
+  const manifest = await recordRenderedReplacementPackageArtifactManifest(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    replacement,
+    supersessionCommit,
+  );
+
+  expect(manifest.next_state).toBe('replacement_package_artifact_manifest_recorded');
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/mutation/preview'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-artifact/materialize'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-set/record'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/supersession/commit'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-artifact/manifest/record-from-authority'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => (
+    apiRequest.path === '/api/v1/layer3/package/replacement-artifact/manifest/record'
+  ))).toEqual([]);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/handoff/',
     '/package/replacement-namespace',
     '/handoff/connector',
     '/source/mixed-corpus/materialize',

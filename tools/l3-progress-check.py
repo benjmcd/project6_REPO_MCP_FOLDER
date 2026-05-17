@@ -1660,6 +1660,10 @@ LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAI
     PLANNING_DOCS
     / "657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "658_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -53231,6 +53235,130 @@ def _check_rendered_replacement_package_artifact_manifest_control_freeze_current
                 )
 
 
+def _check_rendered_replacement_package_artifact_manifest_control_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `rendered_replacement_package_artifact_manifest_control`.",
+        "657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+        "Implementation branch: `codex/l3-rendered-manifest-control-runtime`.",
+        "Current-main checkpoint before implementation: `44d5598890625ee0c4dda880ea6e3cb86a2b22aa`.",
+        "Selected exact operator action: `record_replacement_package_artifact_manifest_from_authority`.",
+        "Selected implementation-entry mode: `rendered_replacement_package_artifact_manifest_control`.",
+        "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+        "Owner service already live: `backend/app/services/layer3_replacement_package_artifact_manifest.py`.",
+        "Server runtime mode already live: `server_computed_replacement_package_artifact_manifest_record_from_authority`.",
+        "replacementPackageArtifactManifestPayload",
+        "renderReplacementPackageArtifactManifestPanel",
+        "State.replacementPackageArtifactManifest",
+        "artifact://replacement-package-artifacts/",
+        "Layer 3 workbench records rendered replacement package artifact manifest control",
+        "replacement_package_artifact_manifest_from_authority_materialization_basis_hash_mismatch",
+        "The next exact posture is `await_current_main_sync_for_rendered_replacement_package_artifact_manifest_control_runtime`.",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF)} "
+                f"missing rendered replacement package artifact manifest control runtime proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Replacement Package Artifact Manifest Control Runtime Proof",
+            "658_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF.md",
+            "#replacement-package-artifact-manifest-submit",
+            "#replacement-package-artifact-manifest-panel",
+            "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+            "State.replacementPackageArtifactMaterialization",
+            "State.replacementPackageSetAuthority",
+            "State.packageSupersessionCommit",
+            "backend behavior",
+            "direct-manifest-route absence",
+            "await_current_main_sync_for_rendered_replacement_package_artifact_manifest_control_runtime",
+        ),
+        MANIFEST: (
+            "rendered_replacement_package_artifact_manifest_control_runtime",
+            "rendered_replacement_package_artifact_manifest_control_runtime_implemented_branch_local",
+            "codex/l3-rendered-manifest-control-runtime",
+            "658_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF.md",
+            '"backend_behavior_change": false',
+            '"rendered_behavior_change": true',
+            "replacement-package-artifact-manifest-submit",
+            "replacement-package-artifact-manifest-panel",
+            "replacementPackageArtifactManifestPayload",
+            "renderReplacementPackageArtifactManifestPanel",
+            "State.replacementPackageArtifactManifest",
+            "direct manifest record route absence proof",
+            "await_current_main_sync_for_rendered_replacement_package_artifact_manifest_control_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_replacement_package_artifact_manifest_control_runtime_proof",
+            "branch_local_rendered_replacement_package_artifact_manifest_control_runtime",
+            "658_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_RUNTIME_PROOF.md",
+            '"backend_behavior_change": false',
+            '"rendered_behavior_change": true',
+            "replacement-package-artifact-manifest-submit",
+            "replacement-package-artifact-manifest-panel",
+            "replacementPackageArtifactManifestPayload",
+            "renderReplacementPackageArtifactManifestPanel",
+            "State.replacementPackageArtifactManifest",
+            "Layer 3 workbench records rendered replacement package artifact manifest control",
+            "replacement_package_artifact_manifest_from_authority_materialization_basis_hash_mismatch",
+            "artifact://replacement-package-artifacts/",
+            "await_current_main_sync_for_rendered_replacement_package_artifact_manifest_control_runtime",
+        ),
+        LAYER3_HTML: (
+            'id="replacement-package-artifact-manifest-submit"',
+            'id="replacement-package-artifact-manifest-panel"',
+            'data-rendered-mode="rendered_replacement_package_artifact_manifest_control"',
+        ),
+        LAYER3_CSS: (
+            ".replacement-package-artifact-manifest-panel",
+            ".replacement-package-artifact-manifest-grid",
+            ".replacement-package-artifact-manifest-rows",
+        ),
+        LAYER3_JS: (
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RENDERED_MODE = 'rendered_replacement_package_artifact_manifest_control'",
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_OPERATOR_DECISION = 'record_replacement_package_artifact_manifest_from_authority'",
+            "function replacementPackageArtifactManifestPayload",
+            "function submitReplacementPackageArtifactManifest",
+            "function renderReplacementPackageArtifactManifestPanel",
+            "/package/replacement-artifact/manifest/record-from-authority",
+            "replacement_package_artifact_manifest_ready",
+            "State.replacementPackageArtifactManifest = await postJson(",
+            "safePackagePayloadRefForDisplay",
+        ),
+        LAYER3_PAGE_TEST: (
+            "replacement-package-artifact-manifest-submit",
+            "replacement-package-artifact-manifest-panel",
+            "rendered_replacement_package_artifact_manifest_control",
+            "function replacementPackageArtifactManifestPayload",
+            "State.replacementPackageArtifactManifest = await postJson(",
+            "'/package/replacement-artifact/manifest/record-from-authority'",
+            "renderReplacementPackageArtifactManifestPanel()",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "recordRenderedReplacementPackageArtifactManifest",
+            "Layer 3 workbench records rendered replacement package artifact manifest control",
+            "replacement_package_artifact_manifest_from_authority_materialization_basis_hash_mismatch",
+            "replacement_package_artifact_manifest_recorded",
+            "artifact://replacement-package-artifacts/",
+            "/package/replacement-artifact/manifest/record-from-authority",
+            "/api/v1/layer3/package/replacement-artifact/manifest/record",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered replacement package artifact manifest control runtime proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53728,6 +53856,7 @@ def main() -> int:
     _check_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync(errors)
     _check_rendered_replacement_package_artifact_manifest_control_freeze(errors)
     _check_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync(errors)
+    _check_rendered_replacement_package_artifact_manifest_control_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
