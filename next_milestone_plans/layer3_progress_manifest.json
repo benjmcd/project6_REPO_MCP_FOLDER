@@ -24450,5 +24450,51 @@
   "latest_replacement_package_artifact_manifest_record_from_authority_runtime_branch": "codex/l3-replacement-manifest-record-authority-runtime",
   "latest_replacement_package_artifact_manifest_record_from_authority_runtime_doc": "next_milestone_plans/Layer3_planning_docs/654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
   "latest_replacement_package_artifact_manifest_record_from_authority_runtime_live_behavior_change": true,
-  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_summary": "Doc 654 implements POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-authority. The route accepts only authority ids plus existing-row basis hashes, computes manifest and authority hashes server-side, records the durable manifest row, returns redacted artifact refs, and leaves rendered UI, replacement namespace rows, package mutation, connector dispatch, source expansion, RAG/vector, provider-public delivery/use, and auth/security blocked."
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_summary": "Doc 654 implements POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-authority. The route accepts only authority ids plus existing-row basis hashes, computes manifest and authority hashes server-side, records the durable manifest row, returns redacted artifact refs, and leaves rendered UI, replacement namespace rows, package mutation, connector dispatch, source expansion, RAG/vector, provider-public delivery/use, and auth/security blocked.",
+  "replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync": {
+    "status": "current_main_synced_replacement_package_artifact_manifest_record_from_authority_runtime",
+    "sync_branch": "codex/l3-manifest-record-authority-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
+    "runtime_pr": "#1258",
+    "runtime_branch": "codex/l3-replacement-manifest-record-authority-runtime",
+    "runtime_branch_commit": "b59ab3be7897ae2eda5379dab53d61aa2644a2fc",
+    "runtime_merge_commit": "d559d42d99d50314007e5f7daa73d60cb9f8592c",
+    "current_main_checkpoint_after_merge": "d559d42d99d50314007e5f7daa73d60cb9f8592c",
+    "synced_route": "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+    "synced_service": "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+    "synced_request_dto": "Layer3ReplacementPackageArtifactManifestFromAuthorityRequest",
+    "synced_response_schema_id": "layer3.replacement_package_artifact_manifest_from_authority.v1",
+    "checks": [
+      "backend-layer3-api passed 2m40s",
+      "test passed 3m4s"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_rendered_behavior_change_this_sync": false,
+    "next_whole_project_posture": "determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail"
+  },
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_branch": "codex/l3-manifest-record-authority-runtime-sync",
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_live_behavior_change": false,
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_summary": "Doc 655 syncs PR #1258 merge commit d559d42d99d50314007e5f7daa73d60cb9f8592c to current main. The server-computed replacement package artifact manifest record-from-authority runtime is current-main synced, and the next exact posture is determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail."
 }
