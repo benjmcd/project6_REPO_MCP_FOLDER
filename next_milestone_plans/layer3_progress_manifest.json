@@ -24218,5 +24218,51 @@
   "latest_rendered_replacement_package_artifact_manifest_control_request_authority_freeze_branch": "codex/l3-rendered-replacement-manifest-freeze",
   "latest_rendered_replacement_package_artifact_manifest_control_request_authority_freeze_doc": "next_milestone_plans/Layer3_planning_docs/650_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_REQUEST_AUTHORITY_FREEZE.md",
   "latest_rendered_replacement_package_artifact_manifest_control_request_authority_freeze_live_behavior_change": false,
-  "latest_rendered_replacement_package_artifact_manifest_control_request_authority_freeze_summary": "Doc 650 records that rendered_replacement_package_artifact_manifest_control is blocked by missing governed manifest request authority. The already-live manifest backend requires artifact_manifest_hash and authority_basis_hash from server-verified byte-size authority that current rendered state does not expose, so the next posture is select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync."
+  "latest_rendered_replacement_package_artifact_manifest_control_request_authority_freeze_summary": "Doc 650 records that rendered_replacement_package_artifact_manifest_control is blocked by missing governed manifest request authority. The already-live manifest backend requires artifact_manifest_hash and authority_basis_hash from server-verified byte-size authority that current rendered state does not expose, so the next posture is select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync.",
+  "replacement_package_artifact_manifest_request_authority_freeze_current_main_sync": {
+    "status": "current_main_synced_replacement_package_artifact_manifest_request_authority_freeze",
+    "sync_branch": "codex/l3-replacement-manifest-authority-freeze-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/650_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_REQUEST_AUTHORITY_FREEZE.md",
+    "freeze_pr": "#1254",
+    "freeze_branch": "codex/l3-rendered-replacement-manifest-freeze",
+    "freeze_branch_commit": "cb33fdb576a8c4b10137f8c3b3a9411615f9780b",
+    "freeze_merge_commit": "b6ad21f949c842911dc95b2088f35d2e5433f573",
+    "current_main_checkpoint_after_merge": "b6ad21f949c842911dc95b2088f35d2e5433f573",
+    "synced_blocker_freeze_posture": "replacement_package_artifact_manifest_request_authority_freeze",
+    "attempted_implementation_entry_mode_blocked_on_current_main": "rendered_replacement_package_artifact_manifest_control",
+    "attempted_operator_action_blocked_on_current_main": "record_replacement_package_artifact_manifest_after_package_supersession_commit",
+    "synced_audit_result": "rendered_replacement_package_artifact_manifest_control_blocked_by_missing_governed_manifest_request_authority",
+    "checks": [
+      "backend-layer3-api passed 2m38s",
+      "test passed 3m13s"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_rendered_behavior_change_this_sync": false,
+    "next_whole_project_posture": "select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync"
+  },
+  "latest_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_branch": "codex/l3-replacement-manifest-authority-freeze-sync",
+  "latest_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_live_behavior_change": false,
+  "latest_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_summary": "Doc 651 syncs PR #1254 merge commit b6ad21f949c842911dc95b2088f35d2e5433f573 to current main. The replacement package artifact manifest request-authority freeze is current-main synced, and the next exact posture is select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync."
 }

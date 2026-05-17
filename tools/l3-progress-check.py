@@ -1634,6 +1634,10 @@ LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_REQUEST_AUTHORITY_
     PLANNING_DOCS
     / "650_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_REQUEST_AUTHORITY_FREEZE.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52707,6 +52711,69 @@ def _check_rendered_replacement_package_artifact_manifest_control_request_author
                 )
 
 
+def _check_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `replacement_package_artifact_manifest_request_authority_freeze` blocker/freeze.",
+        "651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "650_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_REQUEST_AUTHORITY_FREEZE.md",
+        "Blocker/freeze PR: `#1254`.",
+        "cb33fdb576a8c4b10137f8c3b3a9411615f9780b",
+        "b6ad21f949c842911dc95b2088f35d2e5433f573",
+        "Synced result: `current_main_synced_replacement_package_artifact_manifest_request_authority_freeze`.",
+        "backend-layer3-api`: `SUCCESS` in `2m38s`",
+        "test`: `SUCCESS` in `3m13s`",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "The next exact current-main posture is `select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync`.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing replacement artifact manifest request authority freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package Artifact Manifest Request Authority Freeze Current-Main Sync",
+            "651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1254`",
+            "b6ad21f949c842911dc95b2088f35d2e5433f573",
+            "current_main_synced_replacement_package_artifact_manifest_request_authority_freeze",
+            "select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync",
+        ),
+        MANIFEST: (
+            "replacement_package_artifact_manifest_request_authority_freeze_current_main_sync",
+            "current_main_synced_replacement_package_artifact_manifest_request_authority_freeze",
+            "codex/l3-replacement-manifest-authority-freeze-sync",
+            "651_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "backend-layer3-api passed 2m38s",
+            "test passed 3m13s",
+            "reviewThreads totalCount 0",
+            "select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_artifact_manifest_request_authority_freeze_current_main_sync_proof",
+            "current_main_sync_replacement_package_artifact_manifest_request_authority_freeze",
+            "reviewThreads totalCount 0",
+            "current_main_synced_replacement_package_artifact_manifest_request_authority_freeze",
+            "verified byte-size basis",
+            "select_one_governed_replacement_package_artifact_manifest_request_authority_after_blocker_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing replacement artifact manifest request authority freeze sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53197,6 +53264,7 @@ def main() -> int:
     _check_rendered_package_supersession_commit_control_runtime_proof(errors)
     _check_rendered_package_supersession_commit_control_runtime_current_main_sync(errors)
     _check_rendered_replacement_package_artifact_manifest_control_request_authority_freeze(errors)
+    _check_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
