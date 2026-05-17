@@ -1767,6 +1767,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE
     PLANNING_DOCS
     / "684_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "685_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55984,6 +55988,84 @@ def _check_source_l3_output_package_active_authority_server_owned_local_outbox_w
                 )
 
 
+def _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze`.",
+        "685_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC.md",
+        "684_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE.md",
+        "Freeze PR: `#1289`.",
+        "codex/l3-active-authority-local-outbox-freeze",
+        "03dbfc965e6c53d310b0c24f4001a038ab30982c",
+        "fcaa7ad7a38d6a5a1556424b2e90ade6d5bb03e0",
+        "Selected reader path now synced: `server_owned_local_outbox_write`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+        "adopt_active_replacement_package_authority_for_server_owned_local_outbox_write",
+        "Synced result: `current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze`.",
+        "Runtime behavior change synced: `false`.",
+        "backend-layer3-api`: `SUCCESS` in `2m47s`",
+        "test`: `SUCCESS` in `3m33s`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR latestReviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "implement_source_l3_output_package_active_authority_server_owned_local_outbox_write_after_freeze_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority server-owned local outbox write freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Server-Owned Local Outbox Write Freeze Current-Main Sync",
+            "PR `#1289`",
+            "fcaa7ad7a38d6a5a1556424b2e90ade6d5bb03e0",
+            "current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
+            "implement_source_l3_output_package_active_authority_server_owned_local_outbox_write_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
+            "codex/l3-active-authority-local-outbox-freeze-sync",
+            "685_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1289",
+            "fcaa7ad7a38d6a5a1556424b2e90ade6d5bb03e0",
+            "backend-layer3-api SUCCESS 2m47s",
+            "test SUCCESS 3m33s",
+            "implement_source_l3_output_package_active_authority_server_owned_local_outbox_write_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
+            "current_main_synced_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
+            "685_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1289",
+            "reviewThreads totalCount 0",
+            "server_owned_local_outbox_write",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+            "implement_source_l3_output_package_active_authority_server_owned_local_outbox_write_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority server-owned local outbox write freeze sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -56511,6 +56593,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze(errors)
+    _check_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
