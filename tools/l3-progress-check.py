@@ -1930,6 +1930,10 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION_CURRE
     PLANNING_DOCS
     / "727_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION = (
+    PLANNING_DOCS
+    / "728_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -60976,6 +60980,126 @@ def _check_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_c
                 )
 
 
+def _check_corrected_artifact_active_authority_external_export_download_prepare_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `corrected_artifact_active_authority_external_export_download_prepare`.",
+        "728_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION.md",
+        "727_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-download-prepare",
+        "77b9419670c1b83e95103d3ccb10573a0b64fe51",
+        "Selected downstream reader path: `external_export_download_prepare`.",
+        "POST /api/v1/layer3/handoff/export/download/prepare",
+        "resolve_active_replacement_package_payload_authority",
+        "corrected_artifact_active_authority_external_export_download_prepare_proven",
+        "Runtime behavior change in this pass: `false`",
+        "Test/proof behavior change in this pass: `true`",
+        "test_layer3_api_external_export_download_prepare_applies_corrected_artifact_active_authority",
+        "Result observed: `1 passed`",
+        "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+        "select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_prepare_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION)} "
+                f"missing corrected-artifact active authority external export/download prepare evaluation term: {term}"
+            )
+
+    for blocked in (
+        "connector invocation",
+        "destination write",
+        "credentials",
+        "external network egress",
+        "provider-public delivery/use",
+        "raw public URL exposure",
+        "signed URL generation",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "delivery rerun",
+        "external export/download delivery adoption",
+        "connector-local receipt adoption",
+        "local outbox write adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "rendered UI authority",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "browser-supplied refs/hashes/bytes",
+        "raw local path exposure",
+        "hidden LLM planning",
+    ):
+        if blocked not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION)} "
+                f"missing corrected-artifact active authority external export/download prepare blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority External Export Download Prepare Evaluation",
+            "728_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION.md",
+            "codex/l3-corrected-download-prepare",
+            "77b9419670c1b83e95103d3ccb10573a0b64fe51",
+            "POST /api/v1/layer3/handoff/export/download/prepare",
+            "active package payload authority reader path",
+            "test_layer3_api_external_export_download_prepare_applies_corrected_artifact_active_authority",
+            "`1 passed`",
+            "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+            "branch_local_corrected_artifact_active_authority_external_export_download_prepare_proven",
+            "codex/l3-corrected-download-prepare",
+            "728_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION.md",
+            "77b9419670c1b83e95103d3ccb10573a0b64fe51",
+            "external_export_download_prepare",
+            '"runtime_behavior_change": false',
+            "test_layer3_api_external_export_download_prepare_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_prepare_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_external_export_download_prepare_evaluation_proof",
+            "branch_local_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+            "branch_local_corrected_artifact_active_authority_external_export_download_prepare_proven",
+            "728_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION.md",
+            "77b9419670c1b83e95103d3ccb10573a0b64fe51",
+            "POST /api/v1/layer3/handoff/export/download/prepare",
+            '"runtime_behavior_change": false',
+            "real corrected-artifact API route chain reaches external export/download prepare",
+            "external_export_download_prepare applies corrected active package authority",
+            "duplicate prepare replays as already_prepared",
+            "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_external_export_download_prepare_applies_corrected_artifact_active_authority",
+            "_activate_corrected_replacement_package_authority",
+            "/api/v1/layer3/handoff/export/download/prepare",
+            'assert readiness_body["active_package_authority_applied"] is True',
+            'assert readiness_body["payload_refs"] == namespace_body["artifact_refs"]',
+            'assert replay_body["status"] == "already_prepared"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority external export/download prepare "
+                    f"artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -61546,6 +61670,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation(errors)
     _check_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_current_main_sync(errors)
+    _check_corrected_artifact_active_authority_external_export_download_prepare_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
