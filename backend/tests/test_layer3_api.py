@@ -1893,6 +1893,45 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "authority_rail",
     } <= set(replacement_schema["required"])
 
+    replacement_from_corrected_request_schema = spec["paths"][
+        "/api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set"
+    ]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert replacement_from_corrected_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "source_package_set_hash",
+        "corrected_package_artifact_set_id",
+        "corrected_artifact_basis_hash",
+        "operator_decision",
+    } == set(replacement_from_corrected_request_schema["required"])
+    assert replacement_from_corrected_request_schema["properties"]["operator_decision"]["enum"] == [
+        "record_replacement_package_set_authority"
+    ]
+    for forbidden_field in (
+        "replacement_payload_refs",
+        "corrected_artifact_refs",
+        "package_payload",
+        "destination_url",
+        "rag_vector_index",
+        "auth_context",
+    ):
+        assert replacement_from_corrected_request_schema["properties"][forbidden_field]["description"].startswith(
+            "Known but non-admitted"
+        )
+
+    replacement_from_corrected_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+        "post",
+    )
+    assert replacement_from_corrected_schema["title"] == "Layer3ReplacementPackageSetAuthorityResponse"
+    assert "replacement_payload_refs" in replacement_from_corrected_schema["properties"]
+    assert "authority_snapshot" in replacement_from_corrected_schema["properties"]
+
     commit_request_schema = spec["paths"]["/api/v1/layer3/package/supersession/commit"]["post"]["requestBody"][
         "content"
     ]["application/json"]["schema"]
@@ -3015,6 +3054,40 @@ def test_layer3_corrected_package_artifact_set_api_boundary_returns_workbench_er
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_corrected_package_artifact_set_boundary"]
+
+
+def test_layer3_replacement_package_set_from_corrected_artifact_set_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_replacement_from_corrected_artifact_set_boundary_error",
+            "Forced replacement from corrected artifact set boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_replacement_from_corrected_artifact_set_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_replacement_package_set_authority,
+        "record_replacement_package_set_authority_from_corrected_artifact_set",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post("/api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set", json={})
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_replacement_from_corrected_artifact_set_boundary_error",
+    )
+    assert body["message"] == "Forced replacement from corrected artifact set boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_replacement_from_corrected_artifact_set_boundary"]
 
 
 def test_layer3_replacement_package_namespace_api_boundary_returns_workbench_error_envelope(
