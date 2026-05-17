@@ -22,11 +22,20 @@ from app.models.models import (
     L3PackageReplacementActivation,
     L3ReplacementOutputPackage,
 )
+from app.services import layer3_replacement_package_artifact_manifest as manifest_service
 from app.services import layer3_package_replacement_activation as activation_service
 from app.services import layer3_replacement_package_namespace as namespace_service
 from app.services.layer3_workbench import Layer3WorkbenchError
 from test_layer3_replacement_package_artifact_manifest import PACKAGE_KINDS
-from test_layer3_replacement_package_namespace import _namespace_payload, _record_manifest_chain
+from test_layer3_replacement_package_artifact_manifest import (
+    _corrected_manifest_payload,
+    _record_corrected_manifest_authority_chain,
+)
+from test_layer3_replacement_package_namespace import (
+    _corrected_namespace_payload,
+    _namespace_payload,
+    _record_manifest_chain,
+)
 
 
 def test_package_replacement_activation_migration_defines_durable_activation_constraints(monkeypatch) -> None:
@@ -201,6 +210,89 @@ def test_package_replacement_activation_selects_namespace_without_package_mutati
             same_basis_new_request["package_replacement_activation_id"]
             == response["package_replacement_activation_id"]
         )
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_package_replacement_activation_accepts_corrected_artifact_namespace_set(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'corrected-replacement-activation.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        source, artifacts, corrected, authority, commit = _record_corrected_manifest_authority_chain(db, tmp_path)
+        manifest = manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+            db,
+            _corrected_manifest_payload(corrected=corrected, authority=authority, commit=commit),
+        )
+        namespace_response = (
+            namespace_service.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
+                db,
+                _corrected_namespace_payload(
+                    corrected=corrected,
+                    authority=authority,
+                    commit=commit,
+                    manifest=manifest,
+                ),
+            )
+        )
+        payload = _activation_payload(
+            source=source,
+            authority=authority,
+            commit=commit,
+            manifest=manifest,
+            namespaces=namespace_response["namespace_records"],
+            request_id="req-corrected-package-replacement-activation",
+        )
+        source_packages_before = [
+            (package.output_package_id, package.package_kind, package.payload_ref, package.payload_hash)
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind).all()
+        ]
+        files_before = {ref: Path(ref).read_bytes() for ref in artifacts["replacement_payload_refs"]}
+
+        response = activation_service.commit_package_replacement_activation(db, payload)
+
+        assert response["status"] == "activated"
+        assert response["replacement_output_package_ids"] == namespace_response["replacement_output_package_ids"]
+        assert response["source_output_package_ids"] == source["source_output_package_ids"]
+        assert response["package_kinds"] == PACKAGE_KINDS
+        assert response["source_l3_output_package_mutated"] is False
+        assert response["package_payload_rewrite_enabled"] is False
+        assert response["downstream_handoff_rebinding_enabled"] is False
+        assert response["connector_dispatch_enabled"] is False
+        assert response["provider_public_url_enabled"] is False
+        assert response["source_widening_enabled"] is False
+        assert response["qualitative_hybrid_rag_execution_enabled"] is False
+        assert all(ref.startswith("artifact://replacement-package-artifacts/") for ref in response["active_artifact_refs"])
+        assert str(tmp_path) not in json.dumps(response["activation_snapshot"], sort_keys=True)
+        assert db.query(L3PackageReplacementActivation).count() == 1
+        assert db.query(L3ReplacementOutputPackage).count() == len(PACKAGE_KINDS)
+        assert db.query(L3OutputPackage).count() == len(PACKAGE_KINDS)
+
+        source_packages_after = [
+            (package.output_package_id, package.package_kind, package.payload_ref, package.payload_hash)
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind).all()
+        ]
+        assert source_packages_after == source_packages_before
+        assert {ref: Path(ref).read_bytes() for ref in artifacts["replacement_payload_refs"]} == files_before
+
+        resolved = activation_service.resolve_active_replacement_package_authority(db, session_id="session-1")
+        assert resolved is not None
+        assert resolved["replacement_output_package_ids"] == namespace_response["replacement_output_package_ids"]
+        payload_authority = activation_service.resolve_active_replacement_package_payload_authority(
+            db,
+            session_id="session-1",
+        )
+        assert payload_authority is not None
+        assert payload_authority["replacement_payload_hashes"] == artifacts["replacement_payload_hashes"]
+
+        replay = activation_service.commit_package_replacement_activation(
+            db,
+            {**payload, "client_request_id": "req-corrected-package-replacement-activation-replay"},
+        )
+        assert replay["status"] == "already_activated"
+        assert replay["package_replacement_activation_id"] == response["package_replacement_activation_id"]
     finally:
         db.close()
         engine.dispose()

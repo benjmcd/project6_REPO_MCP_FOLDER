@@ -1907,6 +1907,9 @@ LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_PROOF = (
 LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION = (
+    PLANNING_DOCS / "722_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -60241,6 +60244,126 @@ def _check_corrected_artifact_replacement_namespace_runtime_current_main_sync(
                 )
 
 
+def _check_corrected_artifact_replacement_activation_authority_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local satisfied-state evaluation for `corrected_artifact_replacement_activation_authority`.",
+        "722_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION.md",
+        "721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-artifact-activation-eval",
+        "c15f96b7159a7b4e1d152c23df6d6a7bf33ab516",
+        "evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync",
+        "current_main_satisfies_corrected_artifact_replacement_activation_authority",
+        "Runtime behavior change in this pass: `false`",
+        "Test/proof behavior change in this pass: `true`",
+        "667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "POST /api/v1/layer3/package/replacement-activation/commit",
+        "backend/app/services/layer3_package_replacement_activation.py",
+        "L3PackageReplacementActivation",
+        "l3_package_replacement_activation",
+        "L3ReplacementOutputPackage",
+        "backend/tests/test_layer3_package_replacement_activation.py",
+        "L3CorrectedPackageArtifactSet",
+        "L3ReplacementPackageSetAuthority",
+        "L3PackageSupersessionCommit",
+        "L3ReplacementPackageArtifactManifest",
+        "Result observed: `5 passed`",
+        "No separate implementation-entry freeze is required",
+        "await_current_main_sync_for_corrected_artifact_replacement_activation_authority_evaluation",
+        "select_downstream_active_package_authority_read_adoption_after_corrected_artifact_activation_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION)} "
+                f"missing corrected-artifact replacement activation evaluation term: {term}"
+            )
+
+    for blocked in (
+        "package payload rewrite",
+        "source package row mutation",
+        "downstream invalidation",
+        "handoff/export rebinding",
+        "delivery rerun",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "source expansion",
+        "RAG/vector behavior",
+        "rendered controls",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION)} "
+                f"missing corrected-artifact replacement activation evaluation blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Replacement Activation Authority Evaluation",
+            "722_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION.md",
+            "codex/l3-corrected-artifact-activation-eval",
+            "c15f96b7159a7b4e1d152c23df6d6a7bf33ab516",
+            "Current main already satisfies corrected-artifact replacement activation authority",
+            "POST /api/v1/layer3/package/replacement-activation/commit",
+            "backend/app/services/layer3_package_replacement_activation.py",
+            "L3PackageReplacementActivation",
+            "L3ReplacementOutputPackage",
+            "`5 passed`",
+            "await_current_main_sync_for_corrected_artifact_replacement_activation_authority_evaluation",
+        ),
+        MANIFEST: (
+            "corrected_artifact_replacement_activation_authority_evaluation",
+            "branch_local_current_main_satisfied_corrected_artifact_replacement_activation_authority",
+            "codex/l3-corrected-artifact-activation-eval",
+            "722_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION.md",
+            "c15f96b7159a7b4e1d152c23df6d6a7bf33ab516",
+            "current_main_satisfies_corrected_artifact_replacement_activation_authority",
+            '"runtime_behavior_change": false',
+            '"test_proof_behavior_change": true',
+            "test_package_replacement_activation_accepts_corrected_artifact_namespace_set",
+            "5 passed",
+            "await_current_main_sync_for_corrected_artifact_replacement_activation_authority_evaluation",
+            "select_downstream_active_package_authority_read_adoption_after_corrected_artifact_activation_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_replacement_activation_authority_evaluation_proof",
+            "branch_local_corrected_artifact_replacement_activation_authority_evaluation",
+            "branch_local_current_main_satisfied_corrected_artifact_replacement_activation_authority",
+            "722_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION.md",
+            "current_main_satisfies_corrected_artifact_replacement_activation_authority",
+            "test_package_replacement_activation_accepts_corrected_artifact_namespace_set",
+            "activates corrected-artifact namespace set",
+            "preserves source L3OutputPackage rows",
+            "same-basis replay returns already_activated",
+            "await_current_main_sync_for_corrected_artifact_replacement_activation_authority_evaluation",
+        ),
+        LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_TEST: (
+            "test_package_replacement_activation_accepts_corrected_artifact_namespace_set",
+            "_record_corrected_manifest_authority_chain",
+            "_corrected_manifest_payload",
+            "_corrected_namespace_payload",
+            "record_replacement_package_namespace_from_corrected_artifact_manifest_authority",
+            "commit_package_replacement_activation",
+            "resolve_active_replacement_package_payload_authority",
+            "req-corrected-package-replacement-activation-replay",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact replacement activation evaluation artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -60805,6 +60928,7 @@ def main() -> int:
     _check_corrected_artifact_replacement_namespace_authority_freeze_current_main_sync(errors)
     _check_corrected_artifact_replacement_namespace_runtime_proof(errors)
     _check_corrected_artifact_replacement_namespace_runtime_current_main_sync(errors)
+    _check_corrected_artifact_replacement_activation_authority_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
