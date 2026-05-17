@@ -4360,3 +4360,15 @@ Current main now contains `POST /api/v1/layer3/package/replacement-set/record-fr
 Source `L3OutputPackage` row mutation, package payload rewrite, package activation, replacement namespace row creation, replacement artifact manifest recording, package supersession commit, downstream invalidation, provider-public delivery/use, connector/destination dispatch, `ConnectorRun`/`ConnectorRunTarget` creation, credentials, external network egress, source expansion, RAG/vector behavior, auth/security behavior, frontend-durable authority, browser/operator path editing, caller-supplied arbitrary paths or URLs, raw local path exposure, hidden LLM planning, and rendered UI authority remain blocked.
 
 The next exact posture is `evaluate_corrected_artifact_package_rebuild_downstream_existing_authority_after_replacement_authority_runtime_sync`.
+
+## Corrected Artifact Package Rebuild Downstream Authority Freeze
+
+Branch-local implementation-entry freeze: `710_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE.md` records the downstream authority evaluation after the corrected-artifact replacement package-set authority runtime sync.
+
+The evaluation found that current main has the durable downstream package lifecycle tables and services, but the next corrected-artifact bridge is still missing: the generic package supersession commit path expects caller-supplied replacement refs/hashes, while the corrected-artifact authority responses intentionally redact raw refs. The existing record-from-authority manifest path also requires the older `L3ReplacementPackageArtifactMaterialization` row, which is not the corrected-artifact source authority.
+
+Doc 710 freezes only the later server-computed package supersession commit bridge: `POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority`, owner service `backend/app/services/layer3_package_supersession_commit.py`, API owner `backend/app/api/layer3.py`, durable target `L3PackageSupersessionCommit`, upstream authority `L3ReplacementPackageSetAuthority` with request mode `replacement_package_set_authority_from_corrected_artifact_set`, source authority `L3CorrectedPackageArtifactSet`, and operator decision `commit_package_supersession`.
+
+This branch starts no runtime. Package payload rewrite, source `L3OutputPackage` mutation, replacement artifact manifest recording, replacement namespace row creation, package activation, downstream invalidation, provider-public delivery/use, connector/destination dispatch, credentials, external network egress, source expansion, RAG/vector behavior, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, raw local path exposure, hidden LLM planning, and rendered UI authority remain blocked.
+
+The next exact posture after merge is `current_main_sync_corrected_artifact_package_rebuild_downstream_authority_freeze`; after sync, the next posture is `implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync`.
