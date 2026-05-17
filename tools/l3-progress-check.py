@@ -1683,6 +1683,10 @@ LAYER3_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC 
     PLANNING_DOCS
     / "663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE = (
+    PLANNING_DOCS
+    / "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -53788,6 +53792,99 @@ def _check_rendered_replacement_package_namespace_control_runtime_current_main_s
                 )
 
 
+def _check_source_l3_output_package_replacement_activation_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `source_l3_output_package_replacement_activation`.",
+        "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
+        "663_RENDERED_REPLACEMENT_PACKAGE_NAMESPACE_CONTROL_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "1352b18e205ebe961d94db9579a32fe34dca40b9",
+        "Selected package lifecycle action: `activate_replacement_output_package_namespace`.",
+        "Selected future route: `POST /api/v1/layer3/package/replacement-activation/commit`.",
+        "Future owner service: `backend/app/services/layer3_package_replacement_activation.py`.",
+        "Runtime status in this pass: `not_implemented_in_this_pass`.",
+        "L3ReplacementOutputPackage",
+        "L3ReplacementPackageArtifactManifest",
+        "L3ReplacementPackageSetAuthority",
+        "L3PackageSupersessionCommit",
+        "L3OutputPackage",
+        "replacement_activation_basis_hash",
+        "client_request_id` is the idempotency key and must remain outside the canonical activation basis",
+        "current_main_sync_source_l3_output_package_replacement_activation_freeze",
+        "implement_source_l3_output_package_replacement_activation_after_freeze_sync",
+        "select_package_activation_storage_boundary_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE)} "
+                f"missing source L3 output package replacement activation freeze term: {term}"
+            )
+
+    for blocked in (
+        "This freeze admits no runtime implementation.",
+        "Package payload byte rewrite.",
+        "Browser-supplied package or replacement bytes.",
+        "Provider-public delivery/use.",
+        "ConnectorRun creation",
+        "Source expansion.",
+        "RAG/vector behavior.",
+        "Frontend-durable authority.",
+        "caller-supplied arbitrary paths or URLs",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE)} "
+                f"missing source L3 output package replacement activation non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Replacement Activation Freeze",
+            "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
+            "source_l3_output_package_replacement_activation",
+            "activate_replacement_output_package_namespace",
+            "POST /api/v1/layer3/package/replacement-activation/commit",
+            "current_main_sync_source_l3_output_package_replacement_activation_freeze",
+            "implement_source_l3_output_package_replacement_activation_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_replacement_activation_freeze",
+            "implementation_entry_frozen_source_l3_output_package_replacement_activation",
+            "codex/l3-package-activation-freeze",
+            "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
+            "1352b18e205ebe961d94db9579a32fe34dca40b9",
+            "activate_replacement_output_package_namespace",
+            "backend/app/services/layer3_package_replacement_activation.py",
+            "client_request_id is the idempotency key and is not part of the canonical replacement_activation_basis_hash",
+            "current_main_sync_source_l3_output_package_replacement_activation_freeze",
+            "implement_source_l3_output_package_replacement_activation_after_freeze_sync",
+            "latest_source_l3_output_package_replacement_activation_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_replacement_activation_freeze_proof",
+            "implementation_entry_freeze_source_l3_output_package_replacement_activation",
+            "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
+            "activate_replacement_output_package_namespace",
+            "replacement_activation_basis_hash",
+            "client_request_id is the idempotency key and is not part of the canonical replacement_activation_basis_hash",
+            "partial-write rollback proof",
+            "disabled side-effect proof",
+            "latest_source_l3_output_package_replacement_activation_freeze_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package replacement activation freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -54291,6 +54388,7 @@ def main() -> int:
     _check_rendered_replacement_package_namespace_control_freeze_current_main_sync(errors)
     _check_rendered_replacement_package_namespace_control_runtime_proof(errors)
     _check_rendered_replacement_package_namespace_control_runtime_current_main_sync(errors)
+    _check_source_l3_output_package_replacement_activation_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
