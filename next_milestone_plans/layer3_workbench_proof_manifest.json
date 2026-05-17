@@ -25929,5 +25929,96 @@
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_branch": "codex/l3-manifest-authority-source-freeze-sync",
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
   "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_live_behavior_change": false,
-  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_summary": "Doc 653 proof records current-main sync for PR #1256, proves the server-computed replacement package artifact manifest record-from-authority source is current-main synced, and makes implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync the next exact posture."
+  "latest_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync_summary": "Doc 653 proof records current-main sync for PR #1256, proves the server-computed replacement package artifact manifest record-from-authority source is current-main synced, and makes implement_server_computed_replacement_package_artifact_manifest_record_from_authority_after_selection_sync the next exact posture.",
+  "replacement_package_artifact_manifest_record_from_authority_runtime_proof": {
+    "proof_kind": "runtime_implementation_server_computed_replacement_package_artifact_manifest_record_from_authority",
+    "status": "server_computed_replacement_package_artifact_manifest_record_from_authority_runtime_implemented",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "60dba1a6c65d21d668099e5ca704e0c7438aa3a5",
+    "implemented_files": [
+      "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+      "backend/app/api/layer3.py",
+      "backend/tests/test_layer3_api.py"
+    ],
+    "proof_terms": [
+      "Layer3ReplacementPackageArtifactManifestFromAuthorityRequest",
+      "layer3.replacement_package_artifact_manifest_from_authority.v1",
+      "record_replacement_package_artifact_manifest_from_authority",
+      "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+      "materialization_basis_hash",
+      "replacement_authority_basis_hash",
+      "package_supersession_commit_basis_hash",
+      "artifact_manifest_hash",
+      "authority_basis_hash",
+      "verified_artifact_byte_sizes",
+      "artifact://replacement-package-artifacts/{manifest_id}/{package_kind}",
+      "response_artifact_refs_redacted"
+    ],
+    "targeted_tests": [
+      "test_layer3_package_openapi_contracts",
+      "test_layer3_json_workbench_error_openapi_contracts",
+      "test_layer3_replacement_package_artifact_manifest_from_authority_api_boundary_returns_workbench_error_envelope",
+      "test_layer3_api_replacement_package_artifact_manifest_record_from_authority_computes_and_redacts_refs",
+      "test_layer3_api_replacement_package_artifact_manifest_record_from_authority_prechecks_fail_closed"
+    ],
+    "positive_proof": [
+      "server computes manifest hash",
+      "server computes authority basis hash",
+      "server verifies artifact byte sizes",
+      "response refs are redacted",
+      "response manifest snapshot refs are redacted",
+      "same client_request_id replay returns already_recorded",
+      "same computed basis with new client_request_id returns already_recorded",
+      "no connector-run creation",
+      "no connector-run-target creation",
+      "no replacement namespace row",
+      "no source L3OutputPackage row mutation"
+    ],
+    "negative_proof": [
+      "missing fields fail closed",
+      "forbidden browser replacement refs fail closed",
+      "browser artifact_manifest_hash fails closed",
+      "browser authority_basis_hash fails closed",
+      "destination URL fails closed",
+      "unsupported operator decision fails closed",
+      "missing materialization fails closed",
+      "stale materialization_basis_hash fails closed",
+      "stale replacement_authority_basis_hash fails closed",
+      "stale package_supersession_commit_basis_hash fails closed",
+      "tampered artifact hash mismatch fails closed"
+    ],
+    "non_admitted": [
+      "rendered UI control",
+      "existing caller-supplied manifest record contract modification",
+      "replacement namespace rows",
+      "package rebuild",
+      "package payload rewrite",
+      "source L3OutputPackage row mutation",
+      "downstream invalidation",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "ConnectorRun creation",
+      "ConnectorRunTarget creation",
+      "credentials",
+      "external network egress",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority",
+      "raw local path exposure in response"
+    ],
+    "validation": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_replacement_package_artifact_manifest.py .\\backend\\app\\api\\layer3.py .\\backend\\tests\\test_layer3_api.py PASS",
+      "python -m pytest targeted record-from-authority tests PASS"
+    ],
+    "next_required_action_after_merge": "current_main_sync_replacement_package_artifact_manifest_record_from_authority_runtime",
+    "next_whole_project_posture_after_sync": "determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail"
+  },
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_branch": "codex/l3-replacement-manifest-record-authority-runtime",
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_doc": "next_milestone_plans/Layer3_planning_docs/654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_live_behavior_change": true,
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_summary": "Doc 654 proof records the server-computed replacement package artifact manifest record-from-authority runtime, including OpenAPI, error envelope, success/idempotency, redaction, stale basis-hash, forbidden browser-supplied field, and tampered artifact mismatch proof."
 }

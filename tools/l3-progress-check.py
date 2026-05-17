@@ -1646,6 +1646,9 @@ LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_
     PLANNING_DOCS
     / "653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME = (
+    PLANNING_DOCS / "654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52920,6 +52923,101 @@ def _check_replacement_package_artifact_manifest_request_authority_source_select
                 )
 
 
+def _check_replacement_package_artifact_manifest_record_from_authority_runtime(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime implementation for `server_computed_replacement_package_artifact_manifest_record_from_authority`.",
+        "654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
+        "653_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_REQUEST_AUTHORITY_SOURCE_SELECTION_CURRENT_MAIN_SYNC.md",
+        "60dba1a6c65d21d668099e5ca704e0c7438aa3a5",
+        "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+        "layer3.replacement_package_artifact_manifest_from_authority.v1",
+        "Layer3ReplacementPackageArtifactManifestFromAuthorityRequest",
+        "materialization_basis_hash",
+        "replacement_authority_basis_hash",
+        "package_supersession_commit_basis_hash",
+        "artifact://replacement-package-artifacts/{manifest_id}/{package_kind}",
+        "server_computed_replacement_package_artifact_manifest_record_from_authority_runtime_implemented",
+        "current_main_sync_replacement_package_artifact_manifest_record_from_authority_runtime",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME)} "
+                f"missing replacement artifact manifest record-from-authority runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package Artifact Manifest Record-From-Authority Runtime",
+            "654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
+            "POST /api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+            "materialization_basis_hash",
+            "replacement_authority_basis_hash",
+            "package_supersession_commit_basis_hash",
+            "redacted `artifact://replacement-package-artifacts/{manifest_id}/{package_kind}` refs",
+            "current_main_sync_replacement_package_artifact_manifest_record_from_authority_runtime",
+        ),
+        MANIFEST: (
+            "replacement_package_artifact_manifest_record_from_authority_runtime",
+            "server_computed_replacement_package_artifact_manifest_record_from_authority_runtime_implemented",
+            "codex/l3-replacement-manifest-record-authority-runtime",
+            "654_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME.md",
+            "Layer3ReplacementPackageArtifactManifestFromAuthorityRequest",
+            "layer3.replacement_package_artifact_manifest_from_authority.v1",
+            "materialization_basis_hash",
+            "replacement_authority_basis_hash",
+            "package_supersession_commit_basis_hash",
+            "tampered replacement artifact hash mismatch",
+            "current_main_sync_replacement_package_artifact_manifest_record_from_authority_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_artifact_manifest_record_from_authority_runtime_proof",
+            "runtime_implementation_server_computed_replacement_package_artifact_manifest_record_from_authority",
+            "response_artifact_refs_redacted",
+            "test_layer3_api_replacement_package_artifact_manifest_record_from_authority_computes_and_redacts_refs",
+            "stale replacement_authority_basis_hash fails closed",
+            "raw local path exposure in response",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_replacement_package_artifact_manifest.py": (
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_OPERATOR_DECISION",
+            "record_replacement_package_artifact_manifest_from_authority",
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_REQUIRED_FIELDS",
+            "materialization_basis_hash",
+            "replacement_authority_basis_hash",
+            "package_supersession_commit_basis_hash",
+            "redact_artifact_refs=True",
+            "response_artifact_refs_redacted",
+        ),
+        LAYER3_API: (
+            "Layer3ReplacementPackageArtifactManifestFromAuthorityRequest",
+            "/package/replacement-artifact/manifest/record-from-authority",
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_REQUEST_SCHEMA",
+            "replacement_package_artifact_manifest_from_authority.v1",
+            "record_replacement_package_artifact_manifest_from_authority",
+            "record_from_authority_operator_decision",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_replacement_package_artifact_manifest_from_authority_api_boundary_returns_workbench_error_envelope",
+            "test_layer3_api_replacement_package_artifact_manifest_record_from_authority_computes_and_redacts_refs",
+            "test_layer3_api_replacement_package_artifact_manifest_record_from_authority_prechecks_fail_closed",
+            "replacement_package_artifact_manifest_from_authority_scope_not_admitted",
+            "replacement_package_artifact_manifest_payload_hash_mismatch",
+            "response_artifact_refs_redacted",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing replacement artifact manifest record-from-authority runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53413,6 +53511,7 @@ def main() -> int:
     _check_replacement_package_artifact_manifest_request_authority_freeze_current_main_sync(errors)
     _check_replacement_package_artifact_manifest_request_authority_source_selection_freeze(errors)
     _check_replacement_package_artifact_manifest_request_authority_source_selection_current_main_sync(errors)
+    _check_replacement_package_artifact_manifest_record_from_authority_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
