@@ -1971,6 +1971,9 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
     ]["post"]["requestBody"]["content"]["application/json"]["schema"]
     for key, value in layer3_api.PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA.items():
         assert corrected_commit_request_schema[key] == value
+    assert set(corrected_commit_request_schema["properties"]) <= set(
+        layer3_api.Layer3PackageSupersessionCommitFromCorrectedArtifactSetRequest.model_fields
+    )
     assert corrected_commit_request_schema["additionalProperties"] is False
     assert {
         "client_request_id",
@@ -3173,6 +3176,34 @@ def test_layer3_package_supersession_commit_from_corrected_artifact_set_api_boun
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_supersession_commit_from_corrected_artifact_set_boundary"]
+
+
+def test_layer3_package_supersession_commit_from_corrected_artifact_set_known_forbidden_field_returns_workbench_error(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+        json={
+            "client_request_id": "req-forbidden-public-url",
+            "session_id": "session-forbidden",
+            "analysis_plan_id": "plan-forbidden",
+            "pass_run_id": "pass-forbidden",
+            "reconciliation_record_id": "recon-forbidden",
+            "corrected_package_artifact_set_id": "corrected-forbidden",
+            "corrected_artifact_basis_hash": "basis-forbidden",
+            "replacement_package_set_authority_id": "authority-forbidden",
+            "replacement_authority_basis_hash": "authority-basis-forbidden",
+            "operator_decision": "commit_package_supersession",
+            "public_url": "https://example.invalid/package",
+        },
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=400,
+        error_code="package_supersession_commit_from_corrected_artifact_set_scope_not_admitted",
+    )
+    assert body["blocked_fields"] == ["public_url"]
 
 
 def test_layer3_replacement_package_namespace_api_boundary_returns_workbench_error_envelope(

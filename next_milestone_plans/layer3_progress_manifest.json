@@ -27267,5 +27267,66 @@
   "latest_corrected_artifact_package_supersession_commit_runtime_status": "corrected_artifact_package_supersession_commit_runtime_implemented_branch_local",
   "latest_corrected_artifact_package_supersession_commit_runtime_live_behavior_change": true,
   "latest_corrected_artifact_package_supersession_commit_runtime_next_posture": "await_current_main_sync_for_corrected_artifact_package_supersession_commit_runtime",
-  "latest_corrected_artifact_package_supersession_commit_runtime_summary": "Doc 712 implements the server-computed package supersession commit bridge from corrected-artifact replacement authority. The route derives source/replacement refs and hashes server-side, records/replays L3PackageSupersessionCommit through the existing durable persistence path, redacts API response refs and returned commit snapshot refs, and keeps manifest, namespace, activation, handoff/export, delivery, connector/destination, source expansion, RAG/vector, auth/security, rendered UI, frontend-durable authority, package payload rewrite, source package row mutation, caller paths/URLs, and raw local path exposure blocked."
+  "latest_corrected_artifact_package_supersession_commit_runtime_summary": "Doc 712 implements the server-computed package supersession commit bridge from corrected-artifact replacement authority. The route derives source/replacement refs and hashes server-side, records/replays L3PackageSupersessionCommit through the existing durable persistence path, redacts API response refs and returned commit snapshot refs, and keeps manifest, namespace, activation, handoff/export, delivery, connector/destination, source expansion, RAG/vector, auth/security, rendered UI, frontend-durable authority, package payload rewrite, source package row mutation, caller paths/URLs, and raw local path exposure blocked.",
+  "corrected_artifact_package_supersession_commit_runtime_current_main_sync": {
+    "status": "current_main_synced_corrected_artifact_package_supersession_commit_runtime",
+    "sync_branch": "codex/l3-corrected-artifact-supersession-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/712_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_PROOF.md",
+    "runtime_pr": "#1317",
+    "runtime_branch": "codex/l3-corrected-artifact-supersession-commit",
+    "runtime_branch_commit": "410ee98d4342887858df30b9b237a31a425d5907",
+    "runtime_merge_commit": "0c27602358854f778d157ece163549bd1724df1f",
+    "current_main_checkpoint_after_merge": "0c27602358854f778d157ece163549bd1724df1f",
+    "selected_runtime_now_synced": "server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority",
+    "live_route_now_synced": "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+    "owner_service_now_synced": "backend/app/services/layer3_package_supersession_commit.py",
+    "api_owner_now_synced": "backend/app/api/layer3.py",
+    "durable_target_now_synced": "L3PackageSupersessionCommit",
+    "source_authority_now_synced": "L3CorrectedPackageArtifactSet",
+    "replacement_authority_now_synced": "L3ReplacementPackageSetAuthority",
+    "request_mode_now_synced": "package_supersession_commit_from_corrected_artifact_set_authority",
+    "operator_decision_now_synced": "commit_package_supersession",
+    "checks": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "latestReviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved current reviewThreads 0",
+      "mergeability MERGEABLE"
+    ],
+    "post_merge_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "git diff --check PASS"
+    ],
+    "sync_branch_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py .\\backend\\app\\services\\layer3_package_supersession_commit.py .\\backend\\app\\api\\layer3.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_package_supersession_commit.py -q PASS 4 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"supersession_commit_from_corrected_artifact_set or openapi_contracts or package_supersession_commit_contract\" PASS 13 passed, 165 deselected",
+      "git diff --check PASS"
+    ],
+    "runtime_behavior_already_merged": true,
+    "sync_live_behavior_change": true,
+    "review_fix_behavior_change": true,
+    "runtime_behavior_change": false,
+    "next_posture": "evaluate_corrected_artifact_replacement_artifact_manifest_authority_after_supersession_commit_runtime_sync"
+  },
+  "latest_corrected_artifact_package_supersession_commit_runtime_current_main_sync_branch": "codex/l3-corrected-artifact-supersession-sync",
+  "latest_corrected_artifact_package_supersession_commit_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/713_CORRECTED_ARTIFACT_PACKAGE_SUPERSESSION_COMMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_package_supersession_commit_runtime_current_main_sync_status": "current_main_synced_corrected_artifact_package_supersession_commit_runtime",
+  "latest_corrected_artifact_package_supersession_commit_runtime_current_main_sync_live_behavior_change": true,
+  "latest_corrected_artifact_package_supersession_commit_runtime_current_main_sync_next_posture": "evaluate_corrected_artifact_replacement_artifact_manifest_authority_after_supersession_commit_runtime_sync",
+  "latest_corrected_artifact_package_supersession_commit_runtime_current_main_sync_summary": "Doc 713 syncs PR #1317 merge commit 0c27602358854f778d157ece163549bd1724df1f to current main and fixes two post-merge review findings on the same runtime surface: schema-advertised known forbidden fields now reach the Layer 3 workbench error envelope, and the corrected-artifact response preserves the standard authority rail while adding custom flags. The next exact posture is evaluate_corrected_artifact_replacement_artifact_manifest_authority_after_supersession_commit_runtime_sync."
 }
