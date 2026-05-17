@@ -186,6 +186,114 @@ def _canonical_payload_or_raise(canonical_row: L3OutputPackage) -> dict[str, Any
     )
 
 
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item or "").strip() for item in value]
+
+
+def _private_ref_path_or_raise(ref: str, *, label: str) -> Path:
+    normalized = str(ref or "").strip()
+    if not normalized:
+        raise Layer3ApsHandoffError(f"{label} is missing")
+    path = Path(normalized)
+    if not path.exists():
+        raise Layer3ApsHandoffError(f"{label} does not exist")
+    return path
+
+
+def _read_private_json_dict(path: Path, *, label: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise Layer3ApsHandoffError(f"{label} is unreadable") from exc
+    if not isinstance(payload, dict):
+        raise Layer3ApsHandoffError(f"{label} is not a JSON object")
+    return payload
+
+
+def _active_authority_projection(active_package_authority: dict[str, Any] | None) -> dict[str, Any] | None:
+    if active_package_authority is None:
+        return None
+    return {
+        "active_package_authority_applied": True,
+        "package_replacement_activation_id": str(
+            active_package_authority.get("package_replacement_activation_id") or ""
+        ).strip(),
+        "source_output_package_ids": _string_list(active_package_authority.get("source_output_package_ids")),
+        "source_payload_hashes": _string_list(active_package_authority.get("source_payload_hashes")),
+        "active_replacement_output_package_ids": _string_list(
+            active_package_authority.get("replacement_output_package_ids")
+        ),
+        "active_payload_refs": _string_list(active_package_authority.get("active_artifact_refs")),
+        "active_payload_hashes": _string_list(active_package_authority.get("active_artifact_hashes")),
+        "replacement_activation_basis_hash": str(
+            active_package_authority.get("replacement_activation_basis_hash") or ""
+        ).strip(),
+    }
+
+
+def _canonical_payload_from_active_authority_or_raise(
+    active_package_authority: dict[str, Any] | None,
+    *,
+    source_rows: dict[str, L3OutputPackage],
+) -> dict[str, Any]:
+    if active_package_authority is None:
+        return _canonical_payload_or_raise(source_rows[PACKAGE_KIND_CANONICAL_INTERNAL])
+
+    package_kinds = _string_list(active_package_authority.get("package_kinds"))
+    source_ids = _string_list(active_package_authority.get("source_output_package_ids"))
+    source_hashes = _string_list(active_package_authority.get("source_payload_hashes"))
+    active_hashes = _string_list(active_package_authority.get("active_artifact_hashes"))
+    replacement_refs = _string_list(active_package_authority.get("replacement_payload_refs"))
+    replacement_hashes = _string_list(active_package_authority.get("replacement_payload_hashes"))
+    expected_source_ids = [source_rows[kind].output_package_id for kind in REQUIRED_SOURCE_PACKAGE_KINDS]
+    expected_source_hashes = [str(source_rows[kind].payload_hash or "") for kind in REQUIRED_SOURCE_PACKAGE_KINDS]
+    if package_kinds != list(REQUIRED_SOURCE_PACKAGE_KINDS):
+        raise Layer3ApsHandoffError(
+            "active replacement package authority package kinds do not match APS handoff package order"
+        )
+    if source_ids != expected_source_ids or source_hashes != expected_source_hashes:
+        raise Layer3ApsHandoffError(
+            "active replacement package authority source package identity is stale for APS handoff"
+        )
+    if (
+        len(replacement_refs) != len(REQUIRED_SOURCE_PACKAGE_KINDS)
+        or len(replacement_hashes) != len(REQUIRED_SOURCE_PACKAGE_KINDS)
+        or len(active_hashes) != len(REQUIRED_SOURCE_PACKAGE_KINDS)
+        or any(not value for value in replacement_refs + replacement_hashes + active_hashes)
+    ):
+        raise Layer3ApsHandoffError(
+            "active replacement package authority private payload vectors are incomplete for APS handoff"
+        )
+
+    canonical_index = package_kinds.index(PACKAGE_KIND_CANONICAL_INTERNAL)
+    canonical_path = _private_ref_path_or_raise(
+        replacement_refs[canonical_index],
+        label="Active replacement canonical artifact",
+    )
+    try:
+        canonical_bytes = canonical_path.read_bytes()
+    except OSError as exc:
+        raise Layer3ApsHandoffError("Active replacement canonical artifact is unreadable") from exc
+    canonical_hash = hashlib.sha256(canonical_bytes).hexdigest()
+    if canonical_hash != replacement_hashes[canonical_index] or canonical_hash != active_hashes[canonical_index]:
+        raise Layer3ApsHandoffError("active replacement canonical artifact hash does not match APS handoff authority")
+    artifact = _read_private_json_dict(canonical_path, label="Active replacement canonical artifact")
+    source_payload = artifact.get("source_package_payload")
+    if (
+        artifact.get("schema_id") != "layer3.replacement_package_artifact.v1"
+        or artifact.get("package_kind") != PACKAGE_KIND_CANONICAL_INTERNAL
+        or artifact.get("source_output_package_id") != source_rows[PACKAGE_KIND_CANONICAL_INTERNAL].output_package_id
+        or artifact.get("source_payload_hash") != source_rows[PACKAGE_KIND_CANONICAL_INTERNAL].payload_hash
+        or not isinstance(source_payload, dict)
+    ):
+        raise Layer3ApsHandoffError(
+            "active replacement canonical artifact does not match APS handoff source package authority"
+        )
+    return source_payload
+
+
 def _canonical_inventory_or_none(canonical_payload: dict[str, Any]) -> list[dict[str, Any]] | None:
     payload_summary = canonical_payload.get("selection_and_source_summary")
     if not isinstance(payload_summary, dict) or "material_snapshot_inventory_json" not in payload_summary:
@@ -466,9 +574,10 @@ def _summary_json(
     bundle_ref: str,
     package_status: str,
     run_id: str,
+    active_package_authority: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     _aps_bundle, aps_contract = _aps_bundle_modules()
-    return {
+    summary = {
         "package_kind": PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
         "package_status": package_status,
         "source_gate": SOURCE_GATE_D_APS_HANDOFF_FREEZE,
@@ -504,13 +613,30 @@ def _summary_json(
             "source_run_id": run_id,
         },
     }
+    active_projection = _active_authority_projection(active_package_authority)
+    if active_projection is not None:
+        summary.update(active_projection)
+        summary["active_authority_source"] = "source_l3_output_package_replacement_activation"
+        summary["compatibility_notes_json"] = [
+            *summary["compatibility_notes_json"],
+            "APS handoff canonical payload was read from active replacement package artifact authority",
+        ]
+    return summary
 
 
-def check_aps_handoff_compatibility(db: Session, *, session_id: str) -> Layer3ApsHandoffCompatibility:
+def check_aps_handoff_compatibility(
+    db: Session,
+    *,
+    session_id: str,
+    active_package_authority: dict[str, Any] | None = None,
+) -> Layer3ApsHandoffCompatibility:
     try:
         session = _load_session_or_raise(db, session_id=session_id)
         source_rows, _reconciliation = _load_source_packages_or_raise(db, session_id=session.session_id)
-        canonical_payload = _canonical_payload_or_raise(source_rows[PACKAGE_KIND_CANONICAL_INTERNAL])
+        canonical_payload = _canonical_payload_from_active_authority_or_raise(
+            active_package_authority,
+            source_rows=source_rows,
+        )
         run_id, selected_targets = _selected_aps_targets_for_session_or_raise(
             db,
             session_id=session.session_id,
@@ -522,10 +648,18 @@ def check_aps_handoff_compatibility(db: Session, *, session_id: str) -> Layer3Ap
     return Layer3ApsHandoffCompatibility(compatible=True)
 
 
-def materialize_aps_handoff(db: Session, *, session_id: str) -> Layer3ApsHandoffResult:
+def materialize_aps_handoff(
+    db: Session,
+    *,
+    session_id: str,
+    active_package_authority: dict[str, Any] | None = None,
+) -> Layer3ApsHandoffResult:
     session = _load_session_or_raise(db, session_id=session_id)
     source_rows, reconciliation = _load_source_packages_or_raise(db, session_id=session.session_id)
-    canonical_payload = _canonical_payload_or_raise(source_rows[PACKAGE_KIND_CANONICAL_INTERNAL])
+    canonical_payload = _canonical_payload_from_active_authority_or_raise(
+        active_package_authority,
+        source_rows=source_rows,
+    )
     run_id, selected_targets = _selected_aps_targets_for_session_or_raise(
         db,
         session_id=session.session_id,
@@ -566,6 +700,7 @@ def materialize_aps_handoff(db: Session, *, session_id: str) -> Layer3ApsHandoff
             bundle_ref=bundle_ref,
             package_status=package_status,
             run_id=run_id,
+            active_package_authority=active_package_authority,
         ),
     )
     db.add(output_package)

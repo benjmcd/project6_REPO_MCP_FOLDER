@@ -169,10 +169,10 @@ def _install_layer3_browser_patches(temp_path: Path) -> None:
 
     from app.services import layer3_workbench as layer3_workbench_module
 
-    def _check_aps_handoff_compatibility(db, *, session_id):
+    def _check_aps_handoff_compatibility(db, *, session_id, active_package_authority=None):
         return SimpleNamespace(compatible=True, blocked_reason=None)
 
-    def _materialize_aps_handoff(db, *, session_id):
+    def _materialize_aps_handoff(db, *, session_id, active_package_authority=None):
         reconciliation = (
             db.query(L3ReconciliationRecord)
             .filter(L3ReconciliationRecord.session_id == session_id)

@@ -489,6 +489,98 @@ def resolve_active_replacement_package_authority(db: Session, *, session_id: str
     }
 
 
+def resolve_active_replacement_package_payload_authority(db: Session, *, session_id: str) -> dict[str, Any] | None:
+    active_authority = resolve_active_replacement_package_authority(db, session_id=session_id)
+    if active_authority is None:
+        return None
+
+    row = (
+        db.query(L3PackageReplacementActivation)
+        .filter(L3PackageReplacementActivation.session_id == session_id)
+        .one_or_none()
+    )
+    if row is None:
+        _raise_mismatch(
+            "package_replacement_activation_payload_authority_missing",
+            "session_id",
+            "Active replacement package authority disappeared while resolving payload authority.",
+        )
+    manifest = (
+        db.query(L3ReplacementPackageArtifactManifest)
+        .filter(
+            L3ReplacementPackageArtifactManifest.replacement_package_artifact_manifest_id
+            == row.replacement_artifact_manifest_id
+        )
+        .one_or_none()
+    )
+    if manifest is None or manifest.session_id != row.session_id:
+        _raise_mismatch(
+            "package_replacement_activation_payload_manifest_missing",
+            "replacement_artifact_manifest_id",
+            "Active replacement package authority requires an existing same-session artifact manifest.",
+        )
+    if (
+        manifest.replacement_package_set_authority_id != row.replacement_package_set_authority_id
+        or manifest.package_supersession_commit_id != row.package_supersession_commit_id
+    ):
+        _raise_mismatch(
+            "package_replacement_activation_payload_manifest_lineage_mismatch",
+            "replacement_artifact_manifest_id",
+            "Active replacement artifact manifest lineage does not match the activation row.",
+        )
+
+    package_kinds = _string_list(active_authority.get("package_kinds"))
+    active_refs = _string_list(active_authority.get("active_artifact_refs"))
+    active_hashes = _string_list(active_authority.get("active_artifact_hashes"))
+    replacement_refs = _string_list(manifest.replacement_payload_refs_json)
+    replacement_hashes = _string_list(manifest.replacement_payload_hashes_json)
+    verified_refs = _string_list(manifest.verified_artifact_refs_json)
+    verified_hashes = _string_list(manifest.verified_artifact_hashes_json)
+    expected_active_refs = [
+        _response_safe_artifact_ref(
+            manifest_id=manifest.replacement_package_artifact_manifest_id,
+            package_kind=package_kind,
+        )
+        for package_kind in package_kinds
+    ]
+    if (
+        not package_kinds
+        or len(active_refs) != len(package_kinds)
+        or len(active_hashes) != len(package_kinds)
+        or len(replacement_refs) != len(package_kinds)
+        or len(replacement_hashes) != len(package_kinds)
+        or len(verified_refs) != len(package_kinds)
+        or len(verified_hashes) != len(package_kinds)
+        or any(not value for value in active_refs + active_hashes + replacement_refs + replacement_hashes)
+    ):
+        _raise_mismatch(
+            "package_replacement_activation_payload_authority_vector_malformed",
+            "package_kinds",
+            "Active replacement package payload authority vectors are incomplete or malformed.",
+        )
+    if active_refs != expected_active_refs or active_hashes != verified_hashes:
+        _raise_mismatch(
+            "package_replacement_activation_payload_authority_safe_ref_mismatch",
+            "active_artifact_refs",
+            "Active replacement package response-safe refs or hashes do not match the verified manifest.",
+        )
+    if replacement_refs != verified_refs or replacement_hashes != verified_hashes:
+        _raise_mismatch(
+            "package_replacement_activation_payload_authority_manifest_mismatch",
+            "replacement_artifact_manifest_id",
+            "Replacement package private payload refs or hashes do not match the verified manifest.",
+        )
+
+    return {
+        **active_authority,
+        "replacement_artifact_manifest_id": row.replacement_artifact_manifest_id,
+        "replacement_package_set_authority_id": row.replacement_package_set_authority_id,
+        "package_supersession_commit_id": row.package_supersession_commit_id,
+        "replacement_payload_refs": replacement_refs,
+        "replacement_payload_hashes": replacement_hashes,
+    }
+
+
 def commit_package_replacement_activation(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = _validate_payload(payload)
     inputs = _activation_inputs(db, payload)
