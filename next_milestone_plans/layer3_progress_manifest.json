@@ -25592,5 +25592,42 @@
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_doc": "next_milestone_plans/Layer3_planning_docs/672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_live_behavior_change": false,
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
-  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_summary": "Doc 672 freezes source_l3_output_package_active_authority_aps_handoff_dispatch as the next downstream active-package-authority read-adoption slice. It selects aps_handoff_dispatch via POST /api/v1/layer3/handoff/aps/dispatch, admits no runtime in the freeze, and keeps external export/download, local outbox, provider-private handoff, external local export, rendered activation controls, package rebuild/payload rewrite, source mutation, source expansion, RAG/vector, auth/security, and frontend-durable authority unadmitted."
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_summary": "Doc 672 freezes source_l3_output_package_active_authority_aps_handoff_dispatch as the next downstream active-package-authority read-adoption slice. It selects aps_handoff_dispatch via POST /api/v1/layer3/handoff/aps/dispatch, admits no runtime in the freeze, and keeps external export/download, local outbox, provider-private handoff, external local export, rendered activation controls, package rebuild/payload rewrite, source mutation, source expansion, RAG/vector, auth/security, and frontend-durable authority unadmitted.",
+  "source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync": {
+    "status": "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+    "branch": "codex/l3-active-authority-aps-dispatch-freeze-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/673_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
+    "freeze_pr": "#1277",
+    "freeze_branch": "codex/l3-active-authority-aps-dispatch-freeze",
+    "freeze_branch_commit": "19cc7854f18a244ae323e9968fff3d6e726fe5c0",
+    "freeze_merge_commit": "10286378745aff68a4b0b93b511021c30d5b0894",
+    "current_main_checkpoint_after_merge": "10286378745aff68a4b0b93b511021c30d5b0894",
+    "checks": [
+      "backend-layer3-api SUCCESS 2m38s",
+      "test SUCCESS 3m30s"
+    ],
+    "comments": "empty",
+    "reviews": "empty",
+    "latest_reviews": "empty",
+    "review_threads_total_count": 0,
+    "unresolved_review_threads": 0,
+    "mergeability_before_merge": "MERGEABLE",
+    "merge_state_before_merge": "CLEAN",
+    "selected_follow_on_surface": "downstream_active_package_authority_read_adoption",
+    "selected_reader_path": "aps_handoff_dispatch",
+    "selected_route": "POST /api/v1/layer3/handoff/aps/dispatch",
+    "selected_operator_action": "adopt_active_replacement_package_authority_for_aps_handoff_dispatch",
+    "selected_implementation_entry_mode": "source_l3_output_package_active_authority_aps_handoff_dispatch",
+    "sync_live_behavior_change": false,
+    "runtime_rendered_behavior_change_in_sync": false,
+    "next_posture": "implement_source_l3_output_package_active_authority_aps_handoff_dispatch_after_freeze_sync"
+  },
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_branch": "codex/l3-active-authority-aps-dispatch-freeze-sync",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/673_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_pr": "#1277",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_merge_commit": "10286378745aff68a4b0b93b511021c30d5b0894",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_next_posture": "implement_source_l3_output_package_active_authority_aps_handoff_dispatch_after_freeze_sync",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_summary": "Doc 673 syncs PR #1277 merge commit 10286378745aff68a4b0b93b511021c30d5b0894 to current main. The source L3 output package active authority APS handoff dispatch freeze is current-main synced, and the next exact posture is implement_source_l3_output_package_active_authority_aps_handoff_dispatch_after_freeze_sync."
 }
