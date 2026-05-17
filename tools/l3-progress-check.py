@@ -1864,6 +1864,10 @@ LAYER3_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CUR
     PLANNING_DOCS
     / "709_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE = (
+    PLANNING_DOCS
+    / "710_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -58730,6 +58734,132 @@ def _check_replacement_package_set_authority_from_corrected_artifact_set_runtime
                 )
 
 
+def _check_corrected_artifact_package_rebuild_downstream_authority_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze after downstream authority evaluation for `package_rebuild_from_corrected_artifact_set`.",
+        "710_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE.md",
+        "709_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-artifact-downstream-freeze",
+        "02f8145f04bd736bcd3162aeddbaf16cf293e8ce",
+        "Selected surface: `package_mutation_reconstruction`.",
+        "Selected package lifecycle action: `rebuild_package_from_corrected_artifacts`.",
+        "Selected source authority: `operator_review_corrections_server_owned_corrected_package_artifact_set`.",
+        "server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority",
+        "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+        "backend/app/services/layer3_package_supersession_commit.py",
+        "backend/app/api/layer3.py",
+        "L3PackageSupersessionCommit",
+        "L3ReplacementPackageSetAuthority",
+        "L3CorrectedPackageArtifactSet",
+        "replacement_package_set_authority_from_corrected_artifact_set",
+        "package_supersession_commit_from_corrected_artifact_set_authority",
+        "commit_package_supersession",
+        "derive `source_package_set_hash`, source package ids/kinds/refs/hashes",
+        "operator-safe, server-computed package supersession commit bridge",
+        "not_implemented_in_this_pass",
+        "current_main_sync_corrected_artifact_package_rebuild_downstream_authority_freeze",
+        "implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE)} "
+                f"missing corrected-artifact downstream authority freeze term: {term}"
+            )
+
+    for blocked in (
+        "generate replacement artifacts",
+        "rewrite package payloads",
+        "mutate source `L3OutputPackage` rows",
+        "record replacement artifact manifests",
+        "record replacement namespace rows",
+        "activate packages",
+        "invalidate downstream artifacts",
+        "re-run handoff/export or delivery",
+        "create `ConnectorRun` or `ConnectorRunTarget` rows",
+        "use credentials",
+        "perform network egress",
+        "provider-public delivery/use",
+        "source expansion",
+        "RAG/vector",
+        "auth/security",
+        "full mockup",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE)} "
+                f"missing corrected-artifact downstream authority freeze boundary term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Package Rebuild Downstream Authority Freeze",
+            "710_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE.md",
+            "generic package supersession commit path expects caller-supplied replacement refs/hashes",
+            "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority",
+            "L3PackageSupersessionCommit",
+            "current_main_sync_corrected_artifact_package_rebuild_downstream_authority_freeze",
+            "implement_server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "corrected_artifact_package_rebuild_downstream_authority_freeze",
+            "implementation_entry_frozen_corrected_artifact_package_rebuild_downstream_authority",
+            "codex/l3-corrected-artifact-downstream-freeze",
+            "710_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE.md",
+            "02f8145f04bd736bcd3162aeddbaf16cf293e8ce",
+            "server_computed_package_supersession_commit_from_corrected_artifact_replacement_authority",
+            "downstream_bridge_missing_for_corrected_artifact_replacement_authority",
+            "not_implemented_in_this_pass",
+            "current_main_sync_corrected_artifact_package_rebuild_downstream_authority_freeze",
+            "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_package_rebuild_downstream_authority_freeze_proof",
+            "implementation_entry_freeze_corrected_artifact_package_rebuild_downstream_authority",
+            "implementation_entry_frozen_corrected_artifact_package_rebuild_downstream_authority",
+            "710_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE.md",
+            "server-computed package supersession commit from corrected-artifact replacement authority",
+            "no raw local path exposure",
+            "no replacement artifact manifest rows",
+            "no ConnectorRun or ConnectorRunTarget creation",
+            "current_main_sync_corrected_artifact_package_rebuild_downstream_authority_freeze",
+            "latest_corrected_artifact_package_rebuild_downstream_authority_freeze_summary",
+        ),
+        PACKAGE_SUPERSESSION_COMMIT_SERVICE: (
+            "commit_package_supersession",
+            "L3PackageSupersessionCommit",
+            "L3ReplacementPackageSetAuthority",
+        ),
+        REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE: (
+            "record_replacement_package_set_authority_from_corrected_artifact_set",
+            "REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_MODE",
+        ),
+        LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE: (
+            "L3CorrectedPackageArtifactSet",
+            "raw_payload_refs_exposed",
+            "artifact_refs_redacted",
+        ),
+        LAYER3_API: (
+            "/package/supersession/commit",
+            "/package/replacement-set/record-from-corrected-artifact-set",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact downstream authority freeze artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -59282,6 +59412,7 @@ def main() -> int:
     _check_package_rebuild_from_corrected_artifact_set_entry_freeze_current_main_sync(errors)
     _check_replacement_package_set_authority_from_corrected_artifact_set_runtime_proof(errors)
     _check_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync(errors)
+    _check_corrected_artifact_package_rebuild_downstream_authority_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
