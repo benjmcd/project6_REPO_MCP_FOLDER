@@ -108,6 +108,10 @@ def build_bootstrap_contract(
             ),
             "package_supersession_preview_admitted": True,
             "package_supersession_preview_endpoint": f"{api_root}/package/mutation/preview",
+            "replacement_package_artifact_materialization_admitted": True,
+            "replacement_package_artifact_materialization_endpoint": (
+                f"{api_root}/package/replacement-artifact/materialize"
+            ),
             "replacement_package_set_authority_admitted": True,
             "replacement_package_set_authority_endpoint": f"{api_root}/package/replacement-set/record",
             "package_supersession_commit_admitted": True,
