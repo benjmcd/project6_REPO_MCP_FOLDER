@@ -1811,6 +1811,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_C
     PLANNING_DOCS
     / "695_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE = (
+    PLANNING_DOCS
+    / "696_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -57011,6 +57015,106 @@ def _check_source_l3_output_package_active_authority_external_local_export_runti
                 )
 
 
+def _check_package_rebuild_from_corrected_artifacts_operator_action_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: package mutation/reconstruction operator-action selection freeze for `rebuild_package_from_corrected_artifacts`.",
+        "696_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE.md",
+        "695_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "9950ec0c4900638fa6be81a73e67b43ac3723c11",
+        "Current selected surface: `package_mutation_reconstruction`.",
+        "Selected package lifecycle action: `rebuild_package_from_corrected_artifacts`.",
+        "Selected implementation-entry posture: `audit_rebuild_package_from_corrected_artifacts_implementation_entry_after_operator_action_sync`.",
+        "Entry decision: `freeze_only`.",
+        "Runtime status in this pass: `not_implemented_in_this_pass`.",
+        "Current main already proves package supersession preview",
+        "controlled external local export through `external_local_export`",
+        "`rebuild_package` is still treated as a forbidden request field",
+        "no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent",
+        "exact corrected-artifact authority source",
+        "current_main_sync_package_rebuild_from_corrected_artifacts_operator_action_freeze",
+        "audit_rebuild_package_from_corrected_artifacts_implementation_entry_after_operator_action_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE)} "
+                f"missing package rebuild from corrected artifacts operator-action freeze term: {term}"
+            )
+
+    for blocked in (
+        "package payload rewrite",
+        "source `L3OutputPackage` row mutation",
+        "browser-supplied bytes",
+        "arbitrary refs/hashes/paths",
+        "source expansion",
+        "RAG/vector behavior",
+        "connector/destination dispatch",
+        "provider-public delivery/use",
+        "auth/security broadening",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE)} "
+                f"missing package rebuild from corrected artifacts non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Rebuild From Corrected Artifacts Operator Action Freeze",
+            "696_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE.md",
+            "rebuild_package_from_corrected_artifacts",
+            "9950ec0c4900638fa6be81a73e67b43ac3723c11",
+            "package_mutation_reconstruction",
+            "not_implemented_in_this_pass",
+            "current_main_sync_package_rebuild_from_corrected_artifacts_operator_action_freeze",
+            "audit_rebuild_package_from_corrected_artifacts_implementation_entry_after_operator_action_sync",
+        ),
+        MANIFEST: (
+            "package_rebuild_from_corrected_artifacts_operator_action_freeze",
+            "branch_local_freeze_package_rebuild_from_corrected_artifacts_operator_action",
+            "codex/l3-package-rebuild-action-freeze",
+            "696_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE.md",
+            "rebuild_package_from_corrected_artifacts",
+            "not_implemented_in_this_pass",
+            "no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent",
+            "current_main_sync_package_rebuild_from_corrected_artifacts_operator_action_freeze",
+            "audit_rebuild_package_from_corrected_artifacts_implementation_entry_after_operator_action_sync",
+            "latest_package_rebuild_from_corrected_artifacts_operator_action_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "package_rebuild_from_corrected_artifacts_operator_action_freeze_proof",
+            "planning_control_freeze_package_rebuild_from_corrected_artifacts_operator_action",
+            "branch_local_freeze_package_rebuild_from_corrected_artifacts_operator_action",
+            "696_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE.md",
+            "rebuild_package remains a forbidden request field",
+            "runtime starts only after a governed corrected-artifact authority source",
+            "current_main_sync_package_rebuild_from_corrected_artifacts_operator_action_freeze",
+            "audit_rebuild_package_from_corrected_artifacts_implementation_entry_after_operator_action_sync",
+            "latest_package_rebuild_from_corrected_artifacts_operator_action_freeze_summary",
+        ),
+        LAYER3_API: (
+            "rebuild_package",
+            "_forbidden_request_field_schema()",
+            "/package/mutation/preview",
+            "/package/replacement-activation/commit",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing package rebuild from corrected artifacts operator-action freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -57549,6 +57653,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_external_local_export_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_external_local_export_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync(errors)
+    _check_package_rebuild_from_corrected_artifacts_operator_action_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
