@@ -1791,6 +1791,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_H
     PLANNING_DOCS
     / "690_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "691_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -56538,6 +56542,83 @@ def _check_source_l3_output_package_active_authority_local_outbox_provider_priva
                 )
 
 
+def _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime`.",
+        "691_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "690_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_PROOF.md",
+        "Runtime PR: `#1295`.",
+        "codex/l3-active-authority-provider-private-impl",
+        "454dbf8ccb42690023c9be76d9f8f0fc9052499d",
+        "cfc3c4a652293a1757b236d73af97fe446e4ecf1",
+        "Selected reader path now synced: `local_outbox_provider_private_handoff`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        "Synced result: `current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime`.",
+        "Runtime behavior change synced: `false`.",
+        "backend-layer3-api`: `SUCCESS` in `2m47s`",
+        "test`: `SUCCESS` in `3m19s`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR latestReviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority local outbox provider-private handoff runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Local Outbox Provider-Private Handoff Runtime Current-Main Sync",
+            "PR `#1295`",
+            "cfc3c4a652293a1757b236d73af97fe446e4ecf1",
+            "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
+            "codex/l3-active-authority-provider-private-runtime-sync",
+            "691_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1295",
+            "cfc3c4a652293a1757b236d73af97fe446e4ecf1",
+            "backend-layer3-api SUCCESS 2m47s",
+            "test SUCCESS 3m19s",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync",
+            "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
+            "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
+            "691_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1295",
+            "reviewThreads totalCount 0",
+            "local_outbox_provider_private_handoff",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+            "select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync",
+            "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority local outbox provider-private handoff runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -57071,6 +57152,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze(errors)
     _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_proof(errors)
+    _check_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
