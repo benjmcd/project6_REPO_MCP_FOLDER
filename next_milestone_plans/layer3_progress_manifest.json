@@ -26287,5 +26287,44 @@
   "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_doc": "next_milestone_plans/Layer3_planning_docs/690_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_PROOF.md",
   "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_live_behavior_change": false,
   "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
-  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_summary": "Doc 690 proof records source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime: local_outbox_provider_private_handoff carries active replacement refs/hashes through local outbox write into provider-private handoff on the admitted associated-cohort APS evidence-bundle path, derives provider artifact authority from durable local outbox write artifact ref/hash/size and authority basis, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, creates no provider-private signed URL receipt or provider-public delivery state, enables no real connector invocation or external destination write, leaks no raw local path/source artifact ref/provider token/signature, and changes no service runtime behavior."
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_summary": "Doc 690 proof records source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime: local_outbox_provider_private_handoff carries active replacement refs/hashes through local outbox write into provider-private handoff on the admitted associated-cohort APS evidence-bundle path, derives provider artifact authority from durable local outbox write artifact ref/hash/size and authority basis, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, creates no provider-private signed URL receipt or provider-public delivery state, enables no real connector invocation or external destination write, leaks no raw local path/source artifact ref/provider token/signature, and changes no service runtime behavior.",
+  "source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync": {
+    "status": "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
+    "sync_branch": "codex/l3-active-authority-provider-private-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/691_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/690_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_PROOF.md",
+    "runtime_pr": "#1295",
+    "runtime_branch": "codex/l3-active-authority-provider-private-impl",
+    "runtime_branch_commit": "454dbf8ccb42690023c9be76d9f8f0fc9052499d",
+    "runtime_merge_commit": "cfc3c4a652293a1757b236d73af97fe446e4ecf1",
+    "checks": [
+      "backend-layer3-api SUCCESS 2m47s",
+      "test SUCCESS 3m19s"
+    ],
+    "review_gate": [
+      "PR comments empty",
+      "PR reviews empty",
+      "PR latestReviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeable MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "synced_reader_path": "local_outbox_provider_private_handoff",
+    "synced_route": "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+    "synced_validation_seam": "recorded server_owned_local_outbox_write, server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, external_export_download_prepare, and local outbox artifact hash/size validation",
+    "runtime_behavior_change": false,
+    "next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync"
+  },
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_branch": "codex/l3-active-authority-provider-private-runtime-sync",
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/691_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_pr": "#1295",
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_merge_commit": "cfc3c4a652293a1757b236d73af97fe446e4ecf1",
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime",
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync",
+  "latest_source_l3_output_package_active_authority_local_outbox_provider_private_handoff_runtime_current_main_sync_summary": "Doc 691 records current-main sync for PR #1295 merge commit cfc3c4a652293a1757b236d73af97fe446e4ecf1 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_local_outbox_provider_private_handoff_runtime_sync."
 }
