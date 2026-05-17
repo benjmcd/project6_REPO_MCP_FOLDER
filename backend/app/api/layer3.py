@@ -13,6 +13,7 @@ from app.api.deps import get_db
 from app.services import (
     layer3_connector_dispatch_entry,
     layer3_connector_local_destination_receipt,
+    layer3_corrected_package_artifact_set,
     layer3_external_local_export,
     layer3_package_mutation_entry,
     layer3_package_supersession_commit,
@@ -881,6 +882,89 @@ class Layer3ReplacementPackageSetAuthorityRequest(BaseModel):
     hidden_llm_planning: Any | None = None
     schema_migration: Any | None = None
     approved_plan_supersession: Any | None = None
+    retry: Any | None = None
+    rerun: Any | None = None
+    cancel: Any | None = None
+
+
+class Layer3CorrectedPackageArtifactSetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    source_package_set_hash: str | None = None
+    source_output_package_ids: list[str] | None = None
+    source_package_kinds: list[str] | None = None
+    source_payload_refs: list[str] | None = None
+    source_payload_hashes: list[str] | None = None
+    result_review_record_ref: str | None = None
+    reviewed_output_items_hash: str | None = None
+    package_review_preview_hash: str | None = None
+    operator_decision: str | None = None
+    package_supersession_preview_hash: str | None = None
+    replacement_artifact_materialization_id: str | None = None
+    materialization_basis_hash: str | None = None
+    corrected_artifact_refs: Any | None = None
+    corrected_artifact_hashes: Any | None = None
+    corrected_artifact_bytes: Any | None = None
+    corrected_package_payloads: Any | None = None
+    package_payload: Any | None = None
+    package_payload_bytes: Any | None = None
+    package_variant_content: Any | None = None
+    replacement_package_payloads: Any | None = None
+    replacement_package_payload_bytes: Any | None = None
+    edited_package_content: Any | None = None
+    browser_generated_diff: Any | None = None
+    artifact_bytes: Any | None = None
+    generate_artifact: Any | None = None
+    rewrite_output: Any | None = None
+    rebuild_package: Any | None = None
+    mutate_package: Any | None = None
+    replace_package: Any | None = None
+    delete_package: Any | None = None
+    update_package_row: Any | None = None
+    update_payload_ref: Any | None = None
+    update_payload_hash: Any | None = None
+    replacement_output_package_ids: Any | None = None
+    source_l3_output_package_write: Any | None = None
+    source_output_package_update: Any | None = None
+    package_row_mutation: Any | None = None
+    package_payload_write: Any | None = None
+    package_payload_rewrite: Any | None = None
+    analysis_artifact: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    connector_key: Any | None = None
+    connector_run_id: Any | None = None
+    connector_payload: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    provider_public_url: Any | None = None
+    provider_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    download_url: Any | None = None
+    source_upload: Any | None = None
+    source_directory: Any | None = None
+    local_directory: Any | None = None
+    rag_vector_input: Any | None = None
+    rag_vector_index: Any | None = None
+    runtime_db_write: Any | None = None
+    qualitative_execution_instruction: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_prompt: Any | None = None
+    hidden_llm_plan: Any | None = None
+    hidden_llm_planning: Any | None = None
+    rendered_control_state: Any | None = None
+    schema_migration: Any | None = None
+    auth_security_directive: Any | None = None
+    auth_context: Any | None = None
+    security_context: Any | None = None
     retry: Any | None = None
     rerun: Any | None = None
     cancel: Any | None = None
@@ -2571,6 +2655,54 @@ class Layer3ReplacementPackageNamespaceRecordResponse(Layer3BaseResponse):
     frontend_only_durable_state_enabled: bool
     downstream_unavailable: list[str]
     next_state: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3CorrectedPackageArtifactSetResponse(Layer3BaseResponse):
+    corrected_package_artifact_set_id: str
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    reconciliation_record_id: str
+    replacement_artifact_materialization_id: str
+    materialization_basis_hash: str
+    source_package_set_hash: str
+    source_output_package_ids: list[str]
+    source_package_kinds: list[str]
+    source_payload_hashes: list[str]
+    result_review_record_ref: str
+    reviewed_output_items_hash: str
+    package_review_preview_hash: str
+    corrected_package_set_id: str
+    corrected_package_set_hash: str
+    corrected_package_kinds: list[str]
+    corrected_artifact_refs: list[str]
+    corrected_artifact_hashes: list[str]
+    corrected_artifact_byte_sizes: list[int]
+    artifact_namespace: str
+    hash_algorithm: str
+    artifact_manifest_hash: str
+    corrected_artifact_basis_hash: str
+    audit_history: list[dict[str, Any]]
+    authority_snapshot: dict[str, Any]
+    operator_decision: str
+    corrected_package_artifact_set_mode: str
+    source_gate: str
+    corrected_package_artifact_set_record_persisted: bool
+    artifact_refs_redacted: bool
+    package_rebuild_enabled: bool
+    package_row_mutation_enabled: bool
+    source_l3_output_package_mutation_enabled: bool
+    package_payload_rewrite_enabled: bool
+    connector_dispatch_enabled: bool
+    provider_public_url_enabled: bool
+    source_widening_enabled: bool
+    qualitative_hybrid_rag_execution_enabled: bool
+    frontend_only_durable_state_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    created_at: str | None
+    updated_at: str | None
     authority_rail: dict[str, Any]
 
 
@@ -4873,6 +5005,66 @@ REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_FROM_AUTHORITY_REQUEST_SCHEMA: dict[str, A
 }
 
 
+CORRECTED_PACKAGE_ARTIFACT_SET_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Server-owned corrected package artifact-set authority record from existing structured review, "
+        "source package, package-review preview, and server-owned artifact materialization authority. "
+        "It accepts no corrected artifact refs, browser bytes, diffs, paths, URLs, package mutation, "
+        "connector dispatch, credentials, source expansion, or RAG/vector instructions. Successful "
+        "responses use schema_id layer3.corrected_package_artifact_set.v1 and redact raw artifact refs."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "source_package_set_hash",
+        "source_output_package_ids",
+        "source_package_kinds",
+        "source_payload_refs",
+        "source_payload_hashes",
+        "result_review_record_ref",
+        "reviewed_output_items_hash",
+        "package_review_preview_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "source_package_set_hash": {"type": "string"},
+        "source_output_package_ids": {"type": "array", "items": {"type": "string"}},
+        "source_package_kinds": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
+        },
+        "source_payload_refs": {"type": "array", "items": {"type": "string"}},
+        "source_payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "result_review_record_ref": {"type": "string"},
+        "reviewed_output_items_hash": {"type": "string"},
+        "package_review_preview_hash": {"type": "string"},
+        "operator_decision": {
+            "type": "string",
+            "enum": ["record_corrected_package_artifact_set_from_review_corrections"],
+        },
+        "package_supersession_preview_hash": {"type": "string"},
+        "replacement_artifact_materialization_id": {"type": "string"},
+        "materialization_basis_hash": {"type": "string"},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in sorted(
+                layer3_corrected_package_artifact_set.CORRECTED_PACKAGE_ARTIFACT_SET_FORBIDDEN_FIELDS
+            )
+        },
+    },
+}
+
+
 REPLACEMENT_PACKAGE_NAMESPACE_RECORD_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -6375,6 +6567,24 @@ def post_package_replacement_artifact_manifest_record_from_authority(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_replacement_package_artifact_manifest.record_replacement_package_artifact_manifest_from_authority(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/package/corrected-artifact-set/record",
+    response_model=Layer3CorrectedPackageArtifactSetResponse,
+    openapi_extra={"requestBody": _json_request_body(CORRECTED_PACKAGE_ARTIFACT_SET_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_package_corrected_artifact_set_record(
+    payload: Layer3CorrectedPackageArtifactSetRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_corrected_package_artifact_set.record_corrected_package_artifact_set(
             db,
             payload.model_dump(exclude_unset=True),
         )
