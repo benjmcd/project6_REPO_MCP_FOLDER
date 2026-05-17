@@ -1904,6 +1904,9 @@ LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_AUTHORITY_FREEZE_CURRENT_MAIN_SY
 LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_PROOF = (
     PLANNING_DOCS / "720_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_PROOF.md"
 )
+LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -60098,6 +60101,146 @@ def _check_corrected_artifact_replacement_namespace_runtime_proof(
                 )
 
 
+def _check_corrected_artifact_replacement_namespace_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `corrected_artifact_replacement_namespace_runtime`.",
+        "721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "720_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_PROOF.md",
+        "#1325",
+        "codex/l3-corrected-artifact-namespace-runtime",
+        "2c4b7d9d126c7fdb0b6d74925d5faefd13b3c18e",
+        "c73f1ee92eb12450718b9fb4cd83fdde567c5431",
+        "codex/l3-corrected-artifact-namespace-runtime-sync",
+        "server_computed_replacement_namespace_from_corrected_artifact_manifest_authority",
+        "POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+        "backend/app/services/layer3_replacement_package_namespace.py",
+        "backend/app/api/layer3.py",
+        "L3ReplacementOutputPackage",
+        "l3_replacement_output_package",
+        "L3CorrectedPackageArtifactSet",
+        "L3ReplacementPackageSetAuthority",
+        "L3PackageSupersessionCommit",
+        "L3ReplacementPackageArtifactManifest",
+        "replacement_package_namespace_from_corrected_artifact_manifest_authority",
+        "record_replacement_package_namespace_from_corrected_artifact_manifest_authority",
+        "Runtime behavior in this sync: `false`",
+        "reviewThreads totalCount: `3`",
+        "unresolved current reviewThreads: `0`",
+        "resolved reviewThreads: `3`",
+        "atomic namespace-set recording",
+        "corrected-artifact namespace recording now binds source/corrected artifact vectors",
+        "`source_expansion` is defined as a forbidden request property",
+        "`8 passed`",
+        "`4 passed, 178 deselected`",
+        "`182 passed`",
+        "evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing corrected-artifact replacement namespace runtime sync term: {term}"
+            )
+
+    for blocked in (
+        "Package replacement activation",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "connector/destination dispatch",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing corrected-artifact replacement namespace runtime sync blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Replacement Namespace Runtime Current-Main Sync",
+            "721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1325",
+            "2c4b7d9d126c7fdb0b6d74925d5faefd13b3c18e",
+            "c73f1ee92eb12450718b9fb4cd83fdde567c5431",
+            "3` automated reviewThreads resolved with `0` unresolved current reviewThreads",
+            "atomic complete-set recording",
+            "corrected artifact-set vector binding",
+            "`8 passed`",
+            "`4 passed, 178 deselected`",
+            "`182 passed`",
+            "evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync",
+        ),
+        MANIFEST: (
+            "corrected_artifact_replacement_namespace_runtime_current_main_sync",
+            "current_main_synced_corrected_artifact_replacement_namespace_runtime",
+            "codex/l3-corrected-artifact-namespace-runtime-sync",
+            "721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1325",
+            "2c4b7d9d126c7fdb0b6d74925d5faefd13b3c18e",
+            "c73f1ee92eb12450718b9fb4cd83fdde567c5431",
+            '"runtime_behavior_change": false',
+            '"runtime_behavior_already_merged": true',
+            '"unresolved_current_review_threads": 0',
+            '"resolved_review_threads": 3',
+            "transactional complete namespace-set recording",
+            "evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync",
+            "latest_corrected_artifact_replacement_namespace_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_replacement_namespace_runtime_current_main_sync_proof",
+            "current_main_sync_corrected_artifact_replacement_namespace_runtime",
+            "current_main_synced_corrected_artifact_replacement_namespace_runtime",
+            "721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1325",
+            "2c4b7d9d126c7fdb0b6d74925d5faefd13b3c18e",
+            "c73f1ee92eb12450718b9fb4cd83fdde567c5431",
+            '"runtime_behavior_change": false',
+            '"runtime_behavior_already_merged": true',
+            '"unresolved_current_review_threads": 0',
+            '"resolved_review_threads": 3',
+            "corrected artifact-set vector binding",
+            "source_expansion forbidden request/schema boundary",
+            "evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync",
+        ),
+        REPLACEMENT_PACKAGE_NAMESPACE_SERVICE: (
+            "commit: bool = True",
+            "db.flush()",
+            "db.commit()",
+            "db.rollback()",
+            "corrected_vector_expectations",
+            "corrected_package_set_hash",
+            "corrected_artifact_hashes_json",
+            "replacement_package_namespace_from_corrected_manifest_corrected_artifact_vectors_mismatch",
+        ),
+        REPLACEMENT_PACKAGE_NAMESPACE_TEST: (
+            "test_replacement_package_namespace_from_corrected_manifest_rejects_stale_corrected_set",
+            "test_replacement_package_namespace_from_corrected_manifest_rolls_back_partial_set",
+            "replacement_package_namespace_from_corrected_manifest_corrected_artifact_vectors_mismatch",
+            "replacement_package_namespace_authority_basis_hash_mismatch",
+        ),
+        LAYER3_API_TEST: (
+            "source_expansion",
+            "replacement_package_namespace_from_corrected_manifest_scope_not_admitted",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact replacement namespace runtime sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -60661,6 +60804,7 @@ def main() -> int:
     _check_corrected_artifact_replacement_namespace_authority_freeze(errors)
     _check_corrected_artifact_replacement_namespace_authority_freeze_current_main_sync(errors)
     _check_corrected_artifact_replacement_namespace_runtime_proof(errors)
+    _check_corrected_artifact_replacement_namespace_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

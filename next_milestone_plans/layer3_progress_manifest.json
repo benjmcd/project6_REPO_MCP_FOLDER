@@ -27813,5 +27813,50 @@
   "latest_corrected_artifact_replacement_namespace_runtime_status": "branch_local_corrected_artifact_replacement_namespace_runtime_implemented",
   "latest_corrected_artifact_replacement_namespace_runtime_runtime_behavior_change": true,
   "latest_corrected_artifact_replacement_namespace_runtime_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_replacement_namespace_runtime",
-  "latest_corrected_artifact_replacement_namespace_runtime_summary": "Doc 720 implements the corrected-artifact replacement namespace runtime via POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority. The runtime derives the complete L3ReplacementOutputPackage namespace set server-side from corrected-artifact manifest authority, records or replays rows with deterministic per-kind idempotency keys, returns response-safe artifact refs, and preserves blocked package activation, payload rewrite, source mutation, connector/destination, source expansion, RAG/vector, auth/security, rendered UI, frontend-durable authority, caller paths/URLs, and raw path exposure."
+  "latest_corrected_artifact_replacement_namespace_runtime_summary": "Doc 720 implements the corrected-artifact replacement namespace runtime via POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority. The runtime derives the complete L3ReplacementOutputPackage namespace set server-side from corrected-artifact manifest authority, records or replays rows with deterministic per-kind idempotency keys, returns response-safe artifact refs, and preserves blocked package activation, payload rewrite, source mutation, connector/destination, source expansion, RAG/vector, auth/security, rendered UI, frontend-durable authority, caller paths/URLs, and raw path exposure.",
+  "corrected_artifact_replacement_namespace_runtime_current_main_sync": {
+    "status": "current_main_synced_corrected_artifact_replacement_namespace_runtime",
+    "sync_branch": "codex/l3-corrected-artifact-namespace-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/720_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_PROOF.md",
+    "runtime_pr": "#1325",
+    "runtime_branch": "codex/l3-corrected-artifact-namespace-runtime",
+    "runtime_branch_commit": "2c4b7d9d126c7fdb0b6d74925d5faefd13b3c18e",
+    "runtime_merge_commit": "c73f1ee92eb12450718b9fb4cd83fdde567c5431",
+    "current_main_checkpoint_after_merge": "c73f1ee92eb12450718b9fb4cd83fdde567c5431",
+    "implemented_runtime": "server_computed_replacement_namespace_from_corrected_artifact_manifest_authority",
+    "runtime_route": "POST /api/v1/layer3/package/replacement-namespace/record-from-corrected-artifact-manifest-authority",
+    "owner_service": "backend/app/services/layer3_replacement_package_namespace.py",
+    "api_owner": "backend/app/api/layer3.py",
+    "durable_target": "L3ReplacementOutputPackage",
+    "durable_table": "l3_replacement_output_package",
+    "source_authority": "L3CorrectedPackageArtifactSet",
+    "replacement_authority": "L3ReplacementPackageSetAuthority",
+    "supersession_authority": "L3PackageSupersessionCommit",
+    "manifest_authority": "L3ReplacementPackageArtifactManifest",
+    "request_mode": "replacement_package_namespace_from_corrected_artifact_manifest_authority",
+    "operator_decision": "record_replacement_package_namespace_from_corrected_artifact_manifest_authority",
+    "runtime_behavior_change": false,
+    "runtime_behavior_already_merged": true,
+    "review_threads_total": 3,
+    "unresolved_current_review_threads": 0,
+    "resolved_review_threads": 3,
+    "ci_results": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS"
+    },
+    "targeted_pytest_results": {
+      "backend/tests/test_layer3_replacement_package_namespace.py": "8 passed",
+      "backend/tests/test_layer3_api.py -k external_export_download_openapi_contracts_or_package_openapi_contracts_or_replacement_package_namespace_from_corrected_manifest": "4 passed, 178 deselected",
+      "backend/tests/test_layer3_api.py": "182 passed"
+    },
+    "current_main_result": "current main contains the corrected-artifact replacement namespace bridge and complete transactional L3ReplacementOutputPackage namespace-set recording from corrected-artifact manifest authority",
+    "next_posture": "evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync"
+  },
+  "latest_corrected_artifact_replacement_namespace_runtime_current_main_sync_branch": "codex/l3-corrected-artifact-namespace-runtime-sync",
+  "latest_corrected_artifact_replacement_namespace_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/721_CORRECTED_ARTIFACT_REPLACEMENT_NAMESPACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_replacement_namespace_runtime_current_main_sync_status": "current_main_synced_corrected_artifact_replacement_namespace_runtime",
+  "latest_corrected_artifact_replacement_namespace_runtime_current_main_sync_runtime_behavior_change": false,
+  "latest_corrected_artifact_replacement_namespace_runtime_current_main_sync_next_posture": "evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync",
+  "latest_corrected_artifact_replacement_namespace_runtime_current_main_sync_summary": "Doc 721 syncs PR #1325 merge commit c73f1ee92eb12450718b9fb4cd83fdde567c5431 to current main. The corrected-artifact replacement namespace runtime is now current-main synced with green checks, resolved review threads, transactional complete namespace-set recording, corrected-set vector binding, API/schema forbidden-field coverage, and next posture evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync."
 }
