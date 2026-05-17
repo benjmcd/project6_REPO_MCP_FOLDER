@@ -3634,3 +3634,11 @@ Branch-local blocker/freeze: `638_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOUR
 The source audit found that current main can assemble source package fields from `package_supersession_preview_only` state, but cannot assemble replacement package-set id/hash/kinds/refs/hashes or authority basis hash from governed server authority. Existing tests fabricate those fields for API proof; that is not live rendered request authority, and browser/operator path or ref editing remains forbidden.
 
 No runtime begins in this freeze. After merge and current-main sync, the next exact posture is `select_one_governed_replacement_package_set_request_source_authority_after_blocker_sync`.
+
+## Replacement Package-Set Authority Request Source Authority Current-Main Sync
+
+Current-main proof/control sync: PR `#1242` merged `638_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_FREEZE.md` at merge commit `ac8b398a8b5c8258007e613f980cc36c030f2d25`.
+
+The sync doc `639_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_CURRENT_MAIN_SYNC.md` records the merge gate: GitHub `backend-layer3-api` passed in `2m46s`, `test` passed in `2m56s`, PR comments were empty, PR reviews were empty, PR reviewThreads totalCount was `0`, unresolved reviewThreads were `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and post-merge `project6-origin/main` progress check passed. The blocker freeze is now current-main synced as `current_main_synced_replacement_package_set_authority_request_source_authority_freeze`.
+
+The next exact posture is `select_one_governed_replacement_package_set_request_source_authority_after_blocker_sync`. No runtime begins in this sync, and `rendered_replacement_package_set_authority_control`, package supersession commit, package rebuild, package payload rewrite, source `L3OutputPackage` row mutation, replacement payload generation, replacement package row creation, provider-public delivery/use, connector/destination dispatch, source expansion, RAG/vector behavior, auth/security behavior, full mockup activation, frontend-durable authority, browser/operator path editing, and caller-supplied arbitrary paths/URLs remain blocked.
