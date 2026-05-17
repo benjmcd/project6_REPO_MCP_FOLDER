@@ -1603,6 +1603,10 @@ LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF = (
     PLANNING_DOCS
     / "642_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF.md"
 )
+LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "643_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -52042,6 +52046,83 @@ def _check_replacement_package_artifact_materialization_runtime_proof(errors: li
             errors.append(f"{_rel(path)} missing replacement package artifact materialization runtime file")
 
 
+def _check_replacement_package_artifact_materialization_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `server_owned_replacement_package_artifact_materialization_request_source` runtime proof.",
+        "643_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "642_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_PROOF.md",
+        "Runtime PR: `#1246`.",
+        "Runtime branch: `codex/l3-replacement-materialization-source`.",
+        "Runtime branch commit: `44c8b994bd67a167c983815c5c4fb988af9f2787`.",
+        "Runtime merge commit: `afb3d0ff5675d2b506fcef73d41f076302620fb4`.",
+        "Current-main checkpoint after merge: `afb3d0ff5675d2b506fcef73d41f076302620fb4`.",
+        "Synced result: `current_main_synced_replacement_package_artifact_materialization_runtime`.",
+        "backend-layer3-api`: `SUCCESS` in `2m47s`",
+        "test`: `SUCCESS` in `3m4s`",
+        "PR reviewThreads totalCount: `0`.",
+        "python .\\tools\\l3-progress-check.py`: `PASS`",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen`: `PASS`",
+        "rendered_replacement_package_set_authority_control_blocked_by_missing_governed_replacement_request_source",
+        "The next exact current-main posture is `implement_rendered_replacement_package_set_authority_control_after_materialization_runtime_sync`.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing replacement package artifact materialization runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Replacement Package Artifact Materialization Runtime Current-Main Sync",
+            "643_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1246`",
+            "afb3d0ff5675d2b506fcef73d41f076302620fb4",
+            "current_main_synced_replacement_package_artifact_materialization_runtime",
+            "backend/app/services/layer3_replacement_package_materialization.py",
+            "l3_replacement_package_artifact_materialization",
+            "replacement-package-artifacts",
+            "implement_rendered_replacement_package_set_authority_control_after_materialization_runtime_sync",
+        ),
+        MANIFEST: (
+            "replacement_package_artifact_materialization_runtime_current_main_sync",
+            "current_main_synced_replacement_package_artifact_materialization_runtime",
+            "codex/l3-replacement-materialization-source-sync",
+            "643_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1246",
+            "44c8b994bd67a167c983815c5c4fb988af9f2787",
+            "afb3d0ff5675d2b506fcef73d41f076302620fb4",
+            "backend-layer3-api passed 2m47s",
+            "test passed 3m4s",
+            "rendered_replacement_package_set_authority_control_blocked_by_missing_governed_replacement_request_source",
+            "implement_rendered_replacement_package_set_authority_control_after_materialization_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "replacement_package_artifact_materialization_runtime_current_main_sync_proof",
+            "current_main_sync_replacement_package_artifact_materialization_runtime",
+            "current_main_synced_replacement_package_artifact_materialization_runtime",
+            "643_REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "reviewThreads totalCount 0",
+            "backend/app/services/layer3_replacement_package_materialization.py",
+            "POST /api/v1/layer3/package/replacement-artifact/materialize",
+            "l3_replacement_package_artifact_materialization",
+            "replacement-package-artifacts",
+            "implement_rendered_replacement_package_set_authority_control_after_materialization_runtime_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing replacement package artifact materialization runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -52524,6 +52605,7 @@ def main() -> int:
     _check_replacement_package_set_request_source_authority_selection_freeze(errors)
     _check_replacement_package_set_request_source_authority_selection_current_main_sync(errors)
     _check_replacement_package_artifact_materialization_runtime_proof(errors)
+    _check_replacement_package_artifact_materialization_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
