@@ -1656,6 +1656,10 @@ LAYER3_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRE
 LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE = (
     PLANNING_DOCS / "656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md"
 )
+LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -53162,6 +53166,71 @@ def _check_rendered_replacement_package_artifact_manifest_control_freeze(
                 )
 
 
+def _check_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `rendered_replacement_package_artifact_manifest_control_freeze`.",
+        "657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+        "656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+        "Freeze PR: `#1260`.",
+        "d4dce1de07342aebd9b39c46ea5c009ec191d579",
+        "628efbc97930027a9779bebb5d6063d310f63147",
+        "Synced result: `current_main_synced_rendered_replacement_package_artifact_manifest_control_freeze`.",
+        "backend-layer3-api`: `SUCCESS` in `2m37s`",
+        "test`: `SUCCESS` in `3m17s`",
+        "PR reviewThreads totalCount: `0`.",
+        "Merge state before merge: `CLEAN`.",
+        "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing rendered replacement package artifact manifest control freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Rendered Replacement Package Artifact Manifest Control Freeze Current-Main Sync",
+            "657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1260`",
+            "628efbc97930027a9779bebb5d6063d310f63147",
+            "current_main_synced_rendered_replacement_package_artifact_manifest_control_freeze",
+            "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync",
+            "current_main_synced_rendered_replacement_package_artifact_manifest_control_freeze",
+            "codex/l3-rendered-manifest-control-freeze-sync",
+            "657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1260",
+            "628efbc97930027a9779bebb5d6063d310f63147",
+            "backend-layer3-api passed 2m37s",
+            "test passed 3m17s",
+            "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync_proof",
+            "current_main_sync_rendered_replacement_package_artifact_manifest_control_freeze",
+            "current_main_synced_rendered_replacement_package_artifact_manifest_control_freeze",
+            "657_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            "reviewThreads totalCount 0",
+            "#replacement-package-artifact-manifest-submit",
+            "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing rendered replacement package artifact manifest control freeze sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -53658,6 +53727,7 @@ def main() -> int:
     _check_replacement_package_artifact_manifest_record_from_authority_runtime(errors)
     _check_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync(errors)
     _check_rendered_replacement_package_artifact_manifest_control_freeze(errors)
+    _check_rendered_replacement_package_artifact_manifest_control_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
