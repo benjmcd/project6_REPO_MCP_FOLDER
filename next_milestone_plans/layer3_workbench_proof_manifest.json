@@ -25139,5 +25139,49 @@
   "latest_replacement_package_set_authority_request_source_authority_current_main_sync_branch": "codex/l3-replacement-set-request-source-authority-freeze-sync",
   "latest_replacement_package_set_authority_request_source_authority_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/639_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_CURRENT_MAIN_SYNC.md",
   "latest_replacement_package_set_authority_request_source_authority_current_main_sync_live_behavior_change": false,
-  "latest_replacement_package_set_authority_request_source_authority_current_main_sync_summary": "Doc 639 proof records current-main sync for PR #1242 and keeps runtime closed. The next exact posture is select_one_governed_replacement_package_set_request_source_authority_after_blocker_sync."
+  "latest_replacement_package_set_authority_request_source_authority_current_main_sync_summary": "Doc 639 proof records current-main sync for PR #1242 and keeps runtime closed. The next exact posture is select_one_governed_replacement_package_set_request_source_authority_after_blocker_sync.",
+  "replacement_package_set_request_source_authority_selection_freeze_proof": {
+    "proof_kind": "replacement_package_set_request_source_authority_selection_freeze",
+    "status": "branch_local_implementation_entry_freeze",
+    "branch": "codex/l3-replacement-request-source-selection",
+    "governing_doc": "next_milestone_plans/Layer3_planning_docs/640_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE.md",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/639_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "62f587b0642e9b472e2d476ece96f5c68269e718",
+    "selected_surface": "package_mutation_reconstruction",
+    "selected_request_source_authority": "server_owned_replacement_package_artifact_materialization_from_supersession_preview",
+    "selected_operator_action": "materialize_replacement_package_artifacts_from_supersession_preview",
+    "selected_implementation_entry_mode": "server_owned_replacement_package_artifact_materialization_request_source",
+    "future_owner_service": "backend/app/services/layer3_replacement_package_materialization.py",
+    "future_route": "/api/v1/layer3/package/replacement-artifact/materialize",
+    "source_authority": [
+      "next_milestone_plans/Layer3_planning_docs/639_REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SOURCE_AUTHORITY_CURRENT_MAIN_SYNC.md",
+      "backend/app/services/layer3_package_mutation_entry.py",
+      "backend/app/services/layer3_replacement_package_set_authority.py",
+      "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+      "backend/app/services/layer3_package_entry.py"
+    ],
+    "proof_terms": [
+      "640_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE.md",
+      "server_owned_replacement_package_artifact_materialization_from_supersession_preview",
+      "materialize_replacement_package_artifacts_from_supersession_preview",
+      "server_owned_replacement_package_artifact_materialization_request_source",
+      "backend/app/services/layer3_replacement_package_materialization.py",
+      "/api/v1/layer3/package/replacement-artifact/materialize",
+      "replacement_package_set_id",
+      "replacement_payload_refs",
+      "replacement_payload_hashes",
+      "authority_basis_hash",
+      "no browser/operator path editing",
+      "no caller-supplied arbitrary paths or URLs",
+      "implement_server_owned_replacement_package_artifact_materialization_request_source_after_selection_sync"
+    ],
+    "live_behavior_change": false,
+    "backend_behavior_change": false,
+    "rendered_ui_behavior_change": false,
+    "next_whole_project_posture": "implement_server_owned_replacement_package_artifact_materialization_request_source_after_selection_sync"
+  },
+  "latest_replacement_package_set_request_source_authority_selection_freeze_branch": "codex/l3-replacement-request-source-selection",
+  "latest_replacement_package_set_request_source_authority_selection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/640_REPLACEMENT_PACKAGE_SET_REQUEST_SOURCE_AUTHORITY_SELECTION_FREEZE.md",
+  "latest_replacement_package_set_request_source_authority_selection_freeze_live_behavior_change": false,
+  "latest_replacement_package_set_request_source_authority_selection_freeze_summary": "Doc 640 proof records the exact selected request-source authority for replacement package-set fields: server-owned replacement artifact materialization from supersession preview authority. It keeps runtime closed in this pass and moves next posture to implement_server_owned_replacement_package_artifact_materialization_request_source_after_selection_sync after merge/current-main sync."
 }
