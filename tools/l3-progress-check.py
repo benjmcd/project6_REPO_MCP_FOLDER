@@ -1731,6 +1731,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CU
     PLANNING_DOCS
     / "675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE = (
+    PLANNING_DOCS
+    / "676_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55127,6 +55131,101 @@ def _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtim
                 )
 
 
+def _check_source_l3_output_package_active_authority_external_export_download_delivery_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `source_l3_output_package_active_authority_external_export_download_delivery`.",
+        "676_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+        "675_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "7b7e813cc51a74bb95fc959a743aff8dce4e35ab",
+        "Selected follow-on surface: `downstream_active_package_authority_read_adoption`.",
+        "Selected reader path: `external_export_download_deliver`.",
+        "Selected route: `POST /api/v1/layer3/handoff/export/download/deliver`.",
+        "Selected validation seam: `external_export_download_prepare` through `_external_export_download_prepare_payload_for_delivery`.",
+        "Selected operator action: `adopt_active_replacement_package_authority_for_external_export_download_delivery`.",
+        "No runtime begins in this freeze.",
+        "delivery validates against the recorded `external_export_download_prepare` readiness",
+        "source `L3OutputPackage` ids, refs, hashes, payloads, and `uq_l3_output_package_session_kind` remain unchanged",
+        "current_main_sync_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+        "implement_source_l3_output_package_active_authority_external_export_download_delivery_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE)} "
+                f"missing source L3 output package active authority external export/download delivery freeze term: {term}"
+            )
+
+    for blocked in (
+        "connector-local receipt adoption",
+        "server-owned local outbox adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "package rebuild",
+        "package payload rewrite",
+        "provider-public delivery/use",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE)} "
+                f"missing source L3 output package active authority external export/download delivery non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority External Export Download Delivery Freeze",
+            "676_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+            "source_l3_output_package_active_authority_external_export_download_delivery",
+            "external_export_download_deliver",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "_external_export_download_prepare_payload_for_delivery",
+            "current_main_sync_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+            "implement_source_l3_output_package_active_authority_external_export_download_delivery_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+            "implementation_entry_frozen_source_l3_output_package_active_authority_external_export_download_delivery",
+            "codex/l3-active-authority-next-reader-selection",
+            "676_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+            "7b7e813cc51a74bb95fc959a743aff8dce4e35ab",
+            "downstream_active_package_authority_read_adoption",
+            "external_export_download_deliver",
+            "adopt_active_replacement_package_authority_for_external_export_download_delivery",
+            "current_main_sync_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+            "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_external_export_download_delivery_freeze_proof",
+            "implementation_entry_freeze_source_l3_output_package_active_authority_external_export_download_delivery",
+            "676_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+            "external_export_download_deliver",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "_external_export_download_prepare_payload_for_delivery",
+            "source L3OutputPackage rows remain unchanged",
+            "no runtime begins in this freeze",
+            "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority external export/download delivery freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -55645,6 +55744,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_external_export_download_delivery_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
