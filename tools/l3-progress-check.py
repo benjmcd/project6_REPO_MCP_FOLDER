@@ -1751,6 +1751,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE 
     PLANNING_DOCS
     / "680_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "681_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55610,6 +55614,87 @@ def _check_source_l3_output_package_active_authority_connector_local_receipt_fre
                 )
 
 
+def _check_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_connector_local_receipt_freeze`.",
+        "681_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC.md",
+        "680_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE.md",
+        "Freeze PR: `#1285`.",
+        "codex/l3-active-authority-local-receipt-freeze",
+        "0e823dc3d983298209452994154b6a596e248b93",
+        "88986c0925824486bcad32b02f5873e17bcee6e3",
+        "Selected follow-on surface now synced: `downstream_active_package_authority_read_adoption`.",
+        "Selected reader path now synced: `connector_local_destination_receipt`.",
+        "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+        "adopt_active_replacement_package_authority_for_connector_local_receipt",
+        "Synced result: `current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_freeze`.",
+        "Runtime behavior change synced: `false`",
+        "backend-layer3-api`: `SUCCESS` in `2m43s`",
+        "test`: `SUCCESS` in `3m36s`",
+        "PR comments: empty.",
+        "PR reviews: empty.",
+        "PR latestReviews: empty.",
+        "PR reviewThreads totalCount: `0`.",
+        "PR unresolved reviewThreads: `0`.",
+        "Mergeability before merge: `MERGEABLE`.",
+        "Merge state before merge: `CLEAN`.",
+        "Existing no-active-authority connector-local receipt behavior must remain unchanged.",
+        "implement_source_l3_output_package_active_authority_connector_local_receipt_after_freeze_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority connector-local receipt freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Connector Local Receipt Freeze Current-Main Sync",
+            "681_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1285`",
+            "88986c0925824486bcad32b02f5873e17bcee6e3",
+            "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_freeze",
+            "implement_source_l3_output_package_active_authority_connector_local_receipt_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_freeze",
+            "codex/l3-active-authority-local-receipt-freeze-sync",
+            "681_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1285",
+            "88986c0925824486bcad32b02f5873e17bcee6e3",
+            "backend-layer3-api SUCCESS 2m43s",
+            "test SUCCESS 3m36s",
+            "implement_source_l3_output_package_active_authority_connector_local_receipt_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_connector_local_receipt_freeze",
+            "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_freeze",
+            "681_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1285",
+            "reviewThreads totalCount 0",
+            "connector_local_destination_receipt",
+            "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+            "implement_source_l3_output_package_active_authority_connector_local_receipt_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority connector-local receipt freeze sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -56133,6 +56218,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_external_export_download_delivery_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_connector_local_receipt_freeze(errors)
+    _check_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
