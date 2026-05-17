@@ -26034,5 +26034,36 @@
   "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_merge_commit": "3603115d70f53974eb464856827e8c19bf7966c5",
   "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_runtime",
   "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_next_posture": "select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync",
-  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_summary": "Doc 683 records current-main sync for PR #1287 merge commit 3603115d70f53974eb464856827e8c19bf7966c5 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync."
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_current_main_sync_summary": "Doc 683 records current-main sync for PR #1287 merge commit 3603115d70f53974eb464856827e8c19bf7966c5 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_active_package_authority_reader_or_rendered_activation_control_after_connector_local_receipt_runtime_sync.",
+  "source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze": {
+    "status": "implementation_entry_frozen_source_l3_output_package_active_authority_server_owned_local_outbox_write",
+    "planning_branch": "codex/l3-active-authority-local-outbox-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/684_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/683_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_freeze": "2d342439bd1dc6c91f279293da7891190a3d4e4e",
+    "selected_follow_on_surface": "downstream_active_package_authority_read_adoption",
+    "reader_path": "server_owned_local_outbox_write",
+    "route": "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+    "validation_seam": "recorded server_owned_local_outbox_target, connector_local_destination_receipt, external_export_download_prepare, and load_persisted_bundle_artifact source artifact validation",
+    "operator_action": "adopt_active_replacement_package_authority_for_server_owned_local_outbox_write",
+    "selected_implementation_entry_mode": "source_l3_output_package_active_authority_server_owned_local_outbox_write",
+    "runtime_status": "not_started_freeze_only",
+    "proof_terms": [
+      "server_owned_local_outbox_write selected as next downstream active authority reader",
+      "local outbox write must validate target, connector-local receipt, readiness, delivery, and connector dispatch authority carrying active refs/hashes",
+      "source L3OutputPackage rows remain unchanged",
+      "redacted storage://server-owned-local-outbox refs remain response-safe",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no provider-private handoff adoption",
+      "no external local export adoption",
+      "no real connector invocation",
+      "no runtime begins in this freeze"
+    ],
+    "next_posture": "current_main_sync_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze"
+  },
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_branch": "codex/l3-active-authority-local-outbox-freeze",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_doc": "next_milestone_plans/Layer3_planning_docs/684_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_FREEZE.md",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze",
+  "latest_source_l3_output_package_active_authority_server_owned_local_outbox_write_freeze_summary": "Doc 684 freezes the next exact package-lifecycle downstream active-authority reader: server_owned_local_outbox_write through POST /api/v1/layer3/handoff/connector/local-outbox/write. The freeze selects validation over recorded server_owned_local_outbox_target, connector_local_destination_receipt, external_export_download_prepare, and load_persisted_bundle_artifact source artifact authority carrying active refs/hashes and source refs/hashes as distinct authority fields, starts no runtime, and keeps provider-private handoff/external local export plus rendered controls, package mutation/source/RAG/auth/frontend-durable surfaces blocked."
 }
