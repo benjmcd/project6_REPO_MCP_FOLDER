@@ -4508,3 +4508,19 @@ Observed validation for the runtime/sync lane includes `python -m pytest .\backe
 No runtime behavior is introduced by this sync. Package replacement activation, package payload rewrite, source `L3OutputPackage` mutation, connector/destination dispatch, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
 
 The next exact current-main posture is `evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync`.
+
+## Corrected Artifact Replacement Activation Authority Evaluation
+
+Evaluation: `722_CORRECTED_ARTIFACT_REPLACEMENT_ACTIVATION_AUTHORITY_EVALUATION.md` records the branch-local satisfied-state evaluation for `corrected_artifact_replacement_activation_authority`.
+
+The evaluated posture is `evaluate_package_replacement_activation_authority_after_corrected_artifact_namespace_runtime_sync` on branch `codex/l3-corrected-artifact-activation-eval` from current-main checkpoint `c15f96b7159a7b4e1d152c23df6d6a7bf33ab516`.
+
+Current main already satisfies corrected-artifact replacement activation authority through `POST /api/v1/layer3/package/replacement-activation/commit`, `backend/app/services/layer3_package_replacement_activation.py`, and durable `L3PackageReplacementActivation` over corrected-artifact `L3ReplacementOutputPackage` namespace rows.
+
+The new proof in `backend/tests/test_layer3_package_replacement_activation.py` builds `L3CorrectedPackageArtifactSet`, corrected-artifact `L3ReplacementPackageSetAuthority`, corrected-artifact `L3PackageSupersessionCommit`, corrected-artifact `L3ReplacementPackageArtifactManifest`, corrected-artifact complete `L3ReplacementOutputPackage` namespace rows, and `L3PackageReplacementActivation`.
+
+Observed validation: `python -m pytest .\backend\tests\test_layer3_package_replacement_activation.py -q` with `5 passed`.
+
+This pass adds no runtime behavior. Package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rebinding, delivery rerun, provider-public delivery/use, connector/destination dispatch, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, and raw local path exposure remain blocked.
+
+The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_replacement_activation_authority_evaluation`.
