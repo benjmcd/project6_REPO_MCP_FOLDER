@@ -27074,5 +27074,52 @@
   "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_status": "replacement_package_set_authority_from_corrected_artifact_set_runtime_implemented_branch_local",
   "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_live_behavior_change": true,
   "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_next_posture": "await_current_main_sync_for_replacement_package_set_authority_from_corrected_artifact_set_runtime",
-  "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_summary": "Doc 708 implements the bounded replacement package-set authority bridge from L3CorrectedPackageArtifactSet to L3ReplacementPackageSetAuthority. It derives replacement identity server-side, stores durable authority, returns redacted payload refs, proves idempotency/fail-closed behavior and API/OpenAPI boundaries, and keeps package mutation beyond authority recording, namespace/manifest/activation, connector/destination dispatch, source expansion, RAG/vector, auth/security, frontend-durable authority, caller paths/URLs, and raw local path exposure blocked."
+  "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_summary": "Doc 708 implements the bounded replacement package-set authority bridge from L3CorrectedPackageArtifactSet to L3ReplacementPackageSetAuthority. It derives replacement identity server-side, stores durable authority, returns redacted payload refs, proves idempotency/fail-closed behavior and API/OpenAPI boundaries, and keeps package mutation beyond authority recording, namespace/manifest/activation, connector/destination dispatch, source expansion, RAG/vector, auth/security, frontend-durable authority, caller paths/URLs, and raw local path exposure blocked.",
+  "replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync": {
+    "status": "current_main_synced_replacement_package_set_authority_from_corrected_artifact_set_runtime",
+    "sync_branch": "codex/l3-corrected-artifact-replacement-authority-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/709_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/708_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_PROOF.md",
+    "runtime_pr": "#1313",
+    "runtime_branch": "codex/l3-corrected-artifact-replacement-authority-runtime",
+    "runtime_branch_commit": "2df2913a81245dca2c23e39555c2c08060e0af5d",
+    "runtime_merge_commit": "73e102d87788bd9b376ea4d2effab40e853f48b1",
+    "current_main_checkpoint_after_merge": "73e102d87788bd9b376ea4d2effab40e853f48b1",
+    "selected_implementation_posture_now_synced": "replacement_package_set_authority_from_corrected_artifact_set_runtime",
+    "route_now_synced": "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set",
+    "owner_service_now_synced": "backend/app/services/layer3_replacement_package_set_authority.py",
+    "api_owner_now_synced": "backend/app/api/layer3.py",
+    "durable_model_now_synced": "L3ReplacementPackageSetAuthority",
+    "source_model_now_synced": "L3CorrectedPackageArtifactSet",
+    "request_mode_now_synced": "replacement_package_set_authority_from_corrected_artifact_set",
+    "operator_decision_now_synced": "record_replacement_package_set_authority",
+    "checks": [
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "latestReviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_behavior_already_merged": true,
+    "runtime_live_behavior_change": true,
+    "next_posture": "evaluate_corrected_artifact_package_rebuild_downstream_existing_authority_after_replacement_authority_runtime_sync"
+  },
+  "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync_branch": "codex/l3-corrected-artifact-replacement-authority-runtime-sync",
+  "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/709_REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync_status": "current_main_synced_replacement_package_set_authority_from_corrected_artifact_set_runtime",
+  "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync_live_behavior_change": false,
+  "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync_next_posture": "evaluate_corrected_artifact_package_rebuild_downstream_existing_authority_after_replacement_authority_runtime_sync",
+  "latest_replacement_package_set_authority_from_corrected_artifact_set_runtime_current_main_sync_summary": "Doc 709 records current-main sync for PR #1313 merge commit 73e102d87788bd9b376ea4d2effab40e853f48b1. Current main now contains the bounded corrected-artifact replacement package-set authority bridge with redacted refs and fail-closed proof; the next posture is evaluate_corrected_artifact_package_rebuild_downstream_existing_authority_after_replacement_authority_runtime_sync."
 }
