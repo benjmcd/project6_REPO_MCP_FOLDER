@@ -26685,5 +26685,45 @@
   "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_branch": "codex/l3-package-activation-freeze-sync",
   "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
   "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_live_behavior_change": false,
-  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_summary": "Doc 665 proof records current-main sync for PR #1268, proves the source L3 output package replacement activation freeze is current-main synced, records the corrected idempotency-basis separation, and makes implement_source_l3_output_package_replacement_activation_after_freeze_sync the next exact posture."
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_summary": "Doc 665 proof records current-main sync for PR #1268, proves the source L3 output package replacement activation freeze is current-main synced, records the corrected idempotency-basis separation, and makes implement_source_l3_output_package_replacement_activation_after_freeze_sync the next exact posture.",
+  "source_l3_output_package_replacement_activation_runtime_proof": {
+    "proof_kind": "runtime_proof_source_l3_output_package_replacement_activation",
+    "status": "branch_local_runtime_proof_source_l3_output_package_replacement_activation",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-package-activation-runtime",
+    "current_main_preflight_commit": "a06a1a71f9612b5785ec3021461c23a2d3bbfc9e",
+    "selected_package_lifecycle_action": "activate_replacement_output_package_namespace",
+    "implemented_route": "/api/v1/layer3/package/replacement-activation/commit",
+    "owner_service": "backend/app/services/layer3_package_replacement_activation.py",
+    "durable_state": [
+      "L3PackageReplacementActivation",
+      "l3_package_replacement_activation",
+      "0032_layer3_package_replacement_activation.py"
+    ],
+    "storage_boundary": "dedicated_activation_table_preserving_l3_output_package_rows_and_uq_l3_output_package_session_kind",
+    "proof_terms": [
+      "666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+      "source_l3_output_package_replacement_activation_runtime",
+      "activate_replacement_output_package_namespace",
+      "POST /api/v1/layer3/package/replacement-activation/commit",
+      "L3PackageReplacementActivation",
+      "l3_package_replacement_activation",
+      "package_replacement_activation_basis_hash",
+      "resolve_active_replacement_package_authority",
+      "client_request_id is the idempotency key and is not part of the canonical replacement_activation_basis_hash",
+      "response-safe artifact refs",
+      "raw local paths excluded from activation_snapshot",
+      "disabled side-effect flags remain false"
+    ],
+    "validation": [
+      "python -m pytest backend/tests/test_layer3_package_replacement_activation.py -q: 4 passed",
+      "python -m pytest backend/tests/test_layer3_api.py::test_layer3_package_openapi_contracts backend/tests/test_layer3_api.py::test_layer3_json_workbench_error_openapi_contracts backend/tests/test_layer3_api.py::test_layer3_package_replacement_activation_api_boundary_returns_workbench_error_envelope -q: 3 passed"
+    ],
+    "next_posture": "await_current_main_sync_for_source_l3_output_package_replacement_activation_runtime"
+  },
+  "latest_source_l3_output_package_replacement_activation_runtime_branch": "codex/l3-package-activation-runtime",
+  "latest_source_l3_output_package_replacement_activation_runtime_doc": "next_milestone_plans/Layer3_planning_docs/666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+  "latest_source_l3_output_package_replacement_activation_runtime_live_behavior_change": true,
+  "latest_source_l3_output_package_replacement_activation_runtime_summary": "Doc 666 proof records the backend/API source_l3_output_package_replacement_activation runtime: dedicated L3PackageReplacementActivation state, POST /api/v1/layer3/package/replacement-activation/commit, response-safe artifact refs, raw local paths excluded from activation_snapshot, idempotent same-basis replay, stale authority and incomplete namespace fail-closed tests, and disabled side-effect flags."
 }

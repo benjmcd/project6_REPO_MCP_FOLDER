@@ -811,6 +811,7 @@ def _workbench_state_action_contract() -> dict[str, Any]:
         package_supersession_commit_operator_decision="commit_package_supersession",
         replacement_package_artifact_manifest_operator_decision="record_replacement_package_artifact_manifest",
         replacement_package_namespace_operator_decision="record_replacement_package_namespace",
+        package_replacement_activation_operator_decision="activate_replacement_output_package_namespace",
         terminal_pass_statuses=EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES,
     )
 

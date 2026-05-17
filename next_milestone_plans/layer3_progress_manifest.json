@@ -25109,5 +25109,71 @@
   "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_branch": "codex/l3-package-activation-freeze-sync",
   "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
   "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_live_behavior_change": false,
-  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_summary": "Doc 665 syncs PR #1268 merge commit 2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a to current main. The source L3 output package replacement activation freeze is current-main synced, the review-thread correction keeps client_request_id outside canonical replacement_activation_basis_hash, and the next exact posture is implement_source_l3_output_package_replacement_activation_after_freeze_sync."
+  "latest_source_l3_output_package_replacement_activation_freeze_current_main_sync_summary": "Doc 665 syncs PR #1268 merge commit 2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a to current main. The source L3 output package replacement activation freeze is current-main synced, the review-thread correction keeps client_request_id outside canonical replacement_activation_basis_hash, and the next exact posture is implement_source_l3_output_package_replacement_activation_after_freeze_sync.",
+  "source_l3_output_package_replacement_activation_runtime": {
+    "status": "branch_local_runtime_proof_source_l3_output_package_replacement_activation",
+    "branch": "codex/l3-package-activation-runtime",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "a06a1a71f9612b5785ec3021461c23a2d3bbfc9e",
+    "selected_surface": "package_mutation_reconstruction",
+    "selected_package_lifecycle_action": "activate_replacement_output_package_namespace",
+    "selected_implementation_entry_mode": "source_l3_output_package_replacement_activation",
+    "implemented_route": "/api/v1/layer3/package/replacement-activation/commit",
+    "owner_service": "backend/app/services/layer3_package_replacement_activation.py",
+    "durable_state_model": "L3PackageReplacementActivation",
+    "durable_state_table": "l3_package_replacement_activation",
+    "migration": "backend/alembic/versions/0032_layer3_package_replacement_activation.py",
+    "storage_boundary": "dedicated_activation_table_preserving_l3_output_package_rows_and_uq_l3_output_package_session_kind",
+    "request_fields": [
+      "client_request_id",
+      "session_id",
+      "replacement_artifact_manifest_id",
+      "replacement_package_set_authority_id",
+      "package_supersession_commit_id",
+      "replacement_output_package_ids",
+      "source_output_package_ids",
+      "package_kinds",
+      "replacement_activation_basis_hash",
+      "operator_decision"
+    ],
+    "idempotency_basis_separation": "client_request_id is the idempotency key and is not part of the canonical replacement_activation_basis_hash",
+    "runtime_proof": [
+      "migration constraints proof",
+      "successful activation without source package row mutation or package payload write",
+      "same-basis replay returns already_activated",
+      "stale authority failure",
+      "incomplete namespace failure",
+      "forbidden fields fail closed",
+      "response-safe artifact refs",
+      "raw local paths excluded from activation_snapshot",
+      "disabled side-effect flags remain false"
+    ],
+    "validation": [
+      "python -m py_compile backend/app/models/models.py backend/app/services/layer3_package_replacement_activation.py backend/app/services/layer3_state_action_contract.py backend/app/services/layer3_state_model_contract.py backend/app/services/layer3_workbench.py backend/app/api/layer3.py backend/alembic/versions/0032_layer3_package_replacement_activation.py",
+      "python -m py_compile backend/tests/test_layer3_package_replacement_activation.py backend/tests/test_layer3_api.py",
+      "python -m pytest backend/tests/test_layer3_package_replacement_activation.py -q",
+      "python -m pytest backend/tests/test_layer3_api.py::test_layer3_package_openapi_contracts backend/tests/test_layer3_api.py::test_layer3_json_workbench_error_openapi_contracts backend/tests/test_layer3_api.py::test_layer3_package_replacement_activation_api_boundary_returns_workbench_error_envelope -q"
+    ],
+    "next_posture": "await_current_main_sync_for_source_l3_output_package_replacement_activation_runtime",
+    "non_admitted": [
+      "package rebuild",
+      "package payload rewrite",
+      "source L3OutputPackage row mutation",
+      "downstream handoff/export re-binding",
+      "downstream invalidation",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "connector/destination dispatch",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "frontend-durable authority",
+      "caller-supplied arbitrary paths or URLs"
+    ]
+  },
+  "latest_source_l3_output_package_replacement_activation_runtime_branch": "codex/l3-package-activation-runtime",
+  "latest_source_l3_output_package_replacement_activation_runtime_doc": "next_milestone_plans/Layer3_planning_docs/666_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_PROOF.md",
+  "latest_source_l3_output_package_replacement_activation_runtime_live_behavior_change": true,
+  "latest_source_l3_output_package_replacement_activation_runtime_summary": "Doc 666 implements the backend/API source_l3_output_package_replacement_activation runtime on branch codex/l3-package-activation-runtime. It adds POST /api/v1/layer3/package/replacement-activation/commit, service backend/app/services/layer3_package_replacement_activation.py, model L3PackageReplacementActivation, table l3_package_replacement_activation, and migration 0032_layer3_package_replacement_activation.py. The storage boundary is a dedicated activation table preserving L3OutputPackage rows and uq_l3_output_package_session_kind; client_request_id remains outside canonical replacement_activation_basis_hash. The next posture is await_current_main_sync_for_source_l3_output_package_replacement_activation_runtime."
 }
