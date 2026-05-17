@@ -27068,5 +27068,37 @@
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_doc": "next_milestone_plans/Layer3_planning_docs/672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_live_behavior_change": false,
   "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
-  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_summary": "Doc 672 proof records an implementation-entry freeze only: aps_handoff_dispatch is selected as the next active package authority reader, no runtime begins, and downstream readers plus package mutation/rewrite/source/RAG/auth/frontend-durable surfaces remain blocked."
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_summary": "Doc 672 proof records an implementation-entry freeze only: aps_handoff_dispatch is selected as the next active package authority reader, no runtime begins, and downstream readers plus package mutation/rewrite/source/RAG/auth/frontend-durable surfaces remain blocked.",
+  "source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+    "status": "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/673_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
+    "freeze_pr": "#1277",
+    "freeze_merge_commit": "10286378745aff68a4b0b93b511021c30d5b0894",
+    "checks": [
+      "backend-layer3-api SUCCESS 2m38s",
+      "test SUCCESS 3m30s"
+    ],
+    "review_gate": {
+      "comments": "empty",
+      "reviews": "empty",
+      "latest_reviews": "empty",
+      "reviewThreads totalCount 0": true,
+      "unresolved_reviewThreads 0": true
+    },
+    "synced_reader_path": "aps_handoff_dispatch",
+    "synced_route": "POST /api/v1/layer3/handoff/aps/dispatch",
+    "synced_resolver": "resolve_active_replacement_package_authority",
+    "implementation_next_posture": "implement_source_l3_output_package_active_authority_aps_handoff_dispatch_after_freeze_sync",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false
+  },
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_branch": "codex/l3-active-authority-aps-dispatch-freeze-sync",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/673_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_pr": "#1277",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_merge_commit": "10286378745aff68a4b0b93b511021c30d5b0894",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_next_posture": "implement_source_l3_output_package_active_authority_aps_handoff_dispatch_after_freeze_sync",
+  "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_current_main_sync_summary": "Doc 673 proof records current-main sync for PR #1277 and sets the next exact posture to implement_source_l3_output_package_active_authority_aps_handoff_dispatch_after_freeze_sync."
 }
