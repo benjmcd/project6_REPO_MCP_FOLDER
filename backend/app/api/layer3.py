@@ -887,6 +887,80 @@ class Layer3ReplacementPackageSetAuthorityRequest(BaseModel):
     cancel: Any | None = None
 
 
+class Layer3ReplacementPackageSetAuthorityFromCorrectedArtifactSetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    source_package_set_hash: str | None = None
+    corrected_package_artifact_set_id: str | None = None
+    corrected_artifact_basis_hash: str | None = None
+    operator_decision: str | None = None
+    source_output_package_ids: Any | None = None
+    source_package_kinds: Any | None = None
+    source_payload_refs: Any | None = None
+    source_payload_hashes: Any | None = None
+    replacement_package_set_id: Any | None = None
+    replacement_package_set_hash: Any | None = None
+    replacement_package_kinds: Any | None = None
+    replacement_payload_refs: Any | None = None
+    replacement_payload_hashes: Any | None = None
+    authority_basis_hash: Any | None = None
+    corrected_artifact_refs: Any | None = None
+    corrected_artifact_hashes: Any | None = None
+    corrected_artifact_bytes: Any | None = None
+    corrected_package_payloads: Any | None = None
+    replacement_output_package_ids: Any | None = None
+    source_l3_output_package_write: Any | None = None
+    source_output_package_update: Any | None = None
+    browser_generated_diff: Any | None = None
+    rendered_control_state: Any | None = None
+    auth_context: Any | None = None
+    security_context: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    replacement_package_payloads: Any | None = None
+    edited_package_content: Any | None = None
+    rewrite_output: Any | None = None
+    rebuild_package: Any | None = None
+    mutate_package: Any | None = None
+    replace_package: Any | None = None
+    delete_package: Any | None = None
+    update_payload_ref: Any | None = None
+    update_payload_hash: Any | None = None
+    package_supersession_commit: Any | None = None
+    package_row_mutation: Any | None = None
+    package_payload_rewrite: Any | None = None
+    artifact_manifest: Any | None = None
+    analysis_artifact: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    connector_key: Any | None = None
+    connector_run_id: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    download_url: Any | None = None
+    source_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_vector_index: Any | None = None
+    runtime_db_write: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_planning: Any | None = None
+    schema_migration: Any | None = None
+    approved_plan_supersession: Any | None = None
+    retry: Any | None = None
+    rerun: Any | None = None
+    cancel: Any | None = None
+
+
 class Layer3CorrectedPackageArtifactSetRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -4763,6 +4837,45 @@ REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Server-derived replacement package-set authority from an existing corrected package artifact-set authority. "
+        "The caller supplies only identity and basis fields; package refs, hashes, and authority basis are derived "
+        "server-side, and raw local paths are not exposed in the response."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "source_package_set_hash",
+        "corrected_package_artifact_set_id",
+        "corrected_artifact_basis_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "source_package_set_hash": {"type": "string"},
+        "corrected_package_artifact_set_id": {"type": "string"},
+        "corrected_artifact_basis_hash": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["record_replacement_package_set_authority"]},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in sorted(
+                layer3_replacement_package_set_authority.REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_FORBIDDEN_FIELDS
+            )
+        },
+    },
+}
+
+
 PACKAGE_SUPERSESSION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -6511,6 +6624,28 @@ def post_package_replacement_set_record(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_replacement_package_set_authority.record_replacement_package_set_authority(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/package/replacement-set/record-from-corrected-artifact-set",
+    response_model=Layer3ReplacementPackageSetAuthorityResponse,
+    openapi_extra={
+        "requestBody": _json_request_body(
+            REPLACEMENT_PACKAGE_SET_AUTHORITY_FROM_CORRECTED_ARTIFACT_SET_REQUEST_SCHEMA
+        )
+    },
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_package_replacement_set_record_from_corrected_artifact_set(
+    payload: Layer3ReplacementPackageSetAuthorityFromCorrectedArtifactSetRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_replacement_package_set_authority.record_replacement_package_set_authority_from_corrected_artifact_set(
             db,
             payload.model_dump(exclude_unset=True),
         )
