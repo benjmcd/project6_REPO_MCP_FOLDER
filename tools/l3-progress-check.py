@@ -1687,6 +1687,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE = (
     PLANNING_DOCS
     / "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -53885,6 +53889,82 @@ def _check_source_l3_output_package_replacement_activation_freeze(
                 )
 
 
+def _check_source_l3_output_package_replacement_activation_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_replacement_activation_freeze`.",
+        "665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "664_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE.md",
+        "Freeze PR: `#1268`.",
+        "f73dd8114de06a46195f86b146a8c29dad2302a8",
+        "27cc41c47b2a15225926208872230e74188d506b",
+        "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
+        "Synced result: `current_main_synced_source_l3_output_package_replacement_activation_freeze`.",
+        "backend-layer3-api`: `SUCCESS` in `2m57s`",
+        "test`: `SUCCESS` in `3m52s`",
+        "PR reviewThreads totalCount: `1`.",
+        "PR unresolved reviewThreads: `0`.",
+        "PR resolved reviewThreads: `1`.",
+        "PR outdated reviewThreads: `1`.",
+        "Merge state before merge: `CLEAN`.",
+        "client_request_id` is the idempotency key and is not part of the canonical `replacement_activation_basis_hash`",
+        "implement_source_l3_output_package_replacement_activation_after_freeze_sync",
+        "select_package_activation_storage_boundary_after_freeze_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package replacement activation freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Replacement Activation Freeze Current-Main Sync",
+            "665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1268`",
+            "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
+            "current_main_synced_source_l3_output_package_replacement_activation_freeze",
+            "client_request_id` is the idempotency key and is not part of canonical `replacement_activation_basis_hash`",
+            "implement_source_l3_output_package_replacement_activation_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_replacement_activation_freeze_current_main_sync",
+            "current_main_synced_source_l3_output_package_replacement_activation_freeze",
+            "codex/l3-package-activation-freeze-sync",
+            "665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1268",
+            "2009a9e67c8bf95fa96ce7f90804ede0b9c2bf3a",
+            "backend-layer3-api passed 2m57s",
+            "test passed 3m52s",
+            "reviewThreads totalCount 1",
+            "unresolved reviewThreads 0",
+            "review_correction",
+            "implement_source_l3_output_package_replacement_activation_after_freeze_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_replacement_activation_freeze_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_replacement_activation_freeze",
+            "current_main_synced_source_l3_output_package_replacement_activation_freeze",
+            "665_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "reviewThreads totalCount 1",
+            "client_request_id is the idempotency key and is not part of the canonical replacement_activation_basis_hash",
+            "select_package_activation_storage_boundary_after_freeze_sync",
+            "implement_source_l3_output_package_replacement_activation_after_freeze_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package replacement activation freeze sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -54389,6 +54469,7 @@ def main() -> int:
     _check_rendered_replacement_package_namespace_control_runtime_proof(errors)
     _check_rendered_replacement_package_namespace_control_runtime_current_main_sync(errors)
     _check_source_l3_output_package_replacement_activation_freeze(errors)
+    _check_source_l3_output_package_replacement_activation_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
