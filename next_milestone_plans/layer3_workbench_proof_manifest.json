@@ -29165,5 +29165,41 @@
   "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
   "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_handoff_export_prepare_evaluation",
   "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync",
-  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_summary": "Doc 725 proof syncs corrected-artifact active authority handoff/export prepare evaluation after PR #1329 and selects the next downstream active-package-authority reader after handoff/export prepare."
+  "latest_corrected_artifact_active_authority_handoff_export_prepare_evaluation_current_main_sync_summary": "Doc 725 proof syncs corrected-artifact active authority handoff/export prepare evaluation after PR #1329 and selects the next downstream active-package-authority reader after handoff/export prepare.",
+  "corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_proof": {
+    "proof_kind": "branch_local_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
+    "status": "branch_local_corrected_artifact_active_authority_aps_handoff_dispatch_proven",
+    "evaluation_branch": "codex/l3-next-reader-select",
+    "evaluation_doc": "next_milestone_plans/Layer3_planning_docs/726_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_evaluation": "449793c8db30b8b07bd3a08c844ca4c27aa4d49e",
+    "selected_downstream_reader": "aps_handoff_dispatch",
+    "selected_route": "POST /api/v1/layer3/handoff/aps/dispatch",
+    "selected_reader_source": "resolve_active_replacement_package_payload_authority",
+    "runtime_behavior_change": false,
+    "test_proof_behavior_change": true,
+    "proof_command": "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_aps_handoff_dispatch_applies_corrected_artifact_active_authority -q",
+    "observed_result": "1 passed",
+    "proof_coverage": [
+      "real corrected-artifact API route chain reaches APS handoff dispatch",
+      "handoff_export_prepare projects corrected active package authority before dispatch",
+      "aps_handoff_dispatch applies corrected active package authority",
+      "active replacement refs and hashes become APS dispatch payload refs and hashes",
+      "APS output package summary persists active authority projection",
+      "reconciliation aps_handoff_dispatch state persists active authority projection",
+      "source L3OutputPackage rows are preserved",
+      "no ConnectorRun rows are created",
+      "no ConnectorRunTarget rows are created",
+      "no package payload rewrite",
+      "response-safe active artifact refs",
+      "duplicate dispatch replays as already_dispatched"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
+    "next_posture_after_sync": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_aps_handoff_dispatch_sync"
+  },
+  "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_branch": "codex/l3-next-reader-select",
+  "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/726_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_EVALUATION.md",
+  "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_status": "branch_local_corrected_artifact_active_authority_aps_handoff_dispatch_proven",
+  "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation",
+  "latest_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_summary": "Doc 726 proves the corrected-artifact active package authority chain reaches APS handoff dispatch through real API routes after handoff/export prepare."
 }
