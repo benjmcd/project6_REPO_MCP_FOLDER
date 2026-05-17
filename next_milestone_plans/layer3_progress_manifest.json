@@ -26434,5 +26434,44 @@
   "latest_source_l3_output_package_active_authority_external_local_export_runtime_doc": "next_milestone_plans/Layer3_planning_docs/694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md",
   "latest_source_l3_output_package_active_authority_external_local_export_runtime_live_behavior_change": false,
   "latest_source_l3_output_package_active_authority_external_local_export_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_external_local_export_runtime",
-  "latest_source_l3_output_package_active_authority_external_local_export_runtime_summary": "Doc 694 proof records source_l3_output_package_active_authority_external_local_export_runtime: external_local_export carries active replacement refs/hashes through local outbox provider-private handoff into external local export on the admitted associated-cohort APS evidence-bundle path, writes only durable local outbox artifact and manifest bytes authorized by active-authority local outbox write and provider-private handoff state, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, creates no provider-private signed URL receipt or provider-public delivery state, enables no real connector invocation or external provider/object-store write, leaks no raw local path/source artifact ref/configured export path/provider token/provider object key, and changes no service runtime behavior."
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_summary": "Doc 694 proof records source_l3_output_package_active_authority_external_local_export_runtime: external_local_export carries active replacement refs/hashes through local outbox provider-private handoff into external local export on the admitted associated-cohort APS evidence-bundle path, writes only durable local outbox artifact and manifest bytes authorized by active-authority local outbox write and provider-private handoff state, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, creates no provider-private signed URL receipt or provider-public delivery state, enables no real connector invocation or external provider/object-store write, leaks no raw local path/source artifact ref/configured export path/provider token/provider object key, and changes no service runtime behavior.",
+  "source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync": {
+    "status": "current_main_synced_source_l3_output_package_active_authority_external_local_export_runtime",
+    "sync_branch": "codex/l3-active-authority-external-export-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/695_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md",
+    "runtime_pr": "#1299",
+    "runtime_branch": "codex/l3-active-authority-external-export-impl",
+    "runtime_branch_commit": "065498cfb12c26a5a0e9e8d2cf8fbeb94a399762",
+    "runtime_merge_commit": "bfe78692c3272aecf30e5b64d1f21b1751f37119",
+    "checks": [
+      "backend-layer3-api SUCCESS 2m59s",
+      "test SUCCESS 3m34s"
+    ],
+    "review_gate": [
+      "PR comments empty",
+      "PR reviews empty",
+      "PR latestReviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeable MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "synced_reader_path": "external_local_export",
+    "synced_route": "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+    "synced_validation_seam": "recorded local_outbox_provider_private_handoff, server_owned_local_outbox_write, server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, external_export_download_prepare, local outbox artifact and manifest hash/size validation, and LAYER3_EXTERNAL_LOCAL_EXPORT_DIR target authority",
+    "runtime_behavior_change": false,
+    "next_posture": "select_package_mutation_reconstruction_named_operator_action_after_source_l3_output_package_active_authority_external_local_export_runtime_sync"
+  },
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_branch": "codex/l3-active-authority-external-export-runtime-sync",
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/695_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_pr": "#1299",
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_merge_commit": "bfe78692c3272aecf30e5b64d1f21b1751f37119",
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_external_local_export_runtime",
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_next_posture": "select_package_mutation_reconstruction_named_operator_action_after_source_l3_output_package_active_authority_external_local_export_runtime_sync",
+  "latest_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_summary": "Doc 695 records current-main sync for PR #1299 merge commit bfe78692c3272aecf30e5b64d1f21b1751f37119 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_package_mutation_reconstruction_named_operator_action_after_source_l3_output_package_active_authority_external_local_export_runtime_sync. Current main now proves external_local_export consumes active replacement package authority after local-outbox provider-private handoff, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, creates no provider-private signed URL receipt or provider-public delivery state, enables no real connector invocation or external provider/object-store write, leaks no raw local path/source artifact ref/configured export path/provider token/provider object key, and changes no service runtime behavior."
 }

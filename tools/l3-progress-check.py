@@ -1807,6 +1807,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_P
     PLANNING_DOCS
     / "694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "695_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -56905,6 +56909,108 @@ def _check_source_l3_output_package_active_authority_external_local_export_runti
                 )
 
 
+def _check_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_external_local_export_runtime`.",
+        "695_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "694_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_PROOF.md",
+        "Runtime PR: `#1299`.",
+        "codex/l3-active-authority-external-export-impl",
+        "065498cfb12c26a5a0e9e8d2cf8fbeb94a399762",
+        "bfe78692c3272aecf30e5b64d1f21b1751f37119",
+        "Selected reader path now synced: `external_local_export`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        "adopt_active_replacement_package_authority_for_external_local_export",
+        "current_main_synced_source_l3_output_package_active_authority_external_local_export_runtime",
+        "`backend-layer3-api`: `SUCCESS` in `2m59s`",
+        "`test`: `SUCCESS` in `3m34s`",
+        "PR reviewThreads totalCount: `0`",
+        "Merge state before merge: `CLEAN`",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "external local export writes only durable local outbox artifact and manifest bytes authorized",
+        "creates no `ConnectorRun`, `ConnectorRunTarget`, provider-private signed URL receipt, or provider-public delivery state",
+        "select_package_mutation_reconstruction_named_operator_action_after_source_l3_output_package_active_authority_external_local_export_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority external local export runtime sync term: {term}"
+            )
+
+    for blocked in (
+        "package mutation/reconstruction",
+        "source expansion",
+        "RAG/vector behavior",
+        "provider-public delivery/use",
+        "real connector invocation",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority external local export runtime sync non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority External Local Export Runtime Current-Main Sync",
+            "695_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1299",
+            "065498cfb12c26a5a0e9e8d2cf8fbeb94a399762",
+            "bfe78692c3272aecf30e5b64d1f21b1751f37119",
+            "backend-layer3-api` passed in `2m59s",
+            "reviewThreads totalCount was `0`",
+            "external_local_export",
+            "select_package_mutation_reconstruction_named_operator_action_after_source_l3_output_package_active_authority_external_local_export_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_external_local_export_runtime",
+            "codex/l3-active-authority-external-export-runtime-sync",
+            "695_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1299",
+            "bfe78692c3272aecf30e5b64d1f21b1751f37119",
+            "backend-layer3-api SUCCESS 2m59s",
+            "reviewThreads totalCount 0",
+            "python .\\\\tools\\\\l3-progress-check.py PASS",
+            "select_package_mutation_reconstruction_named_operator_action_after_source_l3_output_package_active_authority_external_local_export_runtime_sync",
+            "latest_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_external_local_export_runtime",
+            "current_main_synced_source_l3_output_package_active_authority_external_local_export_runtime",
+            "695_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1299",
+            "bfe78692c3272aecf30e5b64d1f21b1751f37119",
+            "backend-layer3-api SUCCESS 2m59s",
+            "reviewThreads totalCount 0",
+            "python .\\\\tools\\\\l3-target-selection-validate.py --expect frozen PASS",
+            "select_package_mutation_reconstruction_named_operator_action_after_source_l3_output_package_active_authority_external_local_export_runtime_sync",
+            "latest_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority external local export runtime sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -57442,6 +57548,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_external_local_export_freeze(errors)
     _check_source_l3_output_package_active_authority_external_local_export_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_external_local_export_runtime_proof(errors)
+    _check_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
