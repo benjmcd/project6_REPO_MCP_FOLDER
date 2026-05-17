@@ -1190,7 +1190,15 @@ async function submitRenderedPackageReview(page, sessionId, approval, planPrevie
   return packageSubmit;
 }
 
-async function previewRenderedPackageSupersession(page, sessionId, approval, execution, commit, packageSubmit) {
+async function previewRenderedPackageSupersession(
+  page,
+  sessionId,
+  approval,
+  execution,
+  commit,
+  packageSubmit,
+  { proveFailure = true } = {},
+) {
   await expect(page.locator('#package-supersession-preview-panel')).toHaveAttribute('data-rendered-mode', 'rendered_package_supersession_preview_control');
   await expect(page.locator('#package-supersession-preview-panel')).toHaveAttribute('data-preview-state', 'package_supersession_preview_ready');
   await expect(page.locator('#package-supersession-preview-submit')).toBeEnabled();
@@ -1287,25 +1295,250 @@ async function previewRenderedPackageSupersession(page, sessionId, approval, exe
   await expect(page.locator('#package-supersession-preview-panel')).not.toContainText('package_supersession_commit_enabled true');
   await expect(page.locator('#package-supersession-preview-submit')).toBeEnabled();
 
-  await page.route('**/api/v1/layer3/package/mutation/preview', async (route) => {
+  if (proveFailure) {
+    await page.route('**/api/v1/layer3/package/mutation/preview', async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_id: 'layer3.workbench_error.v1',
+          error_code: 'package_supersession_preview_package_review_preview_hash_mismatch',
+          status: 'conflict',
+          message: 'Supplied package_review_preview_hash does not match package-construction authority.',
+          blocked_fields: ['package_review_preview_hash'],
+        }),
+      });
+    });
+    await page.locator('#package-supersession-preview-submit').click();
+    await expect(page.locator('#package-supersession-preview-panel')).toHaveAttribute('data-preview-state', 'package_supersession_preview_package_review_preview_hash_mismatch');
+    await expect(page.locator('#package-supersession-preview-panel')).toContainText('package_supersession_preview_package_review_preview_hash_mismatch');
+    await page.unroute('**/api/v1/layer3/package/mutation/preview');
+  }
+
+  return supersessionPreview;
+}
+
+async function recordRenderedReplacementPackageSetAuthority(
+  page,
+  sessionId,
+  approval,
+  execution,
+  commit,
+  supersessionPreview,
+) {
+  const panel = page.locator('#replacement-package-set-authority-panel');
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_replacement_package_set_authority_control');
+  await expect(panel).toHaveAttribute('data-authority-state', 'replacement_package_set_authority_ready');
+  await expect(page.locator('#replacement-package-set-authority-submit')).toBeEnabled();
+
+  await page.route('**/api/v1/layer3/package/replacement-set/record', async (route) => {
     await route.fulfill({
       status: 409,
       contentType: 'application/json',
       body: JSON.stringify({
         schema_id: 'layer3.workbench_error.v1',
-        error_code: 'package_supersession_preview_package_review_preview_hash_mismatch',
+        error_code: 'replacement_package_set_authority_basis_hash_mismatch',
         status: 'conflict',
-        message: 'Supplied package_review_preview_hash does not match package-construction authority.',
-        blocked_fields: ['package_review_preview_hash'],
+        message: 'Supplied authority_basis_hash does not match materialized replacement package authority.',
+        blocked_fields: ['authority_basis_hash'],
       }),
     });
   });
-  await page.locator('#package-supersession-preview-submit').click();
-  await expect(page.locator('#package-supersession-preview-panel')).toHaveAttribute('data-preview-state', 'package_supersession_preview_package_review_preview_hash_mismatch');
-  await expect(page.locator('#package-supersession-preview-panel')).toContainText('package_supersession_preview_package_review_preview_hash_mismatch');
-  await page.unroute('**/api/v1/layer3/package/mutation/preview');
+  const rejectedMaterializationResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/replacement-artifact/materialize')
+  ));
+  const rejectedAuthorityResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/replacement-set/record')
+  ));
+  await page.locator('#replacement-package-set-authority-submit').click();
+  const rejectedMaterialization = await expectJson(await rejectedMaterializationResponsePromise);
+  expect(['materialized', 'already_materialized']).toContain(rejectedMaterialization.status);
+  expect((await rejectedAuthorityResponsePromise).status()).toBe(409);
+  await expect(panel).toHaveAttribute('data-authority-state', 'replacement_package_set_authority_basis_hash_mismatch');
+  await expect(panel).toContainText('replacement_package_set_authority_basis_hash_mismatch');
+  await expect(page.locator('#replacement-package-set-authority-submit')).toBeEnabled();
+  await page.unroute('**/api/v1/layer3/package/replacement-set/record');
 
-  return supersessionPreview;
+  const materializationRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/package/replacement-artifact/materialize')
+    && apiRequest.method() === 'POST'
+  ));
+  const materializationResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/replacement-artifact/materialize')
+  ));
+  const authorityRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.url().includes('/api/v1/layer3/package/replacement-set/record')
+    && apiRequest.method() === 'POST'
+  ));
+  const authorityResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/package/replacement-set/record')
+  ));
+  await page.locator('#replacement-package-set-authority-submit').click();
+
+  const materializationPayload = (await materializationRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(materializationPayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'operator_decision',
+    'package_supersession_preview_hash',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'session_id',
+    'source_output_package_ids',
+    'source_package_kinds',
+    'source_package_set_hash',
+    'source_payload_hashes',
+    'source_payload_refs',
+  ]);
+  expect(materializationPayload.session_id).toBe(sessionId);
+  expect(materializationPayload.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(materializationPayload.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(materializationPayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(materializationPayload.package_supersession_preview_hash).toBe(supersessionPreview.package_supersession_preview_hash);
+  expect(materializationPayload.source_package_set_hash).toBe(supersessionPreview.package_set_hash);
+  expect(materializationPayload.source_output_package_ids).toEqual(commit.output_package_ids);
+  expect(materializationPayload.source_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(materializationPayload.source_payload_refs).toEqual(commit.payload_refs);
+  expect(materializationPayload.source_payload_hashes).toEqual(commit.payload_hashes);
+  expect(materializationPayload.operator_decision).toBe('materialize_replacement_package_artifacts_from_supersession_preview');
+  for (const forbiddenKey of [
+    'replacement_package_set_id',
+    'replacement_package_set_hash',
+    'replacement_payload_refs',
+    'replacement_payload_hashes',
+    'authority_basis_hash',
+    'package_payload',
+    'replacement_package_payloads',
+    'destination_url',
+    'connector_run_id',
+    'provider_public_url',
+    'source_upload',
+    'rag_vector_index',
+    'frontend_state',
+  ]) {
+    expect(materializationPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  const materialization = await expectJson(await materializationResponsePromise);
+  expect(materialization.schema_id).toBe('layer3.replacement_package_artifact_materialization.v1');
+  expect(['materialized', 'already_materialized']).toContain(materialization.status);
+  expect(materialization.session_id).toBe(sessionId);
+  expect(materialization.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(materialization.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(materialization.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(materialization.package_supersession_preview_hash).toBe(supersessionPreview.package_supersession_preview_hash);
+  expect(materialization.source_package_set_hash).toBe(supersessionPreview.package_set_hash);
+  expect(materialization.source_output_package_ids).toEqual(commit.output_package_ids);
+  expect(materialization.source_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(materialization.source_payload_refs).toEqual(commit.payload_refs);
+  expect(materialization.source_payload_hashes).toEqual(commit.payload_hashes);
+  expect(materialization.replacement_package_set_id).toBeTruthy();
+  expect(materialization.replacement_package_set_hash).toBeTruthy();
+  expect(materialization.replacement_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(materialization.replacement_payload_refs).toHaveLength(3);
+  expect(materialization.replacement_payload_hashes).toHaveLength(3);
+  expect(materialization.authority_basis_hash).toBeTruthy();
+  expect(materialization.replacement_package_artifact_materialization_mode).toBe(
+    'server_owned_replacement_package_artifact_materialization_request_source',
+  );
+  expect(materialization.artifact_namespace).toBe('replacement-package-artifacts');
+  expect(materialization.source_l3_output_package_mutation_enabled).toBe(false);
+  expect(materialization.source_package_payload_rewrite_enabled).toBe(false);
+  expect(materialization.package_supersession_commit_enabled).toBe(false);
+  expect(materialization.connector_dispatch_enabled).toBe(false);
+  expect(materialization.provider_public_url_enabled).toBe(false);
+  expect(materialization.frontend_only_durable_state_enabled).toBe(false);
+  expect(materialization.next_state).toBe('replacement_package_artifacts_materialized');
+
+  const authorityPayload = (await authorityRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(authorityPayload, [
+    'analysis_plan_id',
+    'authority_basis_hash',
+    'client_request_id',
+    'operator_decision',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'replacement_package_kinds',
+    'replacement_package_set_hash',
+    'replacement_package_set_id',
+    'replacement_payload_hashes',
+    'replacement_payload_refs',
+    'session_id',
+    'source_output_package_ids',
+    'source_package_kinds',
+    'source_package_set_hash',
+    'source_payload_hashes',
+    'source_payload_refs',
+  ]);
+  expect(authorityPayload.session_id).toBe(materialization.session_id);
+  expect(authorityPayload.analysis_plan_id).toBe(materialization.analysis_plan_id);
+  expect(authorityPayload.pass_run_id).toBe(materialization.pass_run_id);
+  expect(authorityPayload.reconciliation_record_id).toBe(materialization.reconciliation_record_id);
+  expect(authorityPayload.source_package_set_hash).toBe(materialization.source_package_set_hash);
+  expect(authorityPayload.source_output_package_ids).toEqual(materialization.source_output_package_ids);
+  expect(authorityPayload.source_package_kinds).toEqual(materialization.source_package_kinds);
+  expect(authorityPayload.source_payload_refs).toEqual(materialization.source_payload_refs);
+  expect(authorityPayload.source_payload_hashes).toEqual(materialization.source_payload_hashes);
+  expect(authorityPayload.replacement_package_set_id).toBe(materialization.replacement_package_set_id);
+  expect(authorityPayload.replacement_package_set_hash).toBe(materialization.replacement_package_set_hash);
+  expect(authorityPayload.replacement_package_kinds).toEqual(materialization.replacement_package_kinds);
+  expect(authorityPayload.replacement_payload_refs).toEqual(materialization.replacement_payload_refs);
+  expect(authorityPayload.replacement_payload_hashes).toEqual(materialization.replacement_payload_hashes);
+  expect(authorityPayload.authority_basis_hash).toBe(materialization.authority_basis_hash);
+  expect(authorityPayload.operator_decision).toBe('record_replacement_package_set_authority');
+  for (const forbiddenKey of [
+    'package_payload',
+    'replacement_package_payloads',
+    'edited_package_content',
+    'rewrite_output',
+    'rebuild_package',
+    'package_supersession_commit',
+    'destination_url',
+    'connector_run_id',
+    'provider_public_url',
+    'source_upload',
+    'rag_vector_index',
+    'frontend_state',
+  ]) {
+    expect(authorityPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  const replacementAuthority = await expectJson(await authorityResponsePromise);
+  expect(replacementAuthority.schema_id).toBe('layer3.replacement_package_set_authority.v1');
+  expect(['recorded', 'already_recorded']).toContain(replacementAuthority.status);
+  expect(replacementAuthority.replacement_package_set_authority_id).toBeTruthy();
+  expect(replacementAuthority.session_id).toBe(sessionId);
+  expect(replacementAuthority.analysis_plan_id).toBe(approval.analysis_plan_id);
+  expect(replacementAuthority.pass_run_id).toBe(execution.selection.pass_run_ids[0]);
+  expect(replacementAuthority.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(replacementAuthority.source_package_set_hash).toBe(materialization.source_package_set_hash);
+  expect(replacementAuthority.replacement_package_set_id).toBe(materialization.replacement_package_set_id);
+  expect(replacementAuthority.replacement_package_set_hash).toBe(materialization.replacement_package_set_hash);
+  expect(replacementAuthority.replacement_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(replacementAuthority.replacement_payload_refs).toEqual(materialization.replacement_payload_refs);
+  expect(replacementAuthority.replacement_payload_hashes).toEqual(materialization.replacement_payload_hashes);
+  expect(replacementAuthority.authority_basis_hash).toBe(materialization.authority_basis_hash);
+  expect(replacementAuthority.operator_decision).toBe('record_replacement_package_set_authority');
+  expect(replacementAuthority.replacement_package_set_authority_mode).toBe('replacement_package_set_authority');
+  expect(replacementAuthority.authority_record_persisted).toBe(true);
+  expect(replacementAuthority.package_row_mutation_enabled).toBe(false);
+  expect(replacementAuthority.package_payload_write_enabled).toBe(false);
+  expect(replacementAuthority.package_supersession_commit_enabled).toBe(false);
+  expect(replacementAuthority.connector_dispatch_enabled).toBe(false);
+  expect(replacementAuthority.provider_public_url_enabled).toBe(false);
+  expect(replacementAuthority.frontend_only_durable_state_enabled).toBe(false);
+  expect(replacementAuthority.next_state).toBe('replacement_package_set_authority_recorded');
+
+  await expect(panel).toHaveAttribute('data-authority-state', 'replacement_package_set_authority_recorded');
+  await expect(panel).toContainText('replacement_package_set_authority');
+  await expect(panel).toContainText('replacement_package_set_authority_recorded');
+  await expect(panel).toContainText('redacted_local_payload_ref');
+  await expect(panel).toContainText('false');
+  await expect(page.locator('#replacement-package-set-authority-submit')).toBeDisabled();
+  const renderedText = await panel.textContent();
+  expect(renderedText).not.toMatch(/[A-Za-z]:\\/);
+  await expectNoDeferredRawMixedControls(page);
+  return { materialization, replacementAuthority };
 }
 
 async function submitRenderedHandoffExportPrepare(
@@ -4087,6 +4320,94 @@ test('Layer 3 workbench drives rendered package supersession preview control', a
     '/handoff/',
     '/package/replacement',
     '/package/supersession',
+    '/handoff/connector',
+    '/source/mixed-corpus/materialize',
+  ]);
+});
+
+test('Layer 3 workbench records rendered replacement package-set authority control', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  const status = await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+  const review = await submitRenderedResultReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    status,
+    {
+      operatorDecision: 'approved',
+      reviewNotes: 'Raw mixed rendered result review approves replacement package-set authority.',
+      packageReviewEnabled: true,
+    },
+  );
+  const packagePreview = await inspectRenderedPackagePreview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+  );
+  const commit = await commitRenderedPackageConstruction(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    packagePreview,
+  );
+  const packageSubmit = await submitRenderedPackageReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+  );
+  const supersessionPreview = await previewRenderedPackageSupersession(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    packageSubmit,
+    { proveFailure: false },
+  );
+  const replacement = await recordRenderedReplacementPackageSetAuthority(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    supersessionPreview,
+  );
+
+  expect(replacement.materialization.next_state).toBe('replacement_package_artifacts_materialized');
+  expect(replacement.replacementAuthority.next_state).toBe('replacement_package_set_authority_recorded');
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/execution/result/review'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/preview'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/commit'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/review/submit'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/mutation/preview'))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-artifact/materialize'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-set/record'))).toHaveLength(2);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/handoff/',
+    '/package/supersession',
+    '/package/replacement-artifact/manifest',
+    '/package/replacement-namespace',
     '/handoff/connector',
     '/source/mixed-corpus/materialize',
   ]);
