@@ -1735,6 +1735,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVE
     PLANNING_DOCS
     / "676_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "677_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55226,6 +55230,83 @@ def _check_source_l3_output_package_active_authority_external_export_download_de
                 )
 
 
+def _check_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_l3_output_package_active_authority_external_export_download_delivery_freeze`.",
+        "677_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "676_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+        "#1281",
+        "94cbd8580180420d7e352360197b7cec46163460",
+        "f503e98df92c229ae6d27b0e55aca8a45db93182",
+        "backend-layer3-api`: `SUCCESS` in `2m45s`",
+        "test`: `SUCCESS` in `3m43s`",
+        "PR reviewThreads totalCount: `0`",
+        "PR unresolved reviewThreads: `0`",
+        "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+        "external_export_download_deliver",
+        "POST /api/v1/layer3/handoff/export/download/deliver",
+        "_external_export_download_prepare_payload_for_delivery",
+        "No runtime begins in this sync.",
+        "implement_source_l3_output_package_active_authority_external_export_download_delivery_after_freeze_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source L3 output package active authority external export/download delivery freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority External Export Download Delivery Freeze Current-Main Sync",
+            "677_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1281",
+            "f503e98df92c229ae6d27b0e55aca8a45db93182",
+            "backend-layer3-api` passed in `2m45s`",
+            "test` passed in `3m43s`",
+            "reviewThreads totalCount was `0`",
+            "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+            "implement_source_l3_output_package_active_authority_external_export_download_delivery_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync",
+            "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+            "codex/l3-active-authority-export-delivery-freeze-sync",
+            "677_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1281",
+            "f503e98df92c229ae6d27b0e55aca8a45db93182",
+            "backend-layer3-api SUCCESS 2m45s",
+            "test SUCCESS 3m43s",
+            "reviewThreads totalCount 0",
+            "implement_source_l3_output_package_active_authority_external_export_download_delivery_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync_proof",
+            "current_main_sync_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+            "current_main_synced_source_l3_output_package_active_authority_external_export_download_delivery_freeze",
+            "677_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1281",
+            "reviewThreads totalCount 0",
+            "external_export_download_deliver",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "implement_source_l3_output_package_active_authority_external_export_download_delivery_after_freeze_sync",
+            "latest_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority external export/download delivery freeze sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -55745,6 +55826,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_external_export_download_delivery_freeze(errors)
+    _check_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
