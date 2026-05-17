@@ -7752,6 +7752,108 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         output_metadata_summary.get("source_dataset_version_ids") or []
     )
     prepare_pass_type = PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type
+    package_kinds = [package.package_kind for package in ordered_packages]
+    effective_payload_refs = list(canonical_payload_refs)
+    effective_payload_hashes = list(canonical_payload_hashes)
+    active_authority_projection = None
+
+    from app.services import layer3_package_replacement_activation
+
+    active_authority = layer3_package_replacement_activation.resolve_active_replacement_package_authority(
+        db,
+        session_id=session_id,
+    )
+    if active_authority is not None:
+        active_source_ids = [
+            str(item or "").strip()
+            for item in active_authority.get("source_output_package_ids", [])
+        ] if isinstance(active_authority.get("source_output_package_ids"), list) else []
+        active_source_hashes = [
+            str(item or "").strip()
+            for item in active_authority.get("source_payload_hashes", [])
+        ] if isinstance(active_authority.get("source_payload_hashes"), list) else []
+        active_package_kinds = [
+            str(item or "").strip()
+            for item in active_authority.get("package_kinds", [])
+        ] if isinstance(active_authority.get("package_kinds"), list) else []
+        active_replacement_ids = [
+            str(item or "").strip()
+            for item in active_authority.get("replacement_output_package_ids", [])
+        ] if isinstance(active_authority.get("replacement_output_package_ids"), list) else []
+        active_payload_refs = [
+            str(item or "").strip()
+            for item in active_authority.get("active_artifact_refs", [])
+        ] if isinstance(active_authority.get("active_artifact_refs"), list) else []
+        active_payload_hashes = [
+            str(item or "").strip()
+            for item in active_authority.get("active_artifact_hashes", [])
+        ] if isinstance(active_authority.get("active_artifact_hashes"), list) else []
+
+        if active_package_kinds != package_kinds:
+            raise Layer3WorkbenchError(
+                "handoff_export_prepare_active_authority_package_kinds_mismatch",
+                "Active replacement package authority package kinds do not match the handoff/export package order.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["package_kinds"],
+                next_allowed_actions=["refresh_package_replacement_activation_authority"],
+            )
+        if active_source_ids != expected_package_ids:
+            raise Layer3WorkbenchError(
+                "handoff_export_prepare_active_authority_source_package_ids_mismatch",
+                "Active replacement package authority source package ids do not match the handoff/export package set.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["output_package_ids"],
+                next_allowed_actions=["refresh_package_replacement_activation_authority"],
+            )
+        if active_source_hashes != canonical_payload_hashes:
+            raise Layer3WorkbenchError(
+                "handoff_export_prepare_active_authority_source_payload_hashes_mismatch",
+                "Active replacement package authority source payload hashes are stale for the handoff/export package set.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["payload_hashes"],
+                next_allowed_actions=["refresh_package_replacement_activation_authority"],
+            )
+        if (
+            len(active_replacement_ids) != len(package_kinds)
+            or len(active_payload_refs) != len(package_kinds)
+            or len(active_payload_hashes) != len(package_kinds)
+            or any(not value for value in active_replacement_ids + active_payload_refs + active_payload_hashes)
+            or any(
+                not ref.startswith("artifact://replacement-package-artifacts/")
+                for ref in active_payload_refs
+            )
+            or not str(active_authority.get("package_replacement_activation_id") or "").strip()
+            or not str(active_authority.get("replacement_activation_basis_hash") or "").strip()
+        ):
+            raise Layer3WorkbenchError(
+                "handoff_export_prepare_active_authority_incomplete",
+                "Active replacement package authority is incomplete or exposes a non-response-safe artifact ref.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["package_replacement_activation_id", "active_payload_refs", "active_payload_hashes"],
+                next_allowed_actions=["refresh_package_replacement_activation_authority"],
+            )
+
+        effective_payload_refs = active_payload_refs
+        effective_payload_hashes = active_payload_hashes
+        active_authority_projection = {
+            "active_package_authority_applied": True,
+            "package_replacement_activation_id": str(
+                active_authority.get("package_replacement_activation_id") or ""
+            ).strip(),
+            "source_output_package_ids": active_source_ids,
+            "source_payload_hashes": canonical_payload_hashes,
+            "active_replacement_output_package_ids": active_replacement_ids,
+            "active_payload_refs": active_payload_refs,
+            "active_payload_hashes": active_payload_hashes,
+            "replacement_activation_basis_hash": str(
+                active_authority.get("replacement_activation_basis_hash") or ""
+            ).strip(),
+        }
+
     preparation_basis = {
         "schema_id": "layer3.handoff_export_prepare_authority.v1",
         "package_review_submit_schema_id": expected_submit_schema_id,
@@ -7766,9 +7868,9 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "construction_basis_hash": expected_construction_basis_hash if (source_intake_prepare or qualitative_aps_prepare) else None,
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": expected_package_ids,
-        "package_kinds": [package.package_kind for package in ordered_packages],
-        "payload_refs": canonical_payload_refs,
-        "payload_hashes": canonical_payload_hashes,
+        "package_kinds": package_kinds,
+        "payload_refs": effective_payload_refs,
+        "payload_hashes": effective_payload_hashes,
         "package_review_submit_record_ref": supplied_submit_ref,
         "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
         "handoff_target": "internal_export_envelope",
@@ -7783,6 +7885,8 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "source_shape": source_shape,
         "source_dataset_version_ids": source_dataset_version_ids,
     }
+    if active_authority_projection is not None:
+        preparation_basis.update(active_authority_projection)
     if source_intake_prepare:
         preparation_basis.update(
             {
@@ -7853,9 +7957,9 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "package_review_submit_record_ref": supplied_submit_ref,
             "reconciliation_record_id": reconciliation_record_id,
             "output_package_ids": expected_package_ids,
-            "package_kinds": [package.package_kind for package in ordered_packages],
-            "payload_refs": canonical_payload_refs,
-            "payload_hashes": canonical_payload_hashes,
+            "package_kinds": package_kinds,
+            "payload_refs": effective_payload_refs,
+            "payload_hashes": effective_payload_hashes,
             "package_review_submit_schema_id": expected_submit_schema_id,
             "construction_basis_hash": expected_construction_basis_hash if (source_intake_prepare or qualitative_aps_prepare) else None,
             "pass_type": prepare_pass_type,
@@ -7875,6 +7979,8 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "provider_public_url_enabled": False,
             "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         }
+        if active_authority_projection is not None:
+            envelope.update(active_authority_projection)
         if source_intake_prepare:
             envelope.update(
                 {
@@ -7920,9 +8026,9 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "construction_basis_hash": expected_construction_basis_hash if (source_intake_prepare or qualitative_aps_prepare) else None,
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": expected_package_ids,
-        "package_kinds": [package.package_kind for package in ordered_packages],
-        "payload_refs": canonical_payload_refs,
-        "payload_hashes": canonical_payload_hashes,
+        "package_kinds": package_kinds,
+        "payload_refs": effective_payload_refs,
+        "payload_hashes": effective_payload_hashes,
         "package_review_submit_schema_id": expected_submit_schema_id,
         "pass_type": prepare_pass_type,
         "pass_scope": output_metadata_summary.get("pass_scope"),
@@ -7941,6 +8047,8 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "provider_public_url_enabled": False,
         "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
     }
+    if active_authority_projection is not None:
+        prepare_state.update(active_authority_projection)
     if source_intake_prepare:
         prepare_state.update(
             {
@@ -7984,7 +8092,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "analysis_run_id": analysis_run_id,
             "reconciliation_record_id": reconciliation_record_id,
             "output_package_ids": expected_package_ids,
-            "package_kinds": [package.package_kind for package in ordered_packages],
+            "package_kinds": package_kinds,
             "package_review_submit_schema_id": expected_submit_schema_id,
             "construction_basis_hash": expected_construction_basis_hash if (source_intake_prepare or qualitative_aps_prepare) else None,
             "pass_type": prepare_pass_type,
@@ -8004,6 +8112,8 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         },
     }
+    if active_authority_projection is not None:
+        session.summary_json["handoff_export_prepare"].update(active_authority_projection)
     if source_intake_prepare:
         session.summary_json["handoff_export_prepare"].update(
             {
