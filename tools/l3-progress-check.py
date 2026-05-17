@@ -1699,6 +1699,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC
     PLANNING_DOCS
     / "667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE = (
+    PLANNING_DOCS
+    / "668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -54210,6 +54214,106 @@ def _check_source_l3_output_package_replacement_activation_runtime_current_main_
                 )
 
 
+def _check_source_l3_output_package_active_authority_handoff_export_prepare_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `source_l3_output_package_active_authority_handoff_export_prepare`.",
+        "668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+        "667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "b526d1d5f181a90ae8693f0d4c00dc70fab0bbb3",
+        "Selected follow-on surface: `downstream_active_package_authority_read_adoption`.",
+        "Selected reader path: `handoff_export_prepare`.",
+        "POST /api/v1/layer3/handoff/export/prepare",
+        "backend/app/services/layer3_workbench.py",
+        "backend/app/services/layer3_handoff_export_response.py",
+        "backend/app/services/layer3_package_replacement_activation.py",
+        "resolve_active_replacement_package_authority",
+        "adopt_active_replacement_package_authority_for_handoff_export_prepare",
+        "No runtime begins in this freeze.",
+        "source `L3OutputPackage` rows for provenance and stale-authority checks",
+        "durable `L3PackageReplacementActivation` state",
+        "prepared internal export envelope may include active replacement package refs/hashes",
+        "source `L3OutputPackage` ids, refs, hashes, and `uq_l3_output_package_session_kind` remain unchanged",
+        "active authority must become part of the prepare authority basis when applied",
+        "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+        "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE)} "
+                f"missing source L3 output package active authority handoff/export prepare freeze term: {term}"
+            )
+
+    for blocked in (
+        "rendered activation controls",
+        "package rebuild",
+        "package payload rewrite",
+        "direct source `L3OutputPackage` mutation",
+        "APS handoff dispatch adoption",
+        "external export/download adoption",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE)} "
+                f"missing source L3 output package active authority handoff/export prepare non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Handoff Export Prepare Freeze",
+            "668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+            "source_l3_output_package_active_authority_handoff_export_prepare",
+            "handoff_export_prepare",
+            "POST /api/v1/layer3/handoff/export/prepare",
+            "resolve_active_replacement_package_authority",
+            "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+            "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+            "implementation_entry_frozen_source_l3_output_package_active_authority_handoff_export_prepare",
+            "codex/l3-post-activation-use-surface-freeze",
+            "668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+            "b526d1d5f181a90ae8693f0d4c00dc70fab0bbb3",
+            "downstream_active_package_authority_read_adoption",
+            "handoff_export_prepare",
+            "adopt_active_replacement_package_authority_for_handoff_export_prepare",
+            "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+            "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_handoff_export_prepare_freeze_proof",
+            "implementation_entry_freeze_source_l3_output_package_active_authority_handoff_export_prepare",
+            "668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+            "handoff_export_prepare",
+            "POST /api/v1/layer3/handoff/export/prepare",
+            "resolve_active_replacement_package_authority",
+            "source L3OutputPackage rows remain unchanged",
+            "prepared internal export envelope may include active replacement package refs/hashes",
+            "no runtime begins in this freeze",
+            "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority handoff/export prepare freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -54720,6 +54824,7 @@ def main() -> int:
     _check_source_l3_output_package_replacement_activation_freeze_current_main_sync(errors)
     _check_source_l3_output_package_replacement_activation_runtime_proof(errors)
     _check_source_l3_output_package_replacement_activation_runtime_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_handoff_export_prepare_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

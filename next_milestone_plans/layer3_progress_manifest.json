@@ -25255,5 +25255,92 @@
   "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_merge_commit": "ea01ebd6840bca750f1de2ca716b205f6dcb6896",
   "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_status": "current_main_synced_source_l3_output_package_replacement_activation_runtime",
   "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_next_posture": "select_post_activation_package_lifecycle_use_surface_after_runtime_sync",
-  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_summary": "Doc 667 syncs PR #1271 on current main: source_l3_output_package_replacement_activation_runtime is merged at ea01ebd6840bca750f1de2ca716b205f6dcb6896 with backend-layer3-api/test checks passing, empty comments/reviews, zero reviewThreads, and next posture select_post_activation_package_lifecycle_use_surface_after_runtime_sync."
+  "latest_source_l3_output_package_replacement_activation_runtime_current_main_sync_summary": "Doc 667 syncs PR #1271 on current main: source_l3_output_package_replacement_activation_runtime is merged at ea01ebd6840bca750f1de2ca716b205f6dcb6896 with backend-layer3-api/test checks passing, empty comments/reviews, zero reviewThreads, and next posture select_post_activation_package_lifecycle_use_surface_after_runtime_sync.",
+  "source_l3_output_package_active_authority_handoff_export_prepare_freeze": {
+    "status": "implementation_entry_frozen_source_l3_output_package_active_authority_handoff_export_prepare",
+    "branch": "codex/l3-post-activation-use-surface-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/667_SOURCE_L3_OUTPUT_PACKAGE_REPLACEMENT_ACTIVATION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "b526d1d5f181a90ae8693f0d4c00dc70fab0bbb3",
+    "selected_follow_on_surface": "downstream_active_package_authority_read_adoption",
+    "selected_reader_path": "handoff_export_prepare",
+    "selected_route": "POST /api/v1/layer3/handoff/export/prepare",
+    "selected_owner_services": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/services/layer3_handoff_export_response.py",
+      "backend/app/services/layer3_package_replacement_activation.py"
+    ],
+    "selected_resolver": "resolve_active_replacement_package_authority",
+    "selected_operator_action": "adopt_active_replacement_package_authority_for_handoff_export_prepare",
+    "selected_implementation_entry_mode": "source_l3_output_package_active_authority_handoff_export_prepare",
+    "authority_sources": [
+      "approved package construction authority",
+      "approved package-review submit authority",
+      "source L3OutputPackage rows for provenance and stale-authority checks",
+      "L3PackageReplacementActivation durable state",
+      "replacement namespace response-safe artifact refs and hashes"
+    ],
+    "future_runtime_contract": [
+      "no active replacement authority preserves current handoff_export_prepare behavior",
+      "active replacement authority must match the handoff/export preparation source package set and canonical package order",
+      "prepared internal export envelope may include active replacement package refs/hashes for this reader only",
+      "source L3OutputPackage rows refs hashes and uq_l3_output_package_session_kind remain unchanged",
+      "resolver may expand only enough for response-safe source ids replacement ids package kinds artifact refs artifact hashes and replacement_activation_basis_hash"
+    ],
+    "failure_lifecycle": [
+      "fail closed on stale source package authority",
+      "fail closed on active authority source package id mismatch",
+      "fail closed on active authority package kind mismatch",
+      "fail closed on missing or incomplete active replacement package authority",
+      "fail closed on caller-supplied active refs hashes replacement ids destination paths URLs credentials package bytes or connector fields",
+      "fail closed on any attempt to use active replacement authority for a non-selected downstream reader"
+    ],
+    "idempotency": "same handoff/export prepare request and same resolved active authority returns existing prepared state; changed active authority after existing prepare fails closed unless separately admitted",
+    "entry_decision": "freeze_only",
+    "live_behavior_change": false,
+    "runtime_rendered_behavior_change": false,
+    "required_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "next_required_action_after_merge": "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_freeze",
+    "next_implementation_posture_after_sync": "implement_source_l3_output_package_active_authority_handoff_export_prepare_after_freeze_sync",
+    "non_admitted": [
+      "runtime in this freeze",
+      "rendered activation controls",
+      "package rebuild",
+      "package payload rewrite",
+      "direct source L3OutputPackage mutation",
+      "downstream invalidation",
+      "APS handoff dispatch adoption",
+      "external export/download adoption",
+      "server-owned local outbox adoption",
+      "provider-private handoff adoption",
+      "external local export adoption",
+      "re-delivery runtime",
+      "provider-public delivery/use",
+      "raw public URL exposure",
+      "connector/destination dispatch",
+      "ConnectorRun creation",
+      "ConnectorRunTarget creation",
+      "credentials",
+      "external network egress",
+      "source expansion",
+      "RAG/vector behavior",
+      "auth/security behavior",
+      "full mockup activation",
+      "frontend-durable authority",
+      "caller-supplied arbitrary paths or URLs",
+      "raw local path exposure"
+    ]
+  },
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_branch": "codex/l3-post-activation-use-surface-freeze",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_doc": "next_milestone_plans/Layer3_planning_docs/668_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_FREEZE.md",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_summary": "Doc 668 freezes downstream active-package-authority read adoption for exactly one named reader path: handoff_export_prepare via POST /api/v1/layer3/handoff/export/prepare. The future slice may use resolve_active_replacement_package_authority to prepare active replacement refs/hashes for this reader while preserving source L3OutputPackage rows and leaving rendered controls, APS dispatch adoption, external export/download adoption, package rebuild/payload rewrite, source expansion, RAG/vector, auth/security, and frontend-durable authority blocked.",
+  "latest_source_l3_output_package_active_authority_handoff_export_prepare_freeze_next_posture": "current_main_sync_source_l3_output_package_active_authority_handoff_export_prepare_freeze"
 }
