@@ -1739,6 +1739,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVE
     PLANNING_DOCS
     / "677_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "678_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55307,6 +55311,115 @@ def _check_source_l3_output_package_active_authority_external_export_download_de
                 )
 
 
+def _check_source_l3_output_package_active_authority_external_export_download_delivery_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `source_l3_output_package_active_authority_external_export_download_delivery_runtime`.",
+        "678_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF.md",
+        "677_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "codex/l3-active-authority-export-delivery-impl",
+        "5d22eb1b3a61dd7c3fbf3c117aa8686507f6ff76",
+        "external_export_download_deliver",
+        "POST /api/v1/layer3/handoff/export/download/deliver",
+        "_external_export_download_prepare_payload_for_delivery",
+        "proved_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+        "Runtime behavior change: `false`",
+        "No service code changed in this proof branch.",
+        "source `L3OutputPackage` rows",
+        "no `ConnectorRun` or `ConnectorRunTarget` rows are created",
+        "Result: `1 passed`.",
+        "await_current_main_sync_for_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority external export/download delivery runtime proof term: {term}"
+            )
+
+    for blocked in (
+        "connector-local receipt adoption",
+        "server-owned local outbox adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "package rebuild",
+        "package payload rewrite",
+        "provider-public delivery/use",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority external export/download delivery runtime non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority External Export Download Delivery Runtime Proof",
+            "678_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF.md",
+            "proved_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "codex/l3-active-authority-export-delivery-impl",
+            "5d22eb1b3a61dd7c3fbf3c117aa8686507f6ff76",
+            "external_export_download_deliver",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "backend/tests/test_layer3_api.py::test_layer3_api_aps_handoff_dispatch_applies_active_replacement_authority",
+            "no `ConnectorRun` or `ConnectorRunTarget` creation",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "proved_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "codex/l3-active-authority-export-delivery-impl",
+            "678_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF.md",
+            "5d22eb1b3a61dd7c3fbf3c117aa8686507f6ff76",
+            "external_export_download_deliver",
+            "active refs/hashes carried through external export/download delivery",
+            "no ConnectorRun or ConnectorRunTarget creation",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_external_export_download_delivery_runtime_proof",
+            "implementation_proof_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "678_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_PROOF.md",
+            "external_export_download_deliver",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "delivery streams the APS bundle artifact authorized by recorded readiness",
+            "no ConnectorRun or ConnectorRunTarget rows are created",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_external_export_download_delivery_runtime",
+            "latest_source_l3_output_package_active_authority_external_export_download_delivery_runtime_summary",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_aps_handoff_dispatch_applies_active_replacement_authority",
+            "_external_export_download_deliver_payload",
+            "x-layer3-delivery-state",
+            "external_export_download_delivered",
+            "x-layer3-external-export-download-record-ref",
+            "replay_delivery",
+            "source_packages_after_delivery == source_packages_before_delivery",
+            "readiness_state_after_delivery == readiness_state_before_delivery",
+            "files_under_tmp() == files_before_delivery",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority external export/download delivery runtime proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -55827,6 +55940,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_aps_handoff_dispatch_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_external_export_download_delivery_freeze(errors)
     _check_source_l3_output_package_active_authority_external_export_download_delivery_freeze_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_external_export_download_delivery_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

@@ -11921,6 +11921,96 @@ def test_layer3_api_aps_handoff_dispatch_applies_active_replacement_authority(
     assert readiness_body["active_package_authority_applied"] is True
     assert readiness_body["active_payload_refs"] == activation_body["active_artifact_refs"]
 
+    delivery_payload = _external_export_download_deliver_payload(
+        request_id=f"{request_id}-external-export-download-deliver",
+        prepare_payload=readiness_payload,
+        readiness_body=readiness_body,
+    )
+    expected_delivery_bytes = Path(readiness_body["source_artifact_ref"]).read_bytes()
+    files_before_delivery = files_under_tmp()
+    db = client.layer3_session_factory()
+    try:
+        delivery_counts_before = {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        source_packages_before_delivery = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id.in_(dispatch_payload["output_package_ids"]))
+            .order_by(L3OutputPackage.package_kind.asc())
+            .all()
+        ]
+        readiness_state_before_delivery = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+    finally:
+        db.close()
+
+    delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=delivery_payload)
+    assert delivery.status_code == 200, delivery.text
+    assert delivery.content == expected_delivery_bytes
+    assert delivery.headers["x-layer3-schema-id"] == "layer3.external_export_download_delivery.v1"
+    assert delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    assert delivery.headers["x-layer3-source-artifact-hash"] == readiness_body["source_artifact_hash"]
+    assert delivery.headers["x-layer3-external-export-download-record-ref"] == (
+        readiness_body["external_export_download_record_ref"]
+    )
+    assert "download_url" not in delivery.headers
+    assert "public_url" not in delivery.headers
+    assert "signed_url" not in delivery.headers
+    assert "connector_run_id" not in delivery.headers
+
+    replay_delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=delivery_payload)
+    assert replay_delivery.status_code == 200, replay_delivery.text
+    assert replay_delivery.content == expected_delivery_bytes
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == delivery_counts_before
+        source_packages_after_delivery = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id.in_(dispatch_payload["output_package_ids"]))
+            .order_by(L3OutputPackage.package_kind.asc())
+            .all()
+        ]
+        assert source_packages_after_delivery == source_packages_before_delivery
+        readiness_state_after_delivery = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+        assert readiness_state_after_delivery == readiness_state_before_delivery
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before_delivery
+
 
 def test_layer3_api_aps_handoff_dispatch_active_authority_requires_matching_prepare_state(
     client: TestClient,
