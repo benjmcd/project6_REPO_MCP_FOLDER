@@ -1715,6 +1715,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_
     PLANNING_DOCS
     / "671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE = (
+    PLANNING_DOCS
+    / "672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -54656,6 +54660,110 @@ def _check_source_l3_output_package_active_authority_handoff_export_prepare_runt
                 )
 
 
+def _check_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry freeze for `source_l3_output_package_active_authority_aps_handoff_dispatch`.",
+        "672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
+        "671_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "75ff03173b185d434335831ed382183d58403946",
+        "Selected follow-on surface: `downstream_active_package_authority_read_adoption`.",
+        "Selected reader path: `aps_handoff_dispatch`.",
+        "POST /api/v1/layer3/handoff/aps/dispatch",
+        "backend/app/services/layer3_workbench.py",
+        "backend/app/services/layer3_aps_handoff.py",
+        "backend/app/services/layer3_package_replacement_activation.py",
+        "resolve_active_replacement_package_authority",
+        "adopt_active_replacement_package_authority_for_aps_handoff_dispatch",
+        "No runtime begins in this freeze.",
+        "materializes from source `L3OutputPackage` rows through `materialize_aps_handoff`",
+        "replacement namespace and replacement artifact manifest authority",
+        "response-safe active replacement artifact refs and hashes already projected into handoff/export prepare state",
+        "APS handoff dispatch may use the active replacement package artifact authority as the package payload authority for this reader only",
+        "source `L3OutputPackage` ids, refs, hashes, payloads, and `uq_l3_output_package_session_kind` remain unchanged",
+        "active authority must become part of the APS handoff dispatch authority basis when applied",
+        "current_main_sync_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+        "implement_source_l3_output_package_active_authority_aps_handoff_dispatch_after_freeze_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE)} "
+                f"missing source L3 output package active authority APS handoff dispatch freeze term: {term}"
+            )
+
+    for blocked in (
+        "rendered activation controls",
+        "external export/download adoption",
+        "server-owned local outbox adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "package rebuild",
+        "package payload rewrite",
+        "direct source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE)} "
+                f"missing source L3 output package active authority APS handoff dispatch non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority APS Handoff Dispatch Freeze",
+            "672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
+            "source_l3_output_package_active_authority_aps_handoff_dispatch",
+            "aps_handoff_dispatch",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            "resolve_active_replacement_package_authority",
+            "current_main_sync_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+            "implement_source_l3_output_package_active_authority_aps_handoff_dispatch_after_freeze_sync",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+            "implementation_entry_frozen_source_l3_output_package_active_authority_aps_handoff_dispatch",
+            "codex/l3-active-authority-aps-dispatch-freeze",
+            "672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
+            "75ff03173b185d434335831ed382183d58403946",
+            "downstream_active_package_authority_read_adoption",
+            "aps_handoff_dispatch",
+            "adopt_active_replacement_package_authority_for_aps_handoff_dispatch",
+            "current_main_sync_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze",
+            "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_proof",
+            "implementation_entry_freeze_source_l3_output_package_active_authority_aps_handoff_dispatch",
+            "672_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_APS_HANDOFF_DISPATCH_FREEZE.md",
+            "aps_handoff_dispatch",
+            "POST /api/v1/layer3/handoff/aps/dispatch",
+            "resolve_active_replacement_package_authority",
+            "materialize_aps_handoff currently reads source L3OutputPackage rows",
+            "future implementation must preserve source L3OutputPackage rows unchanged",
+            "no runtime begins in this freeze",
+            "latest_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority APS handoff dispatch freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -55170,6 +55278,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_handoff_export_prepare_freeze_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_handoff_export_prepare_runtime_proof(errors)
     _check_source_l3_output_package_active_authority_handoff_export_prepare_runtime_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_aps_handoff_dispatch_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
