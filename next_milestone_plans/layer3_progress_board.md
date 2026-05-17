@@ -4558,3 +4558,19 @@ Observed validation: focused proof `python -m pytest .\backend\tests\test_layer3
 This pass starts no connector invocation, connector-run creation, destination write, credentials, network egress, provider-public delivery/use, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, or raw local path exposure.
 
 The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_handoff_export_prepare_evaluation`.
+
+## Corrected Artifact Active Authority Handoff Export Prepare Evaluation Current-Main Sync
+
+Current-main sync: `725_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_HANDOFF_EXPORT_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md` syncs evaluation PR `#1329` for `corrected_artifact_active_authority_handoff_export_prepare_evaluation`.
+
+Evaluation branch `codex/l3-corrected-active-handoff-eval` landed branch commit `4568f3e001bc899eec6edc30f325ec5d1dfbef19` into current main at merge commit `536a14886311360c62aabfa6906944cf9445023e`.
+
+Synced result: `current_main_synced_corrected_artifact_active_authority_handoff_export_prepare_evaluation`.
+
+Current main now records `corrected_artifact_active_authority_handoff_export_prepare_proven`: corrected-artifact active package authority reaches `POST /api/v1/layer3/handoff/export/prepare` through the existing `resolve_active_replacement_package_authority` reader path.
+
+PR `#1329` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved current reviewThreads `0`, and merge state `CLEAN`.
+
+No runtime behavior is introduced by this sync. Connector invocation, connector-run creation, destination write, credentials, external network egress, provider-public delivery/use, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, and raw local path exposure remain blocked.
+
+The next exact current-main posture is `select_next_downstream_active_package_authority_reader_after_corrected_artifact_handoff_export_prepare_sync`.
