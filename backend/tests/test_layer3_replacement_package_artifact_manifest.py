@@ -22,10 +22,13 @@ from app.db.session import Base
 from app.models.models import (
     L3AnalysisPlan,
     L3AnalysisSet,
+    L3CorrectedPackageArtifactSet,
     L3OutputPackage,
     L3PackageSupersessionCommit,
     L3PassRun,
     L3ReconciliationRecord,
+    L3ReplacementOutputPackage,
+    L3ReplacementPackageArtifactMaterialization,
     L3ReplacementPackageArtifactManifest,
     L3ReplacementPackageSetAuthority,
     L3Session,
@@ -395,6 +398,156 @@ def _record_authority_chain(db, tmp_path: Path) -> tuple[dict, dict, dict, dict]
     return source, artifacts, authority, commit
 
 
+def _seed_corrected_artifact_set(db, tmp_path: Path) -> tuple[dict, dict, dict]:
+    source = _seed_source(db, tmp_path)
+    artifacts = _replacement_artifacts(tmp_path, request_id="corrected-artifacts")
+    corrected_package_set_hash = authority_service.replacement_package_set_hash(
+        replacement_package_set_id="corrected-set-1",
+        replacement_package_kinds=PACKAGE_KINDS,
+        replacement_payload_refs=artifacts["replacement_payload_refs"],
+        replacement_payload_hashes=artifacts["replacement_payload_hashes"],
+    )
+    materialization_basis_hash = stable_hash(
+        {
+            "schema_id": "test.materialization_basis.v1",
+            "source_package_set_hash": source["source_package_set_hash"],
+            "replacement_package_set_hash": corrected_package_set_hash,
+        }
+    )
+    db.add(
+        L3ReplacementPackageArtifactMaterialization(
+            replacement_artifact_materialization_id="materialization-1",
+            client_request_id="req-materialization-1",
+            session_id="session-1",
+            analysis_plan_id="plan-1",
+            pass_run_id="pass-1",
+            reconciliation_record_id="recon-1",
+            package_supersession_preview_hash=PACKAGE_REVIEW_PREVIEW_HASH,
+            source_package_set_hash=source["source_package_set_hash"],
+            source_output_package_ids_json=source["source_output_package_ids"],
+            source_package_kinds_json=source["source_package_kinds"],
+            source_payload_refs_json=source["source_payload_refs"],
+            source_payload_hashes_json=source["source_payload_hashes"],
+            replacement_package_set_id="corrected-set-1",
+            replacement_package_set_hash=corrected_package_set_hash,
+            replacement_package_kinds_json=PACKAGE_KINDS,
+            replacement_payload_refs_json=artifacts["replacement_payload_refs"],
+            replacement_payload_hashes_json=artifacts["replacement_payload_hashes"],
+            authority_basis_hash="materialization-authority-basis",
+            materialization_basis_hash=materialization_basis_hash,
+            materialization_snapshot_json={},
+            operator_decision="materialize_replacement_package_artifacts_from_supersession_preview",
+            status="materialized",
+        )
+    )
+    corrected_artifact_basis_hash = stable_hash(
+        {
+            "schema_id": "test.corrected_artifact_basis.v1",
+            "source_package_set_hash": source["source_package_set_hash"],
+            "corrected_package_set_hash": corrected_package_set_hash,
+            "corrected_artifact_hashes": artifacts["replacement_payload_hashes"],
+            "corrected_artifact_byte_sizes": artifacts["verified_artifact_byte_sizes"],
+        }
+    )
+    db.add(
+        L3CorrectedPackageArtifactSet(
+            corrected_package_artifact_set_id="corrected-set-row-1",
+            client_request_id="req-corrected-set-1",
+            session_id="session-1",
+            analysis_plan_id="plan-1",
+            pass_run_id="pass-1",
+            reconciliation_record_id="recon-1",
+            replacement_artifact_materialization_id="materialization-1",
+            materialization_basis_hash=materialization_basis_hash,
+            source_package_set_hash=source["source_package_set_hash"],
+            source_output_package_ids_json=source["source_output_package_ids"],
+            source_package_kinds_json=source["source_package_kinds"],
+            source_payload_refs_json=source["source_payload_refs"],
+            source_payload_hashes_json=source["source_payload_hashes"],
+            result_review_record_ref="review://record/1",
+            reviewed_output_items_hash="reviewed-output-items-hash-1",
+            package_review_preview_hash=PACKAGE_REVIEW_PREVIEW_HASH,
+            corrected_package_set_id="corrected-set-1",
+            corrected_package_set_hash=corrected_package_set_hash,
+            corrected_package_kinds_json=PACKAGE_KINDS,
+            corrected_artifact_refs_json=artifacts["replacement_payload_refs"],
+            corrected_artifact_hashes_json=artifacts["replacement_payload_hashes"],
+            corrected_artifact_byte_sizes_json=artifacts["verified_artifact_byte_sizes"],
+            artifact_namespace=manifest_service.REPLACEMENT_PACKAGE_ARTIFACT_NAMESPACE,
+            artifact_manifest_hash="corrected-artifact-manifest-hash-1",
+            corrected_artifact_basis_hash=corrected_artifact_basis_hash,
+            audit_history_json=[],
+            authority_snapshot_json={},
+            operator_decision="record_corrected_package_artifact_set_from_review_corrections",
+            status="recorded",
+        )
+    )
+    db.commit()
+    corrected = {
+        "corrected_package_artifact_set_id": "corrected-set-row-1",
+        "corrected_artifact_basis_hash": corrected_artifact_basis_hash,
+        "source_package_set_hash": source["source_package_set_hash"],
+    }
+    return source, artifacts, corrected
+
+
+def _record_corrected_manifest_authority_chain(db, tmp_path: Path) -> tuple[dict, dict, dict, dict, dict]:
+    source, artifacts, corrected = _seed_corrected_artifact_set(db, tmp_path)
+    authority = authority_service.record_replacement_package_set_authority_from_corrected_artifact_set(
+        db,
+        {
+            "client_request_id": "req-corrected-authority",
+            "session_id": "session-1",
+            "analysis_plan_id": "plan-1",
+            "pass_run_id": "pass-1",
+            "reconciliation_record_id": "recon-1",
+            "source_package_set_hash": source["source_package_set_hash"],
+            "corrected_package_artifact_set_id": corrected["corrected_package_artifact_set_id"],
+            "corrected_artifact_basis_hash": corrected["corrected_artifact_basis_hash"],
+            "operator_decision": "record_replacement_package_set_authority",
+        },
+    )
+    commit = commit_service.commit_package_supersession_from_corrected_artifact_set_authority(
+        db,
+        {
+            "client_request_id": "req-corrected-supersession",
+            "session_id": "session-1",
+            "analysis_plan_id": "plan-1",
+            "pass_run_id": "pass-1",
+            "reconciliation_record_id": "recon-1",
+            "corrected_package_artifact_set_id": corrected["corrected_package_artifact_set_id"],
+            "corrected_artifact_basis_hash": corrected["corrected_artifact_basis_hash"],
+            "replacement_package_set_authority_id": authority["replacement_package_set_authority_id"],
+            "replacement_authority_basis_hash": authority["authority_basis_hash"],
+            "operator_decision": "commit_package_supersession",
+        },
+    )
+    return source, artifacts, corrected, authority, commit
+
+
+def _corrected_manifest_payload(
+    *,
+    corrected: dict,
+    authority: dict,
+    commit: dict,
+    request_id: str = "req-corrected-manifest",
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "session_id": "session-1",
+        "analysis_plan_id": "plan-1",
+        "pass_run_id": "pass-1",
+        "reconciliation_record_id": "recon-1",
+        "corrected_package_artifact_set_id": corrected["corrected_package_artifact_set_id"],
+        "corrected_artifact_basis_hash": corrected["corrected_artifact_basis_hash"],
+        "replacement_package_set_authority_id": authority["replacement_package_set_authority_id"],
+        "replacement_authority_basis_hash": authority["authority_basis_hash"],
+        "package_supersession_commit_id": commit["package_supersession_commit_id"],
+        "package_supersession_commit_basis_hash": commit["commit_basis_hash"],
+        "operator_decision": "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority",
+    }
+
+
 def test_replacement_package_artifact_manifest_records_server_verified_manifest_only(tmp_path) -> None:
     engine = create_engine(f"sqlite:///{tmp_path / 'artifact-manifest.sqlite'}", future=True)
     Base.metadata.create_all(engine)
@@ -451,6 +604,163 @@ def test_replacement_package_artifact_manifest_records_server_verified_manifest_
         assert same_basis["replacement_package_artifact_manifest_id"] == response[
             "replacement_package_artifact_manifest_id"
         ]
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_replacement_package_artifact_manifest_from_corrected_artifact_set_records_redacted_manifest(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'corrected-artifact-manifest.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        source, artifacts, corrected, authority, commit = _record_corrected_manifest_authority_chain(db, tmp_path)
+        source_packages_before = [
+            (package.output_package_id, package.package_kind, package.payload_ref, package.payload_hash)
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind).all()
+        ]
+        files_before = {ref: Path(ref).read_bytes() for ref in artifacts["replacement_payload_refs"]}
+        payload = _corrected_manifest_payload(corrected=corrected, authority=authority, commit=commit)
+
+        response = manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+            db,
+            payload,
+        )
+
+        assert response["schema_id"] == (
+            "layer3.replacement_package_artifact_manifest_from_corrected_artifact_set_authority.v1"
+        )
+        assert response["status"] == "recorded"
+        assert response["replacement_package_set_authority_id"] == authority["replacement_package_set_authority_id"]
+        assert response["package_supersession_commit_id"] == commit["package_supersession_commit_id"]
+        assert response["replacement_payload_refs"] != artifacts["replacement_payload_refs"]
+        assert all(ref.startswith("artifact://replacement-package-artifacts/") for ref in response["replacement_payload_refs"])
+        assert response["verified_artifact_refs"] == response["replacement_payload_refs"]
+        assert response["replacement_payload_hashes"] == artifacts["replacement_payload_hashes"]
+        assert response["verified_artifact_hashes"] == artifacts["verified_artifact_hashes"]
+        assert response["verified_artifact_byte_sizes"] == artifacts["verified_artifact_byte_sizes"]
+        assert response["replacement_package_artifact_manifest_mode"] == (
+            "replacement_package_artifact_manifest_from_corrected_artifact_set_authority"
+        )
+        assert response["source_gate"] == (
+            "715_CORRECTED_ARTIFACT_REPLACEMENT_MANIFEST_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC"
+        )
+        assert response["record_from_authority_operator_decision"] == (
+            "record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority"
+        )
+        assert response["replacement_artifact_materialization_id"] is None
+        assert response["materialization_basis_hash"] is None
+        assert response["authority_rail"]["corrected_artifact_set_source_authority"] is True
+        assert response["authority_rail"]["server_verified_corrected_artifact_authority"] is True
+        assert response["authority_rail"]["response_artifact_refs_redacted"] is True
+        assert response["authority_rail"]["raw_artifact_refs_exposed"] is False
+
+        assert db.query(L3ReplacementPackageArtifactManifest).count() == 1
+        assert db.query(L3ReplacementOutputPackage).count() == 0
+        assert db.query(L3OutputPackage).count() == 3
+        manifest = db.query(L3ReplacementPackageArtifactManifest).one()
+        assert manifest.replacement_payload_refs_json == artifacts["replacement_payload_refs"]
+        assert manifest.verified_artifact_refs_json == artifacts["verified_artifact_refs"]
+        assert response["manifest_snapshot"]["corrected_artifact_set"]["raw_artifact_refs_exposed"] is False
+        source_packages_after = [
+            (package.output_package_id, package.package_kind, package.payload_ref, package.payload_hash)
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind).all()
+        ]
+        assert source_packages_after == source_packages_before
+        assert {ref: Path(ref).read_bytes() for ref in artifacts["replacement_payload_refs"]} == files_before
+
+        replay = manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+            db,
+            payload,
+        )
+        assert replay["status"] == "already_recorded"
+        assert replay["replacement_package_artifact_manifest_id"] == response[
+            "replacement_package_artifact_manifest_id"
+        ]
+        same_basis = manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+            db,
+            {**payload, "client_request_id": "req-corrected-manifest-same-basis"},
+        )
+        assert same_basis["status"] == "already_recorded"
+        assert same_basis["replacement_package_artifact_manifest_id"] == response[
+            "replacement_package_artifact_manifest_id"
+        ]
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_replacement_package_artifact_manifest_from_corrected_artifact_set_prechecks_fail_closed(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'corrected-artifact-manifest-prechecks.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        _source, artifacts, corrected, authority, commit = _record_corrected_manifest_authority_chain(db, tmp_path)
+        payload = _corrected_manifest_payload(corrected=corrected, authority=authority, commit=commit)
+        cases = [
+            (
+                {**payload, "operator_decision": "record_replacement_package_artifact_manifest_from_authority"},
+                "unsupported_replacement_package_artifact_manifest_from_corrected_artifact_set_decision",
+            ),
+            (
+                {**payload, "replacement_payload_refs": ["browser-supplied-ref"]},
+                "replacement_package_artifact_manifest_from_corrected_artifact_set_scope_not_admitted",
+            ),
+            (
+                {**payload, "destination_url": "https://example.invalid/replacement.json"},
+                "replacement_package_artifact_manifest_from_corrected_artifact_set_scope_not_admitted",
+            ),
+            (
+                {**payload, "corrected_artifact_basis_hash": "stale-corrected-basis"},
+                "replacement_package_artifact_manifest_from_corrected_artifact_set_corrected_basis_hash_mismatch",
+            ),
+            (
+                {**payload, "replacement_authority_basis_hash": "stale-authority-basis"},
+                "replacement_package_artifact_manifest_from_corrected_artifact_set_replacement_authority_basis_hash_mismatch",
+            ),
+            (
+                {**payload, "package_supersession_commit_basis_hash": "stale-commit-basis"},
+                "replacement_package_artifact_manifest_from_corrected_artifact_set_supersession_commit_basis_hash_mismatch",
+            ),
+        ]
+        for bad_payload, expected_error in cases:
+            try:
+                manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+                    db,
+                    bad_payload,
+                )
+            except Layer3WorkbenchError as exc:
+                assert exc.error_code == expected_error
+            else:
+                raise AssertionError(f"expected {expected_error}")
+
+        response = manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+            db,
+            payload,
+        )
+        assert response["status"] == "recorded"
+        try:
+            manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+                db,
+                {**payload, "client_request_id": payload["client_request_id"], "corrected_artifact_basis_hash": "other"},
+            )
+        except Layer3WorkbenchError as exc:
+            assert exc.error_code == "replacement_package_artifact_manifest_from_corrected_artifact_set_corrected_basis_hash_mismatch"
+        else:
+            raise AssertionError("expected same-key corrected basis conflict")
+
+        Path(artifacts["replacement_payload_refs"][0]).write_text("tampered", encoding="utf-8")
+        try:
+            manifest_service.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
+                db,
+                {**payload, "client_request_id": "req-corrected-manifest-tampered"},
+            )
+        except Layer3WorkbenchError as exc:
+            assert exc.error_code == "replacement_package_artifact_manifest_payload_hash_mismatch"
+        else:
+            raise AssertionError("expected tampered corrected artifact hash rejection")
     finally:
         db.close()
         engine.dispose()
