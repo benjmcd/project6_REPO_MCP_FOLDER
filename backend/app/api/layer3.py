@@ -1266,6 +1266,12 @@ class Layer3HandoffExportPrepareRequest(BaseModel):
     connector_run_id: Any | None = None
     runtime_db_write: Any | None = None
     analysis_artifact: Any | None = None
+    active_package_authority_applied: Any | None = None
+    package_replacement_activation_id: Any | None = None
+    replacement_activation_basis_hash: Any | None = None
+    active_replacement_output_package_ids: Any | None = None
+    active_payload_refs: Any | None = None
+    active_payload_hashes: Any | None = None
     artifact_manifest: Any | None = None
     create_package: Any | None = None
     rebuild_package: Any | None = None
@@ -2625,6 +2631,14 @@ class Layer3HandoffExportPrepareResponse(Layer3BaseResponse):
     source_shape: str | None = None
     source_dataset_version_ids: list[str] | None = None
     package_review_submit_schema_id: str | None = None
+    active_package_authority_applied: bool | None = None
+    package_replacement_activation_id: str | None = None
+    source_output_package_ids: list[str] | None = None
+    source_payload_hashes: list[str] | None = None
+    active_replacement_output_package_ids: list[str] | None = None
+    active_payload_refs: list[str] | None = None
+    active_payload_hashes: list[str] | None = None
+    replacement_activation_basis_hash: str | None = None
     package_review_submit_record_ref: str
     package_review_state: str
     operator_decision: str
@@ -5109,6 +5123,12 @@ HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "connector_run_id": _forbidden_request_field_schema(),
         "runtime_db_write": _forbidden_request_field_schema(),
         "analysis_artifact": _forbidden_request_field_schema(),
+        "active_package_authority_applied": _forbidden_request_field_schema(),
+        "package_replacement_activation_id": _forbidden_request_field_schema(),
+        "replacement_activation_basis_hash": _forbidden_request_field_schema(),
+        "active_replacement_output_package_ids": _forbidden_request_field_schema(),
+        "active_payload_refs": _forbidden_request_field_schema(),
+        "active_payload_hashes": _forbidden_request_field_schema(),
         "artifact_manifest": _forbidden_request_field_schema(),
         "create_package": _forbidden_request_field_schema(),
         "rebuild_package": _forbidden_request_field_schema(),
