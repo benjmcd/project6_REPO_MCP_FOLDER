@@ -1755,6 +1755,10 @@ LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_
     PLANNING_DOCS
     / "681_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -55695,6 +55699,110 @@ def _check_source_l3_output_package_active_authority_connector_local_receipt_fre
                 )
 
 
+def _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation proof for `source_l3_output_package_active_authority_connector_local_receipt_runtime`.",
+        "682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md",
+        "681_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC.md",
+        "codex/l3-active-authority-local-receipt-impl",
+        "967f6d314306c4cbae6fc4316e93191dad0af882",
+        "Selected reader path: `connector_local_destination_receipt`.",
+        "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+        "adopt_active_replacement_package_authority_for_connector_local_receipt",
+        "Implementation result: `proved_source_l3_output_package_active_authority_connector_local_receipt_runtime`.",
+        "Runtime behavior change: `false`",
+        "associated-cohort APS evidence-bundle authority path",
+        "active replacement refs/hashes are carried from handoff/export prepare through APS handoff dispatch",
+        "connector dispatch remains admitted only through the associated-cohort APS evidence-bundle authority path",
+        "artifact://layer3-internal-fake-local-destination-redacted",
+        "source `L3OutputPackage` rows",
+        "`L3ConnectorLocalDestinationReceipt` remains the durable receipt/status authority",
+        "no `ConnectorRun` or `ConnectorRunTarget` rows are created",
+        "no `download_url`, `public_url`, `signed_url`, or `local_path` is exposed",
+        "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort -q",
+        "await_current_main_sync_for_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority connector-local receipt runtime proof term: {term}"
+            )
+
+    for blocked in (
+        "server-owned local outbox adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "package rebuild",
+        "package payload rewrite",
+        "direct source `L3OutputPackage` mutation",
+        "real connector invocation",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "source expansion",
+        "RAG/vector behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "raw local path exposure",
+    ):
+        if blocked not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF)} "
+                f"missing source L3 output package active authority connector-local receipt runtime non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source L3 Output Package Active Authority Connector Local Receipt Runtime Proof",
+            "682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md",
+            "source_l3_output_package_active_authority_connector_local_receipt_runtime",
+            "codex/l3-active-authority-local-receipt-impl",
+            "967f6d314306c4cbae6fc4316e93191dad0af882",
+            "connector_local_destination_receipt",
+            "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+            "test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+        ),
+        MANIFEST: (
+            "source_l3_output_package_active_authority_connector_local_receipt_runtime",
+            "proved_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+            "codex/l3-active-authority-local-receipt-impl",
+            "682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md",
+            "967f6d314306c4cbae6fc4316e93191dad0af882",
+            "connector_local_destination_receipt",
+            "adopt_active_replacement_package_authority_for_connector_local_receipt",
+            "test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort",
+            "await_current_main_sync_for_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+            "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_summary",
+        ),
+        PROOF_MANIFEST: (
+            "source_l3_output_package_active_authority_connector_local_receipt_runtime_proof",
+            "implementation_proof_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+            "682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md",
+            "connector_local_destination_receipt",
+            "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+            "associated-cohort APS evidence-bundle only",
+            "artifact://layer3-internal-fake-local-destination-redacted",
+            "no ConnectorRun or ConnectorRunTarget rows are created",
+            "test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort",
+            "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_summary",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source L3 output package active authority connector-local receipt runtime proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -56219,6 +56327,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_external_export_download_delivery_runtime_current_main_sync(errors)
     _check_source_l3_output_package_active_authority_connector_local_receipt_freeze(errors)
     _check_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync(errors)
+    _check_source_l3_output_package_active_authority_connector_local_receipt_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

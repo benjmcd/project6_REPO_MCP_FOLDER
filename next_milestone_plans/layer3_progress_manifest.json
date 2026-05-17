@@ -25959,5 +25959,41 @@
   "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync_merge_commit": "88986c0925824486bcad32b02f5873e17bcee6e3",
   "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync_status": "current_main_synced_source_l3_output_package_active_authority_connector_local_receipt_freeze",
   "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync_next_posture": "implement_source_l3_output_package_active_authority_connector_local_receipt_after_freeze_sync",
-  "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync_summary": "Doc 681 records current-main sync for PR #1285 merge commit 88986c0925824486bcad32b02f5873e17bcee6e3 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture implement_source_l3_output_package_active_authority_connector_local_receipt_after_freeze_sync."
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_freeze_current_main_sync_summary": "Doc 681 records current-main sync for PR #1285 merge commit 88986c0925824486bcad32b02f5873e17bcee6e3 with green backend-layer3-api and test checks, empty PR comments/reviews/latestReviews, zero reviewThreads, post-merge progress and target-selection validation, and next posture implement_source_l3_output_package_active_authority_connector_local_receipt_after_freeze_sync.",
+  "source_l3_output_package_active_authority_connector_local_receipt_runtime": {
+    "status": "proved_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+    "runtime_branch": "codex/l3-active-authority-local-receipt-impl",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/681_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_proof": "967f6d314306c4cbae6fc4316e93191dad0af882",
+    "reader_path": "connector_local_destination_receipt",
+    "route": "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+    "validation_seam": "external_export_download_delivery authority revalidation through external_export_download_prepare and _external_export_download_prepare_payload_for_delivery",
+    "operator_action": "adopt_active_replacement_package_authority_for_connector_local_receipt",
+    "runtime_behavior_change": false,
+    "changed_files": [
+      "backend/tests/test_layer3_api.py"
+    ],
+    "proof_terms": [
+      "active refs/hashes carried through connector dispatch record and connector-local receipt",
+      "connector dispatch remains associated-cohort APS evidence-bundle only",
+      "receipt accepts the active-authority APS bundle artifact hash and size",
+      "source L3OutputPackage rows remain unchanged",
+      "durable L3ConnectorLocalDestinationReceipt authority snapshot omits source_artifact_ref",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no external connector invocation or destination write",
+      "no download_url public_url signed_url local_path response leakage",
+      "no additional files written by connector-local receipt"
+    ],
+    "validation": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_aps_handoff_dispatch_applies_active_replacement_authority -q PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort -q PASS"
+    ],
+    "next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_connector_local_receipt_runtime"
+  },
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_branch": "codex/l3-active-authority-local-receipt-impl",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_doc": "next_milestone_plans/Layer3_planning_docs/682_SOURCE_L3_OUTPUT_PACKAGE_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_RECEIPT_RUNTIME_PROOF.md",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_live_behavior_change": false,
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_next_posture": "await_current_main_sync_for_source_l3_output_package_active_authority_connector_local_receipt_runtime",
+  "latest_source_l3_output_package_active_authority_connector_local_receipt_runtime_summary": "Doc 682 proof records source_l3_output_package_active_authority_connector_local_receipt_runtime: connector_local_destination_receipt carries active replacement refs/hashes through connector dispatch record and connector-local receipt on the admitted associated-cohort APS evidence-bundle path, accepts the active-authority APS bundle artifact hash and size, preserves source L3OutputPackage rows, creates no ConnectorRun or ConnectorRunTarget rows, enables no external connector invocation or destination write, leaks no download/public/signed URL or local path, writes no additional files, and changes no service runtime behavior."
 }
