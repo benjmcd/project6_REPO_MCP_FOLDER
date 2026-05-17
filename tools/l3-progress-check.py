@@ -1819,6 +1819,10 @@ LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE_CURRENT_M
     PLANNING_DOCS
     / "697_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT = (
+    PLANNING_DOCS
+    / "698_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT.md"
+)
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
 )
@@ -57221,6 +57225,106 @@ def _check_package_rebuild_from_corrected_artifacts_operator_action_freeze_curre
                 )
 
 
+def _check_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit(
+    errors: list[str],
+) -> None:
+    audit_text = _read_required_text(
+        LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT,
+        errors,
+    )
+    for term in (
+        "Status: implementation-entry authority audit for `rebuild_package_from_corrected_artifacts`.",
+        "698_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT.md",
+        "697_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_OPERATOR_ACTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "5484d35355e7aaabeea39f586be1fe89245f773d",
+        "Selected surface: `package_mutation_reconstruction`.",
+        "Selected package lifecycle action: `rebuild_package_from_corrected_artifacts`.",
+        "Audit result: `no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent`.",
+        "Runtime status: `blocked_no_implementation_entry_freeze`.",
+        "/api/v1/layer3/execution/result/review",
+        "/api/v1/layer3/package/replacement-artifact/materialize",
+        "review metadata only",
+        "does not define corrected package artifact bytes",
+        "does not consume a governed corrected-artifact authority source",
+        "no route, service, model, migration, or test authority",
+        "select_governed_corrected_artifact_source_authority_for_package_rebuild",
+    ):
+        if term not in audit_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT)} "
+                f"missing package rebuild from corrected artifacts implementation-entry authority audit term: {term}"
+            )
+
+    for blocked in (
+        "implementation-entry freeze",
+        "package payload rewrite",
+        "source `L3OutputPackage` row mutation",
+        "corrected package artifact bytes",
+        "browser-supplied package bytes",
+        "browser-supplied replacement bytes",
+        "arbitrary artifact refs",
+        "arbitrary hashes",
+        "local paths",
+        "URLs",
+        "source expansion",
+        "RAG/vector behavior",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "ConnectorRun creation",
+        "ConnectorRunTarget creation",
+        "credentials",
+        "external network egress",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "raw local path exposure",
+    ):
+        if blocked not in audit_text:
+            errors.append(
+                f"{_rel(LAYER3_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT)} "
+                f"missing package rebuild from corrected artifacts implementation-entry authority audit non-admission term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Package Rebuild From Corrected Artifacts Implementation-Entry Authority Audit",
+            "698_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT.md",
+            "5484d35355e7aaabeea39f586be1fe89245f773d",
+            "no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent",
+            "review metadata only",
+            "No route, service, model, migration, or test authority names a governed corrected-artifact source",
+            "select_governed_corrected_artifact_source_authority_for_package_rebuild",
+        ),
+        MANIFEST: (
+            "package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit",
+            "no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent",
+            "codex/l3-package-rebuild-entry-audit",
+            "698_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT.md",
+            "5484d35355e7aaabeea39f586be1fe89245f773d",
+            "blocked_no_implementation_entry_freeze",
+            "no governed corrected-artifact source route, model, migration, manifest, hash, or rebuild basis",
+            "select_governed_corrected_artifact_source_authority_for_package_rebuild",
+            "latest_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit_summary",
+        ),
+        PROOF_MANIFEST: (
+            "package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit_proof",
+            "implementation_entry_authority_audit_package_rebuild_from_corrected_artifacts",
+            "no_runtime_now_rebuild_package_from_corrected_artifacts_source_authority_absent",
+            "698_PACKAGE_REBUILD_FROM_CORRECTED_ARTIFACTS_IMPLEMENTATION_ENTRY_AUTHORITY_AUDIT.md",
+            "5484d35355e7aaabeea39f586be1fe89245f773d",
+            "blocked_no_implementation_entry_freeze",
+            "no governed corrected-artifact source route, model, migration, manifest, hash, or rebuild basis was found",
+            "runtime remains blocked until one corrected-artifact authority source is selected and frozen",
+            "select_governed_corrected_artifact_source_authority_for_package_rebuild",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing package rebuild from corrected artifacts implementation-entry authority audit term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -57761,6 +57865,7 @@ def main() -> int:
     _check_source_l3_output_package_active_authority_external_local_export_runtime_current_main_sync(errors)
     _check_package_rebuild_from_corrected_artifacts_operator_action_freeze(errors)
     _check_package_rebuild_from_corrected_artifacts_operator_action_freeze_current_main_sync(errors)
+    _check_package_rebuild_from_corrected_artifacts_implementation_entry_authority_audit(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
