@@ -24496,5 +24496,63 @@
   "latest_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_branch": "codex/l3-manifest-record-authority-runtime-sync",
   "latest_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_live_behavior_change": false,
-  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_summary": "Doc 655 syncs PR #1258 merge commit d559d42d99d50314007e5f7daa73d60cb9f8592c to current main. The server-computed replacement package artifact manifest record-from-authority runtime is current-main synced, and the next exact posture is determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail."
+  "latest_replacement_package_artifact_manifest_record_from_authority_runtime_current_main_sync_summary": "Doc 655 syncs PR #1258 merge commit d559d42d99d50314007e5f7daa73d60cb9f8592c to current main. The server-computed replacement package artifact manifest record-from-authority runtime is current-main synced, and the next exact posture is determine_rendered_replacement_package_artifact_manifest_control_admission_or_next_package_lifecycle_guardrail.",
+  "rendered_replacement_package_artifact_manifest_control_freeze": {
+    "status": "implementation_entry_frozen_rendered_replacement_package_artifact_manifest_control",
+    "branch": "codex/l3-rendered-manifest-control-admission-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/655_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RECORD_FROM_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_preflight_commit": "d9cf08c7b3c584904e21f9b3bf784bb6845f4352",
+    "selected_surface": "package_mutation_reconstruction",
+    "selected_implementation_entry_mode": "rendered_replacement_package_artifact_manifest_control",
+    "selected_operator_action": "record_replacement_package_artifact_manifest_from_authority",
+    "selected_route": "/api/v1/layer3/package/replacement-artifact/manifest/record-from-authority",
+    "future_rendered_owner_files": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "admitted_response_authority_state": [
+      "State.replacementPackageArtifactMaterialization",
+      "State.replacementPackageSetAuthority",
+      "State.packageSupersessionCommit"
+    ],
+    "admitted_request_fields": [
+      "client_request_id",
+      "session_id",
+      "analysis_plan_id",
+      "pass_run_id",
+      "reconciliation_record_id",
+      "replacement_artifact_materialization_id",
+      "materialization_basis_hash",
+      "replacement_package_set_authority_id",
+      "replacement_authority_basis_hash",
+      "package_supersession_commit_id",
+      "package_supersession_commit_basis_hash",
+      "operator_decision"
+    ],
+    "future_rendered_identifiers": [
+      "#replacement-package-artifact-manifest-submit",
+      "#replacement-package-artifact-manifest-panel",
+      "data-rendered-mode=\"rendered_replacement_package_artifact_manifest_control\""
+    ],
+    "entry_decision": "freeze_only",
+    "runtime_status": "not_implemented_in_this_pass",
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-target-selection-validate.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "next_required_action_after_merge": "current_main_sync_rendered_replacement_package_artifact_manifest_control_freeze",
+    "next_whole_project_posture": "implement_rendered_replacement_package_artifact_manifest_control_after_freeze_sync"
+  },
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_branch": "codex/l3-rendered-manifest-control-admission-freeze",
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_doc": "next_milestone_plans/Layer3_planning_docs/656_RENDERED_REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_CONTROL_FREEZE.md",
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_live_behavior_change": false,
+  "latest_rendered_replacement_package_artifact_manifest_control_freeze_summary": "Doc 656 freezes the rendered replacement package artifact manifest control after the record-from-authority runtime sync. The future control may submit only authority ids and existing-row basis hashes from materialization replacement authority and supersession commit state to the server-computed record-from-authority route, with no runtime implementation in this pass."
 }
