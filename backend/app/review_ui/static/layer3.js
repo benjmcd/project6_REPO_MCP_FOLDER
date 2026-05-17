@@ -53,6 +53,10 @@ const REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE = 'operator_records_replacement
 const REPLACEMENT_PACKAGE_SET_AUTHORITY_RESPONSE_AUTHORITY = 'State.replacementPackageSetAuthority';
 const REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_OPERATOR_DECISION = 'materialize_replacement_package_artifacts_from_supersession_preview';
 const REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_DECISION = 'record_replacement_package_set_authority';
+const PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE = 'rendered_package_supersession_commit_control';
+const PACKAGE_SUPERSESSION_COMMIT_USE_CASE = 'operator_commits_package_supersession_lineage_after_replacement_package_set_authority';
+const PACKAGE_SUPERSESSION_COMMIT_RESPONSE_AUTHORITY = 'State.packageSupersessionCommit';
+const PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION = 'commit_package_supersession';
 const CONNECTOR_LOCAL_RECEIPT_STATUS_SURFACE_MODE = 'rendered_connector_local_destination_receipt_read_only_status_surface';
 const CONNECTOR_LOCAL_RECEIPT_STATUS_USE_CASE = 'operator_reviews_connector_local_destination_receipt_status_without_real_connector_invocation_or_destination_write';
 const CONNECTOR_LOCAL_RECEIPT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.connector_local_destination_receipt';
@@ -126,6 +130,9 @@ const State = {
     replacementPackageSetAuthority: null,
     replacementPackageSetAuthorityError: null,
     replacementPackageSetAuthorityPending: false,
+    packageSupersessionCommit: null,
+    packageSupersessionCommitError: null,
+    packageSupersessionCommitPending: false,
     handoffExportPrepare: null,
     handoffExportPrepareError: null,
     handoffExportPreparePending: false,
@@ -224,6 +231,8 @@ const elements = {
     packageSupersessionPreviewSubmit: document.getElementById('package-supersession-preview-submit'),
     replacementPackageSetAuthorityPanel: document.getElementById('replacement-package-set-authority-panel'),
     replacementPackageSetAuthoritySubmit: document.getElementById('replacement-package-set-authority-submit'),
+    packageSupersessionCommitPanel: document.getElementById('package-supersession-commit-panel'),
+    packageSupersessionCommitSubmit: document.getElementById('package-supersession-commit-submit'),
     handoffExportPrepareForm: document.getElementById('handoff-export-prepare-form'),
     handoffExportPreparePanel: document.getElementById('handoff-export-prepare-panel'),
     handoffExportPrepareDecision: document.getElementById('handoff-export-prepare-decision'),
@@ -581,7 +590,7 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.externalExportDownloadPrepare?.authority_rail || State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.replacementPackageSetAuthority?.authority_rail || State.replacementPackageArtifactMaterialization?.authority_rail || State.packageSupersessionPreview?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
+    return State.externalExportDownloadPrepare?.authority_rail || State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.packageSupersessionCommit?.authority_rail || State.replacementPackageSetAuthority?.authority_rail || State.replacementPackageArtifactMaterialization?.authority_rail || State.packageSupersessionPreview?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
         || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
         || State.executionStart?.authority_rail || State.executionSelection?.authority_rail
         || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
@@ -608,6 +617,7 @@ function currentDownstreamUnavailable() {
         || State.sessionSummary?.connector_local_destination_receipt?.downstream_unavailable
         || State.sessionSummary?.aps_handoff_dispatch?.downstream_unavailable
         || State.handoffExportPrepare?.downstream_unavailable
+        || State.packageSupersessionCommit?.downstream_unavailable
         || State.replacementPackageSetAuthority?.downstream_unavailable
         || State.replacementPackageArtifactMaterialization?.downstream_unavailable
         || State.packageSupersessionPreview?.downstream_unavailable
@@ -648,6 +658,7 @@ function renderContext() {
         package_review_submit: State.packageReviewSubmit?.next_state || State.packageReviewSubmitError?.error_code || State.sessionSummary?.package_review_submit?.state || 'none',
         package_supersession_preview: State.packageSupersessionPreview?.next_state || State.packageSupersessionPreviewError?.error_code || 'none',
         replacement_package_set_authority: State.replacementPackageSetAuthority?.next_state || State.replacementPackageSetAuthorityError?.error_code || State.replacementPackageArtifactMaterialization?.next_state || State.replacementPackageArtifactMaterializationError?.error_code || 'none',
+        package_supersession_commit: State.packageSupersessionCommit?.next_state || State.packageSupersessionCommitError?.error_code || 'none',
         handoff_export_prepare: State.handoffExportPrepare?.next_state || State.handoffExportPrepareError?.error_code || State.sessionSummary?.handoff_export_prepare?.state || 'none',
         aps_handoff_dispatch: State.apsHandoffDispatch?.next_state || State.apsHandoffDispatchError?.error_code || State.sessionSummary?.aps_handoff_dispatch?.state || 'none',
         external_export_download: State.externalExportDownloadPrepare?.next_state || State.externalExportDownloadPrepareError?.error_code || State.sessionSummary?.external_export_download?.state || 'none',
@@ -946,6 +957,21 @@ function stableStringify(value) {
         return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
     }
     return JSON.stringify(value ?? null);
+}
+
+function stableHashAvailable() {
+    return Boolean(window.crypto?.subtle && window.TextEncoder);
+}
+
+async function stableHash(value) {
+    if (!stableHashAvailable()) {
+        throw new Error('browser_sha256_unavailable');
+    }
+    const data = new TextEncoder().encode(stableStringify(value));
+    const digest = await window.crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(digest))
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('');
 }
 
 function capabilitySignatureItems(values) {
@@ -1551,6 +1577,7 @@ function canRefreshSessionSummary() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -1571,6 +1598,7 @@ function canInspectResultStatus() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -1822,11 +1850,25 @@ function replacementPackageSetAuthorityState() {
     return State.replacementPackageSetAuthority || null;
 }
 
+function packageSupersessionCommitState() {
+    return State.packageSupersessionCommit || null;
+}
+
 function replacementPackageSetAuthorityBusy() {
     return Boolean(
         State.replacementPackageArtifactMaterializationPending
         || State.replacementPackageSetAuthorityPending
     );
+}
+
+function packageSupersessionCommitBusy() {
+    return Boolean(State.packageSupersessionCommitPending);
+}
+
+function clearPackageSupersessionCommitState() {
+    State.packageSupersessionCommit = null;
+    State.packageSupersessionCommitError = null;
+    State.packageSupersessionCommitPending = false;
 }
 
 function clearReplacementPackageSetAuthorityState() {
@@ -1836,6 +1878,7 @@ function clearReplacementPackageSetAuthorityState() {
     State.replacementPackageSetAuthority = null;
     State.replacementPackageSetAuthorityError = null;
     State.replacementPackageSetAuthorityPending = false;
+    clearPackageSupersessionCommitState();
 }
 
 function safePackagePayloadRefForDisplay(value) {
@@ -1933,6 +1976,11 @@ function renderPackageSupersessionDependencyRows(rows) {
 
 function packageLifecycleDashboardState(preview, construction, submit) {
     const replacementAuthority = replacementPackageSetAuthorityState() || {};
+    const supersessionCommit = packageSupersessionCommitState() || {};
+    if (packageSupersessionCommitBusy()) return { label: 'package_supersession_commit_recording', pill: 'preview' };
+    if (supersessionCommit.package_supersession_commit_id) {
+        return { label: supersessionCommit.next_state || 'package_supersession_commit_recorded', pill: 'ok' };
+    }
     if (replacementPackageSetAuthorityBusy()) return { label: 'replacement_package_set_authority_recording', pill: 'preview' };
     if (replacementAuthority.replacement_package_set_authority_id) {
         return { label: replacementAuthority.next_state || 'replacement_package_set_authority_recorded', pill: 'ok' };
@@ -1954,6 +2002,7 @@ function packageLifecycleDashboardState(preview, construction, submit) {
     if (
         State.replacementPackageSetAuthorityError
         || State.replacementPackageArtifactMaterializationError
+        || State.packageSupersessionCommitError
         || State.packageReviewSubmitError
         || State.packageConstructionError
         || State.packageReviewPreviewError
@@ -2738,6 +2787,7 @@ function canSubmitPackageSupersessionPreview() {
         && !State.packageReviewSubmitPending
         && !State.packageSupersessionPreviewPending
         && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -2766,6 +2816,48 @@ function canSubmitReplacementPackageSetAuthority() {
         && !State.packageReviewSubmitPending
         && !State.packageSupersessionPreviewPending
         && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
+        && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
+        && !State.externalExportDownloadDeliveryPending
+    );
+}
+
+function canSubmitPackageSupersessionCommit() {
+    const authority = selectedResultAuthority();
+    const preview = packageSupersessionPreviewState() || {};
+    const replacementAuthority = replacementPackageSetAuthorityState() || {};
+    const source = replacementPackageSourceArrays(preview);
+    return Boolean(
+        stableHashAvailable()
+        && hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && preview.package_supersession_preview_hash
+        && preview.package_set_hash
+        && Array.isArray(preview.downstream_dependencies)
+        && replacementAuthority.replacement_package_set_authority_id
+        && replacementAuthority.replacement_package_set_id
+        && replacementAuthority.replacement_package_set_hash
+        && replacementAuthority.authority_basis_hash
+        && source.outputPackageIds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && source.packageKinds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && source.payloadRefs.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && source.payloadHashes.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && Array.isArray(replacementAuthority.replacement_package_kinds)
+        && replacementAuthority.replacement_package_kinds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && Array.isArray(replacementAuthority.replacement_payload_refs)
+        && replacementAuthority.replacement_payload_refs.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && Array.isArray(replacementAuthority.replacement_payload_hashes)
+        && replacementAuthority.replacement_payload_hashes.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && !packageSupersessionCommitState()
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+        && !State.packageSupersessionPreviewPending
+        && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -2800,6 +2892,7 @@ function canSubmitHandoffExportPrepare() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -2842,6 +2935,7 @@ function canSubmitApsHandoffDispatch() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -2893,6 +2987,7 @@ function canSubmitExternalExportDownloadPrepare() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -5001,6 +5096,112 @@ function renderReplacementPackageSetAuthorityPanel() {
             </section>
             <section class="result-review-card replacement-package-set-authority-rows">
                 <strong>Replacement Payload Rows</strong>
+                <ul>${renderReplacementPackageRows(replacementRows)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Deferred Capabilities</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(error)}
+        </div>
+    `;
+}
+
+function renderPackageSupersessionCommitPanel() {
+    const preview = packageSupersessionPreviewState() || {};
+    const replacementAuthority = replacementPackageSetAuthorityState() || {};
+    const commit = packageSupersessionCommitState() || {};
+    const source = replacementPackageSourceArrays(preview);
+    const sourceRows = replacementPackageRows({
+        packageIds: commit.source_output_package_ids || source.outputPackageIds,
+        packageKinds: commit.source_package_kinds || source.packageKinds,
+        payloadRefs: commit.source_payload_refs || source.payloadRefs,
+        payloadHashes: commit.source_payload_hashes || source.payloadHashes,
+    });
+    const replacementRows = replacementPackageRows({
+        packageKinds: commit.replacement_package_kinds || replacementAuthority.replacement_package_kinds || [],
+        payloadRefs: commit.replacement_payload_refs || replacementAuthority.replacement_payload_refs || [],
+        payloadHashes: commit.replacement_payload_hashes || replacementAuthority.replacement_payload_hashes || [],
+    });
+    const error = State.packageSupersessionCommitError;
+    const stateLabel = State.packageSupersessionCommitPending
+        ? 'package_supersession_commit_recording'
+        : (
+            error?.error_code
+            || commit.next_state
+            || (canSubmitPackageSupersessionCommit()
+                ? 'package_supersession_commit_ready'
+                : (stableHashAvailable()
+                    ? 'package_supersession_commit_unavailable'
+                    : 'package_supersession_commit_hashing_unavailable'))
+        );
+    const statePill = error ? 'blocked' : (commit.package_supersession_commit_id ? 'ok' : 'preview');
+    const downstream = commit.downstream_unavailable || replacementAuthority.downstream_unavailable || [];
+    elements.packageSupersessionCommitPanel.dataset.commitState = stateLabel;
+    elements.packageSupersessionCommitPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(statePill)}">${escapeHtml(stateLabel)}</span>
+            <span class="rail-label">${escapeHtml(PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE)}</span>
+        </div>
+        <div class="result-review-grid package-supersession-commit-grid">
+            <section class="result-review-card">
+                <strong>Rendered Control</strong>
+                <ul>
+                    ${fieldItem('use case', PACKAGE_SUPERSESSION_COMMIT_USE_CASE, { code: true })}
+                    ${fieldItem('response authority', PACKAGE_SUPERSESSION_COMMIT_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('operator decision', PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION, { code: true })}
+                    ${fieldItem('browser durable authority', false)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Source Authority</strong>
+                <ul>
+                    ${fieldItem('preview hash', preview.package_supersession_preview_hash || commit.package_supersession_preview_hash, { code: true })}
+                    ${fieldItem('source package set hash', preview.package_set_hash || commit.source_package_set_hash, { code: true })}
+                    ${fieldItem('downstream dependency count', Array.isArray(preview.downstream_dependencies) ? preview.downstream_dependencies.length : null)}
+                    ${fieldItem('source gate', commit.source_gate, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Replacement Authority</strong>
+                <ul>
+                    ${fieldItem('authority id', replacementAuthority.replacement_package_set_authority_id || commit.replacement_package_set_authority_id, { code: true })}
+                    ${fieldItem('replacement set id', replacementAuthority.replacement_package_set_id || commit.replacement_package_set_id, { code: true })}
+                    ${fieldItem('replacement set hash', replacementAuthority.replacement_package_set_hash || commit.replacement_package_set_hash, { code: true })}
+                    ${fieldItem('basis hash', replacementAuthority.authority_basis_hash || commit.replacement_authority_basis_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Commit Result</strong>
+                <ul>
+                    ${fieldItem('status', commit.status)}
+                    ${fieldItem('commit id', commit.package_supersession_commit_id, { code: true })}
+                    ${fieldItem('mode', commit.package_supersession_commit_mode, { code: true })}
+                    ${fieldItem('commit basis', commit.commit_basis_hash, { code: true })}
+                    ${fieldItem('downstream dependency hash', commit.downstream_dependency_hash, { code: true })}
+                    ${fieldItem('next state', commit.next_state)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Disabled Capability Flags</strong>
+                <ul>
+                    ${fieldItem('package row mutation', commit.package_row_mutation_enabled)}
+                    ${fieldItem('package payload write', commit.package_payload_write_enabled)}
+                    ${fieldItem('L3 output package write', commit.l3_output_package_write_enabled)}
+                    ${fieldItem('broad package mutation', commit.broad_package_mutation_enabled)}
+                    ${fieldItem('connector dispatch', commit.connector_dispatch_enabled)}
+                    ${fieldItem('provider public URL', commit.provider_public_url_enabled)}
+                    ${fieldItem('source widening', commit.source_widening_enabled)}
+                    ${fieldItem('qualitative/RAG execution', commit.qualitative_hybrid_rag_execution_enabled)}
+                    ${fieldItem('frontend durable authority', commit.frontend_only_durable_state_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card package-supersession-commit-rows">
+                <strong>Source Package Rows</strong>
+                <ul>${renderReplacementPackageRows(sourceRows)}</ul>
+            </section>
+            <section class="result-review-card package-supersession-commit-rows">
+                <strong>Replacement Package Rows</strong>
                 <ul>${renderReplacementPackageRows(replacementRows)}</ul>
             </section>
             <section class="result-review-card">
@@ -7153,6 +7354,7 @@ function setGateControls() {
         (packageReviewSubmitState() || {}).package_review_submit_enabled === true
         && !State.packageReviewSubmitPending
         && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -7163,6 +7365,7 @@ function setGateControls() {
         && (packageReviewSubmitState()?.package_review_state || packageReviewSubmitState()?.state) === 'package_review_approved'
         && !recordedHandoffExportPrepare()
         && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
         && !State.externalExportDownloadPreparePending
@@ -7216,6 +7419,7 @@ function setGateControls() {
     elements.packageConstructionCommit.disabled = !canCommitPackageConstruction();
     elements.packageSupersessionPreviewSubmit.disabled = !canSubmitPackageSupersessionPreview();
     elements.replacementPackageSetAuthoritySubmit.disabled = !canSubmitReplacementPackageSetAuthority();
+    elements.packageSupersessionCommitSubmit.disabled = !canSubmitPackageSupersessionCommit();
     elements.packageReviewSubmitDecision.disabled = !packageReviewControlsEnabled;
     elements.packageReviewSubmitNotes.disabled = !packageReviewControlsEnabled;
     elements.packageReviewSubmit.disabled = !canSubmitPackageReview();
@@ -7260,6 +7464,7 @@ function renderAll() {
     renderPackageLifecycleDashboardPanel();
     renderPackageSupersessionPreviewPanel();
     renderReplacementPackageSetAuthorityPanel();
+    renderPackageSupersessionCommitPanel();
     renderDownstreamAccessLifecycleDashboardPanel();
     renderHandoffExportPreparePanel();
     renderApsHandoffDispatchPanel();
@@ -7493,6 +7698,72 @@ function replacementPackageSetAuthorityPayload(materialization, authority = sele
         authority_basis_hash: materialization.authority_basis_hash,
         operator_decision: REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_DECISION,
     };
+}
+
+async function packageSupersessionCommitPayload(authority = selectedResultAuthority()) {
+    const preview = packageSupersessionPreviewState() || {};
+    const replacementAuthority = replacementPackageSetAuthorityState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    const source = replacementPackageSourceArrays(preview);
+    const downstreamDependencies = Array.isArray(preview.downstream_dependencies)
+        ? preview.downstream_dependencies
+        : [];
+    const downstreamDependencyHash = await stableHash({
+        schema_id: 'layer3.package_supersession_downstream_dependencies.v1',
+        downstream_dependencies: downstreamDependencies,
+    });
+    const payload = {
+        client_request_id: requestId(),
+        session_id: preview.session_id || replacementAuthority.session_id || authority.sessionId,
+        analysis_plan_id: preview.analysis_plan_id || replacementAuthority.analysis_plan_id || authority.analysisPlanId,
+        pass_run_id: preview.pass_run_id || replacementAuthority.pass_run_id || authority.passRunId,
+        reconciliation_record_id: (
+            preview.reconciliation_record_id
+            || replacementAuthority.reconciliation_record_id
+            || submit.reconciliation_record_id
+            || construction.reconciliation_record_id
+        ),
+        package_supersession_preview_hash: preview.package_supersession_preview_hash,
+        source_package_set_hash: preview.package_set_hash,
+        source_output_package_ids: source.outputPackageIds,
+        source_package_kinds: source.packageKinds,
+        source_payload_refs: source.payloadRefs,
+        source_payload_hashes: source.payloadHashes,
+        replacement_package_set_authority_id: replacementAuthority.replacement_package_set_authority_id,
+        replacement_package_set_id: replacementAuthority.replacement_package_set_id,
+        replacement_package_set_hash: replacementAuthority.replacement_package_set_hash,
+        replacement_package_kinds: replacementAuthority.replacement_package_kinds,
+        replacement_payload_refs: replacementAuthority.replacement_payload_refs,
+        replacement_payload_hashes: replacementAuthority.replacement_payload_hashes,
+        replacement_authority_basis_hash: replacementAuthority.authority_basis_hash,
+        downstream_dependency_hash: downstreamDependencyHash,
+        operator_decision: PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION,
+    };
+    payload.commit_basis_hash = await stableHash({
+        schema_id: 'layer3.package_supersession_commit_basis.v1',
+        mode: 'package_supersession_commit_entry',
+        operator_decision: PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION,
+        session_id: payload.session_id,
+        analysis_plan_id: payload.analysis_plan_id,
+        pass_run_id: payload.pass_run_id,
+        reconciliation_record_id: payload.reconciliation_record_id,
+        package_supersession_preview_hash: payload.package_supersession_preview_hash,
+        source_package_set_hash: payload.source_package_set_hash,
+        source_output_package_ids: payload.source_output_package_ids,
+        source_package_kinds: payload.source_package_kinds,
+        source_payload_refs: payload.source_payload_refs,
+        source_payload_hashes: payload.source_payload_hashes,
+        replacement_package_set_authority_id: payload.replacement_package_set_authority_id,
+        replacement_authority_basis_hash: payload.replacement_authority_basis_hash,
+        replacement_package_set_id: payload.replacement_package_set_id,
+        replacement_package_set_hash: payload.replacement_package_set_hash,
+        replacement_package_kinds: payload.replacement_package_kinds,
+        replacement_payload_refs: payload.replacement_payload_refs,
+        replacement_payload_hashes: payload.replacement_payload_hashes,
+        downstream_dependency_hash: payload.downstream_dependency_hash,
+    });
+    return payload;
 }
 
 function handoffExportPreparePayload(authority = selectedResultAuthority()) {
@@ -8095,6 +8366,7 @@ async function submitReplacementPackageSetAuthority() {
     State.replacementPackageSetAuthority = null;
     State.replacementPackageSetAuthorityPending = false;
     State.replacementPackageSetAuthorityError = null;
+    clearPackageSupersessionCommitState();
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
     State.apsHandoffDispatch = null;
@@ -8147,6 +8419,43 @@ async function submitReplacementPackageSetAuthority() {
         State.replacementPackageArtifactMaterializationPending = false;
         State.replacementPackageSetAuthorityPending = false;
         setBusy(elements.replacementPackageSetAuthoritySubmit, false, 'Record Replacement Set');
+        renderAll();
+    }
+}
+
+async function submitPackageSupersessionCommit() {
+    if (!canSubmitPackageSupersessionCommit()) return;
+    State.packageSupersessionCommitPending = true;
+    State.packageSupersessionCommitError = null;
+    renderAll();
+    setBusy(elements.packageSupersessionCommitSubmit, true, 'Commit Supersession');
+    try {
+        State.packageSupersessionCommit = await postJson(
+            '/package/supersession/commit',
+            await packageSupersessionCommitPayload(),
+        );
+        State.packageSupersessionCommitError = null;
+        addEvent('Package supersession commit lineage recorded.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageSupersessionCommit.session_id)}`);
+            persistSessionRecoveryAnchor('package_supersession_commit_refresh');
+        } catch (refreshError) {
+            addEvent(`Package supersession commit recorded; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.packageSupersessionCommitError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: error.message === 'browser_sha256_unavailable'
+                ? 'package_supersession_commit_hashing_unavailable'
+                : 'package_supersession_commit_request_failed',
+            message: error.message,
+        };
+        addEvent(`Package supersession commit blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.packageSupersessionCommitPending = false;
+        setBusy(elements.packageSupersessionCommitSubmit, false, 'Commit Supersession');
         renderAll();
     }
 }
@@ -8950,6 +9259,7 @@ elements.packageConstructionCommit.addEventListener('click', commitPackageConstr
 elements.packageReviewSubmitForm.addEventListener('submit', submitPackageReview);
 elements.packageSupersessionPreviewSubmit.addEventListener('click', submitPackageSupersessionPreview);
 elements.replacementPackageSetAuthoritySubmit.addEventListener('click', submitReplacementPackageSetAuthority);
+elements.packageSupersessionCommitSubmit.addEventListener('click', submitPackageSupersessionCommit);
 elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExportPrepare);
 elements.apsHandoffDispatchForm.addEventListener('submit', submitApsHandoffDispatch);
 elements.externalExportDownloadPrepareForm.addEventListener('submit', submitExternalExportDownloadPrepare);
