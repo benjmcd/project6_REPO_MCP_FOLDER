@@ -6024,3 +6024,37 @@ No backend route, API DTO, response model, database model, migration, durable ve
 The next exact current-main posture is `select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync`.
 
 Do not continue additional same-family source-directory vector retrieval proof loops unless current-main evidence shows a concrete unresolved defect or named downstream reader.
+
+## Provider-Public Delivery/Use Runtime Authority Selection Freeze
+
+Planning/control selection freeze: `790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md` follows the source-directory deterministic vector retrieval runtime current-main sync.
+
+Selection branch `codex/l3-provider-public-runtime-select` starts from current-main checkpoint `ff1a8dec534d99823c667da5ca7f051c7ccb437c`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime`.
+
+Selected from posture: `select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync`.
+
+Selected major deferred lane: `provider_public_delivery_use`.
+
+Selected provider mode for the next contract question: `fake_provider_only_contract_runtime`.
+
+Selected future authority question: `provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract`.
+
+Selected future contract posture: `write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime`.
+
+Selected future owner/proof surfaces, if a later contract and freeze admit implementation: `backend/app/services/layer3_provider_public_url_delivery_use.py` and `backend/tests/test_layer3_provider_public_url_delivery_use.py`.
+
+Current main remains redacted provider-public prepare/status/revoke state only through `backend/app/services/layer3_provider_public_url.py`, `backend/app/services/layer3_provider_public_url_state.py`, and `backend/app/api/layer3.py`; it uses `layer3_provider_public_url_fake_provider`, keeps `raw_public_url_exposed: False`, keeps `public_url_enabled: False`, and has no provider-public `/use` or `/deliver` runtime.
+
+The selected next contract question is fake-provider-only and redacted: bind to existing provider-public receipts and object authority, use server clock TTL/expiry, deny expired or revoked receipts, never return raw public URLs, allow no public anonymous access, add no cross-origin HTTP delivery, and preserve no-network/no-provider-object-write authority unless a later freeze separately admits more.
+
+Entry decision: `freeze_only`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this freeze: `false`.
+
+No runtime behavior, backend route, API DTO, response model, database model, migration, provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, provider-public delivery/use route, rendered delivery/use control, frontend-durable authority, package behavior, connector/destination dispatch, real connector invocation, network egress, source expansion, RAG/vector indexing expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this freeze.
+
+The next exact posture after merge is `current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync`; after sync, the next exact posture is `write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime`.
