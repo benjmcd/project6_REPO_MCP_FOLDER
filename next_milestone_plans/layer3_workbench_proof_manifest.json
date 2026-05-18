@@ -30500,5 +30500,44 @@
   "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
   "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_status": "source_directory_material_deterministic_lexical_retrieval_runtime_implemented_branch_local",
   "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof",
-  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_summary": "Doc 760 proof records deterministic lexical source-directory retrieval over existing text segments, stale index/source authority failure, empty/forbidden/unknown field failure, bounded paging, no-match responses, and no connector/package side effects while preserving blocked routes, DTOs, models, migrations, durable retrieval rows, vector, embedding, qualitative-hybrid, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path surfaces."
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_summary": "Doc 760 proof records deterministic lexical source-directory retrieval over existing text segments, stale index/source authority failure, empty/forbidden/unknown field failure, bounded paging, no-match responses, and no connector/package side effects while preserving blocked routes, DTOs, models, migrations, durable retrieval rows, vector, embedding, qualitative-hybrid, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path surfaces.",
+  "source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_deterministic_lexical_retrieval_runtime",
+    "status": "current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime",
+    "sync_branch": "codex/l3-retrieval-impl-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
+    "runtime_pr": "#1365",
+    "runtime_branch_commit": "8483d79e16f59e51759dbf2724d7a397bf817b0f",
+    "runtime_merge_commit": "8275da065e0f7dabbb603dbaecb84445c8b10a45",
+    "current_main_checkpoint_after_merge": "8275da065e0f7dabbb603dbaecb84445c8b10a45",
+    "runtime_behavior_already_merged": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 760 source-directory deterministic lexical retrieval runtime proof",
+      "current main records PR #1365 merged at 8275da065e0f7dabbb603dbaecb84445c8b10a45",
+      "current main records green backend-layer3-api and test checks for PR #1365",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main includes backend/app/services/layer3_source_directory_text_retrieval.py",
+      "current main includes backend/tests/test_layer3_source_directory_text_retrieval.py",
+      "no runtime behavior introduced by this sync",
+      "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync is selected for the next authority posture"
+    ],
+    "next_posture": "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync"
+  },
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_branch": "codex/l3-retrieval-impl-sync",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_status": "current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_next_posture": "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_summary": "Doc 761 proof syncs the source-directory deterministic lexical retrieval runtime after PR #1365 and moves the next posture to select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync, with routes, DTOs, models, migrations, durable retrieval rows, vector, embedding, qualitative-hybrid, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path behavior still blocked until separately frozen."
 }
