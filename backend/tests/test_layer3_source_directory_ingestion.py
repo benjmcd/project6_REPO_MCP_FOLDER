@@ -272,6 +272,14 @@ def test_layer3_source_directory_material_preview_reaches_gate_b_without_broad_o
     assert gate_b_body["status"] == "ok"
     assert gate_b_body["approved_candidate_ids"] == [candidate["candidate_id"]]
     assert gate_b_body["next_state"] == "gate_c_preview_ready"
+    gate_c = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={"client_request_id": "source-directory-gate-c-001", "session_id": gate_b_body["session_id"]},
+    )
+    assert gate_c.status_code == 200
+    gate_c_body = gate_c.json()
+    assert gate_c_body["typing_records"][0]["planning_shape_family"] == "document_chunks"
+    assert gate_c_body["typing_records"][0]["chosen_modality"] == "qualitative"
 
     db = client.layer3_session_factory()
     try:
@@ -341,6 +349,34 @@ def test_layer3_source_directory_material_preview_rejects_live_file_drift(
     body = response.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "source_directory_material_preview_file_identity_mismatch"
+
+
+def test_layer3_source_directory_material_preview_fails_closed_when_config_drifts(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-config-drift"),
+    )
+    assert scan.status_code == 201
+    payload = _material_preview_payload(scan.json())
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", "")
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        json=payload,
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_directory_material_config_unavailable"
 
 
 def test_layer3_source_directory_ingestion_rejects_forbidden_or_unsupported_scope(

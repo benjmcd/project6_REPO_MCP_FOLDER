@@ -16,6 +16,7 @@ from app.services.layer3_source_directory_ingestion import (
     SCHEMA_ID as INGESTION_SCHEMA_ID,
     SOURCE_FAMILY,
     STATUS_RECORDED,
+    SourceDirectoryIngestionError,
     _configured_root,
     _negative_invariants as _ingestion_negative_invariants,
     _source_root_ref,
@@ -332,7 +333,15 @@ def _assert_expected_hashes(
 
 
 def _read_live_file(file_record: L3SourceDirectoryIngestionFile, *, max_chars: int) -> dict[str, Any]:
-    root = _configured_root()
+    try:
+        root = _configured_root()
+    except SourceDirectoryIngestionError as exc:
+        raise SourceDirectoryMaterialAdmissionError(
+            "source_directory_material_config_unavailable",
+            "The configured source-directory root is not available for material preview.",
+            http_status=exc.http_status,
+            details={"source_ingestion_file_id": file_record.source_ingestion_file_id, **exc.details},
+        ) from exc
     relative = PurePosixPath(file_record.relative_name)
     if len(relative.parts) != 1 or relative.name != file_record.relative_name:
         raise SourceDirectoryMaterialAdmissionError(
@@ -350,16 +359,33 @@ def _read_live_file(file_record: L3SourceDirectoryIngestionFile, *, max_chars: i
             http_status=409,
             details={"source_ingestion_file_id": file_record.source_ingestion_file_id},
         )
-    if not resolved_path.exists() or not resolved_path.is_file():
+    try:
+        path_available = resolved_path.exists() and resolved_path.is_file()
+    except OSError as exc:
+        raise SourceDirectoryMaterialAdmissionError(
+            "source_directory_material_file_unreadable",
+            "The source-directory file could not be inspected for material preview.",
+            http_status=409,
+            details={"source_ingestion_file_id": file_record.source_ingestion_file_id},
+        ) from exc
+    if not path_available:
         raise SourceDirectoryMaterialAdmissionError(
             "source_directory_material_file_missing",
             "The source-directory file is not available for material preview.",
             http_status=404,
             details={"source_ingestion_file_id": file_record.source_ingestion_file_id},
         )
-    before = resolved_path.stat()
-    data = resolved_path.read_bytes()
-    after = resolved_path.stat()
+    try:
+        before = resolved_path.stat()
+        data = resolved_path.read_bytes()
+        after = resolved_path.stat()
+    except OSError as exc:
+        raise SourceDirectoryMaterialAdmissionError(
+            "source_directory_material_file_unreadable",
+            "The source-directory file could not be read for material preview.",
+            http_status=409,
+            details={"source_ingestion_file_id": file_record.source_ingestion_file_id},
+        ) from exc
     if before.st_size != after.st_size or before.st_mtime_ns != after.st_mtime_ns:
         raise SourceDirectoryMaterialAdmissionError(
             "source_directory_material_file_changed_during_read",
