@@ -1969,6 +1969,10 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALU
     PLANNING_DOCS
     / "737_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION = (
+    PLANNING_DOCS
+    / "738_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -1983,6 +1987,9 @@ LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
 )
 LAYER3_SERVER_OWNED_LOCAL_OUTBOX_WRITE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_server_owned_local_outbox_write.py"
+)
+LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_local_outbox_provider_private_handoff.py"
 )
 LAYER3_EXTERNAL_LOCAL_EXPORT_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0030_layer3_external_local_export.py"
@@ -62203,6 +62210,154 @@ def _check_corrected_artifact_active_authority_server_owned_local_outbox_write_e
                 )
 
 
+def _check_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `corrected_artifact_active_authority_local_outbox_provider_private_handoff`.",
+        "738_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION.md",
+        "737_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-provider-private-handoff",
+        "881e8965698229c12e092de8c21a89fd94a9db4c",
+        "Selected downstream reader path: `local_outbox_provider_private_handoff`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        "backend/app/services/layer3_local_outbox_provider_private_handoff.py",
+        "L3LocalOutboxProviderPrivateHandoffReceipt",
+        "L3LocalOutboxProviderPrivateHandoffAuditEvent",
+        "corrected_artifact_active_authority_local_outbox_provider_private_handoff_proven",
+        "Runtime behavior change in this pass: `false`",
+        "Test/proof behavior change in this pass: `true`",
+        "Current-main proof already present: `false`",
+        "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+        "Result observed in this branch: `1 passed`",
+        "server_owned_local_outbox_write_authority_basis_hash",
+        "local_outbox_provider_private_handoff_prepared",
+        "await_current_main_sync_for_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
+        "select_next_downstream_active_package_authority_reader_after_corrected_artifact_local_outbox_provider_private_handoff_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION)} "
+                f"missing corrected-artifact active authority provider-private handoff term: {term}"
+            )
+
+    for blocked in (
+        "service runtime behavior change",
+        "external local export adoption",
+        "provider-public delivery/use",
+        "provider-private signed URL generation/use",
+        "raw token exposure",
+        "raw provider object key exposure",
+        "real provider network write",
+        "real provider object store write",
+        "real connector invocation",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "arbitrary external destination write",
+        "credentials",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "source expansion",
+        "RAG/vector behavior",
+        "rendered controls",
+        "auth/security behavior",
+        "full mockup activation",
+        "frontend-durable authority",
+        "raw local path exposure",
+        "hidden LLM planning",
+    ):
+        if blocked not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION)} "
+                f"missing corrected-artifact active authority provider-private handoff blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority Local Outbox Provider-Private Handoff Evaluation",
+            "738_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION.md",
+            "codex/l3-corrected-provider-private-handoff",
+            "881e8965698229c12e092de8c21a89fd94a9db4c",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+            "backend/app/services/layer3_local_outbox_provider_private_handoff.py",
+            "L3LocalOutboxProviderPrivateHandoffReceipt",
+            "L3LocalOutboxProviderPrivateHandoffAuditEvent",
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
+            "branch_local_corrected_artifact_active_authority_local_outbox_provider_private_handoff_proven",
+            "codex/l3-corrected-provider-private-handoff",
+            "738_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION.md",
+            "881e8965698229c12e092de8c21a89fd94a9db4c",
+            "local_outbox_provider_private_handoff",
+            "backend/app/services/layer3_local_outbox_provider_private_handoff.py",
+            "L3LocalOutboxProviderPrivateHandoffReceipt",
+            "L3LocalOutboxProviderPrivateHandoffAuditEvent",
+            '"runtime_behavior_change": false',
+            '"test_proof_behavior_change": true',
+            '"current_main_proof_already_present": false',
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_local_outbox_provider_private_handoff_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_proof",
+            "branch_local_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
+            "branch_local_corrected_artifact_active_authority_local_outbox_provider_private_handoff_proven",
+            "738_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION.md",
+            "881e8965698229c12e092de8c21a89fd94a9db4c",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+            "backend/app/services/layer3_local_outbox_provider_private_handoff.py",
+            "L3LocalOutboxProviderPrivateHandoffReceipt",
+            "L3LocalOutboxProviderPrivateHandoffAuditEvent",
+            '"runtime_behavior_change": false',
+            '"test_proof_behavior_change": true',
+            '"current_main_proof_already_present": false',
+            "corrected-artifact activation chain reaches POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+            "external local export adoption remains a separate future selection",
+            "await_current_main_sync_for_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "_local_outbox_provider_private_handoff_payload",
+            '"/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare"',
+            '"/api/v1/layer3/handoff/connector/local-outbox/provider-private/status/"',
+            "L3LocalOutboxProviderPrivateHandoffReceipt",
+            "L3LocalOutboxProviderPrivateHandoffAuditEvent",
+            "L3ProviderPrivateSignedUrlReceipt",
+            "local_outbox_provider_private_handoff_prepared",
+            "server_owned_local_outbox_write_authority_basis_hash",
+            'assert provider_replay.json()["status"] == "already_recorded"',
+            'assert provider_body["raw_token_exposed"] is False',
+        ),
+        LAYER3_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_SERVICE: (
+            "def prepare_local_outbox_provider_private_handoff",
+            "L3LocalOutboxProviderPrivateHandoffReceipt",
+            "L3LocalOutboxProviderPrivateHandoffAuditEvent",
+            "server_owned_local_outbox_write_authority_basis_hash",
+            "LOCAL_OUTBOX_PROVIDER_PRIVATE_PREPARED_STATE",
+            "ProviderPrivateSignedUrlFakeProvider",
+            "raw_token_exposed",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority provider-private handoff "
+                    f"artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -62783,6 +62938,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation(errors)
     _check_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_current_main_sync(errors)
+    _check_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
