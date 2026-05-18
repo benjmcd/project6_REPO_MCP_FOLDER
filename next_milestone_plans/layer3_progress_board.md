@@ -5092,3 +5092,25 @@ Post-merge validation at `341577839d279c9128c3203a06d5ec87ab1351f1` passed: JSON
 This sync admits no runtime behavior, backend route/service/model/migration behavior, source/index rows, vector index, embedding generation, retrieval query, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, or source `L3OutputPackage` mutation.
 
 The next exact current-main posture is `implement_source_directory_material_deterministic_text_index_authority_after_contract_sync`.
+
+## Source Directory Material Deterministic Text Index Runtime Proof
+
+Runtime proof: `754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md` implements `source_directory_material_deterministic_text_index_authority` after the source-directory material source/index authority contract current-main sync.
+
+Implementation branch `codex/l3-source-index-text-impl` starts from current-main checkpoint `fb107c909a69a43a1f9ceb5eb1acc2e1685e2361`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_source_index_authority_contract`.
+
+The runtime owner service is `backend/app/services/layer3_source_directory_text_index.py`. The proof tests live in `backend/tests/test_layer3_source_directory_ingestion.py`.
+
+Runtime behavior introduced by this pass: `true`.
+
+The service admits only already approved `server_configured_directory_file` `L3MaterialSnapshot` rows backed by `L3SourceDirectoryIngestionBatch` and `L3SourceDirectoryIngestionFile` authority. It re-verifies material payload hash, configured direct-child source file identity, request stale-authority fields, and `source_shape` before returning deterministic `deterministic_text_segments` with `line-window-v1` segmentation and replay-stable `index_authority_hash`.
+
+Observed branch validation: `python -m py_compile .\backend\app\services\layer3_source_directory_text_index.py .\backend\tests\test_layer3_source_directory_ingestion.py`; `python -m pytest .\backend\tests\test_layer3_source_directory_ingestion.py -q` -> `13 passed`; and `python -m pytest .\backend\tests\test_layer3_source_boundary.py .\backend\tests\test_layer3_source_intake.py .\backend\tests\test_layer3_model_exports.py .\backend\tests\test_layer3_api.py::test_layer3_forbidden_sentinel_openapi_fields_are_impossible -q` -> `24 passed`.
+
+The proof covers CSV, JSON, TXT, and MD material snapshots; deterministic replay; fail-closed live file drift; fail-closed payload hash mismatch; forbidden vector/retrieval fields; `source_index_rows_written: False`; and no `ConnectorRun`, `ConnectorRunTarget`, or `L3OutputPackage` side effects.
+
+This pass admits no backend route, API DTO, model change, migration, source-index durable row writes, vector indexing, embedding generation, retrieval query runtime, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, hidden LLM planning, arbitrary source ingestion, arbitrary recursive ingestion, broad local upload, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, browser/operator path editing, or raw local path exposure.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_material_deterministic_text_index_runtime_proof`; after sync, pivot to `select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync` only if current-main evidence confirms this runtime is cleanly synced and no concrete same-family downstream reader remains.
