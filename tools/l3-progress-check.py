@@ -1988,6 +1988,10 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURR
 LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE = (
     PLANNING_DOCS / "742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md"
 )
+LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -62869,6 +62873,124 @@ def _check_source_expansion_ingestion_source_family_selection_freeze(
                 )
 
 
+def _check_source_expansion_ingestion_source_family_selection_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_expansion_ingestion_source_family_selection_freeze`.",
+        "743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+        "#1347",
+        "codex/l3-source-family-selection",
+        "3b9ebead55b72c52c25a88de3130436d84e81c61",
+        "cf014d39fd093050aa1bbc183323cb26906fb3f9",
+        "codex/l3-source-family-selection-sync",
+        "current_main_synced_source_expansion_ingestion_source_family_selection_freeze",
+        "server_configured_operator_directory_text_table_source_family",
+        "server_configured_operator_directory_text_table_ingestion",
+        "Runtime behavior introduced by freeze: `false`.",
+        "Runtime behavior in this sync: `false`.",
+        "backend-layer3-api",
+        "test",
+        "Layer 3 progress state check `PASS`",
+        "Layer 3 target-selection validation `PASS (frozen)`",
+        "LAYER3_SOURCE_INGESTION_DIR",
+        "backend/app/services/layer3_source_directory_ingestion.py",
+        "backend/app/api/layer3.py",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source expansion ingestion source-family sync term: {term}"
+            )
+
+    for blocked in (
+        "caller-supplied paths/URLs/globs",
+        "browser-supplied file bytes",
+        "PDFs",
+        "OCR",
+        "Office documents",
+        "arbitrary binaries",
+        "web connectors",
+        "arbitrary recursive ingestion",
+        "RAG/vector indexing",
+        "qualitative-hybrid analysis runtime",
+        "auth/security broadening",
+        "frontend-durable authority",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source expansion ingestion source-family sync blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Expansion Ingestion Source Family Selection Freeze Current-Main Sync",
+            "743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1347",
+            "3b9ebead55b72c52c25a88de3130436d84e81c61",
+            "cf014d39fd093050aa1bbc183323cb26906fb3f9",
+            "current_main_synced_source_expansion_ingestion_source_family_selection_freeze",
+            "server_configured_operator_directory_text_table_source_family",
+            "server_configured_operator_directory_text_table_ingestion",
+            "LAYER3_SOURCE_INGESTION_DIR",
+            "backend/app/services/layer3_source_directory_ingestion.py",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+            "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync",
+        ),
+        MANIFEST: (
+            "source_expansion_ingestion_source_family_selection_freeze_current_main_sync",
+            "current_main_synced_source_expansion_ingestion_source_family_selection_freeze",
+            "codex/l3-source-family-selection-sync",
+            "743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+            "#1347",
+            "3b9ebead55b72c52c25a88de3130436d84e81c61",
+            "cf014d39fd093050aa1bbc183323cb26906fb3f9",
+            "server_configured_operator_directory_text_table_source_family",
+            "server_configured_operator_directory_text_table_ingestion",
+            '"runtime_behavior_introduced_by_freeze": false',
+            '"runtime_behavior_in_this_sync": false',
+            "LAYER3_SOURCE_INGESTION_DIR",
+            "L3SourceDirectoryIngestionBatch",
+            "L3SourceDirectoryIngestionFile",
+            "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_expansion_ingestion_source_family_selection_freeze_current_main_sync_proof",
+            "current_main_sync_source_expansion_ingestion_source_family_selection_freeze",
+            "current_main_synced_source_expansion_ingestion_source_family_selection_freeze",
+            "743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+            "3b9ebead55b72c52c25a88de3130436d84e81c61",
+            "cf014d39fd093050aa1bbc183323cb26906fb3f9",
+            "server_configured_operator_directory_text_table_source_family",
+            "server_configured_operator_directory_text_table_ingestion",
+            '"runtime_behavior_in_this_sync": false',
+            "current main includes Doc 742 source-family selection freeze",
+            "current main records PR #1347 merged at cf014d39fd093050aa1bbc183323cb26906fb3f9",
+            "current main sync preserves direct child .csv, .json, .txt, and .md file boundary",
+            "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source expansion ingestion source-family sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -63454,6 +63576,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_external_local_export_evaluation(errors)
     _check_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync(errors)
     _check_source_expansion_ingestion_source_family_selection_freeze(errors)
+    _check_source_expansion_ingestion_source_family_selection_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
