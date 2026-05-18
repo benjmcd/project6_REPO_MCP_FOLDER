@@ -2078,6 +2078,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CON
     PLANNING_DOCS
     / "765_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "766_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -2092,6 +2096,12 @@ LAYER3_SOURCE_DIRECTORY_TEXT_RETRIEVAL_SERVICE = (
 )
 LAYER3_SOURCE_DIRECTORY_TEXT_RETRIEVAL_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_source_directory_text_retrieval.py"
+)
+LAYER3_SOURCE_DIRECTORY_CONTEXT_PACKET_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_directory_context_packet.py"
+)
+LAYER3_SOURCE_DIRECTORY_CONTEXT_PACKET_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_source_directory_context_packet.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0034_layer3_source_directory_ingestion.py"
@@ -65463,6 +65473,146 @@ def _check_source_directory_material_qualitative_hybrid_context_packet_authority
                 )
 
 
+def _check_source_directory_material_retrieval_augmented_context_packet_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime proof for `source_directory_material_retrieval_augmented_context_packet_runtime_proof`.",
+        "766_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF.md",
+        "codex/l3-rag-qual-impl",
+        "58634b9aab1bacffb06c8f5b86009050a3cea7c3",
+        "765_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+        "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+        "source_directory_material_retrieval_augmented_context_packet_runtime_implemented_branch_local",
+        "Runtime behavior introduced by this pass: `true`.",
+        "backend/app/services/layer3_source_directory_context_packet.py",
+        "backend/tests/test_layer3_source_directory_context_packet.py",
+        "source_directory_material_retrieval_augmented_context_packet(db, payload)",
+        "source_directory_material_text_retrieval(db, payload)",
+        "source_directory_material_deterministic_lexical_retrieval_authority",
+        "deterministic_lexical_segment_retrieval",
+        "layer3.source_directory_context_packet.v1",
+        "context_packet_hash",
+        "source_index_rows_written: False",
+        "retrieval_rows_written: False",
+        "context_packet_rows_written: False",
+        "qualitative_generation_rows_written: False",
+        "analysis_run_rows_written: False",
+        "package_rows_written: False",
+        "no `L3PassRun`, `AnalysisRun`, `L3OutputPackage`, `ConnectorRun`, or `ConnectorRunTarget` side effects",
+        "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_context_packet.py",
+        "python -m pytest .\\backend\\tests\\test_layer3_source_directory_context_packet.py -q",
+        "4 passed",
+        "await_current_main_sync_for_source_directory_material_retrieval_augmented_context_packet_runtime_proof",
+        "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF)} "
+                f"missing source directory retrieval augmented context packet runtime proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Retrieval-Augmented Context Packet Runtime Proof",
+            "766_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF.md",
+            "codex/l3-rag-qual-impl",
+            "58634b9aab1bacffb06c8f5b86009050a3cea7c3",
+            "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+            "backend/app/services/layer3_source_directory_context_packet.py",
+            "backend/tests/test_layer3_source_directory_context_packet.py",
+            "source_directory_material_retrieval_augmented_context_packet(db, payload)",
+            "source_directory_material_text_retrieval(db, payload)",
+            "layer3.source_directory_context_packet.v1",
+            "context_packet_hash",
+            "source_index_rows_written: False",
+            "retrieval_rows_written: False",
+            "context_packet_rows_written: False",
+            "qualitative_generation_rows_written: False",
+            "analysis_run_rows_written: False",
+            "package_rows_written: False",
+            "4 passed",
+            "await_current_main_sync_for_source_directory_material_retrieval_augmented_context_packet_runtime_proof",
+            "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_retrieval_augmented_context_packet_runtime_proof",
+            "source_directory_material_retrieval_augmented_context_packet_runtime_implemented_branch_local",
+            "codex/l3-rag-qual-impl",
+            "766_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF.md",
+            "58634b9aab1bacffb06c8f5b86009050a3cea7c3",
+            "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "retrieval_augmented_qualitative_context_packet",
+            '"runtime_behavior_change": true',
+            "backend/app/services/layer3_source_directory_context_packet.py",
+            "backend/tests/test_layer3_source_directory_context_packet.py",
+            "layer3.source_directory_context_packet.v1",
+            "deterministic context_packet_hash replay",
+            "no L3PassRun AnalysisRun L3OutputPackage ConnectorRun or ConnectorRunTarget side effects",
+            "PASS 4 passed",
+            "await_current_main_sync_for_source_directory_material_retrieval_augmented_context_packet_runtime_proof",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_retrieval_augmented_context_packet_runtime_proof",
+            "branch_local_source_directory_material_retrieval_augmented_context_packet_runtime",
+            "source_directory_material_retrieval_augmented_context_packet_runtime_implemented_branch_local",
+            "codex/l3-rag-qual-impl",
+            "766_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF.md",
+            "58634b9aab1bacffb06c8f5b86009050a3cea7c3",
+            "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+            '"runtime_behavior_change": true',
+            "backend/app/services/layer3_source_directory_context_packet.py",
+            "backend/tests/test_layer3_source_directory_context_packet.py",
+            "deterministic context_packet_hash replay",
+            "stale index_authority_hash rejection through retrieval",
+            "no L3PassRun AnalysisRun L3OutputPackage ConnectorRun or ConnectorRunTarget side effects",
+            "PASS 4 passed",
+            "await_current_main_sync_for_source_directory_material_retrieval_augmented_context_packet_runtime_proof",
+        ),
+        LAYER3_SOURCE_DIRECTORY_CONTEXT_PACKET_SERVICE: (
+            'SCHEMA_ID = "layer3.source_directory_context_packet.v1"',
+            'MODE = "source_directory_material_retrieval_augmented_context_packet_authority"',
+            'CONTEXT_PACKET_CONTRACT_ID = "source_directory_material_retrieval_augmented_context_packet_authority"',
+            'CONTEXT_PACKET_MODE = "retrieval_augmented_qualitative_context_packet"',
+            "def source_directory_material_retrieval_augmented_context_packet(",
+            "source_directory_material_text_retrieval(db, fields)",
+            "_assert_retrieval_authority(retrieval_response)",
+            '"context_packet_hash": context_packet_hash',
+            '"source_index_rows_written": False',
+            '"retrieval_rows_written": False',
+            '"context_packet_rows_written": False',
+            '"qualitative_generation_rows_written": False',
+            '"analysis_run_rows_written": False',
+            '"package_rows_written": False',
+            '"prompt_model_provider_runtime_enabled": False',
+        ),
+        LAYER3_SOURCE_DIRECTORY_CONTEXT_PACKET_TEST: (
+            "test_source_directory_context_packet_returns_deterministic_packet_without_side_effects",
+            "test_source_directory_context_packet_rejects_stale_index_authority_through_retrieval",
+            "test_source_directory_context_packet_uses_text_index_fail_closed_authority_path",
+            "test_source_directory_context_packet_validates_fields_paging_and_no_match",
+            "SourceDirectoryContextPacketError",
+            "SourceDirectoryTextRetrievalError",
+            "SourceDirectoryTextIndexError",
+            "source_directory_context_packet_forbidden_field_not_admitted",
+            "source_directory_context_packet_unknown_field",
+            "_assert_no_downstream_side_effects(db)",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory retrieval augmented context packet runtime proof artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -66071,6 +66221,7 @@ def main() -> int:
     _check_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync(errors)
     _check_source_directory_material_qualitative_hybrid_context_packet_authority_contract(errors)
     _check_source_directory_material_qualitative_hybrid_context_packet_authority_contract_current_main_sync(errors)
+    _check_source_directory_material_retrieval_augmented_context_packet_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
