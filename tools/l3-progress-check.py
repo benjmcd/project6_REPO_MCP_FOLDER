@@ -2178,6 +2178,10 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYN
 LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_AFTER_SELECTION_SYNC = (
     PLANNING_DOCS / "792_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "793_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -68859,6 +68863,123 @@ def _check_provider_public_delivery_use_runtime_authority_contract_after_selecti
                 )
 
 
+def _check_provider_public_delivery_use_runtime_authority_contract_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync`.",
+        "793_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "792_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT.md",
+        "#1397",
+        "codex/l3-pp-use-contract",
+        "6c5414f2d41d9ba734ac7f26d6890f46994be2e9",
+        "6700bfe4489ce8b7630783c5af72bc4f245777b3",
+        "codex/l3-pp-use-contract-sync",
+        "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync",
+        "Runtime behavior introduced by contract PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "`backend-layer3-api`: `SUCCESS`, `3m6s`",
+        "`test`: `SUCCESS`, `3m52s`",
+        "reviewThreads totalCount: `0`",
+        "admit_bounded_fake_provider_redacted_provider_public_delivery_use_implementation_entry_freeze",
+        "fake_provider_only_contract_runtime",
+        "layer3.provider_public_url.delivery_use.v1",
+        "backend/app/services/layer3_provider_public_url_delivery_use.py",
+        "backend/tests/test_layer3_provider_public_url_delivery_use.py",
+        "POST /handoff/export/download/provider-public-url/use",
+        "redacted prepare/status/revoke state only",
+        "raw_public_url_exposed: False",
+        "public_url_enabled: False",
+        "No provider-public runtime implementation begins in this sync.",
+        "freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC)} "
+                f"missing provider-public delivery/use runtime authority contract sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public Delivery/Use Runtime Authority Contract Current-Main Sync",
+            "793_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "#1397",
+            "codex/l3-pp-use-contract",
+            "6c5414f2d41d9ba734ac7f26d6890f46994be2e9",
+            "6700bfe4489ce8b7630783c5af72bc4f245777b3",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync",
+            "792_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT.md",
+            "admit_bounded_fake_provider_redacted_provider_public_delivery_use_implementation_entry_freeze",
+            "fake_provider_only_contract_runtime",
+            "layer3.provider_public_url.delivery_use.v1",
+            "backend/app/services/layer3_provider_public_url_delivery_use.py",
+            "backend/tests/test_layer3_provider_public_url_delivery_use.py",
+            "POST /handoff/export/download/provider-public-url/use",
+            "raw_public_url_exposed: False",
+            "public_url_enabled: False",
+            "Runtime behavior introduced by contract PR: `false`.",
+            "Runtime behavior introduced by this sync: `false`.",
+            "freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry",
+        ),
+        MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_current_main_sync",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync",
+            "codex/l3-pp-use-contract-sync",
+            "793_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "792_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT.md",
+            "#1397",
+            "6c5414f2d41d9ba734ac7f26d6890f46994be2e9",
+            "6700bfe4489ce8b7630783c5af72bc4f245777b3",
+            '"contract_behavior_change": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api_duration": "3m6s"',
+            '"test_duration": "3m52s"',
+            "admit_bounded_fake_provider_redacted_provider_public_delivery_use_implementation_entry_freeze",
+            "fake_provider_only_contract_runtime",
+            "layer3.provider_public_url.delivery_use.v1",
+            "backend/app/services/layer3_provider_public_url_delivery_use.py",
+            "backend/tests/test_layer3_provider_public_url_delivery_use.py",
+            "POST /handoff/export/download/provider-public-url/use",
+            '"current_main_raw_public_url_exposed": false',
+            '"current_main_public_url_enabled": false',
+            '"current_main_provider_public_use_or_deliver_route": false',
+            "freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry",
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_current_main_sync_proof",
+            "current_main_sync_provider_public_delivery_use_runtime_authority_contract_after_selection_sync",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync",
+            "codex/l3-pp-use-contract-sync",
+            "793_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "792_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT.md",
+            "#1397",
+            "6c5414f2d41d9ba734ac7f26d6890f46994be2e9",
+            "6700bfe4489ce8b7630783c5af72bc4f245777b3",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no runtime behavior",
+            "admit_bounded_fake_provider_redacted_provider_public_delivery_use_implementation_entry_freeze is current-main synced",
+            "fake_provider_only_contract_runtime is current-main synced as the only provider mode",
+            "layer3.provider_public_url.delivery_use.v1 is current-main synced as the future response schema",
+            "backend/app/services/layer3_provider_public_url_delivery_use.py is current-main synced as the future service owner",
+            "backend/tests/test_layer3_provider_public_url_delivery_use.py is current-main synced as the future proof owner",
+            "POST /handoff/export/download/provider-public-url/use is current-main synced only as a future route candidate",
+            "raw_public_url_exposed remains false and public_url_enabled remains false",
+            "no provider-public use or deliver route is admitted by this sync",
+            "freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public delivery/use runtime authority contract sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -69502,6 +69623,9 @@ def main() -> int:
         errors
     )
     _check_provider_public_delivery_use_runtime_authority_contract_after_selection_sync(
+        errors
+    )
+    _check_provider_public_delivery_use_runtime_authority_contract_current_main_sync(
         errors
     )
 
