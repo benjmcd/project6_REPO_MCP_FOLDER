@@ -41,6 +41,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["source_directory_qualitative_hybrid_analysis"] is True
     assert direct_body["features"]["source_directory_package_commit"] is True
     assert direct_body["features"]["source_directory_package_review_submit"] is True
+    assert direct_body["features"]["source_directory_package_supersession_preview"] is True
     assert direct_body["features"]["source_directory_handoff_export_prepare"] is True
     assert direct_body["features"]["source_directory_external_export_download_prepare"] is True
     assert direct_body["features"]["broad_qualitative_execution"] is False
@@ -78,6 +79,11 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["execution_readiness"]["source_directory_package_review_submit_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/"
         "qualitative-hybrid-analysis/package/review/submit"
+    )
+    assert direct_body["execution_readiness"]["source_directory_package_supersession_preview_admitted"] is True
+    assert direct_body["execution_readiness"]["source_directory_package_supersession_preview_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/supersession/preview"
     )
     assert direct_body["execution_readiness"]["source_directory_handoff_export_prepare_admitted"] is True
     assert direct_body["execution_readiness"]["source_directory_handoff_export_prepare_endpoint"] == (
