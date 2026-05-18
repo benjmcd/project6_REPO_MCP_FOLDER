@@ -2028,6 +2028,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT = (
     PLANNING_DOCS
     / "752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -64035,6 +64039,109 @@ def _check_source_directory_material_source_index_authority_contract(
                 )
 
 
+def _check_source_directory_material_source_index_authority_contract_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_source_index_authority_contract`.",
+        "753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md",
+        "#1357",
+        "codex/l3-source-index-contract",
+        "bf5d1cadcc99d609a67baac663a7974604af7f26",
+        "341577839d279c9128c3203a06d5ec87ab1351f1",
+        "codex/l3-source-index-contract-sync",
+        "current_main_synced_source_directory_material_source_index_authority_contract",
+        "Runtime behavior introduced by contract: `false`.",
+        "Runtime behavior in this sync: `false`.",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "python -m py_compile .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "git diff --check",
+        "source_directory_material_deterministic_text_index_authority",
+        "backend/app/services/layer3_source_directory_text_index.py",
+        "deterministic_text_segments",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "L3MaterialSnapshot",
+        "server_configured_directory_file",
+        "source_ingestion_batch_id",
+        "source_ingestion_file_id",
+        "material_snapshot_id",
+        "content_sha256",
+        "file_identity_hash",
+        "authority_basis_hash",
+        "payload_hash",
+        "No route was admitted by the contract.",
+        "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC)} "
+                f"missing source directory source/index authority contract sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Source Index Authority Contract Current-Main Sync",
+            "753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "#1357",
+            "bf5d1cadcc99d609a67baac663a7974604af7f26",
+            "341577839d279c9128c3203a06d5ec87ab1351f1",
+            "current_main_synced_source_directory_material_source_index_authority_contract",
+            "source_directory_material_deterministic_text_index_authority",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            "deterministic_text_segments",
+            "reviewThreads totalCount `0`",
+            "python .\\tools\\l3-progress-check.py",
+            "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+            "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_source_index_authority_contract_current_main_sync",
+            "current_main_synced_source_directory_material_source_index_authority_contract",
+            "codex/l3-source-index-contract-sync",
+            "753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md",
+            "#1357",
+            "bf5d1cadcc99d609a67baac663a7974604af7f26",
+            "341577839d279c9128c3203a06d5ec87ab1351f1",
+            '"runtime_behavior_in_this_sync": false',
+            '"reviewThreads": 0',
+            "source_directory_material_deterministic_text_index_authority",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            "deterministic_text_segments",
+            "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_source_index_authority_contract_current_main_sync_proof",
+            "current_main_sync_source_directory_material_source_index_authority_contract",
+            "current_main_synced_source_directory_material_source_index_authority_contract",
+            "753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md",
+            "#1357",
+            "341577839d279c9128c3203a06d5ec87ab1351f1",
+            "current main records zero PR comments, reviews, and review threads",
+            "current main post-merge progress checker passes",
+            "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync is selected for the next implementation posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory source/index authority contract sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -64630,6 +64737,7 @@ def main() -> int:
     _check_source_directory_material_source_index_authority_freeze(errors)
     _check_source_directory_material_source_index_authority_freeze_current_main_sync(errors)
     _check_source_directory_material_source_index_authority_contract(errors)
+    _check_source_directory_material_source_index_authority_contract_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
