@@ -2190,6 +2190,10 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -69264,6 +69268,138 @@ def _check_provider_public_delivery_use_fake_provider_runtime_current_main_sync(
                 )
 
 
+def _check_source_directory_vector_retrieval_api_runtime_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze and runtime proof for `source_directory_material_vector_retrieval_api_runtime_entry`.",
+        "796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md",
+        "codex/l3-source-ingest-family",
+        "8da8cc2ee419512b494d1f8ebafa528ac4e9c23c",
+        "795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+        "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+        "server_configured_operator_directory_text_table_source_family",
+        "implement_source_directory_material_vector_retrieval_api_after_existing_source_family_and_vector_retrieval_runtime_sync",
+        "source_directory_material_vector_retrieval_api_runtime_implemented_branch_local",
+        "Runtime behavior introduced by this pass: `true`.",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+        "layer3.source_directory_vector_retrieval.v1",
+        "backend/app/api/layer3.py",
+        "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+        "source_directory_material_deterministic_vector_retrieval_authority",
+        "raw local paths",
+        "raw vectors",
+        "durable retrieval row",
+        "RAG execution",
+        "prompt/model/provider runtime",
+        "`python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py -q`",
+        "Branch-local result: `5 passed`.",
+        "await_current_main_sync_for_source_directory_material_vector_retrieval_api_runtime",
+        "select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY)} "
+                f"missing source-directory vector retrieval API runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Vector Retrieval API Runtime Entry Freeze",
+            "796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md",
+            "codex/l3-source-ingest-family",
+            "8da8cc2ee419512b494d1f8ebafa528ac4e9c23c",
+            "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+            "server_configured_operator_directory_text_table_source_family",
+            "source_directory_material_vector_retrieval_api_runtime_implemented_branch_local",
+            "Runtime behavior introduced by this pass: `true`.",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+            "layer3.source_directory_vector_retrieval.v1",
+            "backend/app/api/layer3.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            "5 passed",
+            "await_current_main_sync_for_source_directory_material_vector_retrieval_api_runtime",
+            "select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_vector_retrieval_api_runtime_entry",
+            "source_directory_material_vector_retrieval_api_runtime_implemented_branch_local",
+            "codex/l3-source-ingest-family",
+            "796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md",
+            "8da8cc2ee419512b494d1f8ebafa528ac4e9c23c",
+            "795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+            "current_main_already_has_current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime_over_server_configured_operator_directory_text_table_source_family",
+            "implement_source_directory_material_vector_retrieval_api_after_existing_source_family_and_vector_retrieval_runtime_sync",
+            '"runtime_behavior_change": true',
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+            "layer3.source_directory_vector_retrieval.v1",
+            "backend/app/api/layer3.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "source_directory_material_deterministic_vector_retrieval_authority",
+            "python -m pytest .\\\\backend\\\\tests\\\\test_layer3_source_directory_vector_retrieval.py -q PASS 5 passed",
+            '"raw_local_path_exposed": false',
+            '"raw_vector_exposed": false',
+            '"durable_retrieval_rows_written": false',
+            '"rag_execution_enabled": false',
+            '"prompt_model_provider_runtime_enabled": false',
+            '"network_egress_enabled": false',
+            '"frontend_durable_authority_enabled": false',
+            "await_current_main_sync_for_source_directory_material_vector_retrieval_api_runtime",
+            "select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_vector_retrieval_api_runtime_entry_proof",
+            "branch_local_source_directory_material_vector_retrieval_api_runtime_entry",
+            "source_directory_material_vector_retrieval_api_runtime_implemented_branch_local",
+            "codex/l3-source-ingest-family",
+            "796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md",
+            "python -m pytest .\\\\backend\\\\tests\\\\test_layer3_source_directory_vector_retrieval.py -q",
+            "PASS 5 passed",
+            "backend/app/api/layer3.py exposes POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py proves the vector retrieval API route",
+            "source_directory_material_vector_retrieval(db, payload) remains the service authority",
+            "route returns layer3.source_directory_vector_retrieval.v1",
+            "stale embedding authority fails closed through the API route",
+            "forbidden prompt and provider_model API fields are rejected",
+            "raw local path is not returned",
+            "raw vector and normalized features are not returned",
+            "persistent_vector_store_enabled false rag_execution_enabled false prompt_model_provider_runtime_enabled false network_egress_enabled false",
+            "await_current_main_sync_for_source_directory_material_vector_retrieval_api_runtime",
+            "select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync",
+        ),
+        LAYER3_API: (
+            "layer3_source_directory_vector_retrieval",
+            "Layer3SourceDirectoryVectorRetrievalRequest",
+            "Layer3SourceDirectoryVectorRetrievalResponse",
+            "\"/source/ingestion/server-configured-directory/vector-retrieval\"",
+            "post_source_directory_vector_retrieval",
+            "source_directory_material_vector_retrieval",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_source_directory_vector_retrieval.py": (
+            "test_source_directory_vector_retrieval_api_route_is_bounded_and_redacted",
+            "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+            "source_directory_vector_retrieval_stale_embedding_index_authority",
+            "provider_model",
+            "persistent_vector_store_enabled",
+            "network_egress_enabled",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory vector retrieval API runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -69914,6 +70050,7 @@ def main() -> int:
     )
     _check_provider_public_delivery_use_fake_provider_runtime_implementation_entry(errors)
     _check_provider_public_delivery_use_fake_provider_runtime_current_main_sync(errors)
+    _check_source_directory_vector_retrieval_api_runtime_entry(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

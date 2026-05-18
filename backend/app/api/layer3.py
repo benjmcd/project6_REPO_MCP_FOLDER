@@ -32,6 +32,9 @@ from app.services import (
     layer3_server_owned_local_outbox_write,
     layer3_source_directory_ingestion,
     layer3_source_directory_material_admission,
+    layer3_source_directory_text_index,
+    layer3_source_directory_vector_index,
+    layer3_source_directory_vector_retrieval,
     layer3_source_intake,
     layer3_workbench,
 )
@@ -2338,6 +2341,23 @@ class Layer3SourceDirectoryMaterialPreviewRequest(BaseModel):
     actor: str | None = None
 
 
+class Layer3SourceDirectoryVectorRetrievalRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    material_snapshot_id: str = Field(min_length=1)
+    source_ingestion_batch_id: str = Field(min_length=1)
+    source_ingestion_file_id: str = Field(min_length=1)
+    content_sha256: str = Field(min_length=64, max_length=64)
+    file_identity_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    payload_hash: str = Field(min_length=64, max_length=64)
+    index_authority_hash: str = Field(min_length=64, max_length=64)
+    embedding_index_authority_hash: str = Field(min_length=64, max_length=64)
+    query_text: str = Field(min_length=1)
+    top_k: int | None = Field(default=None, ge=1, le=20)
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -2401,6 +2421,35 @@ class Layer3SourceDirectoryMaterialPreviewResponse(Layer3BaseResponse):
     partial_retrieval: bool
     downstream_eligibility: dict[str, bool]
     next_allowed_actions: list[str]
+    negative_invariants: dict[str, bool]
+
+
+class Layer3SourceDirectoryVectorRetrievalResponse(Layer3BaseResponse):
+    mode: str
+    retrieval_contract_id: str
+    retrieval_mode: str
+    query_tokens: list[str]
+    top_k: int
+    total: int
+    items: list[dict[str, Any]]
+    embedding_contract_id: str
+    embedding_mode: str
+    vector_index_mode: str
+    feature_hash_version: str
+    vector_dimensions: int
+    embedding_index_authority_hash: str
+    index_contract_id: str
+    index_mode: str
+    segmentation_version: str
+    index_authority_hash: str
+    source_ingestion_batch_id: str
+    source_ingestion_file_id: str
+    material_snapshot_id: str
+    source_shape: str
+    content_sha256: str
+    file_identity_hash: str
+    authority_basis_hash: str
+    payload_hash: str
     negative_invariants: dict[str, bool]
 
 
@@ -6901,6 +6950,28 @@ def post_source_directory_material_preview(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_source_directory_material_admission.SourceDirectoryMaterialAdmissionError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/vector-retrieval",
+    response_model=Layer3SourceDirectoryVectorRetrievalResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_vector_retrieval(
+    payload: Layer3SourceDirectoryVectorRetrievalRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_source_directory_vector_retrieval.source_directory_material_vector_retrieval(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    except (
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_vector_index.SourceDirectoryVectorIndexError,
+        layer3_source_directory_vector_retrieval.SourceDirectoryVectorRetrievalError,
+    ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
