@@ -6552,3 +6552,31 @@ The synced runtime keeps `aps_handoff_enabled: False`, `external_export_download
 No APS handoff dispatch, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, package payload rewrite, package mutation/reconstruction, source package row mutation, replacement package row creation, or full mockup activation is admitted by this sync.
 
 The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync`.
+
+## Source Directory Package Handoff Operator Status Surface Runtime Entry Freeze
+
+Branch-local implementation-entry freeze and runtime proof: `810_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md` follows the source-directory qualitative-analysis handoff/export prepare runtime current-main sync and resolves `select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync` by selecting the backend operator-visible readiness/status surface for the already-admitted source-directory package and handoff prepare endpoints.
+
+Runtime branch `codex/l3-source-intake-next` starts from current-main checkpoint `9fc019295f8ae202e62c9b91cdfc7eda62191cd1`.
+
+Selected implementation action: `implement_source_directory_package_handoff_operator_status_surface_after_handoff_export_prepare_sync`.
+
+Runtime status after implementation: `source_directory_package_handoff_operator_status_surface_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented runtime owners: `backend/app/services/layer3_bootstrap_contract.py` and `backend/app/services/layer3_readiness_contract.py`.
+
+Implemented proof tests: `backend/tests/test_layer3_bootstrap_contract.py`, `backend/tests/test_layer3_readiness_contract.py`, and `backend/tests/test_layer3_api.py`.
+
+The `/bootstrap` response now exposes feature flags for `source_directory_package_commit`, `source_directory_package_review_submit`, and `source_directory_handoff_export_prepare`.
+
+The `/bootstrap` nested `execution_readiness` surface and `/readiness` response now expose admitted endpoint metadata for the source-directory package commit, package-review submit, and handoff/export prepare endpoints.
+
+The readiness contract records idempotency and concurrency metadata for those already-admitted routes.
+
+Proof: `python -m pytest .\backend\tests\test_layer3_bootstrap_contract.py .\backend\tests\test_layer3_readiness_contract.py -q` passed with `2 passed`; `python -m pytest .\backend\tests\test_layer3_api.py::test_layer3_api_full_first_slice_flow -q` passed with `1 passed`.
+
+Non-admitted: new routes, models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, a new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, and full mockup activation.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_package_handoff_operator_status_surface_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_package_handoff_operator_status_surface_sync` unless current-main evidence shows a concrete unresolved operator-status defect or named downstream reader.

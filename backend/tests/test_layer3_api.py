@@ -7251,6 +7251,9 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["source_directory_material_preview"] is True
     assert bootstrap_body["features"]["source_directory_vector_retrieval"] is True
     assert bootstrap_body["features"]["source_directory_qualitative_hybrid_analysis"] is True
+    assert bootstrap_body["features"]["source_directory_package_commit"] is True
+    assert bootstrap_body["features"]["source_directory_package_review_submit"] is True
+    assert bootstrap_body["features"]["source_directory_handoff_export_prepare"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -7352,6 +7355,24 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         bootstrap_body["execution_readiness"]["source_directory_qualitative_hybrid_analysis_endpoint"]
         == "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
     )
+    assert bootstrap_body["execution_readiness"]["source_directory_package_commit_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["source_directory_package_commit_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/commit"
+    )
+    assert bootstrap_body["execution_readiness"]["source_directory_package_review_submit_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["source_directory_package_review_submit_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/review/submit"
+    )
+    assert bootstrap_body["execution_readiness"]["source_directory_handoff_export_prepare_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["source_directory_handoff_export_prepare_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/handoff/export/prepare"
+    )
     assert (
         bootstrap_body["execution_readiness"]["source_directory_operator_status_surface"]
         == "server_configured_operator_directory_text_table_source_family"
@@ -7393,6 +7414,23 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert (
         readiness_body["source_directory_qualitative_hybrid_analysis_endpoint"]
         == "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
+    )
+    assert readiness_body["source_directory_package_commit_admitted"] is True
+    assert (
+        readiness_body["source_directory_package_commit_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/commit"
+    )
+    assert readiness_body["source_directory_package_review_submit_admitted"] is True
+    assert (
+        readiness_body["source_directory_package_review_submit_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/review/submit"
+    )
+    assert readiness_body["source_directory_handoff_export_prepare_admitted"] is True
+    assert (
+        readiness_body["source_directory_handoff_export_prepare_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/handoff/export/prepare"
     )
     assert (
         readiness_body["source_directory_operator_status_surface"]
