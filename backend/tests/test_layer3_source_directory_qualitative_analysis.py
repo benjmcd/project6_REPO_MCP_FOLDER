@@ -418,3 +418,78 @@ def test_source_directory_qualitative_analysis_validates_context_packet_authorit
         _assert_no_downstream_side_effects(db)
     finally:
         db.close()
+
+
+def test_source_directory_qualitative_hybrid_analysis_api_route_is_bounded_and_redacted(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir, snapshot_info, index_authority_hash = _admitted_material(client, tmp_path, monkeypatch)
+    payload = {
+        **_analysis_payload(snapshot_info, index_authority_hash, "BETA alpha alpha"),
+        "limit": 2,
+        "offset": 0,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.source_directory_qualitative_analysis.v1"
+    assert body["mode"] == "source_directory_material_context_packet_qualitative_hybrid_analysis_authority"
+    assert body["status"] == "available"
+    assert body["analysis_contract_id"] == "source_directory_material_context_packet_qualitative_hybrid_analysis_authority"
+    assert body["analysis_mode"] == "context_packet_grounded_qualitative_hybrid_analysis"
+    assert body["context_packet_contract_id"] == CONTEXT_PACKET_CONTRACT_ID
+    assert body["context_packet_mode"] == CONTEXT_PACKET_MODE
+    assert body["query_tokens"] == ["alpha", "beta"]
+    assert body["total"] == 2
+    assert body["limit"] == 2
+    assert body["offset"] == 0
+    assert body["evidence_summary"]["coverage_label"] == "complete_context_matches"
+    assert body["supporting_segments"][0]["support_label"] == "primary_context_segment"
+    assert "quote_excerpt" in body["supporting_segments"][0]
+    assert "text" not in body["supporting_segments"][0]
+    assert body["source_index_rows_written"] is False
+    assert body["retrieval_rows_written"] is False
+    assert body["context_packet_rows_written"] is False
+    assert body["qualitative_analysis_rows_written"] is False
+    assert body["qualitative_generation_rows_written"] is False
+    assert body["analysis_run_rows_written"] is False
+    assert body["package_rows_written"] is False
+    assert body["connector_rows_written"] is False
+    assert body["negative_invariants"]["vector_index_enabled"] is False
+    assert body["negative_invariants"]["embedding_generation_enabled"] is False
+    assert body["negative_invariants"]["prompt_model_provider_runtime_enabled"] is False
+    assert body["negative_invariants"]["qualitative_generation_runtime_enabled"] is False
+    assert body["negative_invariants"]["connector_dispatch_enabled"] is False
+    assert body["negative_invariants"]["provider_public_delivery_enabled"] is False
+    assert body["negative_invariants"]["network_egress_enabled"] is False
+    assert str(source_dir) not in response.text
+
+    stale = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+        json={**payload, "index_authority_hash": "0" * 64},
+    )
+    assert stale.status_code == 409
+    assert stale.json()["error"]["code"] == "source_directory_text_retrieval_stale_index_authority"
+
+    forbidden = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+        json={**payload, "prompt": "not-admitted", "provider_model": "not-admitted"},
+    )
+    assert forbidden.status_code == 422
+    assert {tuple(error["loc"]) for error in forbidden.json()["detail"]} >= {
+        ("body", "prompt"),
+        ("body", "provider_model"),
+    }
+
+    db = client.layer3_session_factory()
+    try:
+        _assert_no_downstream_side_effects(db)
+    finally:
+        db.close()

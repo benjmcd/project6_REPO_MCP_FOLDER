@@ -32,7 +32,10 @@ from app.services import (
     layer3_server_owned_local_outbox_write,
     layer3_source_directory_ingestion,
     layer3_source_directory_material_admission,
+    layer3_source_directory_context_packet,
+    layer3_source_directory_qualitative_analysis,
     layer3_source_directory_text_index,
+    layer3_source_directory_text_retrieval,
     layer3_source_directory_vector_index,
     layer3_source_directory_vector_retrieval,
     layer3_source_intake,
@@ -2358,6 +2361,25 @@ class Layer3SourceDirectoryVectorRetrievalRequest(BaseModel):
     top_k: int | None = Field(default=None, ge=1, le=20)
 
 
+class Layer3SourceDirectoryQualitativeAnalysisRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    analysis_question: str = Field(min_length=1)
+    analysis_focus: str = Field(min_length=1)
+    material_snapshot_id: str = Field(min_length=1)
+    source_ingestion_batch_id: str = Field(min_length=1)
+    source_ingestion_file_id: str = Field(min_length=1)
+    content_sha256: str = Field(min_length=64, max_length=64)
+    file_identity_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    payload_hash: str = Field(min_length=64, max_length=64)
+    index_authority_hash: str = Field(min_length=64, max_length=64)
+    query_text: str = Field(min_length=1)
+    limit: int | None = Field(default=None, ge=1, le=50)
+    offset: int | None = Field(default=None, ge=0)
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -2450,6 +2472,48 @@ class Layer3SourceDirectoryVectorRetrievalResponse(Layer3BaseResponse):
     file_identity_hash: str
     authority_basis_hash: str
     payload_hash: str
+    negative_invariants: dict[str, bool]
+
+
+class Layer3SourceDirectoryQualitativeAnalysisResponse(Layer3BaseResponse):
+    mode: str
+    analysis_contract_id: str
+    analysis_mode: str
+    qualitative_analysis_hash: str
+    context_packet_contract_id: str
+    context_packet_mode: str
+    context_packet_hash: str
+    analysis_question: str
+    analysis_focus: str
+    query_tokens: list[str]
+    evidence_summary: dict[str, Any]
+    salient_terms: list[dict[str, Any]]
+    supporting_segments: list[dict[str, Any]]
+    coverage_notes: list[dict[str, Any]]
+    analysis_limits: list[dict[str, Any]]
+    total: int
+    limit: int
+    offset: int
+    index_contract_id: str | None
+    index_mode: str | None
+    segmentation_version: str | None
+    index_authority_hash: str
+    source_ingestion_batch_id: str
+    source_ingestion_file_id: str
+    material_snapshot_id: str
+    source_shape: str | None
+    content_sha256: str
+    file_identity_hash: str
+    authority_basis_hash: str
+    payload_hash: str
+    source_index_rows_written: bool
+    retrieval_rows_written: bool
+    context_packet_rows_written: bool
+    qualitative_analysis_rows_written: bool
+    qualitative_generation_rows_written: bool
+    analysis_run_rows_written: bool
+    package_rows_written: bool
+    connector_rows_written: bool
     negative_invariants: dict[str, bool]
 
 
@@ -6971,6 +7035,32 @@ def post_source_directory_vector_retrieval(
         layer3_source_directory_text_index.SourceDirectoryTextIndexError,
         layer3_source_directory_vector_index.SourceDirectoryVectorIndexError,
         layer3_source_directory_vector_retrieval.SourceDirectoryVectorRetrievalError,
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+    response_model=Layer3SourceDirectoryQualitativeAnalysisResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_qualitative_hybrid_analysis(
+    payload: Layer3SourceDirectoryQualitativeAnalysisRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return (
+            layer3_source_directory_qualitative_analysis
+            .source_directory_material_context_packet_qualitative_hybrid_analysis(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
+        layer3_source_directory_qualitative_analysis.SourceDirectoryQualitativeAnalysisError,
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
     ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
