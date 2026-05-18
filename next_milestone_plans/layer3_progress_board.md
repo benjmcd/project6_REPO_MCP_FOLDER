@@ -6396,3 +6396,33 @@ The synced runtime keeps `package_construction_enabled: False`, `package_review_
 No package construction, package-review submit, package payload write, package payload rewrite, source package row mutation, package mutation/reconstruction, replacement package row creation, handoff/export rerun, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this sync.
 
 The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_package_preview_sync`.
+
+## Source Directory Qualitative Analysis Package Construction Runtime Entry Freeze
+
+Branch-local implementation-entry freeze and runtime proof: `804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE.md` follows the source-directory qualitative-analysis package preview runtime current-main sync and resolves `select_next_named_layer3_end_to_end_gap_after_source_directory_package_preview_sync` by selecting the bounded source-directory qualitative-analysis package-construction commit runtime.
+
+Runtime branch `codex/l3-source-package-commit` starts from current-main checkpoint `97eae638b1a93cd1970ebe22fb693b4914e2fced`.
+
+Selected implementation action: `implement_source_directory_qualitative_analysis_package_construction_commit_after_package_preview_sync`.
+
+Runtime status after implementation: `source_directory_qualitative_analysis_package_construction_commit_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented runtime owners: `backend/app/services/layer3_source_directory_qualitative_analysis.py`, `backend/app/services/layer3_package_entry.py`, and `backend/app/api/layer3.py`.
+
+Implemented proof test: `backend/tests/test_layer3_source_directory_qualitative_analysis.py`.
+
+The source-directory qualitative-analysis package commit route is `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/commit`.
+
+The commit response uses schema `layer3.source_directory_qualitative_analysis_package_commit.v1`, mode `source_directory_qualitative_analysis_package_commit_authority`, operator decision `commit_source_directory_qualitative_analysis_package`, and package-construction source gate `804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE`.
+
+The runtime writes one reconciliation record and three package rows for `canonical_internal`, `user_facing`, and `review_facing`; package payload refs are persisted through the package artifact writer and redacted from the API response.
+
+The focused proof passed with `7 passed`; the broader Layer 3 API regression passed with `187 passed`.
+
+The branch-local proof also passed JSON manifest load, Python compile, `python .\tools\l3-progress-check.py`, `python .\tools\l3-target-selection-validate.py --expect frozen`, and `git diff --check`.
+
+No package-review submit, handoff/export rerun, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, package payload rewrite, package mutation/reconstruction, source package row mutation, replacement package row creation, or full mockup activation is admitted by this runtime.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_qualitative_analysis_package_construction_commit_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync` unless current-main evidence shows a concrete unresolved package-construction defect or named downstream reader.
