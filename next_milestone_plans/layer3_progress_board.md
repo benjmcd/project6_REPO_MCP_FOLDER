@@ -5822,3 +5822,29 @@ The focused proof passed `python -m py_compile .\backend\app\services\layer3_sou
 No backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, vector database, persistent vector store, vector query runtime, semantic retrieval ranking, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this pass.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_material_deterministic_embedding_vector_index_runtime_proof`; after sync, the next exact posture is `select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync` only if current-main evidence confirms this runtime is cleanly synced and no concrete same-family vector-index defect remains.
+
+## Source Directory Material Deterministic Embedding Vector Index Runtime Current-Main Sync
+
+Current-main sync: `783_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1387` for `source_directory_material_deterministic_embedding_vector_index_runtime_proof`.
+
+Runtime branch `codex/l3-vector-runtime` landed branch commit `dd30002081dc9f5b5606c3e94b1f74bb8de02d09` into current main at merge commit `c72526582cc85b8747317fc94271fc56a4862a88`.
+
+Synced result: `current_main_synced_source_directory_material_deterministic_embedding_vector_index_runtime`.
+
+Current main now includes `782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md`.
+
+Current main now includes `backend/app/services/layer3_source_directory_vector_index.py` and `backend/tests/test_layer3_source_directory_vector_index.py`.
+
+Current main now implements `source_directory_material_embedding_vector_index(db, payload)` over `source_directory_material_deterministic_text_index_authority`, `layer3.source_directory_text_index.v1`, and `deterministic_text_segments`.
+
+Current main returns `layer3.source_directory_embedding_vector_index.v1`, validates `index_authority_hash`, computes deterministic `embedding_index_authority_hash`, and returns safe `vector_descriptors` with `embedding_vector_hash`, `nonzero_feature_count`, `token_count`, and `vector_l2_norm`.
+
+PR `#1387` had green `backend-layer3-api` (`2m58s`) and `test` (`3m37s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior already merged by runtime PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+No backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, vector database, persistent vector store, vector query runtime, semantic retrieval ranking, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
+
+The next exact current-main posture is `select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync`.
