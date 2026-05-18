@@ -31629,5 +31629,39 @@
   "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/791_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
   "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_current_main_sync_status": "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
   "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_current_main_sync_next_posture": "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime",
-  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_current_main_sync_summary": "Doc 791 proof syncs the provider-public delivery/use runtime authority selection after PR #1395 and moves the next posture to write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime, with no runtime admitted by the sync."
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_current_main_sync_summary": "Doc 791 proof syncs the provider-public delivery/use runtime authority selection after PR #1395 and moves the next posture to write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime, with no runtime admitted by the sync.",
+  "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync_proof": {
+    "proof_kind": "planning_control_authority_contract_provider_public_delivery_use_runtime_after_selection_sync",
+    "status": "planning_control_authority_contract",
+    "contract_branch": "codex/l3-pp-use-contract",
+    "contract_doc": "next_milestone_plans/Layer3_planning_docs/792_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT.md",
+    "current_main_checkpoint_before_contract": "534500dffc9b60934232a8fe5780e402da8d78a0",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/791_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+    "predecessor_synced_result": "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+    "selected_from_posture": "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime",
+    "contract_result": "admit_bounded_fake_provider_redacted_provider_public_delivery_use_implementation_entry_freeze",
+    "runtime_behavior_change": false,
+    "proof_coverage": [
+      "current main has redacted prepare status revoke provider-public durable state",
+      "L3ProviderPublicUrlReceipt and L3ProviderPublicUrlObjectAuthority are selected as the existing state inputs",
+      "fake_provider_only_contract_runtime is selected as the only provider mode",
+      "layer3.provider_public_url.delivery_use.v1 is selected as the future response schema",
+      "backend/app/services/layer3_provider_public_url_delivery_use.py is selected as the future service owner",
+      "backend/tests/test_layer3_provider_public_url_delivery_use.py is selected as the future proof owner",
+      "POST /handoff/export/download/provider-public-url/use is only a future route candidate for the next implementation-entry freeze",
+      "future behavior is read-only over existing provider-public receipt and object authority state",
+      "prepared unexpired receipts may allow a response-safe fake-provider use decision",
+      "expired or revoked receipts must deny future fake-provider delivery use decisions",
+      "raw_public_url_exposed remains false and public_url_enabled remains false",
+      "no provider-public use or deliver route is admitted by this contract",
+      "no runtime route DTO model migration durable use row audit row provider network provider object write raw URL frontend durable package connector source expansion RAG vector auth security full mockup or raw-path behavior is admitted"
+    ],
+    "next_posture_after_merge": "current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync",
+    "next_posture_after_sync": "freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry"
+  },
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync_branch": "codex/l3-pp-use-contract",
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync_doc": "next_milestone_plans/Layer3_planning_docs/792_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT.md",
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync_status": "planning_control_authority_contract",
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync_next_posture_after_merge": "current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync",
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync_summary": "Doc 792 proof admits only the next implementation-entry freeze for a bounded fake-provider redacted provider-public delivery/use decision over existing receipt/object-authority state, with no runtime admitted by the contract."
 }
