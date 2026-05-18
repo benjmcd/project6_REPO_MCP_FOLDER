@@ -5714,3 +5714,27 @@ The selection basis is the pivot after current-main source-directory intake, mat
 No backend route, API DTO, response model, service runtime, database model, migration, durable vector-index row write, durable embedding row write, vector database, vector store, embedding generation, model/provider invocation, prompt/model/provider runtime, hidden LLM planning, qualitative generation runtime, RAG execution, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation is admitted.
 
 The next exact posture after merge is `current_main_sync_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync`; after sync, the next exact posture is `write_source_directory_material_embedding_vector_index_authority_contract_before_runtime`.
+
+## RAG/Vector Retrieval Authority Selection Current-Main Sync
+
+Current-main sync: `779_RAG_VECTOR_AUTH_SYNC.md` syncs selection PR `#1383` for `rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync`.
+
+Selection branch `codex/l3-rag-vector-select` landed branch commit `112a1fc2f622f4617629e25d87bf537deda4954f` into current main at merge commit `54ef33349b6d631c1e8e0cefd819da031245b4ba`.
+
+Synced result: `current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync`.
+
+Current main now includes `778_RAG_VECTOR_AUTH_FREEZE.md`.
+
+Current main now records `rag_vector_retrieval_indexing` as the next major deferred lane after provider-public delivery/use no-runtime sync, but only as an authority-selection lane.
+
+Current main now records `source_directory_material_embedding_vector_index_authority_contract` as the next authority question.
+
+PR `#1383` had green `backend-layer3-api` (`3m10s`) and `test` (`3m44s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by selection PR: `false`.
+
+Runtime behavior introduced by this sync: `false`.
+
+No RAG/vector route, API DTO, response model, service runtime, database model, migration, durable vector-index row write, durable embedding row write, vector database, vector store, embedding generation, model/provider invocation, prompt/model/provider runtime, hidden LLM planning, qualitative generation runtime, RAG execution, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, or raw local path exposure is admitted by this sync.
+
+The next exact current-main posture is `write_source_directory_material_embedding_vector_index_authority_contract_before_runtime`.

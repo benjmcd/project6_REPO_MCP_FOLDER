@@ -2125,6 +2125,9 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTR
 LAYER3_RAG_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_AFTER_PROVIDER_PUBLIC_NO_RUNTIME_SYNC = (
     PLANNING_DOCS / "778_RAG_VECTOR_AUTH_FREEZE.md"
 )
+LAYER3_RAG_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_AFTER_PROVIDER_PUBLIC_NO_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "779_RAG_VECTOR_AUTH_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -67010,6 +67013,112 @@ def _check_rag_vector_retrieval_authority_selection_after_provider_public_no_run
                 )
 
 
+def _check_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_RAG_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_AFTER_PROVIDER_PUBLIC_NO_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync`.",
+        "779_RAG_VECTOR_AUTH_SYNC.md",
+        "778_RAG_VECTOR_AUTH_FREEZE.md",
+        "#1383",
+        "codex/l3-rag-vector-select",
+        "112a1fc2f622f4617629e25d87bf537deda4954f",
+        "54ef33349b6d631c1e8e0cefd819da031245b4ba",
+        "codex/l3-rag-vector-select-sync",
+        "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+        "Runtime behavior introduced by selection PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "3m10s",
+        "test",
+        "3m44s",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "rag_vector_retrieval_indexing",
+        "source_directory_material_embedding_vector_index_authority_contract",
+        "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+        "no backend route",
+        "durable vector-index row write",
+        "embedding generation",
+        "RAG execution",
+        "python -m py_compile .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_RAG_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_AFTER_PROVIDER_PUBLIC_NO_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing RAG/vector authority selection sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## RAG/Vector Retrieval Authority Selection Current-Main Sync",
+            "779_RAG_VECTOR_AUTH_SYNC.md",
+            "#1383",
+            "112a1fc2f622f4617629e25d87bf537deda4954f",
+            "54ef33349b6d631c1e8e0cefd819da031245b4ba",
+            "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+            "778_RAG_VECTOR_AUTH_FREEZE.md",
+            "rag_vector_retrieval_indexing",
+            "source_directory_material_embedding_vector_index_authority_contract",
+            "Runtime behavior introduced by selection PR: `false`.",
+            "Runtime behavior introduced by this sync: `false`.",
+            "backend-layer3-api",
+            "3m10s",
+            "test",
+            "3m44s",
+            "reviewThreads totalCount `0`",
+            "unresolved reviewThreads totalCount `0`",
+            "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+        ),
+        MANIFEST: (
+            "rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync",
+            "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+            "codex/l3-rag-vector-select-sync",
+            "779_RAG_VECTOR_AUTH_SYNC.md",
+            "778_RAG_VECTOR_AUTH_FREEZE.md",
+            "#1383",
+            "112a1fc2f622f4617629e25d87bf537deda4954f",
+            "54ef33349b6d631c1e8e0cefd819da031245b4ba",
+            '"runtime_behavior_introduced_by_selection_pr": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads": 0',
+            '"unresolvedReviewThreads": 0',
+            "rag_vector_retrieval_indexing",
+            "source_directory_material_embedding_vector_index_authority_contract",
+            "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_proof",
+            "current_main_sync_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+            "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+            "779_RAG_VECTOR_AUTH_SYNC.md",
+            "778_RAG_VECTOR_AUTH_FREEZE.md",
+            "#1383",
+            "54ef33349b6d631c1e8e0cefd819da031245b4ba",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no additional runtime behavior",
+            "rag_vector_retrieval_indexing is selected only as an authority-selection lane",
+            "source_directory_material_embedding_vector_index_authority_contract is selected as the next authority question",
+            "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing RAG/vector authority selection sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -67631,6 +67740,7 @@ def main() -> int:
     _check_provider_public_delivery_use_exposure_security_revocation_authority_contract(errors)
     _check_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync(errors)
     _check_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync(errors)
+    _check_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
