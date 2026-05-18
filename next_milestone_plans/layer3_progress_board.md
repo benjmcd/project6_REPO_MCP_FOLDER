@@ -5074,3 +5074,21 @@ Runtime behavior introduced by this contract: `false`.
 This contract selects deterministic lexical/text source-index authority before any vector, embedding, retrieval query, or qualitative-hybrid runtime. It admits no runtime behavior, backend route/service/model/migration behavior, source/index rows, vector index, embedding generation, retrieval query, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, or source `L3OutputPackage` mutation.
 
 The next exact posture after merge is `current_main_sync_source_directory_material_source_index_authority_contract`; after sync, the next exact posture is `implement_source_directory_material_deterministic_text_index_authority_after_contract_sync`.
+
+## Source Directory Material Source Index Authority Contract Current-Main Sync
+
+Current-main sync: `753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md` syncs contract PR `#1357` for `source_directory_material_source_index_authority_contract`.
+
+Contract branch `codex/l3-source-index-contract` landed branch commit `bf5d1cadcc99d609a67baac663a7974604af7f26` into current main at merge commit `341577839d279c9128c3203a06d5ec87ab1351f1`.
+
+Synced result: `current_main_synced_source_directory_material_source_index_authority_contract`.
+
+Current main now records `source_directory_material_deterministic_text_index_authority`, selected future service `backend/app/services/layer3_source_directory_text_index.py`, and index mode `deterministic_text_segments` as the current-main source/index contract before any RAG/vector or qualitative-hybrid runtime.
+
+PR `#1357` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Post-merge validation at `341577839d279c9128c3203a06d5ec87ab1351f1` passed: JSON manifest load, `python -m py_compile .\tools\l3-progress-check.py`, `python .\tools\l3-progress-check.py`, `python .\tools\l3-target-selection-validate.py --expect frozen`, and `git diff --check`.
+
+This sync admits no runtime behavior, backend route/service/model/migration behavior, source/index rows, vector index, embedding generation, retrieval query, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, or source `L3OutputPackage` mutation.
+
+The next exact current-main posture is `implement_source_directory_material_deterministic_text_index_authority_after_contract_sync`.
