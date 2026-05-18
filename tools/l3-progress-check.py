@@ -2020,6 +2020,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE = (
     PLANNING_DOCS
     / "750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -63832,6 +63836,88 @@ def _check_source_directory_material_source_index_authority_freeze(
                 )
 
 
+def _check_source_directory_material_source_index_authority_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_source_index_authority_freeze`.",
+        "751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md",
+        "#1355",
+        "codex/l3-source-index-freeze",
+        "ba773ab5",
+        "ab50df882fd2a28563df0f56f20351251757775c",
+        "codex/l3-source-index-sync",
+        "current_main_synced_source_directory_material_source_index_authority_freeze",
+        "Runtime behavior introduced by freeze: `false`.",
+        "Runtime behavior in this sync: `false`.",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "python -m py_compile .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "git diff --check",
+        "source_directory_material_source_index_authority",
+        "source_directory_material_source_index_authority_contract",
+        "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source directory source/index authority sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Source Index Authority Freeze Current-Main Sync",
+            "751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1355",
+            "ab50df882fd2a28563df0f56f20351251757775c",
+            "current_main_synced_source_directory_material_source_index_authority_freeze",
+            "reviewThreads totalCount `0`",
+            "python .\\tools\\l3-progress-check.py",
+            "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+            "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_material_source_index_authority_freeze_current_main_sync",
+            "current_main_synced_source_directory_material_source_index_authority_freeze",
+            "codex/l3-source-index-sync",
+            "751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1355",
+            "ab50df882fd2a28563df0f56f20351251757775c",
+            '"runtime_behavior_in_this_sync": false',
+            '"reviewThreads": 0',
+            "source_directory_material_source_index_authority",
+            "source_directory_material_source_index_authority_contract",
+            "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_source_index_authority_freeze_current_main_sync_proof",
+            "current_main_sync_source_directory_material_source_index_authority_freeze",
+            "current_main_synced_source_directory_material_source_index_authority_freeze",
+            "751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1355",
+            "ab50df882fd2a28563df0f56f20351251757775c",
+            "current main records zero PR comments, reviews, and review threads",
+            "source_directory_material_source_index_authority_contract is selected for the next planning/control posture",
+            "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory source/index authority sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -64425,6 +64511,7 @@ def main() -> int:
     _check_source_directory_ingestion_gate_b_material_admission_runtime_proof(errors)
     _check_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync(errors)
     _check_source_directory_material_source_index_authority_freeze(errors)
+    _check_source_directory_material_source_index_authority_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
