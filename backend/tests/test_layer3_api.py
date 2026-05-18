@@ -6154,10 +6154,11 @@ def test_layer3_api_provider_public_url_openapi_prepare_status_schema(client: Te
         "{provider_public_url_receipt_id}"
     )
     revoke_path = "/api/v1/layer3/handoff/export/download/provider-public-url/revoke"
+    use_path = "/api/v1/layer3/handoff/export/download/provider-public-url/use"
     assert prepare_path in spec["paths"]
     assert status_path in spec["paths"]
     assert revoke_path in spec["paths"]
-    assert "/api/v1/layer3/handoff/export/download/provider-public-url/use" not in spec["paths"]
+    assert use_path in spec["paths"]
     assert "/api/v1/layer3/handoff/export/download/provider-public-url/deliver" not in spec["paths"]
 
     prepare_schema = spec["paths"][prepare_path]["post"]["requestBody"]["content"]["application/json"]["schema"]
@@ -6218,6 +6219,36 @@ def test_layer3_api_provider_public_url_openapi_prepare_status_schema(client: Te
         assert revoke_schema["properties"][forbidden]["not"] == {}
     assert _openapi_response_schema(spec, revoke_path, "post")["title"] == (
         "Layer3ProviderPublicUrlRevokeResponse"
+    )
+    use_schema = spec["paths"][use_path]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert use_schema["additionalProperties"] is False
+    assert set(use_schema["required"]) == {
+        "client_request_id",
+        "provider_public_url_receipt_id",
+        "delivery_use_mode",
+        "operator_decision",
+    }
+    assert use_schema["properties"]["delivery_use_mode"]["enum"] == [
+        "fake_provider_redacted_use_decision"
+    ]
+    assert use_schema["properties"]["operator_decision"]["enum"] == [
+        "use_provider_public_url_redacted_fake_provider"
+    ]
+    for forbidden in (
+        "provider_public_url",
+        "public_url",
+        "raw_public_url",
+        "public_proxy_url",
+        "download_url",
+        "provider_bucket",
+        "provider_object_key",
+        "provider_secret",
+        "connector_dispatch",
+        "auth_security_override",
+    ):
+        assert use_schema["properties"][forbidden]["not"] == {}
+    assert _openapi_response_schema(spec, use_path, "post")["title"] == (
+        "Layer3ProviderPublicUrlDeliveryUseResponse"
     )
 
 
