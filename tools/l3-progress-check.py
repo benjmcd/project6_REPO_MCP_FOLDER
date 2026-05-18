@@ -2242,6 +2242,10 @@ LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTR
     PLANNING_DOCS
     / "808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "809_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -70946,6 +70950,115 @@ def _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_
             )
 
 
+def _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_qualitative_analysis_handoff_export_prepare_runtime`.",
+        "809_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+        "#1413",
+        "codex/l3-source-handoff-export-prepare",
+        "3b562864b45876ebf243377c84e04ccabd183adc",
+        "bb4e857af4cf9f3a4c114423ef3532821126ac55",
+        "codex/l3-source-handoff-export-prepare-sync",
+        "current_main_synced_source_directory_qualitative_analysis_handoff_export_prepare_runtime",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare",
+        "Layer3SourceDirectoryQualitativeAnalysisHandoffExportPrepareRequest",
+        "Layer3SourceDirectoryQualitativeAnalysisHandoffExportPrepareResponse",
+        "source_directory_qualitative_analysis_handoff_export_prepare(db, payload)",
+        "layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1",
+        "source_directory_qualitative_analysis_handoff_export_prepare_authority",
+        "layer3.handoff_export_prepare_state.v1",
+        "`backend-layer3-api` (`3m8s`)",
+        "`test` (`3m51s`)",
+        "reviewThreads totalCount `0`",
+        "unresolved reviewThreads totalCount `0`",
+        "merge state `CLEAN`",
+        "Runtime behavior introduced by implementation PR: `true`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "already_prepared",
+        "source_directory_handoff_export_prepare_submit_not_approved",
+        "payload_refs_redacted: True",
+        "network_egress_enabled: False",
+        "prompt_model_provider_runtime_enabled: False",
+        "The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync`.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory handoff/export prepare sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Qualitative Analysis Handoff Export Prepare Runtime Current-Main Sync",
+            "809_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1413",
+            "codex/l3-source-handoff-export-prepare",
+            "3b562864b45876ebf243377c84e04ccabd183adc",
+            "bb4e857af4cf9f3a4c114423ef3532821126ac55",
+            "current_main_synced_source_directory_qualitative_analysis_handoff_export_prepare_runtime",
+            "layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1",
+            "source_directory_qualitative_analysis_handoff_export_prepare_authority",
+            "layer3.handoff_export_prepare_state.v1",
+            "3m8s",
+            "3m51s",
+            "Runtime behavior introduced by this sync: `false`.",
+            "already_prepared",
+            "source_directory_handoff_export_prepare_submit_not_approved",
+            "network_egress_enabled: False",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync",
+        ),
+        MANIFEST: (
+            "source_directory_qualitative_analysis_handoff_export_prepare_runtime_current_main_sync",
+            "current_main_synced_source_directory_qualitative_analysis_handoff_export_prepare_runtime",
+            "codex/l3-source-handoff-export-prepare-sync",
+            "809_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "#1413",
+            "3b562864b45876ebf243377c84e04ccabd183adc",
+            "bb4e857af4cf9f3a4c114423ef3532821126ac55",
+            '"runtime_behavior_change": true',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api": "SUCCESS"',
+            '"backend-layer3-api_duration": "3m8s"',
+            '"test_duration": "3m51s"',
+            '"merge_state_before_merge": "CLEAN"',
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare",
+            "layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1",
+            '"payload_refs_redacted": true',
+            '"network_egress_enabled": false',
+            '"prompt_model_provider_runtime_enabled": false',
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_qualitative_analysis_handoff_export_prepare_runtime_current_main_sync_proof",
+            "current_main_sync_source_directory_qualitative_analysis_handoff_export_prepare_runtime",
+            "current_main_synced_source_directory_qualitative_analysis_handoff_export_prepare_runtime",
+            "codex/l3-source-handoff-export-prepare-sync",
+            "809_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1413",
+            "bb4e857af4cf9f3a4c114423ef3532821126ac55",
+            "current main includes source-directory qualitative-analysis handoff/export prepare route",
+            "current main records green backend-layer3-api and test checks for PR #1413",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no additional runtime behavior",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync is selected as the next posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory handoff/export prepare sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -71623,6 +71736,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_entry(errors)
+    _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_current_main_sync(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")
