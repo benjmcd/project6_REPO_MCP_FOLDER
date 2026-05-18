@@ -2168,6 +2168,9 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_
     PLANNING_DOCS
     / "789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_RUNTIME_SYNC = (
+    PLANNING_DOCS / "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -68501,6 +68504,116 @@ def _check_source_directory_material_deterministic_vector_retrieval_runtime_curr
                 )
 
 
+def _check_provider_public_delivery_use_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync(
+    errors: list[str],
+) -> None:
+    selection_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_RUNTIME_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control selection freeze for `provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync`.",
+        "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+        "789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "ff1a8dec534d99823c667da5ca7f051c7ccb437c",
+        "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "provider_public_delivery_use",
+        "fake_provider_only_contract_runtime",
+        "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract",
+        "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime",
+        "backend/app/services/layer3_provider_public_url_delivery_use.py",
+        "backend/tests/test_layer3_provider_public_url_delivery_use.py",
+        "layer3_provider_public_url_fake_provider",
+        "raw_public_url_exposed: False",
+        "public_url_enabled: False",
+        "does not expose provider-public `/use` or `/deliver` runtime",
+        "redacted_fake_provider_receipt_use_decision_only",
+        "server_authorized_layer3_operator_or_internal_backend_caller_only",
+        "never_return_raw_public_url",
+        "no_public_anonymous_access",
+        "expired or revoked receipts must deny future fake-provider delivery/use decisions",
+        "no cross-origin HTTP delivery",
+        "This freeze admits no runtime behavior",
+        "No closed or blocked provider-public, connector, package, source, RAG/vector, auth/security, or frontend-durable lane is reopened by implication.",
+        "current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+    ):
+        if term not in selection_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_RUNTIME_SYNC)} "
+                f"missing provider-public delivery/use runtime authority selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public Delivery/Use Runtime Authority Selection Freeze",
+            "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+            "codex/l3-provider-public-runtime-select",
+            "ff1a8dec534d99823c667da5ca7f051c7ccb437c",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+            "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+            "provider_public_delivery_use",
+            "fake_provider_only_contract_runtime",
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract",
+            "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime",
+            "backend/app/services/layer3_provider_public_url_delivery_use.py",
+            "backend/tests/test_layer3_provider_public_url_delivery_use.py",
+            "raw_public_url_exposed: False",
+            "public_url_enabled: False",
+            "Entry decision: `freeze_only`.",
+            "Runtime status: `not_implemented`.",
+            "Runtime behavior introduced by this freeze: `false`.",
+            "current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+        ),
+        MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+            "planning_control_selection_freeze",
+            "codex/l3-provider-public-runtime-select",
+            "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+            "ff1a8dec534d99823c667da5ca7f051c7ccb437c",
+            "789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+            "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "fake_provider_only_contract_runtime",
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract",
+            "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime",
+            "redacted_fake_provider_receipt_use_decision_only",
+            "never_return_raw_public_url",
+            "no_public_anonymous_access",
+            "current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync_proof",
+            "planning_control_selection_freeze_provider_public_delivery_use_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+            "planning_control_selection_freeze",
+            "codex/l3-provider-public-runtime-select",
+            "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+            "ff1a8dec534d99823c667da5ca7f051c7ccb437c",
+            "provider_public_delivery_use is selected only as a runtime-authority selection lane",
+            "fake_provider_only_contract_runtime is selected as the provider mode for the next contract question",
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract is selected as the next authority question",
+            "raw_public_url_exposed remains false",
+            "public_url_enabled remains false",
+            "no provider-public use or deliver route is admitted by this freeze",
+            "current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+            "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public delivery/use runtime authority selection artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -69135,6 +69248,9 @@ def main() -> int:
     )
     _check_source_directory_material_deterministic_vector_retrieval_runtime_proof(errors)
     _check_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync(
+        errors
+    )
+    _check_provider_public_delivery_use_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync(
         errors
     )
 
