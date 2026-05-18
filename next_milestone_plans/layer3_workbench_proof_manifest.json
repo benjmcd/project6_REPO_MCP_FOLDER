@@ -29833,5 +29833,51 @@
   "latest_source_expansion_ingestion_source_family_selection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
   "latest_source_expansion_ingestion_source_family_selection_freeze_status": "source_expansion_ingestion_source_family_selected_runtime_blocked_until_sync",
   "latest_source_expansion_ingestion_source_family_selection_freeze_next_posture_after_merge": "current_main_sync_source_expansion_ingestion_source_family_selection_freeze",
-  "latest_source_expansion_ingestion_source_family_selection_freeze_summary": "Doc 742 freezes one source expansion/ingestion family: server-configured operator directory text/table ingestion for direct child CSV, JSON, TXT, and MD files only."
+  "latest_source_expansion_ingestion_source_family_selection_freeze_summary": "Doc 742 freezes one source expansion/ingestion family: server-configured operator directory text/table ingestion for direct child CSV, JSON, TXT, and MD files only.",
+  "source_expansion_ingestion_source_family_selection_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_expansion_ingestion_source_family_selection_freeze",
+    "status": "current_main_synced_source_expansion_ingestion_source_family_selection_freeze",
+    "sync_branch": "codex/l3-source-family-selection-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "synced_freeze_doc": "next_milestone_plans/Layer3_planning_docs/742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+    "freeze_pr": "#1347",
+    "freeze_branch_commit": "3b9ebead55b72c52c25a88de3130436d84e81c61",
+    "freeze_merge_commit": "cf014d39fd093050aa1bbc183323cb26906fb3f9",
+    "current_main_checkpoint_after_merge": "cf014d39fd093050aa1bbc183323cb26906fb3f9",
+    "selected_source_family": "server_configured_operator_directory_text_table_source_family",
+    "selected_implementation_entry_mode": "server_configured_operator_directory_text_table_ingestion",
+    "runtime_behavior_introduced_by_freeze": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen: PASS (frozen)"
+    ],
+    "proof_coverage": [
+      "current main includes Doc 742 source-family selection freeze",
+      "current main records PR #1347 merged at cf014d39fd093050aa1bbc183323cb26906fb3f9",
+      "current main records green backend-layer3-api and test checks for PR #1347",
+      "current main records zero PR comments, reviews, latest reviews, and review threads",
+      "current main post-merge progress checker passes",
+      "current main post-merge target-selection validation remains frozen",
+      "current main sync preserves direct child .csv, .json, .txt, and .md file boundary",
+      "current main sync preserves LAYER3_SOURCE_INGESTION_DIR as server/operator config authority",
+      "current main sync keeps caller-supplied paths, recursive traversal, PDFs, OCR, Office documents, arbitrary binaries, web connectors, RAG/vector indexing, package mutation, connector dispatch, provider-public behavior, auth/security broadening, rendered controls, and frontend-durable authority blocked",
+      "no runtime behavior introduced by the freeze or this sync"
+    ],
+    "next_posture": "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync"
+  },
+  "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_branch": "codex/l3-source-family-selection-sync",
+  "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_status": "current_main_synced_source_expansion_ingestion_source_family_selection_freeze",
+  "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_next_posture": "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync",
+  "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_summary": "Doc 743 proof syncs source expansion/ingestion source-family selection after PR #1347 and opens only the exact server-configured operator directory text/table ingestion implementation posture."
 }
