@@ -29861,5 +29861,48 @@
   "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_status": "source_directory_material_retrieval_augmented_context_packet_runtime_implemented_branch_local",
   "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_runtime_behavior_change": true,
   "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_retrieval_augmented_context_packet_runtime_proof",
-  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_summary": "Doc 766 implements source_directory_material_retrieval_augmented_context_packet_authority in backend/app/services/layer3_source_directory_context_packet.py with focused proof test backend/tests/test_layer3_source_directory_context_packet.py. It assembles deterministic response-safe context packets over existing source-directory lexical retrieval, computes stable context_packet_hash, proves stale index and source authority rejection, empty/forbidden/unknown field failure, bounded paging, no-match preservation, and no pass-run analysis package connector side effects while keeping routes, DTOs, models, migrations, durable context-packet rows, vector, embedding, qualitative generation, prompt/model/provider, package, connector, provider, rendered/frontend-durable, source-expansion, auth/security, credential, network, and raw-path behavior blocked."
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_summary": "Doc 766 implements source_directory_material_retrieval_augmented_context_packet_authority in backend/app/services/layer3_source_directory_context_packet.py with focused proof test backend/tests/test_layer3_source_directory_context_packet.py. It assembles deterministic response-safe context packets over existing source-directory lexical retrieval, computes stable context_packet_hash, proves stale index and source authority rejection, empty/forbidden/unknown field failure, bounded paging, no-match preservation, and no pass-run analysis package connector side effects while keeping routes, DTOs, models, migrations, durable context-packet rows, vector, embedding, qualitative generation, prompt/model/provider, package, connector, provider, rendered/frontend-durable, source-expansion, auth/security, credential, network, and raw-path behavior blocked.",
+  "source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync": {
+    "status": "current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime",
+    "sync_branch": "codex/l3-rag-qual-impl-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/767_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/766_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF.md",
+    "runtime_pr": "#1371",
+    "runtime_branch": "codex/l3-rag-qual-impl",
+    "runtime_branch_commit": "94bf690283d1d7c0eda734bd4ecd11486292dfeb",
+    "runtime_merge_commit": "22d8ff1bbf1f38f8dfc64d07ca153b5df6239e69",
+    "current_main_checkpoint_after_merge": "22d8ff1bbf1f38f8dfc64d07ca153b5df6239e69",
+    "runtime_behavior_already_merged": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "implemented_files": [
+      "backend/app/services/layer3_source_directory_context_packet.py",
+      "backend/tests/test_layer3_source_directory_context_packet.py"
+    ],
+    "post_merge_validation": [
+      "json manifest load PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\backend\\app\\services\\layer3_source_directory_context_packet.py .\\backend\\tests\\test_layer3_source_directory_context_packet.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_context_packet.py .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py .\\backend\\tests\\test_layer3_source_directory_ingestion.py -q PASS 21 passed",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync"
+  },
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_branch": "codex/l3-rag-qual-impl-sync",
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/767_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_status": "current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime",
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_runtime_behavior_change": false,
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_next_posture": "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync",
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_summary": "Doc 767 syncs PR #1371 merge commit 22d8ff1bbf1f38f8dfc64d07ca153b5df6239e69 to current main. The source-directory retrieval-augmented context packet runtime is current-main truth; no runtime behavior is introduced by the sync, and the next posture is select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync."
 }
