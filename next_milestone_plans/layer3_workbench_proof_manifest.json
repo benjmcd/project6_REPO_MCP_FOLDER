@@ -30364,5 +30364,41 @@
   "latest_source_directory_material_lexical_retrieval_authority_freeze_doc": "next_milestone_plans/Layer3_planning_docs/756_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE.md",
   "latest_source_directory_material_lexical_retrieval_authority_freeze_status": "branch_local_source_directory_material_lexical_retrieval_authority_freeze_written",
   "latest_source_directory_material_lexical_retrieval_authority_freeze_next_posture_after_merge": "current_main_sync_source_directory_material_lexical_retrieval_authority_freeze",
-  "latest_source_directory_material_lexical_retrieval_authority_freeze_summary": "Doc 756 proof records retrieval authority selection after the source-directory deterministic text index runtime current-main sync. It chooses deterministic_lexical_segment_retrieval and source_directory_material_deterministic_lexical_retrieval_authority for a future contract while keeping runtime, vector, embedding, qualitative-hybrid, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path behavior blocked."
+  "latest_source_directory_material_lexical_retrieval_authority_freeze_summary": "Doc 756 proof records retrieval authority selection after the source-directory deterministic text index runtime current-main sync. It chooses deterministic_lexical_segment_retrieval and source_directory_material_deterministic_lexical_retrieval_authority for a future contract while keeping runtime, vector, embedding, qualitative-hybrid, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path behavior blocked.",
+  "source_directory_material_lexical_retrieval_authority_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_lexical_retrieval_authority_freeze",
+    "status": "current_main_synced_source_directory_material_lexical_retrieval_authority_freeze",
+    "sync_branch": "codex/l3-retrieval-selection-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/757_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/756_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE.md",
+    "freeze_pr": "#1361",
+    "freeze_branch_commit": "6aa4157bd5194a9b7ebafc80ccd07c6a229dd4e0",
+    "freeze_merge_commit": "8049f131ce35e473864665d05093f1215b6601b1",
+    "current_main_checkpoint_after_merge": "8049f131ce35e473864665d05093f1215b6601b1",
+    "runtime_behavior_introduced_by_freeze": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 756 source-directory lexical retrieval authority freeze",
+      "current main records PR #1361 merged at 8049f131ce35e473864665d05093f1215b6601b1",
+      "current main records green backend-layer3-api and test checks for PR #1361",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "no runtime behavior introduced by this sync",
+      "write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime is selected for the next authority posture"
+    ],
+    "next_posture": "write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime"
+  },
+  "latest_source_directory_material_lexical_retrieval_authority_freeze_current_main_sync_branch": "codex/l3-retrieval-selection-sync",
+  "latest_source_directory_material_lexical_retrieval_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/757_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_lexical_retrieval_authority_freeze_current_main_sync_status": "current_main_synced_source_directory_material_lexical_retrieval_authority_freeze",
+  "latest_source_directory_material_lexical_retrieval_authority_freeze_current_main_sync_next_posture": "write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime",
+  "latest_source_directory_material_lexical_retrieval_authority_freeze_current_main_sync_summary": "Doc 757 proof syncs the source-directory lexical retrieval authority freeze after PR #1361 and moves the next posture to write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime, with runtime, vector, embedding, qualitative-hybrid, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path behavior still blocked until separately frozen."
 }

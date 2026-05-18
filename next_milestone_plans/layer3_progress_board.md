@@ -5156,3 +5156,21 @@ Runtime behavior introduced by this freeze: `false`.
 This freeze admits no runtime behavior, backend route/service/model/migration behavior, source-index rows, vector index, embedding generation, retrieval query runtime, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, prompt/model/provider runtime, credentials, network, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact posture after merge is `current_main_sync_source_directory_material_lexical_retrieval_authority_freeze`; after sync, the next exact posture is `write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime`.
+
+## Source Directory Material Lexical Retrieval Authority Freeze Current-Main Sync
+
+Current-main sync: `757_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md` syncs freeze PR `#1361` for `source_directory_material_lexical_retrieval_authority_freeze`.
+
+Freeze branch `codex/l3-retrieval-selection` landed branch commit `6aa4157bd5194a9b7ebafc80ccd07c6a229dd4e0` into current main at merge commit `8049f131ce35e473864665d05093f1215b6601b1`.
+
+Synced result: `current_main_synced_source_directory_material_lexical_retrieval_authority_freeze`.
+
+Current main now records `source_directory_material_lexical_retrieval_authority_contract`, `deterministic_lexical_segment_retrieval`, `source_directory_material_deterministic_lexical_retrieval_authority`, and future owner `backend/app/services/layer3_source_directory_text_retrieval.py` as the selected retrieval authority posture before qualitative-hybrid runtime.
+
+PR `#1361` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by this sync: `false`.
+
+This sync admits no runtime behavior, backend route, API DTO, model change, migration, source-index durable row writes, vector indexing, embedding generation, retrieval query runtime, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, credentials, network egress, raw local path exposure, or prompt/model/provider runtime.
+
+The next exact current-main posture is `write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime`.
