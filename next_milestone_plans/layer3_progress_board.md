@@ -4792,3 +4792,23 @@ The proof verifies matching write/target/local receipt authority, `source_artifa
 No service runtime behavior change, external local export adoption, provider-public delivery/use, provider-private signed URL generation/use, raw token exposure, raw provider object key exposure, real provider network write, real provider object store write, real connector invocation, `ConnectorRun` creation, `ConnectorRunTarget` creation, arbitrary external destination write, credentials, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, full mockup activation, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, or hidden LLM planning is admitted by this pass.
 
 The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation`.
+
+## Corrected Artifact Active Authority Local Outbox Provider-Private Handoff Evaluation Current-Main Sync
+
+Current-main sync: `739_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION_CURRENT_MAIN_SYNC.md` syncs evaluation PR `#1343` for `corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation`.
+
+Evaluation branch `codex/l3-corrected-provider-private-handoff` landed branch commit `2e86442c2347ad9bd013e1399d3f72397e025c38` into current main at merge commit `dbebfe0e0ad9bd660041da02a5ca48b28ea13996`.
+
+Synced result: `current_main_synced_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation`.
+
+Evaluation result now synced: `corrected_artifact_active_authority_local_outbox_provider_private_handoff_proven`.
+
+PR `#1343` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Post-merge validation at `dbebfe0e0ad9bd660041da02a5ca48b28ea13996` passed: `python .\tools\l3-progress-check.py`; `python .\tools\l3-target-selection-validate.py --expect frozen`; and `python -m pytest .\backend\tests\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority -q`.
+
+Current main now proves corrected-artifact active package authority reaches `POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare` after server-owned local outbox write through `backend/app/services/layer3_local_outbox_provider_private_handoff.py`, `L3LocalOutboxProviderPrivateHandoffReceipt`, and `L3LocalOutboxProviderPrivateHandoffAuditEvent`.
+
+No runtime behavior is introduced by the evaluation or this sync. External local export adoption, provider-public delivery/use, provider-private signed URL generation/use, raw token exposure, raw provider object key exposure, real provider network write, real provider object store write, real connector invocation, `ConnectorRun` creation, `ConnectorRunTarget` creation, arbitrary external destination write, credentials, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, full mockup activation, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
+
+The next exact current-main posture is `select_next_downstream_active_package_authority_reader_after_corrected_artifact_local_outbox_provider_private_handoff_sync`.
