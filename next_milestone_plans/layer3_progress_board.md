@@ -6216,3 +6216,27 @@ The focused proof passed with `5 passed` and covers deterministic vector retriev
 No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable vector-store row write, durable embedding row write, durable retrieval row write, vector database, persistent vector store, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, provider-public delivery/use broadening, provider-private signed URL generation/use, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this runtime.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_material_vector_retrieval_api_runtime`; after sync, pivot to `select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync` unless current-main evidence shows a concrete unresolved vector retrieval API defect or named downstream reader.
+
+## Source Directory Vector Retrieval API Runtime Current-Main Sync
+
+Current-main proof/control sync: `797_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1401` for `source_directory_material_vector_retrieval_api_runtime`.
+
+Runtime branch `codex/l3-source-ingest-family` landed branch commit `96e0b7ef72aeb89bbadc7b3b2e729bf207c3a25b` into current main at merge commit `9c546460f2dd46c6d7a44479fa5a7c6ced3cc469`.
+
+Synced result: `current_main_synced_source_directory_material_vector_retrieval_api_runtime`.
+
+Current main now includes `POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval`, `Layer3SourceDirectoryVectorRetrievalRequest`, `Layer3SourceDirectoryVectorRetrievalResponse`, response schema `layer3.source_directory_vector_retrieval.v1`, API owner `backend/app/api/layer3.py`, and proof owner `backend/tests/test_layer3_source_directory_vector_retrieval.py`.
+
+The current-main synced runtime is only a backend API wrapper over the already-synced deterministic local vector retrieval service `source_directory_material_vector_retrieval(db, payload)`, over `server_configured_operator_directory_text_table_source_family` and `source_directory_material_deterministic_vector_retrieval_authority`.
+
+PR `#1401` had green `backend-layer3-api` (`3m2s`) and `test` (`3m28s`) checks, comments totalCount `0`, reviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime keeps `raw_local_path_exposed: False`, `raw_vector_exposed: False`, `normalized_features_exposed: False`, `durable_vector_store_rows_written: False`, `durable_embedding_rows_written: False`, `durable_retrieval_rows_written: False`, `rag_execution_enabled: False`, `prompt_model_provider_runtime_enabled: False`, `connector_dispatch_enabled: False`, `package_mutation_enabled: False`, `network_egress_enabled: False`, and `frontend_durable_authority_enabled: False`.
+
+No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable vector-store row write, durable embedding row write, durable retrieval row write, vector database, persistent vector store, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, provider-public delivery/use broadening, provider-private signed URL generation/use, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
+
+The next exact current-main posture is `select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync`.
