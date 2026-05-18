@@ -4838,3 +4838,23 @@ The proof verifies matching provider-private handoff and server-owned local outb
 No service runtime behavior change, provider-public delivery/use, provider-private signed URL generation/use, raw token exposure, raw provider object key exposure, real provider network write, real provider object store write, real connector invocation, `ConnectorRun` creation, `ConnectorRunTarget` creation, arbitrary external destination write, credentials, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, qualitative-hybrid runtime, rendered controls, auth/security behavior, full mockup activation, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, or hidden LLM planning is admitted by this pass.
 
 The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_external_local_export_evaluation`. After sync, the next exact posture should pivot to `select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync` unless current-main evidence identifies a concrete unresolved defect or another named downstream reader.
+
+## Corrected Artifact Active Authority External Local Export Evaluation Current-Main Sync
+
+Current-main sync: `741_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURRENT_MAIN_SYNC.md` syncs evaluation PR `#1345` for `corrected_artifact_active_authority_external_local_export_evaluation`.
+
+Evaluation branch `codex/l3-corrected-external-local-export` landed branch commit `608bf65432382d193b339eca31f792bb38d4ae2a` into current main at merge commit `7a936f37c2858ea813a3d8763dfe8b740114d54a`.
+
+Synced result: `current_main_synced_corrected_artifact_active_authority_external_local_export_evaluation`.
+
+Evaluation result now synced: `corrected_artifact_active_authority_external_local_export_proven`.
+
+PR `#1345` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Post-merge validation at `7a936f37c2858ea813a3d8763dfe8b740114d54a` passed: `python .\tools\l3-progress-check.py`; `python .\tools\l3-target-selection-validate.py --expect frozen`; and `python -m pytest .\backend\tests\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority -q`.
+
+Current main now proves corrected-artifact active package authority reaches `POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write` after local-outbox provider-private handoff through `backend/app/services/layer3_external_local_export.py`, `L3ExternalLocalExportReceipt`, and `L3ExternalLocalExportAuditEvent`.
+
+No runtime behavior is introduced by the evaluation or this sync. Provider-public delivery/use, provider-private signed URL generation/use, raw token exposure, raw provider object key exposure, real provider network write, real provider object store write, real connector invocation, `ConnectorRun` creation, `ConnectorRunTarget` creation, arbitrary external destination write, credentials, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, qualitative-hybrid runtime, rendered controls, auth/security behavior, full mockup activation, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
+
+The next exact current-main posture is `select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync`.
