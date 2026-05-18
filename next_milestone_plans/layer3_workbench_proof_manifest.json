@@ -32448,5 +32448,46 @@
   "latest_source_directory_external_export_download_prepare_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
   "latest_source_directory_external_export_download_prepare_runtime_entry_status": "source_directory_external_export_download_prepare_runtime_implemented_branch_local",
   "latest_source_directory_external_export_download_prepare_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_external_export_download_prepare_runtime",
-  "latest_source_directory_external_export_download_prepare_runtime_entry_summary": "Doc 812 proof records the bounded source-directory external export/download reference-only readiness prepare runtime over already prepared source-directory package handoff authority."
+  "latest_source_directory_external_export_download_prepare_runtime_entry_summary": "Doc 812 proof records the bounded source-directory external export/download reference-only readiness prepare runtime over already prepared source-directory package handoff authority.",
+  "source_directory_external_export_download_prepare_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_external_export_download_prepare_runtime",
+    "status": "current_main_synced_source_directory_external_export_download_prepare_runtime",
+    "sync_branch": "codex/l3-next-gap-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/813_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+    "runtime_pr": "#1417",
+    "runtime_branch": "codex/l3-next-gap",
+    "runtime_branch_commit": "38bb55594d6c1129a4d11e872f884ebd865e218f",
+    "runtime_merge_commit": "061a65074d91c86815e5dfe28a6deaad7f896184",
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "backend-layer3-api_duration": "2m59s",
+      "test": "SUCCESS",
+      "test_duration": "3m40s",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "proof_coverage": [
+      "current main includes the source-directory external export/download prepare route",
+      "current main includes source-directory external export/download prepare bootstrap feature flag",
+      "current main includes source-directory external export/download prepare readiness endpoint metadata",
+      "current main records PR #1417 merged at 061a65074d91c86815e5dfe28a6deaad7f896184",
+      "current main records green backend-layer3-api and test checks for PR #1417",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main sync introduces no additional runtime behavior",
+      "select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync is selected as the next posture"
+    ],
+    "next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync"
+  },
+  "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_branch": "codex/l3-next-gap-sync",
+  "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/813_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_status": "current_main_synced_source_directory_external_export_download_prepare_runtime",
+  "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync",
+  "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_summary": "Doc 813 proof syncs the source-directory external export/download prepare runtime after PR #1417 and pivots to the next named Layer 3 end-to-end gap selection."
 }
