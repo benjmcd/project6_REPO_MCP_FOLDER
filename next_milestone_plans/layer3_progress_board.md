@@ -4858,3 +4858,19 @@ Current main now proves corrected-artifact active package authority reaches `POS
 No runtime behavior is introduced by the evaluation or this sync. Provider-public delivery/use, provider-private signed URL generation/use, raw token exposure, raw provider object key exposure, real provider network write, real provider object store write, real connector invocation, `ConnectorRun` creation, `ConnectorRunTarget` creation, arbitrary external destination write, credentials, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, qualitative-hybrid runtime, rendered controls, auth/security behavior, full mockup activation, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
 
 The next exact current-main posture is `select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync`.
+
+## Source Expansion Ingestion Source Family Selection Freeze
+
+Branch-local source-family selection and behavior freeze: `742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md` selects `server_configured_operator_directory_text_table_source_family` after the corrected-artifact external local export current-main sync.
+
+Planning branch `codex/l3-source-family-selection` starts from current-main checkpoint `a9d9215fbb17758dc7cec317b7c56ddcbaf413ae`.
+
+The selected deferred lane is `source_expansion_ingestion`; the selected source-family class is `server_configured_local_directory_text_table_ingestion`; and the selected implementation-entry mode is `server_configured_operator_directory_text_table_ingestion`.
+
+The selected source family is a server-configured operator-provided local directory containing only direct child `.csv`, `.json`, `.txt`, and `.md` files. The candidate implementation surfaces are `backend/app/services/layer3_source_directory_ingestion.py`, `backend/app/api/layer3.py`, config authority `LAYER3_SOURCE_INGESTION_DIR`, route `POST /api/v1/layer3/source/ingestion/server-configured-directory/scan`, status route `GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}`, durable batch authority `L3SourceDirectoryIngestionBatch`, and durable file authority `L3SourceDirectoryIngestionFile`.
+
+Implementation entry is allowed after current-main sync only for this exact source family. The future slice must reject caller-supplied paths, URLs, globs, recursive flags, browser-supplied file bytes, unsupported file types, path escape, symlinks, empty eligible directories, stale file identity, oversized files/batches, non-text decoding failure, and configured roots that are unset, relative, missing, not directories, inside app-owned storage, or inside local-outbox/export staging.
+
+This freeze admits no runtime behavior by itself. PDFs, OCR, Office documents, arbitrary binaries, web connectors, arbitrary recursive ingestion, local upload expansion, package construction, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, RAG/vector indexing, qualitative-hybrid analysis runtime, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, and hidden LLM planning remain blocked.
+
+The next exact posture after merge is `current_main_sync_source_expansion_ingestion_source_family_selection_freeze`; after sync, the next exact posture is `implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync`.
