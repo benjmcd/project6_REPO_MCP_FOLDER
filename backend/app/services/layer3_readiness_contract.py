@@ -33,6 +33,7 @@ READINESS_REQUIRED_GATES = (
     "aps-handoff-dispatch",
     "external-export-download-prepare",
     "external-export-download-deliver",
+    "source-directory-external-export-download-prepare",
     "connector-local-destination-receipt",
     "source-directory-operator-status",
     "browser-proof",
@@ -56,6 +57,7 @@ READINESS_IMPLEMENTED_GATES = (
     "aps-handoff-dispatch",
     "external-export-download-prepare",
     "external-export-download-deliver",
+    "source-directory-external-export-download-prepare",
     "connector-local-destination-receipt",
     "source-directory-operator-status",
 )
@@ -157,6 +159,11 @@ def build_readiness_contract(
             f"{api_root}/source/ingestion/server-configured-directory/"
             "qualitative-hybrid-analysis/handoff/export/prepare"
         ),
+        "source_directory_external_export_download_prepare_admitted": True,
+        "source_directory_external_export_download_prepare_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/handoff/export/download/prepare"
+        ),
         "source_directory_operator_status_surface": "server_configured_operator_directory_text_table_source_family",
         "package_review_admitted": False,
         "external_handoff_admitted": False,
@@ -202,6 +209,7 @@ def build_readiness_contract(
             "client_request_id_required_for_source_directory_package_commit": True,
             "client_request_id_required_for_source_directory_package_review_submit": True,
             "client_request_id_required_for_source_directory_handoff_export_prepare": True,
+            "client_request_id_required_for_source_directory_external_export_download_prepare": True,
             "duplicate_gate_b_decision": "same required client_request_id, provided source context, provided material_preview_id, and decision manifest uses a durable Gate B idempotency claim and returns existing Gate B session; conflicts fail closed",
             "gate_b_decision_idempotency_scope": "durable_claim_and_post_commit_retry",
             "gate_b_decision_concurrent_duplicate_lock": True,
@@ -233,6 +241,7 @@ def build_readiness_contract(
             "duplicate_source_directory_package_commit": "same client_request_id and same source-directory qualitative-analysis package authority returns existing package rows; conflicts fail closed",
             "duplicate_source_directory_package_review_submit": "same authority basis and same source-directory operator decision returns existing package-review state; conflicts fail closed",
             "duplicate_source_directory_handoff_export_prepare": "same authority basis and same source-directory operator decision returns existing handoff/export prepare state; conflicts fail closed",
+            "duplicate_source_directory_external_export_download_prepare": "same authority basis and same source-directory export/download readiness decision returns existing readiness state; conflicts fail closed",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
             "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
         },
@@ -271,6 +280,7 @@ def build_readiness_contract(
             "source_directory_package_commit_uses_session_reconciliation_and_package_locks": True,
             "source_directory_package_review_submit_uses_session_reconciliation_and_package_locks": True,
             "source_directory_handoff_export_prepare_uses_session_reconciliation_and_package_locks": True,
+            "source_directory_external_export_download_prepare_uses_session_reconciliation_and_package_locks": True,
             "broad_analysis_execution_requires_later_freeze": True,
         },
         "deferred_decisions": {
@@ -294,5 +304,6 @@ def build_readiness_contract(
             "replacement_package_namespace": "admitted only as separate replacement output-package namespace rows over verified manifest artifacts; source L3OutputPackage rows, payload writes, and broad package mutation remain blocked",
             "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
             "source_directory_operator_status": "admitted only as backend bootstrap/readiness exposure for the already-admitted server-configured local directory scan, status, material-preview, vector-retrieval, qualitative-hybrid analysis, package commit, package-review submit, and handoff/export prepare routes",
+            "source_directory_external_export_download_prepare": "admitted only as a reference-only readiness descriptor after source-directory handoff_export_prepared; same-origin delivery, provider URLs, connector dispatch, network egress, frontend controls, and package mutation remain disabled",
         },
     }

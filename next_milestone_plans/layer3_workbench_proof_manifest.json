@@ -32411,5 +32411,42 @@
   "latest_source_directory_package_handoff_operator_status_surface_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/811_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_package_handoff_operator_status_surface_runtime_current_main_sync_status": "current_main_synced_source_directory_package_handoff_operator_status_surface_runtime",
   "latest_source_directory_package_handoff_operator_status_surface_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_handoff_operator_status_surface_sync",
-  "latest_source_directory_package_handoff_operator_status_surface_runtime_current_main_sync_summary": "Doc 811 proof syncs the source-directory package/handoff operator status surface runtime after PR #1415 and pivots to the next named Layer 3 end-to-end gap selection."
+  "latest_source_directory_package_handoff_operator_status_surface_runtime_current_main_sync_summary": "Doc 811 proof syncs the source-directory package/handoff operator status surface runtime after PR #1415 and pivots to the next named Layer 3 end-to-end gap selection.",
+  "source_directory_external_export_download_prepare_runtime_entry_proof": {
+    "proof_kind": "branch_local_source_directory_external_export_download_prepare_runtime_entry",
+    "status": "source_directory_external_export_download_prepare_runtime_implemented_branch_local",
+    "runtime_branch": "codex/l3-next-gap",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+    "current_main_preflight_checkpoint": "4d96de73d31d27f7f5d3c5482e46c26840e722a3",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/811_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "selected_from_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_handoff_operator_status_surface_sync",
+    "runtime_behavior_change": true,
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_qualitative_analysis.py .\\backend\\app\\api\\layer3.py .\\backend\\app\\services\\layer3_bootstrap_contract.py .\\backend\\app\\services\\layer3_readiness_contract.py .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_readiness_contract.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_readiness_contract.py -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py -q"
+    ],
+    "proof_results": [
+      "PASS",
+      "PASS 14 passed",
+      "PASS 12 passed"
+    ],
+    "proof_coverage": [
+      "source-directory external export/download prepare route is POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/prepare",
+      "response schema is layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1",
+      "runtime mode is source_directory_qualitative_analysis_external_export_download_prepare_authority",
+      "state schema is layer3.external_export_download_prepare_state.v1",
+      "source gate is 812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE",
+      "runtime requires existing package construction package-review submit and handoff/export prepare authority",
+      "runtime records external_export_download_prepared readiness and supports already_prepared replay",
+      "payload references remain redacted",
+      "same-origin delivery provider URLs connector dispatch network egress frontend controls source expansion and package mutation remain blocked"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_external_export_download_prepare_runtime"
+  },
+  "latest_source_directory_external_export_download_prepare_runtime_entry_branch": "codex/l3-next-gap",
+  "latest_source_directory_external_export_download_prepare_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+  "latest_source_directory_external_export_download_prepare_runtime_entry_status": "source_directory_external_export_download_prepare_runtime_implemented_branch_local",
+  "latest_source_directory_external_export_download_prepare_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_external_export_download_prepare_runtime",
+  "latest_source_directory_external_export_download_prepare_runtime_entry_summary": "Doc 812 proof records the bounded source-directory external export/download reference-only readiness prepare runtime over already prepared source-directory package handoff authority."
 }

@@ -42,6 +42,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["source_directory_package_commit"] is True
     assert direct_body["features"]["source_directory_package_review_submit"] is True
     assert direct_body["features"]["source_directory_handoff_export_prepare"] is True
+    assert direct_body["features"]["source_directory_external_export_download_prepare"] is True
     assert direct_body["features"]["broad_qualitative_execution"] is False
     assert direct_body["features"]["rag_vector_retrieval"] is False
     assert direct_body["features"]["dispatch"] is False
@@ -82,6 +83,11 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["execution_readiness"]["source_directory_handoff_export_prepare_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/"
         "qualitative-hybrid-analysis/handoff/export/prepare"
+    )
+    assert direct_body["execution_readiness"]["source_directory_external_export_download_prepare_admitted"] is True
+    assert direct_body["execution_readiness"]["source_directory_external_export_download_prepare_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/handoff/export/download/prepare"
     )
     assert (
         direct_body["execution_readiness"]["source_directory_operator_status_surface"]
