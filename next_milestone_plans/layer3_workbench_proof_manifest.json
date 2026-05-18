@@ -29418,5 +29418,51 @@
   "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/732_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION.md",
   "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_status": "branch_local_corrected_artifact_active_authority_connector_local_destination_receipt_proven",
   "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
-  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_summary": "Doc 732 proves the corrected-artifact active authority chain reaches connector-local destination receipt through recorded connector dispatch and external export/download prepare state with same-origin delivery revalidation."
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_summary": "Doc 732 proves the corrected-artifact active authority chain reaches connector-local destination receipt through recorded connector dispatch and external export/download prepare state with same-origin delivery revalidation.",
+  "corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+    "status": "current_main_synced_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+    "sync_branch": "codex/l3-corrected-connector-receipt-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/733_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/732_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION.md",
+    "evaluation_pr": "#1337",
+    "evaluation_branch_commit": "65270941fd278c98ddc8f1f638dffd80393bfaf0",
+    "evaluation_merge_commit": "25e7db158e6d4bba2b38924839cbceb38b39d7e5",
+    "current_main_checkpoint_after_merge": "25e7db158e6d4bba2b38924839cbceb38b39d7e5",
+    "evaluation_result": "corrected_artifact_active_authority_connector_local_destination_receipt_proven",
+    "runtime_behavior_introduced_by_evaluation": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen: PASS (frozen)"
+    ],
+    "synced_runtime_route": "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+    "synced_reader": "recorded connector_dispatch_record authority plus recorded external_export_download_prepare state with same-origin delivery revalidation",
+    "proof_coverage": [
+      "current main includes Doc 732 corrected-artifact connector-local destination receipt evaluation",
+      "current main includes focused connector-local destination receipt API regression",
+      "current main records PR #1337 merged at 25e7db158e6d4bba2b38924839cbceb38b39d7e5",
+      "current main records green backend-layer3-api and test checks for PR #1337",
+      "current main records zero PR comments, reviews, latest reviews, and review threads",
+      "current main post-merge progress checker passes",
+      "current main post-merge target-selection validation remains frozen",
+      "no runtime behavior introduced by the evaluation or this sync",
+      "next downstream active-package-authority reader selection is deferred to a separate current-main posture"
+    ],
+    "next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_connector_local_destination_receipt_sync"
+  },
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_branch": "codex/l3-corrected-connector-receipt-sync",
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/733_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_connector_local_destination_receipt_sync",
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_summary": "Doc 733 proof syncs corrected-artifact active authority connector-local destination receipt evaluation after PR #1337 and selects the next downstream active-package-authority reader after connector-local destination receipt."
 }

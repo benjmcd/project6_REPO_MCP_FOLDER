@@ -28362,5 +28362,42 @@
   "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_status": "branch_local_corrected_artifact_active_authority_connector_local_destination_receipt_proven",
   "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_runtime_behavior_change": false,
   "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
-  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_summary": "Doc 732 proves the corrected-artifact active package authority chain reaches connector_local_destination_receipt through recorded connector_dispatch_record and external_export_download_prepare state with same-origin delivery revalidation. Current main already has the reader path, so this pass adds proof/control coverage only and admits no service runtime behavior change."
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_summary": "Doc 732 proves the corrected-artifact active package authority chain reaches connector_local_destination_receipt through recorded connector_dispatch_record and external_export_download_prepare state with same-origin delivery revalidation. Current main already has the reader path, so this pass adds proof/control coverage only and admits no service runtime behavior change.",
+  "corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync": {
+    "status": "current_main_synced_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+    "sync_branch": "codex/l3-corrected-connector-receipt-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/733_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/732_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION.md",
+    "evaluation_pr": "#1337",
+    "evaluation_branch": "codex/l3-corrected-connector-receipt",
+    "evaluation_branch_commit": "65270941fd278c98ddc8f1f638dffd80393bfaf0",
+    "evaluation_merge_commit": "25e7db158e6d4bba2b38924839cbceb38b39d7e5",
+    "current_main_checkpoint_after_merge": "25e7db158e6d4bba2b38924839cbceb38b39d7e5",
+    "evaluation_result": "corrected_artifact_active_authority_connector_local_destination_receipt_proven",
+    "runtime_behavior_introduced_by_evaluation": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": {
+      "python .\\tools\\l3-progress-check.py": "PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen": "PASS (frozen)"
+    },
+    "synced_runtime_route": "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+    "synced_reader": "recorded connector_dispatch_record authority plus recorded external_export_download_prepare state with same-origin delivery revalidation",
+    "synced_runtime_owner": "backend/app/services/layer3_connector_local_destination_receipt.py",
+    "next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_connector_local_destination_receipt_sync"
+  },
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_branch": "codex/l3-corrected-connector-receipt-sync",
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/733_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_runtime_behavior_change": false,
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_connector_local_destination_receipt_sync",
+  "latest_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync_summary": "Doc 733 syncs PR #1337 merge commit 25e7db158e6d4bba2b38924839cbceb38b39d7e5 to current main. Current main now records that corrected-artifact active package authority reaches connector_local_destination_receipt through recorded connector_dispatch_record and external_export_download_prepare state with same-origin delivery revalidation, with no runtime behavior introduced by either the evaluation or this sync."
 }
