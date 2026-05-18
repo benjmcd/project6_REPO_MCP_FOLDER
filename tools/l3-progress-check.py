@@ -2036,6 +2036,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF = (
     PLANNING_DOCS
     / "754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "755_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -64301,6 +64305,99 @@ def _check_source_directory_material_deterministic_text_index_runtime_proof(
                 )
 
 
+def _check_source_directory_material_deterministic_text_index_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_deterministic_text_index_runtime_proof`.",
+        "755_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md",
+        "#1359",
+        "codex/l3-source-index-text-impl",
+        "9d3278112389e08ce280e61c8b02ae709d124214",
+        "c0403c860b3e8903b4ee1e80ab9fca04f92301ad",
+        "codex/l3-source-index-text-sync",
+        "current_main_synced_source_directory_material_deterministic_text_index_runtime",
+        "Runtime behavior already merged by runtime PR: `true`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "python -m py_compile .\\tools\\l3-progress-check.py .\\backend\\app\\services\\layer3_source_directory_text_index.py .\\backend\\tests\\test_layer3_source_directory_ingestion.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "13 passed",
+        "24 passed",
+        "backend/app/services/layer3_source_directory_text_index.py",
+        "source_directory_material_deterministic_text_index_authority",
+        "deterministic_text_segments",
+        "line-window-v1",
+        "source_index_rows_written: False",
+        "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source directory deterministic text index runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Deterministic Text Index Runtime Current-Main Sync",
+            "755_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1359",
+            "9d3278112389e08ce280e61c8b02ae709d124214",
+            "c0403c860b3e8903b4ee1e80ab9fca04f92301ad",
+            "current_main_synced_source_directory_material_deterministic_text_index_runtime",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            "reviewThreads totalCount `0`",
+            "13 passed",
+            "24 passed",
+            "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_deterministic_text_index_runtime_current_main_sync",
+            "current_main_synced_source_directory_material_deterministic_text_index_runtime",
+            "codex/l3-source-index-text-sync",
+            "755_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md",
+            "#1359",
+            "9d3278112389e08ce280e61c8b02ae709d124214",
+            "c0403c860b3e8903b4ee1e80ab9fca04f92301ad",
+            '"runtime_behavior_already_merged": true',
+            '"runtime_behavior_in_this_sync": false',
+            '"reviewThreads": 0',
+            "source_directory_material_deterministic_text_index_authority",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            "deterministic_text_segments",
+            "line-window-v1",
+            "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_deterministic_text_index_runtime_current_main_sync_proof",
+            "current_main_sync_source_directory_material_deterministic_text_index_runtime",
+            "current_main_synced_source_directory_material_deterministic_text_index_runtime",
+            "755_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1359",
+            "c0403c860b3e8903b4ee1e80ab9fca04f92301ad",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main post-merge progress checker passes",
+            "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory deterministic text index runtime sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -64898,6 +64995,7 @@ def main() -> int:
     _check_source_directory_material_source_index_authority_contract(errors)
     _check_source_directory_material_source_index_authority_contract_current_main_sync(errors)
     _check_source_directory_material_deterministic_text_index_runtime_proof(errors)
+    _check_source_directory_material_deterministic_text_index_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
