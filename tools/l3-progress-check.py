@@ -1946,6 +1946,10 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVAL
     PLANNING_DOCS
     / "731_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION = (
+    PLANNING_DOCS
+    / "732_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -61472,6 +61476,127 @@ def _check_corrected_artifact_active_authority_external_export_download_deliver_
                 )
 
 
+def _check_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `corrected_artifact_active_authority_connector_local_destination_receipt`.",
+        "732_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION.md",
+        "731_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-connector-receipt",
+        "124fdb1e532563158714f05ffbf8d467281b5643",
+        "Selected downstream reader path: `connector_local_destination_receipt`.",
+        "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+        "recorded `connector_dispatch_record` authority",
+        "same-origin external export/download delivery authority",
+        "corrected_artifact_active_authority_connector_local_destination_receipt_proven",
+        "Runtime behavior change in this pass: `false`",
+        "Test/proof behavior change in this pass: `true`",
+        "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+        "Result observed: `1 passed`",
+        "await_current_main_sync_for_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+        "select_next_downstream_active_package_authority_reader_after_corrected_artifact_connector_local_destination_receipt_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION)} "
+                f"missing corrected-artifact active authority connector-local destination receipt term: {term}"
+            )
+
+    for blocked in (
+        "service runtime behavior",
+        "connector invocation",
+        "connector-run creation",
+        "connector target creation",
+        "real destination write",
+        "credentials",
+        "external network egress",
+        "provider-public delivery/use",
+        "raw public URL exposure",
+        "signed URL generation",
+        "provider-private signed URL generation",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "external export/download prepare rerun beyond delivery revalidation",
+        "local outbox write adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "browser-supplied refs/hashes/bytes",
+        "raw local path exposure",
+        "hidden LLM planning",
+    ):
+        if blocked not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION)} "
+                f"missing corrected-artifact active authority connector-local destination receipt blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority Connector Local Destination Receipt Evaluation",
+            "732_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION.md",
+            "codex/l3-corrected-connector-receipt",
+            "124fdb1e532563158714f05ffbf8d467281b5643",
+            "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+            "recorded `connector_dispatch_record` and `external_export_download_prepare` state",
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+            "branch_local_corrected_artifact_active_authority_connector_local_destination_receipt_proven",
+            "codex/l3-corrected-connector-receipt",
+            "732_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION.md",
+            "124fdb1e532563158714f05ffbf8d467281b5643",
+            "connector_local_destination_receipt",
+            '"runtime_behavior_change": false',
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_connector_local_destination_receipt_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_proof",
+            "branch_local_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+            "branch_local_corrected_artifact_active_authority_connector_local_destination_receipt_proven",
+            "732_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION.md",
+            "124fdb1e532563158714f05ffbf8d467281b5643",
+            "POST /api/v1/layer3/handoff/connector/local-destination/receipt",
+            '"runtime_behavior_change": false',
+            "real corrected-artifact associated-cohort API route chain reaches connector-local destination receipt",
+            "duplicate connector-local destination receipt replays as already_recorded",
+            "await_current_main_sync_for_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "_activate_corrected_replacement_package_authority",
+            "_approve_cohort_aps_handoff_plan",
+            '"/api/v1/layer3/handoff/connector/local-destination/receipt"',
+            "already_recorded",
+            "L3ConnectorLocalDestinationReceipt",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority connector-local destination receipt "
+                    f"artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -62046,6 +62171,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_external_export_download_prepare_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_external_export_download_deliver_evaluation(errors)
     _check_corrected_artifact_active_authority_external_export_download_deliver_evaluation_current_main_sync(errors)
+    _check_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
