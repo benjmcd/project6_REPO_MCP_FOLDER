@@ -5322,3 +5322,33 @@ Runtime behavior introduced by this sync: `false`.
 This sync admits no runtime behavior, backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, context-packet durable row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact current-main posture is `write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime`.
+
+## Source Directory Material Qualitative Hybrid Context Packet Authority Contract
+
+Branch-local qualitative-hybrid context-packet authority contract: `764_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT.md` follows the source-directory qualitative-hybrid context-packet authority freeze current-main sync.
+
+Contract branch `codex/l3-rag-qual-contract` starts from current-main checkpoint `933a1d0753cee6c62888cf907291ad4c54f3af17`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_freeze`.
+
+Selected from posture: `write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime`.
+
+Selected contract: `source_directory_material_retrieval_augmented_context_packet_authority`.
+
+Selected context-packet mode: `retrieval_augmented_qualitative_context_packet`.
+
+Selected retrieval authority: `source_directory_material_deterministic_lexical_retrieval_authority`.
+
+Selected future owner service: `backend/app/services/layer3_source_directory_context_packet.py`.
+
+Selected future proof test: `backend/tests/test_layer3_source_directory_context_packet.py`.
+
+Selected future implementation action: `implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync`.
+
+Runtime behavior introduced by this contract: `false`.
+
+The future request is limited to current source/material/index/retrieval authority fields, deterministic `query_text`, bounded `limit`, and bounded `offset`. The future runtime must call `source_directory_material_text_retrieval(db, payload)`, validate `retrieval_contract_id` and `retrieval_mode`, compute a stable `context_packet_hash`, return row-write flags as false, and create no `L3PassRun`, `AnalysisRun`, `L3OutputPackage`, `ConnectorRun`, or `ConnectorRunTarget` side effects.
+
+This contract admits no runtime behavior, backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, context-packet durable row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_contract`; after sync, the next exact posture is `implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync`.
