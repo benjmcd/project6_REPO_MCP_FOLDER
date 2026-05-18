@@ -37,6 +37,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "source_directory_material_preview": True,
     "source_directory_vector_retrieval": True,
     "source_directory_hybrid_context_packet": True,
+    "source_directory_hybrid_context_packet_qualitative_analysis": True,
     "source_directory_qualitative_hybrid_analysis": True,
     "source_directory_qualitative_hybrid_analysis_status": True,
     "source_directory_package_commit": True,
@@ -159,6 +160,11 @@ def build_bootstrap_contract(
             "source_directory_hybrid_context_packet_admitted": True,
             "source_directory_hybrid_context_packet_endpoint": (
                 f"{api_root}/source/ingestion/server-configured-directory/hybrid-context-packet"
+            ),
+            "source_directory_hybrid_context_packet_qualitative_analysis_admitted": True,
+            "source_directory_hybrid_context_packet_qualitative_analysis_endpoint": (
+                f"{api_root}/source/ingestion/server-configured-directory/"
+                "hybrid-context-packet/qualitative-analysis"
             ),
             "source_directory_qualitative_hybrid_analysis_admitted": True,
             "source_directory_qualitative_hybrid_analysis_endpoint": (

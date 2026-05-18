@@ -36,6 +36,7 @@ READINESS_REQUIRED_GATES = (
     "source-directory-qualitative-hybrid-analysis-status",
     "source-directory-package-supersession-preview",
     "source-directory-hybrid-context-packet",
+    "source-directory-hybrid-context-packet-qualitative-analysis",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -65,6 +66,7 @@ READINESS_IMPLEMENTED_GATES = (
     "source-directory-qualitative-hybrid-analysis-status",
     "source-directory-package-supersession-preview",
     "source-directory-hybrid-context-packet",
+    "source-directory-hybrid-context-packet-qualitative-analysis",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -154,6 +156,11 @@ def build_readiness_contract(
         "source_directory_hybrid_context_packet_endpoint": (
             f"{api_root}/source/ingestion/server-configured-directory/hybrid-context-packet"
         ),
+        "source_directory_hybrid_context_packet_qualitative_analysis_admitted": True,
+        "source_directory_hybrid_context_packet_qualitative_analysis_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis"
+        ),
         "source_directory_qualitative_hybrid_analysis_admitted": True,
         "source_directory_qualitative_hybrid_analysis_endpoint": (
             f"{api_root}/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
@@ -240,6 +247,7 @@ def build_readiness_contract(
             "client_request_id_required_for_source_directory_material_preview": False,
             "client_request_id_required_for_source_directory_vector_retrieval": False,
             "client_request_id_required_for_source_directory_hybrid_context_packet": False,
+            "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis": False,
             "client_request_id_required_for_source_directory_qualitative_hybrid_analysis": False,
             "client_request_id_required_for_source_directory_qualitative_hybrid_analysis_status": False,
             "client_request_id_required_for_source_directory_package_commit": True,
@@ -277,6 +285,7 @@ def build_readiness_contract(
             "duplicate_source_directory_material_preview": "read-only material preview revalidates recorded source-directory material authority",
             "duplicate_source_directory_vector_retrieval": "read-only deterministic vector retrieval revalidates source-directory material, text-index, vector-index, and embedding-index authority",
             "duplicate_source_directory_hybrid_context_packet": "read-only deterministic hybrid context packet revalidates source-directory lexical context-packet and vector-retrieval authority without durable retrieval rows",
+            "duplicate_source_directory_hybrid_context_packet_qualitative_analysis": "read-only deterministic qualitative analysis revalidates source-directory hybrid context-packet authority without package, provider, connector, network, or durable analysis rows",
             "duplicate_source_directory_qualitative_hybrid_analysis": "read-only deterministic qualitative-hybrid analysis revalidates source-directory material, retrieval, and context-packet authority",
             "duplicate_source_directory_qualitative_hybrid_analysis_status": "read-only status revalidates source-directory qualitative-hybrid analysis authority without returning full evidence segments or package-preview payloads",
             "duplicate_source_directory_package_commit": "same client_request_id and same source-directory qualitative-analysis package authority returns existing package rows; conflicts fail closed",
@@ -321,6 +330,7 @@ def build_readiness_contract(
             "source_directory_material_preview_is_read_only": True,
             "source_directory_vector_retrieval_is_read_only": True,
             "source_directory_hybrid_context_packet_is_read_only": True,
+            "source_directory_hybrid_context_packet_qualitative_analysis_is_read_only": True,
             "source_directory_qualitative_hybrid_analysis_is_read_only": True,
             "source_directory_qualitative_hybrid_analysis_status_is_read_only": True,
             "source_directory_package_commit_uses_session_reconciliation_and_package_locks": True,
@@ -354,6 +364,7 @@ def build_readiness_contract(
             "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
             "source_directory_operator_status": "admitted only as backend bootstrap/readiness exposure for the already-admitted server-configured local directory scan, status, material-preview, vector-retrieval, qualitative-hybrid analysis, package commit, package-review submit, and handoff/export prepare routes",
             "source_directory_hybrid_context_packet": "admitted only as a read-only deterministic fusion of existing source-directory lexical context-packet and vector-retrieval authority; persistent vector stores, RAG execution, provider/model runtime, package mutation, connector dispatch, network egress, and frontend controls remain disabled",
+            "source_directory_hybrid_context_packet_qualitative_analysis": "admitted only as a read-only deterministic qualitative-analysis reader over the source-directory hybrid context packet; package construction, package-review submit, handoff/export, provider/model runtime, RAG execution, connector dispatch, network egress, frontend controls, and durable analysis rows remain disabled",
             "source_directory_qualitative_hybrid_analysis_status": "admitted only as a read-only operator-visible status reader over the existing deterministic source-directory qualitative-hybrid analysis authority; full supporting segments, package-preview payloads, prompt/model runtime, package writes, connector dispatch, network egress, frontend controls, and raw path exposure remain disabled",
             "source_directory_package_supersession_preview": "admitted only as a read-only source-directory package mutation/reconstruction preview over an approved package-review submit; replacement authority, supersession commit, package row mutation, payload writes or rewrite, provider delivery, connector dispatch, network egress, and frontend controls remain disabled",
             "source_directory_external_export_download_prepare": "admitted only as a reference-only readiness descriptor after source-directory handoff_export_prepared; provider URLs, connector dispatch, network egress, frontend controls, and package mutation remain disabled",
