@@ -4874,3 +4874,23 @@ Implementation entry is allowed after current-main sync only for this exact sour
 This freeze admits no runtime behavior by itself. PDFs, OCR, Office documents, arbitrary binaries, web connectors, arbitrary recursive ingestion, local upload expansion, package construction, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, RAG/vector indexing, qualitative-hybrid analysis runtime, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, and hidden LLM planning remain blocked.
 
 The next exact posture after merge is `current_main_sync_source_expansion_ingestion_source_family_selection_freeze`; after sync, the next exact posture is `implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync`.
+
+## Source Expansion Ingestion Source Family Selection Freeze Current-Main Sync
+
+Current-main sync: `743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md` syncs freeze PR `#1347` for `source_expansion_ingestion_source_family_selection_freeze`.
+
+Freeze branch `codex/l3-source-family-selection` landed branch commit `3b9ebead55b72c52c25a88de3130436d84e81c61` into current main at merge commit `cf014d39fd093050aa1bbc183323cb26906fb3f9`.
+
+Synced result: `current_main_synced_source_expansion_ingestion_source_family_selection_freeze`.
+
+Current main now records `server_configured_operator_directory_text_table_source_family` as the selected source expansion/ingestion family and `server_configured_operator_directory_text_table_ingestion` as the next implementation entry.
+
+PR `#1347` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Post-merge validation at `cf014d39fd093050aa1bbc183323cb26906fb3f9` passed: `python .\tools\l3-progress-check.py`; and `python .\tools\l3-target-selection-validate.py --expect frozen`.
+
+The synced source family remains bounded to direct child `.csv`, `.json`, `.txt`, and `.md` files under server/operator-configured `LAYER3_SOURCE_INGESTION_DIR`. The candidate implementation surfaces remain `backend/app/services/layer3_source_directory_ingestion.py`, `backend/app/api/layer3.py`, `POST /api/v1/layer3/source/ingestion/server-configured-directory/scan`, `GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}`, `L3SourceDirectoryIngestionBatch`, and `L3SourceDirectoryIngestionFile`.
+
+No runtime behavior is introduced by the freeze or this sync. Caller-supplied paths, URLs, glob patterns, recursive flags, browser-supplied file bytes, PDFs, OCR, Office documents, arbitrary binaries, archives, executable files, symlinks, web connectors, arbitrary recursive ingestion, local upload expansion, package construction, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, RAG/vector indexing, qualitative-hybrid analysis runtime, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, and hidden LLM planning remain blocked.
+
+The next exact current-main posture is `implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync`.
