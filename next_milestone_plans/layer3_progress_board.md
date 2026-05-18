@@ -5998,3 +5998,29 @@ The focused proof covers deterministic score-ordered replay, stale embedding-ind
 No backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, durable retrieval row write, vector database, persistent vector store, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package behavior, handoff/export rerun, connector/destination dispatch, credentials, network egress, provider-public delivery/use, auth/security broadening, rendered/frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this runtime.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof`.
+
+## Source Directory Material Deterministic Vector Retrieval Runtime Current-Main Sync
+
+Current-main sync: `789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1393` for `source_directory_material_deterministic_vector_retrieval_runtime_proof`.
+
+Runtime branch `codex/l3-vector-retrieval-runtime` landed branch commit `1428cac062ae3f4a4ea52d2dea10c73d004595b5` into current main at merge commit `261c995c7330952bf01fa5b43202fd4445dbb5ea`.
+
+Synced result: `current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime`.
+
+Current main now includes `788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md`, `backend/app/services/layer3_source_directory_vector_retrieval.py`, and `backend/tests/test_layer3_source_directory_vector_retrieval.py`.
+
+Current main now implements `source_directory_material_vector_retrieval(db, payload)` over `source_directory_material_deterministic_embedding_vector_index_authority`, `layer3.source_directory_embedding_vector_index.v1`, `source-directory-hash-vector-v1`, and `vector_dimensions == 4096`.
+
+Current main validates `embedding_index_authority_hash`, rejects stale authority through the vector-index/text-index authority path, computes deterministic normalized query-to-segment dot product scores, omits `vector_score <= 0` results without fallback, and returns `layer3.source_directory_vector_retrieval.v1`.
+
+PR `#1393` had green `backend-layer3-api` (`3m15s`) and `test` (`3m38s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior already merged by runtime PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+No backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, durable retrieval row write, vector database, persistent vector store, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package behavior, handoff/export rerun, connector/destination dispatch, credentials, network egress, provider-public delivery/use, auth/security broadening, rendered/frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
+
+The next exact current-main posture is `select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync`.
+
+Do not continue additional same-family source-directory vector retrieval proof loops unless current-main evidence shows a concrete unresolved defect or named downstream reader.

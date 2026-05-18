@@ -2164,6 +2164,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF = 
     PLANNING_DOCS
     / "788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -68397,6 +68401,106 @@ def _check_source_directory_material_deterministic_vector_retrieval_runtime_proo
                 )
 
 
+def _check_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_deterministic_vector_retrieval_runtime_proof`.",
+        "789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+        "#1393",
+        "codex/l3-vector-retrieval-runtime",
+        "1428cac062ae3f4a4ea52d2dea10c73d004595b5",
+        "261c995c7330952bf01fa5b43202fd4445dbb5ea",
+        "codex/l3-vector-retrieval-runtime-sync",
+        "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+        "Runtime behavior already merged by runtime PR: `true`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "`backend-layer3-api`: `SUCCESS`, `3m15s`",
+        "`test`: `SUCCESS`, `3m38s`",
+        "comments totalCount: `0`",
+        "reviews totalCount: `0`",
+        "latestReviews totalCount: `0`",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "backend/app/services/layer3_source_directory_vector_retrieval.py",
+        "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+        "source_directory_material_vector_retrieval(db, payload)",
+        "layer3.source_directory_vector_retrieval.v1",
+        "source-directory-hash-vector-v1",
+        "vector_dimensions == 4096",
+        "embedding_index_authority_hash",
+        "deterministic normalized query-to-segment dot product",
+        "vector_score <= 0",
+        "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source directory deterministic vector retrieval runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Deterministic Vector Retrieval Runtime Current-Main Sync",
+            "789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1393",
+            "1428cac062ae3f4a4ea52d2dea10c73d004595b5",
+            "261c995c7330952bf01fa5b43202fd4445dbb5ea",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+            "source_directory_material_vector_retrieval(db, payload)",
+            "layer3.source_directory_vector_retrieval.v1",
+            "Runtime behavior introduced by this sync: `false`.",
+            "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+            "codex/l3-vector-retrieval-runtime-sync",
+            "789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+            "#1393",
+            "1428cac062ae3f4a4ea52d2dea10c73d004595b5",
+            "261c995c7330952bf01fa5b43202fd4445dbb5ea",
+            '"runtime_behavior_already_merged_by_runtime_pr": true',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api_duration": "3m15s"',
+            '"test_duration": "3m38s"',
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            "layer3.source_directory_vector_retrieval.v1",
+            "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_proof",
+            "current_main_sync_source_directory_material_deterministic_vector_retrieval_runtime",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+            "789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+            "#1393",
+            "1428cac062ae3f4a4ea52d2dea10c73d004595b5",
+            "261c995c7330952bf01fa5b43202fd4445dbb5ea",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no additional runtime behavior",
+            "source_directory_material_vector_retrieval(db, payload) is current-main synced",
+            "layer3.source_directory_vector_retrieval.v1 is current-main synced",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py and backend/tests/test_layer3_source_directory_vector_retrieval.py are current-main synced",
+            "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory deterministic vector retrieval runtime sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -69030,6 +69134,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_material_deterministic_vector_retrieval_runtime_proof(errors)
+    _check_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")
