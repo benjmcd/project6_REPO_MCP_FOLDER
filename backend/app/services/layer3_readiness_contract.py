@@ -34,6 +34,7 @@ READINESS_REQUIRED_GATES = (
     "external-export-download-prepare",
     "external-export-download-deliver",
     "connector-local-destination-receipt",
+    "source-directory-operator-status",
     "browser-proof",
 )
 READINESS_IMPLEMENTED_GATES = (
@@ -56,6 +57,7 @@ READINESS_IMPLEMENTED_GATES = (
     "external-export-download-prepare",
     "external-export-download-deliver",
     "connector-local-destination-receipt",
+    "source-directory-operator-status",
 )
 READINESS_DEFERRED_GATES = (
     "approved-plan-correction",
@@ -122,6 +124,25 @@ def build_readiness_contract(
         "plan_revision_recovery_endpoint": f"{api_root}/plan/revision/recover",
         "approved_plan_cancel_admitted": True,
         "approved_plan_cancel_endpoint": f"{api_root}/plan/approved/cancel",
+        "source_directory_ingestion_scan_admitted": True,
+        "source_directory_ingestion_scan_endpoint": f"{api_root}/source/ingestion/server-configured-directory/scan",
+        "source_directory_ingestion_status_admitted": True,
+        "source_directory_ingestion_status_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/status/{{source_ingestion_batch_id}}"
+        ),
+        "source_directory_material_preview_admitted": True,
+        "source_directory_material_preview_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/material-preview"
+        ),
+        "source_directory_vector_retrieval_admitted": True,
+        "source_directory_vector_retrieval_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/vector-retrieval"
+        ),
+        "source_directory_qualitative_hybrid_analysis_admitted": True,
+        "source_directory_qualitative_hybrid_analysis_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
+        ),
+        "source_directory_operator_status_surface": "server_configured_operator_directory_text_table_source_family",
         "package_review_admitted": False,
         "external_handoff_admitted": False,
         "external_export_admitted": False,
@@ -159,6 +180,10 @@ def build_readiness_contract(
             "client_request_id_required_for_replacement_package_namespace": True,
             "client_request_id_required_for_plan_revision_recovery": True,
             "client_request_id_required_for_approved_plan_cancel": True,
+            "client_request_id_required_for_source_directory_ingestion_scan": True,
+            "client_request_id_required_for_source_directory_material_preview": False,
+            "client_request_id_required_for_source_directory_vector_retrieval": False,
+            "client_request_id_required_for_source_directory_qualitative_hybrid_analysis": False,
             "duplicate_gate_b_decision": "same required client_request_id, provided source context, provided material_preview_id, and decision manifest uses a durable Gate B idempotency claim and returns existing Gate B session; conflicts fail closed",
             "gate_b_decision_idempotency_scope": "durable_claim_and_post_commit_retry",
             "gate_b_decision_concurrent_duplicate_lock": True,
@@ -183,6 +208,10 @@ def build_readiness_contract(
             "duplicate_replacement_package_namespace": "same client_request_id and authority basis returns existing replacement namespace row; conflicts fail closed",
             "duplicate_plan_revision_recovery": "same client_request_id and same recorded revision-control authority returns existing recovery state; conflicts fail closed",
             "duplicate_approved_plan_cancel": "same client_request_id and same approved-plan authority basis returns existing cancellation state; conflicts fail closed",
+            "duplicate_source_directory_ingestion_scan": "same client_request_id and same server-configured directory basis returns existing source-directory batch state; conflicts fail closed",
+            "duplicate_source_directory_material_preview": "read-only material preview revalidates recorded source-directory material authority",
+            "duplicate_source_directory_vector_retrieval": "read-only deterministic vector retrieval revalidates source-directory material, text-index, vector-index, and embedding-index authority",
+            "duplicate_source_directory_qualitative_hybrid_analysis": "read-only deterministic qualitative-hybrid analysis revalidates source-directory material, retrieval, and context-packet authority",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
             "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
         },
@@ -213,6 +242,11 @@ def build_readiness_contract(
             "plan_revision_recovery_is_preview_refresh_only": True,
             "approved_plan_cancel_uses_session_and_plan_locks": True,
             "approved_plan_cancel_without_replacement_only": True,
+            "source_directory_ingestion_scan_uses_configured_source_root": True,
+            "source_directory_status_is_read_only": True,
+            "source_directory_material_preview_is_read_only": True,
+            "source_directory_vector_retrieval_is_read_only": True,
+            "source_directory_qualitative_hybrid_analysis_is_read_only": True,
             "broad_analysis_execution_requires_later_freeze": True,
         },
         "deferred_decisions": {
@@ -235,5 +269,6 @@ def build_readiness_contract(
             "replacement_package_artifact_manifest": "admitted only as server-side manifest verification of existing replacement refs and hashes; artifact generation, package row mutation, payload writes, and broad package mutation remain blocked",
             "replacement_package_namespace": "admitted only as separate replacement output-package namespace rows over verified manifest artifacts; source L3OutputPackage rows, payload writes, and broad package mutation remain blocked",
             "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
+            "source_directory_operator_status": "admitted only as backend bootstrap/readiness exposure for the already-admitted server-configured local directory scan, status, material-preview, vector-retrieval, and qualitative-hybrid analysis routes",
         },
     }

@@ -2206,6 +2206,10 @@ LAYER3_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYN
     PLANNING_DOCS
     / "799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -69819,6 +69823,110 @@ def _check_source_directory_qualitative_hybrid_analysis_api_runtime_current_main
                 )
 
 
+def _check_source_directory_operator_readiness_status_surface_runtime_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze and runtime proof for `source_directory_operator_readiness_bootstrap_status_surface_runtime_entry`.",
+        "800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+        "codex/l3-source-readiness",
+        "0dd3f1fb6aa7d29ef3f48c54c75fb0788336798e",
+        "799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync",
+        "implement_source_directory_operator_readiness_bootstrap_status_surface_after_qualitative_hybrid_analysis_api_sync",
+        "source_directory_operator_readiness_bootstrap_status_surface_runtime_implemented_branch_local",
+        "Runtime behavior introduced by this pass: `true`.",
+        "source_directory_ingestion_scan",
+        "source_directory_ingestion_status",
+        "source_directory_material_preview",
+        "source_directory_vector_retrieval",
+        "source_directory_qualitative_hybrid_analysis",
+        "source-directory-operator-status",
+        "server_configured_operator_directory_text_table_source_family",
+        "backend/app/services/layer3_bootstrap_contract.py",
+        "backend/app/services/layer3_readiness_contract.py",
+        "backend/app/api/layer3.py",
+        "backend/tests/test_layer3_api.py",
+        "2 passed",
+        "187 passed",
+        "await_current_main_sync_for_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync",
+        "does not admit any new source family",
+        "frontend-rendered controls",
+        "network egress",
+        "prompt/model/provider runtime",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY)} "
+                f"missing source-directory operator readiness status surface runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Operator Readiness Status Surface Runtime Entry Freeze",
+            "800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+            "codex/l3-source-readiness",
+            "0dd3f1fb6aa7d29ef3f48c54c75fb0788336798e",
+            "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync",
+            "source_directory_operator_readiness_bootstrap_status_surface_runtime_implemented_branch_local",
+            "source_directory_ingestion_scan",
+            "source_directory_ingestion_status",
+            "source_directory_material_preview",
+            "source_directory_vector_retrieval",
+            "source_directory_qualitative_hybrid_analysis",
+            "source-directory-operator-status",
+            "2 passed",
+            "187 passed",
+            "await_current_main_sync_for_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_operator_readiness_bootstrap_status_surface_runtime_entry",
+            "source_directory_operator_readiness_bootstrap_status_surface_runtime_implemented_branch_local",
+            "codex/l3-source-readiness",
+            "800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+            "0dd3f1fb6aa7d29ef3f48c54c75fb0788336798e",
+            "799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "operator_visible_backend_readiness_bootstrap_status_surface_for_admitted_source_directory_chain",
+            "implement_source_directory_operator_readiness_bootstrap_status_surface_after_qualitative_hybrid_analysis_api_sync",
+            '"runtime_behavior_change": true',
+            "source-directory-operator-status",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+            "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+            '"new_source_family_enabled": false',
+            '"frontend_durable_authority_enabled": false',
+            '"connector_dispatch_enabled": false',
+            '"provider_public_delivery_enabled": false',
+            '"network_egress_enabled": false',
+            '"prompt_model_provider_runtime_enabled": false',
+            "await_current_main_sync_for_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_operator_readiness_bootstrap_status_surface_runtime_entry_proof",
+            "branch_local_source_directory_operator_readiness_bootstrap_status_surface_runtime_entry",
+            "source_directory_operator_readiness_bootstrap_status_surface_runtime_implemented_branch_local",
+            "codex/l3-source-readiness",
+            "800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+            "bootstrap features expose source_directory_ingestion_scan",
+            "readiness response exposes admitted endpoint metadata for the already-admitted source-directory chain",
+            "Layer3ExecutionReadinessResponse schema includes the new source-directory status-surface fields",
+            "no new source family arbitrary ingestion frontend durable authority package mutation connector dispatch provider delivery network egress vector indexing expansion prompt/model/provider runtime or raw local path exposure is admitted",
+            "await_current_main_sync_for_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory operator readiness status surface artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -70475,6 +70583,7 @@ def main() -> int:
     _check_source_directory_qualitative_hybrid_analysis_api_runtime_current_main_sync(
         errors
     )
+    _check_source_directory_operator_readiness_status_surface_runtime_entry(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

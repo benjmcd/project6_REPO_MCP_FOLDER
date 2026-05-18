@@ -32,6 +32,11 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "replacement_package_namespace": True,
     "plan_revision_recovery": True,
     "approved_plan_cancel": True,
+    "source_directory_ingestion_scan": True,
+    "source_directory_ingestion_status": True,
+    "source_directory_material_preview": True,
+    "source_directory_vector_retrieval": True,
+    "source_directory_qualitative_hybrid_analysis": True,
     "analysis_execution": False,
     "single_aps_doc_qualitative_execution": True,
     "broad_qualitative_execution": False,
@@ -126,6 +131,27 @@ def build_bootstrap_contract(
             "plan_revision_recovery_endpoint": f"{api_root}/plan/revision/recover",
             "approved_plan_cancel_admitted": True,
             "approved_plan_cancel_endpoint": f"{api_root}/plan/approved/cancel",
+            "source_directory_ingestion_scan_admitted": True,
+            "source_directory_ingestion_scan_endpoint": (
+                f"{api_root}/source/ingestion/server-configured-directory/scan"
+            ),
+            "source_directory_ingestion_status_admitted": True,
+            "source_directory_ingestion_status_endpoint": (
+                f"{api_root}/source/ingestion/server-configured-directory/status/{{source_ingestion_batch_id}}"
+            ),
+            "source_directory_material_preview_admitted": True,
+            "source_directory_material_preview_endpoint": (
+                f"{api_root}/source/ingestion/server-configured-directory/material-preview"
+            ),
+            "source_directory_vector_retrieval_admitted": True,
+            "source_directory_vector_retrieval_endpoint": (
+                f"{api_root}/source/ingestion/server-configured-directory/vector-retrieval"
+            ),
+            "source_directory_qualitative_hybrid_analysis_admitted": True,
+            "source_directory_qualitative_hybrid_analysis_endpoint": (
+                f"{api_root}/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
+            ),
+            "source_directory_operator_status_surface": "server_configured_operator_directory_text_table_source_family",
             "package_review_admitted": False,
             "external_handoff_admitted": False,
             "external_export_admitted": False,
