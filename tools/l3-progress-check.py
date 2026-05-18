@@ -2043,6 +2043,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_S
 LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE = (
     PLANNING_DOCS / "756_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "757_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -64493,6 +64497,95 @@ def _check_source_directory_material_lexical_retrieval_authority_freeze(
                 )
 
 
+def _check_source_directory_material_lexical_retrieval_authority_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_lexical_retrieval_authority_freeze`.",
+        "757_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "756_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE.md",
+        "#1361",
+        "codex/l3-retrieval-selection",
+        "6aa4157bd5194a9b7ebafc80ccd07c6a229dd4e0",
+        "8049f131ce35e473864665d05093f1215b6601b1",
+        "codex/l3-retrieval-selection-sync",
+        "current_main_synced_source_directory_material_lexical_retrieval_authority_freeze",
+        "Runtime behavior introduced by freeze PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "source_directory_material_lexical_retrieval_authority_contract",
+        "deterministic_lexical_segment_retrieval",
+        "source_directory_material_deterministic_lexical_retrieval_authority",
+        "backend/app/services/layer3_source_directory_text_retrieval.py",
+        "python -m py_compile .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source directory lexical retrieval authority freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Lexical Retrieval Authority Freeze Current-Main Sync",
+            "757_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1361",
+            "6aa4157bd5194a9b7ebafc80ccd07c6a229dd4e0",
+            "8049f131ce35e473864665d05093f1215b6601b1",
+            "current_main_synced_source_directory_material_lexical_retrieval_authority_freeze",
+            "backend/app/services/layer3_source_directory_text_retrieval.py",
+            "reviewThreads totalCount `0`",
+            "Runtime behavior introduced by this sync: `false`.",
+            "write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_material_lexical_retrieval_authority_freeze_current_main_sync",
+            "current_main_synced_source_directory_material_lexical_retrieval_authority_freeze",
+            "codex/l3-retrieval-selection-sync",
+            "757_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "756_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE.md",
+            "#1361",
+            "6aa4157bd5194a9b7ebafc80ccd07c6a229dd4e0",
+            "8049f131ce35e473864665d05093f1215b6601b1",
+            '"runtime_behavior_introduced_by_freeze": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"reviewThreads": 0',
+            "source_directory_material_lexical_retrieval_authority_contract",
+            "source_directory_material_deterministic_lexical_retrieval_authority",
+            "deterministic_lexical_segment_retrieval",
+            "backend/app/services/layer3_source_directory_text_retrieval.py",
+            "write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_lexical_retrieval_authority_freeze_current_main_sync_proof",
+            "current_main_sync_source_directory_material_lexical_retrieval_authority_freeze",
+            "current_main_synced_source_directory_material_lexical_retrieval_authority_freeze",
+            "757_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1361",
+            "8049f131ce35e473864665d05093f1215b6601b1",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "no runtime behavior introduced by this sync",
+            "write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory lexical retrieval authority freeze sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -65092,6 +65185,7 @@ def main() -> int:
     _check_source_directory_material_deterministic_text_index_runtime_proof(errors)
     _check_source_directory_material_deterministic_text_index_runtime_current_main_sync(errors)
     _check_source_directory_material_lexical_retrieval_authority_freeze(errors)
+    _check_source_directory_material_lexical_retrieval_authority_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
