@@ -5792,3 +5792,33 @@ Runtime behavior introduced by this sync: `false`.
 No runtime behavior, backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, vector database, persistent vector store, vector query, semantic retrieval ranking, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
 
 The next exact current-main posture is `implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync`.
+
+## Source Directory Material Deterministic Embedding Vector Index Runtime Proof
+
+Branch-local runtime proof: `782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md` implements the selected `source_directory_material_deterministic_embedding_vector_index_authority` posture.
+
+Runtime branch `codex/l3-vector-runtime` starts from current-main checkpoint `d3acf9f078a495bc09d40ee39477d1b09bbde1bf`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_embedding_vector_index_authority_contract`.
+
+Selected implementation action: `implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync`.
+
+Runtime status after implementation: `source_directory_material_deterministic_embedding_vector_index_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented owner service: `backend/app/services/layer3_source_directory_vector_index.py`.
+
+Implemented proof test: `backend/tests/test_layer3_source_directory_vector_index.py`.
+
+The runtime adds `source_directory_material_embedding_vector_index(db, payload)`, which validates request fields, calls `source_directory_material_text_index(db, payload)` before descriptor construction, validates `index_authority_hash`, and returns `layer3.source_directory_embedding_vector_index.v1`.
+
+The runtime records `embedding_contract_id: source_directory_material_deterministic_embedding_vector_index_authority`, `embedding_mode: deterministic_local_hashing_vector_embedding`, `vector_index_mode: deterministic_source_directory_segment_vector_index`, `feature_hash_version: source-directory-hash-vector-v1`, `vector_dimensions: 4096`, deterministic `embedding_index_authority_hash`, and safe `vector_descriptors`.
+
+Each descriptor includes segment ID, sequence, line/character bounds, `segment_hash`, `embedding_vector_hash`, `nonzero_feature_count`, `token_count`, and `vector_l2_norm`; it does not expose raw text, raw vector arrays, normalized feature arrays, raw paths, credentials, provider/model values, package payloads, connector targets, public URLs, source expansion inputs, or frontend-durable state.
+
+The focused proof passed `python -m py_compile .\backend\app\services\layer3_source_directory_vector_index.py .\backend\tests\test_layer3_source_directory_vector_index.py` and `python -m pytest .\backend\tests\test_layer3_source_directory_vector_index.py -q` with `4 passed`.
+
+No backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, vector database, persistent vector store, vector query runtime, semantic retrieval ranking, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this pass.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_material_deterministic_embedding_vector_index_runtime_proof`; after sync, the next exact posture is `select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync` only if current-main evidence confirms this runtime is cleanly synced and no concrete same-family vector-index defect remains.

@@ -2136,6 +2136,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT_CURRE
     PLANNING_DOCS
     / "781_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -2162,6 +2166,12 @@ LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE = (
 )
 LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_source_directory_qualitative_analysis.py"
+)
+LAYER3_SOURCE_DIRECTORY_VECTOR_INDEX_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_directory_vector_index.py"
+)
+LAYER3_SOURCE_DIRECTORY_VECTOR_INDEX_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_source_directory_vector_index.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0034_layer3_source_directory_ingestion.py"
@@ -67376,6 +67386,186 @@ def _check_source_directory_material_embedding_vector_index_authority_contract_c
                 )
 
 
+def _check_source_directory_material_deterministic_embedding_vector_index_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime proof for `source_directory_material_deterministic_embedding_vector_index_runtime_proof`.",
+        "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md",
+        "codex/l3-vector-runtime",
+        "d3acf9f078a495bc09d40ee39477d1b09bbde1bf",
+        "781_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_embedding_vector_index_authority_contract",
+        "implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync",
+        "source_directory_material_deterministic_embedding_vector_index_runtime_implemented_branch_local",
+        "Runtime behavior introduced by this pass: `true`.",
+        "backend/app/services/layer3_source_directory_vector_index.py",
+        "backend/tests/test_layer3_source_directory_vector_index.py",
+        "source_directory_material_embedding_vector_index(db, payload)",
+        "source_directory_material_text_index(db, payload)",
+        "layer3.source_directory_embedding_vector_index.v1",
+        "source_directory_material_deterministic_embedding_vector_index_authority",
+        "deterministic_local_hashing_vector_embedding",
+        "deterministic_source_directory_segment_vector_index",
+        "source-directory-hash-vector-v1",
+        "vector_dimensions: 4096",
+        "embedding_index_authority_hash",
+        "embedding_vector_hash",
+        "nonzero_feature_count",
+        "vector_l2_norm",
+        "source_index_rows_written: False",
+        "embedding_vector_rows_written: False",
+        "vector_index_rows_written: False",
+        "retrieval_rows_written: False",
+        "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_vector_index.py .\\backend\\tests\\test_layer3_source_directory_vector_index.py",
+        "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_index.py -q",
+        "4 passed",
+        "await_current_main_sync_for_source_directory_material_deterministic_embedding_vector_index_runtime_proof",
+        "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF)} "
+                f"missing source directory deterministic embedding/vector index runtime proof term: {term}"
+            )
+
+    service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_VECTOR_INDEX_SERVICE, errors)
+    for term in (
+        'SCHEMA_ID = "layer3.source_directory_embedding_vector_index.v1"',
+        'MODE = "source_directory_material_deterministic_embedding_vector_index_authority"',
+        'EMBEDDING_MODE = "deterministic_local_hashing_vector_embedding"',
+        'VECTOR_INDEX_MODE = "deterministic_source_directory_segment_vector_index"',
+        'FEATURE_HASH_VERSION = "source-directory-hash-vector-v1"',
+        "VECTOR_DIMENSIONS = 4096",
+        "source_directory_material_embedding_vector_index(",
+        "source_directory_material_text_index(db, _text_index_payload(fields))",
+        "source_directory_vector_index_stale_index_authority",
+        "normalize_query_tokens(text)",
+        "hashlib.sha256(token.encode(\"utf-8\")).hexdigest()",
+        "% VECTOR_DIMENSIONS",
+        "math.sqrt(sum(weight * weight for weight in bucket_weights.values()))",
+        "embedding_index_authority_hash",
+        "embedding_vector_hash",
+        "nonzero_feature_count",
+        "vector_l2_norm",
+        "source_index_rows_written",
+        "embedding_vector_rows_written",
+        "vector_index_rows_written",
+        "retrieval_rows_written",
+        "persistent_vector_store_enabled",
+        "vector_query_enabled",
+        "rag_execution_enabled",
+        "embedding_model_provider_enabled",
+        "network_egress_enabled",
+        '"query_text"',
+        '"provider_model"',
+        '"vector"',
+        '"runtime_db_write"',
+        '"durable_write"',
+    ):
+        if term not in service_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_VECTOR_INDEX_SERVICE)} missing vector index service term: {term}"
+            )
+
+    test_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_VECTOR_INDEX_TEST, errors)
+    for term in (
+        "test_source_directory_vector_index_returns_deterministic_descriptors_without_side_effects",
+        "test_source_directory_vector_index_rejects_stale_index_authority",
+        "test_source_directory_vector_index_uses_text_index_fail_closed_authority_path",
+        "test_source_directory_vector_index_validates_forbidden_unknown_and_required_fields",
+        "source_directory_material_embedding_vector_index",
+        "source_directory_material_text_index",
+        "embedding_index_authority_hash",
+        "embedding_vector_hash",
+        "nonzero_feature_count",
+        "vector_l2_norm",
+        "source_directory_vector_index_stale_index_authority",
+        "source_directory_text_index_file_identity_mismatch",
+        "source_directory_vector_index_forbidden_field_not_admitted",
+        "source_directory_vector_index_unknown_field",
+        "source_directory_vector_index_required_field_missing",
+        "L3PassRun",
+        "AnalysisRun",
+        "L3OutputPackage",
+        "ConnectorRun",
+        "ConnectorRunTarget",
+    ):
+        if term not in test_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_VECTOR_INDEX_TEST)} missing vector index proof test term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Deterministic Embedding Vector Index Runtime Proof",
+            "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md",
+            "codex/l3-vector-runtime",
+            "d3acf9f078a495bc09d40ee39477d1b09bbde1bf",
+            "current_main_synced_source_directory_material_embedding_vector_index_authority_contract",
+            "source_directory_material_deterministic_embedding_vector_index_runtime_implemented_branch_local",
+            "backend/app/services/layer3_source_directory_vector_index.py",
+            "backend/tests/test_layer3_source_directory_vector_index.py",
+            "source_directory_material_embedding_vector_index(db, payload)",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "source-directory-hash-vector-v1",
+            "vector_dimensions: 4096",
+            "embedding_index_authority_hash",
+            "embedding_vector_hash",
+            "4 passed",
+            "await_current_main_sync_for_source_directory_material_deterministic_embedding_vector_index_runtime_proof",
+            "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_deterministic_embedding_vector_index_runtime_proof",
+            "source_directory_material_deterministic_embedding_vector_index_runtime_implemented_branch_local",
+            "codex/l3-vector-runtime",
+            "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md",
+            "d3acf9f078a495bc09d40ee39477d1b09bbde1bf",
+            "current_main_synced_source_directory_material_embedding_vector_index_authority_contract",
+            "implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync",
+            "backend/app/services/layer3_source_directory_vector_index.py",
+            "backend/tests/test_layer3_source_directory_vector_index.py",
+            '"runtime_behavior_change": true',
+            '"backend_route_behavior_change": false',
+            '"database_model_or_migration_change": false',
+            '"durable_vector_store_rows_written": false',
+            '"durable_embedding_rows_written": false',
+            '"vector_query_runtime": false',
+            '"rag_execution": false',
+            "layer3.source_directory_embedding_vector_index.v1",
+            "source-directory-hash-vector-v1",
+            '"vector_dimensions": 4096',
+            "source_directory_material_text_index(db, payload)",
+            "index_authority_hash validation",
+            "await_current_main_sync_for_source_directory_material_deterministic_embedding_vector_index_runtime_proof",
+            "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "runtime_proof_source_directory_material_deterministic_embedding_vector_index",
+            "source_directory_material_deterministic_embedding_vector_index_runtime_implemented_branch_local",
+            "codex/l3-vector-runtime",
+            "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md",
+            "source_directory_material_embedding_vector_index calls source_directory_material_text_index before vector descriptor construction",
+            "index_authority_hash is validated against recomputed deterministic text-index authority",
+            "feature_hash_version source-directory-hash-vector-v1 and vector_dimensions 4096 are implemented",
+            "no L3PassRun AnalysisRun L3OutputPackage ConnectorRun or ConnectorRunTarget side effects are written",
+            "await_current_main_sync_for_source_directory_material_deterministic_embedding_vector_index_runtime_proof",
+            "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory deterministic embedding/vector index runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -68000,6 +68190,7 @@ def main() -> int:
     _check_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_current_main_sync(errors)
     _check_source_directory_material_embedding_vector_index_authority_contract(errors)
     _check_source_directory_material_embedding_vector_index_authority_contract_current_main_sync(errors)
+    _check_source_directory_material_deterministic_embedding_vector_index_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
