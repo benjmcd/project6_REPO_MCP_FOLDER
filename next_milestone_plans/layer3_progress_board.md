@@ -4670,3 +4670,19 @@ PR `#1335` had green `backend-layer3-api` and `test` checks, comments totalCount
 No runtime behavior is introduced by the evaluation or this sync. Connector invocation, connector-run creation, connector target creation, destination write, credentials, external network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, provider-private signed URL generation, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, connector-local receipt adoption, local outbox write adoption, provider-private handoff adoption, external local export adoption, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
 
 The next exact current-main posture is `select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_deliver_sync`.
+
+## Corrected Artifact Active Authority Connector Local Destination Receipt Evaluation
+
+Evaluation proof: `732_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION.md` selects `connector_local_destination_receipt` as the next downstream active-package-authority reader after corrected-artifact external export/download deliver sync.
+
+The evaluated branch is `codex/l3-corrected-connector-receipt` from current-main checkpoint `124fdb1e532563158714f05ffbf8d467281b5643`.
+
+The pass proves `POST /api/v1/layer3/handoff/connector/local-destination/receipt` consumes corrected-artifact active package authority through recorded `connector_dispatch_record` and `external_export_download_prepare` state, revalidates same-origin external export/download delivery authority, and records the bounded connector-local destination receipt without new service runtime behavior.
+
+The added API regression is `test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority` in `backend/tests/test_layer3_api.py`.
+
+Observed validation: `python -m pytest .\backend\tests\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority -q` with `1 passed`.
+
+This pass starts no service runtime behavior change, connector invocation, connector-run creation, connector target creation, real destination write, credentials, external network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, provider-private signed URL generation, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, local outbox write adoption, provider-private handoff adoption, external local export adoption, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, or hidden LLM planning.
+
+The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation`.
