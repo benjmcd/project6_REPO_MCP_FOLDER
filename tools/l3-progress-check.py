@@ -2024,6 +2024,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC
     PLANNING_DOCS
     / "751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT = (
+    PLANNING_DOCS
+    / "752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -63918,6 +63922,119 @@ def _check_source_directory_material_source_index_authority_freeze_current_main_
                 )
 
 
+def _check_source_directory_material_source_index_authority_contract(
+    errors: list[str],
+) -> None:
+    contract_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local source/index authority contract for `source_directory_material_source_index_authority_contract`.",
+        "752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md",
+        "codex/l3-source-index-contract",
+        "12e7c776b7dc0c6e9a85b2c8c864b6a7790a55fe",
+        "751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_source_index_authority_freeze",
+        "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime",
+        "source_directory_material_deterministic_text_index_authority",
+        "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
+        "Runtime behavior introduced by this contract: `false`.",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "L3MaterialSnapshot",
+        "server_configured_directory_file",
+        "backend/app/services/layer3_source_directory_text_index.py",
+        "deterministic_text_segments",
+        "source_ingestion_batch_id",
+        "source_ingestion_file_id",
+        "material_snapshot_id",
+        "content_sha256",
+        "file_identity_hash",
+        "authority_basis_hash",
+        "payload_hash",
+        "segmentation version",
+        "This contract does not admit a new route.",
+        "source/index rows",
+        "vector index",
+        "embedding generation",
+        "retrieval query",
+        "qualitative-hybrid analysis runtime",
+        "current_main_sync_source_directory_material_source_index_authority_contract",
+    ):
+        if term not in contract_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT)} "
+                f"missing source directory source/index authority contract term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Source Index Authority Contract",
+            "752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md",
+            "codex/l3-source-index-contract",
+            "12e7c776b7dc0c6e9a85b2c8c864b6a7790a55fe",
+            "current_main_synced_source_directory_material_source_index_authority_freeze",
+            "source_directory_material_deterministic_text_index_authority",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            "deterministic_text_segments",
+            "Runtime behavior introduced by this contract: `false`.",
+            "source_ingestion_batch_id",
+            "source_ingestion_file_id",
+            "material_snapshot_id",
+            "content_sha256",
+            "file_identity_hash",
+            "authority_basis_hash",
+            "payload_hash",
+            "current_main_sync_source_directory_material_source_index_authority_contract",
+            "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_source_index_authority_contract",
+            "branch_local_source_directory_material_source_index_authority_contract_written",
+            "codex/l3-source-index-contract",
+            "752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md",
+            "751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "12e7c776b7dc0c6e9a85b2c8c864b6a7790a55fe",
+            "source_directory_material_deterministic_text_index_authority",
+            "deterministic_text_segments",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            '"runtime_behavior_change": false',
+            "source_ingestion_batch_id",
+            "source_ingestion_file_id",
+            "material_snapshot_id",
+            "content_sha256",
+            "file_identity_hash",
+            "authority_basis_hash",
+            "payload_hash",
+            "current_main_sync_source_directory_material_source_index_authority_contract",
+            "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_source_index_authority_contract_proof",
+            "branch_local_source_directory_material_source_index_authority_contract",
+            "branch_local_source_directory_material_source_index_authority_contract_written",
+            "752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md",
+            "source_directory_material_deterministic_text_index_authority",
+            "deterministic_text_segments",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            '"runtime_behavior_change": false',
+            "selects deterministic lexical/text source-index authority before RAG/vector or qualitative-hybrid runtime",
+            "ties future source/index identity to L3SourceDirectoryIngestionBatch, L3SourceDirectoryIngestionFile, and L3MaterialSnapshot",
+            "keeps new routes unadmitted by the contract",
+            "keeps source/index rows unimplemented until after current-main sync and implementation proof",
+            "current_main_sync_source_directory_material_source_index_authority_contract",
+            "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory source/index authority contract artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -64512,6 +64629,7 @@ def main() -> int:
     _check_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync(errors)
     _check_source_directory_material_source_index_authority_freeze(errors)
     _check_source_directory_material_source_index_authority_freeze_current_main_sync(errors)
+    _check_source_directory_material_source_index_authority_contract(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
