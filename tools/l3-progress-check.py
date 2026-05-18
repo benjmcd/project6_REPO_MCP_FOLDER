@@ -2140,6 +2140,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PR
     PLANNING_DOCS
     / "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "783_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -67566,6 +67570,125 @@ def _check_source_directory_material_deterministic_embedding_vector_index_runtim
                 )
 
 
+def _check_source_directory_material_deterministic_embedding_vector_index_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_deterministic_embedding_vector_index_runtime_proof`.",
+        "783_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md",
+        "#1387",
+        "codex/l3-vector-runtime",
+        "dd30002081dc9f5b5606c3e94b1f74bb8de02d09",
+        "c72526582cc85b8747317fc94271fc56a4862a88",
+        "codex/l3-vector-runtime-sync",
+        "current_main_synced_source_directory_material_deterministic_embedding_vector_index_runtime",
+        "Runtime behavior already merged by runtime PR: `true`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "2m58s",
+        "test",
+        "3m37s",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "backend/app/services/layer3_source_directory_vector_index.py",
+        "backend/tests/test_layer3_source_directory_vector_index.py",
+        "source_directory_material_embedding_vector_index(db, payload)",
+        "source_directory_material_deterministic_text_index_authority",
+        "layer3.source_directory_embedding_vector_index.v1",
+        "embedding_index_authority_hash",
+        "embedding_vector_hash",
+        "nonzero_feature_count",
+        "vector_l2_norm",
+        "source-directory-hash-vector-v1",
+        "vector_dimensions: 4096",
+        "python -m py_compile .\\tools\\l3-progress-check.py .\\backend\\app\\services\\layer3_source_directory_vector_index.py .\\backend\\tests\\test_layer3_source_directory_vector_index.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_index.py -q",
+        "git diff --check",
+        "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source directory deterministic embedding/vector index runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Deterministic Embedding Vector Index Runtime Current-Main Sync",
+            "783_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1387",
+            "dd30002081dc9f5b5606c3e94b1f74bb8de02d09",
+            "c72526582cc85b8747317fc94271fc56a4862a88",
+            "current_main_synced_source_directory_material_deterministic_embedding_vector_index_runtime",
+            "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md",
+            "backend/app/services/layer3_source_directory_vector_index.py",
+            "backend/tests/test_layer3_source_directory_vector_index.py",
+            "source_directory_material_embedding_vector_index(db, payload)",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "embedding_index_authority_hash",
+            "embedding_vector_hash",
+            "2m58s",
+            "3m37s",
+            "reviewThreads totalCount `0`",
+            "unresolved reviewThreads totalCount `0`",
+            "Runtime behavior already merged by runtime PR: `true`.",
+            "Runtime behavior introduced by this sync: `false`.",
+            "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_deterministic_embedding_vector_index_runtime_current_main_sync",
+            "current_main_synced_source_directory_material_deterministic_embedding_vector_index_runtime",
+            "codex/l3-vector-runtime-sync",
+            "783_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md",
+            "#1387",
+            "dd30002081dc9f5b5606c3e94b1f74bb8de02d09",
+            "c72526582cc85b8747317fc94271fc56a4862a88",
+            '"runtime_behavior_already_merged_by_runtime_pr": true',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads": 0',
+            '"unresolvedReviewThreads": 0',
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "backend/app/services/layer3_source_directory_vector_index.py",
+            "backend/tests/test_layer3_source_directory_vector_index.py",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "source-directory-hash-vector-v1",
+            '"synced_vector_dimensions": 4096',
+            "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_deterministic_embedding_vector_index_runtime_current_main_sync_proof",
+            "current_main_sync_source_directory_material_deterministic_embedding_vector_index_runtime",
+            "current_main_synced_source_directory_material_deterministic_embedding_vector_index_runtime",
+            "783_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "782_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_PROOF.md",
+            "#1387",
+            "c72526582cc85b8747317fc94271fc56a4862a88",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no additional runtime behavior",
+            "source_directory_material_deterministic_embedding_vector_index_authority is current-main synced",
+            "backend/app/services/layer3_source_directory_vector_index.py and backend/tests/test_layer3_source_directory_vector_index.py are current-main synced",
+            "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory deterministic embedding/vector index runtime sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -68191,6 +68314,7 @@ def main() -> int:
     _check_source_directory_material_embedding_vector_index_authority_contract(errors)
     _check_source_directory_material_embedding_vector_index_authority_contract_current_main_sync(errors)
     _check_source_directory_material_deterministic_embedding_vector_index_runtime_proof(errors)
+    _check_source_directory_material_deterministic_embedding_vector_index_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
