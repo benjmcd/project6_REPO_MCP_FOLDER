@@ -29226,5 +29226,48 @@
   "latest_source_directory_material_deterministic_text_index_runtime_proof_status": "branch_local_source_directory_material_deterministic_text_index_runtime_implemented",
   "latest_source_directory_material_deterministic_text_index_runtime_proof_runtime_behavior_change": true,
   "latest_source_directory_material_deterministic_text_index_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_text_index_runtime_proof",
-  "latest_source_directory_material_deterministic_text_index_runtime_proof_summary": "Doc 754 implements the bounded source_directory_material_deterministic_text_index_authority service over existing server_configured_directory_file L3MaterialSnapshot authority. It returns deterministic text segments and replay-stable index authority while writing no source-index rows and admitting no route, DTO, model, migration, vector, embedding, retrieval, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, auth/security, network, or raw path behavior."
+  "latest_source_directory_material_deterministic_text_index_runtime_proof_summary": "Doc 754 implements the bounded source_directory_material_deterministic_text_index_authority service over existing server_configured_directory_file L3MaterialSnapshot authority. It returns deterministic text segments and replay-stable index authority while writing no source-index rows and admitting no route, DTO, model, migration, vector, embedding, retrieval, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, auth/security, network, or raw path behavior.",
+  "source_directory_material_deterministic_text_index_runtime_current_main_sync": {
+    "status": "current_main_synced_source_directory_material_deterministic_text_index_runtime",
+    "sync_branch": "codex/l3-source-index-text-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/755_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md",
+    "runtime_pr": "#1359",
+    "runtime_branch": "codex/l3-source-index-text-impl",
+    "runtime_branch_commit": "9d3278112389e08ce280e61c8b02ae709d124214",
+    "runtime_merge_commit": "c0403c860b3e8903b4ee1e80ab9fca04f92301ad",
+    "current_main_checkpoint_after_merge": "c0403c860b3e8903b4ee1e80ab9fca04f92301ad",
+    "runtime_behavior_already_merged": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "post_merge_validation": [
+      "json manifest load PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\backend\\app\\services\\layer3_source_directory_text_index.py .\\backend\\tests\\test_layer3_source_directory_ingestion.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_ingestion.py -q PASS 13 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_boundary.py .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_model_exports.py .\\backend\\tests\\test_layer3_api.py::test_layer3_forbidden_sentinel_openapi_fields_are_impossible -q PASS 24 passed",
+      "git diff --check PASS"
+    ],
+    "synced_runtime": "source_directory_material_deterministic_text_index_authority",
+    "owner_service": "backend/app/services/layer3_source_directory_text_index.py",
+    "index_mode": "deterministic_text_segments",
+    "segmentation_version": "line-window-v1",
+    "next_posture": "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync"
+  },
+  "latest_source_directory_material_deterministic_text_index_runtime_current_main_sync_branch": "codex/l3-source-index-text-sync",
+  "latest_source_directory_material_deterministic_text_index_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/755_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_deterministic_text_index_runtime_current_main_sync_status": "current_main_synced_source_directory_material_deterministic_text_index_runtime",
+  "latest_source_directory_material_deterministic_text_index_runtime_current_main_sync_runtime_behavior_change": false,
+  "latest_source_directory_material_deterministic_text_index_runtime_current_main_sync_next_posture": "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync",
+  "latest_source_directory_material_deterministic_text_index_runtime_current_main_sync_summary": "Doc 755 syncs PR #1359 merge commit c0403c860b3e8903b4ee1e80ab9fca04f92301ad to current main. The bounded deterministic text source/index runtime is current-main truth; no additional behavior is introduced by the sync, and the next posture is select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync."
 }
