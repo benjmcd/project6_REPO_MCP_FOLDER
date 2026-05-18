@@ -28818,5 +28818,39 @@
   "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_status": "current_main_synced_server_configured_operator_directory_text_table_ingestion_runtime",
   "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_runtime_behavior_change": false,
   "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_next_posture": "select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync",
-  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_summary": "Doc 745 syncs PR #1349 merge commit be89cd042af5e39e23cdbf01d092799d13b83767 to current main. Current main now includes bounded server-configured operator directory text/table ingestion runtime, with downstream material/index authority left for separate selection."
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_summary": "Doc 745 syncs PR #1349 merge commit be89cd042af5e39e23cdbf01d092799d13b83767 to current main. Current main now includes bounded server-configured operator directory text/table ingestion runtime, with downstream material/index authority left for separate selection.",
+  "source_directory_ingestion_downstream_material_authority_freeze": {
+    "status": "branch_local_source_directory_ingestion_downstream_material_authority_selected",
+    "selection_branch": "codex/l3-source-directory-downstream-selection",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/746_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/745_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_selection": "4f909e63721bd1fd050fd9b4ae776b2898524c5b",
+    "selected_upstream_runtime": "server_configured_operator_directory_text_table_ingestion",
+    "selected_source_family": "server_configured_operator_directory_text_table_source_family",
+    "selected_downstream_family": "source_directory_ingestion_material_authority",
+    "selected_downstream_mode": "source_directory_ingestion_gate_b_material_admission",
+    "selected_downstream_authority": "gate_b_material_candidate_from_source_directory_ingestion_file",
+    "canonical_upstream_authorities": [
+      "L3SourceDirectoryIngestionBatch",
+      "L3SourceDirectoryIngestionFile"
+    ],
+    "future_owner_service": "backend/app/services/layer3_source_directory_material_admission.py",
+    "future_api_owner": "backend/app/api/layer3.py",
+    "future_material_preview_route": "POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+    "future_gate_b_route_reuse": "POST /api/v1/layer3/gate-b/decision",
+    "runtime_behavior_change": false,
+    "indexing_admitted": false,
+    "package_construction_admitted": false,
+    "connector_dispatch_admitted": false,
+    "provider_url_admitted": false,
+    "rendered_controls_admitted": false,
+    "next_posture_after_merge": "current_main_sync_source_directory_ingestion_downstream_material_authority_freeze",
+    "next_posture_after_sync": "implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync"
+  },
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_branch": "codex/l3-source-directory-downstream-selection",
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_doc": "next_milestone_plans/Layer3_planning_docs/746_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE.md",
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_status": "branch_local_source_directory_ingestion_downstream_material_authority_selected",
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_runtime_behavior_change": false,
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_next_posture_after_merge": "current_main_sync_source_directory_ingestion_downstream_material_authority_freeze",
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_summary": "Doc 746 selects source_directory_ingestion_gate_b_material_admission as the next source-directory downstream material authority, over persisted L3SourceDirectoryIngestionBatch and L3SourceDirectoryIngestionFile rows. It admits no runtime behavior and keeps RAG/vector indexing, package construction, connector dispatch, provider URL behavior, rendered controls, and frontend-durable authority blocked."
 }
