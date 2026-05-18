@@ -6528,3 +6528,27 @@ Proof: `python -m pytest backend/tests/test_layer3_source_directory_qualitative_
 Non-admitted: APS handoff dispatch, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, package payload rewrite, package mutation/reconstruction, source package row mutation, replacement package row creation, and full mockup activation.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_qualitative_analysis_handoff_export_prepare_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync` unless current-main evidence shows a concrete unresolved handoff/export prepare defect or named downstream reader.
+
+## Source Directory Qualitative Analysis Handoff Export Prepare Runtime Current-Main Sync
+
+Current-main proof/control sync: `809_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1413` for `source_directory_qualitative_analysis_handoff_export_prepare_runtime`.
+
+Runtime branch `codex/l3-source-handoff-export-prepare` landed branch commit `3b562864b45876ebf243377c84e04ccabd183adc` into current main at merge commit `bb4e857af4cf9f3a4c114423ef3532821126ac55`.
+
+Synced result: `current_main_synced_source_directory_qualitative_analysis_handoff_export_prepare_runtime`.
+
+Current main now includes the bounded source-directory qualitative-analysis handoff/export prepare route, schema `layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1`, mode `source_directory_qualitative_analysis_handoff_export_prepare_authority`, source gate `808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE`, and durable state schema `layer3.handoff_export_prepare_state.v1`.
+
+PR `#1413` had green `backend-layer3-api` (`3m8s`) and `test` (`3m51s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime records prepare-only handoff/export decision state for the existing source-directory qualitative-analysis package set, supports `already_prepared` replay, rejects non-approved submit state with `source_directory_handoff_export_prepare_submit_not_approved`, and keeps `payload_refs_redacted: True`.
+
+The synced runtime keeps `aps_handoff_enabled: False`, `external_export_download_enabled: False`, `provider_public_delivery_enabled: False`, `connector_dispatch_enabled: False`, `network_egress_enabled: False`, `frontend_durable_authority_enabled: False`, `prompt_model_provider_runtime_enabled: False`, `qualitative_generation_runtime_enabled: False`, `new_source_family_enabled: False`, `source_package_row_mutation_enabled: False`, `package_mutation_reconstruction_enabled: False`, and `package_payload_rewrite_enabled: False`.
+
+No APS handoff dispatch, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, package payload rewrite, package mutation/reconstruction, source package row mutation, replacement package row creation, or full mockup activation is admitted by this sync.
+
+The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync`.
