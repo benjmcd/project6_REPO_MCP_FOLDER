@@ -13971,6 +13971,7 @@ def test_layer3_api_connector_local_destination_receipt_applies_corrected_artifa
             "packages": db.query(L3OutputPackage).count(),
             "reconciliations": db.query(L3ReconciliationRecord).count(),
             "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
         }
         source_packages_before = [
             (
@@ -14034,6 +14035,7 @@ def test_layer3_api_connector_local_destination_receipt_applies_corrected_artifa
             "packages": db.query(L3OutputPackage).count(),
             "reconciliations": db.query(L3ReconciliationRecord).count(),
             "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
         } == {**counts_before, "local_receipts": counts_before["local_receipts"] + 1}
         source_packages_after = [
             (
@@ -14071,6 +14073,116 @@ def test_layer3_api_connector_local_destination_receipt_applies_corrected_artifa
     finally:
         db.close()
     assert files_under_tmp() == files_before
+
+    target_payload = _server_owned_local_outbox_fake_target_payload(
+        request_id=f"{request_id}-fake-target",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        readiness_body=readiness_body,
+    )
+    files_before_target = files_under_tmp()
+    target = client.post("/api/v1/layer3/handoff/connector/local-outbox/fake-target", json=target_payload)
+    assert target.status_code == 200, target.json()
+    target_body = target.json()
+    assert target_body["schema_id"] == "layer3.server_owned_local_outbox_fake_target_receipt.v1"
+    assert target_body["status"] == "recorded"
+    assert target_body["server_owned_local_outbox_target_state"] == "server_owned_local_outbox_fake_target_recorded"
+    assert target_body["target_operation_state"] == "server_owned_local_outbox_fake_target_recorded"
+    assert target_body["connector_dispatch_record_ref"] == connector_body["connector_dispatch_record_ref"]
+    assert target_body["connector_local_destination_receipt_id"] == (
+        local_receipt_body["connector_local_destination_receipt_id"]
+    )
+    assert target_body["external_export_download_record_ref"] == readiness_body["external_export_download_record_ref"]
+    assert target_body["accepted_artifact_ref"] == "artifact://server-owned-local-outbox-fake-target-redacted"
+    assert target_body["accepted_artifact_hash"] == readiness_body["source_artifact_hash"]
+    assert target_body["accepted_artifact_size_bytes"] == readiness_body["source_artifact_size_bytes"]
+    assert target_body["fake_target_contract_enabled"] is True
+    assert target_body["real_connector_invocation_enabled"] is False
+    assert target_body["destination_write_enabled"] is False
+    assert target_body["destination_write_performed"] is False
+    assert target_body["connector_run_created"] is False
+    assert target_body["connector_run_target_created"] is False
+    assert target_body["credentials_enabled"] is False
+    assert target_body["network_write_enabled"] is False
+    assert target_body["provider_public_delivery_enabled"] is False
+    assert target_body["package_mutation_enabled"] is False
+    assert target_body["source_expansion_enabled"] is False
+    assert target_body["rag_vector_enabled"] is False
+    target_response_text = json.dumps(target_body, sort_keys=True)
+    assert readiness_body["source_artifact_ref"] not in target_response_text
+    assert str(tmp_path) not in target_response_text
+    for forbidden_key in (
+        "connector_key",
+        "connector_run_id",
+        "connector_run_target_id",
+        "destination_path",
+        "destination_url",
+        "local_path",
+        "package_payload",
+        "public_url",
+        "signed_url",
+    ):
+        assert forbidden_key not in target_body
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+        } == {
+            **counts_before,
+            "local_receipts": counts_before["local_receipts"] + 1,
+            "target_receipts": counts_before["target_receipts"] + 1,
+        }
+        target_row = (
+            db.query(L3ServerOwnedLocalOutboxTargetReceipt)
+            .filter(
+                L3ServerOwnedLocalOutboxTargetReceipt.server_owned_local_outbox_target_receipt_id
+                == target_body["server_owned_local_outbox_target_receipt_id"]
+            )
+            .one()
+        )
+        assert target_row.accepted_artifact_hash == readiness_body["source_artifact_hash"]
+        assert target_row.accepted_artifact_size_bytes == readiness_body["source_artifact_size_bytes"]
+        assert target_row.authority_snapshot_json["accepted_artifact_hash"] == readiness_body["source_artifact_hash"]
+        assert target_row.authority_snapshot_json["connector_local_destination_receipt_id"] == (
+            local_receipt_body["connector_local_destination_receipt_id"]
+        )
+        assert "source_artifact_ref" not in target_row.authority_snapshot_json
+        assert "destination_path" not in target_row.authority_snapshot_json
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        assert reconciliation.summary_json["external_export_download_prepare"] == readiness_state_before
+        target_state = reconciliation.summary_json["server_owned_local_outbox_target"]
+        assert target_state["accepted_artifact_ref"] == "artifact://server-owned-local-outbox-fake-target-redacted"
+        assert target_state["accepted_artifact_hash"] == readiness_body["source_artifact_hash"]
+        assert target_state["connector_local_destination_receipt_id"] == (
+            local_receipt_body["connector_local_destination_receipt_id"]
+        )
+        assert target_state["destination_write_enabled"] is False
+        assert target_state["connector_run_created"] is False
+        assert target_state["connector_run_target_created"] is False
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before_target
+
+    target_replay = client.post("/api/v1/layer3/handoff/connector/local-outbox/fake-target", json=target_payload)
+    assert target_replay.status_code == 200, target_replay.json()
+    assert target_replay.json()["status"] == "already_recorded"
+    assert target_replay.json()["server_owned_local_outbox_target_receipt_id"] == (
+        target_body["server_owned_local_outbox_target_receipt_id"]
+    )
 
 
 def test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort(
