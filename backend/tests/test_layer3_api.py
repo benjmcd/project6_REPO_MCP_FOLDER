@@ -13967,11 +13967,15 @@ def test_layer3_api_connector_local_destination_receipt_applies_corrected_artifa
             "analysis_artifacts": db.query(AnalysisArtifact).count(),
             "connector_runs": db.query(ConnectorRun).count(),
             "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "handoff_audit_events": db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
             "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
             "packages": db.query(L3OutputPackage).count(),
+            "provider_private_signed_url_receipts": db.query(L3ProviderPrivateSignedUrlReceipt).count(),
             "reconciliations": db.query(L3ReconciliationRecord).count(),
             "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
             "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
         }
         source_packages_before = [
             (
@@ -14031,11 +14035,15 @@ def test_layer3_api_connector_local_destination_receipt_applies_corrected_artifa
             "analysis_artifacts": db.query(AnalysisArtifact).count(),
             "connector_runs": db.query(ConnectorRun).count(),
             "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "handoff_audit_events": db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
             "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
             "packages": db.query(L3OutputPackage).count(),
+            "provider_private_signed_url_receipts": db.query(L3ProviderPrivateSignedUrlReceipt).count(),
             "reconciliations": db.query(L3ReconciliationRecord).count(),
             "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
             "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
         } == {**counts_before, "local_receipts": counts_before["local_receipts"] + 1}
         source_packages_after = [
             (
@@ -14134,11 +14142,15 @@ def test_layer3_api_connector_local_destination_receipt_applies_corrected_artifa
             "analysis_artifacts": db.query(AnalysisArtifact).count(),
             "connector_runs": db.query(ConnectorRun).count(),
             "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "handoff_audit_events": db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
             "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
             "packages": db.query(L3OutputPackage).count(),
+            "provider_private_signed_url_receipts": db.query(L3ProviderPrivateSignedUrlReceipt).count(),
             "reconciliations": db.query(L3ReconciliationRecord).count(),
             "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
             "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
         } == {
             **counts_before,
             "local_receipts": counts_before["local_receipts"] + 1,
@@ -14182,6 +14194,234 @@ def test_layer3_api_connector_local_destination_receipt_applies_corrected_artifa
     assert target_replay.json()["status"] == "already_recorded"
     assert target_replay.json()["server_owned_local_outbox_target_receipt_id"] == (
         target_body["server_owned_local_outbox_target_receipt_id"]
+    )
+
+    write_payload = _server_owned_local_outbox_write_payload(
+        request_id=f"{request_id}-write",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        readiness_body=readiness_body,
+    )
+    write = client.post("/api/v1/layer3/handoff/connector/local-outbox/write", json=write_payload)
+    assert write.status_code == 200, write.json()
+    write_body = write.json()
+    assert write_body["schema_id"] == "layer3.server_owned_local_outbox_write_receipt.v1"
+    assert write_body["status"] == "recorded"
+    assert write_body["server_owned_local_outbox_write_performed"] is True
+    assert write_body["connector_local_destination_receipt_id"] == (
+        local_receipt_body["connector_local_destination_receipt_id"]
+    )
+    assert write_body["server_owned_local_outbox_target_receipt_id"] == (
+        target_body["server_owned_local_outbox_target_receipt_id"]
+    )
+    assert write_body["accepted_artifact_ref"] == "artifact://server-owned-local-outbox-source-redacted"
+    assert write_body["accepted_artifact_hash"] == readiness_body["source_artifact_hash"]
+    assert write_body["accepted_artifact_size_bytes"] == readiness_body["source_artifact_size_bytes"]
+    assert write_body["outbox_artifact_ref"].startswith("storage://server-owned-local-outbox/")
+    assert write_body["outbox_manifest_ref"].startswith("storage://server-owned-local-outbox/")
+    assert write_body["outbox_artifact_hash"] == readiness_body["source_artifact_hash"]
+    assert write_body["outbox_artifact_size_bytes"] == readiness_body["source_artifact_size_bytes"]
+    assert write_body["real_connector_invocation_enabled"] is False
+    assert write_body["external_destination_write_enabled"] is False
+    assert write_body["connector_run_created"] is False
+    assert write_body["connector_run_target_created"] is False
+    assert write_body["credentials_enabled"] is False
+    assert write_body["provider_public_delivery_enabled"] is False
+    assert write_body["package_mutation_enabled"] is False
+    assert write_body["source_expansion_enabled"] is False
+    assert write_body["rag_vector_enabled"] is False
+    write_response_text = json.dumps(write_body, sort_keys=True)
+    assert readiness_body["source_artifact_ref"] not in write_response_text
+    assert str(tmp_path) not in write_response_text
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "handoff_audit_events": db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "provider_private_signed_url_receipts": db.query(L3ProviderPrivateSignedUrlReceipt).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
+        } == {
+            **counts_before,
+            "local_receipts": counts_before["local_receipts"] + 1,
+            "target_receipts": counts_before["target_receipts"] + 1,
+            "write_receipts": counts_before["write_receipts"] + 1,
+        }
+        assert [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ] == source_packages_before
+        write_row = (
+            db.query(L3ServerOwnedLocalOutboxWriteReceipt)
+            .filter(
+                L3ServerOwnedLocalOutboxWriteReceipt.server_owned_local_outbox_write_receipt_id
+                == write_body["server_owned_local_outbox_write_receipt_id"]
+            )
+            .one()
+        )
+        assert write_row.accepted_artifact_hash == readiness_body["source_artifact_hash"]
+        assert write_row.authority_snapshot_json["connector_local_destination_receipt_authority_basis_hash"]
+        assert "source_artifact_ref" not in write_row.authority_snapshot_json
+        outbox_artifact_path = Path(settings.storage_dir) / write_row.outbox_artifact_ref
+        assert outbox_artifact_path.read_bytes() == expected_delivery_bytes
+    finally:
+        db.close()
+
+    provider_payload = _local_outbox_provider_private_handoff_payload(
+        request_id=f"{request_id}-provider-private",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+    provider_private = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json=provider_payload,
+    )
+    assert provider_private.status_code == 200, provider_private.json()
+    provider_body = provider_private.json()
+    assert provider_body["schema_id"] == "layer3.local_outbox_provider_private_handoff.prepare.v1"
+    assert provider_body["status"] == "prepared"
+    assert provider_body["provider_private_handoff_state"] == "local_outbox_provider_private_handoff_prepared"
+    assert provider_body["server_owned_local_outbox_write_receipt_id"] == (
+        write_body["server_owned_local_outbox_write_receipt_id"]
+    )
+    assert provider_body["server_owned_local_outbox_target_receipt_id"] == (
+        target_body["server_owned_local_outbox_target_receipt_id"]
+    )
+    assert provider_body["connector_local_destination_receipt_id"] == (
+        local_receipt_body["connector_local_destination_receipt_id"]
+    )
+    assert provider_body["connector_dispatch_record_ref"] == connector_body["connector_dispatch_record_ref"]
+    assert provider_body["external_export_download_record_ref"] == readiness_body["external_export_download_record_ref"]
+    assert provider_body["source_artifact_hash"] == readiness_body["source_artifact_hash"]
+    assert provider_body["source_artifact_size_bytes"] == readiness_body["source_artifact_size_bytes"]
+    assert provider_body["outbox_artifact_hash"] == write_body["outbox_artifact_hash"]
+    assert provider_body["outbox_artifact_size_bytes"] == write_body["outbox_artifact_size_bytes"]
+    assert provider_body["outbox_artifact_ref"] == write_body["outbox_artifact_ref"]
+    assert provider_body["outbox_manifest_ref"] == write_body["outbox_manifest_ref"]
+    assert provider_body["raw_token_exposed"] is False
+    assert provider_body["provider_private_use_route_enabled"] is False
+    assert provider_body["real_connector_invocation_enabled"] is False
+    assert provider_body["external_provider_network_write_enabled"] is False
+    assert provider_body["external_object_store_write_enabled"] is False
+    assert provider_body["external_destination_write_enabled"] is False
+    assert provider_body["connector_run_created"] is False
+    assert provider_body["connector_run_target_created"] is False
+    assert provider_body["credentials_enabled"] is False
+    assert provider_body["provider_public_delivery_enabled"] is False
+    assert provider_body["package_mutation_enabled"] is False
+    assert provider_body["source_expansion_enabled"] is False
+    assert provider_body["rag_vector_enabled"] is False
+    assert provider_body["auth_security_implementation_enabled"] is False
+    assert provider_body["full_mockup_activation_enabled"] is False
+    assert provider_body["frontend_durable_authority_enabled"] is False
+    assert provider_body["audit_receipt"]["provider_secret_redacted"] is True
+    assert provider_body["audit_receipt"]["provider_network_enabled"] is False
+    assert provider_body["audit_receipt"]["provider_object_write_enabled"] is False
+    assert provider_body["authority_rail"]["durable_state_authority"] is True
+    provider_response_text = json.dumps(provider_body, sort_keys=True)
+    assert str(Path(settings.storage_dir)) not in provider_response_text
+    assert readiness_body["source_artifact_ref"] not in provider_response_text
+    assert "fake-provider-private-token" not in provider_response_text
+    assert "signature=" not in provider_response_text
+
+    provider_status = client.get(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/status/"
+        f"{provider_body['provider_private_handoff_receipt_id']}"
+    )
+    assert provider_status.status_code == 200, provider_status.json()
+    assert provider_status.json()["provider_private_handoff_state"] == (
+        "local_outbox_provider_private_handoff_prepared"
+    )
+    assert provider_status.json()["raw_token_exposed"] is False
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "handoff_audit_events": db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count(),
+            "handoff_receipts": db.query(L3LocalOutboxProviderPrivateHandoffReceipt).count(),
+            "local_receipts": db.query(L3ConnectorLocalDestinationReceipt).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "provider_private_signed_url_receipts": db.query(L3ProviderPrivateSignedUrlReceipt).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+            "target_receipts": db.query(L3ServerOwnedLocalOutboxTargetReceipt).count(),
+            "write_receipts": db.query(L3ServerOwnedLocalOutboxWriteReceipt).count(),
+        } == {
+            **counts_before,
+            "handoff_audit_events": counts_before["handoff_audit_events"] + 1,
+            "handoff_receipts": counts_before["handoff_receipts"] + 1,
+            "local_receipts": counts_before["local_receipts"] + 1,
+            "target_receipts": counts_before["target_receipts"] + 1,
+            "write_receipts": counts_before["write_receipts"] + 1,
+        }
+        assert [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ] == source_packages_before
+        provider_row = (
+            db.query(L3LocalOutboxProviderPrivateHandoffReceipt)
+            .filter(
+                L3LocalOutboxProviderPrivateHandoffReceipt.provider_private_handoff_receipt_id
+                == provider_body["provider_private_handoff_receipt_id"]
+            )
+            .one()
+        )
+        assert provider_row.authority_basis_hash == provider_body["authority_basis_hash"]
+        assert provider_row.authority_snapshot_json["server_owned_local_outbox_write_authority_basis_hash"] == (
+            write_body["authority_basis_hash"]
+        )
+        assert provider_row.authority_snapshot_json["outbox_artifact_ref"] == write_body["outbox_artifact_ref"]
+        assert provider_row.authority_snapshot_json["outbox_manifest_ref"] == write_body["outbox_manifest_ref"]
+        assert "source_artifact_ref" not in provider_row.authority_snapshot_json
+        assert "provider_private_signed_url_token" not in provider_row.authority_snapshot_json
+    finally:
+        db.close()
+
+    provider_replay = client.post(
+        "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        json=provider_payload,
+    )
+    assert provider_replay.status_code == 200, provider_replay.json()
+    assert provider_replay.json()["status"] == "already_recorded"
+    assert provider_replay.json()["provider_private_handoff_receipt_id"] == (
+        provider_body["provider_private_handoff_receipt_id"]
     )
 
 
