@@ -5584,3 +5584,33 @@ Runtime behavior introduced by this sync: `false`.
 This sync admits no new runtime behavior beyond the already-merged qualitative-analysis service, and admits no backend route, API DTO, response model, database model, migration, durable qualitative analysis row write, durable context-packet row write, source-index durable row write, retrieval durable row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact current-main posture is `select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync`. Do not continue additional same-family source-directory qualitative-analysis proof loops unless current-main evidence shows a concrete unresolved defect or named downstream reader.
+
+## Provider-Public Delivery/Use Authority Selection Freeze
+
+Branch-local selection freeze: `774_PROVIDER_PUBLIC_AUTH_FREEZE.md` follows the source-directory qualitative-analysis runtime current-main sync.
+
+Freeze branch `codex/l3-provider-public-authority-select` starts from current-main checkpoint `16c7e09f7d66863eef6e55b522c3f3839711f649`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime`.
+
+Selected from posture: `select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync`.
+
+Selected major deferred lane: `provider_public_delivery_use`.
+
+Selected authority question: `provider_public_delivery_use_exposure_security_revocation_authority_contract`.
+
+Selected future contract posture: `write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime`.
+
+Entry decision: `freeze_only`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this freeze: `false`.
+
+The selection basis is the pivot after current-main source-directory intake, indexing, retrieval, context packet, and qualitative-hybrid analysis runtime sync. The source-directory qualitative-analysis family is not continued by this freeze.
+
+Current main previously records provider-public delivery/use as no-runtime when exposure, security, revocation, public access, leak-control, provider/object-store, and audit authority are not selected. This freeze selects that missing authority question only.
+
+No provider-public delivery/use route, raw public URL exposure, `public_url_enabled: true` rail, public proxy runtime, provider adapter, provider credential, provider object write/copy/mutation/ACL change, rendered delivery/use control, frontend-durable authority, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, network egress, source expansion, arbitrary source ingestion, RAG/vector indexing, embedding generation, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, or raw local path exposure is admitted.
+
+The next exact posture after merge is `current_main_sync_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync`; after sync, the next exact posture is `write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime`.
