@@ -31216,5 +31216,45 @@
   "latest_source_directory_material_embedding_vector_index_authority_contract_doc": "next_milestone_plans/Layer3_planning_docs/780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md",
   "latest_source_directory_material_embedding_vector_index_authority_contract_status": "planning_control_authority_contract_no_runtime",
   "latest_source_directory_material_embedding_vector_index_authority_contract_next_posture_after_merge": "current_main_sync_source_directory_material_embedding_vector_index_authority_contract",
-  "latest_source_directory_material_embedding_vector_index_authority_contract_summary": "Doc 780 proof freezes source_directory_material_embedding_vector_index_authority_contract as no-runtime and selects deterministic local hashed lexical segment vectors over the admitted source-directory text index, with provider/model/network/route/vector-store/durable embedding/RAG/package/connector/source-expansion/auth/frontend-durable behavior still blocked."
+  "latest_source_directory_material_embedding_vector_index_authority_contract_summary": "Doc 780 proof freezes source_directory_material_embedding_vector_index_authority_contract as no-runtime and selects deterministic local hashed lexical segment vectors over the admitted source-directory text index, with provider/model/network/route/vector-store/durable embedding/RAG/package/connector/source-expansion/auth/frontend-durable behavior still blocked.",
+  "source_directory_material_embedding_vector_index_authority_contract_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_embedding_vector_index_authority_contract",
+    "status": "current_main_synced_source_directory_material_embedding_vector_index_authority_contract",
+    "sync_branch": "codex/l3-vector-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/781_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+    "contract_doc": "next_milestone_plans/Layer3_planning_docs/780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md",
+    "contract_pr": "#1385",
+    "contract_branch_commit": "759f23346164ed3d052eda60cc8f2375e5eccd89",
+    "contract_merge_commit": "f9c32562f9740fe9375e56d00cd7ce5ecc51fba8",
+    "current_main_checkpoint_after_merge": "f9c32562f9740fe9375e56d00cd7ce5ecc51fba8",
+    "runtime_behavior_introduced_by_contract_pr": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 780 source-directory embedding/vector-index authority contract",
+      "current main records PR #1385 merged at f9c32562f9740fe9375e56d00cd7ce5ecc51fba8",
+      "current main records green backend-layer3-api and test checks for PR #1385",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main sync introduces no additional runtime behavior",
+      "source_directory_material_deterministic_embedding_vector_index_authority is current-main synced",
+      "deterministic_local_hashing_vector_embedding and deterministic_source_directory_segment_vector_index are current-main synced",
+      "backend/app/services/layer3_source_directory_vector_index.py and backend/tests/test_layer3_source_directory_vector_index.py are selected for the future implementation",
+      "implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync is selected for the next authority posture"
+    ],
+    "next_posture": "implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync"
+  },
+  "latest_source_directory_material_embedding_vector_index_authority_contract_current_main_sync_branch": "codex/l3-vector-sync",
+  "latest_source_directory_material_embedding_vector_index_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/781_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_embedding_vector_index_authority_contract_current_main_sync_status": "current_main_synced_source_directory_material_embedding_vector_index_authority_contract",
+  "latest_source_directory_material_embedding_vector_index_authority_contract_current_main_sync_next_posture": "implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync",
+  "latest_source_directory_material_embedding_vector_index_authority_contract_current_main_sync_summary": "Doc 781 proof syncs the source-directory embedding/vector-index authority contract after PR #1385 and moves the next posture to implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync, with no runtime admitted by the sync."
 }
