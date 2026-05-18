@@ -4622,3 +4622,19 @@ Observed validation: `python -m pytest .\backend\tests\test_layer3_api.py::test_
 This pass starts no service runtime behavior change, connector invocation, connector-run creation, destination write, credentials, network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, external export/download delivery adoption, connector-local receipt adoption, local outbox write adoption, provider-private handoff adoption, external local export adoption, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, or hidden LLM planning.
 
 The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_prepare_evaluation`.
+
+## Corrected Artifact Active Authority External Export Download Prepare Evaluation Current-Main Sync
+
+Current-main sync: `729_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md` syncs evaluation PR `#1333` for `corrected_artifact_active_authority_external_export_download_prepare_evaluation`.
+
+Evaluation branch `codex/l3-corrected-download-prepare` landed branch commit `9242a471a249aa53724044a9217f4e037ce753b6` into current main at merge commit `826e1df03c5e0440a62e4fe9f365b46a8a7291de`.
+
+Synced result: `current_main_synced_corrected_artifact_active_authority_external_export_download_prepare_evaluation`.
+
+Current main now records `corrected_artifact_active_authority_external_export_download_prepare_proven`: corrected-artifact active package authority reaches `POST /api/v1/layer3/handoff/export/download/prepare` through the existing active package payload authority reader path.
+
+PR `#1333` had green `backend-layer3-api` and `test` checks, and merge state `CLEAN`.
+
+No runtime behavior is introduced by the evaluation or this sync. Connector invocation, connector-run creation, destination write, credentials, external network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, external export/download delivery adoption, connector-local receipt adoption, local outbox write adoption, provider-private handoff adoption, external local export adoption, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
+
+The next exact current-main posture is `select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_prepare_sync`.
