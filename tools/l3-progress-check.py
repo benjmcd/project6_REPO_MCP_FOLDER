@@ -2008,8 +2008,15 @@ LAYER3_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_M
     PLANNING_DOCS
     / "747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
+)
+LAYER3_SOURCE_DIRECTORY_MATERIAL_ADMISSION_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_directory_material_admission.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0034_layer3_source_directory_ingestion.py"
@@ -63516,6 +63523,116 @@ def _check_source_directory_ingestion_downstream_material_authority_freeze_curre
                 )
 
 
+def _check_source_directory_ingestion_gate_b_material_admission_runtime_proof(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime proof for `source_directory_ingestion_gate_b_material_admission`.",
+        "748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md",
+        "codex/l3-source-directory-material-admission",
+        "747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "0de713bb3a6ef465658c81c9cc829583afab726a",
+        "Runtime behavior change: `true`.",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "backend/app/services/layer3_source_directory_material_admission.py",
+        "backend/app/api/layer3.py",
+        "backend/app/services/layer3_source_boundary.py",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        "POST /api/v1/layer3/gate-b/decision",
+        "server_configured_directory_file",
+        "mat-server_configured_directory_file-",
+        "file_identity_hash",
+        "authority_basis_hash",
+        "Gate B decision route now validates",
+        "32 passed",
+        "No `ConnectorRun`, `ConnectorRunTarget`, or `L3OutputPackage` rows are created.",
+        "await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof",
+        "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF)} "
+                f"missing source directory material admission runtime term: {term}"
+            )
+
+    for path, terms in {
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_ADMISSION_SERVICE: (
+            "SCHEMA_ID = \"layer3.source_directory_material_preview.v1\"",
+            "MODE = \"source_directory_ingestion_gate_b_material_admission\"",
+            "SOURCE_CLASS = \"server_configured_directory_file\"",
+            "GATE_B_CANDIDATE_PREFIX = \"mat-server_configured_directory_file-\"",
+            "file_identity_hash",
+            "authority_basis_hash",
+            "_read_live_file",
+            "source_directory_material_preview_file_identity_mismatch",
+            "source_directory_gate_b_forbidden_field_not_admitted",
+            "source_root_absolute_path_exposed",
+        ),
+        LAYER3_API: (
+            "Layer3SourceDirectoryMaterialPreviewRequest",
+            "Layer3SourceDirectoryMaterialPreviewResponse",
+            "layer3_source_directory_material_admission",
+            "/source/ingestion/server-configured-directory/material-preview",
+        ),
+        SOURCE_BOUNDARY_SERVICE: (
+            "SOURCE_DIRECTORY_GATE_B_MATERIAL_ADMISSION_MODE",
+            "SOURCE_DIRECTORY_GATE_B_SOURCE_CLASS",
+            "SOURCE_DIRECTORY_GATE_B_CANDIDATE_PREFIX",
+            "server_configured_directory_material_preview_enabled",
+            "server_configured_directory_gate_b_material_admission_route",
+        ),
+        WORKBENCH_SERVICE: (
+            "SOURCE_DIRECTORY_FILE_SOURCE_CLASS",
+            "validate_source_directory_gate_b_decision_basis",
+            "refresh_source_directory_material_preview",
+        ),
+        LAYER3_SOURCE_DIRECTORY_INGESTION_TEST: (
+            "test_layer3_source_directory_material_preview_reaches_gate_b_without_broad_outputs",
+            "test_layer3_source_directory_material_preview_fails_closed_on_stale_authority",
+            "test_layer3_source_directory_material_preview_rejects_live_file_drift",
+            "L3MaterialSnapshot",
+            "ConnectorRun",
+            "L3OutputPackage",
+        ),
+        BOARD: (
+            "## Source Directory Ingestion Gate B Material Admission Runtime Proof",
+            "748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md",
+            "source_directory_ingestion_gate_b_material_admission",
+            "server_configured_directory_file",
+            "32 passed",
+            "await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof",
+        ),
+        MANIFEST: (
+            "source_directory_ingestion_gate_b_material_admission_runtime_proof",
+            "branch_local_source_directory_ingestion_gate_b_material_admission_runtime_proven",
+            "backend/app/services/layer3_source_directory_material_admission.py",
+            "server_configured_directory_file",
+            '"runtime_behavior_change": true',
+            "32 passed",
+            "await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_ingestion_gate_b_material_admission_runtime_proof",
+            "branch_local_source_directory_ingestion_gate_b_material_admission_runtime_proof",
+            "server_configured_directory_file L3MaterialSnapshot",
+            "stale authority and live file drift fail closed",
+            "32 passed",
+            "await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory material admission runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -64106,6 +64223,7 @@ def main() -> int:
     _check_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync(errors)
     _check_source_directory_ingestion_downstream_material_authority_freeze(errors)
     _check_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync(errors)
+    _check_source_directory_ingestion_gate_b_material_admission_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
