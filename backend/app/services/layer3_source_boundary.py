@@ -15,6 +15,7 @@ SOURCE_INTAKE_SUPPORTED_MODES = (
     "operator_source_intake_inventory_read_only",
     "operator_source_intake_material_preview_read_only",
     SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_MODE,
+    "server_configured_operator_directory_text_table_ingestion",
 )
 UNSUPPORTED_SOURCE_CLASSES = (
     "rag_vector_index",
@@ -89,6 +90,19 @@ def source_boundary_contract() -> dict[str, Any]:
         "source_intake_gate_b_material_admission_route": "/api/v1/layer3/gate-b/decision",
         "source_intake_gate_b_material_admission_enabled": True,
         "operator_upload_gate_b_admission_requires_later_freeze": False,
+        "server_configured_directory_ingestion_enabled": True,
+        "server_configured_directory_ingestion_route": (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/scan"
+        ),
+        "server_configured_directory_ingestion_status_route": (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}"
+        ),
+        "server_configured_directory_ingestion_source_family": (
+            "server_configured_operator_directory_text_table_source_family"
+        ),
+        "server_configured_directory_ingestion_config_authority": "LAYER3_SOURCE_INGESTION_DIR",
+        "server_configured_directory_ingestion_allowed_extensions": [".csv", ".json", ".txt", ".md"],
+        "server_configured_directory_ingestion_direct_child_only": True,
         "generic_source_upload_preflight_field_enabled": False,
         "operator_upload_material_preview_enabled": True,
         "operator_upload_material_preview_requires_later_freeze": False,
