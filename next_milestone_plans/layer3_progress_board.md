@@ -5268,3 +5268,33 @@ The synced runtime validates `index_authority_hash`, calls `source_directory_mat
 This sync admits no new runtime behavior beyond the already-merged deterministic lexical retrieval service, and admits no backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, vector indexing, embedding generation, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered control, full mockup activation, frontend-durable authority, source expansion, credential, network egress, prompt/model/provider runtime, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact current-main posture is `select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync`. Do not continue same-family source-directory lexical retrieval proof loops unless current-main evidence names a concrete unresolved defect or downstream reader.
+
+## Source Directory Material Qualitative Hybrid Context Packet Authority Freeze
+
+Branch-local qualitative-hybrid/RAG authority selection freeze: `762_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE.md` follows the source-directory deterministic lexical retrieval runtime current-main sync.
+
+Freeze branch `codex/l3-rag-qual-selection` starts from current-main checkpoint `3cad064ad2dc80abf53a297b0a1d5b1ba53211b3`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime`.
+
+Selected from posture: `select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync`.
+
+Selected next authority question: `source_directory_material_qualitative_hybrid_context_packet_authority_contract`.
+
+Selected future authority: `source_directory_material_retrieval_augmented_context_packet_authority`.
+
+Selected future mode: `retrieval_augmented_qualitative_context_packet`.
+
+Selected retrieval authority: `source_directory_material_deterministic_lexical_retrieval_authority`.
+
+Selected future owner service: `backend/app/services/layer3_source_directory_context_packet.py`.
+
+Selected future proof test: `backend/tests/test_layer3_source_directory_context_packet.py`.
+
+Runtime behavior introduced by this freeze: `false`.
+
+Current main now proves source-directory source/material/index authority plus deterministic lexical retrieval over `deterministic_text_segments`, but it still does not select vector storage, embedding generation, prompt/model/provider runtime, output taxonomy expansion, package compatibility changes, rendered controls, auth/security broadening, provider/public delivery/use, or connector/destination dispatch.
+
+This freeze selects a deterministic context-packet bridge only. It admits no runtime behavior, backend route, API DTO, response model, database model, migration, durable context-packet row, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_freeze`; after sync, the next exact posture is `write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime`.
