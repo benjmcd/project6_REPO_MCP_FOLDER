@@ -5770,3 +5770,25 @@ Runtime behavior introduced by this contract: `false`.
 The contract freezes a deterministic local hashed lexical vector index over already-admitted source-directory text-index segments only: `feature_hash_version == source-directory-hash-vector-v1`, `vector_dimensions == 4096`, stable SHA-256 token buckets, token-frequency weights, and L2 normalization for cosine-compatible scoring. It selects no embedding model, provider, credential, network egress, backend route, rendered control, frontend-durable state, durable vector-store rows, durable embedding rows, vector query runtime, RAG execution, package behavior, connector dispatch, provider-public delivery/use, source expansion, or raw local path exposure.
 
 The next exact posture after merge is `current_main_sync_source_directory_material_embedding_vector_index_authority_contract`; after sync, the next exact posture is `implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync`.
+
+## Source Directory Material Embedding Vector Index Authority Contract Current-Main Sync
+
+Current-main sync: `781_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md` syncs contract PR `#1385` for `source_directory_material_embedding_vector_index_authority_contract`.
+
+Contract branch `codex/l3-vector-contract` landed branch commit `759f23346164ed3d052eda60cc8f2375e5eccd89` into current main at merge commit `f9c32562f9740fe9375e56d00cd7ce5ecc51fba8`.
+
+Synced result: `current_main_synced_source_directory_material_embedding_vector_index_authority_contract`.
+
+Current main now includes `780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md`.
+
+Current main now records `source_directory_material_deterministic_embedding_vector_index_authority`, `deterministic_local_hashing_vector_embedding`, `deterministic_source_directory_segment_vector_index`, `source_directory_material_deterministic_text_index_authority`, `deterministic_text_segments`, `source-directory-hash-vector-v1`, and `vector_dimensions == 4096` as the selected future implementation authority.
+
+PR `#1385` had green `backend-layer3-api` (`3m14s`) and `test` (`3m33s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by contract PR: `false`.
+
+Runtime behavior introduced by this sync: `false`.
+
+No runtime behavior, backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, vector database, persistent vector store, vector query, semantic retrieval ranking, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
+
+The next exact current-main posture is `implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync`.
