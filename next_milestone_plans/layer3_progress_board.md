@@ -6186,3 +6186,33 @@ Runtime behavior introduced by this sync: `false`.
 No real provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, public anonymous access, public redirect, byte streaming, rendered delivery/use control, frontend-durable authority, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, source expansion, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, RAG/vector indexing expansion, embedding generation expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
 
 The next exact current-main posture is `select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync`.
+
+## Source Directory Vector Retrieval API Runtime Entry Freeze
+
+Branch-local implementation-entry freeze and runtime proof: `796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md` follows the provider-public delivery/use fake-provider runtime current-main sync and resolves `select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync` by adopting the already-synced `server_configured_operator_directory_text_table_source_family`.
+
+Runtime branch `codex/l3-source-ingest-family` starts from current-main checkpoint `8da8cc2ee419512b494d1f8ebafa528ac4e9c23c`.
+
+Current main already has `current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime` over `server_configured_operator_directory_text_table_source_family`; this pass therefore selects the implementation-bearing API wrapper over the existing deterministic local vector retrieval service rather than duplicating source-family ingestion work.
+
+Selected implementation action: `implement_source_directory_material_vector_retrieval_api_after_existing_source_family_and_vector_retrieval_runtime_sync`.
+
+Runtime status after implementation: `source_directory_material_vector_retrieval_api_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented API route: `POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval`.
+
+Implemented response schema: `layer3.source_directory_vector_retrieval.v1`.
+
+Implemented API owner: `backend/app/api/layer3.py`.
+
+Implemented proof test: `backend/tests/test_layer3_source_directory_vector_retrieval.py`.
+
+The route calls `source_directory_material_vector_retrieval(db, payload)` and returns deterministic local vector retrieval results for already-admitted source-directory material. It preserves current source-directory material, text-index, vector-index, and embedding-index authority hashes; rejects stale authority; rejects extra prompt/provider fields; and does not expose raw local paths, raw vectors, normalized feature maps, prompt payloads, provider payloads, package payloads, connector payloads, source file bytes, or frontend state.
+
+The focused proof passed with `5 passed` and covers deterministic vector retrieval service behavior, the API route response, stale embedding authority fail-closed response, forbidden prompt/provider API fields, no raw local path in API response, no raw vectors or normalized features in items, no downstream side effects, and negative invariants for persistent vector store, RAG execution, prompt/model/provider runtime, and network egress.
+
+No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable vector-store row write, durable embedding row write, durable retrieval row write, vector database, persistent vector store, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, provider-public delivery/use broadening, provider-private signed URL generation/use, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this runtime.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_material_vector_retrieval_api_runtime`; after sync, pivot to `select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync` unless current-main evidence shows a concrete unresolved vector retrieval API defect or named downstream reader.
