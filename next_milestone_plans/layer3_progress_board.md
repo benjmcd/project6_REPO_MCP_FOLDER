@@ -5664,3 +5664,25 @@ The missing authority before provider-public delivery/use runtime is exposure cl
 The next exact posture after merge is `current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract`.
 
 After sync, the next exact posture is `select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync` unless current-main evidence names a concrete unresolved provider-public defect or newly selected provider-public downstream reader.
+
+## Provider-Public Delivery/Use Authority Contract Current-Main Sync
+
+Current-main sync: `777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md` syncs contract PR `#1381` for `provider_public_delivery_use_exposure_security_revocation_authority_contract`.
+
+Contract branch `codex/l3-provider-public-contract` landed branch commit `b313f5bbb7a5a9b47824c79ede18b9ccb98734ed` into current main at merge commit `c1861e7c85f9b674698f56585de3941a513a8474`.
+
+Synced result: `current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract`.
+
+Current main now includes `776_PROVIDER_PUBLIC_AUTH_CONTRACT.md`.
+
+Current main now records `no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent`.
+
+PR `#1381` had green `backend-layer3-api` (`3m12s`) and `test` (`3m45s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by contract PR: `false`.
+
+Runtime behavior introduced by this sync: `false`.
+
+Current main remains provider-public no-runtime for delivery/use: no provider-public delivery/use route, no raw public URL exposure, no `public_url_enabled: true` rail, no public proxy runtime, no provider adapter, no provider credential, no provider object write/copy/mutation/ACL change, no rendered delivery/use control, no frontend-durable authority, no package construction, no package mutation/reconstruction, no handoff/export rerun, no connector/destination dispatch, no real connector invocation, no network egress, no source expansion, no arbitrary source ingestion, no RAG/vector indexing, no embedding generation, no prompt/model/provider runtime, no broad qualitative generation, no auth/security behavior change, no full mockup activation, and no raw local path exposure.
+
+The next exact current-main posture is `select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync`.

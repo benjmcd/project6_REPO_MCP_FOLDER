@@ -31071,5 +31071,44 @@
   "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_status": "planning_control_authority_contract_no_runtime",
   "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_result": "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent",
   "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_next_posture_after_merge": "current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract",
-  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_summary": "Doc 776 proof records the provider-public exposure security revocation authority contract as no-runtime. Current-main provider-public authority remains redacted prepare/status/revoke state only, raw_public_url_exposed remains false, public_url_enabled remains false, and delivery/use runtime is blocked until exposure, security, revocation, provider/object-store, public access, leak-control, and audit authority are selected."
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_summary": "Doc 776 proof records the provider-public exposure security revocation authority contract as no-runtime. Current-main provider-public authority remains redacted prepare/status/revoke state only, raw_public_url_exposed remains false, public_url_enabled remains false, and delivery/use runtime is blocked until exposure, security, revocation, provider/object-store, public access, leak-control, and audit authority are selected.",
+  "provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+    "status": "current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+    "sync_branch": "codex/l3-provider-public-contract-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md",
+    "contract_doc": "next_milestone_plans/Layer3_planning_docs/776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+    "contract_pr": "#1381",
+    "contract_branch_commit": "b313f5bbb7a5a9b47824c79ede18b9ccb98734ed",
+    "contract_merge_commit": "c1861e7c85f9b674698f56585de3941a513a8474",
+    "current_main_checkpoint_after_merge": "c1861e7c85f9b674698f56585de3941a513a8474",
+    "runtime_behavior_introduced_by_contract_pr": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 776 provider-public delivery/use exposure security revocation authority contract",
+      "current main records PR #1381 merged at c1861e7c85f9b674698f56585de3941a513a8474",
+      "current main records green backend-layer3-api and test checks for PR #1381",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main sync introduces no additional runtime behavior",
+      "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent remains the provider-public delivery/use result",
+      "provider-public delivery/use route raw public URL exposure public_url_enabled true provider adapter credential object write rendered controls network source expansion RAG vector prompt model auth security frontend durable full mockup and raw local path behavior remain blocked",
+      "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync is selected for the next authority posture"
+    ],
+    "next_posture": "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync"
+  },
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync_branch": "codex/l3-provider-public-contract-sync",
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md",
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync_status": "current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync_next_posture": "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync_summary": "Doc 777 proof syncs the provider-public delivery/use exposure security revocation authority contract after PR #1381 and moves the next posture to select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync, with no provider-public runtime admitted by the sync."
 }
