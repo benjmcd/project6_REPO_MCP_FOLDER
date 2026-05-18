@@ -30712,5 +30712,44 @@
   "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/766_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF.md",
   "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_status": "source_directory_material_retrieval_augmented_context_packet_runtime_implemented_branch_local",
   "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_retrieval_augmented_context_packet_runtime_proof",
-  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_summary": "Doc 766 proof records deterministic response-safe context-packet assembly over existing source-directory lexical retrieval, stable context_packet_hash replay, stale index/source authority failure, empty/forbidden/unknown field failure, bounded paging, no-match preservation, and no pass-run analysis package connector side effects while preserving blocked routes, DTOs, models, migrations, durable context-packet rows, vector, embedding, qualitative generation, prompt/model/provider, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, and raw-path surfaces."
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_proof_summary": "Doc 766 proof records deterministic response-safe context-packet assembly over existing source-directory lexical retrieval, stable context_packet_hash replay, stale index/source authority failure, empty/forbidden/unknown field failure, bounded paging, no-match preservation, and no pass-run analysis package connector side effects while preserving blocked routes, DTOs, models, migrations, durable context-packet rows, vector, embedding, qualitative generation, prompt/model/provider, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, and raw-path surfaces.",
+  "source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_retrieval_augmented_context_packet_runtime",
+    "status": "current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime",
+    "sync_branch": "codex/l3-rag-qual-impl-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/767_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/766_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF.md",
+    "runtime_pr": "#1371",
+    "runtime_branch_commit": "94bf690283d1d7c0eda734bd4ecd11486292dfeb",
+    "runtime_merge_commit": "22d8ff1bbf1f38f8dfc64d07ca153b5df6239e69",
+    "current_main_checkpoint_after_merge": "22d8ff1bbf1f38f8dfc64d07ca153b5df6239e69",
+    "runtime_behavior_already_merged": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 766 source-directory retrieval-augmented context packet runtime proof",
+      "current main records PR #1371 merged at 22d8ff1bbf1f38f8dfc64d07ca153b5df6239e69",
+      "current main records green backend-layer3-api and test checks for PR #1371",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main includes backend/app/services/layer3_source_directory_context_packet.py",
+      "current main includes backend/tests/test_layer3_source_directory_context_packet.py",
+      "no runtime behavior introduced by this sync",
+      "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync is selected for the next authority posture"
+    ],
+    "next_posture": "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync"
+  },
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_branch": "codex/l3-rag-qual-impl-sync",
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/767_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_status": "current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime",
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_next_posture": "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync",
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_summary": "Doc 767 proof syncs the source-directory retrieval-augmented context packet runtime after PR #1371 and moves the next posture to select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync, with routes, DTOs, models, migrations, durable context-packet rows, vector, embedding, qualitative generation, prompt/model/provider, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, and raw-path behavior still blocked until separately frozen."
 }
