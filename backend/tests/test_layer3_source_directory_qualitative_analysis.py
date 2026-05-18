@@ -1074,6 +1074,67 @@ def test_source_directory_qualitative_analysis_external_export_download_prepare_
         "package_kind": body["package_kinds"][1],
         "package_payload_hash": body["payload_hashes"][1],
     }
+    delivery_status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/handoff/export/download/deliver/status"
+        ),
+        json=delivery_payload,
+    )
+    assert delivery_status.status_code == 200, delivery_status.text
+    status_body = delivery_status.json()
+    assert status_body["schema_id"] == (
+        "layer3.source_directory_qualitative_analysis_external_export_download_delivery_status.v1"
+    )
+    assert status_body["status"] == "ready"
+    assert status_body["delivery_status"] == "source_directory_external_export_download_delivery_ready"
+    assert status_body["delivery_available"] is True
+    assert status_body["delivery_streaming_performed"] is False
+    assert status_body["delivery_state"] == "external_export_download_delivered"
+    assert status_body["source_gate"] == (
+        "816_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_RUNTIME_ENTRY_FREEZE"
+    )
+    assert status_body["validated_delivery_source_gate"] == (
+        "814_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE"
+    )
+    assert (
+        status_body["external_export_download_record_ref"]
+        == body["external_export_download_record_ref"]
+    )
+    assert status_body["export_download_descriptor_ref"] == body["export_download_descriptor_ref"]
+    assert status_body["output_package_id"] == body["output_package_ids"][1]
+    assert status_body["package_kind"] == body["package_kinds"][1]
+    assert status_body["package_payload_hash"] == expected_payload_hash
+    assert status_body["payload_ref_redacted"] is True
+    assert status_body["raw_local_path_exposed"] is False
+    assert status_body["same_origin_delivery_enabled"] is True
+    assert status_body["provider_public_delivery_enabled"] is False
+    assert status_body["provider_private_signed_url_enabled"] is False
+    assert status_body["connector_dispatch_enabled"] is False
+    assert status_body["network_egress_enabled"] is False
+    assert status_body["frontend_durable_authority_enabled"] is False
+    assert status_body["package_payload_rewrite_enabled"] is False
+    assert status_body["source_package_row_mutation_enabled"] is False
+    assert status_body["delivery_headers"]["X-Layer3-Delivery-State"] == "external_export_download_delivered"
+    assert status_body["delivery_headers"]["X-Layer3-Source-Artifact-Hash"] == expected_payload_hash
+    assert status_body["delivery_authority"]["payload_ref_redacted"] is True
+    assert "artifact_path" not in status_body
+    assert "filename" not in status_body
+    assert str(source_dir) not in delivery_status.text
+    assert str(Path(settings.storage_dir)) not in delivery_status.text
+
+    stale_status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/handoff/export/download/deliver/status"
+        ),
+        json={**delivery_payload, "package_payload_hash": "0" * 64},
+    )
+    assert stale_status.status_code == 409, stale_status.text
+    assert stale_status.json()["error"]["code"] == (
+        "source_directory_external_export_download_delivery_payload_hash_mismatch"
+    )
+
     delivery = client.post(
         (
             "/api/v1/layer3/source/ingestion/server-configured-directory/"
