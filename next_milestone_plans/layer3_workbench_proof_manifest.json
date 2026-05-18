@@ -31516,5 +31516,46 @@
   "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
   "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_status": "source_directory_material_deterministic_vector_retrieval_runtime_implemented_branch_local",
   "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof",
-  "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_summary": "Doc 788 proof implements deterministic local source-directory vector retrieval runtime and moves the next posture to await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof."
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_summary": "Doc 788 proof implements deterministic local source-directory vector retrieval runtime and moves the next posture to await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof.",
+  "source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_deterministic_vector_retrieval_runtime",
+    "status": "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+    "sync_branch": "codex/l3-vector-retrieval-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+    "runtime_pr": "#1393",
+    "runtime_branch_commit": "1428cac062ae3f4a4ea52d2dea10c73d004595b5",
+    "runtime_merge_commit": "261c995c7330952bf01fa5b43202fd4445dbb5ea",
+    "current_main_checkpoint_after_merge": "261c995c7330952bf01fa5b43202fd4445dbb5ea",
+    "runtime_behavior_already_merged_by_runtime_pr": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 788 source-directory deterministic vector retrieval runtime proof",
+      "current main records PR #1393 merged at 261c995c7330952bf01fa5b43202fd4445dbb5ea",
+      "current main records green backend-layer3-api and test checks for PR #1393",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main sync introduces no additional runtime behavior",
+      "source_directory_material_deterministic_vector_retrieval_authority is current-main synced",
+      "source_directory_material_vector_retrieval(db, payload) is current-main synced",
+      "layer3.source_directory_vector_retrieval.v1 is current-main synced",
+      "backend/app/services/layer3_source_directory_vector_retrieval.py and backend/tests/test_layer3_source_directory_vector_retrieval.py are current-main synced",
+      "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync is selected for the next authority posture"
+    ],
+    "next_posture": "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync"
+  },
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_branch": "codex/l3-vector-retrieval-runtime-sync",
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_status": "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_next_posture": "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_summary": "Doc 789 proof syncs the source-directory deterministic vector retrieval runtime after PR #1393 and moves the next posture to select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync, with no additional runtime admitted by the sync."
 }
