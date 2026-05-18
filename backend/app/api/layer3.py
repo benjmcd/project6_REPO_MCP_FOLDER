@@ -2491,6 +2491,14 @@ class Layer3SourceDirectoryQualitativeAnalysisResponse(Layer3BaseResponse):
     analysis_contract_id: str
     analysis_mode: str
     qualitative_analysis_hash: str
+    source_directory_package_review_preview_enabled: bool
+    source_directory_package_review_preview_hash: str
+    source_directory_package_review_preview: dict[str, Any]
+    candidate_package_kinds: list[str]
+    package_commit_enabled: bool
+    package_review_submit_enabled: bool
+    handoff_enabled: bool
+    external_export_download_enabled: bool
     context_packet_contract_id: str
     context_packet_mode: str
     context_packet_hash: str
