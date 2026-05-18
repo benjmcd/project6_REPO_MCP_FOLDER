@@ -6130,3 +6130,37 @@ Runtime behavior introduced by this sync: `false`.
 No runtime behavior, backend route, API DTO, response model, database model, migration, durable use row, audit row, provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, rendered delivery/use control, frontend-durable authority, package behavior, connector/destination dispatch, real connector invocation, network egress, source expansion, RAG/vector indexing expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
 
 The next exact current-main posture is `freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry`.
+
+## Provider-Public Delivery/Use Fake-Provider Runtime Implementation Entry Freeze
+
+Branch-local implementation-entry freeze and runtime proof: `794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md` follows the provider-public delivery/use runtime authority contract current-main sync.
+
+Runtime branch `codex/l3-pp-use-runtime` starts from current-main checkpoint `bcf5cb3b196e56c4d3532c97c8eb8778e858cb2c`.
+
+Predecessor sync result: `current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync`.
+
+Selected from posture: `freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry`.
+
+Selected implementation action: `implement_provider_public_delivery_use_fake_provider_redacted_runtime_after_contract_sync`.
+
+Runtime status after implementation: `provider_public_delivery_use_fake_provider_redacted_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented service: `backend/app/services/layer3_provider_public_url_delivery_use.py`.
+
+Implemented proof test: `backend/tests/test_layer3_provider_public_url_delivery_use.py`.
+
+Implemented API route: `POST /handoff/export/download/provider-public-url/use`.
+
+Implemented response schema: `layer3.provider_public_url.delivery_use.v1`.
+
+The runtime implements a read-only fake-provider redacted delivery/use decision over existing `L3ProviderPublicUrlReceipt` and `L3ProviderPublicUrlObjectAuthority` state. Prepared unexpired unrevoked receipts return `delivery_use_decision: allowed`; expired or revoked receipts return `delivery_use_decision: denied` with response-safe denial reasons.
+
+The focused proof passed with `9 passed` and covers allowed decision redaction, expired/revoked denial, missing receipt and missing authority fail-closed behavior, stale authority hash rejection, source artifact hash and size mismatch rejection, forbidden URL/provider credential field rejection, API route redaction, OpenAPI route guardrails, and no durable use row or audit row creation during delivery/use.
+
+The runtime keeps `raw_public_url_exposed: False`, `public_url_enabled: False`, `provider_network_enabled: False`, `provider_object_write_enabled: False`, `public_redirect_enabled: False`, `byte_streaming_enabled: False`, `connector_dispatch_enabled: False`, `package_mutation_enabled: False`, `source_expansion_enabled: False`, `rag_vector_indexing_enabled: False`, and `frontend_durable_authority_enabled: False`.
+
+No real provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, public anonymous access, public redirect, byte streaming, rendered delivery/use control, frontend-durable authority, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, source expansion, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, RAG/vector indexing expansion, embedding generation expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this runtime.
+
+The next exact posture after merge is `await_current_main_sync_for_provider_public_delivery_use_fake_provider_redacted_runtime_implementation`; after sync, pivot to `select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync` unless current-main evidence shows a concrete unresolved provider-public defect or named downstream reader.

@@ -27,6 +27,7 @@ from app.services import (
     layer3_replacement_package_set_authority,
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
+    layer3_provider_public_url_delivery_use,
     layer3_server_owned_local_outbox_target,
     layer3_server_owned_local_outbox_write,
     layer3_source_directory_ingestion,
@@ -1992,6 +1993,49 @@ class Layer3ProviderPublicUrlRevokeRequest(BaseModel):
     browser_durable_authority: Any | None = None
 
 
+class Layer3ProviderPublicUrlDeliveryUseRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    provider_public_url_receipt_id: str | None = None
+    expected_authority_hash: str | None = None
+    expected_source_artifact_hash: str | None = None
+    expected_source_artifact_size_bytes: int | None = None
+    delivery_use_mode: str | None = None
+    operator_decision: str | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    raw_public_url: Any | None = None
+    public_proxy_url: Any | None = None
+    download_url: Any | None = None
+    signed_url: Any | None = None
+    provider_url: Any | None = None
+    provider_credentials: Any | None = None
+    provider_secret: Any | None = None
+    provider_token: Any | None = None
+    provider_bucket: Any | None = None
+    provider_container: Any | None = None
+    provider_object_key: Any | None = None
+    provider_object_identity: Any | None = None
+    raw_provider_signature: Any | None = None
+    raw_provider_object_key: Any | None = None
+    connector_dispatch: Any | None = None
+    connector_run_id: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    package_mutation: Any | None = None
+    source_expansion: Any | None = None
+    source_payload: Any | None = None
+    local_directory: Any | None = None
+    local_path: Any | None = None
+    web_connector: Any | None = None
+    rag_vector_state: Any | None = None
+    prompt_model_settings: Any | None = None
+    prompt_or_model_payload: Any | None = None
+    auth_security_override: Any | None = None
+    browser_durable_authority: Any | None = None
+
+
 class Layer3ConnectorDispatchRecordRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3693,6 +3737,35 @@ class Layer3ProviderPublicUrlRevokeResponse(Layer3ProviderPublicUrlStatusRespons
     pass
 
 
+class Layer3ProviderPublicUrlDeliveryUseResponse(Layer3BaseResponse):
+    provider_public_url_receipt_id: str
+    provider_public_url_object_authority_id: str
+    provider_public_url_state: str
+    delivery_use_mode: str
+    delivery_use_decision: str
+    delivery_use_denied_reason: str | None = None
+    provider_public_url_redacted: str
+    provider_public_url_replay_policy: str
+    authority_hash: str
+    source_artifact_hash: str
+    source_artifact_size_bytes: int
+    raw_public_url_exposed: bool
+    public_url_enabled: bool
+    provider_network_enabled: bool
+    provider_object_write_enabled: bool
+    public_redirect_enabled: bool
+    byte_streaming_enabled: bool
+    durable_use_row_created: bool
+    audit_row_created: bool
+    provider_credentials_enabled: bool
+    connector_dispatch_enabled: bool
+    package_mutation_enabled: bool
+    source_expansion_enabled: bool
+    rag_vector_indexing_enabled: bool
+    frontend_durable_authority_enabled: bool
+    next_allowed_actions: list[str]
+
+
 class Layer3WorkbenchErrorResponse(Layer3BaseResponse):
     error_code: str
     message: str
@@ -4082,6 +4155,43 @@ PROVIDER_PUBLIC_URL_REVOKE_REQUEST_SCHEMA: dict[str, Any] = {
         **{
             field: _forbidden_request_field_schema()
             for field in PROVIDER_PUBLIC_URL_FORBIDDEN_REQUEST_FIELDS
+        },
+    },
+}
+
+
+PROVIDER_PUBLIC_URL_DELIVERY_USE_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Read-only fake-provider provider-public delivery/use decision over existing "
+        "redacted provider-public receipt authority. It never returns raw URLs, streams "
+        "bytes, redirects, writes provider objects, invokes connector/network dispatch, "
+        "or creates durable use/audit rows."
+    ),
+    "required": [
+        "client_request_id",
+        "provider_public_url_receipt_id",
+        "delivery_use_mode",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "provider_public_url_receipt_id": {"type": "string"},
+        "expected_authority_hash": {"type": "string"},
+        "expected_source_artifact_hash": {"type": "string"},
+        "expected_source_artifact_size_bytes": {"type": "integer"},
+        "delivery_use_mode": {"type": "string", "enum": ["fake_provider_redacted_use_decision"]},
+        "operator_decision": {"type": "string", "enum": ["use_provider_public_url_redacted_fake_provider"]},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in (
+                *PROVIDER_PUBLIC_URL_FORBIDDEN_REQUEST_FIELDS,
+                "source_payload",
+                "local_path",
+                "prompt_model_settings",
+                "prompt_or_model_payload",
+            )
         },
     },
 }
@@ -7604,6 +7714,24 @@ def post_provider_public_url_revoke(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_provider_public_url.provider_public_url_revoke(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/handoff/export/download/provider-public-url/use",
+    response_model=Layer3ProviderPublicUrlDeliveryUseResponse,
+    openapi_extra={"requestBody": _json_request_body(PROVIDER_PUBLIC_URL_DELIVERY_USE_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_provider_public_url_delivery_use(
+    payload: Layer3ProviderPublicUrlDeliveryUseRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_provider_public_url_delivery_use.provider_public_url_delivery_use(
             db,
             payload.model_dump(exclude_unset=True),
         )
