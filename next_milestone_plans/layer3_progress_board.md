@@ -5528,3 +5528,35 @@ Runtime behavior introduced by this sync: `false`.
 This sync admits no runtime behavior, backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, durable context-packet row write, durable qualitative analysis row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact current-main posture is `implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync`.
+
+## Source Directory Material Context-Packet Qualitative-Hybrid Analysis Runtime Proof
+
+Branch-local runtime proof: `772_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF.md` follows the source-directory context-packet qualitative-hybrid analysis contract current-main sync.
+
+Runtime branch `codex/l3-qual-analysis-runtime` starts from current-main checkpoint `047b8c7b0cc1f33399956ae150bc09e37f78868d`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_contract`.
+
+Selected implementation action: `implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync`.
+
+Implemented runtime status: `source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+The implementation adds `backend/app/services/layer3_source_directory_qualitative_analysis.py`.
+
+The proof adds `backend/tests/test_layer3_source_directory_qualitative_analysis.py`.
+
+The service function is `source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)`.
+
+The service validates the qualitative-analysis request field set, calls `source_directory_material_retrieval_augmented_context_packet(db, payload)`, validates `context_packet_contract_id`, `context_packet_mode`, and `schema_id`, and returns `layer3.source_directory_qualitative_analysis.v1` with deterministic `qualitative_analysis_hash`.
+
+The deterministic extractive sections are `evidence_summary`, `salient_terms`, `supporting_segments`, `coverage_notes`, and `analysis_limits`.
+
+Focused proof `python -m pytest .\backend\tests\test_layer3_source_directory_qualitative_analysis.py -q` passes with `4 passed`.
+
+The proof covers deterministic analysis, stable hash replay, context-packet authority validation, stale index authority rejection, stale source/material authority rejection, empty `analysis_question`, empty query rejection, forbidden and unknown fields, bounded `limit` and `offset`, no-match response preservation, and no `L3PassRun`, `AnalysisRun`, `L3OutputPackage`, `ConnectorRun`, or `ConnectorRunTarget` side effects.
+
+No backend route, API DTO, response model, database model, migration, durable qualitative analysis row, durable context-packet row, source-index durable row, retrieval durable row, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is added.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof`; after sync, pivot to `select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync` only if current-main evidence confirms this runtime is cleanly synced and no concrete same-family qualitative-analysis defect remains.
