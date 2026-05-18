@@ -4812,3 +4812,29 @@ Current main now proves corrected-artifact active package authority reaches `POS
 No runtime behavior is introduced by the evaluation or this sync. External local export adoption, provider-public delivery/use, provider-private signed URL generation/use, raw token exposure, raw provider object key exposure, real provider network write, real provider object store write, real connector invocation, `ConnectorRun` creation, `ConnectorRunTarget` creation, arbitrary external destination write, credentials, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, full mockup activation, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
 
 The next exact current-main posture is `select_next_downstream_active_package_authority_reader_after_corrected_artifact_local_outbox_provider_private_handoff_sync`.
+
+## Corrected Artifact Active Authority External Local Export Evaluation
+
+Evaluation proof/control: `740_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION.md` selects `external_local_export` as the next downstream active-package-authority reader after corrected-artifact local-outbox provider-private handoff sync.
+
+Evaluation branch `codex/l3-corrected-external-local-export` starts from current-main checkpoint `d85d5ad7602a22cea7d52edd678612274d7fab73`.
+
+Selected route: `POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write`.
+
+Selected service authority: `backend/app/services/layer3_external_local_export.py`.
+
+Durable receipt/audit authorities: `L3ExternalLocalExportReceipt` and `L3ExternalLocalExportAuditEvent`.
+
+Evaluation result: `corrected_artifact_active_authority_external_local_export_proven`.
+
+Focused proof extends `backend/tests/test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority` through corrected-artifact activation, handoff/export prepare, APS handoff dispatch, external export/download prepare and delivery, connector dispatch, connector-local destination receipt, server-owned local outbox fake target, server-owned local outbox write, local-outbox provider-private handoff prepare/status, and external local export write/status.
+
+Observed branch validation: `python -m pytest .\backend\tests\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority -q` -> `1 passed`.
+
+Runtime behavior change in this pass: `false`. Test/proof behavior change in this pass: `true`. Current-main proof already present: `false`.
+
+The proof verifies matching provider-private handoff and server-owned local outbox write authority, corrected outbox artifact hash/size continuity into `external-local-export://` refs, durable authority snapshot linkage through `provider_private_handoff_authority_basis_hash` and `server_owned_local_outbox_write_authority_basis_hash`, external local export status `external_local_export_written`, response/status/session-summary redaction, unchanged source `L3OutputPackage` rows, no `ConnectorRun`/`ConnectorRunTarget`/`L3ProviderPrivateSignedUrlReceipt`, and replay as `already_recorded`.
+
+No service runtime behavior change, provider-public delivery/use, provider-private signed URL generation/use, raw token exposure, raw provider object key exposure, real provider network write, real provider object store write, real connector invocation, `ConnectorRun` creation, `ConnectorRunTarget` creation, arbitrary external destination write, credentials, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, qualitative-hybrid runtime, rendered controls, auth/security behavior, full mockup activation, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, or hidden LLM planning is admitted by this pass.
+
+The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_external_local_export_evaluation`. After sync, the next exact posture should pivot to `select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync` unless current-main evidence identifies a concrete unresolved defect or another named downstream reader.
