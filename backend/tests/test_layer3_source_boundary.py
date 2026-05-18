@@ -48,6 +48,10 @@ def test_source_boundary_candidate_id_parsing_is_limited_to_admitted_classes() -
         source_class_from_material_candidate_id("mat-aps_content_document-material123")
         == "aps_content_document"
     )
+    assert (
+        source_class_from_material_candidate_id("mat-server_configured_directory_file-file123")
+        == "server_configured_directory_file"
+    )
     assert source_class_from_material_candidate_id("mat-web_connector-material123") is None
 
 
@@ -93,6 +97,7 @@ def test_source_boundary_contract_keeps_deferred_source_expansion_fail_closed() 
         "operator_source_intake_material_preview_read_only",
         "source_intake_gate_b_material_admission",
         "server_configured_operator_directory_text_table_ingestion",
+        "source_directory_ingestion_gate_b_material_admission",
     ]
     assert contract["source_intake_upload_enabled"] is True
     assert contract["source_intake_record_enabled"] is True
@@ -107,6 +112,13 @@ def test_source_boundary_contract_keeps_deferred_source_expansion_fail_closed() 
     assert contract["server_configured_directory_ingestion_config_authority"] == "LAYER3_SOURCE_INGESTION_DIR"
     assert contract["server_configured_directory_ingestion_allowed_extensions"] == [".csv", ".json", ".txt", ".md"]
     assert contract["server_configured_directory_ingestion_direct_child_only"] is True
+    assert contract["server_configured_directory_material_preview_enabled"] is True
+    assert (
+        contract["server_configured_directory_material_preview_route"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview"
+    )
+    assert contract["server_configured_directory_gate_b_material_admission_route"] == "/api/v1/layer3/gate-b/decision"
+    assert contract["server_configured_directory_material_preview_requires_later_freeze"] is False
     assert contract["local_directory_enabled"] is False
     assert contract["broad_file_upload_enabled"] is False
     assert contract["web_connector_enabled"] is False

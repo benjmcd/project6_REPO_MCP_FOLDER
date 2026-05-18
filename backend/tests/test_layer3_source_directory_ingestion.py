@@ -21,6 +21,7 @@ from app.db.session import Base
 from app.models.models import (
     ConnectorRun,
     ConnectorRunTarget,
+    L3MaterialSnapshot,
     L3OutputPackage,
     L3SourceDirectoryIngestionBatch,
     L3SourceDirectoryIngestionFile,
@@ -76,6 +77,17 @@ def _write_source_dir(root: Path) -> None:
     (root / "delta.md").write_text("# Markdown source\n", encoding="utf-8")
 
 
+def _material_preview_payload(scan_body: dict, relative_name: str = "alpha.csv") -> dict[str, str]:
+    file_record = next(item for item in scan_body["files"] if item["relative_name"] == relative_name)
+    return {
+        "client_request_id": f"source-directory-material-preview-{relative_name}",
+        "source_ingestion_batch_id": scan_body["source_ingestion_batch_id"],
+        "source_ingestion_file_id": file_record["source_ingestion_file_id"],
+        "file_identity_hash": file_record["file_identity_hash"],
+        "authority_basis_hash": file_record["authority_basis_hash"],
+    }
+
+
 def test_layer3_source_directory_ingestion_openapi_contract(client: TestClient) -> None:
     schema = client.app.openapi()
 
@@ -97,6 +109,22 @@ def test_layer3_source_directory_ingestion_openapi_contract(client: TestClient) 
         "files",
         "negative_invariants",
     }.issubset(set(response_schema["required"]))
+
+    preview_schema = schema["paths"]["/api/v1/layer3/source/ingestion/server-configured-directory/material-preview"][
+        "post"
+    ]
+    preview_request_ref = preview_schema["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+    preview_request_schema = schema["components"]["schemas"][preview_request_ref.rsplit("/", 1)[-1]]
+    assert preview_request_schema["additionalProperties"] is False
+    assert set(preview_request_schema["required"]) == {
+        "client_request_id",
+        "source_ingestion_batch_id",
+        "source_ingestion_file_id",
+        "file_identity_hash",
+        "authority_basis_hash",
+    }
+    assert "local_path" not in preview_request_schema["properties"]
+    assert "recursive" not in preview_request_schema["properties"]
 
 
 def test_layer3_source_directory_ingestion_fails_closed_when_config_unset(client: TestClient) -> None:
@@ -185,6 +213,170 @@ def test_layer3_source_directory_ingestion_records_redacted_durable_authority(
         assert db.query(L3OutputPackage).count() == 0
     finally:
         db.close()
+
+
+def test_layer3_source_directory_material_preview_reaches_gate_b_without_broad_outputs(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-material"),
+    )
+    assert scan.status_code == 201
+    scan_body = scan.json()
+    preview = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        json=_material_preview_payload(scan_body),
+    )
+
+    assert preview.status_code == 200
+    preview_body = preview.json()
+    assert preview_body["schema_id"] == "layer3.source_directory_material_preview.v1"
+    assert preview_body["mode"] == "source_directory_ingestion_gate_b_material_admission"
+    assert preview_body["status"] == "available"
+    assert preview_body["source_gate"]["canonical_source_of_truth"] == "L3SourceDirectoryIngestionFile"
+    assert preview_body["source_gate"]["absolute_path_exposed"] is False
+    assert preview_body["source_gate"]["rag_vector_index_enabled"] is False
+    assert preview_body["source_gate"]["package_construction_enabled"] is False
+    assert preview_body["material_candidate"]["candidate_id"].startswith("mat-server_configured_directory_file-")
+    assert preview_body["material_candidate"]["source_class"] == "server_configured_directory_file"
+    assert preview_body["material_candidate"]["preview_text"].replace("\r\n", "\n") == "name,value\nalpha,1\n"
+    assert str(source_dir) not in str(preview_body)
+
+    candidate = preview_body["material_candidate"]
+    gate_b = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "source-directory-gate-b-001",
+            "preflight_id": "preflight-source-directory",
+            "source_set_id": scan_body["source_ingestion_batch_id"],
+            "material_preview_id": preview_body["material_preview_id"],
+            "material_preview_hash": preview_body["material_preview_hash"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "decision_basis": candidate,
+                }
+            ],
+        },
+    )
+    assert gate_b.status_code == 200
+    gate_b_body = gate_b.json()
+    assert gate_b_body["status"] == "ok"
+    assert gate_b_body["approved_candidate_ids"] == [candidate["candidate_id"]]
+    assert gate_b_body["next_state"] == "gate_c_preview_ready"
+    gate_c = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={"client_request_id": "source-directory-gate-c-001", "session_id": gate_b_body["session_id"]},
+    )
+    assert gate_c.status_code == 200
+    gate_c_body = gate_c.json()
+    assert gate_c_body["typing_records"][0]["planning_shape_family"] == "document_chunks"
+    assert gate_c_body["typing_records"][0]["chosen_modality"] == "qualitative"
+
+    db = client.layer3_session_factory()
+    try:
+        snapshots = db.query(L3MaterialSnapshot).all()
+        assert len(snapshots) == 1
+        assert snapshots[0].source_shape == "server_configured_directory_file"
+        assert snapshots[0].source_identity_json["source_ingestion_batch_id"] == scan_body["source_ingestion_batch_id"]
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_source_directory_material_preview_fails_closed_on_stale_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-stale"),
+    )
+    assert scan.status_code == 201
+    payload = _material_preview_payload(scan.json())
+    payload["file_identity_hash"] = "0" * 64
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        json=payload,
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_directory_material_preview_stale_authority"
+    assert body["error"]["details"]["blocked_fields"] == ["file_identity_hash"]
+
+
+def test_layer3_source_directory_material_preview_rejects_live_file_drift(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-drift"),
+    )
+    assert scan.status_code == 201
+    payload = _material_preview_payload(scan.json())
+    (source_dir / "alpha.csv").write_text("name,value\nalpha,99\n", encoding="utf-8")
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        json=payload,
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_directory_material_preview_file_identity_mismatch"
+
+
+def test_layer3_source_directory_material_preview_fails_closed_when_config_drifts(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-config-drift"),
+    )
+    assert scan.status_code == 201
+    payload = _material_preview_payload(scan.json())
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", "")
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        json=payload,
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_directory_material_config_unavailable"
 
 
 def test_layer3_source_directory_ingestion_rejects_forbidden_or_unsupported_scope(
