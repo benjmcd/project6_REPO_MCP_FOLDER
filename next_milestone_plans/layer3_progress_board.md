@@ -6058,3 +6058,27 @@ Runtime behavior introduced by this freeze: `false`.
 No runtime behavior, backend route, API DTO, response model, database model, migration, provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, provider-public delivery/use route, rendered delivery/use control, frontend-durable authority, package behavior, connector/destination dispatch, real connector invocation, network egress, source expansion, RAG/vector indexing expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this freeze.
 
 The next exact posture after merge is `current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync`; after sync, the next exact posture is `write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime`.
+
+## Provider-Public Delivery/Use Runtime Authority Selection Current-Main Sync
+
+Current-main sync: `791_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md` syncs selection PR `#1395` for `provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync`.
+
+Selection branch `codex/l3-provider-public-runtime-select` landed branch commit `ceaf0071f989c8c4162810f11aa0ea68c5c0d387` into current main at merge commit `e649f70446b4d2f533a5e33eec9bc3fbfb14065c`.
+
+Synced result: `current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync`.
+
+Current main now includes `790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md`.
+
+Current main now selects `provider_public_delivery_use`, `fake_provider_only_contract_runtime`, `provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract`, and `write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime`.
+
+Current main still records provider-public authority as redacted prepare/status/revoke state only, uses `layer3_provider_public_url_fake_provider`, keeps `raw_public_url_exposed: False`, keeps `public_url_enabled: False`, and exposes no provider-public `/use` or `/deliver` runtime.
+
+PR `#1395` had green `backend-layer3-api` (`2m47s`) and `test` (`3m42s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by selection PR: `false`.
+
+Runtime behavior introduced by this sync: `false`.
+
+No runtime behavior, backend route, API DTO, response model, database model, migration, provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, provider-public delivery/use route, rendered delivery/use control, frontend-durable authority, package behavior, connector/destination dispatch, real connector invocation, network egress, source expansion, RAG/vector indexing expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
+
+The next exact current-main posture is `write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime`.
