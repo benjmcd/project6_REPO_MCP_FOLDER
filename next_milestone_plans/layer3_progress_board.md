@@ -5202,3 +5202,25 @@ The future ranking is deterministic lexical segment retrieval only: normalized u
 This contract admits no runtime behavior, backend route/API DTO/model/migration behavior, source-index rows, retrieval rows, vector index, embedding generation, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, prompt/model/provider runtime, credentials, network, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact posture after merge is `current_main_sync_source_directory_material_lexical_retrieval_authority_contract`; after sync, the next exact posture is `implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync`.
+
+## Source Directory Material Lexical Retrieval Authority Contract Current-Main Sync
+
+Current-main proof/control sync: `759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md` syncs contract PR `#1363` for `source_directory_material_lexical_retrieval_authority_contract`.
+
+Contract branch `codex/l3-retrieval-contract` landed branch commit `c08dc222372100b431232946c3ede818731312e2` into current main at merge commit `f22439007ae958d704932d4a3fb7c0cac0848d3b`.
+
+Synced result: `current_main_synced_source_directory_material_lexical_retrieval_authority_contract`.
+
+Current main now records `source_directory_material_deterministic_lexical_retrieval_authority`, `deterministic_lexical_segment_retrieval`, future owner `backend/app/services/layer3_source_directory_text_retrieval.py`, and future proof test `backend/tests/test_layer3_source_directory_text_retrieval.py` as the selected retrieval implementation posture before qualitative-hybrid runtime.
+
+PR `#1363` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by contract PR: `false`.
+
+Runtime behavior introduced by this sync: `false`.
+
+Sync validation from current-main checkpoint `f22439007ae958d704932d4a3fb7c0cac0848d3b` must pass: JSON manifest load; `python -m py_compile .\tools\l3-progress-check.py`; `python .\tools\l3-progress-check.py`; `python .\tools\l3-target-selection-validate.py --expect frozen`; and `git diff --check`.
+
+This sync admits no runtime behavior, backend route, API DTO, model change, migration, source-index durable row writes, retrieval durable row writes, vector indexing, embedding generation, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, raw local path exposure, or prompt/model/provider runtime.
+
+The next exact current-main posture is `implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync`.
