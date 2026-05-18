@@ -2012,6 +2012,10 @@ LAYER3_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF = (
     PLANNING_DOCS
     / "748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -63649,6 +63653,82 @@ def _check_source_directory_ingestion_gate_b_material_admission_runtime_proof(
                 )
 
 
+def _check_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_ingestion_gate_b_material_admission_runtime_proof`.",
+        "749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md",
+        "#1353",
+        "codex/l3-source-directory-material-admission",
+        "61af65dde27ca4a6190b162b7d27ad6311e52ec7",
+        "8e5a2814d4c63e0ee092169b124a26e1271ae2fc",
+        "codex/l3-source-directory-material-admission-sync",
+        "current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime",
+        "Runtime behavior introduced by runtime proof: `true`.",
+        "Runtime behavior in this sync: `false`.",
+        "backend-layer3-api",
+        "test",
+        "all resolved",
+        "server_configured_directory_file",
+        "document_chunks",
+        "qualitative",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source directory material admission runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Ingestion Gate B Material Admission Runtime Current-Main Sync",
+            "749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1353",
+            "8e5a2814d4c63e0ee092169b124a26e1271ae2fc",
+            "current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime",
+            "all reviewThreads resolved",
+            "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync",
+        ),
+        MANIFEST: (
+            "source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync",
+            "current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime",
+            "codex/l3-source-directory-material-admission-sync",
+            "749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1353",
+            "8e5a2814d4c63e0ee092169b124a26e1271ae2fc",
+            '"runtime_behavior_in_this_sync": false',
+            "resolvedReviewThreads",
+            "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_proof",
+            "current_main_sync_source_directory_ingestion_gate_b_material_admission_runtime",
+            "current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime",
+            "749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1353",
+            "8e5a2814d4c63e0ee092169b124a26e1271ae2fc",
+            "current main records all three review threads resolved",
+            "pivot rule now applies after source-directory material admission sync",
+            "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory material admission sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -64240,6 +64320,7 @@ def main() -> int:
     _check_source_directory_ingestion_downstream_material_authority_freeze(errors)
     _check_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync(errors)
     _check_source_directory_ingestion_gate_b_material_admission_runtime_proof(errors)
+    _check_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
