@@ -4998,3 +4998,21 @@ This pass proves material preview reaches Gate B, persists a `server_configured_
 This pass does not admit RAG/vector indexing, qualitative-hybrid runtime, package construction, package mutation/reconstruction, source package row mutation, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, rendered controls, frontend-durable authority, hidden LLM planning, arbitrary source ingestion, arbitrary recursive ingestion, broad local upload, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, browser/operator path editing, auth/security broadening, or source `L3OutputPackage` mutation.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof`; after sync, pivot to `select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync` only if current-main evidence confirms that as the selected next authority question.
+
+## Source Directory Ingestion Gate B Material Admission Runtime Current-Main Sync
+
+Current-main sync: `749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1353` for `source_directory_ingestion_gate_b_material_admission_runtime_proof`.
+
+Runtime branch `codex/l3-source-directory-material-admission` landed branch commits `ae0c085ac507065650b3b0a10a4cd09cd7be9c09` and `61af65dde27ca4a6190b162b7d27ad6311e52ec7` into current main at merge commit `8e5a2814d4c63e0ee092169b124a26e1271ae2fc`.
+
+Synced result: `current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime`.
+
+Current main now includes bounded source-directory Gate B material admission over `L3SourceDirectoryIngestionBatch` and `L3SourceDirectoryIngestionFile`, with `server_configured_directory_file` candidates, Gate B decision-basis validation, `L3MaterialSnapshot` persistence, and Gate C `document_chunks` / `qualitative` typing support.
+
+PR `#1353` had green `backend-layer3-api` and `test` checks after rerun, comments totalCount `0`, reviewThreads totalCount `3`, all reviewThreads resolved, and merge state `CLEAN` before merge.
+
+Post-merge validation at `8e5a2814d4c63e0ee092169b124a26e1271ae2fc` passed: `python .\tools\l3-progress-check.py`; and `python .\tools\l3-target-selection-validate.py --expect frozen`.
+
+This sync admits no additional runtime behavior. RAG/vector indexing, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, and source `L3OutputPackage` mutation remain blocked.
+
+The source-directory material-admission reader is now cleanly synced through current main. Under the pivot rule, do not continue additional same-family source-directory package/export/active-authority proof loops unless current-main evidence shows a concrete unresolved defect or named downstream reader. The next authority question is `select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync` only after source/index authority is selected and frozen.

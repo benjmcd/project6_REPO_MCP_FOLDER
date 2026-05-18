@@ -30062,5 +30062,49 @@
   "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md",
   "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_status": "branch_local_source_directory_ingestion_gate_b_material_admission_runtime_proven",
   "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof",
-  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_summary": "Doc 748 proves bounded source-directory material preview through Gate B admission over persisted batch/file authority, includes matching Gate C typing support, converts config/read drift to blocked errors, and keeps broader source, index, package, connector, provider, rendered/frontend, and auth/security behavior blocked."
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_summary": "Doc 748 proves bounded source-directory material preview through Gate B admission over persisted batch/file authority, includes matching Gate C typing support, converts config/read drift to blocked errors, and keeps broader source, index, package, connector, provider, rendered/frontend, and auth/security behavior blocked.",
+  "source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_ingestion_gate_b_material_admission_runtime",
+    "status": "current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime",
+    "sync_branch": "codex/l3-source-directory-material-admission-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md",
+    "runtime_pr": "#1353",
+    "runtime_branch_commits": [
+      "ae0c085ac507065650b3b0a10a4cd09cd7be9c09",
+      "61af65dde27ca4a6190b162b7d27ad6311e52ec7"
+    ],
+    "runtime_merge_commit": "8e5a2814d4c63e0ee092169b124a26e1271ae2fc",
+    "current_main_checkpoint_after_merge": "8e5a2814d4c63e0ee092169b124a26e1271ae2fc",
+    "runtime_behavior_introduced_by_runtime_proof": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviewThreads": 3,
+      "resolvedReviewThreads": 3
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen: PASS (frozen)"
+    ],
+    "proof_coverage": [
+      "current main includes Doc 748 source-directory Gate B material admission runtime proof",
+      "current main records PR #1353 merged at 8e5a2814d4c63e0ee092169b124a26e1271ae2fc",
+      "current main records green backend-layer3-api and test checks for PR #1353",
+      "current main records all three review threads resolved",
+      "current main post-merge progress checker passes",
+      "current main post-merge target-selection validation remains frozen",
+      "no runtime behavior introduced by this sync",
+      "pivot rule now applies after source-directory material admission sync"
+    ],
+    "next_posture": "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync"
+  },
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_branch": "codex/l3-source-directory-material-admission-sync",
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_status": "current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime",
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_next_posture": "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync",
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_summary": "Doc 749 proof syncs source-directory Gate B material admission after PR #1353 and applies the pivot rule away from same-family package/export/active-authority loops unless current-main evidence names a concrete defect or downstream reader."
 }
