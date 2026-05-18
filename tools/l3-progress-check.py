@@ -2144,6 +2144,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CU
     PLANNING_DOCS
     / "783_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE = (
+    PLANNING_DOCS
+    / "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -67689,6 +67693,123 @@ def _check_source_directory_material_deterministic_embedding_vector_index_runtim
                 )
 
 
+def _check_source_directory_material_vector_retrieval_authority_selection_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local vector retrieval authority selection freeze for `source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync`.",
+        "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
+        "codex/l3-vector-retrieval-select",
+        "cd1723beee053f5c25196bc5c8584a2f36fd9c0e",
+        "783_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_deterministic_embedding_vector_index_runtime",
+        "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "source_directory_material_deterministic_vector_retrieval_authority_contract",
+        "source_directory_material_deterministic_vector_retrieval_authority",
+        "deterministic_local_hash_vector_similarity_retrieval",
+        "source_directory_material_deterministic_embedding_vector_index_authority",
+        "layer3.source_directory_embedding_vector_index.v1",
+        "safe_vector_descriptors",
+        "backend/app/services/layer3_source_directory_vector_retrieval.py",
+        "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+        "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime",
+        "Vector query runtime selected now: `false`.",
+        "RAG execution selected: `false`.",
+        "Context-packet mutation selected: `false`.",
+        "Prompt/model/provider runtime selected: `false`.",
+        "Network egress selected: `false`.",
+        "Durable retrieval rows selected: `false`.",
+        "Backend route selected: `false`.",
+        "Rendered/frontend-durable authority selected: `false`.",
+        "source_directory_material_embedding_vector_index(db, payload)",
+        "embedding_index_authority_hash",
+        "vector_descriptors",
+        "embedding_vector_hash",
+        "nonzero_feature_count",
+        "token_count",
+        "vector_l2_norm",
+        "current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+        "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE)} "
+                f"missing source directory vector retrieval authority selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Vector Retrieval Authority Selection Freeze",
+            "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
+            "codex/l3-vector-retrieval-select",
+            "cd1723beee053f5c25196bc5c8584a2f36fd9c0e",
+            "current_main_synced_source_directory_material_deterministic_embedding_vector_index_runtime",
+            "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+            "source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "source_directory_material_deterministic_vector_retrieval_authority",
+            "deterministic_local_hash_vector_similarity_retrieval",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "safe_vector_descriptors",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            "Runtime behavior introduced by this freeze: `false`.",
+            "current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+            "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_material_vector_retrieval_authority_selection",
+            "branch_local_source_directory_material_vector_retrieval_authority_selection_freeze",
+            "codex/l3-vector-retrieval-select",
+            "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
+            "cd1723beee053f5c25196bc5c8584a2f36fd9c0e",
+            "783_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_EMBEDDING_VECTOR_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_source_directory_material_deterministic_embedding_vector_index_runtime",
+            "select_next_rag_vector_retrieval_authority_after_source_directory_embedding_vector_index_runtime_sync",
+            "source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "source_directory_material_deterministic_vector_retrieval_authority",
+            "deterministic_local_hash_vector_similarity_retrieval",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "safe_vector_descriptors",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            '"runtime_behavior_change": false',
+            '"vector_query_runtime_selected_now": false',
+            '"rag_execution_selected": false',
+            '"durable_retrieval_rows_selected": false',
+            '"backend_route_selected": false',
+            "current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+            "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_vector_retrieval_authority_selection_proof",
+            "planning_control_authority_selection_source_directory_material_vector_retrieval_no_runtime",
+            "branch_local_source_directory_material_vector_retrieval_authority_selection_freeze",
+            "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
+            "source_directory_material_embedding_vector_index(db, payload) is current-main synced",
+            "layer3.source_directory_embedding_vector_index.v1 is the only selected input schema for this lane",
+            "source_directory_material_deterministic_vector_retrieval_authority_contract is selected as the next authority question",
+            "deterministic_local_hash_vector_similarity_retrieval is selected only for future contract evaluation",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py and backend/tests/test_layer3_source_directory_vector_retrieval.py are selected for a future contract/runtime lane",
+            "no vector query runtime semantic retrieval ranking RAG context-packet mutation prompt provider network durable retrieval rows package connector source expansion auth security frontend durable full mockup or raw-path behavior is admitted",
+            "current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+            "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory vector retrieval authority selection freeze artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -68315,6 +68436,7 @@ def main() -> int:
     _check_source_directory_material_embedding_vector_index_authority_contract_current_main_sync(errors)
     _check_source_directory_material_deterministic_embedding_vector_index_runtime_proof(errors)
     _check_source_directory_material_deterministic_embedding_vector_index_runtime_current_main_sync(errors)
+    _check_source_directory_material_vector_retrieval_authority_selection_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
