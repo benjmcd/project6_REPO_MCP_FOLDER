@@ -30465,5 +30465,40 @@
   "latest_source_directory_material_lexical_retrieval_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_material_lexical_retrieval_authority_contract_current_main_sync_status": "current_main_synced_source_directory_material_lexical_retrieval_authority_contract",
   "latest_source_directory_material_lexical_retrieval_authority_contract_current_main_sync_next_posture": "implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync",
-  "latest_source_directory_material_lexical_retrieval_authority_contract_current_main_sync_summary": "Doc 759 proof syncs the source-directory lexical retrieval authority contract after PR #1363 and moves the next posture to implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync, with routes, DTOs, models, migrations, source-index rows, retrieval rows, vector, embedding, qualitative-hybrid, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path behavior still blocked until separately frozen."
+  "latest_source_directory_material_lexical_retrieval_authority_contract_current_main_sync_summary": "Doc 759 proof syncs the source-directory lexical retrieval authority contract after PR #1363 and moves the next posture to implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync, with routes, DTOs, models, migrations, source-index rows, retrieval rows, vector, embedding, qualitative-hybrid, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path behavior still blocked until separately frozen.",
+  "source_directory_material_deterministic_lexical_retrieval_runtime_proof": {
+    "proof_kind": "branch_local_source_directory_material_deterministic_lexical_retrieval_runtime",
+    "status": "source_directory_material_deterministic_lexical_retrieval_runtime_implemented_branch_local",
+    "implementation_branch": "codex/l3-retrieval-impl",
+    "proof_doc": "next_milestone_plans/Layer3_planning_docs/760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_implementation": "65953dfd0dc3e76886239aaa4495a65b7c7ab21c",
+    "predecessor_synced_result": "current_main_synced_source_directory_material_lexical_retrieval_authority_contract",
+    "selected_implementation_action": "implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync",
+    "runtime_behavior_change": true,
+    "implemented_files": [
+      "backend/app/services/layer3_source_directory_text_retrieval.py",
+      "backend/tests/test_layer3_source_directory_text_retrieval.py"
+    ],
+    "proof_coverage": [
+      "successful deterministic retrieval and stable replay",
+      "deterministic ranking by matched_unique_query_terms summed_term_frequency segment length segment_sequence and segment_id",
+      "stale index_authority_hash rejection",
+      "stale source material authority rejection through the text-index path",
+      "empty query forbidden field unknown field bounded limit offset and no-match behavior",
+      "no ConnectorRun ConnectorRunTarget or L3OutputPackage side effects",
+      "routes DTOs models migrations durable retrieval rows vector embedding qualitative-hybrid package connector provider frontend durable authority source expansion auth security credential network prompt model provider and raw local path behavior remain blocked"
+    ],
+    "validation": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_text_retrieval.py .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py -q PASS 4 passed"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof",
+    "next_posture_after_sync": "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync"
+  },
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_branch": "codex/l3-retrieval-impl",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_status": "source_directory_material_deterministic_lexical_retrieval_runtime_implemented_branch_local",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_summary": "Doc 760 proof records deterministic lexical source-directory retrieval over existing text segments, stale index/source authority failure, empty/forbidden/unknown field failure, bounded paging, no-match responses, and no connector/package side effects while preserving blocked routes, DTOs, models, migrations, durable retrieval rows, vector, embedding, qualitative-hybrid, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path surfaces."
 }
