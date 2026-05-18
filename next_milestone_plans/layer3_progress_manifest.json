@@ -30200,5 +30200,59 @@
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof_status": "source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_implemented_branch_local",
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof_runtime_behavior_change": true,
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof",
-  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof_summary": "Doc 772 implements source-directory context-packet qualitative-hybrid analysis runtime in backend/app/services/layer3_source_directory_qualitative_analysis.py with proof in backend/tests/test_layer3_source_directory_qualitative_analysis.py. It calls context-packet authority, validates context_packet_contract_id context_packet_mode and schema_id, computes deterministic qualitative_analysis_hash, returns layer3.source_directory_qualitative_analysis.v1, and keeps routes, DTOs, models, migrations, durable qualitative rows, vector, embedding, prompt/model/provider, package, connector, provider, frontend-durable, source expansion, auth/security, credential, network, and raw-path behavior blocked."
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof_summary": "Doc 772 implements source-directory context-packet qualitative-hybrid analysis runtime in backend/app/services/layer3_source_directory_qualitative_analysis.py with proof in backend/tests/test_layer3_source_directory_qualitative_analysis.py. It calls context-packet authority, validates context_packet_contract_id context_packet_mode and schema_id, computes deterministic qualitative_analysis_hash, returns layer3.source_directory_qualitative_analysis.v1, and keeps routes, DTOs, models, migrations, durable qualitative rows, vector, embedding, prompt/model/provider, package, connector, provider, frontend-durable, source expansion, auth/security, credential, network, and raw-path behavior blocked.",
+  "source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync": {
+    "status": "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime",
+    "sync_branch": "codex/l3-qual-analysis-runtime-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/773_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/772_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF.md",
+    "runtime_pr": "#1377",
+    "runtime_branch": "codex/l3-qual-analysis-runtime",
+    "runtime_branch_commit": "7c33354af2053d2223f215b56e46ec003a81b320",
+    "runtime_merge_commit": "52686d7d4600224b753b0868675cdc28a61e9ffa",
+    "current_main_checkpoint_after_merge": "52686d7d4600224b753b0868675cdc28a61e9ffa",
+    "runtime_behavior_already_merged": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "backend-layer3-api_duration": "3m3s",
+      "test": "SUCCESS",
+      "test_duration": "3m27s",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "implemented_service": "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+    "proof_test": "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+    "implemented_function": "source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)",
+    "selected_runtime_authority": "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+    "selected_input_authority": "source_directory_material_retrieval_augmented_context_packet_authority",
+    "selected_input_schema": "layer3.source_directory_context_packet.v1",
+    "response_schema": "layer3.source_directory_qualitative_analysis.v1",
+    "runtime_result": [
+      "validates context_packet_contract_id context_packet_mode and schema_id",
+      "computes deterministic qualitative_analysis_hash",
+      "generates deterministic extractive evidence_summary salient_terms supporting_segments coverage_notes and analysis_limits"
+    ],
+    "post_merge_validation": [
+      "json manifest load PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\backend\\app\\services\\layer3_source_directory_qualitative_analysis.py .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py -q PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py .\\backend\\tests\\test_layer3_source_directory_context_packet.py .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py .\\backend\\tests\\test_layer3_source_directory_ingestion.py -q PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync"
+  },
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_branch": "codex/l3-qual-analysis-runtime-sync",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/773_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_status": "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_runtime_behavior_change": false,
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_next_posture": "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_summary": "Doc 773 syncs PR #1377 merge commit 52686d7d4600224b753b0868675cdc28a61e9ffa to current main. The source-directory context-packet qualitative-hybrid analysis runtime is current-main truth; no runtime behavior is introduced by the sync, and the next posture is select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync."
 }

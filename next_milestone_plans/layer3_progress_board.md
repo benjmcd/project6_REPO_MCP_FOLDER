@@ -5560,3 +5560,27 @@ The proof covers deterministic analysis, stable hash replay, context-packet auth
 No backend route, API DTO, response model, database model, migration, durable qualitative analysis row, durable context-packet row, source-index durable row, retrieval durable row, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is added.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof`; after sync, pivot to `select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync` only if current-main evidence confirms this runtime is cleanly synced and no concrete same-family qualitative-analysis defect remains.
+
+## Source Directory Material Context-Packet Qualitative-Hybrid Analysis Runtime Current-Main Sync
+
+Current-main sync: `773_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1377` for `source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof`.
+
+Runtime branch `codex/l3-qual-analysis-runtime` landed branch commit `7c33354af2053d2223f215b56e46ec003a81b320` into current main at merge commit `52686d7d4600224b753b0868675cdc28a61e9ffa`.
+
+Synced result: `current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime`.
+
+Current main now includes `backend/app/services/layer3_source_directory_qualitative_analysis.py`, `backend/tests/test_layer3_source_directory_qualitative_analysis.py`, and `772_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF.md`.
+
+Current main now implements `source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)` over `source_directory_material_retrieval_augmented_context_packet_authority` and `layer3.source_directory_context_packet.v1`.
+
+Current main now returns `layer3.source_directory_qualitative_analysis.v1`, validates `context_packet_contract_id`, `context_packet_mode`, and `schema_id`, computes deterministic `qualitative_analysis_hash`, and generates deterministic extractive `evidence_summary`, `salient_terms`, `supporting_segments`, `coverage_notes`, and `analysis_limits`.
+
+PR `#1377` had green `backend-layer3-api` (`3m3s`) and `test` (`3m27s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior already merged by runtime PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+This sync admits no new runtime behavior beyond the already-merged qualitative-analysis service, and admits no backend route, API DTO, response model, database model, migration, durable qualitative analysis row write, durable context-packet row write, source-index durable row write, retrieval durable row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact current-main posture is `select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync`. Do not continue additional same-family source-directory qualitative-analysis proof loops unless current-main evidence shows a concrete unresolved defect or named downstream reader.
