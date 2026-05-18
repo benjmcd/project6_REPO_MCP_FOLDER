@@ -29804,5 +29804,34 @@
   "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/741_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURRENT_MAIN_SYNC.md",
   "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_external_local_export_evaluation",
   "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_next_posture": "select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync",
-  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_summary": "Doc 741 proof syncs corrected-artifact active authority external local export evaluation after PR #1345 and pivots next to source expansion/ingestion with one named source family."
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_summary": "Doc 741 proof syncs corrected-artifact active authority external local export evaluation after PR #1345 and pivots next to source expansion/ingestion with one named source family.",
+  "source_expansion_ingestion_source_family_selection_freeze_proof": {
+    "proof_kind": "branch_local_source_family_selection_freeze",
+    "status": "source_expansion_ingestion_source_family_selected_runtime_blocked_until_sync",
+    "planning_branch": "codex/l3-source-family-selection",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/741_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_selection": "a9d9215fbb17758dc7cec317b7c56ddcbaf413ae",
+    "selected_deferred_lane": "source_expansion_ingestion",
+    "selected_source_family": "server_configured_operator_directory_text_table_source_family",
+    "selected_source_family_class": "server_configured_local_directory_text_table_ingestion",
+    "selected_implementation_entry_mode": "server_configured_operator_directory_text_table_ingestion",
+    "implementation_entry_allowed_after_current_main_sync": true,
+    "runtime_behavior_change": false,
+    "proof_coverage": [
+      "selects one bounded source expansion/ingestion family after corrected-artifact external local export sync",
+      "admits only direct child .csv, .json, .txt, and .md files",
+      "requires server-configured LAYER3_SOURCE_INGESTION_DIR authority",
+      "blocks caller-supplied paths, URLs, globs, recursive traversal, and browser-supplied file bytes",
+      "blocks PDFs, OCR, Office documents, arbitrary binaries, archives, symlinks, and web connectors",
+      "blocks RAG/vector indexing, qualitative-hybrid runtime, package mutation, connector dispatch, provider-public behavior, auth/security broadening, rendered controls, and frontend-durable authority"
+    ],
+    "next_posture_after_merge": "current_main_sync_source_expansion_ingestion_source_family_selection_freeze",
+    "next_posture_after_sync": "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync"
+  },
+  "latest_source_expansion_ingestion_source_family_selection_freeze_branch": "codex/l3-source-family-selection",
+  "latest_source_expansion_ingestion_source_family_selection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+  "latest_source_expansion_ingestion_source_family_selection_freeze_status": "source_expansion_ingestion_source_family_selected_runtime_blocked_until_sync",
+  "latest_source_expansion_ingestion_source_family_selection_freeze_next_posture_after_merge": "current_main_sync_source_expansion_ingestion_source_family_selection_freeze",
+  "latest_source_expansion_ingestion_source_family_selection_freeze_summary": "Doc 742 freezes one source expansion/ingestion family: server-configured operator directory text/table ingestion for direct child CSV, JSON, TXT, and MD files only."
 }

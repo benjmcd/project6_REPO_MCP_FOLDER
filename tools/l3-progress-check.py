@@ -1985,6 +1985,9 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURR
     PLANNING_DOCS
     / "741_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE = (
+    PLANNING_DOCS / "742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -62757,6 +62760,115 @@ def _check_corrected_artifact_active_authority_external_local_export_evaluation_
                 )
 
 
+def _check_source_expansion_ingestion_source_family_selection_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local source-family selection and behavior freeze for `server_configured_operator_directory_text_table_source_family`.",
+        "742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+        "741_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-source-family-selection",
+        "a9d9215fbb17758dc7cec317b7c56ddcbaf413ae",
+        "Selected deferred lane: `source_expansion_ingestion`.",
+        "Selected source family: `server_configured_operator_directory_text_table_source_family`.",
+        "Selected source-family class: `server_configured_local_directory_text_table_ingestion`.",
+        "Selected implementation-entry mode: `server_configured_operator_directory_text_table_ingestion`.",
+        "Implementation entry allowed after current-main sync: `true`.",
+        "Runtime status: `not_started_freeze_only`.",
+        "Runtime behavior change in this pass: `false`.",
+        "`LAYER3_SOURCE_INGESTION_DIR`",
+        "`backend/app/services/layer3_source_directory_ingestion.py`",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "current_main_sync_source_expansion_ingestion_source_family_selection_freeze",
+        "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE)} "
+                f"missing source expansion ingestion source-family selection term: {term}"
+            )
+
+    for term in (
+        ".csv",
+        ".json",
+        ".txt",
+        ".md",
+        "caller-supplied paths",
+        "recursive traversal",
+        "PDFs",
+        "OCR",
+        "Office documents",
+        "arbitrary binaries",
+        "web connectors",
+        "RAG/vector indexing",
+        "qualitative-hybrid analysis runtime",
+        "auth/security broadening",
+        "frontend-durable authority",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE)} "
+                f"missing source expansion ingestion boundary term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Expansion Ingestion Source Family Selection Freeze",
+            "742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+            "server_configured_operator_directory_text_table_source_family",
+            "server_configured_local_directory_text_table_ingestion",
+            "server_configured_operator_directory_text_table_ingestion",
+            "LAYER3_SOURCE_INGESTION_DIR",
+            "backend/app/services/layer3_source_directory_ingestion.py",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+            "current_main_sync_source_expansion_ingestion_source_family_selection_freeze",
+            "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync",
+        ),
+        MANIFEST: (
+            "source_expansion_ingestion_source_family_selection_freeze",
+            "branch_local_source_family_selection_freeze",
+            "codex/l3-source-family-selection",
+            "742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+            "a9d9215fbb17758dc7cec317b7c56ddcbaf413ae",
+            "server_configured_operator_directory_text_table_source_family",
+            "server_configured_local_directory_text_table_ingestion",
+            "server_configured_operator_directory_text_table_ingestion",
+            '"implementation_entry_allowed_after_current_main_sync": true',
+            '"runtime_behavior_change": false',
+            '"recursive_traversal_admitted": false',
+            '"caller_supplied_paths_admitted": false',
+            "LAYER3_SOURCE_INGESTION_DIR",
+            "L3SourceDirectoryIngestionBatch",
+            "L3SourceDirectoryIngestionFile",
+            "current_main_sync_source_expansion_ingestion_source_family_selection_freeze",
+        ),
+        PROOF_MANIFEST: (
+            "source_expansion_ingestion_source_family_selection_freeze_proof",
+            "branch_local_source_family_selection_freeze",
+            "source_expansion_ingestion_source_family_selected_runtime_blocked_until_sync",
+            "742_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE.md",
+            "server_configured_operator_directory_text_table_source_family",
+            "direct child .csv, .json, .txt, and .md files",
+            "blocks caller-supplied paths",
+            "blocks PDFs, OCR, Office documents",
+            "current_main_sync_source_expansion_ingestion_source_family_selection_freeze",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source expansion ingestion source-family selection artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -63341,6 +63453,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_external_local_export_evaluation(errors)
     _check_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync(errors)
+    _check_source_expansion_ingestion_source_family_selection_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
