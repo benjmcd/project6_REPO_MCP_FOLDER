@@ -5738,3 +5738,35 @@ Runtime behavior introduced by this sync: `false`.
 No RAG/vector route, API DTO, response model, service runtime, database model, migration, durable vector-index row write, durable embedding row write, vector database, vector store, embedding generation, model/provider invocation, prompt/model/provider runtime, hidden LLM planning, qualitative generation runtime, RAG execution, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, or raw local path exposure is admitted by this sync.
 
 The next exact current-main posture is `write_source_directory_material_embedding_vector_index_authority_contract_before_runtime`.
+
+## Source Directory Material Embedding Vector Index Authority Contract
+
+Branch-local authority contract: `780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md` follows the RAG/vector retrieval authority selection current-main sync.
+
+Contract branch `codex/l3-vector-contract` starts from current-main checkpoint `3f17fa3903e4e177505fcbc60cd31688a9c8dd5a`.
+
+Predecessor sync result: `current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync`.
+
+Selected from posture: `write_source_directory_material_embedding_vector_index_authority_contract_before_runtime`.
+
+Selected contract: `source_directory_material_deterministic_embedding_vector_index_authority`.
+
+Selected embedding mode: `deterministic_local_hashing_vector_embedding`.
+
+Selected vector index mode: `deterministic_source_directory_segment_vector_index`.
+
+Selected input authority: `source_directory_material_deterministic_text_index_authority`.
+
+Selected vector source: `deterministic_text_segments`.
+
+Selected future owner service: `backend/app/services/layer3_source_directory_vector_index.py`.
+
+Selected future proof test: `backend/tests/test_layer3_source_directory_vector_index.py`.
+
+Selected future implementation action: `implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync`.
+
+Runtime behavior introduced by this contract: `false`.
+
+The contract freezes a deterministic local hashed lexical vector index over already-admitted source-directory text-index segments only: `feature_hash_version == source-directory-hash-vector-v1`, `vector_dimensions == 4096`, stable SHA-256 token buckets, token-frequency weights, and L2 normalization for cosine-compatible scoring. It selects no embedding model, provider, credential, network egress, backend route, rendered control, frontend-durable state, durable vector-store rows, durable embedding rows, vector query runtime, RAG execution, package behavior, connector dispatch, provider-public delivery/use, source expansion, or raw local path exposure.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_embedding_vector_index_authority_contract`; after sync, the next exact posture is `implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync`.
