@@ -41,6 +41,8 @@ The material-preview route requires the caller to name a persisted batch/file au
 
 The existing Gate B decision route now validates `server_configured_directory_file` decision basis before committing the selected candidate into the existing Layer 3 session/descriptor/material-snapshot path.
 
+The existing Gate C typing entry now includes a bounded `server_configured_directory_file` text/table rule with `document_chunks` planning shape and `qualitative` modality, so a candidate admitted by this slice is not stranded immediately after Gate B.
+
 ## Proof
 
 Focused validation passed:
@@ -57,6 +59,9 @@ Proof coverage:
 - OpenAPI request schema for material preview is intentionally scoped and excludes caller path/recursive fields.
 - Material preview reaches Gate B using persisted `L3SourceDirectoryIngestionBatch` and `L3SourceDirectoryIngestionFile` authority.
 - Gate B persists a `server_configured_directory_file` `L3MaterialSnapshot`.
+- Gate C preview types that material as `document_chunks` / `qualitative`.
+- Source-directory configuration drift during preview or Gate B revalidation returns a blocked response instead of an unhandled server error.
+- Live file inspection/read failures are converted to source-directory material-admission errors.
 - Stale supplied file identity hash fails closed.
 - Live file drift after ingestion fails closed.
 - Raw configured root and absolute file paths are not exposed in responses.

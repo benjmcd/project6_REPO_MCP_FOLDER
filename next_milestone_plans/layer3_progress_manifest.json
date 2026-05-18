@@ -28921,6 +28921,8 @@
       "material preview re-reads only the configured direct-child file represented by persisted authority",
       "Gate B validates server_configured_directory_file decision basis before commit",
       "Gate B persists a server_configured_directory_file L3MaterialSnapshot",
+      "Gate C preview types server_configured_directory_file as document_chunks qualitative material",
+      "configuration drift and live file read failures are converted to blocked material-admission errors",
       "stale supplied authority and live file drift fail closed",
       "raw configured root and absolute file paths are not exposed",
       "creates no ConnectorRun, ConnectorRunTarget, or L3OutputPackage rows"
@@ -28933,5 +28935,5 @@
   "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_status": "branch_local_source_directory_ingestion_gate_b_material_admission_runtime_proven",
   "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_runtime_behavior_change": true,
   "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof",
-  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_summary": "Doc 748 implements the bounded source-directory Gate B material-admission reader. It emits server_configured_directory_file material candidates from persisted L3SourceDirectoryIngestionBatch/File authority, validates stale hashes and live file drift fail-closed, reuses Gate B to persist L3MaterialSnapshot rows, and keeps RAG/vector, package, connector, provider, rendered/frontend-durable, broad source, and auth/security scope blocked."
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_summary": "Doc 748 implements the bounded source-directory Gate B material-admission reader. It emits server_configured_directory_file material candidates from persisted L3SourceDirectoryIngestionBatch/File authority, validates stale hashes and live file drift fail-closed, converts configuration/read drift into blocked errors, reuses Gate B to persist L3MaterialSnapshot rows, adds the matching Gate C qualitative document_chunks typing rule, and keeps RAG/vector, package, connector, provider, rendered/frontend-durable, broad source, and auth/security scope blocked."
 }

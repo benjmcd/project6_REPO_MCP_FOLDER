@@ -4989,9 +4989,11 @@ The material-preview route requires persisted `source_ingestion_batch_id`, persi
 
 Gate B now validates `server_configured_directory_file` decision basis before committing that candidate through the existing Layer 3 selection/session/material-snapshot path.
 
+Gate C now has a bounded typing rule for `server_configured_directory_file`, mapping the admitted text/table file material to `document_chunks` and `qualitative` so the session is not stranded immediately after Gate B.
+
 Observed branch validation: `python -m py_compile .\backend\app\services\layer3_source_directory_material_admission.py .\backend\app\services\layer3_source_boundary.py .\backend\app\services\layer3_workbench.py .\backend\app\api\layer3.py`; and `python -m pytest .\backend\tests\test_layer3_source_directory_ingestion.py .\backend\tests\test_layer3_source_boundary.py .\backend\tests\test_layer3_source_intake.py .\backend\tests\test_layer3_model_exports.py .\backend\tests\test_layer3_api.py::test_layer3_forbidden_sentinel_openapi_fields_are_impossible -q` -> `32 passed`.
 
-This pass proves material preview reaches Gate B and persists a `server_configured_directory_file` `L3MaterialSnapshot`, while creating no `ConnectorRun`, `ConnectorRunTarget`, or `L3OutputPackage` rows.
+This pass proves material preview reaches Gate B, persists a `server_configured_directory_file` `L3MaterialSnapshot`, reaches Gate C preview with `document_chunks` / `qualitative` typing, converts configuration drift/read failures into blocked material-admission errors, and creates no `ConnectorRun`, `ConnectorRunTarget`, or `L3OutputPackage` rows.
 
 This pass does not admit RAG/vector indexing, qualitative-hybrid runtime, package construction, package mutation/reconstruction, source package row mutation, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, rendered controls, frontend-durable authority, hidden LLM planning, arbitrary source ingestion, arbitrary recursive ingestion, broad local upload, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, browser/operator path editing, auth/security broadening, or source `L3OutputPackage` mutation.
 
