@@ -2110,6 +2110,9 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNT
     PLANNING_DOCS
     / "773_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_RUNTIME_SYNC = (
+    PLANNING_DOCS / "774_PROVIDER_PUBLIC_AUTH_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -66457,6 +66460,109 @@ def _check_source_directory_material_context_packet_qualitative_hybrid_analysis_
                 )
 
 
+def _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync(
+    errors: list[str],
+) -> None:
+    selection_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_RUNTIME_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control selection freeze for `provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync`.",
+        "774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+        "773_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "16c7e09f7d66863eef6e55b522c3f3839711f649",
+        "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "provider_public_delivery_use",
+        "provider_public_delivery_use_exposure_security_revocation_authority_contract",
+        "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+        "Current main has synced the source-directory chain through governed local-directory intake",
+        "do not continue additional same-family source-directory qualitative-analysis proof loops",
+        "raw public URL delivery/use as blocked until exposure, security, revocation, public access, leak-control, provider/object-store, and audit authority are selected and proved",
+        "This freeze therefore selects the next authority question, not runtime implementation.",
+        "187_PROVIDER_PUBLIC_URL_ENTRY_FREEZE.md",
+        "188_PROVIDER_PUBLIC_URL_ENTRY_CONTRACT.md",
+        "383_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE.md",
+        "384_SOURCE_INTAKE_PROVIDER_PUBLIC_URL_DELIVERY_USE_RUNTIME_FREEZE_CURRENT_MAIN_SYNC.md",
+        "569_LAYER3_PROVIDER_PUBLIC_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_SYNC.md",
+        "570_LAYER3_PROVIDER_PUBLIC_AUTHORITY_AUDIT_AFTER_SOURCE_INTAKE_PROVIDER_PRIVATE_AUTHORITY_CURRENT_MAIN_SYNC.md",
+        "backend/app/services/layer3_provider_public_url.py",
+        "backend/app/services/layer3_provider_public_url_state.py",
+        "backend/tests/test_layer3_provider_public_url_state.py",
+        "public_url_enabled: true",
+        "No closed or blocked provider-public, connector, package, source, RAG/vector, auth/security, or frontend-durable lane is reopened by implication.",
+        "current_main_sync_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+    ):
+        if term not in selection_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_RUNTIME_SYNC)} "
+                f"missing provider-public authority selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public Delivery/Use Authority Selection Freeze",
+            "774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+            "codex/l3-provider-public-authority-select",
+            "16c7e09f7d66863eef6e55b522c3f3839711f649",
+            "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime",
+            "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync",
+            "provider_public_delivery_use",
+            "provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+            "Entry decision: `freeze_only`.",
+            "Runtime status: `not_implemented`.",
+            "Runtime behavior introduced by this freeze: `false`.",
+            "source-directory qualitative-analysis family is not continued by this freeze",
+            "public_url_enabled: true",
+            "current_main_sync_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+        ),
+        MANIFEST: (
+            "provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+            "planning_control_selection_freeze",
+            "codex/l3-provider-public-authority-select",
+            "774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+            "16c7e09f7d66863eef6e55b522c3f3839711f649",
+            "773_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime",
+            "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync",
+            "provider_public_delivery_use",
+            "provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "public_url_enabled true rail",
+            "current_main_sync_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync_proof",
+            "planning_control_selection_freeze_provider_public_delivery_use_authority_after_source_directory_qualitative_analysis_runtime_sync",
+            "planning_control_selection_freeze",
+            "codex/l3-provider-public-authority-select",
+            "774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+            "16c7e09f7d66863eef6e55b522c3f3839711f649",
+            "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync",
+            "provider_public_delivery_use is selected only as an authority-selection lane",
+            "provider_public_delivery_use_exposure_security_revocation_authority_contract is selected as the next authority question",
+            "provider-public delivery/use routes, raw public URL exposure, public_url_enabled true",
+            "current_main_sync_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+            "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public authority selection artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -67073,6 +67179,7 @@ def main() -> int:
     _check_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_current_main_sync(errors)
     _check_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof(errors)
     _check_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync(errors)
+    _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
