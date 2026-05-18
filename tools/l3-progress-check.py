@@ -2086,6 +2086,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_CURR
     PLANNING_DOCS
     / "767_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE = (
+    PLANNING_DOCS
+    / "768_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -65716,6 +65720,119 @@ def _check_source_directory_material_retrieval_augmented_context_packet_runtime_
                 )
 
 
+def _check_source_directory_material_qualitative_hybrid_analysis_authority_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local qualitative-hybrid analysis authority selection freeze for `source_directory_material_qualitative_hybrid_analysis_authority_freeze`.",
+        "768_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE.md",
+        "codex/l3-qual-analysis-selection",
+        "c1b212faff625d81c030e00b99f746a01bd2adf8",
+        "767_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime",
+        "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+        "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+        "context_packet_grounded_qualitative_hybrid_analysis",
+        "source_directory_material_retrieval_augmented_context_packet_authority",
+        "layer3.source_directory_context_packet.v1",
+        "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+        "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+        "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
+        "Vector runtime selected: `false`.",
+        "Embedding generation selected: `false`.",
+        "Prompt/model/provider runtime selected: `false`.",
+        "Network egress selected: `false`.",
+        "Provider-public delivery/use selected: `false`.",
+        "Durable qualitative analysis rows selected: `false`.",
+        "Rendered/frontend-durable authority selected: `false`.",
+        "source_directory_material_retrieval_augmented_context_packet(db, payload)",
+        "source_directory_material_text_retrieval(db, payload)",
+        "context_packet_hash",
+        "current_main_sync_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE)} "
+                f"missing source directory qualitative hybrid analysis authority freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Qualitative-Hybrid Analysis Authority Freeze",
+            "768_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE.md",
+            "codex/l3-qual-analysis-selection",
+            "c1b212faff625d81c030e00b99f746a01bd2adf8",
+            "current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime",
+            "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+            "context_packet_grounded_qualitative_hybrid_analysis",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "layer3.source_directory_context_packet.v1",
+            "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+            "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+            "Runtime behavior introduced by this freeze: `false`.",
+            "current_main_sync_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+            "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+            "branch_local_source_directory_material_qualitative_hybrid_analysis_authority_freeze_written",
+            "codex/l3-qual-analysis-selection",
+            "768_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE.md",
+            "c1b212faff625d81c030e00b99f746a01bd2adf8",
+            "current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime",
+            "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+            "context_packet_grounded_qualitative_hybrid_analysis",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "layer3.source_directory_context_packet.v1",
+            "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+            "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+            '"runtime_behavior_change": false',
+            '"selected_vector_runtime": false',
+            '"selected_embedding_generation": false',
+            '"selected_prompt_model_provider_runtime": false',
+            '"selected_network_egress": false',
+            '"selected_provider_public_delivery_use": false',
+            '"selected_durable_qualitative_analysis_rows": false',
+            '"selected_rendered_frontend_durable_authority": false',
+            "current_main_sync_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+            "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_qualitative_hybrid_analysis_authority_freeze_proof",
+            "branch_local_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+            "branch_local_source_directory_material_qualitative_hybrid_analysis_authority_freeze_written",
+            "768_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE.md",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+            "context_packet_grounded_qualitative_hybrid_analysis",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "layer3.source_directory_context_packet.v1",
+            "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+            "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+            '"runtime_behavior_change": false',
+            "keeps vector runtime embedding generation prompt model provider runtime network egress provider-public delivery durable qualitative rows and rendered frontend durable authority unselected",
+            "current_main_sync_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+            "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory qualitative hybrid analysis authority freeze artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -66326,6 +66443,7 @@ def main() -> int:
     _check_source_directory_material_qualitative_hybrid_context_packet_authority_contract_current_main_sync(errors)
     _check_source_directory_material_retrieval_augmented_context_packet_runtime_proof(errors)
     _check_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync(errors)
+    _check_source_directory_material_qualitative_hybrid_analysis_authority_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
