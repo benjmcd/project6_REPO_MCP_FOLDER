@@ -31141,5 +31141,44 @@
   "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync_doc": "next_milestone_plans/Layer3_planning_docs/778_RAG_VECTOR_AUTH_FREEZE.md",
   "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync_status": "planning_control_selection_freeze",
   "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync_next_posture_after_merge": "current_main_sync_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
-  "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync_summary": "Doc 778 proof selects rag_vector_retrieval_indexing only as an authority-selection lane after provider-public no-runtime sync, requires source_directory_material_embedding_vector_index_authority_contract before runtime, and keeps vector services, embeddings, vector stores, RAG execution, routes, models, migrations, package, connector, provider-public, source expansion, auth/security, network, frontend-durable, full mockup, and raw-path behavior blocked."
+  "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync_summary": "Doc 778 proof selects rag_vector_retrieval_indexing only as an authority-selection lane after provider-public no-runtime sync, requires source_directory_material_embedding_vector_index_authority_contract before runtime, and keeps vector services, embeddings, vector stores, RAG execution, routes, models, migrations, package, connector, provider-public, source expansion, auth/security, network, frontend-durable, full mockup, and raw-path behavior blocked.",
+  "rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+    "status": "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+    "sync_branch": "codex/l3-rag-vector-select-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/779_RAG_VECTOR_AUTH_SYNC.md",
+    "selection_doc": "next_milestone_plans/Layer3_planning_docs/778_RAG_VECTOR_AUTH_FREEZE.md",
+    "selection_pr": "#1383",
+    "selection_branch_commit": "112a1fc2f622f4617629e25d87bf537deda4954f",
+    "selection_merge_commit": "54ef33349b6d631c1e8e0cefd819da031245b4ba",
+    "current_main_checkpoint_after_merge": "54ef33349b6d631c1e8e0cefd819da031245b4ba",
+    "runtime_behavior_introduced_by_selection_pr": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 778 RAG/vector retrieval authority selection freeze",
+      "current main records PR #1383 merged at 54ef33349b6d631c1e8e0cefd819da031245b4ba",
+      "current main records green backend-layer3-api and test checks for PR #1383",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main sync introduces no additional runtime behavior",
+      "rag_vector_retrieval_indexing is selected only as an authority-selection lane",
+      "source_directory_material_embedding_vector_index_authority_contract is selected as the next authority question",
+      "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime is selected for the next authority posture"
+    ],
+    "next_posture": "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime"
+  },
+  "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_branch": "codex/l3-rag-vector-select-sync",
+  "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/779_RAG_VECTOR_AUTH_SYNC.md",
+  "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_status": "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+  "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_next_posture": "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+  "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_summary": "Doc 779 proof syncs the RAG/vector retrieval authority selection freeze after PR #1383 and moves the next posture to write_source_directory_material_embedding_vector_index_authority_contract_before_runtime, with no RAG/vector runtime admitted by the sync."
 }
