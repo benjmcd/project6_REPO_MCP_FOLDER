@@ -28460,5 +28460,37 @@
   "latest_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation",
   "latest_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation_current_main_sync_runtime_behavior_change": false,
   "latest_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_fake_target_sync",
-  "latest_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation_current_main_sync_summary": "Doc 735 syncs PR #1339 merge commit 7f370e8125df24d4ed567c11f77b33b165cd7771 to current main. Current main now records that corrected-artifact active package authority reaches server_owned_local_outbox_fake_target through recorded connector_local_destination_receipt, connector_dispatch_record, and external_export_download_prepare state, with no runtime behavior introduced by either the evaluation or this sync."
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation_current_main_sync_summary": "Doc 735 syncs PR #1339 merge commit 7f370e8125df24d4ed567c11f77b33b165cd7771 to current main. Current main now records that corrected-artifact active package authority reaches server_owned_local_outbox_fake_target through recorded connector_local_destination_receipt, connector_dispatch_record, and external_export_download_prepare state, with no runtime behavior introduced by either the evaluation or this sync.",
+  "corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation": {
+    "status": "branch_local_corrected_artifact_active_authority_server_owned_local_outbox_write_proven",
+    "evaluation_branch": "codex/l3-corrected-outbox-write",
+    "evaluation_doc": "next_milestone_plans/Layer3_planning_docs/736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/735_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_evaluation": "fdb0e94d14a791548f104a739276c597320c4682",
+    "selected_downstream_reader": "server_owned_local_outbox_write",
+    "selected_route": "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+    "selected_service_authority": "backend/app/services/layer3_server_owned_local_outbox_write.py",
+    "durable_write_status_authority": "L3ServerOwnedLocalOutboxWriteReceipt",
+    "selected_reader_source": "recorded server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, and external_export_download_prepare state",
+    "evaluation_result": "corrected_artifact_active_authority_server_owned_local_outbox_write_proven",
+    "runtime_behavior_change": false,
+    "test_proof_behavior_change": false,
+    "current_main_proof_already_present": true,
+    "proof_test": "backend/tests/test_layer3_api.py",
+    "existing_test": "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+    "observed_result": "1 passed",
+    "admitted_scope": "server-owned local outbox write reader only",
+    "downstream_assertions_not_admitted_by_this_record": [
+      "provider_private_handoff_adoption",
+      "external_local_export_adoption"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+    "next_posture_after_sync": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_write_sync"
+  },
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_branch": "codex/l3-corrected-outbox-write",
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md",
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_status": "branch_local_corrected_artifact_active_authority_server_owned_local_outbox_write_proven",
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_runtime_behavior_change": false,
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_summary": "Doc 736 records that current main already proves the corrected-artifact active package authority chain reaches server_owned_local_outbox_write through recorded server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, and external_export_download_prepare state. This pass is proof/control only, admits no service runtime behavior change, and leaves provider-private handoff and external local export adoption for separate exact selections."
 }
