@@ -2182,6 +2182,10 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC
     PLANNING_DOCS
     / "793_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY = (
+    PLANNING_DOCS
+    / "794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -68976,7 +68980,165 @@ def _check_provider_public_delivery_use_runtime_authority_contract_current_main_
         for term in terms:
             if term not in text:
                 errors.append(
-                    f"{_rel(path)} missing provider-public delivery/use runtime authority contract sync artifact term: {term}"
+                f"{_rel(path)} missing provider-public delivery/use runtime authority contract sync artifact term: {term}"
+                )
+
+
+def _check_provider_public_delivery_use_fake_provider_runtime_implementation_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze and runtime proof for `provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry`.",
+        "794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md",
+        "codex/l3-pp-use-runtime",
+        "bcf5cb3b196e56c4d3532c97c8eb8778e858cb2c",
+        "793_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry",
+        "implement_provider_public_delivery_use_fake_provider_redacted_runtime_after_contract_sync",
+        "provider_public_delivery_use_fake_provider_redacted_runtime_implemented_branch_local",
+        "Runtime behavior introduced by this pass: `true`.",
+        "backend/app/services/layer3_provider_public_url_delivery_use.py",
+        "backend/tests/test_layer3_provider_public_url_delivery_use.py",
+        "POST /handoff/export/download/provider-public-url/use",
+        "layer3.provider_public_url.delivery_use.v1",
+        "fake_provider_only_contract_runtime",
+        "`delivery_use_mode: fake_provider_redacted_use_decision`",
+        "`operator_decision: use_provider_public_url_redacted_fake_provider`",
+        "delivery_use_decision: allowed",
+        "delivery_use_denied_reason: provider_public_url_expired",
+        "delivery_use_denied_reason: provider_public_url_revoked",
+        "`raw_public_url_exposed: False`",
+        "`public_url_enabled: False`",
+        "`provider_network_enabled: False`",
+        "`provider_object_write_enabled: False`",
+        "`public_redirect_enabled: False`",
+        "`byte_streaming_enabled: False`",
+        "`durable_use_row_created: False`",
+        "`audit_row_created: False`",
+        "`python -m pytest .\\backend\\tests\\test_layer3_provider_public_url_delivery_use.py -q`",
+        "Branch-local result: `9 passed`.",
+        "await_current_main_sync_for_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+        "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY)} "
+                f"missing provider-public delivery/use fake-provider runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public Delivery/Use Fake-Provider Runtime Implementation Entry Freeze",
+            "794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "codex/l3-pp-use-runtime",
+            "bcf5cb3b196e56c4d3532c97c8eb8778e858cb2c",
+            "provider_public_delivery_use_fake_provider_redacted_runtime_implemented_branch_local",
+            "Runtime behavior introduced by this pass: `true`.",
+            "backend/app/services/layer3_provider_public_url_delivery_use.py",
+            "backend/tests/test_layer3_provider_public_url_delivery_use.py",
+            "POST /handoff/export/download/provider-public-url/use",
+            "layer3.provider_public_url.delivery_use.v1",
+            "raw_public_url_exposed: False",
+            "public_url_enabled: False",
+            "provider_network_enabled: False",
+            "provider_object_write_enabled: False",
+            "await_current_main_sync_for_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+            "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+        ),
+        MANIFEST: (
+            "provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry",
+            "provider_public_delivery_use_fake_provider_redacted_runtime_implemented_branch_local",
+            "codex/l3-pp-use-runtime",
+            "794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "implement_provider_public_delivery_use_fake_provider_redacted_runtime_after_contract_sync",
+            '"runtime_behavior_change": true',
+            "backend/app/services/layer3_provider_public_url_delivery_use.py",
+            "POST /handoff/export/download/provider-public-url/use",
+            "layer3.provider_public_url.delivery_use.v1",
+            "fake_provider_only_contract_runtime",
+            "python -m pytest .\\\\backend\\\\tests\\\\test_layer3_provider_public_url_delivery_use.py -q PASS 9 passed",
+            '"raw_public_url_exposed": false',
+            '"public_url_enabled": false',
+            '"provider_network_enabled": false',
+            '"provider_object_write_enabled": false',
+            '"durable_use_row_created": false',
+            '"audit_row_created": false',
+            "await_current_main_sync_for_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+            "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry_proof",
+            "branch_local_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry",
+            "provider_public_delivery_use_fake_provider_redacted_runtime_implemented_branch_local",
+            "codex/l3-pp-use-runtime",
+            "794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "python -m pytest .\\\\backend\\\\tests\\\\test_layer3_provider_public_url_delivery_use.py -q",
+            "PASS 9 passed",
+            "backend/app/services/layer3_provider_public_url_delivery_use.py implements read-only provider_public_url_delivery_use(db, payload)",
+            "backend/app/api/layer3.py exposes POST /handoff/export/download/provider-public-url/use",
+            "prepared unexpired unrevoked receipt returns delivery_use_decision allowed",
+            "expired receipt returns delivery_use_decision denied with provider_public_url_expired",
+            "revoked receipt returns delivery_use_decision denied with provider_public_url_revoked",
+            "missing receipt and missing authority fail closed",
+            "raw_public_url_exposed false and public_url_enabled false",
+            "provider_network_enabled false and provider_object_write_enabled false",
+            "public_redirect_enabled false and byte_streaming_enabled false",
+            "durable_use_row_created false and audit_row_created false",
+            "await_current_main_sync_for_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+            "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public delivery/use fake-provider runtime artifact term: {term}"
+                )
+
+    for path, terms in {
+        ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_delivery_use.py": (
+            "PROVIDER_PUBLIC_URL_DELIVERY_USE_SCHEMA_ID = \"layer3.provider_public_url.delivery_use.v1\"",
+            "PROVIDER_PUBLIC_URL_DELIVERY_USE_MODE = \"fake_provider_redacted_use_decision\"",
+            "PROVIDER_PUBLIC_URL_DELIVERY_USE_OPERATOR_DECISION = \"use_provider_public_url_redacted_fake_provider\"",
+            "def provider_public_url_delivery_use(",
+            "delivery_use_decision",
+            "raw_public_url_exposed",
+            "public_url_enabled",
+            "provider_network_enabled",
+            "provider_object_write_enabled",
+            "public_redirect_enabled",
+            "byte_streaming_enabled",
+            "durable_use_row_created",
+            "audit_row_created",
+        ),
+        LAYER3_API: (
+            "layer3_provider_public_url_delivery_use",
+            "Layer3ProviderPublicUrlDeliveryUseRequest",
+            "Layer3ProviderPublicUrlDeliveryUseResponse",
+            "PROVIDER_PUBLIC_URL_DELIVERY_USE_REQUEST_SCHEMA",
+            "\"/handoff/export/download/provider-public-url/use\"",
+            "post_provider_public_url_delivery_use",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_provider_public_url_delivery_use.py": (
+            "test_provider_public_delivery_use_allows_prepared_receipt_without_writes_or_raw_url",
+            "test_provider_public_delivery_use_denies_expired_or_revoked_receipts",
+            "test_provider_public_delivery_use_fails_closed_for_stale_or_forbidden_inputs",
+            "test_provider_public_delivery_use_fails_closed_for_missing_receipt_or_authority",
+            "test_provider_public_delivery_use_api_route_is_redacted_and_openapi_guarded",
+            "provider_public_url_delivery_use",
+            "RAW_PROVIDER_PUBLIC_REFERENCE not in serialized",
+            "db.query(L3ProviderPublicUrlAuditEvent).count()",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public delivery/use fake-provider runtime source term: {term}"
                 )
 
 
@@ -69628,6 +69790,7 @@ def main() -> int:
     _check_provider_public_delivery_use_runtime_authority_contract_current_main_sync(
         errors
     )
+    _check_provider_public_delivery_use_fake_provider_runtime_implementation_entry(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
