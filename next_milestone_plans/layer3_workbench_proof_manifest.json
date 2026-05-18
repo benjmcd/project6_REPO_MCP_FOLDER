@@ -30249,5 +30249,43 @@
   "latest_source_directory_material_source_index_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_material_source_index_authority_contract_current_main_sync_status": "current_main_synced_source_directory_material_source_index_authority_contract",
   "latest_source_directory_material_source_index_authority_contract_current_main_sync_next_posture": "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
-  "latest_source_directory_material_source_index_authority_contract_current_main_sync_summary": "Doc 753 proof syncs the source-directory deterministic text source/index contract after PR #1357 and keeps vector, embedding, retrieval, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, and auth/security behavior blocked."
+  "latest_source_directory_material_source_index_authority_contract_current_main_sync_summary": "Doc 753 proof syncs the source-directory deterministic text source/index contract after PR #1357 and keeps vector, embedding, retrieval, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, and auth/security behavior blocked.",
+  "source_directory_material_deterministic_text_index_runtime_proof": {
+    "proof_kind": "branch_local_source_directory_material_deterministic_text_index_runtime",
+    "status": "branch_local_source_directory_material_deterministic_text_index_runtime_implemented",
+    "runtime_branch": "codex/l3-source-index-text-impl",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_implementation": "fb107c909a69a43a1f9ceb5eb1acc2e1685e2361",
+    "predecessor_synced_result": "current_main_synced_source_directory_material_source_index_authority_contract",
+    "selected_runtime": "source_directory_material_deterministic_text_index_authority",
+    "index_mode": "deterministic_text_segments",
+    "segmentation_version": "line-window-v1",
+    "owner_service": "backend/app/services/layer3_source_directory_text_index.py",
+    "proof_test": "backend/tests/test_layer3_source_directory_ingestion.py",
+    "runtime_behavior_change": true,
+    "proof_coverage": [
+      "service reads existing L3SourceDirectoryIngestionBatch L3SourceDirectoryIngestionFile and L3MaterialSnapshot authority",
+      "service admits only server_configured_directory_file material snapshots",
+      "service verifies payload hash and live direct-child source file identity before segmenting",
+      "service returns deterministic_text_segments with line-window-v1 segmentation and replay-stable index_authority_hash",
+      "source_index_rows_written False",
+      "negative invariants keep route vector embedding retrieval qualitative-hybrid connector provider package frontend durable authority and network egress disabled",
+      "focused test proves CSV JSON TXT and MD coverage",
+      "focused test proves fail-closed live file drift payload hash mismatch and forbidden vector retrieval fields",
+      "focused test proves no ConnectorRun ConnectorRunTarget or L3OutputPackage side effects"
+    ],
+    "validation": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_text_index.py .\\backend\\tests\\test_layer3_source_directory_ingestion.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_ingestion.py -q PASS 13 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_boundary.py .\\backend\\tests\\test_layer3_source_intake.py .\\backend\\tests\\test_layer3_model_exports.py .\\backend\\tests\\test_layer3_api.py::test_layer3_forbidden_sentinel_openapi_fields_are_impossible -q PASS 24 passed"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_text_index_runtime_proof",
+    "next_posture_after_sync": "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync"
+  },
+  "latest_source_directory_material_deterministic_text_index_runtime_proof_branch": "codex/l3-source-index-text-impl",
+  "latest_source_directory_material_deterministic_text_index_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md",
+  "latest_source_directory_material_deterministic_text_index_runtime_proof_status": "branch_local_source_directory_material_deterministic_text_index_runtime_implemented",
+  "latest_source_directory_material_deterministic_text_index_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_text_index_runtime_proof",
+  "latest_source_directory_material_deterministic_text_index_runtime_proof_summary": "Doc 754 proof records the bounded source-directory deterministic text index service, deterministic segment replay, fail-closed authority drift checks, source_index_rows_written False, and no route, vector, embedding, retrieval, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, auth/security, network, or raw path behavior."
 }

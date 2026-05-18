@@ -2032,11 +2032,18 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SY
     PLANNING_DOCS
     / "753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
 LAYER3_SOURCE_DIRECTORY_MATERIAL_ADMISSION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_material_admission.py"
+)
+LAYER3_SOURCE_DIRECTORY_TEXT_INDEX_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_directory_text_index.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0034_layer3_source_directory_ingestion.py"
@@ -64142,6 +64149,158 @@ def _check_source_directory_material_source_index_authority_contract_current_mai
                 )
 
 
+def _check_source_directory_material_deterministic_text_index_runtime_proof(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime proof for `source_directory_material_deterministic_text_index_authority`.",
+        "754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md",
+        "codex/l3-source-index-text-impl",
+        "fb107c909a69a43a1f9ceb5eb1acc2e1685e2361",
+        "753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_source_index_authority_contract",
+        "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
+        "Runtime behavior introduced by this pass: `true`.",
+        "backend/app/services/layer3_source_directory_text_index.py",
+        "backend/tests/test_layer3_source_directory_ingestion.py",
+        "source_directory_material_deterministic_text_index_authority",
+        "server_configured_directory_file",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "L3MaterialSnapshot",
+        "deterministic_text_segments",
+        "line-window-v1",
+        "source_index_rows_written: False",
+        "13 passed",
+        "24 passed",
+        "await_current_main_sync_for_source_directory_material_deterministic_text_index_runtime_proof",
+        "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF)} "
+                f"missing source directory deterministic text index runtime proof term: {term}"
+            )
+
+    service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_TEXT_INDEX_SERVICE, errors)
+    for term in (
+        'SCHEMA_ID = "layer3.source_directory_text_index.v1"',
+        'MODE = "source_directory_material_deterministic_text_index_authority"',
+        'SOURCE_CLASS = "server_configured_directory_file"',
+        'INDEX_MODE = "deterministic_text_segments"',
+        'SEGMENTATION_VERSION = "line-window-v1"',
+        "def source_directory_material_text_index(",
+        "class SourceDirectoryTextIndexError(Exception):",
+        "source_directory_text_index_forbidden_field_not_admitted",
+        "source_directory_text_index_stale_request_authority",
+        "source_directory_text_index_material_identity_mismatch",
+        "source_directory_text_index_file_identity_mismatch",
+        "_assert_payload_authority(snapshot)",
+        "_assert_live_file_matches_authority(file_record, live_file)",
+        '"source_index_rows_written": False',
+        '"route_admitted": False',
+        '"vector_index_enabled": False',
+        '"embedding_generation_enabled": False',
+        '"retrieval_query_enabled": False',
+        '"qualitative_hybrid_runtime_enabled": False',
+        '"connector_dispatch_enabled": False',
+        '"provider_public_delivery_enabled": False',
+        '"package_mutation_enabled": False',
+        '"frontend_durable_authority_enabled": False',
+        '"network_egress_enabled": False',
+    ):
+        if term not in service_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_TEXT_INDEX_SERVICE)} "
+                f"missing source directory deterministic text index service term: {term}"
+            )
+
+    test_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_INGESTION_TEST, errors)
+    for term in (
+        "test_layer3_source_directory_text_index_segments_admitted_material_without_broad_outputs",
+        "test_layer3_source_directory_text_index_fails_closed_on_live_file_drift",
+        "test_layer3_source_directory_text_index_rejects_forbidden_retrieval_scope",
+        "test_layer3_source_directory_text_index_fails_closed_on_payload_hash_mismatch",
+        "_approve_source_directory_file",
+        "_text_index_payload",
+        "alpha.csv",
+        "bravo.json",
+        "charlie.txt",
+        "delta.md",
+        "source_directory_text_index_file_identity_mismatch",
+        "source_directory_text_index_forbidden_field_not_admitted",
+        "source_directory_text_index_stale_request_authority",
+        "ConnectorRun",
+        "ConnectorRunTarget",
+        "L3OutputPackage",
+    ):
+        if term not in test_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_INGESTION_TEST)} "
+                f"missing source directory deterministic text index proof test term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Deterministic Text Index Runtime Proof",
+            "754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md",
+            "codex/l3-source-index-text-impl",
+            "fb107c909a69a43a1f9ceb5eb1acc2e1685e2361",
+            "current_main_synced_source_directory_material_source_index_authority_contract",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            "deterministic_text_segments",
+            "line-window-v1",
+            "Runtime behavior introduced by this pass: `true`.",
+            "13 passed",
+            "24 passed",
+            "source_index_rows_written: False",
+            "await_current_main_sync_for_source_directory_material_deterministic_text_index_runtime_proof",
+            "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_deterministic_text_index_runtime_proof",
+            "branch_local_source_directory_material_deterministic_text_index_runtime_implemented",
+            "codex/l3-source-index-text-impl",
+            "754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md",
+            "fb107c909a69a43a1f9ceb5eb1acc2e1685e2361",
+            "source_directory_material_deterministic_text_index_authority",
+            "deterministic_text_segments",
+            "line-window-v1",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            '"runtime_behavior_change": true',
+            "13 passed",
+            "24 passed",
+            "source_index_rows_written False",
+            "await_current_main_sync_for_source_directory_material_deterministic_text_index_runtime_proof",
+            "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "branch_local_source_directory_material_deterministic_text_index_runtime",
+            "branch_local_source_directory_material_deterministic_text_index_runtime_implemented",
+            "754_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_PROOF.md",
+            "source_directory_material_deterministic_text_index_authority",
+            "deterministic_text_segments",
+            "line-window-v1",
+            "backend/app/services/layer3_source_directory_text_index.py",
+            '"runtime_behavior_change": true',
+            "source_index_rows_written False",
+            "negative invariants keep route vector embedding retrieval qualitative-hybrid connector provider package frontend durable authority and network egress disabled",
+            "await_current_main_sync_for_source_directory_material_deterministic_text_index_runtime_proof",
+            "select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory deterministic text index runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -64738,6 +64897,7 @@ def main() -> int:
     _check_source_directory_material_source_index_authority_freeze_current_main_sync(errors)
     _check_source_directory_material_source_index_authority_contract(errors)
     _check_source_directory_material_source_index_authority_contract_current_main_sync(errors)
+    _check_source_directory_material_deterministic_text_index_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

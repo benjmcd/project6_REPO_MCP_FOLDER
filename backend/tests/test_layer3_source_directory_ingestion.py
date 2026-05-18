@@ -26,6 +26,10 @@ from app.models.models import (
     L3SourceDirectoryIngestionBatch,
     L3SourceDirectoryIngestionFile,
 )
+from app.services.layer3_source_directory_text_index import (
+    SourceDirectoryTextIndexError,
+    source_directory_material_text_index,
+)
 from main import app
 
 
@@ -85,6 +89,60 @@ def _material_preview_payload(scan_body: dict, relative_name: str = "alpha.csv")
         "source_ingestion_file_id": file_record["source_ingestion_file_id"],
         "file_identity_hash": file_record["file_identity_hash"],
         "authority_basis_hash": file_record["authority_basis_hash"],
+    }
+
+
+def _approve_source_directory_file(client: TestClient, scan_body: dict, relative_name: str) -> dict[str, str]:
+    preview = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        json=_material_preview_payload(scan_body, relative_name),
+    )
+    assert preview.status_code == 200
+    preview_body = preview.json()
+    candidate = preview_body["material_candidate"]
+    request_suffix = relative_name.replace(".", "-")
+    gate_b = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": f"source-directory-gate-b-{request_suffix}",
+            "preflight_id": f"preflight-source-directory-{request_suffix}",
+            "source_set_id": scan_body["source_ingestion_batch_id"],
+            "material_preview_id": preview_body["material_preview_id"],
+            "material_preview_hash": preview_body["material_preview_hash"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "decision_basis": candidate,
+                }
+            ],
+        },
+    )
+    assert gate_b.status_code == 200
+    db = client.layer3_session_factory()
+    try:
+        snapshot = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == gate_b.json()["session_id"])
+            .one()
+        )
+        return {
+            "material_snapshot_id": snapshot.material_snapshot_id,
+            "payload_hash": snapshot.payload_hash,
+            "source_ingestion_batch_id": scan_body["source_ingestion_batch_id"],
+            "source_ingestion_file_id": candidate["payload"]["source_ingestion_file_id"],
+            "content_sha256": candidate["payload"]["content_sha256"],
+            "file_identity_hash": candidate["payload"]["file_identity_hash"],
+            "authority_basis_hash": candidate["payload"]["authority_basis_hash"],
+        }
+    finally:
+        db.close()
+
+
+def _text_index_payload(snapshot_info: dict[str, str]) -> dict[str, str]:
+    return {
+        "client_request_id": f"source-directory-text-index-{snapshot_info['source_ingestion_file_id']}",
+        **snapshot_info,
     }
 
 
@@ -290,6 +348,164 @@ def test_layer3_source_directory_material_preview_reaches_gate_b_without_broad_o
         assert db.query(ConnectorRun).count() == 0
         assert db.query(ConnectorRunTarget).count() == 0
         assert db.query(L3OutputPackage).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_source_directory_text_index_segments_admitted_material_without_broad_outputs(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-text-index"),
+    )
+    assert scan.status_code == 201
+    scan_body = scan.json()
+
+    expected_text = {
+        "alpha.csv": "name,value",
+        "bravo.json": '"rows"',
+        "charlie.txt": "plain text source",
+        "delta.md": "# Markdown source",
+    }
+    for relative_name, expected in expected_text.items():
+        snapshot_info = _approve_source_directory_file(client, scan_body, relative_name)
+        db = client.layer3_session_factory()
+        try:
+            body = source_directory_material_text_index(db, _text_index_payload(snapshot_info))
+            replay = source_directory_material_text_index(db, _text_index_payload(snapshot_info))
+
+            assert body["schema_id"] == "layer3.source_directory_text_index.v1"
+            assert body["mode"] == "source_directory_material_deterministic_text_index_authority"
+            assert body["status"] == "available"
+            assert body["index_contract_id"] == "source_directory_material_deterministic_text_index_authority"
+            assert body["index_mode"] == "deterministic_text_segments"
+            assert body["segmentation_version"] == "line-window-v1"
+            assert body["source_shape"] == "server_configured_directory_file"
+            assert body["source_ingestion_batch_id"] == scan_body["source_ingestion_batch_id"]
+            assert body["source_ingestion_file_id"] == snapshot_info["source_ingestion_file_id"]
+            assert body["material_snapshot_id"] == snapshot_info["material_snapshot_id"]
+            assert body["payload_hash"] == snapshot_info["payload_hash"]
+            assert body["segment_count"] >= 1
+            assert expected in "".join(segment["text"] for segment in body["segments"])
+            assert [segment["segment_id"] for segment in body["segments"]] == [
+                segment["segment_id"] for segment in replay["segments"]
+            ]
+            assert body["index_authority_hash"] == replay["index_authority_hash"]
+            assert body["source_index_rows_written"] is False
+            assert body["negative_invariants"]["source_index_rows_written"] is False
+            assert body["negative_invariants"]["route_admitted"] is False
+            assert body["negative_invariants"]["vector_index_enabled"] is False
+            assert body["negative_invariants"]["embedding_generation_enabled"] is False
+            assert body["negative_invariants"]["retrieval_query_enabled"] is False
+            assert body["negative_invariants"]["qualitative_hybrid_runtime_enabled"] is False
+            assert body["negative_invariants"]["connector_dispatch_enabled"] is False
+            assert body["negative_invariants"]["provider_public_delivery_enabled"] is False
+            assert str(source_dir) not in str(body)
+        finally:
+            db.close()
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3MaterialSnapshot).count() == 4
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_source_directory_text_index_fails_closed_on_live_file_drift(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-text-index-drift"),
+    )
+    assert scan.status_code == 201
+    snapshot_info = _approve_source_directory_file(client, scan.json(), "alpha.csv")
+    (source_dir / "alpha.csv").write_text("name,value\nalpha,99\n", encoding="utf-8")
+
+    db = client.layer3_session_factory()
+    try:
+        with pytest.raises(SourceDirectoryTextIndexError) as exc_info:
+            source_directory_material_text_index(db, _text_index_payload(snapshot_info))
+        assert exc_info.value.code == "source_directory_text_index_file_identity_mismatch"
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_source_directory_text_index_rejects_forbidden_retrieval_scope(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-text-index-forbidden"),
+    )
+    assert scan.status_code == 201
+    snapshot_info = _approve_source_directory_file(client, scan.json(), "alpha.csv")
+
+    db = client.layer3_session_factory()
+    try:
+        with pytest.raises(SourceDirectoryTextIndexError) as exc_info:
+            source_directory_material_text_index(
+                db,
+                {
+                    **_text_index_payload(snapshot_info),
+                    "vector_index": "not-admitted",
+                    "retrieval_query_text": "not-admitted",
+                },
+            )
+        assert exc_info.value.code == "source_directory_text_index_forbidden_field_not_admitted"
+        assert exc_info.value.details["forbidden_fields"] == ["retrieval_query_text", "vector_index"]
+    finally:
+        db.close()
+
+
+def test_layer3_source_directory_text_index_fails_closed_on_payload_hash_mismatch(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-text-index-payload"),
+    )
+    assert scan.status_code == 201
+    snapshot_info = _approve_source_directory_file(client, scan.json(), "alpha.csv")
+    snapshot_info["payload_hash"] = "0" * 64
+
+    db = client.layer3_session_factory()
+    try:
+        with pytest.raises(SourceDirectoryTextIndexError) as exc_info:
+            source_directory_material_text_index(db, _text_index_payload(snapshot_info))
+        assert exc_info.value.code == "source_directory_text_index_stale_request_authority"
+        assert exc_info.value.details["blocked_fields"] == ["payload_hash"]
     finally:
         db.close()
 
