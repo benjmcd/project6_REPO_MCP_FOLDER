@@ -5614,3 +5614,27 @@ Current main previously records provider-public delivery/use as no-runtime when 
 No provider-public delivery/use route, raw public URL exposure, `public_url_enabled: true` rail, public proxy runtime, provider adapter, provider credential, provider object write/copy/mutation/ACL change, rendered delivery/use control, frontend-durable authority, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, network egress, source expansion, arbitrary source ingestion, RAG/vector indexing, embedding generation, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, or raw local path exposure is admitted.
 
 The next exact posture after merge is `current_main_sync_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync`; after sync, the next exact posture is `write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime`.
+
+## Provider-Public Delivery/Use Authority Selection Current-Main Sync
+
+Current-main sync: `775_PROVIDER_PUBLIC_AUTH_SYNC.md` syncs selection PR `#1379` for `provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync`.
+
+Selection branch `codex/l3-provider-public-authority-select` landed branch commit `db70ad99153216080a7430d1fefe2217db03d415` into current main at merge commit `59f1d246d643794153cb6300d25d587ee6e287a1`.
+
+Synced result: `current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync`.
+
+Current main now includes `774_PROVIDER_PUBLIC_AUTH_FREEZE.md`.
+
+Current main now records `provider_public_delivery_use` as the next major deferred lane after source-directory qualitative-analysis runtime sync, but only as an authority-selection lane.
+
+Current main now records `provider_public_delivery_use_exposure_security_revocation_authority_contract` as the next authority question.
+
+PR `#1379` had green `backend-layer3-api` (`3m7s`) and `test` (`3m34s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by selection PR: `false`.
+
+Runtime behavior introduced by this sync: `false`.
+
+No provider-public delivery/use route, raw public URL exposure, `public_url_enabled: true` rail, public proxy runtime, provider adapter, provider credential, provider object write/copy/mutation/ACL change, rendered delivery/use control, frontend-durable authority, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, network egress, source expansion, arbitrary source ingestion, RAG/vector indexing, embedding generation, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, or raw local path exposure is admitted by this sync.
+
+The next exact current-main posture is `write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime`.

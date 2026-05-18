@@ -2113,6 +2113,9 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNT
 LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_RUNTIME_SYNC = (
     PLANNING_DOCS / "774_PROVIDER_PUBLIC_AUTH_FREEZE.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "775_PROVIDER_PUBLIC_AUTH_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -66563,6 +66566,108 @@ def _check_provider_public_delivery_use_authority_selection_after_source_directo
                 )
 
 
+def _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync`.",
+        "775_PROVIDER_PUBLIC_AUTH_SYNC.md",
+        "774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+        "#1379",
+        "codex/l3-provider-public-authority-select",
+        "db70ad99153216080a7430d1fefe2217db03d415",
+        "59f1d246d643794153cb6300d25d587ee6e287a1",
+        "codex/l3-provider-public-authority-sync",
+        "current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+        "Runtime behavior introduced by selection PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "3m7s",
+        "test",
+        "3m34s",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "provider_public_delivery_use",
+        "provider_public_delivery_use_exposure_security_revocation_authority_contract",
+        "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+        "no provider-public delivery/use route",
+        "no raw public URL exposure",
+        "public_url_enabled: true",
+        "python -m py_compile .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing provider-public authority selection sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public Delivery/Use Authority Selection Current-Main Sync",
+            "775_PROVIDER_PUBLIC_AUTH_SYNC.md",
+            "#1379",
+            "db70ad99153216080a7430d1fefe2217db03d415",
+            "59f1d246d643794153cb6300d25d587ee6e287a1",
+            "current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+            "774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+            "provider_public_delivery_use",
+            "provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "Runtime behavior introduced by selection PR: `false`.",
+            "Runtime behavior introduced by this sync: `false`.",
+            "backend-layer3-api",
+            "3m7s",
+            "test",
+            "3m34s",
+            "reviewThreads totalCount `0`",
+            "unresolved reviewThreads totalCount `0`",
+            "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+        ),
+        MANIFEST: (
+            "provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync",
+            "current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+            "codex/l3-provider-public-authority-sync",
+            "775_PROVIDER_PUBLIC_AUTH_SYNC.md",
+            "774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+            "#1379",
+            "db70ad99153216080a7430d1fefe2217db03d415",
+            "59f1d246d643794153cb6300d25d587ee6e287a1",
+            '"runtime_behavior_introduced_by_selection_pr": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads": 0',
+            '"unresolvedReviewThreads": 0',
+            "provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync_proof",
+            "current_main_sync_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+            "current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+            "775_PROVIDER_PUBLIC_AUTH_SYNC.md",
+            "774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+            "#1379",
+            "59f1d246d643794153cb6300d25d587ee6e287a1",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no additional runtime behavior",
+            "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public authority selection sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -67180,6 +67285,7 @@ def main() -> int:
     _check_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof(errors)
     _check_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync(errors)
     _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync(errors)
+    _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
