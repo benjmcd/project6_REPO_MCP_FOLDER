@@ -30966,5 +30966,32 @@
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/773_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_status": "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime",
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_next_posture": "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync",
-  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_summary": "Doc 773 proof syncs the source-directory context-packet qualitative-hybrid analysis runtime after PR #1377 and moves the next posture to select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync, with same-family qualitative-analysis loops stopped unless current-main evidence names a concrete defect or downstream reader."
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync_summary": "Doc 773 proof syncs the source-directory context-packet qualitative-hybrid analysis runtime after PR #1377 and moves the next posture to select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync, with same-family qualitative-analysis loops stopped unless current-main evidence names a concrete defect or downstream reader.",
+  "provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync_proof": {
+    "proof_kind": "planning_control_selection_freeze_provider_public_delivery_use_authority_after_source_directory_qualitative_analysis_runtime_sync",
+    "status": "planning_control_selection_freeze",
+    "branch": "codex/l3-provider-public-authority-select",
+    "selection_doc": "next_milestone_plans/Layer3_planning_docs/774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+    "current_main_preflight_checkpoint": "16c7e09f7d66863eef6e55b522c3f3839711f649",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/773_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "predecessor_synced_result": "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime",
+    "selected_from_posture": "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync",
+    "selected_major_deferred_lane": "provider_public_delivery_use",
+    "selected_authority_question": "provider_public_delivery_use_exposure_security_revocation_authority_contract",
+    "runtime_behavior_change": false,
+    "proof_coverage": [
+      "current main source-directory qualitative-analysis runtime is synced through Doc 773",
+      "same-family source-directory qualitative-analysis proof loops are stopped unless current-main evidence names a concrete defect or downstream reader",
+      "provider_public_delivery_use is selected only as an authority-selection lane",
+      "provider_public_delivery_use_exposure_security_revocation_authority_contract is selected as the next authority question",
+      "provider-public delivery/use routes, raw public URL exposure, public_url_enabled true, public proxy runtime, provider credentials/adapters/object writes, rendered delivery/use controls, package mutation, connector dispatch, source expansion, RAG/vector, auth/security, network, frontend-durable, full mockup, and raw-path behavior remain blocked"
+    ],
+    "next_posture_after_merge": "current_main_sync_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+    "next_posture_after_sync": "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime"
+  },
+  "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync_branch": "codex/l3-provider-public-authority-select",
+  "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync_doc": "next_milestone_plans/Layer3_planning_docs/774_PROVIDER_PUBLIC_AUTH_FREEZE.md",
+  "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync_status": "planning_control_selection_freeze",
+  "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync_next_posture_after_merge": "current_main_sync_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+  "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync_summary": "Doc 774 proof selects provider_public_delivery_use only as an authority-selection lane after source-directory qualitative-analysis runtime sync, requires provider_public_delivery_use_exposure_security_revocation_authority_contract before runtime, and keeps provider-public delivery/use routes, raw public URL exposure, public_url_enabled true, public proxy runtime, provider credentials/adapters/object writes, rendered delivery/use controls, package, connector, source expansion, RAG/vector, auth/security, network, frontend-durable, full mockup, and raw-path behavior blocked."
 }
