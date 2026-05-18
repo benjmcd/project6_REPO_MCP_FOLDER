@@ -33,6 +33,7 @@ from app.services import (
     layer3_source_directory_ingestion,
     layer3_source_directory_material_admission,
     layer3_source_directory_context_packet,
+    layer3_source_directory_hybrid_context,
     layer3_source_directory_qualitative_analysis,
     layer3_source_directory_text_index,
     layer3_source_directory_text_retrieval,
@@ -127,6 +128,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     source_directory_material_preview_endpoint: str
     source_directory_vector_retrieval_admitted: bool
     source_directory_vector_retrieval_endpoint: str
+    source_directory_hybrid_context_packet_admitted: bool
+    source_directory_hybrid_context_packet_endpoint: str
     source_directory_qualitative_hybrid_analysis_admitted: bool
     source_directory_qualitative_hybrid_analysis_endpoint: str
     source_directory_operator_status_surface: str
@@ -2372,6 +2375,11 @@ class Layer3SourceDirectoryVectorRetrievalRequest(BaseModel):
     top_k: int | None = Field(default=None, ge=1, le=20)
 
 
+class Layer3SourceDirectoryHybridContextPacketRequest(Layer3SourceDirectoryVectorRetrievalRequest):
+    limit: int | None = Field(default=None, ge=1, le=50)
+    offset: int | None = Field(default=None, ge=0)
+
+
 class Layer3SourceDirectoryQualitativeAnalysisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -2577,6 +2585,53 @@ class Layer3SourceDirectoryVectorRetrievalResponse(Layer3BaseResponse):
     authority_basis_hash: str
     payload_hash: str
     negative_invariants: dict[str, bool]
+
+
+class Layer3SourceDirectoryHybridContextPacketResponse(Layer3BaseResponse):
+    mode: str
+    hybrid_context_contract_id: str
+    hybrid_context_mode: str
+    source_gate: str
+    hybrid_context_packet_hash: str
+    lexical_context_packet_hash: str
+    lexical_context_packet_contract_id: str
+    lexical_context_packet_mode: str
+    vector_retrieval_contract_id: str
+    vector_retrieval_mode: str
+    embedding_contract_id: str
+    embedding_mode: str
+    vector_index_mode: str
+    feature_hash_version: str
+    vector_dimensions: int
+    query_tokens: list[str]
+    lexical_total: int
+    lexical_limit: int
+    lexical_offset: int
+    vector_total: int
+    vector_top_k: int
+    hybrid_total: int
+    items: list[dict[str, Any]]
+    index_authority_hash: str
+    embedding_index_authority_hash: str
+    source_ingestion_batch_id: str
+    source_ingestion_file_id: str
+    material_snapshot_id: str
+    source_shape: str | None
+    content_sha256: str
+    file_identity_hash: str
+    authority_basis_hash: str
+    payload_hash: str
+    source_index_rows_written: bool
+    embedding_vector_rows_written: bool
+    vector_index_rows_written: bool
+    retrieval_rows_written: bool
+    context_packet_rows_written: bool
+    qualitative_analysis_rows_written: bool
+    analysis_run_rows_written: bool
+    package_rows_written: bool
+    connector_rows_written: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
 
 
 class Layer3SourceDirectoryQualitativeAnalysisResponse(Layer3BaseResponse):
@@ -7428,6 +7483,31 @@ def post_source_directory_vector_retrieval(
         )
     except (
         layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_vector_index.SourceDirectoryVectorIndexError,
+        layer3_source_directory_vector_retrieval.SourceDirectoryVectorRetrievalError,
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/hybrid-context-packet",
+    response_model=Layer3SourceDirectoryHybridContextPacketResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_hybrid_context_packet(
+    payload: Layer3SourceDirectoryHybridContextPacketRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_source_directory_hybrid_context.source_directory_material_hybrid_retrieval_context_packet(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    except (
+        layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
+        layer3_source_directory_hybrid_context.SourceDirectoryHybridContextError,
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
         layer3_source_directory_vector_index.SourceDirectoryVectorIndexError,
         layer3_source_directory_vector_retrieval.SourceDirectoryVectorRetrievalError,
     ) as exc:
