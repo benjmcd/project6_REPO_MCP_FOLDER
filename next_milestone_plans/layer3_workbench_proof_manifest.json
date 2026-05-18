@@ -31440,5 +31440,48 @@
   "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_doc": "next_milestone_plans/Layer3_planning_docs/786_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT.md",
   "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_status": "planning_control_authority_contract_no_runtime",
   "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_next_posture_after_merge": "current_main_sync_source_directory_material_deterministic_vector_retrieval_authority_contract",
-  "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_summary": "Doc 786 proof freezes source-directory deterministic vector retrieval as a no-runtime contract and moves the next posture to current_main_sync_source_directory_material_deterministic_vector_retrieval_authority_contract."
+  "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_summary": "Doc 786 proof freezes source-directory deterministic vector retrieval as a no-runtime contract and moves the next posture to current_main_sync_source_directory_material_deterministic_vector_retrieval_authority_contract.",
+  "source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_deterministic_vector_retrieval_authority_contract",
+    "status": "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+    "sync_branch": "codex/l3-vector-retrieval-contract-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+    "contract_doc": "next_milestone_plans/Layer3_planning_docs/786_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT.md",
+    "contract_pr": "#1391",
+    "contract_branch_commit": "3725dc334c21007e1eac3a923f6a9fe6849df7ad",
+    "contract_merge_commit": "526b428a1a16f10ae6c5fe1ce4431cd466ab7266",
+    "current_main_checkpoint_after_merge": "526b428a1a16f10ae6c5fe1ce4431cd466ab7266",
+    "runtime_behavior_introduced_by_contract_pr": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 786 source-directory deterministic vector retrieval authority contract",
+      "current main records PR #1391 merged at 526b428a1a16f10ae6c5fe1ce4431cd466ab7266",
+      "current main records green backend-layer3-api and test checks for PR #1391",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main sync introduces no additional runtime behavior",
+      "source_directory_material_deterministic_vector_retrieval_authority is current-main synced as the future runtime authority",
+      "deterministic_local_hash_vector_similarity_retrieval is current-main synced as the future retrieval mode",
+      "source_directory_material_deterministic_embedding_vector_index_authority and layer3.source_directory_embedding_vector_index.v1 are selected inputs",
+      "future runtime must call source_directory_material_embedding_vector_index(db, vector_index_payload) before scoring",
+      "future scoring uses source-directory-hash-vector-v1 vector_dimensions 4096 and deterministic normalized query-to-segment dot product",
+      "backend/app/services/layer3_source_directory_vector_retrieval.py and backend/tests/test_layer3_source_directory_vector_retrieval.py are selected for the future implementation",
+      "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync is selected for the next authority posture"
+    ],
+    "next_posture": "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync"
+  },
+  "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_branch": "codex/l3-vector-retrieval-contract-sync",
+  "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_status": "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+  "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_next_posture": "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync",
+  "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_summary": "Doc 787 proof syncs the source-directory deterministic vector retrieval authority contract after PR #1391 and moves the next posture to implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync, with no runtime admitted by the sync."
 }
