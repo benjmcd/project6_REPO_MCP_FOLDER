@@ -4638,3 +4638,19 @@ PR `#1333` had green `backend-layer3-api` and `test` checks, and merge state `CL
 No runtime behavior is introduced by the evaluation or this sync. Connector invocation, connector-run creation, destination write, credentials, external network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, delivery rerun, external export/download delivery adoption, connector-local receipt adoption, local outbox write adoption, provider-private handoff adoption, external local export adoption, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
 
 The next exact current-main posture is `select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_prepare_sync`.
+
+## Corrected Artifact Active Authority External Export Download Deliver Evaluation
+
+Evaluation proof: `730_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION.md` selects `external_export_download_deliver` as the next downstream active-package-authority reader after corrected-artifact external export/download prepare sync.
+
+The evaluated branch is `codex/l3-corrected-download-deliver` from current-main checkpoint `8a99731d7504a5efe8362d9777a8e1f97d853bc0`.
+
+The pass proves `POST /api/v1/layer3/handoff/export/download/deliver` consumes corrected-artifact active package authority through recorded `external_export_download_prepare` state, revalidates the same readiness through `external_export_download_prepare`, and streams the bounded same-origin APS bundle artifact without new service runtime behavior.
+
+The added API regression is `test_layer3_api_external_export_download_deliver_applies_corrected_artifact_active_authority` in `backend/tests/test_layer3_api.py`.
+
+Observed validation: `python -m pytest .\backend\tests\test_layer3_api.py::test_layer3_api_external_export_download_deliver_applies_corrected_artifact_active_authority -q` with `1 passed`.
+
+This pass starts no service runtime behavior change, connector invocation, connector-run creation, connector target creation, destination write, credentials, external network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, provider-private signed URL generation, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, connector-local receipt adoption, local outbox write adoption, provider-private handoff adoption, external local export adoption, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, or hidden LLM planning.
+
+The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_deliver_evaluation`.
