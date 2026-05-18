@@ -524,12 +524,71 @@ def test_source_directory_qualitative_hybrid_analysis_api_route_is_bounded_and_r
     assert body["negative_invariants"]["network_egress_enabled"] is False
     assert str(source_dir) not in response.text
 
+    status_response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/status",
+        json=payload,
+    )
+    assert status_response.status_code == 200, status_response.text
+    status_body = status_response.json()
+    assert status_body["schema_id"] == "layer3.source_directory_qualitative_analysis_status.v1"
+    assert status_body["mode"] == "source_directory_qualitative_hybrid_analysis_status_authority"
+    assert status_body["status"] == "available"
+    assert status_body["analysis_status"] == "source_directory_qualitative_hybrid_analysis_available"
+    assert status_body["source_gate"] == (
+        "818_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE"
+    )
+    assert status_body["validated_analysis_schema_id"] == "layer3.source_directory_qualitative_analysis.v1"
+    assert status_body["validated_analysis_mode"] == (
+        "source_directory_material_context_packet_qualitative_hybrid_analysis_authority"
+    )
+    assert status_body["qualitative_analysis_hash"] == body["qualitative_analysis_hash"]
+    assert status_body["context_packet_hash"] == body["context_packet_hash"]
+    assert (
+        status_body["source_directory_package_review_preview_hash"]
+        == body["source_directory_package_review_preview_hash"]
+    )
+    assert status_body["source_directory_package_review_preview_available"] is True
+    assert status_body["source_directory_package_review_preview_payload_redacted"] is True
+    assert status_body["supporting_segments_redacted"] is True
+    assert status_body["analysis_result_redacted"] is True
+    assert status_body["query_tokens"] == ["alpha", "beta"]
+    assert status_body["coverage_label"] == "complete_context_matches"
+    assert status_body["supporting_segment_count"] == len(body["supporting_segments"])
+    assert status_body["salient_term_count"] == len(body["salient_terms"])
+    assert status_body["coverage_note_count"] == len(body["coverage_notes"])
+    assert status_body["analysis_limit_count"] == len(body["analysis_limits"])
+    assert status_body["source_index_rows_written"] is False
+    assert status_body["retrieval_rows_written"] is False
+    assert status_body["context_packet_rows_written"] is False
+    assert status_body["qualitative_analysis_rows_written"] is False
+    assert status_body["qualitative_generation_rows_written"] is False
+    assert status_body["analysis_run_rows_written"] is False
+    assert status_body["package_rows_written"] is False
+    assert status_body["connector_rows_written"] is False
+    assert status_body["negative_invariants"]["prompt_model_provider_runtime_enabled"] is False
+    assert status_body["negative_invariants"]["qualitative_generation_runtime_enabled"] is False
+    assert status_body["negative_invariants"]["connector_dispatch_enabled"] is False
+    assert status_body["negative_invariants"]["provider_public_delivery_enabled"] is False
+    assert status_body["negative_invariants"]["network_egress_enabled"] is False
+    assert "source_directory_package_review_preview" not in status_body
+    assert "supporting_segments" not in status_body
+    assert "evidence_summary" not in status_body
+    assert "quote_excerpt" not in status_response.text
+    assert str(source_dir) not in status_response.text
+
     stale = client.post(
         "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
         json={**payload, "index_authority_hash": "0" * 64},
     )
     assert stale.status_code == 409
     assert stale.json()["error"]["code"] == "source_directory_text_retrieval_stale_index_authority"
+
+    stale_status = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/status",
+        json={**payload, "index_authority_hash": "0" * 64},
+    )
+    assert stale_status.status_code == 409
+    assert stale_status.json()["error"]["code"] == "source_directory_text_retrieval_stale_index_authority"
 
     forbidden = client.post(
         "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
