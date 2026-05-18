@@ -28273,5 +28273,40 @@
   "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_status": "branch_local_corrected_artifact_active_authority_external_export_download_deliver_proven",
   "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_runtime_behavior_change": false,
   "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_deliver_evaluation",
-  "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_summary": "Doc 730 proves the corrected-artifact active package authority chain reaches external_export_download_deliver through recorded external_export_download_prepare state and delivery revalidation. Current main already has the reader path, so this pass adds proof/control coverage only and admits no service runtime behavior change."
+  "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_summary": "Doc 730 proves the corrected-artifact active package authority chain reaches external_export_download_deliver through recorded external_export_download_prepare state and delivery revalidation. Current main already has the reader path, so this pass adds proof/control coverage only and admits no service runtime behavior change.",
+  "corrected_artifact_active_authority_external_export_download_deliver_evaluation_current_main_sync": {
+    "status": "current_main_synced_corrected_artifact_active_authority_external_export_download_deliver_evaluation",
+    "sync_branch": "codex/l3-corrected-download-deliver-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/731_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/730_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION.md",
+    "evaluation_pr": "#1335",
+    "evaluation_branch": "codex/l3-corrected-download-deliver",
+    "evaluation_branch_commit": "42cccf228c58e938420069d127f8a9cee2ced9ca",
+    "evaluation_merge_commit": "977d440a3e097f4273e9733b9ebe08a75fefe116",
+    "current_main_checkpoint_after_merge": "977d440a3e097f4273e9733b9ebe08a75fefe116",
+    "evaluation_result": "corrected_artifact_active_authority_external_export_download_deliver_proven",
+    "runtime_behavior_introduced_by_evaluation": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "mergeable": "MERGEABLE",
+      "merge_state": "CLEAN",
+      "reviewThreads": 0
+    },
+    "post_merge_validation": {
+      "python .\\tools\\l3-progress-check.py": "PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen": "PASS (frozen)"
+    },
+    "synced_runtime_route": "POST /api/v1/layer3/handoff/export/download/deliver",
+    "synced_reader": "recorded external_export_download_prepare state with external_export_download_prepare revalidation",
+    "synced_runtime_owner": "backend/app/services/layer3_workbench.py",
+    "next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_deliver_sync"
+  },
+  "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_current_main_sync_branch": "codex/l3-corrected-download-deliver-sync",
+  "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/731_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_external_export_download_deliver_evaluation",
+  "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_current_main_sync_runtime_behavior_change": false,
+  "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_deliver_sync",
+  "latest_corrected_artifact_active_authority_external_export_download_deliver_evaluation_current_main_sync_summary": "Doc 731 syncs PR #1335 merge commit 977d440a3e097f4273e9733b9ebe08a75fefe116 to current main. Current main now records that corrected-artifact active package authority reaches external_export_download_deliver through recorded external_export_download_prepare state and delivery revalidation, with no runtime behavior introduced by either the evaluation or this sync."
 }
