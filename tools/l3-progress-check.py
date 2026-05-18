@@ -2116,6 +2116,9 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_Q
 LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_RUNTIME_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "775_PROVIDER_PUBLIC_AUTH_SYNC.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTRACT = (
+    PLANNING_DOCS / "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -66668,6 +66671,118 @@ def _check_provider_public_delivery_use_authority_selection_after_source_directo
                 )
 
 
+def _check_provider_public_delivery_use_exposure_security_revocation_authority_contract(
+    errors: list[str],
+) -> None:
+    contract_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTRACT,
+        errors,
+    )
+    for term in (
+        "Status: planning/control authority contract for `provider_public_delivery_use_exposure_security_revocation_authority_contract`.",
+        "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+        "775_PROVIDER_PUBLIC_AUTH_SYNC.md",
+        "current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+        "codex/l3-provider-public-contract",
+        "9904ece3a6d34c910fe33231253e952f2d3e6811",
+        "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+        "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent",
+        "Runtime behavior introduced by this contract: `false`.",
+        "backend/app/services/layer3_provider_public_url.py",
+        "backend/app/services/layer3_provider_public_url_state.py",
+        "backend/app/api/layer3.py",
+        "layer3_provider_public_url_fake_provider",
+        "raw_public_url_exposed: False",
+        "public_url_enabled: False",
+        "does not expose a provider-public delivery/use route",
+        "does not return a raw public URL",
+        "`public_url_enabled: true`",
+        "exposure classification",
+        "caller authorization",
+        "raw URL leak-control policy",
+        "revocation-after-exposure semantics",
+        "cache, referrer, CORS, CSP, content-disposition",
+        "provider or object-store owner",
+        "fake-provider contract tests",
+        "This contract admits no backend route",
+        "current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+        "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+    ):
+        if term not in contract_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTRACT)} "
+                f"missing provider-public exposure security revocation authority contract term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public Delivery/Use Exposure Security Revocation Authority Contract",
+            "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+            "codex/l3-provider-public-contract",
+            "9904ece3a6d34c910fe33231253e952f2d3e6811",
+            "775_PROVIDER_PUBLIC_AUTH_SYNC.md",
+            "current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+            "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+            "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent",
+            "Runtime behavior introduced by this contract: `false`.",
+            "redacted provider-public prepare/status/revoke state only",
+            "no provider-public delivery/use route",
+            "no raw public URL exposure",
+            "`public_url_enabled: true` rail",
+            "exposure classification",
+            "fake-provider proof architecture",
+            "current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+        ),
+        MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "planning_control_authority_contract_no_runtime",
+            "codex/l3-provider-public-contract",
+            "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+            "9904ece3a6d34c910fe33231253e952f2d3e6811",
+            "775_PROVIDER_PUBLIC_AUTH_SYNC.md",
+            "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+            "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent",
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "raw_public_url_exposed false",
+            "public_url_enabled false",
+            "provider public delivery use route",
+            "public_url_enabled true rail",
+            "provider object-store model",
+            "HTTP delivery model",
+            "current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_authority_contract_proof",
+            "planning_control_authority_contract_provider_public_delivery_use_exposure_security_revocation",
+            "planning_control_authority_contract_no_runtime",
+            "codex/l3-provider-public-contract",
+            "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+            "9904ece3a6d34c910fe33231253e952f2d3e6811",
+            "current main provider-public authority is redacted prepare status revoke state only",
+            "layer3_provider_public_url_fake_provider",
+            "raw_public_url_exposed remains false",
+            "public_url_enabled remains false",
+            "no provider-public delivery/use route is admitted",
+            "no raw public URL exposure is admitted",
+            "provider-public delivery/use runtime remains blocked until exposure security revocation provider object-store public access leak-control and audit authority are selected",
+            "provider object-store model",
+            "HTTP delivery model",
+            "current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public exposure security revocation authority contract artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -67286,6 +67401,7 @@ def main() -> int:
     _check_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_current_main_sync(errors)
     _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync(errors)
     _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync(errors)
+    _check_provider_public_delivery_use_exposure_security_revocation_authority_contract(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
