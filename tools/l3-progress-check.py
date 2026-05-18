@@ -2054,6 +2054,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MA
     PLANNING_DOCS
     / "759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -2062,6 +2066,12 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_ADMISSION_SERVICE = (
 )
 LAYER3_SOURCE_DIRECTORY_TEXT_INDEX_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_text_index.py"
+)
+LAYER3_SOURCE_DIRECTORY_TEXT_RETRIEVAL_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_directory_text_retrieval.py"
+)
+LAYER3_SOURCE_DIRECTORY_TEXT_RETRIEVAL_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_source_directory_text_retrieval.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0034_layer3_source_directory_ingestion.py"
@@ -64789,6 +64799,149 @@ def _check_source_directory_material_lexical_retrieval_authority_contract_curren
                 )
 
 
+def _check_source_directory_material_deterministic_lexical_retrieval_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime proof for `source_directory_material_deterministic_lexical_retrieval_runtime_proof`.",
+        "codex/l3-retrieval-impl",
+        "65953dfd0dc3e76886239aaa4495a65b7c7ab21c",
+        "759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_lexical_retrieval_authority_contract",
+        "implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync",
+        "Runtime behavior introduced by this pass: `true`.",
+        "backend/app/services/layer3_source_directory_text_retrieval.py",
+        "backend/tests/test_layer3_source_directory_text_retrieval.py",
+        "source_directory_material_text_retrieval(db, payload)",
+        "source_directory_material_text_index(db, payload)",
+        "source_directory_text_retrieval_stale_index_authority",
+        "source_directory_text_retrieval_empty_query",
+        "source_directory_text_retrieval_forbidden_field_not_admitted",
+        "source_directory_text_retrieval_unknown_field",
+        "nrc_aps_content_index.normalize_query_tokens",
+        "matched_unique_query_terms",
+        "summed_term_frequency",
+        "total: 0",
+        "layer3.source_directory_text_retrieval.v1",
+        "retrieval_rows_written: False",
+        "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_text_retrieval.py .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py",
+        "python -m pytest .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py -q",
+        "await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof",
+        "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF)} "
+                f"missing source directory deterministic lexical retrieval runtime proof term: {term}"
+            )
+
+    service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_TEXT_RETRIEVAL_SERVICE, errors)
+    for term in (
+        "SCHEMA_ID = \"layer3.source_directory_text_retrieval.v1\"",
+        "MODE = \"source_directory_material_deterministic_lexical_retrieval_authority\"",
+        "RETRIEVAL_MODE = \"deterministic_lexical_segment_retrieval\"",
+        "def source_directory_material_text_retrieval",
+        "source_directory_material_text_index(db, _index_payload(fields))",
+        "source_directory_text_retrieval_stale_index_authority",
+        "source_directory_text_retrieval_empty_query",
+        "source_directory_text_retrieval_forbidden_field_not_admitted",
+        "source_directory_text_retrieval_unknown_field",
+        "normalize_query_tokens",
+        "matched_unique_query_terms",
+        "summed_term_frequency",
+        "\"retrieval_rows_written\": False",
+        "\"vector_index_enabled\": False",
+        "\"embedding_generation_enabled\": False",
+        "\"qualitative_hybrid_runtime_enabled\": False",
+        "\"connector_dispatch_enabled\": False",
+        "\"network_egress_enabled\": False",
+    ):
+        if term not in service_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_TEXT_RETRIEVAL_SERVICE)} "
+                f"missing source directory deterministic lexical retrieval service term: {term}"
+            )
+
+    test_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_TEXT_RETRIEVAL_TEST, errors)
+    for term in (
+        "test_source_directory_text_retrieval_returns_deterministic_ranked_segments_without_side_effects",
+        "test_source_directory_text_retrieval_rejects_stale_index_authority",
+        "test_source_directory_text_retrieval_uses_text_index_fail_closed_authority_path",
+        "test_source_directory_text_retrieval_validates_query_fields_and_paging",
+        "source_directory_text_retrieval_stale_index_authority",
+        "source_directory_text_index_file_identity_mismatch",
+        "source_directory_text_retrieval_empty_query",
+        "source_directory_text_retrieval_forbidden_field_not_admitted",
+        "source_directory_text_retrieval_unknown_field",
+        "source_directory_text_retrieval_limit_out_of_bounds",
+        "notpresent",
+        "ConnectorRun",
+        "ConnectorRunTarget",
+        "L3OutputPackage",
+    ):
+        if term not in test_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_TEXT_RETRIEVAL_TEST)} "
+                f"missing source directory deterministic lexical retrieval test term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Deterministic Lexical Retrieval Runtime Proof",
+            "760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
+            "codex/l3-retrieval-impl",
+            "65953dfd0dc3e76886239aaa4495a65b7c7ab21c",
+            "current_main_synced_source_directory_material_lexical_retrieval_authority_contract",
+            "Runtime behavior introduced by this pass: `true`.",
+            "backend/app/services/layer3_source_directory_text_retrieval.py",
+            "backend/tests/test_layer3_source_directory_text_retrieval.py",
+            "matched_unique_query_terms",
+            "summed_term_frequency",
+            "4 passed",
+            "await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof",
+            "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_deterministic_lexical_retrieval_runtime_proof",
+            "source_directory_material_deterministic_lexical_retrieval_runtime_implemented_branch_local",
+            "codex/l3-retrieval-impl",
+            "760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
+            "65953dfd0dc3e76886239aaa4495a65b7c7ab21c",
+            "current_main_synced_source_directory_material_lexical_retrieval_authority_contract",
+            "implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync",
+            '"runtime_behavior_change": true',
+            "backend/app/services/layer3_source_directory_text_retrieval.py",
+            "backend/tests/test_layer3_source_directory_text_retrieval.py",
+            "test_layer3_source_directory_text_retrieval.py -q PASS 4 passed",
+            "await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof",
+            "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_deterministic_lexical_retrieval_runtime_proof",
+            "branch_local_source_directory_material_deterministic_lexical_retrieval_runtime",
+            "source_directory_material_deterministic_lexical_retrieval_runtime_implemented_branch_local",
+            "760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
+            "backend/app/services/layer3_source_directory_text_retrieval.py",
+            "backend/tests/test_layer3_source_directory_text_retrieval.py",
+            "stale index_authority_hash rejection",
+            "stale source material authority rejection through the text-index path",
+            "no ConnectorRun ConnectorRunTarget or L3OutputPackage side effects",
+            "await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof",
+            "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory deterministic lexical retrieval runtime proof artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -65391,6 +65544,7 @@ def main() -> int:
     _check_source_directory_material_lexical_retrieval_authority_freeze_current_main_sync(errors)
     _check_source_directory_material_lexical_retrieval_authority_contract(errors)
     _check_source_directory_material_lexical_retrieval_authority_contract_current_main_sync(errors)
+    _check_source_directory_material_deterministic_lexical_retrieval_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
