@@ -2434,6 +2434,19 @@ class Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadPrepareReque
     operator_decision: Literal["prepare_source_directory_external_export_download"]
 
 
+class Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadDeliverRequest(
+    Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadPrepareRequest
+):
+    external_export_download_record_ref: str = Field(min_length=1)
+    export_download_descriptor_ref: str = Field(min_length=1)
+    external_export_download_state: Literal["external_export_download_prepared"]
+    delivery_mode: Literal["same_origin_artifact_stream"]
+    output_package_id: str = Field(min_length=1)
+    package_kind: Literal["canonical_internal", "user_facing", "review_facing"]
+    package_payload_hash: str = Field(min_length=64, max_length=64)
+    operator_decision: Literal["deliver_source_directory_external_export_download"]
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -7421,6 +7434,40 @@ def post_source_directory_qualitative_analysis_external_export_download_prepare(
         layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
     ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver",
+    response_model=None,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_qualitative_analysis_external_export_download_deliver(
+    payload: Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadDeliverRequest,
+    db: Session = Depends(get_db),
+) -> FileResponse | JSONResponse:
+    try:
+        delivery = (
+            layer3_source_directory_qualitative_analysis
+            .source_directory_qualitative_analysis_external_export_download_deliver(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
+        layer3_source_directory_qualitative_analysis.SourceDirectoryExternalExportDownloadDeliveryError,
+        layer3_source_directory_qualitative_analysis.SourceDirectoryQualitativeAnalysisError,
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+    return FileResponse(
+        path=delivery.artifact_path,
+        media_type=delivery.media_type,
+        filename=delivery.filename,
+        content_disposition_type="attachment",
+        headers=delivery.headers,
+    )
 
 
 @router.post(

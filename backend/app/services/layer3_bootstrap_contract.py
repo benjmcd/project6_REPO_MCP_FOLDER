@@ -41,6 +41,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "source_directory_package_review_submit": True,
     "source_directory_handoff_export_prepare": True,
     "source_directory_external_export_download_prepare": True,
+    "source_directory_external_export_download_deliver": True,
     "analysis_execution": False,
     "single_aps_doc_qualitative_execution": True,
     "broad_qualitative_execution": False,
@@ -174,6 +175,11 @@ def build_bootstrap_contract(
             "source_directory_external_export_download_prepare_endpoint": (
                 f"{api_root}/source/ingestion/server-configured-directory/"
                 "qualitative-hybrid-analysis/handoff/export/download/prepare"
+            ),
+            "source_directory_external_export_download_deliver_admitted": True,
+            "source_directory_external_export_download_deliver_endpoint": (
+                f"{api_root}/source/ingestion/server-configured-directory/"
+                "qualitative-hybrid-analysis/handoff/export/download/deliver"
             ),
             "source_directory_operator_status_surface": "server_configured_operator_directory_text_table_source_family",
             "package_review_admitted": False,
