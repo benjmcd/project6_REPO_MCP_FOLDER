@@ -4718,3 +4718,19 @@ Observed validation: `python -m pytest .\backend\tests\test_layer3_api.py::test_
 This pass starts no service runtime behavior change, connector invocation, connector-run creation, connector target creation, real destination write, local outbox write adoption, credentials, external network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, provider-private signed URL generation, provider-private handoff adoption, external local export adoption, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, auth/security behavior, rendered UI authority, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, or hidden LLM planning.
 
 The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation`.
+
+## Corrected Artifact Active Authority Server Owned Local Outbox Fake Target Evaluation Current-Main Sync
+
+Current-main sync: `735_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION_CURRENT_MAIN_SYNC.md` syncs evaluation PR `#1339` for `corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation`.
+
+Evaluation branch `codex/l3-corrected-outbox-fake-target` landed branch commit `5a4a9d7c30a5833b05d67487564d03695fd53f9c` into current main at merge commit `7f370e8125df24d4ed567c11f77b33b165cd7771`.
+
+Synced result: `current_main_synced_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation`.
+
+Current main now records `corrected_artifact_active_authority_server_owned_local_outbox_fake_target_proven`: corrected-artifact active package authority reaches `POST /api/v1/layer3/handoff/connector/local-outbox/fake-target` through recorded `connector_local_destination_receipt`, `connector_dispatch_record`, and `external_export_download_prepare` state.
+
+PR `#1339` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, and state `MERGED`.
+
+No runtime behavior is introduced by the evaluation or this sync. Service runtime behavior change, connector invocation, connector-run creation, connector target creation, real destination write, local outbox write adoption, credentials, external network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, provider-private signed URL generation, provider-private handoff adoption, external local export adoption, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
+
+The next exact current-main posture is `select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_fake_target_sync`.
