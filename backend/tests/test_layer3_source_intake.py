@@ -90,6 +90,7 @@ def test_layer3_source_boundary_admits_operator_upload_intake_without_broad_sour
         "operator_source_intake_inventory_read_only",
         "operator_source_intake_material_preview_read_only",
         "source_intake_gate_b_material_admission",
+        "server_configured_operator_directory_text_table_ingestion",
     ]
     assert contract["source_upload_enabled"] is False
     assert contract["source_intake_upload_enabled"] is True
@@ -100,6 +101,8 @@ def test_layer3_source_boundary_admits_operator_upload_intake_without_broad_sour
     assert contract["source_intake_gate_b_material_admission_enabled"] is True
     assert contract["operator_upload_gate_b_admission_requires_later_freeze"] is False
     assert contract["source_intake_gate_b_material_admission_route"] == "/api/v1/layer3/gate-b/decision"
+    assert contract["server_configured_directory_ingestion_enabled"] is True
+    assert contract["server_configured_directory_ingestion_config_authority"] == "LAYER3_SOURCE_INGESTION_DIR"
     assert contract["broad_file_upload_enabled"] is False
     assert contract["local_directory_enabled"] is False
     assert contract["web_connector_enabled"] is False

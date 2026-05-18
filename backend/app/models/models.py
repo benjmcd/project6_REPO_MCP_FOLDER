@@ -1511,6 +1511,77 @@ class L3SourceIntakeRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class L3SourceDirectoryIngestionBatch(Base):
+    __tablename__ = "l3_source_directory_ingestion_batch"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_source_directory_batch_client_request"),
+        UniqueConstraint("authority_basis_hash", name="uq_l3_source_directory_batch_authority_basis"),
+        UniqueConstraint("directory_fingerprint_hash", name="uq_l3_source_directory_batch_fingerprint"),
+        CheckConstraint(
+            "source_family = 'server_configured_operator_directory_text_table_source_family'",
+            name="ck_l3_source_directory_batch_source_family",
+        ),
+        CheckConstraint(
+            "ingestion_mode = 'server_configured_operator_directory_text_table_ingestion'",
+            name="ck_l3_source_directory_batch_ingestion_mode",
+        ),
+        CheckConstraint("status IN ('recorded', 'already_recorded')", name="ck_l3_source_directory_batch_status"),
+        Index("ix_l3_source_directory_batch_source_family", "source_family"),
+        Index("ix_l3_source_directory_batch_status", "status"),
+    )
+
+    source_ingestion_batch_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_family: Mapped[str] = mapped_column(String(96), nullable=False)
+    ingestion_mode: Mapped[str] = mapped_column(String(96), nullable=False)
+    config_authority: Mapped[str] = mapped_column(String(96), nullable=False)
+    directory_fingerprint_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    eligible_file_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    authority_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default="recorded")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class L3SourceDirectoryIngestionFile(Base):
+    __tablename__ = "l3_source_directory_ingestion_file"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_ingestion_batch_id",
+            "relative_name",
+            name="uq_l3_source_directory_file_batch_relative_name",
+        ),
+        UniqueConstraint("authority_basis_hash", name="uq_l3_source_directory_file_authority_basis"),
+        CheckConstraint("status = 'recorded'", name="ck_l3_source_directory_file_status"),
+        Index("ix_l3_source_directory_file_batch", "source_ingestion_batch_id"),
+        Index("ix_l3_source_directory_file_extension", "extension"),
+        Index("ix_l3_source_directory_file_sha256", "content_sha256"),
+    )
+
+    source_ingestion_file_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    source_ingestion_batch_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_source_directory_ingestion_batch.source_ingestion_batch_id"),
+        nullable=False,
+    )
+    relative_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    extension: Mapped[str] = mapped_column(String(16), nullable=False)
+    media_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    content_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    mtime_ns: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    file_identity_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default="recorded")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    batch: Mapped[L3SourceDirectoryIngestionBatch] = relationship()
+
+
 class L3SignedReferenceToken(Base):
     __tablename__ = "l3_signed_reference_token"
     __table_args__ = (

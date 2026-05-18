@@ -4894,3 +4894,25 @@ The synced source family remains bounded to direct child `.csv`, `.json`, `.txt`
 No runtime behavior is introduced by the freeze or this sync. Caller-supplied paths, URLs, glob patterns, recursive flags, browser-supplied file bytes, PDFs, OCR, Office documents, arbitrary binaries, archives, executable files, symlinks, web connectors, arbitrary recursive ingestion, local upload expansion, package construction, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, RAG/vector indexing, qualitative-hybrid analysis runtime, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, and hidden LLM planning remain blocked.
 
 The next exact current-main posture is `implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync`.
+
+## Server Configured Operator Directory Text/Table Ingestion Runtime Proof
+
+Runtime proof: `744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md` implements `server_configured_operator_directory_text_table_ingestion` after source-family selection current-main sync.
+
+Implementation branch `codex/l3-source-directory-ingestion` starts from current-main checkpoint `f371f2c43d9578e9f909c6c705b35ac48ffc24fb`.
+
+The canonical durable authorities are `L3SourceDirectoryIngestionBatch` and `L3SourceDirectoryIngestionFile`, backed by migration `backend/alembic/versions/0034_layer3_source_directory_ingestion.py`.
+
+The service owner is `backend/app/services/layer3_source_directory_ingestion.py`; the API owner is `backend/app/api/layer3.py`; the boundary contract owner is `backend/app/services/layer3_source_boundary.py`.
+
+The admitted scan route is `POST /api/v1/layer3/source/ingestion/server-configured-directory/scan`; the admitted status route is `GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}`.
+
+Runtime behavior change in this pass: `true`.
+
+The runtime is bounded to direct child `.csv`, `.json`, `.txt`, and `.md` files under server/operator-configured `LAYER3_SOURCE_INGESTION_DIR`. It rejects caller-supplied paths, URLs, glob patterns, recursive flags, browser-supplied file bytes, non-file direct children, symlinks, unsupported extensions, empty directories, empty files, oversized files/batches, non-UTF text, invalid JSON, duplicate conflicting relative names, stale file identity, and configured roots that are unset, relative, missing, not directories, inside app-owned storage, inside local-outbox staging, or inside external local export staging.
+
+Observed branch validation: `python -m py_compile .\backend\app\services\layer3_source_directory_ingestion.py .\backend\app\api\layer3.py .\backend\app\models\models.py .\backend\alembic\versions\0034_layer3_source_directory_ingestion.py`; and `python -m pytest .\backend\tests\test_layer3_source_directory_ingestion.py .\backend\tests\test_layer3_source_boundary.py .\backend\tests\test_layer3_source_intake.py .\backend\tests\test_layer3_model_exports.py .\backend\tests\test_layer3_api.py::test_layer3_forbidden_sentinel_openapi_fields_are_impossible -q` -> `29 passed`.
+
+This pass does not admit PDFs, OCR, Office documents, arbitrary binaries, web connectors, arbitrary recursive ingestion, local upload expansion, RAG/vector indexing, qualitative-hybrid runtime, package construction or rewrite, source `L3OutputPackage` mutation, connector dispatch, provider-public behavior, credentialed network behavior, auth/security broadening, rendered controls, frontend-durable authority, or hidden LLM planning.
+
+The next exact posture after merge is `await_current_main_sync_for_server_configured_operator_directory_text_table_ingestion_runtime_proof`; after sync, the next exact posture is `select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync`.

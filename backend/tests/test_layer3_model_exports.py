@@ -31,6 +31,8 @@ L3_MODEL_NAMES = (
     "L3RetrievalEvent",
     "L3SelectionManifest",
     "L3Session",
+    "L3SourceDirectoryIngestionBatch",
+    "L3SourceDirectoryIngestionFile",
     "L3SignedReferenceAuditEvent",
     "L3SignedReferenceReceipt",
     "L3SignedReferenceRevocation",
