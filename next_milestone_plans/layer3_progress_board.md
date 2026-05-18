@@ -6346,3 +6346,31 @@ The synced runtime keeps `new_source_family_enabled: False`, `arbitrary_source_i
 No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable frontend authority, frontend-rendered controls, source package row mutation, package payload rewrite, package construction, package mutation/reconstruction, handoff/export rerun, provider-public delivery/use broadening, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, vector indexing expansion, embedding generation expansion, persistent vector store, prompt/model/provider runtime, qualitative generation runtime, new RAG execution, raw local path exposure, full segment text exposure, raw vector exposure, or source `L3OutputPackage` mutation is admitted by this sync.
 
 The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync`.
+
+## Source Directory Qualitative Analysis Package Preview Runtime Entry Freeze
+
+Branch-local implementation-entry freeze and runtime proof: `802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE.md` follows the source-directory operator readiness/status surface runtime current-main sync and resolves `select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync` by selecting the source-directory qualitative-analysis read-only package-review preview runtime.
+
+Runtime branch `codex/l3-source-package-preview` starts from current-main checkpoint `7da0b5bd3f4d992f24de250956360d1515bdfa65`.
+
+Selected implementation action: `implement_source_directory_qualitative_analysis_read_only_package_review_preview_after_operator_status_surface_sync`.
+
+Runtime status after implementation: `source_directory_qualitative_analysis_package_preview_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented runtime owners: `backend/app/services/layer3_source_directory_qualitative_analysis.py` and `backend/app/api/layer3.py`.
+
+Implemented proof test: `backend/tests/test_layer3_source_directory_qualitative_analysis.py`.
+
+The source-directory qualitative-hybrid analysis response now exposes `source_directory_package_review_preview_enabled`, `source_directory_package_review_preview_hash`, and `source_directory_package_review_preview`.
+
+The read-only package preview uses schema `layer3.source_directory_qualitative_analysis_package_review_preview.v1`, mode `read_only_source_directory_qualitative_analysis_package_review_preview`, and source gate `802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE`.
+
+Candidate package kinds are `canonical_internal`, `user_facing`, and `review_facing`, but package commit, package-review submit, handoff, and external export/download remain disabled.
+
+The focused proof passed with `5 passed`.
+
+No package construction, package-review submit, package payload write, package payload rewrite, source package row mutation, package mutation/reconstruction, replacement package row creation, handoff/export rerun, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this runtime.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_qualitative_analysis_package_preview_runtime`; after sync, pivot to the next named Layer 3 end-to-end gap unless current-main evidence shows a concrete unresolved package-preview defect or named downstream reader.

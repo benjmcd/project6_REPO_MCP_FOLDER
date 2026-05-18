@@ -32021,5 +32021,38 @@
   "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_current_main_sync_status": "current_main_synced_source_directory_operator_readiness_bootstrap_status_surface_runtime",
   "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync",
-  "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_current_main_sync_summary": "Doc 801 proof syncs the source-directory operator readiness/status surface runtime after PR #1405 and pivots to the next named Layer 3 end-to-end gap selection."
+  "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_current_main_sync_summary": "Doc 801 proof syncs the source-directory operator readiness/status surface runtime after PR #1405 and pivots to the next named Layer 3 end-to-end gap selection.",
+  "source_directory_qualitative_analysis_package_preview_runtime_entry_proof": {
+    "proof_kind": "branch_local_source_directory_qualitative_analysis_package_preview_runtime_entry",
+    "status": "source_directory_qualitative_analysis_package_preview_runtime_implemented_branch_local",
+    "runtime_branch": "codex/l3-source-package-preview",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE.md",
+    "current_main_preflight_checkpoint": "7da0b5bd3f4d992f24de250956360d1515bdfa65",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "selected_from_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync",
+    "runtime_behavior_change": true,
+    "proof_commands": [
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py -q"
+    ],
+    "proof_results": [
+      "PASS 5 passed"
+    ],
+    "proof_coverage": [
+      "source-directory qualitative-hybrid analysis response exposes source_directory_package_review_preview_enabled",
+      "source-directory qualitative-hybrid analysis response exposes deterministic source_directory_package_review_preview_hash",
+      "package preview schema is layer3.source_directory_qualitative_analysis_package_review_preview.v1",
+      "package preview mode is read_only_source_directory_qualitative_analysis_package_review_preview",
+      "package preview source gate is 802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE",
+      "candidate package kinds remain canonical_internal user_facing review_facing",
+      "package commit package-review submit handoff and external export/download remain disabled",
+      "no package rows payload writes source package row mutation connector provider network frontend durable prompt/model/provider or qualitative generation runtime is admitted"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_qualitative_analysis_package_preview_runtime",
+    "next_posture_after_sync": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_preview_sync"
+  },
+  "latest_source_directory_qualitative_analysis_package_preview_runtime_entry_branch": "codex/l3-source-package-preview",
+  "latest_source_directory_qualitative_analysis_package_preview_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE.md",
+  "latest_source_directory_qualitative_analysis_package_preview_runtime_entry_status": "source_directory_qualitative_analysis_package_preview_runtime_implemented_branch_local",
+  "latest_source_directory_qualitative_analysis_package_preview_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_qualitative_analysis_package_preview_runtime",
+  "latest_source_directory_qualitative_analysis_package_preview_runtime_entry_summary": "Doc 802 proof records read-only source-directory qualitative-analysis package preview metadata and preserves all package construction, mutation, provider, connector, network, frontend, and prompt/model/provider non-admissions."
 }
