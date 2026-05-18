@@ -2258,6 +2258,10 @@ LAYER3_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY = (
     PLANNING_DOCS
     / "812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "813_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -71308,6 +71312,87 @@ def _check_source_directory_external_export_download_prepare_runtime_entry(
                 )
 
 
+def _check_source_directory_external_export_download_prepare_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_external_export_download_prepare_runtime`.",
+        "813_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+        "PR `#1417`",
+        "38bb55594d6c1129a4d11e872f884ebd865e218f",
+        "061a65074d91c86815e5dfe28a6deaad7f896184",
+        "codex/l3-next-gap-sync",
+        "current_main_synced_source_directory_external_export_download_prepare_runtime",
+        "Runtime behavior introduced by this sync: `false`.",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/prepare",
+        "source_directory_external_export_download_prepare_admitted",
+        "layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1",
+        "source_directory_qualitative_analysis_external_export_download_prepare_authority",
+        "layer3.external_export_download_prepare_state.v1",
+        "already_prepared",
+        "`backend-layer3-api`: `SUCCESS`, `2m59s`",
+        "`test`: `SUCCESS`, `3m40s`",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "`python .\\tools\\l3-progress-check.py` - `PASS`",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory external export/download prepare sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory External Export Download Prepare Runtime Current-Main Sync",
+            "813_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1417`",
+            "061a65074d91c86815e5dfe28a6deaad7f896184",
+            "current_main_synced_source_directory_external_export_download_prepare_runtime",
+            "source_directory_external_export_download_prepare_admitted",
+            "Runtime behavior introduced by this sync: `false`.",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync",
+        ),
+        MANIFEST: (
+            "source_directory_external_export_download_prepare_runtime_current_main_sync",
+            "current_main_synced_source_directory_external_export_download_prepare_runtime",
+            '"runtime_pr": "#1417"',
+            "061a65074d91c86815e5dfe28a6deaad7f896184",
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads": 0',
+            '"runtime_behavior_in_this_sync": false',
+            "source_directory_external_export_download_prepare_admitted",
+            '"same_origin_delivery_enabled": false',
+            '"connector_dispatch_enabled": false',
+            '"frontend_rendered_controls_enabled": false',
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_external_export_download_prepare_runtime_current_main_sync_proof",
+            "current_main_sync_source_directory_external_export_download_prepare_runtime",
+            "current_main_synced_source_directory_external_export_download_prepare_runtime",
+            '"runtime_pr": "#1417"',
+            "061a65074d91c86815e5dfe28a6deaad7f896184",
+            "current main includes the source-directory external export/download prepare route",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory external export/download prepare sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -71995,6 +72080,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_external_export_download_prepare_runtime_entry(errors)
+    _check_source_directory_external_export_download_prepare_runtime_current_main_sync(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")

@@ -6628,3 +6628,27 @@ Proof: `python -m pytest .\backend\tests\test_layer3_source_directory_qualitativ
 Non-admitted: models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, same-origin delivery/streaming, browser download, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, and full mockup activation.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_external_export_download_prepare_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync` unless current-main evidence shows a concrete unresolved source-directory external export/download prepare defect or named downstream reader.
+
+## Source Directory External Export Download Prepare Runtime Current-Main Sync
+
+Current-main proof/control sync: `813_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1417` for `source_directory_external_export_download_prepare_runtime`.
+
+Runtime branch `codex/l3-next-gap` landed branch commit `38bb55594d6c1129a4d11e872f884ebd865e218f` into current main at merge commit `061a65074d91c86815e5dfe28a6deaad7f896184`.
+
+Synced result: `current_main_synced_source_directory_external_export_download_prepare_runtime`.
+
+Current main now includes the source-directory external export/download prepare route `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/prepare`.
+
+Current main also includes bootstrap/readiness exposure for `source_directory_external_export_download_prepare` and `source_directory_external_export_download_prepare_admitted`.
+
+PR `#1417` had green `backend-layer3-api` (`2m59s`) and `test` (`3m40s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime keeps `same_origin_delivery_enabled: False`, `browser_download_enabled: False`, `provider_public_delivery_enabled: False`, `provider_private_signed_url_enabled: False`, `connector_dispatch_enabled: False`, `network_egress_enabled: False`, `frontend_durable_authority_enabled: False`, `frontend_rendered_controls_enabled: False`, `package_payload_write_enabled: False`, `package_mutation_reconstruction_enabled: False`, `source_package_row_mutation_enabled: False`, and `new_source_family_enabled: False`.
+
+No models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, same-origin delivery/streaming, browser download, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this sync.
+
+The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync`.
