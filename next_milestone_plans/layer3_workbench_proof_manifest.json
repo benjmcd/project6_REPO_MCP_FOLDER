@@ -32217,5 +32217,45 @@
   "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
   "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_status": "source_directory_qualitative_analysis_package_review_submit_runtime_implemented_branch_local",
   "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_qualitative_analysis_package_review_submit_runtime",
-  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_summary": "Doc 806 proof records the bounded source-directory qualitative-analysis package-review submit runtime, including durable submit state, idempotent replay, stale construction-basis rejection, redacted payload refs, and all downstream non-admissions."
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_summary": "Doc 806 proof records the bounded source-directory qualitative-analysis package-review submit runtime, including durable submit state, idempotent replay, stale construction-basis rejection, redacted payload refs, and all downstream non-admissions.",
+  "source_directory_qualitative_analysis_package_review_submit_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_qualitative_analysis_package_review_submit_runtime",
+    "status": "current_main_synced_source_directory_qualitative_analysis_package_review_submit_runtime",
+    "sync_branch": "codex/l3-source-package-review-submit-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/807_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
+    "runtime_pr": "#1411",
+    "runtime_branch_commit": "118b5e076341a941d3f222329af9dbc742ffc00e",
+    "runtime_merge_commit": "2bcf6035d5e0f75f2e6dd4596ed41b10378d0fcf",
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "backend-layer3-api_duration": "3m10s",
+      "test": "SUCCESS",
+      "test_duration": "3m48s",
+      "comments": 0,
+      "reviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "proof_coverage": [
+      "current main includes source-directory qualitative-analysis package-review submit route",
+      "current main includes layer3.source_directory_qualitative_analysis_package_review_submit.v1",
+      "current main includes source_directory_qualitative_analysis_package_review_submit_authority",
+      "current main includes layer3.package_review_submit_state.v1",
+      "current main records PR #1411 merged at 2bcf6035d5e0f75f2e6dd4596ed41b10378d0fcf",
+      "current main records green backend-layer3-api and test checks for PR #1411",
+      "current main records zero PR comments reviews and review threads",
+      "current main sync introduces no additional runtime behavior",
+      "select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync is selected as the next posture"
+    ],
+    "next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync"
+  },
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_current_main_sync_branch": "codex/l3-source-package-review-submit-sync",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/807_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_current_main_sync_status": "current_main_synced_source_directory_qualitative_analysis_package_review_submit_runtime",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_current_main_sync_summary": "Doc 807 proof syncs the source-directory qualitative-analysis package-review submit runtime after PR #1411 and pivots to the next named Layer 3 end-to-end gap selection."
 }
