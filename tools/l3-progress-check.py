@@ -2230,6 +2230,10 @@ LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURREN
     PLANNING_DOCS
     / "805_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -70553,6 +70557,138 @@ def _check_source_directory_qualitative_analysis_package_construction_runtime_cu
                 )
 
 
+def _check_source_directory_qualitative_analysis_package_review_submit_runtime_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze and runtime proof for `source_directory_qualitative_analysis_package_review_submit_runtime`.",
+        "806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
+        "codex/l3-source-package-review-submit",
+        "4f4c6229f456a2c8482b7e94e595bac5db5bc079",
+        "805_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync",
+        "implement_source_directory_qualitative_analysis_package_review_submit_after_package_construction_commit_sync",
+        "source_directory_qualitative_analysis_package_review_submit_runtime_implemented_branch_local",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/review/submit",
+        "layer3.source_directory_qualitative_analysis_package_review_submit.v1",
+        "source_directory_qualitative_analysis_package_review_submit_authority",
+        "layer3.package_review_submit_state.v1",
+        "package_review_approved",
+        "already_submitted",
+        "source_directory_package_review_submit_construction_mismatch",
+        "payload_refs_redacted: True",
+        "9 passed",
+        "await_current_main_sync_for_source_directory_qualitative_analysis_package_review_submit_runtime",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY)} "
+                f"missing source-directory package-review submit runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Qualitative Analysis Package Review Submit Runtime Entry Freeze",
+            "806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
+            "codex/l3-source-package-review-submit",
+            "4f4c6229f456a2c8482b7e94e595bac5db5bc079",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync",
+            "source_directory_qualitative_analysis_package_review_submit_runtime_implemented_branch_local",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/review/submit",
+            "layer3.source_directory_qualitative_analysis_package_review_submit.v1",
+            "source_directory_qualitative_analysis_package_review_submit_authority",
+            "layer3.package_review_submit_state.v1",
+            "package_review_approved",
+            "already_submitted",
+            "9 passed",
+            "payload refs redacted",
+            "await_current_main_sync_for_source_directory_qualitative_analysis_package_review_submit_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_qualitative_analysis_package_review_submit_runtime_entry",
+            "source_directory_qualitative_analysis_package_review_submit_runtime_implemented_branch_local",
+            "codex/l3-source-package-review-submit",
+            "806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
+            "4f4c6229f456a2c8482b7e94e595bac5db5bc079",
+            "805_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "implement_source_directory_qualitative_analysis_package_review_submit_after_package_construction_commit_sync",
+            '"runtime_behavior_change": true',
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/review/submit",
+            "layer3.source_directory_qualitative_analysis_package_review_submit.v1",
+            "source_directory_qualitative_analysis_package_review_submit_authority",
+            "layer3.package_review_submit_state.v1",
+            '"package_rows_written": false',
+            '"package_payload_write_enabled": false',
+            '"payload_refs_redacted": true',
+            '"network_egress_enabled": false',
+            '"prompt_model_provider_runtime_enabled": false',
+            "await_current_main_sync_for_source_directory_qualitative_analysis_package_review_submit_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_qualitative_analysis_package_review_submit_runtime_entry_proof",
+            "branch_local_source_directory_qualitative_analysis_package_review_submit_runtime_entry",
+            "source_directory_qualitative_analysis_package_review_submit_runtime_implemented_branch_local",
+            "codex/l3-source-package-review-submit",
+            "806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
+            "submit schema is layer3.source_directory_qualitative_analysis_package_review_submit.v1",
+            "submit state schema is layer3.package_review_submit_state.v1",
+            "runtime replay returns already_submitted",
+            "stale construction_basis_hash is rejected",
+            "payload references are redacted from the API response",
+            "no new package rows package payloads L3PassRun AnalysisRun ConnectorRun or ConnectorRunTarget rows are written",
+            "await_current_main_sync_for_source_directory_qualitative_analysis_package_review_submit_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package-review submit artifact term: {term}"
+                )
+
+    service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE, errors)
+    for term in (
+        "PACKAGE_REVIEW_SUBMIT_SCHEMA_ID",
+        "PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID",
+        "PACKAGE_REVIEW_SUBMIT_SOURCE_GATE",
+        "def source_directory_qualitative_analysis_package_review_submit(",
+        "source_directory_package_review_submit_construction_mismatch",
+        "payload_refs_redacted",
+    ):
+        if term not in service_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE)} "
+                f"missing source-directory package-review submit service term: {term}"
+            )
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "Layer3SourceDirectoryQualitativeAnalysisPackageReviewSubmitRequest",
+        "Layer3SourceDirectoryQualitativeAnalysisPackageReviewSubmitResponse",
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/review/submit",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing source-directory package-review submit API term: {term}")
+
+    test_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST, errors)
+    for term in (
+        "test_source_directory_qualitative_analysis_package_review_submit_records_bounded_authority",
+        "test_source_directory_qualitative_analysis_package_review_submit_rejects_stale_construction",
+        "already_submitted",
+        "source_directory_package_review_submit_construction_mismatch",
+    ):
+        if term not in test_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST)} "
+                f"missing source-directory package-review submit test term: {term}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -71225,6 +71361,7 @@ def main() -> int:
     _check_source_directory_qualitative_analysis_package_construction_runtime_current_main_sync(
         errors
     )
+    _check_source_directory_qualitative_analysis_package_review_submit_runtime_entry(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
