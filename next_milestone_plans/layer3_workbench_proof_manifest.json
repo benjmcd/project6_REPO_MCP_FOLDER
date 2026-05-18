@@ -30205,5 +30205,49 @@
   "latest_source_directory_material_source_index_authority_contract_doc": "next_milestone_plans/Layer3_planning_docs/752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md",
   "latest_source_directory_material_source_index_authority_contract_status": "branch_local_source_directory_material_source_index_authority_contract_written",
   "latest_source_directory_material_source_index_authority_contract_next_posture_after_merge": "current_main_sync_source_directory_material_source_index_authority_contract",
-  "latest_source_directory_material_source_index_authority_contract_summary": "Doc 752 proof records the deterministic text source-index authority contract and keeps vector, embedding, retrieval, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, and auth/security behavior blocked."
+  "latest_source_directory_material_source_index_authority_contract_summary": "Doc 752 proof records the deterministic text source-index authority contract and keeps vector, embedding, retrieval, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, and auth/security behavior blocked.",
+  "source_directory_material_source_index_authority_contract_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_source_index_authority_contract",
+    "status": "current_main_synced_source_directory_material_source_index_authority_contract",
+    "sync_branch": "codex/l3-source-index-contract-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+    "synced_contract_doc": "next_milestone_plans/Layer3_planning_docs/752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md",
+    "contract_pr": "#1357",
+    "contract_branch_commit": "bf5d1cadcc99d609a67baac663a7974604af7f26",
+    "contract_merge_commit": "341577839d279c9128c3203a06d5ec87ab1351f1",
+    "current_main_checkpoint_after_merge": "341577839d279c9128c3203a06d5ec87ab1351f1",
+    "runtime_behavior_introduced_by_contract": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": [
+      "json manifest load: PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen: PASS (frozen)",
+      "git diff --check: PASS"
+    ],
+    "proof_coverage": [
+      "current main includes Doc 752 source-directory material source/index authority contract",
+      "current main records PR #1357 merged at 341577839d279c9128c3203a06d5ec87ab1351f1",
+      "current main records green backend-layer3-api and test checks for PR #1357",
+      "current main records zero PR comments, reviews, and review threads",
+      "current main post-merge progress checker passes",
+      "current main post-merge target-selection validation remains frozen",
+      "no runtime behavior introduced by this sync",
+      "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync is selected for the next implementation posture"
+    ],
+    "next_posture": "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync"
+  },
+  "latest_source_directory_material_source_index_authority_contract_current_main_sync_branch": "codex/l3-source-index-contract-sync",
+  "latest_source_directory_material_source_index_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/753_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_source_index_authority_contract_current_main_sync_status": "current_main_synced_source_directory_material_source_index_authority_contract",
+  "latest_source_directory_material_source_index_authority_contract_current_main_sync_next_posture": "implement_source_directory_material_deterministic_text_index_authority_after_contract_sync",
+  "latest_source_directory_material_source_index_authority_contract_current_main_sync_summary": "Doc 753 proof syncs the source-directory deterministic text source/index contract after PR #1357 and keeps vector, embedding, retrieval, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, and auth/security behavior blocked."
 }
