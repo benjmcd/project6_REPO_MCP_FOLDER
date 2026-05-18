@@ -29756,5 +29756,53 @@
   "latest_corrected_artifact_active_authority_external_local_export_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/740_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION.md",
   "latest_corrected_artifact_active_authority_external_local_export_evaluation_status": "branch_local_corrected_artifact_active_authority_external_local_export_proven",
   "latest_corrected_artifact_active_authority_external_local_export_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_external_local_export_evaluation",
-  "latest_corrected_artifact_active_authority_external_local_export_evaluation_summary": "Doc 740 proves corrected-artifact active authority reaches external local export after local-outbox provider-private handoff and selects source expansion/ingestion as the next deferred lane after sync unless current-main evidence identifies a concrete unresolved defect or another named downstream reader."
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_summary": "Doc 740 proves corrected-artifact active authority reaches external local export after local-outbox provider-private handoff and selects source expansion/ingestion as the next deferred lane after sync unless current-main evidence identifies a concrete unresolved defect or another named downstream reader.",
+  "corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_corrected_artifact_active_authority_external_local_export_evaluation",
+    "status": "current_main_synced_corrected_artifact_active_authority_external_local_export_evaluation",
+    "sync_branch": "codex/l3-corrected-external-local-export-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/741_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/740_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION.md",
+    "evaluation_pr": "#1345",
+    "evaluation_branch_commit": "608bf65432382d193b339eca31f792bb38d4ae2a",
+    "evaluation_merge_commit": "7a936f37c2858ea813a3d8763dfe8b740114d54a",
+    "current_main_checkpoint_after_merge": "7a936f37c2858ea813a3d8763dfe8b740114d54a",
+    "evaluation_result": "corrected_artifact_active_authority_external_local_export_proven",
+    "runtime_behavior_introduced_by_evaluation": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen: PASS (frozen)",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority -q: 1 passed"
+    ],
+    "synced_runtime_route": "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+    "synced_reader": "recorded local_outbox_provider_private_handoff, server_owned_local_outbox_write, server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, and external_export_download_prepare state",
+    "proof_coverage": [
+      "current main includes Doc 740 corrected-artifact external local export evaluation",
+      "current main includes focused corrected-artifact external local export API regression evidence",
+      "current main records PR #1345 merged at 7a936f37c2858ea813a3d8763dfe8b740114d54a",
+      "current main records green backend-layer3-api and test checks for PR #1345",
+      "current main records zero PR comments, reviews, latest reviews, and review threads",
+      "current main post-merge progress checker passes",
+      "current main post-merge target-selection validation remains frozen",
+      "focused corrected-artifact API regression passes after merge",
+      "no runtime behavior introduced by the evaluation or this sync",
+      "next major deferred lane is source expansion/ingestion with one named source family"
+    ],
+    "next_posture": "select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync"
+  },
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_branch": "codex/l3-corrected-external-local-export-sync",
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/741_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_external_local_export_evaluation",
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_next_posture": "select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync",
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_summary": "Doc 741 proof syncs corrected-artifact active authority external local export evaluation after PR #1345 and pivots next to source expansion/ingestion with one named source family."
 }

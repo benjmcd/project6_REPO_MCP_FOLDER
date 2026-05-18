@@ -28626,5 +28626,45 @@
   "latest_corrected_artifact_active_authority_external_local_export_evaluation_status": "branch_local_corrected_artifact_active_authority_external_local_export_proven",
   "latest_corrected_artifact_active_authority_external_local_export_evaluation_runtime_behavior_change": false,
   "latest_corrected_artifact_active_authority_external_local_export_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_external_local_export_evaluation",
-  "latest_corrected_artifact_active_authority_external_local_export_evaluation_summary": "Doc 740 extends the corrected-artifact active package authority API regression through external_local_export after local-outbox provider-private handoff. This pass adds proof coverage only, admits no service runtime behavior change, and selects source expansion/ingestion as the next deferred lane after current-main sync unless current-main evidence identifies a concrete unresolved defect or another named downstream reader."
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_summary": "Doc 740 extends the corrected-artifact active package authority API regression through external_local_export after local-outbox provider-private handoff. This pass adds proof coverage only, admits no service runtime behavior change, and selects source expansion/ingestion as the next deferred lane after current-main sync unless current-main evidence identifies a concrete unresolved defect or another named downstream reader.",
+  "corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync": {
+    "status": "current_main_synced_corrected_artifact_active_authority_external_local_export_evaluation",
+    "sync_branch": "codex/l3-corrected-external-local-export-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/741_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/740_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION.md",
+    "evaluation_pr": "#1345",
+    "evaluation_branch": "codex/l3-corrected-external-local-export",
+    "evaluation_branch_commit": "608bf65432382d193b339eca31f792bb38d4ae2a",
+    "evaluation_merge_commit": "7a936f37c2858ea813a3d8763dfe8b740114d54a",
+    "current_main_checkpoint_after_merge": "7a936f37c2858ea813a3d8763dfe8b740114d54a",
+    "evaluation_result": "corrected_artifact_active_authority_external_local_export_proven",
+    "runtime_behavior_introduced_by_evaluation": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": {
+      "python .\\tools\\l3-progress-check.py": "PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen": "PASS (frozen)",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority -q": "1 passed"
+    },
+    "synced_runtime_route": "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+    "synced_reader": "recorded local_outbox_provider_private_handoff, server_owned_local_outbox_write, server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, and external_export_download_prepare state",
+    "synced_runtime_owner": "backend/app/services/layer3_external_local_export.py",
+    "durable_receipt_authority": "L3ExternalLocalExportReceipt",
+    "durable_audit_authority": "L3ExternalLocalExportAuditEvent",
+    "next_posture": "select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync"
+  },
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_branch": "codex/l3-corrected-external-local-export-sync",
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/741_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_external_local_export_evaluation",
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_runtime_behavior_change": false,
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_next_posture": "select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync",
+  "latest_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync_summary": "Doc 741 syncs PR #1345 merge commit 7a936f37c2858ea813a3d8763dfe8b740114d54a to current main. Current main now records that corrected-artifact active package authority reaches external_local_export after local-outbox provider-private handoff, with no runtime behavior introduced by either the evaluation or this sync, and pivots next to a named source expansion/ingestion family."
 }
