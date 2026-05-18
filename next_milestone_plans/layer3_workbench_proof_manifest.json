@@ -31030,5 +31030,46 @@
   "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/775_PROVIDER_PUBLIC_AUTH_SYNC.md",
   "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync_status": "current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
   "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync_next_posture": "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
-  "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync_summary": "Doc 775 proof syncs the provider-public authority selection freeze after PR #1379 and moves the next posture to write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime, with provider-public delivery/use routes, raw public URL exposure, public_url_enabled true, public proxy runtime, provider credentials/adapters/object writes, rendered controls, package, connector, source expansion, RAG/vector, auth/security, network, frontend-durable, full mockup, and raw-path behavior still blocked."
+  "latest_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync_summary": "Doc 775 proof syncs the provider-public authority selection freeze after PR #1379 and moves the next posture to write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime, with provider-public delivery/use routes, raw public URL exposure, public_url_enabled true, public proxy runtime, provider credentials/adapters/object writes, rendered controls, package, connector, source expansion, RAG/vector, auth/security, network, frontend-durable, full mockup, and raw-path behavior still blocked.",
+  "provider_public_delivery_use_exposure_security_revocation_authority_contract_proof": {
+    "proof_kind": "planning_control_authority_contract_provider_public_delivery_use_exposure_security_revocation",
+    "status": "planning_control_authority_contract_no_runtime",
+    "branch": "codex/l3-provider-public-contract",
+    "contract_doc": "next_milestone_plans/Layer3_planning_docs/776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+    "current_main_preflight_checkpoint": "9904ece3a6d34c910fe33231253e952f2d3e6811",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/775_PROVIDER_PUBLIC_AUTH_SYNC.md",
+    "predecessor_synced_result": "current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync",
+    "selected_from_posture": "write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime",
+    "contract_result": "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent",
+    "runtime_behavior_change": false,
+    "proof_coverage": [
+      "current main includes Doc 775 provider-public authority selection current-main sync",
+      "current main provider-public authority is redacted prepare status revoke state only",
+      "current main uses fake provider authority layer3_provider_public_url_fake_provider",
+      "raw_public_url_exposed remains false",
+      "public_url_enabled remains false",
+      "no provider-public delivery/use route is admitted",
+      "no raw public URL exposure is admitted",
+      "no provider adapter credential object write copy mutation ACL public proxy rendered controls auth security network frontend durable package connector source expansion RAG vector prompt model provider runtime full mockup or raw local path behavior is admitted",
+      "provider-public delivery/use runtime remains blocked until exposure security revocation provider object-store public access leak-control and audit authority are selected"
+    ],
+    "future_admission_requirements": [
+      "provider mode selection",
+      "exposure model",
+      "security model",
+      "revocation model",
+      "leak-control model",
+      "provider object-store model",
+      "HTTP delivery model",
+      "proof model"
+    ],
+    "next_posture_after_merge": "current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+    "next_posture_after_sync": "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync"
+  },
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_branch": "codex/l3-provider-public-contract",
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_doc": "next_milestone_plans/Layer3_planning_docs/776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_status": "planning_control_authority_contract_no_runtime",
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_result": "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent",
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_next_posture_after_merge": "current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+  "latest_provider_public_delivery_use_exposure_security_revocation_authority_contract_summary": "Doc 776 proof records the provider-public exposure security revocation authority contract as no-runtime. Current-main provider-public authority remains redacted prepare/status/revoke state only, raw_public_url_exposed remains false, public_url_enabled remains false, and delivery/use runtime is blocked until exposure, security, revocation, provider/object-store, public access, leak-control, and audit authority are selected."
 }
