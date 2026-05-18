@@ -2102,6 +2102,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONT
     PLANNING_DOCS
     / "771_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "772_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -2122,6 +2126,12 @@ LAYER3_SOURCE_DIRECTORY_CONTEXT_PACKET_SERVICE = (
 )
 LAYER3_SOURCE_DIRECTORY_CONTEXT_PACKET_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_source_directory_context_packet.py"
+)
+LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_directory_qualitative_analysis.py"
+)
+LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_source_directory_qualitative_analysis.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0034_layer3_source_directory_ingestion.py"
@@ -66185,6 +66195,152 @@ def _check_source_directory_material_context_packet_qualitative_hybrid_analysis_
                 )
 
 
+def _check_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof(
+    errors: list[str],
+) -> None:
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime proof for `source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof`.",
+        "772_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF.md",
+        "codex/l3-qual-analysis-runtime",
+        "047b8c7b0cc1f33399956ae150bc09e37f78868d",
+        "771_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+        "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync",
+        "source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_implemented_branch_local",
+        "Runtime behavior introduced by this pass: `true`.",
+        "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+        "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+        "source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)",
+        "source_directory_material_retrieval_augmented_context_packet(db, payload)",
+        "context_packet_contract_id",
+        "context_packet_mode",
+        "layer3.source_directory_context_packet.v1",
+        "layer3.source_directory_qualitative_analysis.v1",
+        "qualitative_analysis_hash",
+        "evidence_summary",
+        "salient_terms",
+        "supporting_segments",
+        "coverage_notes",
+        "analysis_limits",
+        "context_packet_rows_written: False",
+        "qualitative_analysis_rows_written: False",
+        "connector_rows_written: False",
+        "stale `index_authority_hash` rejection",
+        "empty or whitespace-only `analysis_question` rejection",
+        "forbidden prompt/model/provider/vector/package/connector/path/runtime-db-write field rejection",
+        "no `L3PassRun`, `AnalysisRun`, `L3OutputPackage`, `ConnectorRun`, or `ConnectorRunTarget` side effects",
+        "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_qualitative_analysis.py .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py",
+        "python -m pytest .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py -q",
+        "4 passed",
+        "await_current_main_sync_for_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof",
+        "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF)} "
+                f"missing source directory qualitative analysis runtime proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Context-Packet Qualitative-Hybrid Analysis Runtime Proof",
+            "772_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF.md",
+            "codex/l3-qual-analysis-runtime",
+            "047b8c7b0cc1f33399956ae150bc09e37f78868d",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_implemented_branch_local",
+            "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+            "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)",
+            "layer3.source_directory_qualitative_analysis.v1",
+            "qualitative_analysis_hash",
+            "4 passed",
+            "no `L3PassRun`, `AnalysisRun`, `L3OutputPackage`, `ConnectorRun`, or `ConnectorRunTarget` side effects",
+            "await_current_main_sync_for_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof",
+        ),
+        MANIFEST: (
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_implemented_branch_local",
+            "codex/l3-qual-analysis-runtime",
+            "772_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF.md",
+            "047b8c7b0cc1f33399956ae150bc09e37f78868d",
+            "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+            "context_packet_grounded_qualitative_hybrid_analysis",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "layer3.source_directory_context_packet.v1",
+            "layer3.source_directory_qualitative_analysis.v1",
+            '"runtime_behavior_change": true',
+            "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+            "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)",
+            "computes deterministic qualitative_analysis_hash",
+            "PASS 4 passed",
+            "await_current_main_sync_for_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof",
+            "select_next_major_layer3_deferred_lane_after_source_directory_qualitative_analysis_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof",
+            "branch_local_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_implemented_branch_local",
+            "772_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_RUNTIME_PROOF.md",
+            "047b8c7b0cc1f33399956ae150bc09e37f78868d",
+            "stable qualitative_analysis_hash replay",
+            "returned context-packet authority validation",
+            "stale index_authority_hash rejection through the context-packet and retrieval path",
+            "no L3PassRun AnalysisRun L3OutputPackage ConnectorRun or ConnectorRunTarget side effects",
+            "PASS 4 passed",
+            "await_current_main_sync_for_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof",
+        ),
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE: (
+            'SCHEMA_ID = "layer3.source_directory_qualitative_analysis.v1"',
+            'MODE = "source_directory_material_context_packet_qualitative_hybrid_analysis_authority"',
+            'ANALYSIS_CONTRACT_ID = "source_directory_material_context_packet_qualitative_hybrid_analysis_authority"',
+            'ANALYSIS_MODE = "context_packet_grounded_qualitative_hybrid_analysis"',
+            "def source_directory_material_context_packet_qualitative_hybrid_analysis(",
+            "source_directory_material_retrieval_augmented_context_packet(",
+            "def _assert_context_packet_authority(",
+            "source_directory_qualitative_analysis_context_packet_authority_mismatch",
+            "source_directory_qualitative_analysis_forbidden_field_not_admitted",
+            "source_directory_qualitative_analysis_unknown_field",
+            "qualitative_analysis_hash",
+            '"evidence_summary": evidence_summary',
+            '"salient_terms": salient_terms',
+            '"supporting_segments": supporting_segments',
+            '"coverage_notes": coverage_notes',
+            '"analysis_limits": analysis_limits',
+            '"context_packet_rows_written": False',
+            '"qualitative_analysis_rows_written": False',
+            '"connector_rows_written": False',
+            "prompt_model_provider_runtime_enabled",
+            "raw_local_path_exposed",
+        ),
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST: (
+            "test_source_directory_qualitative_analysis_returns_deterministic_extract_without_side_effects",
+            "test_source_directory_qualitative_analysis_rejects_stale_authority_through_context_packet_path",
+            "test_source_directory_qualitative_analysis_validates_request_fields_and_no_match",
+            "test_source_directory_qualitative_analysis_validates_context_packet_authority",
+            "SourceDirectoryTextRetrievalError",
+            "SourceDirectoryTextIndexError",
+            "SourceDirectoryQualitativeAnalysisError",
+            "qualitative_analysis_hash",
+            "forbidden_fields",
+            "_assert_no_downstream_side_effects",
+            "L3PassRun",
+            "ConnectorRunTarget",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory qualitative analysis runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -66799,6 +66955,7 @@ def main() -> int:
     _check_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync(errors)
     _check_source_directory_material_context_packet_qualitative_hybrid_analysis_contract(errors)
     _check_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_current_main_sync(errors)
+    _check_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
