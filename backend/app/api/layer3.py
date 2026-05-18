@@ -2447,6 +2447,35 @@ class Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadDeliverReque
     operator_decision: Literal["deliver_source_directory_external_export_download"]
 
 
+class Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadDeliveryStatusResponse(Layer3BaseResponse):
+    mode: str
+    delivery_status: str
+    delivery_available: bool
+    delivery_streaming_performed: bool
+    delivery_state: str
+    source_gate: str
+    validated_delivery_source_gate: str
+    external_export_download_record_ref: str
+    export_download_descriptor_ref: str
+    output_package_id: str
+    package_kind: str
+    package_payload_hash: str
+    payload_ref_redacted: bool
+    raw_local_path_exposed: bool
+    same_origin_delivery_enabled: bool
+    browser_managed_same_origin_attachment_enabled: bool
+    provider_public_delivery_enabled: bool
+    provider_private_signed_url_enabled: bool
+    connector_dispatch_enabled: bool
+    network_egress_enabled: bool
+    frontend_durable_authority_enabled: bool
+    package_payload_rewrite_enabled: bool
+    source_package_row_mutation_enabled: bool
+    delivery_headers: dict[str, str]
+    delivery_authority: dict[str, Any]
+    next_allowed_actions: list[str]
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -7429,6 +7458,33 @@ def post_source_directory_qualitative_analysis_external_export_download_prepare(
     except (
         layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
         layer3_source_directory_qualitative_analysis.SourceDirectoryExternalExportDownloadPrepareError,
+        layer3_source_directory_qualitative_analysis.SourceDirectoryQualitativeAnalysisError,
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver/status",
+    response_model=Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadDeliveryStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_qualitative_analysis_external_export_download_delivery_status(
+    payload: Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadDeliverRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return (
+            layer3_source_directory_qualitative_analysis
+            .source_directory_qualitative_analysis_external_export_download_delivery_status(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
+        layer3_source_directory_qualitative_analysis.SourceDirectoryExternalExportDownloadDeliveryError,
         layer3_source_directory_qualitative_analysis.SourceDirectoryQualitativeAnalysisError,
         layer3_source_directory_text_index.SourceDirectoryTextIndexError,
         layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
