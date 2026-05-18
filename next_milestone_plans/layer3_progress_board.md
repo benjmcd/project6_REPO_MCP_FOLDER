@@ -6322,3 +6322,27 @@ The focused proof passed with `2 passed` for shared bootstrap/readiness contract
 No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable frontend authority, frontend-rendered controls, source package row mutation, package payload rewrite, package construction, package mutation/reconstruction, handoff/export rerun, provider-public delivery/use broadening, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, vector indexing expansion, embedding generation expansion, persistent vector store, prompt/model/provider runtime, qualitative generation runtime, new RAG execution, raw local path exposure, full segment text exposure, raw vector exposure, or source `L3OutputPackage` mutation is admitted by this runtime.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_operator_readiness_bootstrap_status_surface_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync` unless current-main evidence shows a concrete unresolved operator-status defect or named downstream reader.
+
+## Source Directory Operator Readiness Status Surface Runtime Current-Main Sync
+
+Current-main proof/control sync: `801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1405` for `source_directory_operator_readiness_bootstrap_status_surface_runtime`.
+
+Runtime branch `codex/l3-source-readiness` landed branch commit `70e44f40995c6e0954f1f282b8b4bb41c19375ba` into current main at merge commit `30716e5bf7f487ba79e60845f1c2bcff651ea4ec`.
+
+Synced result: `current_main_synced_source_directory_operator_readiness_bootstrap_status_surface_runtime`.
+
+Current main now includes `/bootstrap` feature flags, `/bootstrap` nested `execution_readiness` endpoint metadata, `/readiness` endpoint metadata, `Layer3ExecutionReadinessResponse` fields, and `source-directory-operator-status` readiness implemented-gate metadata for the already-admitted source-directory scan/status/material-preview/vector-retrieval/qualitative-hybrid analysis chain.
+
+The selected source family remains `server_configured_operator_directory_text_table_source_family`.
+
+PR `#1405` had green `backend-layer3-api` (`3m22s`) and `test` (`3m23s`) checks, comments totalCount `0`, reviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime keeps `new_source_family_enabled: False`, `arbitrary_source_ingestion_enabled: False`, `frontend_durable_authority_enabled: False`, `frontend_rendered_controls_enabled: False`, `package_mutation_enabled: False`, `connector_dispatch_enabled: False`, `provider_public_delivery_enabled: False`, `network_egress_enabled: False`, `vector_indexing_expansion_enabled: False`, `prompt_model_provider_runtime_enabled: False`, `raw_local_path_exposed: False`, `full_segment_text_exposed: False`, and `raw_vector_exposed: False`.
+
+No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable frontend authority, frontend-rendered controls, source package row mutation, package payload rewrite, package construction, package mutation/reconstruction, handoff/export rerun, provider-public delivery/use broadening, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, vector indexing expansion, embedding generation expansion, persistent vector store, prompt/model/provider runtime, qualitative generation runtime, new RAG execution, raw local path exposure, full segment text exposure, raw vector exposure, or source `L3OutputPackage` mutation is admitted by this sync.
+
+The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync`.
