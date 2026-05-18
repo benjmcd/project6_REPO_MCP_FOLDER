@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
 
+from app.models.models import L3MaterialSnapshot, L3Session
 from app.services.layer3_source_directory_context_packet import (
     CONTEXT_PACKET_CONTRACT_ID,
     CONTEXT_PACKET_MODE,
@@ -13,9 +14,13 @@ from app.services.layer3_source_directory_context_packet import (
     source_directory_material_retrieval_augmented_context_packet,
 )
 from app.services.layer3_package_entry import (
+    FINALIZED_PACKAGE_SESSION_STATUSES,
+    Layer3PackageEntryError,
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_REVIEW_FACING,
     PACKAGE_KIND_USER_FACING,
+    SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+    materialize_source_directory_qualitative_analysis_package_commit,
 )
 from app.services.layer3_source_directory_ingestion import _stable_hash
 from app.services.nrc_aps_content_index import normalize_query_tokens
@@ -32,6 +37,9 @@ PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
     PACKAGE_KIND_USER_FACING,
     PACKAGE_KIND_REVIEW_FACING,
 )
+PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.source_directory_qualitative_analysis_package_commit.v1"
+PACKAGE_CONSTRUCTION_COMMIT_MODE = "source_directory_qualitative_analysis_package_commit_authority"
+PACKAGE_CONSTRUCTION_OPERATOR_DECISION = "commit_source_directory_qualitative_analysis_package"
 
 _REQUIRED_FIELDS = {
     "client_request_id",
@@ -49,6 +57,12 @@ _REQUIRED_FIELDS = {
 }
 
 _OPTIONAL_FIELDS = {"limit", "offset"}
+
+_PACKAGE_COMMIT_REQUIRED_FIELDS = _REQUIRED_FIELDS | {
+    "qualitative_analysis_hash",
+    "source_directory_package_review_preview_hash",
+    "operator_decision",
+}
 
 _CONTEXT_PACKET_FIELDS = (
     _REQUIRED_FIELDS
@@ -114,6 +128,33 @@ class SourceDirectoryQualitativeAnalysisError(Exception):
             "request_id": "source-directory-qualitative-analysis-error",
             "server_time": _server_time(),
             "mode": MODE,
+            "status": "blocked",
+            "error": {"code": self.code, "message": self.message, "details": self.details},
+        }
+
+
+class SourceDirectoryPackageCommitError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        http_status: int = 400,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.http_status = http_status
+        self.details = details or {}
+
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID,
+            "schema_version": 1,
+            "request_id": "source-directory-package-commit-error",
+            "server_time": _server_time(),
+            "mode": PACKAGE_CONSTRUCTION_COMMIT_MODE,
             "status": "blocked",
             "error": {"code": self.code, "message": self.message, "details": self.details},
         }
@@ -222,6 +263,142 @@ def source_directory_material_context_packet_qualitative_hybrid_analysis(
     }
 
 
+def source_directory_qualitative_analysis_package_commit(
+    db: Session,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = _normalise_package_commit_payload(payload)
+    request_id = _required(fields, "client_request_id")
+    if str(fields.get("operator_decision") or "") != PACKAGE_CONSTRUCTION_OPERATOR_DECISION:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_operator_decision_not_admitted",
+            "The source-directory package commit requires the admitted package-construction operator decision.",
+            http_status=409,
+            details={
+                "field": "operator_decision",
+                "expected": PACKAGE_CONSTRUCTION_OPERATOR_DECISION,
+            },
+        )
+
+    qualitative_analysis = source_directory_material_context_packet_qualitative_hybrid_analysis(
+        db,
+        _qualitative_analysis_payload(fields),
+    )
+    expected_analysis_hash = str(qualitative_analysis["qualitative_analysis_hash"])
+    if str(fields.get("qualitative_analysis_hash") or "") != expected_analysis_hash:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_qualitative_analysis_hash_mismatch",
+            "Package construction commit must reference the current server-recomputed qualitative-analysis hash.",
+            http_status=409,
+            details={"blocked_fields": ["qualitative_analysis_hash"]},
+        )
+    preview = qualitative_analysis["source_directory_package_review_preview"]
+    expected_preview_hash = str(preview["package_review_preview_hash"])
+    if str(fields.get("source_directory_package_review_preview_hash") or "") != expected_preview_hash:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_preview_hash_mismatch",
+            "Package construction commit must reference the current server-recomputed source-directory package-review preview hash.",
+            http_status=409,
+            details={"blocked_fields": ["source_directory_package_review_preview_hash"]},
+        )
+
+    material_snapshot = _load_material_snapshot_for_commit(
+        db,
+        material_snapshot_id=str(qualitative_analysis["material_snapshot_id"]),
+        source_authority=preview["source_authority"],
+    )
+    session = _load_package_commit_session(db, material_snapshot=material_snapshot)
+    try:
+        result = materialize_source_directory_qualitative_analysis_package_commit(
+            db,
+            session=session,
+            material_snapshot=material_snapshot,
+            client_request_id=request_id,
+            package_review_preview_hash=expected_preview_hash,
+            qualitative_analysis=qualitative_analysis,
+            source_authority=preview["source_authority"],
+        )
+    except Layer3PackageEntryError as exc:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_existing_package_state",
+            str(exc),
+            http_status=409,
+            details={"next_allowed_actions": ["inspect_existing_package_state"]},
+        ) from exc
+    db.commit()
+
+    reconciliation_summary = result.reconciliation_record.summary_json or {}
+    commit_summary = reconciliation_summary.get("source_directory_qualitative_package_commit")
+    if not isinstance(commit_summary, dict):
+        commit_summary = {}
+    packages = list(result.output_packages)
+    return {
+        "schema_id": PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": request_id,
+        "server_time": _server_time(),
+        "mode": PACKAGE_CONSTRUCTION_COMMIT_MODE,
+        "status": "committed",
+        "operator_decision": PACKAGE_CONSTRUCTION_OPERATOR_DECISION,
+        "session_id": session.session_id,
+        "selection_manifest_id": session.selection_manifest_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "source_ingestion_batch_id": qualitative_analysis["source_ingestion_batch_id"],
+        "source_ingestion_file_id": qualitative_analysis["source_ingestion_file_id"],
+        "content_sha256": qualitative_analysis["content_sha256"],
+        "file_identity_hash": qualitative_analysis["file_identity_hash"],
+        "authority_basis_hash": qualitative_analysis["authority_basis_hash"],
+        "payload_hash": qualitative_analysis["payload_hash"],
+        "index_authority_hash": qualitative_analysis["index_authority_hash"],
+        "context_packet_hash": qualitative_analysis["context_packet_hash"],
+        "qualitative_analysis_hash": expected_analysis_hash,
+        "source_directory_package_review_preview_hash": expected_preview_hash,
+        "construction_basis_hash": commit_summary.get("construction_basis_hash")
+        or commit_summary.get("authority_basis_hash"),
+        "reconciliation_record_id": result.reconciliation_record.reconciliation_record_id,
+        "output_packages": [
+            {
+                "output_package_id": package.output_package_id,
+                "package_kind": package.package_kind,
+                "status": package.status,
+                "payload_hash": package.payload_hash,
+                "payload_ref_redacted": True,
+            }
+            for package in packages
+        ],
+        "output_package_ids": [package.output_package_id for package in packages],
+        "package_kinds": [package.package_kind for package in packages],
+        "payload_hashes": [package.payload_hash for package in packages],
+        "payload_refs_redacted": True,
+        "package_rows_written": True,
+        "package_payloads_written": True,
+        "source_package_row_mutation_enabled": False,
+        "package_payload_rewrite_enabled": False,
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "prompt_model_provider_runtime_enabled": False,
+        "package_construction_source_gate": SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+        "next_state": "source_directory_qualitative_analysis_package_constructed",
+        "next_allowed_actions": [],
+        "negative_invariants": {
+            "source_package_row_mutation_enabled": False,
+            "package_payload_rewrite_enabled": False,
+            "package_review_submit_enabled": False,
+            "handoff_export_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "network_egress_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "prompt_model_provider_runtime_enabled": False,
+        },
+    }
+
+
 def _source_directory_package_review_preview(
     *,
     request_id: str,
@@ -324,6 +501,31 @@ def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     for field in sorted(_REQUIRED_FIELDS):
         _required(fields, field)
     return fields
+
+
+def _normalise_package_commit_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    forbidden = sorted(set(fields) & _FORBIDDEN_FIELDS)
+    if forbidden:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_forbidden_field_not_admitted",
+            "The source-directory package commit request includes fields from a deferred or forbidden mode.",
+            details={"forbidden_fields": forbidden},
+        )
+    unknown = sorted(set(fields) - _PACKAGE_COMMIT_REQUIRED_FIELDS - _OPTIONAL_FIELDS)
+    if unknown:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_unknown_field",
+            "The source-directory package commit request contract is intentionally scoped.",
+            details={"unknown_fields": unknown},
+        )
+    for field in sorted(_PACKAGE_COMMIT_REQUIRED_FIELDS):
+        _required(fields, field)
+    return fields
+
+
+def _qualitative_analysis_payload(fields: Mapping[str, Any]) -> dict[str, Any]:
+    return {field: fields[field] for field in sorted(_REQUIRED_FIELDS | _OPTIONAL_FIELDS) if field in fields}
 
 
 def _context_packet_payload(fields: Mapping[str, Any]) -> dict[str, Any]:
@@ -553,6 +755,57 @@ def _required(fields: Mapping[str, Any], key: str) -> str:
             details={"field": key},
         )
     return value
+
+
+def _load_material_snapshot_for_commit(
+    db: Session,
+    *,
+    material_snapshot_id: str,
+    source_authority: Mapping[str, Any],
+) -> L3MaterialSnapshot:
+    snapshot = db.get(L3MaterialSnapshot, material_snapshot_id)
+    if snapshot is None:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_material_snapshot_not_found",
+            "No material snapshot exists for the source-directory package commit.",
+            http_status=404,
+            details={"material_snapshot_id": material_snapshot_id},
+        )
+    mismatches = [
+        field
+        for field, expected in {
+            "material_snapshot_id": snapshot.material_snapshot_id,
+            "payload_hash": snapshot.payload_hash,
+        }.items()
+        if str(source_authority.get(field) or "") != str(expected)
+    ]
+    if mismatches:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_material_authority_mismatch",
+            "The source-directory package commit source authority does not match the material snapshot.",
+            http_status=409,
+            details={"blocked_fields": mismatches},
+        )
+    return snapshot
+
+
+def _load_package_commit_session(db: Session, *, material_snapshot: L3MaterialSnapshot) -> L3Session:
+    session = db.get(L3Session, material_snapshot.session_id)
+    if session is None:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_session_not_found",
+            "No Layer 3 session owns the source-directory material snapshot.",
+            http_status=404,
+            details={"session_id": material_snapshot.session_id},
+        )
+    if session.status not in FINALIZED_PACKAGE_SESSION_STATUSES or session.completed_at is None:
+        raise SourceDirectoryPackageCommitError(
+            "source_directory_package_commit_session_not_terminal",
+            "Source-directory package construction requires a finalized Layer 3 material session.",
+            http_status=409,
+            details={"session_id": session.session_id, "status": session.status},
+        )
+    return session
 
 
 def _negative_invariants() -> dict[str, bool]:
