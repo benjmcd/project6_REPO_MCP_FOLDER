@@ -40,6 +40,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "source_directory_qualitative_hybrid_analysis_status": True,
     "source_directory_package_commit": True,
     "source_directory_package_review_submit": True,
+    "source_directory_package_supersession_preview": True,
     "source_directory_handoff_export_prepare": True,
     "source_directory_external_export_download_prepare": True,
     "source_directory_external_export_download_deliver": True,
@@ -172,6 +173,11 @@ def build_bootstrap_contract(
             "source_directory_package_review_submit_endpoint": (
                 f"{api_root}/source/ingestion/server-configured-directory/"
                 "qualitative-hybrid-analysis/package/review/submit"
+            ),
+            "source_directory_package_supersession_preview_admitted": True,
+            "source_directory_package_supersession_preview_endpoint": (
+                f"{api_root}/source/ingestion/server-configured-directory/"
+                "qualitative-hybrid-analysis/package/supersession/preview"
             ),
             "source_directory_handoff_export_prepare_admitted": True,
             "source_directory_handoff_export_prepare_endpoint": (

@@ -885,6 +885,89 @@ def test_source_directory_qualitative_analysis_handoff_export_prepare_records_bo
     )
     assert submit.status_code == 200, submit.text
     submit_body = submit.json()
+    supersession_preview_payload = {
+        **submit_payload,
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": "package_review_approved",
+        "operator_decision": "preview_source_directory_package_supersession",
+    }
+    supersession_preview = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/supersession/preview"
+        ),
+        json=supersession_preview_payload,
+    )
+    assert supersession_preview.status_code == 200, supersession_preview.text
+    preview_body = supersession_preview.json()
+    assert preview_body["schema_id"] == (
+        "layer3.source_directory_qualitative_analysis_package_supersession_preview.v1"
+    )
+    assert preview_body["mode"] == (
+        "source_directory_qualitative_analysis_package_supersession_preview_authority"
+    )
+    assert preview_body["status"] == "previewed"
+    assert preview_body["source_gate"] == "820_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RUNTIME_ENTRY_FREEZE"
+    assert preview_body["package_review_submit_source_gate"] == (
+        "806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE"
+    )
+    assert preview_body["package_construction_source_gate"] == (
+        "804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE"
+    )
+    assert preview_body["output_package_ids"] == commit_body["output_package_ids"]
+    assert preview_body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert preview_body["payload_hashes"] == commit_body["payload_hashes"]
+    assert preview_body["payload_refs_redacted"] is True
+    assert preview_body["source_package_set_hash"]
+    assert preview_body["package_supersession_preview_hash"]
+    assert preview_body["downstream_dependency_hash"]
+    assert preview_body["downstream_dependencies"] == [
+        {
+            "state_key": "package_review_submit",
+            "package_review_state": "package_review_approved",
+            "schema_id": "layer3.package_review_submit_state.v1",
+            "source_gate": "806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE",
+            "submit_record_ref": submit_body["submit_record_ref"],
+            "payload_refs_redacted": True,
+        }
+    ]
+    assert preview_body["replacement_package_set_authority_enabled"] is False
+    assert preview_body["package_supersession_commit_enabled"] is False
+    assert preview_body["package_row_mutation_enabled"] is False
+    assert preview_body["package_payload_rewrite_enabled"] is False
+    assert preview_body["source_package_row_mutation_enabled"] is False
+    assert preview_body["connector_dispatch_enabled"] is False
+    assert preview_body["provider_public_delivery_enabled"] is False
+    assert preview_body["network_egress_enabled"] is False
+    assert preview_body["frontend_durable_authority_enabled"] is False
+    assert preview_body["negative_invariants"]["package_row_mutation_enabled"] is False
+    assert str(source_dir) not in supersession_preview.text
+    assert str(Path(settings.storage_dir)) not in supersession_preview.text
+
+    stale_supersession_preview = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/supersession/preview"
+        ),
+        json={
+            **supersession_preview_payload,
+            "payload_hashes": ["0" * 64, *commit_body["payload_hashes"][1:]],
+        },
+    )
+    assert stale_supersession_preview.status_code == 409, stale_supersession_preview.text
+    assert stale_supersession_preview.json()["error"]["code"] == (
+        "source_directory_package_supersession_preview_package_set_mismatch"
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3OutputPackage).count() == 3
+        assert db.query(ConnectorRun).count() == 0
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        assert "package_supersession_preview" not in reconciliation.summary_json
+    finally:
+        db.close()
+
     prepare_payload = {
         **submit_payload,
         "package_review_submit_record_ref": submit_body["submit_record_ref"],

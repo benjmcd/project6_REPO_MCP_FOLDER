@@ -34,6 +34,7 @@ READINESS_REQUIRED_GATES = (
     "external-export-download-prepare",
     "external-export-download-deliver",
     "source-directory-qualitative-hybrid-analysis-status",
+    "source-directory-package-supersession-preview",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -61,6 +62,7 @@ READINESS_IMPLEMENTED_GATES = (
     "external-export-download-prepare",
     "external-export-download-deliver",
     "source-directory-qualitative-hybrid-analysis-status",
+    "source-directory-package-supersession-preview",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -165,6 +167,11 @@ def build_readiness_contract(
             f"{api_root}/source/ingestion/server-configured-directory/"
             "qualitative-hybrid-analysis/package/review/submit"
         ),
+        "source_directory_package_supersession_preview_admitted": True,
+        "source_directory_package_supersession_preview_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/supersession/preview"
+        ),
         "source_directory_handoff_export_prepare_admitted": True,
         "source_directory_handoff_export_prepare_endpoint": (
             f"{api_root}/source/ingestion/server-configured-directory/"
@@ -230,6 +237,7 @@ def build_readiness_contract(
             "client_request_id_required_for_source_directory_qualitative_hybrid_analysis_status": False,
             "client_request_id_required_for_source_directory_package_commit": True,
             "client_request_id_required_for_source_directory_package_review_submit": True,
+            "client_request_id_required_for_source_directory_package_supersession_preview": False,
             "client_request_id_required_for_source_directory_handoff_export_prepare": True,
             "client_request_id_required_for_source_directory_external_export_download_prepare": True,
             "client_request_id_required_for_source_directory_external_export_download_deliver": True,
@@ -265,6 +273,7 @@ def build_readiness_contract(
             "duplicate_source_directory_qualitative_hybrid_analysis_status": "read-only status revalidates source-directory qualitative-hybrid analysis authority without returning full evidence segments or package-preview payloads",
             "duplicate_source_directory_package_commit": "same client_request_id and same source-directory qualitative-analysis package authority returns existing package rows; conflicts fail closed",
             "duplicate_source_directory_package_review_submit": "same authority basis and same source-directory operator decision returns existing package-review state; conflicts fail closed",
+            "duplicate_source_directory_package_supersession_preview": "read-only preview recomputes the source-directory package set hash and downstream dependency hash without package row mutation or payload rewrite",
             "duplicate_source_directory_handoff_export_prepare": "same authority basis and same source-directory operator decision returns existing handoff/export prepare state; conflicts fail closed",
             "duplicate_source_directory_external_export_download_prepare": "same authority basis and same source-directory export/download readiness decision returns existing readiness state; conflicts fail closed",
             "duplicate_source_directory_external_export_download_deliver": "read-only delivery revalidates the prepared source-directory package authority and may re-stream the same existing package artifact",
@@ -307,6 +316,7 @@ def build_readiness_contract(
             "source_directory_qualitative_hybrid_analysis_status_is_read_only": True,
             "source_directory_package_commit_uses_session_reconciliation_and_package_locks": True,
             "source_directory_package_review_submit_uses_session_reconciliation_and_package_locks": True,
+            "source_directory_package_supersession_preview_is_read_only": True,
             "source_directory_handoff_export_prepare_uses_session_reconciliation_and_package_locks": True,
             "source_directory_external_export_download_prepare_uses_session_reconciliation_and_package_locks": True,
             "source_directory_external_export_download_deliver_uses_session_reconciliation_and_package_locks": True,
@@ -335,6 +345,7 @@ def build_readiness_contract(
             "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
             "source_directory_operator_status": "admitted only as backend bootstrap/readiness exposure for the already-admitted server-configured local directory scan, status, material-preview, vector-retrieval, qualitative-hybrid analysis, package commit, package-review submit, and handoff/export prepare routes",
             "source_directory_qualitative_hybrid_analysis_status": "admitted only as a read-only operator-visible status reader over the existing deterministic source-directory qualitative-hybrid analysis authority; full supporting segments, package-preview payloads, prompt/model runtime, package writes, connector dispatch, network egress, frontend controls, and raw path exposure remain disabled",
+            "source_directory_package_supersession_preview": "admitted only as a read-only source-directory package mutation/reconstruction preview over an approved package-review submit; replacement authority, supersession commit, package row mutation, payload writes or rewrite, provider delivery, connector dispatch, network egress, and frontend controls remain disabled",
             "source_directory_external_export_download_prepare": "admitted only as a reference-only readiness descriptor after source-directory handoff_export_prepared; provider URLs, connector dispatch, network egress, frontend controls, and package mutation remain disabled",
             "source_directory_external_export_download_deliver": "admitted only as same-origin streaming of one already constructed source-directory package payload after source-directory external export/download prepare; provider URLs, signed URLs, connector dispatch, network egress, frontend controls, package mutation, and raw path exposure remain disabled",
             "source_directory_external_export_download_delivery_status": "admitted only as a read-only operator-visible status reader over the existing source-directory delivery authority; byte streaming, provider URLs, signed URLs, connector dispatch, network egress, frontend controls, package mutation, and raw path exposure remain disabled",
