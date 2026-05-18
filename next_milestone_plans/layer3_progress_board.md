@@ -5638,3 +5638,29 @@ Runtime behavior introduced by this sync: `false`.
 No provider-public delivery/use route, raw public URL exposure, `public_url_enabled: true` rail, public proxy runtime, provider adapter, provider credential, provider object write/copy/mutation/ACL change, rendered delivery/use control, frontend-durable authority, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, network egress, source expansion, arbitrary source ingestion, RAG/vector indexing, embedding generation, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, or raw local path exposure is admitted by this sync.
 
 The next exact current-main posture is `write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime`.
+
+## Provider-Public Delivery/Use Exposure Security Revocation Authority Contract
+
+Contract doc: `776_PROVIDER_PUBLIC_AUTH_CONTRACT.md`.
+
+Contract branch: `codex/l3-provider-public-contract`.
+
+Current-main preflight checkpoint: `9904ece3a6d34c910fe33231253e952f2d3e6811`.
+
+Predecessor sync doc: `775_PROVIDER_PUBLIC_AUTH_SYNC.md`.
+
+Predecessor synced result: `current_main_synced_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync`.
+
+Selected from posture: `write_provider_public_delivery_use_exposure_security_revocation_authority_contract_before_runtime`.
+
+Contract result: `no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent`.
+
+Runtime behavior introduced by this contract: `false`.
+
+Current main has redacted provider-public prepare/status/revoke state only. It has no provider-public delivery/use route, no raw public URL exposure, no `public_url_enabled: true` rail, no public proxy runtime, no provider adapter, no provider credential, no provider object write/copy/mutation/ACL change, no rendered delivery/use control, no frontend-durable authority, no package construction, no package mutation/reconstruction, no handoff/export rerun, no connector/destination dispatch, no real connector invocation, no network egress, no source expansion, no arbitrary source ingestion, no RAG/vector indexing, no embedding generation, no prompt/model/provider runtime, no broad qualitative generation, no auth/security behavior change, no full mockup activation, and no raw local path exposure.
+
+The missing authority before provider-public delivery/use runtime is exposure classification, caller authorization, raw URL leak-control policy, revocation-after-exposure semantics, HTTP cache/referrer/CORS/CSP/content-disposition policy, provider/object-store owner and credential/network/ACL boundaries, exposure/revocation audit requirements, and fake-provider proof architecture.
+
+The next exact posture after merge is `current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract`.
+
+After sync, the next exact posture is `select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync` unless current-main evidence names a concrete unresolved provider-public defect or newly selected provider-public downstream reader.
