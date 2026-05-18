@@ -5224,3 +5224,25 @@ Sync validation from current-main checkpoint `f22439007ae958d704932d4a3fb7c0cac0
 This sync admits no runtime behavior, backend route, API DTO, model change, migration, source-index durable row writes, retrieval durable row writes, vector indexing, embedding generation, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, raw local path exposure, or prompt/model/provider runtime.
 
 The next exact current-main posture is `implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync`.
+
+## Source Directory Material Deterministic Lexical Retrieval Runtime Proof
+
+Runtime proof: `760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md` implements `source_directory_material_deterministic_lexical_retrieval_authority` after the source-directory lexical retrieval authority contract current-main sync.
+
+Implementation branch `codex/l3-retrieval-impl` starts from current-main checkpoint `65953dfd0dc3e76886239aaa4495a65b7c7ab21c`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_lexical_retrieval_authority_contract`.
+
+Selected implementation action: `implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented files: `backend/app/services/layer3_source_directory_text_retrieval.py` and `backend/tests/test_layer3_source_directory_text_retrieval.py`.
+
+The runtime calls `source_directory_material_text_index(db, payload)` before ranking segments, validates `index_authority_hash`, admits deterministic lexical `query_text` over existing `deterministic_text_segments`, ranks by `matched_unique_query_terms`, `summed_term_frequency`, segment length, `segment_sequence`, and `segment_id`, and returns no-match responses with `total: 0` and `items: []`.
+
+Validation passed: `python -m py_compile .\backend\app\services\layer3_source_directory_text_retrieval.py .\backend\tests\test_layer3_source_directory_text_retrieval.py`; `python -m pytest .\backend\tests\test_layer3_source_directory_text_retrieval.py -q` -> `4 passed`.
+
+This runtime proof admits no backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, vector indexing, embedding generation, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered control, full mockup activation, frontend-durable authority, source expansion, credential, network egress, prompt/model/provider runtime, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof`; after sync, pivot to `select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync` only if current-main evidence confirms this runtime is cleanly synced and no concrete same-family lexical retrieval defect remains.
