@@ -5882,3 +5882,29 @@ Runtime behavior introduced by this freeze: `false`.
 This selection only freezes the next vector-retrieval authority question. It admits no vector query runtime, semantic retrieval ranking, RAG execution, context-packet mutation, qualitative generation runtime, backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, durable retrieval row write, prompt/model/provider runtime, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, source expansion, arbitrary source ingestion, rendered/frontend-durable authority, auth/security broadening, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact posture after merge is `current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync`; after sync, the next exact posture is `write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime`.
+
+## Source Directory Material Vector Retrieval Authority Selection Current-Main Sync
+
+Current-main sync: `785_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md` syncs selection PR `#1389` for `source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync`.
+
+Selection branch `codex/l3-vector-retrieval-select` landed branch commit `1cef06ab450e78d0666bed85efadef04fabfe139` into current main at merge commit `07a80d049cc4ad7390b98ececcb78102a20679c1`.
+
+Synced result: `current_main_synced_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync`.
+
+Current main now includes `784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md`.
+
+Current main now records `source_directory_material_deterministic_vector_retrieval_authority_contract` as the next authority question after deterministic source-directory embedding/vector-index runtime sync.
+
+Current main now records `source_directory_material_deterministic_vector_retrieval_authority`, `deterministic_local_hash_vector_similarity_retrieval`, `source_directory_material_deterministic_embedding_vector_index_authority`, `layer3.source_directory_embedding_vector_index.v1`, and `safe_vector_descriptors` as the selected future contract inputs.
+
+Current main now selects `backend/app/services/layer3_source_directory_vector_retrieval.py` and `backend/tests/test_layer3_source_directory_vector_retrieval.py` for the future contract/runtime lane.
+
+PR `#1389` had green `backend-layer3-api` (`3m5s`) and `test` (`3m37s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by selection PR: `false`.
+
+Runtime behavior introduced by this sync: `false`.
+
+No vector query runtime, semantic retrieval ranking, RAG execution, context-packet mutation, qualitative generation runtime, backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, durable retrieval row write, prompt/model/provider runtime, credentials, network egress, provider-public delivery/use, package behavior, connector dispatch, rendered/frontend-durable authority, source expansion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
+
+The next exact current-main posture is `write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime`.
