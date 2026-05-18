@@ -6106,3 +6106,27 @@ Runtime behavior introduced by this contract: `false`.
 No runtime behavior, backend route, API DTO, response model, database model, migration, durable use row, audit row, provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, rendered delivery/use control, frontend-durable authority, package behavior, connector/destination dispatch, real connector invocation, network egress, source expansion, RAG/vector indexing expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this contract.
 
 The next exact posture after merge is `current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync`; after sync, the next exact posture is `freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry`.
+
+## Provider-Public Delivery/Use Runtime Authority Contract Current-Main Sync
+
+Current-main sync: `793_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md` syncs contract PR `#1397` for `provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync`.
+
+Contract branch `codex/l3-pp-use-contract` landed branch commit `6c5414f2d41d9ba734ac7f26d6890f46994be2e9` into current main at merge commit `6700bfe4489ce8b7630783c5af72bc4f245777b3`.
+
+Synced result: `current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_after_selection_sync`.
+
+Current main now includes `792_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_CONTRACT.md`.
+
+Current main now records `admit_bounded_fake_provider_redacted_provider_public_delivery_use_implementation_entry_freeze`, selects `fake_provider_only_contract_runtime`, selects `layer3.provider_public_url.delivery_use.v1`, selects future service owner `backend/app/services/layer3_provider_public_url_delivery_use.py`, selects future proof owner `backend/tests/test_layer3_provider_public_url_delivery_use.py`, and records `POST /handoff/export/download/provider-public-url/use` as only a future route candidate for the next implementation-entry freeze.
+
+Current main still exposes no provider-public `/use` or `/deliver` runtime, keeps `raw_public_url_exposed: False`, keeps `public_url_enabled: False`, performs no provider network or provider object write, and does not return a raw public URL.
+
+PR `#1397` had green `backend-layer3-api` (`3m6s`) and `test` (`3m52s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by contract PR: `false`.
+
+Runtime behavior introduced by this sync: `false`.
+
+No runtime behavior, backend route, API DTO, response model, database model, migration, durable use row, audit row, provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, rendered delivery/use control, frontend-durable authority, package behavior, connector/destination dispatch, real connector invocation, network egress, source expansion, RAG/vector indexing expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
+
+The next exact current-main posture is `freeze_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry`.
