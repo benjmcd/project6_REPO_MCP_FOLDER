@@ -2202,6 +2202,10 @@ LAYER3_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_ENTRY = (
     PLANNING_DOCS
     / "798_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_ENTRY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -69676,6 +69680,145 @@ def _check_source_directory_qualitative_hybrid_analysis_api_runtime_entry(
                 )
 
 
+def _check_source_directory_qualitative_hybrid_analysis_api_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime`.",
+        "799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "798_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_ENTRY_FREEZE.md",
+        "#1403",
+        "codex/l3-qual-api",
+        "39dc407c91f70c811d8754f4ed22d4e3020e8610",
+        "578880feee19c69e9f2a70afce47e8a0d7822c48",
+        "codex/l3-qual-api-sync",
+        "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
+        "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+        "Layer3SourceDirectoryQualitativeAnalysisRequest",
+        "Layer3SourceDirectoryQualitativeAnalysisResponse",
+        "layer3.source_directory_qualitative_analysis.v1",
+        "backend/app/api/layer3.py",
+        "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+        "source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)",
+        "server_configured_operator_directory_text_table_source_family",
+        "source_directory_material_retrieval_augmented_context_packet_authority",
+        "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+        "`backend-layer3-api`: `SUCCESS`, `3m11s`",
+        "`test`: `SUCCESS`, `3m39s`",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state: `CLEAN`",
+        "Runtime behavior introduced by implementation PR: `true`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "raw_local_path_exposed: False",
+        "full_segment_text_exposed: False",
+        "durable_qualitative_analysis_rows_written: False",
+        "new_rag_execution_enabled: False",
+        "prompt_model_provider_runtime_enabled: False",
+        "network_egress_enabled: False",
+        "frontend_durable_authority_enabled: False",
+        "admits no new source family",
+        "The next major implementation-bearing lane should be selected from the remaining Layer 3 end-to-end gaps",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory qualitative-hybrid analysis API runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Qualitative-Hybrid Analysis API Runtime Current-Main Sync",
+            "799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1403",
+            "codex/l3-qual-api",
+            "39dc407c91f70c811d8754f4ed22d4e3020e8610",
+            "578880feee19c69e9f2a70afce47e8a0d7822c48",
+            "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+            "Layer3SourceDirectoryQualitativeAnalysisRequest",
+            "Layer3SourceDirectoryQualitativeAnalysisResponse",
+            "layer3.source_directory_qualitative_analysis.v1",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)",
+            "server_configured_operator_directory_text_table_source_family",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+            "3m11s",
+            "3m39s",
+            "Runtime behavior introduced by this sync: `false`.",
+            "raw_local_path_exposed: False",
+            "new_rag_execution_enabled: False",
+            "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync",
+            "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
+            "codex/l3-qual-api-sync",
+            "799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "798_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_ENTRY_FREEZE.md",
+            "#1403",
+            "codex/l3-qual-api",
+            "39dc407c91f70c811d8754f4ed22d4e3020e8610",
+            "578880feee19c69e9f2a70afce47e8a0d7822c48",
+            '"runtime_behavior_change": true',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api": "SUCCESS"',
+            '"backend-layer3-api_duration": "3m11s"',
+            '"test_duration": "3m39s"',
+            '"merge_state_before_merge": "CLEAN"',
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+            "Layer3SourceDirectoryQualitativeAnalysisRequest",
+            "Layer3SourceDirectoryQualitativeAnalysisResponse",
+            "layer3.source_directory_qualitative_analysis.v1",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)",
+            "server_configured_operator_directory_text_table_source_family",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+            '"raw_local_path_exposed": false',
+            '"full_segment_text_exposed": false',
+            '"durable_qualitative_analysis_rows_written": false',
+            '"new_rag_execution_enabled": false',
+            '"prompt_model_provider_runtime_enabled": false',
+            '"network_egress_enabled": false',
+            '"frontend_durable_authority_enabled": false',
+            "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_proof",
+            "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
+            "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
+            "codex/l3-qual-api-sync",
+            "799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "798_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_ENTRY_FREEZE.md",
+            "#1403",
+            "39dc407c91f70c811d8754f4ed22d4e3020e8610",
+            "578880feee19c69e9f2a70afce47e8a0d7822c48",
+            '"runtime_behavior_in_this_sync": false',
+            "current main includes POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+            "current main includes Layer3SourceDirectoryQualitativeAnalysisRequest",
+            "current main includes Layer3SourceDirectoryQualitativeAnalysisResponse",
+            "current main exposes layer3.source_directory_qualitative_analysis.v1",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload) remains the service authority",
+            "server_configured_operator_directory_text_table_source_family remains the source family",
+            "source_directory_material_retrieval_augmented_context_packet_authority remains the context-packet authority",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority remains the qualitative-hybrid authority",
+            "current main sync introduces no additional runtime behavior",
+            "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync is selected as the next posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory qualitative-hybrid analysis API runtime sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -70329,6 +70472,9 @@ def main() -> int:
     _check_source_directory_vector_retrieval_api_runtime_entry(errors)
     _check_source_directory_vector_retrieval_api_runtime_current_main_sync(errors)
     _check_source_directory_qualitative_hybrid_analysis_api_runtime_entry(errors)
+    _check_source_directory_qualitative_hybrid_analysis_api_runtime_current_main_sync(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")
