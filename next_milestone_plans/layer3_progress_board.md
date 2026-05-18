@@ -5114,3 +5114,21 @@ The proof covers CSV, JSON, TXT, and MD material snapshots; deterministic replay
 This pass admits no backend route, API DTO, model change, migration, source-index durable row writes, vector indexing, embedding generation, retrieval query runtime, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, package payload rewrite, source `L3OutputPackage` mutation, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, hidden LLM planning, arbitrary source ingestion, arbitrary recursive ingestion, broad local upload, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, browser/operator path editing, or raw local path exposure.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_material_deterministic_text_index_runtime_proof`; after sync, pivot to `select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync` only if current-main evidence confirms this runtime is cleanly synced and no concrete same-family downstream reader remains.
+
+## Source Directory Material Deterministic Text Index Runtime Current-Main Sync
+
+Current-main sync: `755_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_TEXT_INDEX_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1359` for `source_directory_material_deterministic_text_index_runtime_proof`.
+
+Runtime branch `codex/l3-source-index-text-impl` landed branch commit `9d3278112389e08ce280e61c8b02ae709d124214` into current main at merge commit `c0403c860b3e8903b4ee1e80ab9fca04f92301ad`.
+
+Synced result: `current_main_synced_source_directory_material_deterministic_text_index_runtime`.
+
+Current main now includes `backend/app/services/layer3_source_directory_text_index.py` as the bounded deterministic text source/index authority runtime for already admitted `server_configured_directory_file` `L3MaterialSnapshot` rows.
+
+PR `#1359` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Post-merge validation at `c0403c860b3e8903b4ee1e80ab9fca04f92301ad` passed: JSON manifest load; `python -m py_compile .\tools\l3-progress-check.py .\backend\app\services\layer3_source_directory_text_index.py .\backend\tests\test_layer3_source_directory_ingestion.py`; `python .\tools\l3-progress-check.py`; `python .\tools\l3-target-selection-validate.py --expect frozen`; `python -m pytest .\backend\tests\test_layer3_source_directory_ingestion.py -q` -> `13 passed`; `python -m pytest .\backend\tests\test_layer3_source_boundary.py .\backend\tests\test_layer3_source_intake.py .\backend\tests\test_layer3_model_exports.py .\backend\tests\test_layer3_api.py::test_layer3_forbidden_sentinel_openapi_fields_are_impossible -q` -> `24 passed`; and `git diff --check`.
+
+This sync admits no additional runtime behavior, backend route, API DTO, model change, migration, source-index durable row writes, vector indexing, embedding generation, retrieval query runtime, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, credentials, network egress, or raw local path exposure.
+
+The next exact current-main posture is `select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync`. Do not continue same-family source-directory text-index loops unless current-main evidence names a concrete unresolved defect or downstream reader.
