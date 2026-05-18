@@ -78,6 +78,11 @@ def test_layer3_readiness_contract_is_shared() -> None:
         "/api/v1/layer3/source/ingestion/server-configured-directory/"
         "qualitative-hybrid-analysis/handoff/export/prepare"
     )
+    assert direct["source_directory_external_export_download_prepare_admitted"] is True
+    assert direct["source_directory_external_export_download_prepare_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/handoff/export/download/prepare"
+    )
     assert direct["source_directory_operator_status_surface"] == (
         "server_configured_operator_directory_text_table_source_family"
     )
@@ -98,6 +103,12 @@ def test_layer3_readiness_contract_is_shared() -> None:
     )
     assert (
         direct["idempotency_contract"]["client_request_id_required_for_source_directory_handoff_export_prepare"]
+        is True
+    )
+    assert (
+        direct["idempotency_contract"][
+            "client_request_id_required_for_source_directory_external_export_download_prepare"
+        ]
         is True
     )
     assert direct["concurrency_contract"]["approved_plan_cancel_without_replacement_only"] is True
@@ -122,11 +133,20 @@ def test_layer3_readiness_contract_is_shared() -> None:
         ]
         is True
     )
+    assert (
+        direct["concurrency_contract"][
+            "source_directory_external_export_download_prepare_uses_session_reconciliation_and_package_locks"
+        ]
+        is True
+    )
     assert direct["deferred_decisions"]["source_breadth"] == (
         "requires later freeze before RAG/vector/upload/local-directory expansion"
     )
     assert direct["deferred_decisions"]["source_directory_operator_status"].startswith(
         "admitted only as backend bootstrap/readiness exposure"
+    )
+    assert direct["deferred_decisions"]["source_directory_external_export_download_prepare"].startswith(
+        "admitted only as a reference-only readiness descriptor"
     )
     assert direct["deferred_decisions"]["revision_recovery"].startswith("admitted only as preview-refresh recovery")
     assert direct["deferred_decisions"]["approved_plan_correction"].startswith(

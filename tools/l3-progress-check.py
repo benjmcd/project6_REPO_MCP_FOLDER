@@ -2254,6 +2254,10 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_CURRENT_
     PLANNING_DOCS
     / "811_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -71221,6 +71225,89 @@ def _check_source_directory_package_handoff_operator_status_surface_runtime_curr
                 )
 
 
+def _check_source_directory_external_export_download_prepare_runtime_entry(
+    errors: list[str],
+) -> None:
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze and runtime proof for `source_directory_external_export_download_prepare_runtime`.",
+        "812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_package_handoff_operator_status_surface_sync",
+        "codex/l3-next-gap",
+        "source_directory_external_export_download_prepare_runtime_implemented_branch_local",
+        "implement_source_directory_external_export_download_prepare_after_package_handoff_operator_status_surface_sync",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/prepare",
+        "layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1",
+        "source_directory_qualitative_analysis_external_export_download_prepare_authority",
+        "layer3.external_export_download_prepare_state.v1",
+        "source_directory_qualitative_analysis_package_download_reference",
+        "reference_only_prepare",
+        "prepare_source_directory_external_export_download",
+        "external_export_download_prepared",
+        "already_prepared",
+        "payload refs redacted",
+        "same-origin delivery/streaming",
+        "provider-public delivery/use",
+        "connector/destination dispatch",
+        "frontend-rendered controls",
+        "PASS`, `14 passed",
+        "await_current_main_sync_for_source_directory_external_export_download_prepare_runtime",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY)} "
+                f"missing source-directory external export/download prepare runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory External Export Download Prepare Runtime Entry Freeze",
+            "812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "source_directory_external_export_download_prepare_runtime_implemented_branch_local",
+            "layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1",
+            "source_directory_qualitative_analysis_external_export_download_prepare_authority",
+            "external_export_download_prepared",
+            "already_prepared",
+            "payload refs redacted",
+            "same-origin delivery/streaming",
+            "await_current_main_sync_for_source_directory_external_export_download_prepare_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_external_export_download_prepare_runtime_entry",
+            "source_directory_external_export_download_prepare_runtime_implemented_branch_local",
+            "codex/l3-next-gap",
+            "812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_package_handoff_operator_status_surface_sync",
+            "layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1",
+            "source_directory_qualitative_analysis_external_export_download_prepare_authority",
+            "prepare_source_directory_external_export_download",
+            '"same_origin_delivery_enabled": false',
+            '"connector_dispatch_enabled": false',
+            '"frontend_rendered_controls_enabled": false',
+            "await_current_main_sync_for_source_directory_external_export_download_prepare_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_external_export_download_prepare_runtime_entry_proof",
+            "branch_local_source_directory_external_export_download_prepare_runtime_entry",
+            "source_directory_external_export_download_prepare_runtime_implemented_branch_local",
+            "812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "runtime records external_export_download_prepared readiness and supports already_prepared replay",
+            "payload references remain redacted",
+            "same-origin delivery provider URLs connector dispatch network egress frontend controls source expansion and package mutation remain blocked",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory external export/download prepare runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -71907,6 +71994,7 @@ def main() -> int:
     _check_source_directory_package_handoff_operator_status_surface_runtime_current_main_sync(
         errors
     )
+    _check_source_directory_external_export_download_prepare_runtime_entry(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
