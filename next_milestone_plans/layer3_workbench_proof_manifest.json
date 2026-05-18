@@ -31557,5 +31557,35 @@
   "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_status": "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
   "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_next_posture": "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
-  "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_summary": "Doc 789 proof syncs the source-directory deterministic vector retrieval runtime after PR #1393 and moves the next posture to select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync, with no additional runtime admitted by the sync."
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_current_main_sync_summary": "Doc 789 proof syncs the source-directory deterministic vector retrieval runtime after PR #1393 and moves the next posture to select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync, with no additional runtime admitted by the sync.",
+  "provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync_proof": {
+    "proof_kind": "planning_control_selection_freeze_provider_public_delivery_use_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+    "status": "planning_control_selection_freeze",
+    "selection_branch": "codex/l3-provider-public-runtime-select",
+    "selection_doc": "next_milestone_plans/Layer3_planning_docs/790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+    "current_main_checkpoint_before_selection": "ff1a8dec534d99823c667da5ca7f051c7ccb437c",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/789_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "predecessor_synced_result": "current_main_synced_source_directory_material_deterministic_vector_retrieval_runtime",
+    "selected_from_posture": "select_provider_public_delivery_use_exposure_security_revocation_runtime_authority_after_source_directory_vector_retrieval_runtime_sync",
+    "runtime_behavior_change": false,
+    "proof_coverage": [
+      "provider_public_delivery_use is selected only as a runtime-authority selection lane",
+      "fake_provider_only_contract_runtime is selected as the provider mode for the next contract question",
+      "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract is selected as the next authority question",
+      "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime is selected as the next contract posture after sync",
+      "current main provider-public authority remains redacted prepare status revoke state only",
+      "layer3_provider_public_url_fake_provider remains the only selected provider authority",
+      "raw_public_url_exposed remains false",
+      "public_url_enabled remains false",
+      "no provider-public use or deliver route is admitted by this freeze",
+      "no real provider network provider object write credential raw public URL rendered control frontend durable authority package connector source expansion RAG vector expansion auth security full mockup or raw-path behavior is admitted"
+    ],
+    "next_posture_after_merge": "current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+    "next_posture_after_sync": "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime"
+  },
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync_branch": "codex/l3-provider-public-runtime-select",
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync_doc": "next_milestone_plans/Layer3_planning_docs/790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync_status": "planning_control_selection_freeze",
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync_next_posture_after_merge": "current_main_sync_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+  "latest_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync_summary": "Doc 790 proof selects the provider-public delivery/use runtime authority contract question after source-directory vector retrieval runtime sync, with no runtime admitted by the freeze."
 }
