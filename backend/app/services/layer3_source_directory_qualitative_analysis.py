@@ -34,6 +34,9 @@ SCHEMA_ID = "layer3.source_directory_qualitative_analysis.v1"
 MODE = "source_directory_material_context_packet_qualitative_hybrid_analysis_authority"
 ANALYSIS_CONTRACT_ID = "source_directory_material_context_packet_qualitative_hybrid_analysis_authority"
 ANALYSIS_MODE = "context_packet_grounded_qualitative_hybrid_analysis"
+ANALYSIS_STATUS_SCHEMA_ID = "layer3.source_directory_qualitative_analysis_status.v1"
+ANALYSIS_STATUS_MODE = "source_directory_qualitative_hybrid_analysis_status_authority"
+ANALYSIS_STATUS_SOURCE_GATE = "818_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE"
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.source_directory_qualitative_analysis_package_review_preview.v1"
 PACKAGE_REVIEW_PREVIEW_MODE = "read_only_source_directory_qualitative_analysis_package_review_preview"
 PACKAGE_REVIEW_PREVIEW_SOURCE_GATE = "802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE"
@@ -541,6 +544,70 @@ def source_directory_material_context_packet_qualitative_hybrid_analysis(
         "payload_hash": context_packet["payload_hash"],
         **row_write_flags,
         "negative_invariants": negative_invariants,
+    }
+
+
+def source_directory_qualitative_hybrid_analysis_status(
+    db: Session,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    analysis = source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)
+    negative_invariants = dict(analysis["negative_invariants"])
+    return {
+        "schema_id": ANALYSIS_STATUS_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": analysis["request_id"],
+        "server_time": _server_time(),
+        "mode": ANALYSIS_STATUS_MODE,
+        "status": "available",
+        "analysis_status": "source_directory_qualitative_hybrid_analysis_available",
+        "source_gate": ANALYSIS_STATUS_SOURCE_GATE,
+        "validated_analysis_schema_id": analysis["schema_id"],
+        "validated_analysis_mode": analysis["mode"],
+        "analysis_contract_id": analysis["analysis_contract_id"],
+        "analysis_mode": analysis["analysis_mode"],
+        "qualitative_analysis_hash": analysis["qualitative_analysis_hash"],
+        "context_packet_contract_id": analysis["context_packet_contract_id"],
+        "context_packet_mode": analysis["context_packet_mode"],
+        "context_packet_hash": analysis["context_packet_hash"],
+        "source_directory_package_review_preview_available": True,
+        "source_directory_package_review_preview_hash": analysis[
+            "source_directory_package_review_preview_hash"
+        ],
+        "source_directory_package_review_preview_payload_redacted": True,
+        "supporting_segments_redacted": True,
+        "analysis_result_redacted": True,
+        "query_tokens": list(analysis["query_tokens"]),
+        "coverage_label": str(analysis["evidence_summary"].get("coverage_label") or ""),
+        "supporting_segment_count": len(analysis["supporting_segments"]),
+        "salient_term_count": len(analysis["salient_terms"]),
+        "coverage_note_count": len(analysis["coverage_notes"]),
+        "analysis_limit_count": len(analysis["analysis_limits"]),
+        "total": int(analysis["total"]),
+        "limit": int(analysis["limit"]),
+        "offset": int(analysis["offset"]),
+        "index_contract_id": analysis.get("index_contract_id"),
+        "index_mode": analysis.get("index_mode"),
+        "segmentation_version": analysis.get("segmentation_version"),
+        "index_authority_hash": analysis["index_authority_hash"],
+        "source_ingestion_batch_id": analysis["source_ingestion_batch_id"],
+        "source_ingestion_file_id": analysis["source_ingestion_file_id"],
+        "material_snapshot_id": analysis["material_snapshot_id"],
+        "source_shape": analysis.get("source_shape"),
+        "content_sha256": analysis["content_sha256"],
+        "file_identity_hash": analysis["file_identity_hash"],
+        "authority_basis_hash": analysis["authority_basis_hash"],
+        "payload_hash": analysis["payload_hash"],
+        "source_index_rows_written": bool(analysis["source_index_rows_written"]),
+        "retrieval_rows_written": bool(analysis["retrieval_rows_written"]),
+        "context_packet_rows_written": bool(analysis["context_packet_rows_written"]),
+        "qualitative_analysis_rows_written": bool(analysis["qualitative_analysis_rows_written"]),
+        "qualitative_generation_rows_written": bool(analysis["qualitative_generation_rows_written"]),
+        "analysis_run_rows_written": bool(analysis["analysis_run_rows_written"]),
+        "package_rows_written": bool(analysis["package_rows_written"]),
+        "connector_rows_written": bool(analysis["connector_rows_written"]),
+        "negative_invariants": negative_invariants,
+        "next_allowed_actions": ["inspect_source_directory_qualitative_hybrid_analysis"],
     }
 
 

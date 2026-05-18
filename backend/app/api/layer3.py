@@ -2621,6 +2621,56 @@ class Layer3SourceDirectoryQualitativeAnalysisResponse(Layer3BaseResponse):
     negative_invariants: dict[str, bool]
 
 
+class Layer3SourceDirectoryQualitativeAnalysisStatusResponse(Layer3BaseResponse):
+    mode: str
+    analysis_status: str
+    source_gate: str
+    validated_analysis_schema_id: str
+    validated_analysis_mode: str
+    analysis_contract_id: str
+    analysis_mode: str
+    qualitative_analysis_hash: str
+    context_packet_contract_id: str
+    context_packet_mode: str
+    context_packet_hash: str
+    source_directory_package_review_preview_available: bool
+    source_directory_package_review_preview_hash: str
+    source_directory_package_review_preview_payload_redacted: bool
+    supporting_segments_redacted: bool
+    analysis_result_redacted: bool
+    query_tokens: list[str]
+    coverage_label: str
+    supporting_segment_count: int
+    salient_term_count: int
+    coverage_note_count: int
+    analysis_limit_count: int
+    total: int
+    limit: int
+    offset: int
+    index_contract_id: str | None
+    index_mode: str | None
+    segmentation_version: str | None
+    index_authority_hash: str
+    source_ingestion_batch_id: str
+    source_ingestion_file_id: str
+    material_snapshot_id: str
+    source_shape: str | None
+    content_sha256: str
+    file_identity_hash: str
+    authority_basis_hash: str
+    payload_hash: str
+    source_index_rows_written: bool
+    retrieval_rows_written: bool
+    context_packet_rows_written: bool
+    qualitative_analysis_rows_written: bool
+    qualitative_generation_rows_written: bool
+    analysis_run_rows_written: bool
+    package_rows_written: bool
+    connector_rows_written: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
 class Layer3SourceDirectoryQualitativeAnalysisPackageCommitResponse(Layer3BaseResponse):
     mode: str
     operator_decision: str
@@ -7344,6 +7394,32 @@ def post_source_directory_qualitative_hybrid_analysis(
         return (
             layer3_source_directory_qualitative_analysis
             .source_directory_material_context_packet_qualitative_hybrid_analysis(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
+        layer3_source_directory_qualitative_analysis.SourceDirectoryQualitativeAnalysisError,
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/status",
+    response_model=Layer3SourceDirectoryQualitativeAnalysisStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_qualitative_hybrid_analysis_status(
+    payload: Layer3SourceDirectoryQualitativeAnalysisRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return (
+            layer3_source_directory_qualitative_analysis
+            .source_directory_qualitative_hybrid_analysis_status(
                 db,
                 payload.model_dump(exclude_unset=True),
             )
