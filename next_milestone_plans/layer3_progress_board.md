@@ -5052,3 +5052,25 @@ Post-merge validation at `ab50df882fd2a28563df0f56f20351251757775c` passed: JSON
 This sync admits no runtime behavior. Source/index rows, vector index, embedding generation, retrieval query, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, and source `L3OutputPackage` mutation remain blocked.
 
 The next exact current-main posture is `write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime`.
+
+## Source Directory Material Source Index Authority Contract
+
+Branch-local source/index authority contract: `752_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_CONTRACT.md` follows `751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+Contract branch `codex/l3-source-index-contract` starts from current-main checkpoint `12e7c776b7dc0c6e9a85b2c8c864b6a7790a55fe`.
+
+Synced predecessor: `current_main_synced_source_directory_material_source_index_authority_freeze`.
+
+Selected contract: `source_directory_material_deterministic_text_index_authority`.
+
+Selected future owner service: `backend/app/services/layer3_source_directory_text_index.py`.
+
+Selected future index mode: `deterministic_text_segments`.
+
+Canonical future inputs are `L3SourceDirectoryIngestionBatch`, `L3SourceDirectoryIngestionFile`, and `L3MaterialSnapshot` with `source_shape == server_configured_directory_file`, tied by `source_ingestion_batch_id`, `source_ingestion_file_id`, `material_snapshot_id`, `content_sha256`, `file_identity_hash`, `authority_basis_hash`, and `payload_hash`.
+
+Runtime behavior introduced by this contract: `false`.
+
+This contract selects deterministic lexical/text source-index authority before any vector, embedding, retrieval query, or qualitative-hybrid runtime. It admits no runtime behavior, backend route/service/model/migration behavior, source/index rows, vector index, embedding generation, retrieval query, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_source_index_authority_contract`; after sync, the next exact posture is `implement_source_directory_material_deterministic_text_index_authority_after_contract_sync`.
