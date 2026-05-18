@@ -5374,3 +5374,25 @@ Runtime behavior introduced by this sync: `false`.
 This sync admits no runtime behavior, backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, context-packet durable row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact current-main posture is `implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync`.
+
+## Source Directory Material Retrieval-Augmented Context Packet Runtime Proof
+
+Runtime proof: `766_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_PROOF.md` implements `source_directory_material_retrieval_augmented_context_packet_runtime_proof` after the source-directory qualitative-hybrid context-packet authority contract current-main sync.
+
+Runtime branch `codex/l3-rag-qual-impl` starts from current-main checkpoint `58634b9aab1bacffb06c8f5b86009050a3cea7c3`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_contract`.
+
+Implemented files: `backend/app/services/layer3_source_directory_context_packet.py`; `backend/tests/test_layer3_source_directory_context_packet.py`.
+
+The service function `source_directory_material_retrieval_augmented_context_packet(db, payload)` validates the context-packet request contract, calls `source_directory_material_text_retrieval(db, payload)`, validates `retrieval_contract_id` and `retrieval_mode`, assembles `layer3.source_directory_context_packet.v1`, computes deterministic `context_packet_hash`, and returns bounded `text_excerpt` context items plus source/material/index/retrieval authority IDs and hashes.
+
+The runtime returns `source_index_rows_written: False`, `retrieval_rows_written: False`, `context_packet_rows_written: False`, `qualitative_generation_rows_written: False`, `analysis_run_rows_written: False`, and `package_rows_written: False`.
+
+Focused proof covers deterministic replay, stale `index_authority_hash` rejection through retrieval, stale source/material authority rejection through text-index, empty-query rejection, forbidden prompt/vector/runtime-db-write fields, unknown fields, bounded `limit`/`offset`, no-match preservation, and no `L3PassRun`, `AnalysisRun`, `L3OutputPackage`, `ConnectorRun`, or `ConnectorRunTarget` side effects.
+
+Validation passed: `python -m py_compile .\backend\app\services\layer3_source_directory_context_packet.py .\backend\tests\test_layer3_source_directory_context_packet.py`; `python -m pytest .\backend\tests\test_layer3_source_directory_context_packet.py -q` -> `4 passed`.
+
+This runtime proof admits no backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, durable context-packet row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered control, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_material_retrieval_augmented_context_packet_runtime_proof`; after sync, pivot to `select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync` only if current-main evidence confirms this runtime is cleanly synced and no concrete same-family context-packet defect remains.
