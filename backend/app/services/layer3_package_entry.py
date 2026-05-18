@@ -66,6 +66,9 @@ SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE = "140_QUAL_APS_PACKAGE_CO
 SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE = (
     "804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE"
 )
+SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE = (
+    "828_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE"
+)
 PACKAGE_SCHEMA_VERSION = 1
 
 FINALIZED_PACKAGE_SESSION_STATUSES = frozenset(
@@ -1466,6 +1469,241 @@ def materialize_source_directory_qualitative_analysis_package_commit(
         "construction_basis_hash"
     ] = construction_basis_hash
     reconciliation_record.summary_json = reconciliation_summary
+    for package in package_rows:
+        package.summary_json = {
+            **_json_clone(package.summary_json or {}),
+            "construction_basis_hash": construction_basis_hash,
+        }
+    db.flush()
+
+    return Layer3PackageEntryResult(
+        reconciliation_record=reconciliation_record,
+        output_packages=tuple(package_rows),
+        replayed=False,
+    )
+
+
+def materialize_source_directory_hybrid_context_qualitative_analysis_package_commit(
+    db: Session,
+    *,
+    session: L3Session,
+    material_snapshot: L3MaterialSnapshot,
+    client_request_id: str,
+    package_review_preview_hash: str,
+    qualitative_analysis: dict[str, Any],
+    source_authority: dict[str, Any],
+) -> Layer3PackageEntryResult:
+    _ensure_session_not_yet_packaged(db, session_id=session.session_id)
+
+    package_status = PACKAGE_STATUS_COMPLETE
+    source_gate = SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE
+    authority_basis = {
+        "schema_id": "layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_commit_authority_basis.v1",
+        "client_request_id": client_request_id,
+        "session_id": session.session_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "source_shape": material_snapshot.source_shape,
+        "package_review_preview_hash": package_review_preview_hash,
+        "qualitative_analysis_hash": qualitative_analysis["qualitative_analysis_hash"],
+        "hybrid_context_packet_hash": qualitative_analysis["hybrid_context_packet_hash"],
+        "lexical_context_packet_hash": qualitative_analysis["lexical_context_packet_hash"],
+        "index_authority_hash": qualitative_analysis["index_authority_hash"],
+        "embedding_index_authority_hash": qualitative_analysis["embedding_index_authority_hash"],
+        "source_authority": _json_clone(source_authority),
+        "package_kinds": [
+            PACKAGE_KIND_CANONICAL_INTERNAL,
+            PACKAGE_KIND_USER_FACING,
+            PACKAGE_KIND_REVIEW_FACING,
+        ],
+        "source_gate": source_gate,
+    }
+    authority_basis_hash = _stable_hash(authority_basis)
+    analysis_summary = {
+        "analysis_contract_id": qualitative_analysis["analysis_contract_id"],
+        "analysis_mode": qualitative_analysis["analysis_mode"],
+        "analysis_question": qualitative_analysis["analysis_question"],
+        "analysis_focus": qualitative_analysis["analysis_focus"],
+        "query_tokens": _json_clone(qualitative_analysis.get("query_tokens") or []),
+        "evidence_summary": _json_clone(qualitative_analysis["evidence_summary"]),
+        "salient_terms": _json_clone(qualitative_analysis.get("salient_terms") or []),
+        "supporting_segments": _json_clone(qualitative_analysis.get("supporting_segments") or []),
+        "coverage_notes": _json_clone(qualitative_analysis.get("coverage_notes") or []),
+        "analysis_limits": _json_clone(qualitative_analysis.get("analysis_limits") or []),
+        "lexical_total": int(qualitative_analysis["lexical_total"]),
+        "lexical_limit": int(qualitative_analysis["lexical_limit"]),
+        "lexical_offset": int(qualitative_analysis["lexical_offset"]),
+        "vector_total": int(qualitative_analysis["vector_total"]),
+        "vector_top_k": int(qualitative_analysis["vector_top_k"]),
+        "hybrid_total": int(qualitative_analysis["hybrid_total"]),
+    }
+    source_summary = {
+        "session_id": session.session_id,
+        "selection_manifest_id": session.selection_manifest_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "source_plane": material_snapshot.source_plane,
+        "source_shape": material_snapshot.source_shape,
+        "source_identity": _json_clone(material_snapshot.source_identity_json or {}),
+        "source_provenance": _json_clone(material_snapshot.source_provenance_json or {}),
+        "load_summary": _json_clone(material_snapshot.load_summary_json or {}),
+        "payload_hash": material_snapshot.payload_hash,
+        "source_authority": _json_clone(source_authority),
+    }
+    negative_invariants = {
+        "source_package_row_mutation_enabled": False,
+        "package_payload_rewrite_enabled": False,
+        "package_review_submit_enabled": False,
+        "handoff_export_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "prompt_model_provider_runtime_enabled": False,
+    }
+    canonical_payload = {
+        "package_header": _package_header(
+            session_id=session.session_id,
+            package_kind=PACKAGE_KIND_CANONICAL_INTERNAL,
+            package_status=package_status,
+            source_gate=source_gate,
+        ),
+        "authority_basis": _json_clone(authority_basis),
+        "authority_basis_hash": authority_basis_hash,
+        "source_summary": source_summary,
+        "qualitative_analysis": analysis_summary,
+        "package_lifecycle": {
+            "package_construction_enabled": True,
+            "package_mutation_enabled": False,
+            "source_package_row_mutation_enabled": False,
+            "package_payload_rewrite_enabled": False,
+        },
+        "downstream_unavailable": {
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "external_export_download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "frontend_durable_authority_enabled": False,
+        },
+        "negative_invariants": negative_invariants,
+    }
+    canonical_key = canonical_payload["package_header"]["package_key"]
+    user_facing_payload = {
+        "package_header": _package_header(
+            session_id=session.session_id,
+            package_kind=PACKAGE_KIND_USER_FACING,
+            package_status=package_status,
+            canonical_package_key=canonical_key,
+            source_gate=source_gate,
+        ),
+        "session_summary": {
+            "session_id": session.session_id,
+            "material_snapshot_id": material_snapshot.material_snapshot_id,
+            "source_shape": material_snapshot.source_shape,
+            "package_status": package_status,
+        },
+        "analysis_summary": {
+            "analysis_question": analysis_summary["analysis_question"],
+            "analysis_focus": analysis_summary["analysis_focus"],
+            "evidence_summary": analysis_summary["evidence_summary"],
+            "supporting_segments": analysis_summary["supporting_segments"],
+            "coverage_notes": analysis_summary["coverage_notes"],
+        },
+        "downstream_unavailable": canonical_payload["downstream_unavailable"],
+    }
+    review_facing_payload = {
+        "package_header": _package_header(
+            session_id=session.session_id,
+            package_kind=PACKAGE_KIND_REVIEW_FACING,
+            package_status=package_status,
+            canonical_package_key=canonical_key,
+            source_gate=source_gate,
+        ),
+        "authority_basis_hash": authority_basis_hash,
+        "source_summary": source_summary,
+        "analysis_review": analysis_summary,
+        "review_controls": {
+            "package_review_submit_enabled": False,
+            "frontend_durable_authority_enabled": False,
+        },
+        "owner_service_notes_json": [
+            "constructed from source-directory hybrid context-packet qualitative-analysis package-preview authority",
+            "handoff, export, connector dispatch, provider delivery, and frontend durable authority remain deferred",
+        ],
+    }
+
+    reconciliation_summary = {
+        "package_status": package_status,
+        "source_gate": source_gate,
+        "source_directory_hybrid_context_qualitative_package_commit": {
+            "schema_id": "layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_commit_summary.v1",
+            "client_request_id": client_request_id,
+            "authority_basis": _json_clone(authority_basis),
+            "authority_basis_hash": authority_basis_hash,
+            "package_review_preview_hash": package_review_preview_hash,
+            "package_construction_source_gate": source_gate,
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "external_export_download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "network_egress_enabled": False,
+            "frontend_durable_authority_enabled": False,
+        },
+    }
+    reconciliation_record = L3ReconciliationRecord(
+        reconciliation_record_id=uuid_str(),
+        session_id=session.session_id,
+        status=_reconciliation_status(package_status),
+        summary_json=reconciliation_summary,
+    )
+    db.add(reconciliation_record)
+    db.flush()
+
+    package_rows: list[L3OutputPackage] = []
+    for package_kind, payload in (
+        (PACKAGE_KIND_CANONICAL_INTERNAL, canonical_payload),
+        (PACKAGE_KIND_USER_FACING, user_facing_payload),
+        (PACKAGE_KIND_REVIEW_FACING, review_facing_payload),
+    ):
+        payload_ref, payload_hash = _persist_package_payload(
+            session_id=session.session_id,
+            package_kind=package_kind,
+            payload=payload,
+        )
+        package_rows.append(
+            L3OutputPackage(
+                output_package_id=uuid_str(),
+                session_id=session.session_id,
+                reconciliation_record_id=reconciliation_record.reconciliation_record_id,
+                package_kind=package_kind,
+                status=package_status,
+                payload_ref=payload_ref,
+                payload_hash=payload_hash,
+                summary_json=_output_package_summary(
+                    package_kind=package_kind,
+                    payload=payload,
+                    package_status=package_status,
+                    findings=analysis_summary["supporting_segments"],
+                    contradictions=[],
+                    caveats=analysis_summary["analysis_limits"],
+                    source_gate=source_gate,
+                ),
+            )
+        )
+    db.add_all(package_rows)
+    db.flush()
+
+    construction_basis_hash = _stable_hash(
+        {
+            **authority_basis,
+            "package_kinds": [package.package_kind for package in package_rows],
+            "payload_hashes": [package.payload_hash for package in package_rows],
+        }
+    )
+    reconciliation_summary["source_directory_hybrid_context_qualitative_package_commit"][
+        "construction_basis_hash"
+    ] = construction_basis_hash
+    reconciliation_record.summary_json = _json_clone(reconciliation_summary)
     for package in package_rows:
         package.summary_json = {
             **_json_clone(package.summary_json or {}),

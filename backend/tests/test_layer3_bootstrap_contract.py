@@ -46,6 +46,12 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
         ]
         is True
     )
+    assert (
+        direct_body["features"][
+            "source_directory_hybrid_context_packet_qualitative_analysis_package_commit"
+        ]
+        is True
+    )
     assert direct_body["features"]["source_directory_qualitative_hybrid_analysis"] is True
     assert direct_body["features"]["source_directory_package_commit"] is True
     assert direct_body["features"]["source_directory_package_review_submit"] is True
@@ -106,6 +112,21 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
         == (
             "/api/v1/layer3/source/ingestion/server-configured-directory/"
             "hybrid-context-packet/qualitative-analysis"
+        )
+    )
+    assert (
+        direct_body["execution_readiness"][
+            "source_directory_hybrid_context_packet_qualitative_analysis_package_commit_admitted"
+        ]
+        is True
+    )
+    assert (
+        direct_body["execution_readiness"][
+            "source_directory_hybrid_context_packet_qualitative_analysis_package_commit_endpoint"
+        ]
+        == (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/commit"
         )
     )
     assert direct_body["execution_readiness"]["source_directory_qualitative_hybrid_analysis_admitted"] is True
