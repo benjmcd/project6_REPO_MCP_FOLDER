@@ -2066,6 +2066,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FRE
     PLANNING_DOCS
     / "762_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "763_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -65149,6 +65153,105 @@ def _check_source_directory_material_qualitative_hybrid_context_packet_authority
                 )
 
 
+def _check_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_qualitative_hybrid_context_packet_authority_freeze`.",
+        "763_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "762_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE.md",
+        "#1367",
+        "codex/l3-rag-qual-selection",
+        "898b18cd5e31800612170b7bb3b4331c2f034488",
+        "add262b96ba510eef0fd65bff6ea1da33823defd",
+        "codex/l3-rag-qual-selection-sync",
+        "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
+        "Runtime behavior introduced by freeze PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "3m04s",
+        "test",
+        "3m25s",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+        "source_directory_material_retrieval_augmented_context_packet_authority",
+        "retrieval_augmented_qualitative_context_packet",
+        "source_directory_material_deterministic_lexical_retrieval_authority",
+        "backend/app/services/layer3_source_directory_context_packet.py",
+        "backend/tests/test_layer3_source_directory_context_packet.py",
+        "python -m py_compile .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source directory qualitative hybrid context packet authority freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Qualitative Hybrid Context Packet Authority Freeze Current-Main Sync",
+            "763_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1367",
+            "898b18cd5e31800612170b7bb3b4331c2f034488",
+            "add262b96ba510eef0fd65bff6ea1da33823defd",
+            "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
+            "source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "retrieval_augmented_qualitative_context_packet",
+            "source_directory_material_deterministic_lexical_retrieval_authority",
+            "backend/app/services/layer3_source_directory_context_packet.py",
+            "backend/tests/test_layer3_source_directory_context_packet.py",
+            "Runtime behavior introduced by this sync: `false`.",
+            "write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync",
+            "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
+            "codex/l3-rag-qual-selection-sync",
+            "763_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "762_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE.md",
+            "#1367",
+            "898b18cd5e31800612170b7bb3b4331c2f034488",
+            "add262b96ba510eef0fd65bff6ea1da33823defd",
+            '"runtime_behavior_introduced_by_freeze": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"unresolvedReviewThreads": 0',
+            "source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "retrieval_augmented_qualitative_context_packet",
+            "backend/app/services/layer3_source_directory_context_packet.py",
+            "backend/tests/test_layer3_source_directory_context_packet.py",
+            "write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync_proof",
+            "current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
+            "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
+            "763_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1367",
+            "add262b96ba510eef0fd65bff6ea1da33823defd",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "no runtime behavior introduced by this sync",
+            "write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory qualitative hybrid context packet authority freeze sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -65754,6 +65857,7 @@ def main() -> int:
     _check_source_directory_material_deterministic_lexical_retrieval_runtime_proof(errors)
     _check_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync(errors)
     _check_source_directory_material_qualitative_hybrid_context_packet_authority_freeze(errors)
+    _check_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
