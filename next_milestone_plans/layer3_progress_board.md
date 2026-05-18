@@ -4734,3 +4734,19 @@ PR `#1339` had green `backend-layer3-api` and `test` checks, comments totalCount
 No runtime behavior is introduced by the evaluation or this sync. Service runtime behavior change, connector invocation, connector-run creation, connector target creation, real destination write, local outbox write adoption, credentials, external network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, provider-private signed URL generation, provider-private handoff adoption, external local export adoption, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
 
 The next exact current-main posture is `select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_fake_target_sync`.
+
+## Corrected Artifact Active Authority Server Owned Local Outbox Write Evaluation
+
+Evaluation proof/control: `736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md` selects `server_owned_local_outbox_write` as the next downstream active-package-authority reader after corrected-artifact server-owned local outbox fake-target sync.
+
+The evaluated branch is `codex/l3-corrected-outbox-write` from current-main checkpoint `fdb0e94d14a791548f104a739276c597320c4682`.
+
+The pass records that current main already proves `POST /api/v1/layer3/handoff/connector/local-outbox/write` consumes corrected-artifact active package authority through recorded `server_owned_local_outbox_target`, `connector_local_destination_receipt`, `connector_dispatch_record`, and `external_export_download_prepare` state. The canonical service authority is `backend/app/services/layer3_server_owned_local_outbox_write.py`; durable write/status authority remains `L3ServerOwnedLocalOutboxWriteReceipt`.
+
+The existing API regression is `test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority` in `backend/tests/test_layer3_api.py`.
+
+Observed validation before this control record: `python -m pytest .\backend\tests\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority -q` with `1 passed`.
+
+This pass records already-present proof only and introduces no service runtime behavior change or test/proof behavior change. The admitted proof is bounded to server-owned local outbox write even though the existing regression also contains downstream provider-private handoff and external local export assertions. Provider-private handoff adoption, external local export adoption, connector invocation, connector-run creation, connector target creation, arbitrary external destination write, credentials, external network egress, provider-public delivery/use, raw public URL exposure, signed URL generation, provider-private signed URL generation, package payload rewrite, source `L3OutputPackage` mutation, downstream invalidation, handoff/export rerun, external export/download prepare rerun beyond delivery revalidation, source expansion, RAG/vector behavior, broad qualitative/hybrid execution, rendered controls, auth/security behavior, frontend-durable authority, caller-supplied paths/URLs, browser-supplied refs/hashes/bytes, raw local path exposure, and hidden LLM planning remain blocked.
+
+The next exact posture after merge is `await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation`.

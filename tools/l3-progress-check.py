@@ -1962,6 +1962,9 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET
     PLANNING_DOCS
     / "735_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION = (
+    PLANNING_DOCS / "736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -1973,6 +1976,9 @@ LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_TEST = (
 )
 LAYER3_EXTERNAL_LOCAL_EXPORT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_local_export.py"
+)
+LAYER3_SERVER_OWNED_LOCAL_OUTBOX_WRITE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_server_owned_local_outbox_write.py"
 )
 LAYER3_EXTERNAL_LOCAL_EXPORT_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0030_layer3_external_local_export.py"
@@ -61931,6 +61937,148 @@ def _check_corrected_artifact_active_authority_server_owned_local_outbox_fake_ta
                 )
 
 
+def _check_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `corrected_artifact_active_authority_server_owned_local_outbox_write`.",
+        "736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md",
+        "735_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-outbox-write",
+        "fdb0e94d14a791548f104a739276c597320c4682",
+        "Selected downstream reader path: `server_owned_local_outbox_write`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+        "backend/app/services/layer3_server_owned_local_outbox_write.py",
+        "L3ServerOwnedLocalOutboxWriteReceipt",
+        "corrected_artifact_active_authority_server_owned_local_outbox_write_proven",
+        "Runtime behavior change in this pass: `false`",
+        "Test/proof behavior change in this pass: `false`",
+        "Current-main proof already present: `true`",
+        "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+        "Result observed before this control record: `1 passed`",
+        "provider-private handoff and external local export assertions",
+        "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+        "select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_write_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION)} "
+                f"missing corrected-artifact active authority server-owned local outbox write term: {term}"
+            )
+
+    for blocked in (
+        "connector invocation",
+        "connector-run creation",
+        "connector target creation",
+        "arbitrary external destination write",
+        "credentials",
+        "external network egress",
+        "provider-public delivery/use",
+        "raw public URL exposure",
+        "signed URL generation",
+        "provider-private signed URL generation",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "source expansion",
+        "RAG/vector behavior",
+        "broad qualitative/hybrid execution",
+        "rendered controls",
+        "auth/security behavior",
+        "frontend-durable authority",
+        "raw local path exposure",
+        "hidden LLM planning",
+    ):
+        if blocked not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION)} "
+                f"missing corrected-artifact active authority server-owned local outbox write blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority Server Owned Local Outbox Write Evaluation",
+            "736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md",
+            "codex/l3-corrected-outbox-write",
+            "fdb0e94d14a791548f104a739276c597320c4682",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+            "backend/app/services/layer3_server_owned_local_outbox_write.py",
+            "L3ServerOwnedLocalOutboxWriteReceipt",
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "provider-private handoff and external local export assertions",
+            "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+            "branch_local_corrected_artifact_active_authority_server_owned_local_outbox_write_proven",
+            "codex/l3-corrected-outbox-write",
+            "736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md",
+            "fdb0e94d14a791548f104a739276c597320c4682",
+            "server_owned_local_outbox_write",
+            "backend/app/services/layer3_server_owned_local_outbox_write.py",
+            "L3ServerOwnedLocalOutboxWriteReceipt",
+            '"runtime_behavior_change": false',
+            '"test_proof_behavior_change": false',
+            '"current_main_proof_already_present": true',
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "provider_private_handoff_adoption",
+            "external_local_export_adoption",
+            "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_write_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_proof",
+            "branch_local_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+            "branch_local_corrected_artifact_active_authority_server_owned_local_outbox_write_proven",
+            "736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md",
+            "fdb0e94d14a791548f104a739276c597320c4682",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+            "backend/app/services/layer3_server_owned_local_outbox_write.py",
+            "L3ServerOwnedLocalOutboxWriteReceipt",
+            '"runtime_behavior_change": false',
+            '"test_proof_behavior_change": false',
+            '"current_main_proof_already_present": true',
+            "corrected-artifact chain reaches POST /api/v1/layer3/handoff/connector/local-outbox/write",
+            "provider-private handoff adoption and external local export adoption remain separate future selections",
+            "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "_server_owned_local_outbox_write_payload",
+            '"/api/v1/layer3/handoff/connector/local-outbox/write"',
+            "L3ServerOwnedLocalOutboxWriteReceipt",
+            "artifact://server-owned-local-outbox-source-redacted",
+            'assert write_body["server_owned_local_outbox_write_performed"] is True',
+            'assert write_replay.json()["status"] == "already_recorded"',
+            "connector_local_destination_receipt_authority_basis_hash",
+            "artifact_path.read_bytes() == expected_delivery_bytes",
+        ),
+        LAYER3_SERVER_OWNED_LOCAL_OUTBOX_WRITE_SERVICE: (
+            "def write_server_owned_local_outbox",
+            "SERVER_OWNED_LOCAL_OUTBOX_WRITE_REDACTED_SOURCE_REF",
+            "load_persisted_bundle_artifact",
+            "L3ServerOwnedLocalOutboxWriteReceipt",
+            "connector_local_destination_receipt_authority_basis_hash",
+            "server_owned_local_outbox_write_recorded",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority server-owned local outbox write "
+                    f"artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -62509,6 +62657,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation(errors)
     _check_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation_current_main_sync(errors)
+    _check_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
