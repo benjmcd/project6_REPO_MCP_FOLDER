@@ -1977,6 +1977,10 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF
     PLANNING_DOCS
     / "739_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION = (
+    PLANNING_DOCS
+    / "740_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -62487,6 +62491,142 @@ def _check_corrected_artifact_active_authority_local_outbox_provider_private_han
                 )
 
 
+def _check_corrected_artifact_active_authority_external_local_export_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `corrected_artifact_active_authority_external_local_export`.",
+        "740_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION.md",
+        "739_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-external-local-export",
+        "d85d5ad7602a22cea7d52edd678612274d7fab73",
+        "Selected downstream reader path: `external_local_export`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        "backend/app/services/layer3_external_local_export.py",
+        "L3ExternalLocalExportReceipt",
+        "L3ExternalLocalExportAuditEvent",
+        "corrected_artifact_active_authority_external_local_export_proven",
+        "Runtime behavior change in this pass: `false`",
+        "Test/proof behavior change in this pass: `true`",
+        "Current-main proof already present: `false`",
+        "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+        "provider_private_handoff_authority_basis_hash",
+        "server_owned_local_outbox_write_authority_basis_hash",
+        "external_local_export_written",
+        "Result observed in this branch: `1 passed`",
+        "await_current_main_sync_for_corrected_artifact_active_authority_external_local_export_evaluation",
+        "select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION)} "
+                f"missing corrected-artifact active authority external local export term: {term}"
+            )
+
+    for blocked in (
+        "provider-public delivery/use",
+        "provider-private signed URL generation/use",
+        "raw token exposure",
+        "raw provider object key exposure",
+        "real provider network write",
+        "real provider object store write",
+        "real connector invocation",
+        "`ConnectorRun` creation",
+        "`ConnectorRunTarget` creation",
+        "arbitrary external destination write",
+        "credentials",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "source expansion",
+        "RAG/vector behavior",
+        "qualitative-hybrid runtime",
+        "rendered controls",
+        "auth/security behavior",
+        "full mockup activation",
+        "frontend-durable authority",
+        "raw local path exposure",
+        "hidden LLM planning",
+    ):
+        if blocked not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION)} "
+                f"missing corrected-artifact active authority external local export blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority External Local Export Evaluation",
+            "740_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION.md",
+            "codex/l3-corrected-external-local-export",
+            "d85d5ad7602a22cea7d52edd678612274d7fab73",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+            "backend/app/services/layer3_external_local_export.py",
+            "L3ExternalLocalExportReceipt",
+            "L3ExternalLocalExportAuditEvent",
+            "corrected_artifact_active_authority_external_local_export_proven",
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_external_local_export_evaluation",
+            "select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_external_local_export_evaluation",
+            "branch_local_corrected_artifact_active_authority_external_local_export_proven",
+            "codex/l3-corrected-external-local-export",
+            "740_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION.md",
+            "d85d5ad7602a22cea7d52edd678612274d7fab73",
+            "external_local_export",
+            "backend/app/services/layer3_external_local_export.py",
+            "L3ExternalLocalExportReceipt",
+            "L3ExternalLocalExportAuditEvent",
+            '"runtime_behavior_change": false',
+            '"test_proof_behavior_change": true',
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_external_local_export_evaluation",
+            "select_source_expansion_ingestion_named_source_family_after_corrected_artifact_external_local_export_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_external_local_export_evaluation_proof",
+            "branch_local_corrected_artifact_active_authority_external_local_export_evaluation",
+            "branch_local_corrected_artifact_active_authority_external_local_export_proven",
+            "740_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_LOCAL_EXPORT_EVALUATION.md",
+            "d85d5ad7602a22cea7d52edd678612274d7fab73",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+            "backend/app/services/layer3_external_local_export.py",
+            "L3ExternalLocalExportReceipt",
+            "L3ExternalLocalExportAuditEvent",
+            "corrected-artifact activation chain reaches POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+            "external local export consumes local-outbox provider-private handoff",
+            "source expansion ingestion becomes the next deferred lane after current-main sync",
+            "await_current_main_sync_for_corrected_artifact_active_authority_external_local_export_evaluation",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "_external_local_export_payload",
+            "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+            "external_local_export_written",
+            "provider_private_handoff_authority_basis_hash",
+            "server_owned_local_outbox_write_authority_basis_hash",
+            "counts_before_external_export",
+            "L3ExternalLocalExportReceipt",
+            "L3ExternalLocalExportAuditEvent",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority external local export "
+                    f"artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -63069,6 +63209,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation(errors)
     _check_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_current_main_sync(errors)
+    _check_corrected_artifact_active_authority_external_local_export_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
