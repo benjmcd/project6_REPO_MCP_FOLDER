@@ -2210,6 +2210,10 @@ LAYER3_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY = (
     PLANNING_DOCS
     / "800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -69927,6 +69931,113 @@ def _check_source_directory_operator_readiness_status_surface_runtime_entry(
                 )
 
 
+def _check_source_directory_operator_readiness_status_surface_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_operator_readiness_bootstrap_status_surface_runtime`.",
+        "801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+        "#1405",
+        "codex/l3-source-readiness",
+        "70e44f40995c6e0954f1f282b8b4bb41c19375ba",
+        "30716e5bf7f487ba79e60845f1c2bcff651ea4ec",
+        "codex/l3-source-readiness-sync",
+        "current_main_synced_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync",
+        "source_directory_ingestion_scan",
+        "source_directory_ingestion_status",
+        "source_directory_material_preview",
+        "source_directory_vector_retrieval",
+        "source_directory_qualitative_hybrid_analysis",
+        "source-directory-operator-status",
+        "Layer3ExecutionReadinessResponse",
+        "server_configured_operator_directory_text_table_source_family",
+        "`backend-layer3-api`: `SUCCESS`, `3m22s`",
+        "`test`: `SUCCESS`, `3m23s`",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state: `CLEAN`",
+        "Runtime behavior introduced by implementation PR: `true`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "new_source_family_enabled: False",
+        "frontend_durable_authority_enabled: False",
+        "network_egress_enabled: False",
+        "prompt_model_provider_runtime_enabled: False",
+        "This current-main sync admits no new source family",
+        "The next major implementation-bearing lane should be selected from the remaining Layer 3 end-to-end gaps",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory operator readiness status surface sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Operator Readiness Status Surface Runtime Current-Main Sync",
+            "801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1405",
+            "codex/l3-source-readiness",
+            "70e44f40995c6e0954f1f282b8b4bb41c19375ba",
+            "30716e5bf7f487ba79e60845f1c2bcff651ea4ec",
+            "current_main_synced_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+            "source-directory-operator-status",
+            "3m22s",
+            "3m23s",
+            "Runtime behavior introduced by this sync: `false`.",
+            "new_source_family_enabled: False",
+            "network_egress_enabled: False",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync",
+        ),
+        MANIFEST: (
+            "source_directory_operator_readiness_bootstrap_status_surface_runtime_current_main_sync",
+            "current_main_synced_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+            "codex/l3-source-readiness-sync",
+            "801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+            "#1405",
+            "70e44f40995c6e0954f1f282b8b4bb41c19375ba",
+            "30716e5bf7f487ba79e60845f1c2bcff651ea4ec",
+            '"runtime_behavior_change": true',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api": "SUCCESS"',
+            '"backend-layer3-api_duration": "3m22s"',
+            '"test_duration": "3m23s"',
+            '"merge_state_before_merge": "CLEAN"',
+            "source-directory-operator-status",
+            '"new_source_family_enabled": false',
+            '"frontend_durable_authority_enabled": false',
+            '"network_egress_enabled": false',
+            '"prompt_model_provider_runtime_enabled": false',
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_operator_readiness_bootstrap_status_surface_runtime_current_main_sync_proof",
+            "current_main_sync_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+            "current_main_synced_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+            "codex/l3-source-readiness-sync",
+            "801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1405",
+            "30716e5bf7f487ba79e60845f1c2bcff651ea4ec",
+            "current main includes source-directory bootstrap feature flags",
+            "current main records source-directory-operator-status as an implemented readiness gate",
+            "current main sync introduces no additional runtime behavior",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync is selected as the next posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory operator readiness status surface sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -70584,6 +70695,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_operator_readiness_status_surface_runtime_entry(errors)
+    _check_source_directory_operator_readiness_status_surface_runtime_current_main_sync(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")
