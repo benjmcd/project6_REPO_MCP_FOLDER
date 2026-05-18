@@ -2070,6 +2070,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FRE
     PLANNING_DOCS
     / "763_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT = (
+    PLANNING_DOCS
+    / "764_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -65252,6 +65256,113 @@ def _check_source_directory_material_qualitative_hybrid_context_packet_authority
                 )
 
 
+def _check_source_directory_material_qualitative_hybrid_context_packet_authority_contract(
+    errors: list[str],
+) -> None:
+    contract_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local qualitative-hybrid context-packet authority contract for `source_directory_material_qualitative_hybrid_context_packet_authority_contract`.",
+        "764_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT.md",
+        "codex/l3-rag-qual-contract",
+        "933a1d0753cee6c62888cf907291ad4c54f3af17",
+        "763_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
+        "write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime",
+        "source_directory_material_retrieval_augmented_context_packet_authority",
+        "retrieval_augmented_qualitative_context_packet",
+        "source_directory_material_deterministic_lexical_retrieval_authority",
+        "backend/app/services/layer3_source_directory_context_packet.py",
+        "backend/tests/test_layer3_source_directory_context_packet.py",
+        "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+        "Runtime behavior introduced by this contract: `false`.",
+        "Vector runtime selected: `false`.",
+        "Embedding generation selected: `false`.",
+        "Prompt/model/provider runtime selected: `false`.",
+        "Qualitative generation runtime selected: `false`.",
+        "Durable context-packet row writes selected: `false`.",
+        "`client_request_id`",
+        "`index_authority_hash`",
+        "source_directory_material_text_retrieval(db, payload)",
+        "layer3.source_directory_context_packet.v1",
+        "context_packet_hash",
+        "source_index_rows_written: False",
+        "retrieval_rows_written: False",
+        "context_packet_rows_written: False",
+        "qualitative_generation_rows_written: False",
+        "analysis_run_rows_written: False",
+        "package_rows_written: False",
+        "current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+        "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+    ):
+        if term not in contract_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT)} "
+                f"missing source directory qualitative hybrid context packet authority contract term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Qualitative Hybrid Context Packet Authority Contract",
+            "764_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT.md",
+            "codex/l3-rag-qual-contract",
+            "933a1d0753cee6c62888cf907291ad4c54f3af17",
+            "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "retrieval_augmented_qualitative_context_packet",
+            "source_directory_material_deterministic_lexical_retrieval_authority",
+            "backend/app/services/layer3_source_directory_context_packet.py",
+            "backend/tests/test_layer3_source_directory_context_packet.py",
+            "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+            "Runtime behavior introduced by this contract: `false`.",
+            "source_directory_material_text_retrieval(db, payload)",
+            "context_packet_hash",
+            "current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+            "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+            "branch_local_source_directory_material_qualitative_hybrid_context_packet_authority_contract_written",
+            "codex/l3-rag-qual-contract",
+            "764_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT.md",
+            "933a1d0753cee6c62888cf907291ad4c54f3af17",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "retrieval_augmented_qualitative_context_packet",
+            "source_directory_material_deterministic_lexical_retrieval_authority",
+            "backend/app/services/layer3_source_directory_context_packet.py",
+            "backend/tests/test_layer3_source_directory_context_packet.py",
+            "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+            '"runtime_behavior_change": false',
+            "call source_directory_material_text_retrieval(db, payload)",
+            "compute context_packet_hash",
+            "current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_qualitative_hybrid_context_packet_authority_contract_proof",
+            "branch_local_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+            "branch_local_source_directory_material_qualitative_hybrid_context_packet_authority_contract_written",
+            "764_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT.md",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "retrieval_augmented_qualitative_context_packet",
+            "backend/app/services/layer3_source_directory_context_packet.py",
+            "backend/tests/test_layer3_source_directory_context_packet.py",
+            '"runtime_behavior_change": false',
+            "requires future runtime to call source_directory_material_text_retrieval(db, payload)",
+            "requires stable context_packet_hash replay",
+            "current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+            "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory qualitative hybrid context packet authority contract artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -65858,6 +65969,7 @@ def main() -> int:
     _check_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync(errors)
     _check_source_directory_material_qualitative_hybrid_context_packet_authority_freeze(errors)
     _check_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync(errors)
+    _check_source_directory_material_qualitative_hybrid_context_packet_authority_contract(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
