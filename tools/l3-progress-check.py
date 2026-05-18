@@ -2238,6 +2238,10 @@ LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_CURRE
     PLANNING_DOCS
     / "807_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -70802,6 +70806,146 @@ def _check_source_directory_qualitative_analysis_package_review_submit_runtime_c
                 )
 
 
+def _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze and runtime proof for `source_directory_qualitative_analysis_handoff_export_prepare_runtime`.",
+        "808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+        "codex/l3-source-handoff-export-prepare",
+        "15e276104367627f0f886cb00a22c10dffd9492e",
+        "807_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync",
+        "implement_source_directory_qualitative_analysis_handoff_export_prepare_after_package_review_submit_sync",
+        "source_directory_qualitative_analysis_handoff_export_prepare_runtime_implemented_branch_local",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare",
+        "layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1",
+        "source_directory_qualitative_analysis_handoff_export_prepare_authority",
+        "layer3.handoff_export_prepare_state.v1",
+        "package_review_state: package_review_approved",
+        "handoff_target: internal_export_envelope",
+        "export_mode: prepare_only",
+        "layer3.source_directory_internal_export_envelope.v1",
+        "already_prepared",
+        "payload_refs_redacted: True",
+        "11 passed",
+        "await_current_main_sync_for_source_directory_qualitative_analysis_handoff_export_prepare_runtime",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY)} "
+                f"missing source-directory handoff/export prepare runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Qualitative Analysis Handoff Export Prepare Runtime Entry Freeze",
+            "808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "codex/l3-source-handoff-export-prepare",
+            "15e276104367627f0f886cb00a22c10dffd9492e",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync",
+            "source_directory_qualitative_analysis_handoff_export_prepare_runtime_implemented_branch_local",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare",
+            "layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1",
+            "source_directory_qualitative_analysis_handoff_export_prepare_authority",
+            "layer3.handoff_export_prepare_state.v1",
+            "handoff_export_prepared",
+            "already_prepared",
+            "11 passed",
+            "payload refs redacted",
+            "await_current_main_sync_for_source_directory_qualitative_analysis_handoff_export_prepare_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_qualitative_analysis_handoff_export_prepare_runtime_entry",
+            "source_directory_qualitative_analysis_handoff_export_prepare_runtime_implemented_branch_local",
+            "codex/l3-source-handoff-export-prepare",
+            "808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "15e276104367627f0f886cb00a22c10dffd9492e",
+            "807_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "implement_source_directory_qualitative_analysis_handoff_export_prepare_after_package_review_submit_sync",
+            '"runtime_behavior_change": true',
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare",
+            "layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1",
+            "source_directory_qualitative_analysis_handoff_export_prepare_authority",
+            "layer3.handoff_export_prepare_state.v1",
+            '"requires_package_review_state": "package_review_approved"',
+            '"handoff_target": "internal_export_envelope"',
+            '"export_mode": "prepare_only"',
+            '"internal_envelope_schema_id": "layer3.source_directory_internal_export_envelope.v1"',
+            '"package_rows_written": false',
+            '"package_payload_write_enabled": false',
+            '"payload_refs_redacted": true',
+            '"network_egress_enabled": false',
+            '"prompt_model_provider_runtime_enabled": false',
+            "await_current_main_sync_for_source_directory_qualitative_analysis_handoff_export_prepare_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_qualitative_analysis_handoff_export_prepare_runtime_entry_proof",
+            "branch_local_source_directory_qualitative_analysis_handoff_export_prepare_runtime_entry",
+            "source_directory_qualitative_analysis_handoff_export_prepare_runtime_implemented_branch_local",
+            "codex/l3-source-handoff-export-prepare",
+            "808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "prepare schema is layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1",
+            "prepare state schema is layer3.handoff_export_prepare_state.v1",
+            "runtime requires approved package-review submit authority",
+            "runtime replay returns already_prepared",
+            "non-approved package-review submit state is rejected",
+            "payload references are redacted from the API response and internal envelope",
+            "no new package rows package payloads L3PassRun AnalysisRun ConnectorRun or ConnectorRunTarget rows are written",
+            "await_current_main_sync_for_source_directory_qualitative_analysis_handoff_export_prepare_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory handoff/export prepare artifact term: {term}"
+                )
+
+    service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE, errors)
+    for term in (
+        "HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
+        "HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID",
+        "HANDOFF_EXPORT_PREPARE_SOURCE_GATE",
+        "def source_directory_qualitative_analysis_handoff_export_prepare(",
+        "source_directory_handoff_export_prepare_submit_not_approved",
+        "layer3.source_directory_internal_export_envelope.v1",
+        "payload_refs_redacted",
+    ):
+        if term not in service_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE)} "
+                f"missing source-directory handoff/export prepare service term: {term}"
+            )
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "Layer3SourceDirectoryQualitativeAnalysisHandoffExportPrepareRequest",
+        "Layer3SourceDirectoryQualitativeAnalysisHandoffExportPrepareResponse",
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing source-directory handoff/export prepare API term: {term}")
+
+    test_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST, errors)
+    for term in (
+        "test_source_directory_qualitative_analysis_handoff_export_prepare_records_bounded_authority",
+        "test_source_directory_qualitative_analysis_handoff_export_prepare_requires_approved_submit",
+        "already_prepared",
+        "source_directory_handoff_export_prepare_submit_not_approved",
+    ):
+        if term not in test_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST)} "
+                f"missing source-directory handoff/export prepare test term: {term}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -71478,6 +71622,7 @@ def main() -> int:
     _check_source_directory_qualitative_analysis_package_review_submit_runtime_current_main_sync(
         errors
     )
+    _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_entry(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
