@@ -2186,6 +2186,10 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY =
     PLANNING_DOCS
     / "794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -69142,6 +69146,124 @@ def _check_provider_public_delivery_use_fake_provider_runtime_implementation_ent
                 )
 
 
+def _check_provider_public_delivery_use_fake_provider_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `provider_public_delivery_use_fake_provider_redacted_runtime_implementation`.",
+        "795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md",
+        "#1399",
+        "codex/l3-pp-use-runtime",
+        "81625823561540d2c4ae17d5ee20e24cdd0515b9",
+        "15cd06a6c394d0fd49db1a5bc2e00956b2431834",
+        "codex/l3-pp-use-main-sync",
+        "current_main_synced_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+        "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+        "`backend-layer3-api`: `SUCCESS`, `3m6s`",
+        "`test`: `SUCCESS`, `3m40s`",
+        "reviewThreads totalCount: `0`",
+        "Runtime behavior introduced by implementation PR: `true`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend/app/services/layer3_provider_public_url_delivery_use.py",
+        "backend/tests/test_layer3_provider_public_url_delivery_use.py",
+        "POST /handoff/export/download/provider-public-url/use",
+        "layer3.provider_public_url.delivery_use.v1",
+        "`raw_public_url_exposed: False`",
+        "`public_url_enabled: False`",
+        "`provider_network_enabled: False`",
+        "`provider_object_write_enabled: False`",
+        "`durable_use_row_created: False`",
+        "`audit_row_created: False`",
+        "`source_expansion_enabled: False`",
+        "`rag_vector_indexing_enabled: False`",
+        "`frontend_durable_authority_enabled: False`",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing provider-public delivery/use fake-provider runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public Delivery/Use Fake-Provider Runtime Current-Main Sync",
+            "795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1399",
+            "codex/l3-pp-use-runtime",
+            "81625823561540d2c4ae17d5ee20e24cdd0515b9",
+            "15cd06a6c394d0fd49db1a5bc2e00956b2431834",
+            "current_main_synced_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+            "backend/app/services/layer3_provider_public_url_delivery_use.py",
+            "backend/tests/test_layer3_provider_public_url_delivery_use.py",
+            "POST /handoff/export/download/provider-public-url/use",
+            "layer3.provider_public_url.delivery_use.v1",
+            "raw_public_url_exposed: False",
+            "public_url_enabled: False",
+            "provider_network_enabled: False",
+            "provider_object_write_enabled: False",
+            "Runtime behavior introduced by implementation PR: `true`.",
+            "Runtime behavior introduced by this sync: `false`.",
+            "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+        ),
+        MANIFEST: (
+            "provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync",
+            "current_main_synced_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+            "codex/l3-pp-use-main-sync",
+            "795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "#1399",
+            "codex/l3-pp-use-runtime",
+            "81625823561540d2c4ae17d5ee20e24cdd0515b9",
+            "15cd06a6c394d0fd49db1a5bc2e00956b2431834",
+            '"runtime_behavior_change": true',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api_duration": "3m6s"',
+            '"test_duration": "3m40s"',
+            "backend/app/services/layer3_provider_public_url_delivery_use.py",
+            "POST /handoff/export/download/provider-public-url/use",
+            "layer3.provider_public_url.delivery_use.v1",
+            '"raw_public_url_exposed": false',
+            '"public_url_enabled": false',
+            '"provider_network_enabled": false',
+            '"provider_object_write_enabled": false',
+            '"durable_use_row_created": false',
+            '"audit_row_created": false',
+            "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_proof",
+            "current_main_sync_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+            "current_main_synced_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+            "codex/l3-pp-use-main-sync",
+            "795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md",
+            "#1399",
+            "81625823561540d2c4ae17d5ee20e24cdd0515b9",
+            "15cd06a6c394d0fd49db1a5bc2e00956b2431834",
+            "current main includes backend/app/services/layer3_provider_public_url_delivery_use.py",
+            "current main includes backend/tests/test_layer3_provider_public_url_delivery_use.py",
+            "current main exposes POST /handoff/export/download/provider-public-url/use",
+            "current main records zero PR comments reviews and review threads",
+            "current main runtime reads L3ProviderPublicUrlReceipt and L3ProviderPublicUrlObjectAuthority only",
+            "raw_public_url_exposed false and public_url_enabled false",
+            "provider_network_enabled false and provider_object_write_enabled false",
+            "current main sync introduces no additional runtime behavior",
+            "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync is selected as the next posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public delivery/use fake-provider runtime sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -69791,6 +69913,7 @@ def main() -> int:
         errors
     )
     _check_provider_public_delivery_use_fake_provider_runtime_implementation_entry(errors)
+    _check_provider_public_delivery_use_fake_provider_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
