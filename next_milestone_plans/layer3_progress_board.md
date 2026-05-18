@@ -5472,3 +5472,37 @@ Runtime behavior introduced by this sync: `false`.
 This sync admits no runtime behavior, backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, durable context-packet row write, durable qualitative analysis row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact current-main posture is `write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime`.
+
+## Source Directory Material Context-Packet Qualitative-Hybrid Analysis Contract
+
+Branch-local qualitative-hybrid analysis contract: `770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md` follows the source-directory qualitative-hybrid analysis authority freeze current-main sync.
+
+Contract branch `codex/l3-qual-analysis-contract` starts from current-main checkpoint `2fb5ace714eac8c3b1fa509a1fd9dd3afb0068b2`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_qualitative_hybrid_analysis_authority_freeze`.
+
+Selected from posture: `write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime`.
+
+Selected contract: `source_directory_material_context_packet_qualitative_hybrid_analysis_authority`.
+
+Selected analysis mode: `context_packet_grounded_qualitative_hybrid_analysis`.
+
+Selected input authority: `source_directory_material_retrieval_augmented_context_packet_authority`.
+
+Selected input schema: `layer3.source_directory_context_packet.v1`.
+
+Selected future owner service: `backend/app/services/layer3_source_directory_qualitative_analysis.py`.
+
+Selected future proof test: `backend/tests/test_layer3_source_directory_qualitative_analysis.py`.
+
+Selected future implementation action: `implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync`.
+
+Future response schema: `layer3.source_directory_qualitative_analysis.v1`.
+
+Runtime behavior introduced by this contract: `false`.
+
+The future runtime must call `source_directory_material_retrieval_augmented_context_packet(db, payload)`, validate `context_packet_contract_id`, `context_packet_mode`, and `schema_id`, compute deterministic `qualitative_analysis_hash`, and generate only deterministic extractive sections from response-safe context-packet items.
+
+This contract admits no runtime behavior, backend route, API DTO, response model, database model, migration, durable qualitative analysis row write, durable context-packet row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_contract`; after sync, the next exact posture is `implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync`.
