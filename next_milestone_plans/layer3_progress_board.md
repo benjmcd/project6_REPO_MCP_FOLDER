@@ -5686,3 +5686,31 @@ Runtime behavior introduced by this sync: `false`.
 Current main remains provider-public no-runtime for delivery/use: no provider-public delivery/use route, no raw public URL exposure, no `public_url_enabled: true` rail, no public proxy runtime, no provider adapter, no provider credential, no provider object write/copy/mutation/ACL change, no rendered delivery/use control, no frontend-durable authority, no package construction, no package mutation/reconstruction, no handoff/export rerun, no connector/destination dispatch, no real connector invocation, no network egress, no source expansion, no arbitrary source ingestion, no RAG/vector indexing, no embedding generation, no prompt/model/provider runtime, no broad qualitative generation, no auth/security behavior change, no full mockup activation, and no raw local path exposure.
 
 The next exact current-main posture is `select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync`.
+
+## RAG/Vector Retrieval Authority Selection Freeze
+
+Branch-local selection freeze: `778_RAG_VECTOR_AUTH_FREEZE.md` follows the provider-public delivery/use authority contract current-main sync.
+
+Freeze branch `codex/l3-rag-vector-select` starts from current-main checkpoint `6b94135b2045bd3cfde666fc3b70d9a9e6c8d6fe`.
+
+Predecessor sync result: `current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract`.
+
+Selected from posture: `select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync`.
+
+Selected major deferred lane: `rag_vector_retrieval_indexing`.
+
+Selected authority question: `source_directory_material_embedding_vector_index_authority_contract`.
+
+Selected future contract posture: `write_source_directory_material_embedding_vector_index_authority_contract_before_runtime`.
+
+Entry decision: `freeze_only`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this freeze: `false`.
+
+The selection basis is the pivot after current-main source-directory intake, material admission, deterministic text indexing, lexical retrieval, retrieval-augmented context packets, deterministic context-packet qualitative-hybrid analysis, and provider-public delivery/use no-runtime sync. Current main has no vector service file, no vector-focused tests, no vector index row write, no embedding generation, no vector query route, and no RAG/vector runtime; `rag_vector_retrieval: False` remains in the bootstrap contract and `rag_vector_behavior` remains blocked in the authority matrix.
+
+No backend route, API DTO, response model, service runtime, database model, migration, durable vector-index row write, durable embedding row write, vector database, vector store, embedding generation, model/provider invocation, prompt/model/provider runtime, hidden LLM planning, qualitative generation runtime, RAG execution, package construction, package mutation/reconstruction, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation is admitted.
+
+The next exact posture after merge is `current_main_sync_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync`; after sync, the next exact posture is `write_source_directory_material_embedding_vector_index_authority_contract_before_runtime`.
