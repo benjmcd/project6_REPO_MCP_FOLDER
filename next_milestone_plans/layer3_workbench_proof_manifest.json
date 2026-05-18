@@ -30639,5 +30639,43 @@
   "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_doc": "next_milestone_plans/Layer3_planning_docs/764_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT.md",
   "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_status": "branch_local_source_directory_material_qualitative_hybrid_context_packet_authority_contract_written",
   "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_next_posture_after_merge": "current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
-  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_summary": "Doc 764 proof records the source-directory qualitative-hybrid context-packet contract over deterministic lexical retrieval, selects source_directory_material_retrieval_augmented_context_packet_authority, future owner backend/app/services/layer3_source_directory_context_packet.py, and future proof backend/tests/test_layer3_source_directory_context_packet.py while preserving blocked runtime, vector, embedding, prompt/model/provider, qualitative generation, package, connector, provider, frontend-durable, source expansion, auth/security, credential, network, and raw-path surfaces."
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_summary": "Doc 764 proof records the source-directory qualitative-hybrid context-packet contract over deterministic lexical retrieval, selects source_directory_material_retrieval_augmented_context_packet_authority, future owner backend/app/services/layer3_source_directory_context_packet.py, and future proof backend/tests/test_layer3_source_directory_context_packet.py while preserving blocked runtime, vector, embedding, prompt/model/provider, qualitative generation, package, connector, provider, frontend-durable, source expansion, auth/security, credential, network, and raw-path surfaces.",
+  "source_directory_material_qualitative_hybrid_context_packet_authority_contract_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+    "status": "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+    "sync_branch": "codex/l3-rag-qual-contract-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/765_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+    "contract_doc": "next_milestone_plans/Layer3_planning_docs/764_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT.md",
+    "contract_pr": "#1369",
+    "contract_branch_commit": "58e14a21487f31433079b1245e0bde9138e47801",
+    "contract_merge_commit": "24cc1e6c9cf3cbe6e5721e282e65b6436fb50045",
+    "current_main_checkpoint_after_merge": "24cc1e6c9cf3cbe6e5721e282e65b6436fb50045",
+    "runtime_behavior_introduced_by_contract": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 764 source-directory qualitative-hybrid context-packet authority contract",
+      "current main records PR #1369 merged at 24cc1e6c9cf3cbe6e5721e282e65b6436fb50045",
+      "current main records green backend-layer3-api and test checks for PR #1369",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main selects source_directory_material_retrieval_augmented_context_packet_authority as the future implementation authority",
+      "no runtime behavior introduced by this sync",
+      "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync is selected for the next authority posture"
+    ],
+    "next_posture": "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync"
+  },
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_current_main_sync_branch": "codex/l3-rag-qual-contract-sync",
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/765_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_current_main_sync_status": "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_current_main_sync_next_posture": "implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync",
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_contract_current_main_sync_summary": "Doc 765 proof syncs the source-directory qualitative-hybrid context-packet authority contract after PR #1369 and moves the next posture to implement_source_directory_material_retrieval_augmented_context_packet_authority_after_contract_sync, with vector, embedding, prompt/model/provider, qualitative generation, package, connector, provider, frontend-durable, source expansion, auth/security, credential, network, and raw-path behavior still blocked until separately frozen."
 }
