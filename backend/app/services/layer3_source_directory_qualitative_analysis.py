@@ -6,7 +6,7 @@ from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
 
-from app.models.models import L3MaterialSnapshot, L3Session
+from app.models.models import L3MaterialSnapshot, L3OutputPackage, L3ReconciliationRecord, L3Session
 from app.services.layer3_source_directory_context_packet import (
     CONTEXT_PACKET_CONTRACT_ID,
     CONTEXT_PACKET_MODE,
@@ -23,6 +23,7 @@ from app.services.layer3_package_entry import (
     materialize_source_directory_qualitative_analysis_package_commit,
 )
 from app.services.layer3_source_directory_ingestion import _stable_hash
+from app.services.layer3_utils import json_clone as _json_clone, stable_id as _stable_id
 from app.services.nrc_aps_content_index import normalize_query_tokens
 
 SCHEMA_ID = "layer3.source_directory_qualitative_analysis.v1"
@@ -40,6 +41,30 @@ PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
 PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.source_directory_qualitative_analysis_package_commit.v1"
 PACKAGE_CONSTRUCTION_COMMIT_MODE = "source_directory_qualitative_analysis_package_commit_authority"
 PACKAGE_CONSTRUCTION_OPERATOR_DECISION = "commit_source_directory_qualitative_analysis_package"
+PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.source_directory_qualitative_analysis_package_review_submit.v1"
+PACKAGE_REVIEW_SUBMIT_MODE = "source_directory_qualitative_analysis_package_review_submit_authority"
+PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID = "layer3.package_review_submit_state.v1"
+PACKAGE_REVIEW_SUBMIT_SOURCE_GATE = "806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE"
+PACKAGE_REVIEW_APPROVED_STATE = "package_review_approved"
+PACKAGE_REVIEW_CHANGES_REQUESTED_STATE = "package_review_changes_requested"
+PACKAGE_REVIEW_REJECTED_STATE = "package_review_rejected"
+PACKAGE_REVIEW_BLOCKED_STATE = "package_review_blocked"
+PACKAGE_REVIEW_SUBMIT_DECISIONS = frozenset({"approved", "changes_requested", "rejected", "blocked"})
+PACKAGE_REVIEW_SUBMIT_STATE_BY_DECISION = {
+    "approved": PACKAGE_REVIEW_APPROVED_STATE,
+    "changes_requested": PACKAGE_REVIEW_CHANGES_REQUESTED_STATE,
+    "rejected": PACKAGE_REVIEW_REJECTED_STATE,
+    "blocked": PACKAGE_REVIEW_BLOCKED_STATE,
+}
+PACKAGE_REVIEW_SUBMIT_NOTE_REQUIRED_DECISIONS = frozenset({"changes_requested", "rejected", "blocked"})
+PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = (
+    "handoff",
+    "export",
+    "aps_handoff",
+    "external_export_download",
+    "connector_dispatch",
+    "provider_public_delivery",
+)
 
 _REQUIRED_FIELDS = {
     "client_request_id",
@@ -61,6 +86,17 @@ _OPTIONAL_FIELDS = {"limit", "offset"}
 _PACKAGE_COMMIT_REQUIRED_FIELDS = _REQUIRED_FIELDS | {
     "qualitative_analysis_hash",
     "source_directory_package_review_preview_hash",
+    "operator_decision",
+}
+
+_PACKAGE_REVIEW_SUBMIT_REQUIRED_FIELDS = _REQUIRED_FIELDS | {
+    "qualitative_analysis_hash",
+    "source_directory_package_review_preview_hash",
+    "construction_basis_hash",
+    "reconciliation_record_id",
+    "output_package_ids",
+    "package_kinds",
+    "payload_hashes",
     "operator_decision",
 }
 
@@ -155,6 +191,33 @@ class SourceDirectoryPackageCommitError(Exception):
             "request_id": "source-directory-package-commit-error",
             "server_time": _server_time(),
             "mode": PACKAGE_CONSTRUCTION_COMMIT_MODE,
+            "status": "blocked",
+            "error": {"code": self.code, "message": self.message, "details": self.details},
+        }
+
+
+class SourceDirectoryPackageReviewSubmitError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        http_status: int = 400,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.http_status = http_status
+        self.details = details or {}
+
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+            "schema_version": 1,
+            "request_id": "source-directory-package-review-submit-error",
+            "server_time": _server_time(),
+            "mode": PACKAGE_REVIEW_SUBMIT_MODE,
             "status": "blocked",
             "error": {"code": self.code, "message": self.message, "details": self.details},
         }
@@ -399,6 +462,286 @@ def source_directory_qualitative_analysis_package_commit(
     }
 
 
+def source_directory_qualitative_analysis_package_review_submit(
+    db: Session,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = _normalise_package_review_submit_payload(payload)
+    request_id = _require_submit_field(fields, "client_request_id")
+    operator_decision = str(fields.get("operator_decision") or "").strip()
+    decision_notes = str(fields.get("decision_notes") or "").strip()
+    if operator_decision not in PACKAGE_REVIEW_SUBMIT_DECISIONS:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_decision_not_admitted",
+            "operator_decision must be approved, changes_requested, rejected, or blocked.",
+            http_status=409,
+            details={"field": "operator_decision"},
+        )
+    if operator_decision in PACKAGE_REVIEW_SUBMIT_NOTE_REQUIRED_DECISIONS and not decision_notes:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_decision_notes_required",
+            "decision_notes are required for changes_requested, rejected, or blocked package-review decisions.",
+            details={"field": "decision_notes"},
+        )
+
+    qualitative_analysis = source_directory_material_context_packet_qualitative_hybrid_analysis(
+        db,
+        _qualitative_analysis_payload(fields),
+    )
+    expected_analysis_hash = str(qualitative_analysis["qualitative_analysis_hash"])
+    if str(fields.get("qualitative_analysis_hash") or "") != expected_analysis_hash:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_qualitative_analysis_hash_mismatch",
+            "Package-review submit must reference the current server-recomputed qualitative-analysis hash.",
+            http_status=409,
+            details={"blocked_fields": ["qualitative_analysis_hash"]},
+        )
+    preview = qualitative_analysis["source_directory_package_review_preview"]
+    expected_preview_hash = str(preview["package_review_preview_hash"])
+    if str(fields.get("source_directory_package_review_preview_hash") or "") != expected_preview_hash:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_preview_hash_mismatch",
+            "Package-review submit must reference the current server-recomputed source-directory package-review preview hash.",
+            http_status=409,
+            details={"blocked_fields": ["source_directory_package_review_preview_hash"]},
+        )
+
+    material_snapshot = _load_material_snapshot_for_submit(
+        db,
+        material_snapshot_id=str(qualitative_analysis["material_snapshot_id"]),
+        source_authority=preview["source_authority"],
+    )
+    session = _load_package_review_submit_session(db, material_snapshot=material_snapshot)
+    reconciliation_record_id = _require_submit_field(fields, "reconciliation_record_id")
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            L3ReconciliationRecord.session_id == session.session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    if reconciliation is None:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_reconciliation_not_found",
+            "No source-directory package reconciliation record exists for the supplied authority.",
+            http_status=404,
+            details={"reconciliation_record_id": reconciliation_record_id},
+        )
+
+    reconciliation_summary = _json_clone(reconciliation.summary_json or {})
+    commit_summary = reconciliation_summary.get("source_directory_qualitative_package_commit")
+    if not isinstance(commit_summary, dict):
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_requires_package_commit",
+            "Package-review submit requires source-directory qualitative package-commit authority.",
+            http_status=409,
+            details={"reconciliation_record_id": reconciliation_record_id},
+        )
+    if str(reconciliation_summary.get("source_gate") or "") != SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_source_gate_mismatch",
+            "Package-review submit requires the source-directory qualitative package-construction source gate.",
+            http_status=409,
+            details={"blocked_fields": ["reconciliation_record_id"]},
+        )
+
+    supplied_construction_basis_hash = _require_submit_field(fields, "construction_basis_hash")
+    expected_construction_basis_hash = str(
+        commit_summary.get("construction_basis_hash") or commit_summary.get("authority_basis_hash") or ""
+    )
+    commit_authority_basis = commit_summary.get("authority_basis")
+    if not isinstance(commit_authority_basis, dict):
+        commit_authority_basis = {}
+    commit_mismatches = [
+        field
+        for field, expected in {
+            "package_review_preview_hash": expected_preview_hash,
+            "qualitative_analysis_hash": expected_analysis_hash,
+        }.items()
+        if str(commit_summary.get(field) or commit_authority_basis.get(field) or "") != str(expected)
+    ]
+    if commit_mismatches or supplied_construction_basis_hash != expected_construction_basis_hash:
+        blocked_fields = sorted(
+            set(
+                commit_mismatches
+                + (
+                    ["construction_basis_hash"]
+                    if supplied_construction_basis_hash != expected_construction_basis_hash
+                    else []
+                )
+            )
+        )
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_construction_mismatch",
+            "Stored package-construction provenance does not match the supplied package-review submit authority.",
+            http_status=409,
+            details={"blocked_fields": blocked_fields},
+        )
+
+    packages = _source_directory_review_packages(
+        db,
+        session_id=session.session_id,
+        reconciliation_record_id=reconciliation_record_id,
+    )
+    supplied_package_ids = _submit_string_list(fields.get("output_package_ids"), field="output_package_ids")
+    supplied_package_kinds = _submit_string_list(fields.get("package_kinds"), field="package_kinds")
+    supplied_payload_hashes = _submit_string_list(fields.get("payload_hashes"), field="payload_hashes")
+    expected_package_ids = [package.output_package_id for package in packages]
+    expected_package_kinds = [package.package_kind for package in packages]
+    expected_payload_hashes = [package.payload_hash for package in packages]
+    if supplied_package_ids != expected_package_ids:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_package_ids_mismatch",
+            "Supplied output_package_ids do not match the constructed source-directory package set.",
+            http_status=409,
+            details={"blocked_fields": ["output_package_ids"]},
+        )
+    if supplied_package_kinds != expected_package_kinds:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_package_kinds_mismatch",
+            "Supplied package_kinds must match canonical_internal, user_facing, and review_facing in review order.",
+            http_status=409,
+            details={"blocked_fields": ["package_kinds"]},
+        )
+    if supplied_payload_hashes != expected_payload_hashes:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_payload_hashes_mismatch",
+            "Supplied payload_hashes do not match the constructed source-directory package payload hashes.",
+            http_status=409,
+            details={"blocked_fields": ["payload_hashes"]},
+        )
+
+    package_review_state = PACKAGE_REVIEW_SUBMIT_STATE_BY_DECISION[operator_decision]
+    submit_basis = {
+        "schema_id": "layer3.source_directory_qualitative_analysis_package_review_submit_authority_basis.v1",
+        "session_id": session.session_id,
+        "selection_manifest_id": session.selection_manifest_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "source_ingestion_batch_id": qualitative_analysis["source_ingestion_batch_id"],
+        "source_ingestion_file_id": qualitative_analysis["source_ingestion_file_id"],
+        "content_sha256": qualitative_analysis["content_sha256"],
+        "file_identity_hash": qualitative_analysis["file_identity_hash"],
+        "authority_basis_hash": qualitative_analysis["authority_basis_hash"],
+        "payload_hash": qualitative_analysis["payload_hash"],
+        "index_authority_hash": qualitative_analysis["index_authority_hash"],
+        "context_packet_hash": qualitative_analysis["context_packet_hash"],
+        "qualitative_analysis_hash": expected_analysis_hash,
+        "package_review_preview_hash": expected_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_hashes": expected_payload_hashes,
+        "operator_decision": operator_decision,
+        "decision_notes": decision_notes or None,
+        "package_review_state": package_review_state,
+        "package_construction_source_gate": SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_gate": PACKAGE_REVIEW_SUBMIT_SOURCE_GATE,
+        "source_shape": material_snapshot.source_shape,
+    }
+    submit_record_ref = _stable_id("l3-source-directory-package-review-submit", submit_basis)
+    existing_submit = reconciliation_summary.get("package_review_submit")
+    if isinstance(existing_submit, dict):
+        if str(existing_submit.get("submit_record_ref") or "") == submit_record_ref:
+            return _package_review_submit_response(
+                request_id=request_id,
+                status="already_submitted",
+                session=session,
+                material_snapshot=material_snapshot,
+                qualitative_analysis=qualitative_analysis,
+                reconciliation=reconciliation,
+                packages=packages,
+                submit_state=existing_submit,
+            )
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_already_recorded",
+            "This source-directory package set already has a package-review submit decision.",
+            http_status=409,
+            details={"blocked_fields": ["operator_decision", "decision_notes"]},
+        )
+
+    submit_state = {
+        "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+        "package_review_submit_schema_id": PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+        "client_request_id": request_id,
+        "submit_record_ref": submit_record_ref,
+        "authority_basis": submit_basis,
+        "state": package_review_state,
+        "package_review_state": package_review_state,
+        "operator_decision": operator_decision,
+        "decision_notes": decision_notes or None,
+        "package_review_preview_hash": expected_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_hashes": expected_payload_hashes,
+        "payload_refs": None,
+        "payload_refs_redacted": True,
+        "package_construction_source_gate": SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_gate": PACKAGE_REVIEW_SUBMIT_SOURCE_GATE,
+        "source_shape": material_snapshot.source_shape,
+        "recorded_at": _server_time(),
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "prompt_model_provider_runtime_enabled": False,
+        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+    }
+    reconciliation.summary_json = {
+        **reconciliation_summary,
+        "source_directory_qualitative_package_commit": {
+            **commit_summary,
+            "package_review_submit_enabled": False,
+        },
+        "package_review_submit": submit_state,
+    }
+    session.summary_json = {
+        **_json_clone(session.summary_json or {}),
+        "package_review_submit": {
+            "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+            "package_review_submit_schema_id": PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+            "submit_record_ref": submit_record_ref,
+            "state": package_review_state,
+            "package_review_state": package_review_state,
+            "operator_decision": operator_decision,
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": expected_package_ids,
+            "package_kinds": expected_package_kinds,
+            "payload_hashes": expected_payload_hashes,
+            "payload_refs": None,
+            "payload_refs_redacted": True,
+            "package_construction_source_gate": SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+            "source_gate": PACKAGE_REVIEW_SUBMIT_SOURCE_GATE,
+            "source_shape": material_snapshot.source_shape,
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "export_enabled": False,
+            "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        },
+    }
+    db.commit()
+
+    return _package_review_submit_response(
+        request_id=request_id,
+        status="submitted",
+        session=session,
+        material_snapshot=material_snapshot,
+        qualitative_analysis=qualitative_analysis,
+        reconciliation=reconciliation,
+        packages=packages,
+        submit_state=submit_state,
+    )
+
+
 def _source_directory_package_review_preview(
     *,
     request_id: str,
@@ -521,6 +864,32 @@ def _normalise_package_commit_payload(payload: Mapping[str, Any]) -> dict[str, A
         )
     for field in sorted(_PACKAGE_COMMIT_REQUIRED_FIELDS):
         _required(fields, field)
+    return fields
+
+
+def _normalise_package_review_submit_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    forbidden = sorted(set(fields) & _FORBIDDEN_FIELDS)
+    if forbidden:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_forbidden_field_not_admitted",
+            "The source-directory package-review submit request includes fields from a deferred or forbidden mode.",
+            details={"forbidden_fields": forbidden},
+        )
+    unknown = sorted(
+        set(fields)
+        - _PACKAGE_REVIEW_SUBMIT_REQUIRED_FIELDS
+        - _OPTIONAL_FIELDS
+        - {"decision_notes"}
+    )
+    if unknown:
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_unknown_field",
+            "The source-directory package-review submit request contract is intentionally scoped.",
+            details={"unknown_fields": unknown},
+        )
+    for field in sorted(_PACKAGE_REVIEW_SUBMIT_REQUIRED_FIELDS):
+        _require_submit_field(fields, field)
     return fields
 
 
@@ -755,6 +1124,176 @@ def _required(fields: Mapping[str, Any], key: str) -> str:
             details={"field": key},
         )
     return value
+
+
+def _require_submit_field(fields: Mapping[str, Any], key: str) -> str:
+    value = fields.get(key)
+    if value is None or (isinstance(value, str) and not value.strip()):
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_required_field_missing",
+            "A required source-directory package-review submit field is missing or empty.",
+            details={"field": key},
+        )
+    return str(value).strip()
+
+
+def _submit_string_list(value: Any, *, field: str) -> list[str]:
+    if not isinstance(value, list):
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_list_field_invalid",
+            "Package-review submit list fields must be supplied as non-empty string lists.",
+            details={"field": field},
+        )
+    normalized = [str(item or "").strip() for item in value]
+    if not normalized or any(not item for item in normalized):
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_list_field_invalid",
+            "Package-review submit list fields must be supplied as non-empty string lists.",
+            details={"field": field},
+        )
+    return normalized
+
+
+def _source_directory_review_packages(
+    db: Session,
+    *,
+    session_id: str,
+    reconciliation_record_id: str,
+) -> list[L3OutputPackage]:
+    packages = (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
+        )
+        .with_for_update()
+        .all()
+    )
+    if (
+        len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    ):
+        raise SourceDirectoryPackageReviewSubmitError(
+            "source_directory_package_review_submit_requires_complete_package_set",
+            "Package-review submit requires exactly the constructed canonical_internal, user_facing, and review_facing packages.",
+            http_status=409,
+            details={"blocked_fields": ["output_package_ids"]},
+        )
+    review_order = {kind: index for index, kind in enumerate(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)}
+    return sorted(packages, key=lambda package: review_order[package.package_kind])
+
+
+def _load_material_snapshot_for_submit(
+    db: Session,
+    *,
+    material_snapshot_id: str,
+    source_authority: Mapping[str, Any],
+) -> L3MaterialSnapshot:
+    try:
+        return _load_material_snapshot_for_commit(
+            db,
+            material_snapshot_id=material_snapshot_id,
+            source_authority=source_authority,
+        )
+    except SourceDirectoryPackageCommitError as exc:
+        raise SourceDirectoryPackageReviewSubmitError(
+            exc.code.replace("package_commit", "package_review_submit"),
+            exc.message.replace("package commit", "package-review submit"),
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+
+def _load_package_review_submit_session(db: Session, *, material_snapshot: L3MaterialSnapshot) -> L3Session:
+    try:
+        return _load_package_commit_session(db, material_snapshot=material_snapshot)
+    except SourceDirectoryPackageCommitError as exc:
+        raise SourceDirectoryPackageReviewSubmitError(
+            exc.code.replace("package_commit", "package_review_submit"),
+            exc.message.replace("package construction", "package-review submit"),
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+
+def _package_review_submit_response(
+    *,
+    request_id: str,
+    status: str,
+    session: L3Session,
+    material_snapshot: L3MaterialSnapshot,
+    qualitative_analysis: Mapping[str, Any],
+    reconciliation: L3ReconciliationRecord,
+    packages: list[L3OutputPackage],
+    submit_state: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema_id": PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": request_id,
+        "server_time": _server_time(),
+        "mode": PACKAGE_REVIEW_SUBMIT_MODE,
+        "status": status,
+        "operator_decision": submit_state["operator_decision"],
+        "decision_notes": submit_state.get("decision_notes"),
+        "session_id": session.session_id,
+        "selection_manifest_id": session.selection_manifest_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "source_ingestion_batch_id": qualitative_analysis["source_ingestion_batch_id"],
+        "source_ingestion_file_id": qualitative_analysis["source_ingestion_file_id"],
+        "content_sha256": qualitative_analysis["content_sha256"],
+        "file_identity_hash": qualitative_analysis["file_identity_hash"],
+        "authority_basis_hash": qualitative_analysis["authority_basis_hash"],
+        "payload_hash": qualitative_analysis["payload_hash"],
+        "index_authority_hash": qualitative_analysis["index_authority_hash"],
+        "context_packet_hash": qualitative_analysis["context_packet_hash"],
+        "qualitative_analysis_hash": qualitative_analysis["qualitative_analysis_hash"],
+        "source_directory_package_review_preview_hash": submit_state["package_review_preview_hash"],
+        "construction_basis_hash": submit_state["construction_basis_hash"],
+        "reconciliation_record_id": reconciliation.reconciliation_record_id,
+        "output_packages": [
+            {
+                "output_package_id": package.output_package_id,
+                "package_kind": package.package_kind,
+                "status": package.status,
+                "payload_hash": package.payload_hash,
+                "payload_ref_redacted": True,
+            }
+            for package in packages
+        ],
+        "output_package_ids": [package.output_package_id for package in packages],
+        "package_kinds": [package.package_kind for package in packages],
+        "payload_hashes": [package.payload_hash for package in packages],
+        "payload_refs_redacted": True,
+        "package_review_state": submit_state["package_review_state"],
+        "submit_record_ref": submit_state["submit_record_ref"],
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "prompt_model_provider_runtime_enabled": False,
+        "package_construction_source_gate": SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_gate": PACKAGE_REVIEW_SUBMIT_SOURCE_GATE,
+        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        "next_state": submit_state["package_review_state"],
+        "next_allowed_actions": [],
+        "negative_invariants": {
+            "package_payload_rewrite_enabled": False,
+            "handoff_export_enabled": False,
+            "aps_handoff_enabled": False,
+            "external_export_download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "network_egress_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "prompt_model_provider_runtime_enabled": False,
+        },
+    }
 
 
 def _load_material_snapshot_for_commit(
