@@ -43,10 +43,50 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["plan_revision_recovery_endpoint"] == "/api/v1/layer3/plan/revision/recover"
     assert direct["approved_plan_cancel_admitted"] is True
     assert direct["approved_plan_cancel_endpoint"] == "/api/v1/layer3/plan/approved/cancel"
+    assert direct["source_directory_ingestion_scan_admitted"] is True
+    assert direct["source_directory_ingestion_scan_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan"
+    )
+    assert direct["source_directory_ingestion_status_admitted"] is True
+    assert direct["source_directory_ingestion_status_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}"
+    )
+    assert direct["source_directory_material_preview_admitted"] is True
+    assert direct["source_directory_material_preview_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview"
+    )
+    assert direct["source_directory_vector_retrieval_admitted"] is True
+    assert direct["source_directory_vector_retrieval_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval"
+    )
+    assert direct["source_directory_qualitative_hybrid_analysis_admitted"] is True
+    assert direct["source_directory_qualitative_hybrid_analysis_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
+    )
+    assert direct["source_directory_operator_status_surface"] == (
+        "server_configured_operator_directory_text_table_source_family"
+    )
     assert direct["idempotency_contract"]["client_request_id_required_for_approved_plan_cancel"] is True
+    assert direct["idempotency_contract"]["client_request_id_required_for_source_directory_ingestion_scan"] is True
+    assert direct["idempotency_contract"]["client_request_id_required_for_source_directory_material_preview"] is False
+    assert direct["idempotency_contract"]["client_request_id_required_for_source_directory_vector_retrieval"] is False
+    assert (
+        direct["idempotency_contract"][
+            "client_request_id_required_for_source_directory_qualitative_hybrid_analysis"
+        ]
+        is False
+    )
     assert direct["concurrency_contract"]["approved_plan_cancel_without_replacement_only"] is True
+    assert direct["concurrency_contract"]["source_directory_ingestion_scan_uses_configured_source_root"] is True
+    assert direct["concurrency_contract"]["source_directory_status_is_read_only"] is True
+    assert direct["concurrency_contract"]["source_directory_material_preview_is_read_only"] is True
+    assert direct["concurrency_contract"]["source_directory_vector_retrieval_is_read_only"] is True
+    assert direct["concurrency_contract"]["source_directory_qualitative_hybrid_analysis_is_read_only"] is True
     assert direct["deferred_decisions"]["source_breadth"] == (
         "requires later freeze before RAG/vector/upload/local-directory expansion"
+    )
+    assert direct["deferred_decisions"]["source_directory_operator_status"].startswith(
+        "admitted only as backend bootstrap/readiness exposure"
     )
     assert direct["deferred_decisions"]["revision_recovery"].startswith("admitted only as preview-refresh recovery")
     assert direct["deferred_decisions"]["approved_plan_correction"].startswith(

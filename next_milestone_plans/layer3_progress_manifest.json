@@ -31971,5 +31971,68 @@
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_status": "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_runtime_behavior_change": false,
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync",
-  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_summary": "Doc 799 syncs PR #1403 merge commit 578880feee19c69e9f2a70afce47e8a0d7822c48 to current main. The bounded source-directory qualitative-hybrid analysis API runtime is current-main synced, no behavior is introduced by the sync itself, and the next posture pivots to select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync."
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_summary": "Doc 799 syncs PR #1403 merge commit 578880feee19c69e9f2a70afce47e8a0d7822c48 to current main. The bounded source-directory qualitative-hybrid analysis API runtime is current-main synced, no behavior is introduced by the sync itself, and the next posture pivots to select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync.",
+  "source_directory_operator_readiness_bootstrap_status_surface_runtime_entry": {
+    "status": "source_directory_operator_readiness_bootstrap_status_surface_runtime_implemented_branch_local",
+    "runtime_branch": "codex/l3-source-readiness",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+    "current_main_preflight_checkpoint": "0dd3f1fb6aa7d29ef3f48c54c75fb0788336798e",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "selected_from_posture": "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync",
+    "selected_gap": "operator_visible_backend_readiness_bootstrap_status_surface_for_admitted_source_directory_chain",
+    "selected_implementation_action": "implement_source_directory_operator_readiness_bootstrap_status_surface_after_qualitative_hybrid_analysis_api_sync",
+    "runtime_behavior_change": true,
+    "source_family": "server_configured_operator_directory_text_table_source_family",
+    "feature_flags": [
+      "source_directory_ingestion_scan",
+      "source_directory_ingestion_status",
+      "source_directory_material_preview",
+      "source_directory_vector_retrieval",
+      "source_directory_qualitative_hybrid_analysis"
+    ],
+    "readiness_gate": "source-directory-operator-status",
+    "status_surface_owners": [
+      "backend/app/services/layer3_bootstrap_contract.py",
+      "backend/app/services/layer3_readiness_contract.py",
+      "backend/app/api/layer3.py"
+    ],
+    "proof_tests": [
+      "backend/tests/test_layer3_bootstrap_contract.py",
+      "backend/tests/test_layer3_readiness_contract.py",
+      "backend/tests/test_layer3_api.py"
+    ],
+    "admitted_endpoints": [
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+      "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
+    ],
+    "new_source_family_enabled": false,
+    "arbitrary_source_ingestion_enabled": false,
+    "frontend_durable_authority_enabled": false,
+    "frontend_rendered_controls_enabled": false,
+    "package_mutation_enabled": false,
+    "connector_dispatch_enabled": false,
+    "provider_public_delivery_enabled": false,
+    "network_egress_enabled": false,
+    "vector_indexing_expansion_enabled": false,
+    "prompt_model_provider_runtime_enabled": false,
+    "raw_local_path_exposed": false,
+    "full_segment_text_exposed": false,
+    "raw_vector_exposed": false,
+    "validation": [
+      "python -m pytest .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_readiness_contract.py -q PASS 2 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q PASS 187 passed",
+      "python -m py_compile .\\backend\\app\\services\\layer3_bootstrap_contract.py .\\backend\\app\\services\\layer3_readiness_contract.py .\\backend\\app\\api\\layer3.py .\\backend\\tests\\test_layer3_api.py .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_readiness_contract.py PASS"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+    "next_posture_after_sync": "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync"
+  },
+  "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_entry_branch": "codex/l3-source-readiness",
+  "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+  "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_entry_status": "source_directory_operator_readiness_bootstrap_status_surface_runtime_implemented_branch_local",
+  "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_entry_runtime_behavior_change": true,
+  "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_operator_readiness_bootstrap_status_surface_runtime",
+  "latest_source_directory_operator_readiness_bootstrap_status_surface_runtime_entry_summary": "Doc 800 and branch codex/l3-source-readiness implement backend operator-visible bootstrap/readiness exposure for the already-admitted source-directory scan, status, material-preview, vector-retrieval, and qualitative-hybrid analysis chain without adding source expansion, frontend durable state, package mutation, provider delivery, connector dispatch, network egress, or prompt/model/provider runtime."
 }
