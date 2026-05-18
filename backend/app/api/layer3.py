@@ -29,6 +29,7 @@ from app.services import (
     layer3_provider_public_url,
     layer3_server_owned_local_outbox_target,
     layer3_server_owned_local_outbox_write,
+    layer3_source_directory_ingestion,
     layer3_source_intake,
     layer3_workbench,
 )
@@ -2271,6 +2272,15 @@ class Layer3ExternalLocalExportWriteRequest(BaseModel):
     decision_notes: str | None = None
 
 
+class Layer3SourceDirectoryIngestionScanRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    operator_decision: Literal["scan_server_configured_operator_directory"]
+    source_family: Literal["server_configured_operator_directory_text_table_source_family"] | None = None
+    ingestion_mode: Literal["server_configured_operator_directory_text_table_ingestion"] | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -2300,6 +2310,25 @@ class Layer3SourceIntakeRecordResponse(Layer3BaseResponse):
     authority_basis_hash: str
     downstream_eligibility: dict[str, Any]
     source_gate: str
+    next_allowed_actions: list[str]
+    negative_invariants: dict[str, bool]
+
+
+class Layer3SourceDirectoryIngestionResponse(Layer3BaseResponse):
+    source_ingestion_batch_id: str
+    source_family: str
+    ingestion_mode: str
+    config_authority: str
+    source_root_ref: str
+    source_root_absolute_path_exposed: bool
+    direct_child_only: bool
+    allowed_extensions: list[str]
+    eligible_file_count: int
+    total_size_bytes: int
+    directory_fingerprint_hash: str
+    authority_basis_hash: str
+    authority_snapshot: dict[str, Any]
+    files: list[dict[str, Any]]
     next_allowed_actions: list[str]
     negative_invariants: dict[str, bool]
 
@@ -6680,6 +6709,43 @@ def get_source_intake_material_preview(
             max_chars=max_chars,
         )
     except layer3_source_intake.SourceIntakeError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/scan",
+    response_model=Layer3SourceDirectoryIngestionResponse,
+    status_code=201,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_ingestion_scan(
+    payload: Layer3SourceDirectoryIngestionScanRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_source_directory_ingestion.scan_server_configured_directory(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_source_directory_ingestion.SourceDirectoryIngestionError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.get(
+    "/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+    response_model=Layer3SourceDirectoryIngestionResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_source_directory_ingestion_status(
+    source_ingestion_batch_id: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_source_directory_ingestion.source_directory_ingestion_status(
+            db,
+            source_ingestion_batch_id,
+        )
+    except layer3_source_directory_ingestion.SourceDirectoryIngestionError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
