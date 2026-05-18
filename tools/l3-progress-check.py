@@ -1992,6 +1992,19 @@ LAYER3_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SY
     PLANNING_DOCS
     / "743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md"
+)
+LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
+)
+LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0034_layer3_source_directory_ingestion.py"
+)
+LAYER3_SOURCE_DIRECTORY_INGESTION_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_source_directory_ingestion.py"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -62991,6 +63004,141 @@ def _check_source_expansion_ingestion_source_family_selection_freeze_current_mai
                 )
 
 
+def _check_server_configured_operator_directory_text_table_ingestion_runtime_proof(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime proof for `server_configured_operator_directory_text_table_ingestion`.",
+        "744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md",
+        "743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "codex/l3-source-directory-ingestion",
+        "f371f2c43d9578e9f909c6c705b35ac48ffc24fb",
+        "server_configured_operator_directory_text_table_source_family",
+        "server_configured_operator_directory_text_table_ingestion",
+        "LAYER3_SOURCE_INGESTION_DIR",
+        "Runtime behavior change in this pass: `true`.",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "backend/alembic/versions/0034_layer3_source_directory_ingestion.py",
+        "backend/app/services/layer3_source_directory_ingestion.py",
+        "backend/app/api/layer3.py",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "backend/tests/test_layer3_source_directory_ingestion.py",
+        "Observed results: compile pass; `29 passed`.",
+        "await_current_main_sync_for_server_configured_operator_directory_text_table_ingestion_runtime_proof",
+        "select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF)} "
+                f"missing source directory ingestion runtime proof term: {term}"
+            )
+
+    for blocked in (
+        "caller-supplied paths/URLs/globs",
+        "browser-supplied file bytes",
+        "PDFs",
+        "OCR",
+        "Office documents",
+        "arbitrary binaries",
+        "web connectors",
+        "arbitrary recursive ingestion",
+        "RAG/vector indexing",
+        "qualitative-hybrid analysis runtime",
+        "auth/security broadening",
+        "frontend-durable authority",
+    ):
+        if blocked not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF)} "
+                f"missing source directory ingestion runtime blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE: (
+            "SCHEMA_ID = \"layer3.source_directory_ingestion_batch.v1\"",
+            "MODE = \"server_configured_operator_directory_text_table_ingestion\"",
+            "SOURCE_FAMILY = \"server_configured_operator_directory_text_table_source_family\"",
+            "CONFIG_AUTHORITY = \"LAYER3_SOURCE_INGESTION_DIR\"",
+            "ALLOWED_EXTENSIONS = (\".csv\", \".json\", \".txt\", \".md\")",
+            "caller_supplied_paths_admitted",
+            "recursive_traversal_admitted",
+            "source_directory_ingestion_dir_unset",
+            "source_directory_ingestion_extension_not_admitted",
+            "source_directory_ingestion_stale_file_identity",
+            "server-configured://LAYER3_SOURCE_INGESTION_DIR",
+        ),
+        LAYER3_API: (
+            "Layer3SourceDirectoryIngestionScanRequest",
+            "Layer3SourceDirectoryIngestionResponse",
+            "layer3_source_directory_ingestion",
+            "/source/ingestion/server-configured-directory/scan",
+            "/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        ),
+        MODELS: (
+            "class L3SourceDirectoryIngestionBatch",
+            "class L3SourceDirectoryIngestionFile",
+            "l3_source_directory_ingestion_batch",
+            "l3_source_directory_ingestion_file",
+        ),
+        LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION: (
+            "0034_layer3_source_directory_ingestion",
+            "l3_source_directory_ingestion_batch",
+            "l3_source_directory_ingestion_file",
+        ),
+        LAYER3_SOURCE_DIRECTORY_INGESTION_TEST: (
+            "test_layer3_source_directory_ingestion_records_redacted_durable_authority",
+            "already_recorded",
+            "ConnectorRun",
+            "L3OutputPackage",
+            "source_directory_ingestion_dir_not_admitted",
+        ),
+        BOARD: (
+            "## Server Configured Operator Directory Text/Table Ingestion Runtime Proof",
+            "744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md",
+            "codex/l3-source-directory-ingestion",
+            "f371f2c43d9578e9f909c6c705b35ac48ffc24fb",
+            "L3SourceDirectoryIngestionBatch",
+            "L3SourceDirectoryIngestionFile",
+            "backend/app/services/layer3_source_directory_ingestion.py",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+            "29 passed",
+            "await_current_main_sync_for_server_configured_operator_directory_text_table_ingestion_runtime_proof",
+            "select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync",
+        ),
+        MANIFEST: (
+            "server_configured_operator_directory_text_table_ingestion_runtime_proof",
+            "branch_local_server_configured_operator_directory_text_table_ingestion_runtime_proven",
+            "codex/l3-source-directory-ingestion",
+            "744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md",
+            "f371f2c43d9578e9f909c6c705b35ac48ffc24fb",
+            "L3SourceDirectoryIngestionBatch",
+            "L3SourceDirectoryIngestionFile",
+            '"runtime_behavior_change": true',
+            "await_current_main_sync_for_server_configured_operator_directory_text_table_ingestion_runtime_proof",
+        ),
+        PROOF_MANIFEST: (
+            "branch_local_server_configured_operator_directory_text_table_ingestion_runtime_proof",
+            "branch_local_server_configured_operator_directory_text_table_ingestion_runtime_proven",
+            "records L3SourceDirectoryIngestionBatch and L3SourceDirectoryIngestionFile durable authority",
+            "proves same-request replay and same-basis new-request replay as already_recorded",
+            "creates no ConnectorRun, ConnectorRunTarget, or L3OutputPackage rows",
+            "select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory ingestion runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -63577,6 +63725,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_external_local_export_evaluation_current_main_sync(errors)
     _check_source_expansion_ingestion_source_family_selection_freeze(errors)
     _check_source_expansion_ingestion_source_family_selection_freeze_current_main_sync(errors)
+    _check_server_configured_operator_directory_text_table_ingestion_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

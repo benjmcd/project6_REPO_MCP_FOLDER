@@ -1,0 +1,584 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
+from typing import Any, Mapping
+
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.models import L3SourceDirectoryIngestionBatch, L3SourceDirectoryIngestionFile
+
+
+SCHEMA_ID = "layer3.source_directory_ingestion_batch.v1"
+STATUS_SCHEMA_ID = "layer3.source_directory_ingestion_status.v1"
+MODE = "server_configured_operator_directory_text_table_ingestion"
+SOURCE_FAMILY = "server_configured_operator_directory_text_table_source_family"
+CONFIG_AUTHORITY = "LAYER3_SOURCE_INGESTION_DIR"
+OPERATOR_DECISION = "scan_server_configured_operator_directory"
+STATUS_RECORDED = "recorded"
+ALLOWED_EXTENSIONS = (".csv", ".json", ".txt", ".md")
+MAX_BATCH_FILES = 100
+
+_MEDIA_TYPES = {
+    ".csv": "text/csv",
+    ".json": "application/json",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+}
+_FORBIDDEN_REQUEST_FIELDS = {
+    "path",
+    "paths",
+    "directory",
+    "local_directory",
+    "local_path",
+    "url",
+    "urls",
+    "glob",
+    "recursive",
+    "file",
+    "files",
+    "file_bytes",
+    "rag_vector_index",
+    "web_connector",
+}
+
+
+@dataclass(frozen=True)
+class _FileObservation:
+    relative_name: str
+    extension: str
+    media_type: str
+    content_size_bytes: int
+    mtime_ns: int
+    content_sha256: str
+    file_identity_hash: str
+    authority_basis_hash: str
+
+
+class SourceDirectoryIngestionError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        http_status: int = 400,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.http_status = http_status
+        self.details = details or {}
+
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": SCHEMA_ID,
+            "schema_version": 1,
+            "request_id": "source-directory-ingestion-error",
+            "server_time": _server_time(),
+            "mode": MODE,
+            "status": "blocked",
+            "error": {
+                "code": self.code,
+                "message": self.message,
+                "details": self.details,
+            },
+        }
+
+
+def scan_server_configured_directory(
+    db: Session,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = _normalise_payload(payload)
+    client_request_id = _required(fields, "client_request_id")
+    if len(client_request_id) > 255:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_client_request_id_too_long",
+            "client_request_id must be 255 characters or fewer.",
+            details={"client_request_id_length": len(client_request_id)},
+        )
+    operator_decision = _required(fields, "operator_decision")
+    if operator_decision != OPERATOR_DECISION:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_operator_decision_not_admitted",
+            "operator_decision is not admitted for server-configured directory ingestion.",
+            details={"expected_operator_decision": OPERATOR_DECISION, "received_operator_decision": operator_decision},
+        )
+    source_family = fields.get("source_family") or SOURCE_FAMILY
+    if source_family != SOURCE_FAMILY:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_source_family_not_admitted",
+            "Only the selected server-configured text/table source family is admitted.",
+            details={"expected_source_family": SOURCE_FAMILY, "received_source_family": source_family},
+        )
+    ingestion_mode = fields.get("ingestion_mode") or MODE
+    if ingestion_mode != MODE:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_mode_not_admitted",
+            "Only the selected server-configured directory ingestion mode is admitted.",
+            details={"expected_ingestion_mode": MODE, "received_ingestion_mode": ingestion_mode},
+        )
+
+    root = _configured_root()
+    observations = _observe_direct_child_files(root)
+    total_size = sum(item.content_size_bytes for item in observations)
+    directory_fingerprint_hash = _stable_hash(
+        {
+            "mode": MODE,
+            "source_family": SOURCE_FAMILY,
+            "files": [
+                {
+                    "relative_name": item.relative_name,
+                    "extension": item.extension,
+                    "content_size_bytes": item.content_size_bytes,
+                    "mtime_ns": item.mtime_ns,
+                    "content_sha256": item.content_sha256,
+                    "file_identity_hash": item.file_identity_hash,
+                }
+                for item in observations
+            ],
+        }
+    )
+    authority_basis = {
+        "schema_id": SCHEMA_ID,
+        "mode": MODE,
+        "source_family": SOURCE_FAMILY,
+        "config_authority": CONFIG_AUTHORITY,
+        "directory_fingerprint_hash": directory_fingerprint_hash,
+    }
+    authority_basis_hash = _stable_hash(authority_basis)
+
+    existing = _existing_batch(db, client_request_id, authority_basis_hash)
+    if existing is not None:
+        if existing.client_request_id == client_request_id and existing.authority_basis_hash != authority_basis_hash:
+            raise SourceDirectoryIngestionError(
+                "source_directory_ingestion_idempotency_conflict",
+                "The client_request_id conflicts with a different directory authority basis.",
+                http_status=409,
+                details={"client_request_id": client_request_id},
+            )
+        return _batch_response(db, existing, response_status="already_recorded", request_id=client_request_id)
+
+    authority_snapshot = {
+        "schema_id": SCHEMA_ID,
+        "mode": MODE,
+        "source_family": SOURCE_FAMILY,
+        "config_authority": CONFIG_AUTHORITY,
+        "configured_root_hash": _stable_hash({"configured_root": str(root)}),
+        "direct_child_only": True,
+        "allowed_extensions": list(ALLOWED_EXTENSIONS),
+        "recursive_traversal_admitted": False,
+        "caller_supplied_paths_admitted": False,
+        "browser_supplied_file_bytes_admitted": False,
+        "directory_fingerprint_hash": directory_fingerprint_hash,
+    }
+    batch = L3SourceDirectoryIngestionBatch(
+        client_request_id=client_request_id,
+        source_family=SOURCE_FAMILY,
+        ingestion_mode=MODE,
+        config_authority=CONFIG_AUTHORITY,
+        directory_fingerprint_hash=directory_fingerprint_hash,
+        authority_basis_hash=authority_basis_hash,
+        eligible_file_count=len(observations),
+        total_size_bytes=total_size,
+        authority_snapshot_json=authority_snapshot,
+        summary_json={
+            "authority_basis": authority_basis,
+            "negative_invariants": _negative_invariants(),
+            "source_root_ref": _source_root_ref(),
+            "files": [_file_summary(item) for item in observations],
+        },
+        status=STATUS_RECORDED,
+    )
+    db.add(batch)
+    db.flush()
+    for item in observations:
+        db.add(
+            L3SourceDirectoryIngestionFile(
+                source_ingestion_batch_id=batch.source_ingestion_batch_id,
+                relative_name=item.relative_name,
+                extension=item.extension,
+                media_type=item.media_type,
+                content_size_bytes=item.content_size_bytes,
+                mtime_ns=item.mtime_ns,
+                content_sha256=item.content_sha256,
+                file_identity_hash=item.file_identity_hash,
+                authority_basis_hash=item.authority_basis_hash,
+                summary_json=_file_summary(item),
+                status=STATUS_RECORDED,
+            )
+        )
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        existing_after_race = _existing_batch(db, client_request_id, authority_basis_hash)
+        if existing_after_race is not None:
+            return _batch_response(
+                db,
+                existing_after_race,
+                response_status="already_recorded",
+                request_id=client_request_id,
+            )
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_record_conflict",
+            "The source directory ingestion batch conflicts with an existing persisted authority row.",
+            http_status=409,
+            details={"client_request_id": client_request_id},
+        ) from exc
+    db.refresh(batch)
+    return _batch_response(db, batch, request_id=client_request_id)
+
+
+def source_directory_ingestion_status(
+    db: Session,
+    source_ingestion_batch_id: str,
+) -> dict[str, Any]:
+    batch_id = str(source_ingestion_batch_id or "").strip()
+    if not batch_id:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_batch_id_required",
+            "source_ingestion_batch_id is required.",
+            details={"field": "source_ingestion_batch_id"},
+        )
+    batch = db.get(L3SourceDirectoryIngestionBatch, batch_id)
+    if batch is None:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_batch_not_found",
+            "No source directory ingestion batch exists for the requested status.",
+            http_status=404,
+            details={"source_ingestion_batch_id": batch_id},
+        )
+    body = _batch_response(db, batch)
+    body["schema_id"] = STATUS_SCHEMA_ID
+    body["mode"] = "server_configured_operator_directory_text_table_ingestion_status"
+    return body
+
+
+def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, str]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    forbidden = sorted(set(fields) & _FORBIDDEN_REQUEST_FIELDS)
+    if forbidden:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_forbidden_field",
+            "The source directory ingestion request includes caller-controlled source selection fields.",
+            details={"forbidden_fields": forbidden},
+        )
+    allowed = {"client_request_id", "operator_decision", "source_family", "ingestion_mode"}
+    unknown = sorted(set(fields) - allowed)
+    if unknown:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_unknown_field",
+            "The source directory ingestion request contract is intentionally scoped.",
+            details={"unknown_fields": unknown},
+        )
+    return {key: str(value).strip() for key, value in fields.items()}
+
+
+def _configured_root() -> Path:
+    configured = str(settings.layer3_source_ingestion_dir or "").strip()
+    if not configured:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_dir_unset",
+            f"{CONFIG_AUTHORITY} must be set before server-configured directory ingestion can run.",
+            http_status=409,
+            details={"config_authority": CONFIG_AUTHORITY},
+        )
+    root = Path(configured)
+    if not root.is_absolute():
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_dir_not_absolute",
+            f"{CONFIG_AUTHORITY} must be an absolute server-owned directory.",
+            http_status=409,
+            details={"config_authority": CONFIG_AUTHORITY},
+        )
+    if not root.exists() or not root.is_dir():
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_dir_unavailable",
+            f"{CONFIG_AUTHORITY} must resolve to an existing directory.",
+            http_status=409,
+            details={"config_authority": CONFIG_AUTHORITY},
+        )
+    resolved = root.resolve()
+    for blocked_root in _blocked_roots():
+        if _same_or_child(resolved, blocked_root):
+            raise SourceDirectoryIngestionError(
+                "source_directory_ingestion_dir_not_admitted",
+                "The configured source ingestion directory overlaps app-owned storage or export staging.",
+                http_status=409,
+                details={"config_authority": CONFIG_AUTHORITY, "blocked_root": blocked_root.name},
+            )
+    return resolved
+
+
+def _observe_direct_child_files(root: Path) -> list[_FileObservation]:
+    children = sorted(root.iterdir(), key=lambda item: item.name.lower())
+    if not children:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_empty_directory",
+            "The configured source ingestion directory has no eligible direct child files.",
+        )
+    seen_names: set[str] = set()
+    observations: list[_FileObservation] = []
+    for child in children:
+        relative_name = child.name
+        normalized_name = relative_name.lower()
+        if normalized_name in seen_names:
+            raise SourceDirectoryIngestionError(
+                "source_directory_ingestion_duplicate_relative_name",
+                "The configured source ingestion directory has duplicate conflicting relative names.",
+                details={"relative_name": relative_name},
+            )
+        seen_names.add(normalized_name)
+        if child.is_symlink():
+            raise SourceDirectoryIngestionError(
+                "source_directory_ingestion_symlink_not_admitted",
+                "Symlinks are not admitted for source directory ingestion.",
+                details={"relative_name": relative_name},
+            )
+        if not child.is_file():
+            raise SourceDirectoryIngestionError(
+                "source_directory_ingestion_non_file_not_admitted",
+                "Only direct child files are admitted; directories and device paths are blocked.",
+                details={"relative_name": relative_name},
+            )
+        extension = child.suffix.lower()
+        if extension not in ALLOWED_EXTENSIONS:
+            raise SourceDirectoryIngestionError(
+                "source_directory_ingestion_extension_not_admitted",
+                "Only CSV, JSON, TXT, and MD files are admitted.",
+                details={"relative_name": relative_name, "extension": extension},
+            )
+        observations.append(_observe_file(child, relative_name, extension))
+    if not observations:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_empty_eligible_directory",
+            "The configured source ingestion directory has no eligible direct child files.",
+        )
+    if len(observations) > MAX_BATCH_FILES:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_batch_too_large",
+            "The configured source ingestion directory exceeds the maximum admitted file count.",
+            details={"max_batch_files": MAX_BATCH_FILES, "received_file_count": len(observations)},
+        )
+    max_batch_bytes = _max_file_bytes() * MAX_BATCH_FILES
+    total_size = sum(item.content_size_bytes for item in observations)
+    if total_size > max_batch_bytes:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_batch_bytes_too_large",
+            "The configured source ingestion directory exceeds the maximum admitted batch size.",
+            details={"max_batch_bytes": max_batch_bytes, "received_bytes": total_size},
+        )
+    return observations
+
+
+def _observe_file(path: Path, relative_name: str, extension: str) -> _FileObservation:
+    before = path.stat()
+    if before.st_size <= 0:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_empty_file",
+            "Empty files are not admitted for source directory ingestion.",
+            details={"relative_name": relative_name},
+        )
+    max_file_bytes = _max_file_bytes()
+    if before.st_size > max_file_bytes:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_file_too_large",
+            "A source directory file exceeds the configured maximum file size.",
+            details={"relative_name": relative_name, "max_file_bytes": max_file_bytes, "received_bytes": before.st_size},
+        )
+    data = path.read_bytes()
+    after = path.stat()
+    if before.st_size != after.st_size or before.st_mtime_ns != after.st_mtime_ns:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_stale_file_identity",
+            "A source directory file changed while ingestion identity was being computed.",
+            http_status=409,
+            details={"relative_name": relative_name},
+        )
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_text_decode_failed",
+            "Source directory files must decode as UTF-8 text.",
+            details={"relative_name": relative_name},
+        ) from exc
+    if extension == ".json":
+        try:
+            json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise SourceDirectoryIngestionError(
+                "source_directory_ingestion_json_parse_failed",
+                "JSON source directory files must parse as JSON.",
+                details={"relative_name": relative_name},
+            ) from exc
+    content_sha256 = hashlib.sha256(data).hexdigest()
+    file_identity = {
+        "relative_name": relative_name,
+        "extension": extension,
+        "content_size_bytes": after.st_size,
+        "mtime_ns": after.st_mtime_ns,
+        "content_sha256": content_sha256,
+    }
+    file_identity_hash = _stable_hash(file_identity)
+    return _FileObservation(
+        relative_name=relative_name,
+        extension=extension,
+        media_type=_MEDIA_TYPES[extension],
+        content_size_bytes=after.st_size,
+        mtime_ns=after.st_mtime_ns,
+        content_sha256=content_sha256,
+        file_identity_hash=file_identity_hash,
+        authority_basis_hash=_stable_hash({"schema_id": SCHEMA_ID, "file_identity": file_identity}),
+    )
+
+
+def _existing_batch(
+    db: Session,
+    client_request_id: str,
+    authority_basis_hash: str,
+) -> L3SourceDirectoryIngestionBatch | None:
+    return (
+        db.query(L3SourceDirectoryIngestionBatch)
+        .filter(
+            (L3SourceDirectoryIngestionBatch.client_request_id == client_request_id)
+            | (L3SourceDirectoryIngestionBatch.authority_basis_hash == authority_basis_hash)
+        )
+        .one_or_none()
+    )
+
+
+def _batch_response(
+    db: Session,
+    batch: L3SourceDirectoryIngestionBatch,
+    *,
+    response_status: str | None = None,
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    files = (
+        db.query(L3SourceDirectoryIngestionFile)
+        .filter(L3SourceDirectoryIngestionFile.source_ingestion_batch_id == batch.source_ingestion_batch_id)
+        .order_by(L3SourceDirectoryIngestionFile.relative_name.asc())
+        .all()
+    )
+    return {
+        "schema_id": SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": request_id or batch.client_request_id,
+        "server_time": _server_time(),
+        "mode": MODE,
+        "status": response_status or batch.status,
+        "message": "Layer 3 server-configured source directory ingestion recorded durable file authority.",
+        "source_ingestion_batch_id": batch.source_ingestion_batch_id,
+        "source_family": batch.source_family,
+        "ingestion_mode": batch.ingestion_mode,
+        "config_authority": batch.config_authority,
+        "source_root_ref": _source_root_ref(),
+        "source_root_absolute_path_exposed": False,
+        "direct_child_only": True,
+        "allowed_extensions": list(ALLOWED_EXTENSIONS),
+        "eligible_file_count": batch.eligible_file_count,
+        "total_size_bytes": batch.total_size_bytes,
+        "directory_fingerprint_hash": batch.directory_fingerprint_hash,
+        "authority_basis_hash": batch.authority_basis_hash,
+        "authority_snapshot": batch.authority_snapshot_json or {},
+        "files": [_stored_file_response(item) for item in files],
+        "negative_invariants": _negative_invariants(),
+        "next_allowed_actions": [
+            "use_source_directory_ingestion_batch_as_inventory_authority",
+            "define_later_freeze_before_material_admission_package_rag_or_rendered_controls",
+        ],
+    }
+
+
+def _stored_file_response(file_record: L3SourceDirectoryIngestionFile) -> dict[str, Any]:
+    return {
+        "source_ingestion_file_id": file_record.source_ingestion_file_id,
+        "relative_name": file_record.relative_name,
+        "extension": file_record.extension,
+        "media_type": file_record.media_type,
+        "content_size_bytes": file_record.content_size_bytes,
+        "content_sha256": file_record.content_sha256,
+        "file_identity_hash": file_record.file_identity_hash,
+        "authority_basis_hash": file_record.authority_basis_hash,
+        "status": file_record.status,
+        "absolute_path_exposed": False,
+    }
+
+
+def _file_summary(item: _FileObservation) -> dict[str, Any]:
+    return {
+        "relative_name": item.relative_name,
+        "extension": item.extension,
+        "media_type": item.media_type,
+        "content_size_bytes": item.content_size_bytes,
+        "content_sha256": item.content_sha256,
+        "file_identity_hash": item.file_identity_hash,
+        "absolute_path_exposed": False,
+    }
+
+
+def _blocked_roots() -> list[Path]:
+    roots = [
+        Path(settings.storage_dir),
+        Path(settings.raw_storage_dir),
+        Path(settings.artifact_storage_dir),
+        Path(settings.layer3_local_outbox_dir),
+    ]
+    if settings.layer3_external_local_export_dir:
+        roots.append(Path(settings.layer3_external_local_export_dir))
+    return [root.resolve() for root in roots if str(root)]
+
+
+def _same_or_child(path: Path, root: Path) -> bool:
+    return path == root or root in path.parents
+
+
+def _max_file_bytes() -> int:
+    return int(settings.max_upload_mb) * 1024 * 1024
+
+
+def _required(fields: Mapping[str, str], key: str) -> str:
+    value = fields.get(key, "").strip()
+    if not value:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_required_field_missing",
+            "A required source directory ingestion field is missing or empty.",
+            details={"field": key},
+        )
+    return value
+
+
+def _negative_invariants() -> dict[str, bool]:
+    return {
+        "caller_supplied_paths_enabled": False,
+        "recursive_traversal_enabled": False,
+        "browser_file_upload_enabled": False,
+        "pdf_ocr_office_binary_enabled": False,
+        "web_connector_enabled": False,
+        "rag_vector_index_enabled": False,
+        "package_construction_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
+def _source_root_ref() -> str:
+    return "server-configured://LAYER3_SOURCE_INGESTION_DIR"
+
+
+def _stable_hash(value: Any) -> str:
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _server_time() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")

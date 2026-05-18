@@ -28745,5 +28745,39 @@
   "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_status": "current_main_synced_source_expansion_ingestion_source_family_selection_freeze",
   "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_runtime_behavior_change": false,
   "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_next_posture": "implement_server_configured_operator_directory_text_table_ingestion_after_source_family_selection_sync",
-  "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_summary": "Doc 743 syncs PR #1347 merge commit cf014d39fd093050aa1bbc183323cb26906fb3f9 to current main. Current main now records server_configured_operator_directory_text_table_source_family as the selected source expansion/ingestion family, with runtime still blocked until the exact implementation slice."
+  "latest_source_expansion_ingestion_source_family_selection_freeze_current_main_sync_summary": "Doc 743 syncs PR #1347 merge commit cf014d39fd093050aa1bbc183323cb26906fb3f9 to current main. Current main now records server_configured_operator_directory_text_table_source_family as the selected source expansion/ingestion family, with runtime still blocked until the exact implementation slice.",
+  "server_configured_operator_directory_text_table_ingestion_runtime_proof": {
+    "status": "branch_local_server_configured_operator_directory_text_table_ingestion_runtime_proven",
+    "implementation_branch": "codex/l3-source-directory-ingestion",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/743_SOURCE_EXPANSION_INGESTION_SOURCE_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_implementation": "f371f2c43d9578e9f909c6c705b35ac48ffc24fb",
+    "selected_source_family": "server_configured_operator_directory_text_table_source_family",
+    "runtime_mode": "server_configured_operator_directory_text_table_ingestion",
+    "config_authority": "LAYER3_SOURCE_INGESTION_DIR",
+    "scan_route": "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+    "status_route": "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+    "service_owner": "backend/app/services/layer3_source_directory_ingestion.py",
+    "api_owner": "backend/app/api/layer3.py",
+    "boundary_contract_owner": "backend/app/services/layer3_source_boundary.py",
+    "migration": "backend/alembic/versions/0034_layer3_source_directory_ingestion.py",
+    "durable_batch_authority": "L3SourceDirectoryIngestionBatch",
+    "durable_file_authority": "L3SourceDirectoryIngestionFile",
+    "allowed_extensions": [".csv", ".json", ".txt", ".md"],
+    "recursive_traversal_admitted": false,
+    "caller_supplied_paths_admitted": false,
+    "runtime_behavior_change": true,
+    "validation": {
+      "python -m py_compile source-directory-ingestion runtime files": "PASS",
+      "python -m pytest source-directory-ingestion focused tests plus API OpenAPI sentinel": "29 passed"
+    },
+    "next_posture_after_merge": "await_current_main_sync_for_server_configured_operator_directory_text_table_ingestion_runtime_proof",
+    "next_posture_after_sync": "select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync"
+  },
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_branch": "codex/l3-source-directory-ingestion",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_status": "branch_local_server_configured_operator_directory_text_table_ingestion_runtime_proven",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_runtime_behavior_change": true,
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_server_configured_operator_directory_text_table_ingestion_runtime_proof",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_summary": "Doc 744 implements the bounded server-configured operator directory text/table ingestion runtime. It records L3SourceDirectoryIngestionBatch and L3SourceDirectoryIngestionFile authority for direct child CSV, JSON, TXT, and MD files under LAYER3_SOURCE_INGESTION_DIR, exposes redacted refs only, proves replay behavior, and leaves RAG/vector, package construction, connector dispatch, provider-public behavior, auth/security broadening, rendered controls, and frontend-durable authority blocked."
 }
