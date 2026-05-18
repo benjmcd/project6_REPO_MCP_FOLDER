@@ -34,10 +34,39 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["single_aps_doc_qualitative_execution"] is True
     assert direct_body["features"]["plan_revision_recovery"] is True
     assert direct_body["features"]["approved_plan_cancel"] is True
+    assert direct_body["features"]["source_directory_ingestion_scan"] is True
+    assert direct_body["features"]["source_directory_ingestion_status"] is True
+    assert direct_body["features"]["source_directory_material_preview"] is True
+    assert direct_body["features"]["source_directory_vector_retrieval"] is True
+    assert direct_body["features"]["source_directory_qualitative_hybrid_analysis"] is True
     assert direct_body["features"]["broad_qualitative_execution"] is False
     assert direct_body["features"]["rag_vector_retrieval"] is False
     assert direct_body["features"]["dispatch"] is False
     assert direct_body["execution_readiness"]["dispatch_admitted"] is False
     assert direct_body["execution_readiness"]["plan_revision_recovery_admitted"] is True
     assert direct_body["execution_readiness"]["approved_plan_cancel_admitted"] is True
+    assert direct_body["execution_readiness"]["source_directory_ingestion_scan_admitted"] is True
+    assert direct_body["execution_readiness"]["source_directory_ingestion_scan_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan"
+    )
+    assert direct_body["execution_readiness"]["source_directory_ingestion_status_admitted"] is True
+    assert direct_body["execution_readiness"]["source_directory_ingestion_status_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}"
+    )
+    assert direct_body["execution_readiness"]["source_directory_material_preview_admitted"] is True
+    assert direct_body["execution_readiness"]["source_directory_material_preview_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview"
+    )
+    assert direct_body["execution_readiness"]["source_directory_vector_retrieval_admitted"] is True
+    assert direct_body["execution_readiness"]["source_directory_vector_retrieval_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval"
+    )
+    assert direct_body["execution_readiness"]["source_directory_qualitative_hybrid_analysis_admitted"] is True
+    assert direct_body["execution_readiness"]["source_directory_qualitative_hybrid_analysis_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
+    )
+    assert (
+        direct_body["execution_readiness"]["source_directory_operator_status_surface"]
+        == "server_configured_operator_directory_text_table_source_family"
+    )
     assert direct_body["execution_readiness"]["readiness_state"] == "execution_readiness_blocked"

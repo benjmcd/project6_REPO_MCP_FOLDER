@@ -119,6 +119,17 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     plan_revision_recovery_endpoint: str
     approved_plan_cancel_admitted: bool
     approved_plan_cancel_endpoint: str
+    source_directory_ingestion_scan_admitted: bool
+    source_directory_ingestion_scan_endpoint: str
+    source_directory_ingestion_status_admitted: bool
+    source_directory_ingestion_status_endpoint: str
+    source_directory_material_preview_admitted: bool
+    source_directory_material_preview_endpoint: str
+    source_directory_vector_retrieval_admitted: bool
+    source_directory_vector_retrieval_endpoint: str
+    source_directory_qualitative_hybrid_analysis_admitted: bool
+    source_directory_qualitative_hybrid_analysis_endpoint: str
+    source_directory_operator_status_surface: str
     package_review_admitted: bool
     external_handoff_admitted: bool
     external_export_admitted: bool
