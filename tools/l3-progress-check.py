@@ -2122,6 +2122,9 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTR
 LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md"
 )
+LAYER3_RAG_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_AFTER_PROVIDER_PUBLIC_NO_RUNTIME_SYNC = (
+    PLANNING_DOCS / "778_RAG_VECTOR_AUTH_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -66891,6 +66894,122 @@ def _check_provider_public_delivery_use_exposure_security_revocation_authority_c
                 )
 
 
+def _check_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_RAG_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_AFTER_PROVIDER_PUBLIC_NO_RUNTIME_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: planning/control selection freeze for `rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync`.",
+        "778_RAG_VECTOR_AUTH_FREEZE.md",
+        "777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md",
+        "current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+        "codex/l3-rag-vector-select",
+        "6b94135b2045bd3cfde666fc3b70d9a9e6c8d6fe",
+        "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+        "rag_vector_retrieval_indexing",
+        "source_directory_material_embedding_vector_index_authority_contract",
+        "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+        "Entry decision: `freeze_only`.",
+        "Runtime status: `not_implemented`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "no vector service file",
+        "no vector-focused tests",
+        "no vector index row write",
+        "no embedding generation",
+        "no vector query route",
+        "no RAG/vector runtime",
+        "`rag_vector_retrieval: False`",
+        "`rag_vector_behavior` blocked",
+        "This freeze therefore selects the RAG/vector authority question only.",
+        "This freeze admits no backend route",
+        "embedding generation",
+        "RAG execution",
+        "current_main_sync_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+        "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_RAG_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_AFTER_PROVIDER_PUBLIC_NO_RUNTIME_SYNC)} "
+                f"missing RAG/vector authority selection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## RAG/Vector Retrieval Authority Selection Freeze",
+            "778_RAG_VECTOR_AUTH_FREEZE.md",
+            "codex/l3-rag-vector-select",
+            "6b94135b2045bd3cfde666fc3b70d9a9e6c8d6fe",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+            "rag_vector_retrieval_indexing",
+            "source_directory_material_embedding_vector_index_authority_contract",
+            "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+            "Entry decision: `freeze_only`.",
+            "Runtime status: `not_implemented`.",
+            "Runtime behavior introduced by this freeze: `false`.",
+            "no vector service file",
+            "no vector-focused tests",
+            "no vector index row write",
+            "no embedding generation",
+            "no vector query route",
+            "no RAG/vector runtime",
+            "`rag_vector_retrieval: False`",
+            "`rag_vector_behavior` remains blocked",
+            "current_main_sync_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+        ),
+        MANIFEST: (
+            "rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+            "planning_control_selection_freeze",
+            "codex/l3-rag-vector-select",
+            "778_RAG_VECTOR_AUTH_FREEZE.md",
+            "6b94135b2045bd3cfde666fc3b70d9a9e6c8d6fe",
+            "777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+            "rag_vector_retrieval_indexing",
+            "source_directory_material_embedding_vector_index_authority_contract",
+            "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+            '"entry_decision": "freeze_only"',
+            '"runtime_status": "not_implemented"',
+            '"runtime_behavior_change": false',
+            '"backend_route_behavior_change": false',
+            '"frontend_only_durable_authority_change": false',
+            "bootstrap contract reports rag_vector_retrieval false",
+            "authority matrix keeps rag_vector_behavior blocked",
+            "durable vector index row write",
+            "embedding generation",
+            "rag execution",
+            "current_main_sync_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_no_runtime_sync_proof",
+            "planning_control_selection_freeze_rag_vector_retrieval_authority_after_provider_public_no_runtime_sync",
+            "planning_control_selection_freeze",
+            "codex/l3-rag-vector-select",
+            "778_RAG_VECTOR_AUTH_FREEZE.md",
+            "6b94135b2045bd3cfde666fc3b70d9a9e6c8d6fe",
+            "current main provider-public delivery/use authority contract is synced through Doc 777",
+            "rag_vector_retrieval_indexing is selected only as an authority-selection lane",
+            "source_directory_material_embedding_vector_index_authority_contract is selected as the next authority question",
+            "current main has no vector service file no vector-focused tests no vector index row write no embedding generation no vector query route and no RAG/vector runtime",
+            "rag_vector_retrieval false remains in bootstrap contract",
+            "rag_vector_behavior remains blocked in the authority matrix",
+            "vector services embedding generation vector stores RAG execution",
+            "current_main_sync_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+            "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing RAG/vector authority selection freeze artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -67511,6 +67630,7 @@ def main() -> int:
     _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync(errors)
     _check_provider_public_delivery_use_exposure_security_revocation_authority_contract(errors)
     _check_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync(errors)
+    _check_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
