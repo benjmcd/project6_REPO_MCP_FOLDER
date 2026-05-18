@@ -32140,5 +32140,45 @@
   "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE.md",
   "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_entry_status": "source_directory_qualitative_analysis_package_construction_commit_runtime_implemented_branch_local",
   "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_qualitative_analysis_package_construction_commit_runtime",
-  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_entry_summary": "Doc 804 proof records the bounded source-directory qualitative-analysis package-construction commit runtime, including exact package rows and payload writes, stale-hash and existing-package guards, redacted response payload refs, and all downstream non-admissions."
+  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_entry_summary": "Doc 804 proof records the bounded source-directory qualitative-analysis package-construction commit runtime, including exact package rows and payload writes, stale-hash and existing-package guards, redacted response payload refs, and all downstream non-admissions.",
+  "source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_qualitative_analysis_package_construction_commit_runtime",
+    "status": "current_main_synced_source_directory_qualitative_analysis_package_construction_commit_runtime",
+    "sync_branch": "codex/l3-source-package-commit-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/805_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE.md",
+    "runtime_pr": "#1409",
+    "runtime_branch_commit": "bbf25487908c15e68d327d70140b005e46afedf0",
+    "runtime_merge_commit": "2a403e857408b09044acd7329503a99a6d83c327",
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "backend-layer3-api_duration": "3m21s",
+      "test": "SUCCESS",
+      "test_duration": "3m52s",
+      "comments": 0,
+      "reviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "proof_coverage": [
+      "current main includes source-directory qualitative-analysis package commit route",
+      "current main includes layer3.source_directory_qualitative_analysis_package_commit.v1",
+      "current main includes source_directory_qualitative_analysis_package_commit_authority",
+      "current main records PR #1409 merged at 2a403e857408b09044acd7329503a99a6d83c327",
+      "current main records green backend-layer3-api and test checks for PR #1409",
+      "current main records zero PR comments reviews and review threads",
+      "source family remains server_configured_operator_directory_text_table_source_family",
+      "current main sync introduces no additional runtime behavior",
+      "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync is selected as the next posture"
+    ],
+    "next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync"
+  },
+  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_branch": "codex/l3-source-package-commit-sync",
+  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/805_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_status": "current_main_synced_source_directory_qualitative_analysis_package_construction_commit_runtime",
+  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync",
+  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_summary": "Doc 805 proof syncs the source-directory qualitative-analysis package-construction commit runtime after PR #1409 and pivots to the next named Layer 3 end-to-end gap selection."
 }
