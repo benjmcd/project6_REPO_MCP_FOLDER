@@ -6240,3 +6240,33 @@ The synced runtime keeps `raw_local_path_exposed: False`, `raw_vector_exposed: F
 No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable vector-store row write, durable embedding row write, durable retrieval row write, vector database, persistent vector store, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, provider-public delivery/use broadening, provider-private signed URL generation/use, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
 
 The next exact current-main posture is `select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync`.
+
+## Source Directory Qualitative-Hybrid Analysis API Runtime Entry Freeze
+
+Branch-local implementation-entry freeze and runtime proof: `798_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_ENTRY_FREEZE.md` follows the source-directory vector retrieval API runtime current-main sync and resolves `select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync` by adopting the already-synced `source_directory_material_context_packet_qualitative_hybrid_analysis_runtime`.
+
+Runtime branch `codex/l3-qual-api` starts from current-main checkpoint `f08391c10823329714e6e57fe01bc25f5f066e87`.
+
+Current main already has `current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_runtime` over `source_directory_material_retrieval_augmented_context_packet_authority`; this pass therefore selects the implementation-bearing API wrapper over the existing deterministic extractive qualitative-hybrid analysis service rather than adding a new analysis engine.
+
+Selected implementation action: `implement_source_directory_material_context_packet_qualitative_hybrid_analysis_api_after_existing_service_runtime_sync`.
+
+Runtime status after implementation: `source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented API route: `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis`.
+
+Implemented response schema: `layer3.source_directory_qualitative_analysis.v1`.
+
+Implemented API owner: `backend/app/api/layer3.py`.
+
+Implemented proof test: `backend/tests/test_layer3_source_directory_qualitative_analysis.py`.
+
+The route calls `source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload)` and returns deterministic extractive qualitative-hybrid analysis over already-admitted source-directory material and context-packet authority. It preserves source-directory material, text-index, retrieval, and context-packet authority hashes; rejects stale authority; rejects extra prompt/provider fields; and does not expose raw local paths, full segment text, raw vectors, embeddings, prompt payloads, provider payloads, package payloads, connector payloads, source file bytes, or frontend state.
+
+The focused proof passed with `5 passed` and covers deterministic qualitative-hybrid service behavior, the API route response, stale index authority fail-closed response, forbidden prompt/provider API fields, no raw local path in API response, no full segment text in supporting segments, no downstream side effects, and negative invariants for vector indexing, embedding generation, qualitative generation, prompt/model/provider runtime, connector dispatch, provider-public delivery, and network egress.
+
+No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable context-packet row write, durable qualitative-analysis row write, durable qualitative-generation row write, durable retrieval row write, durable vector-store row write, durable embedding row write, vector database, persistent vector store, new RAG execution, vector indexing, embedding generation, prompt/model/provider runtime, provider-public delivery/use broadening, provider-private signed URL generation/use, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this runtime.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime`; after sync, pivot to the next named Layer 3 end-to-end gap unless current-main evidence shows a concrete unresolved qualitative-hybrid API defect or named downstream reader.
