@@ -30751,5 +30751,37 @@
   "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/767_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_status": "current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime",
   "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_next_posture": "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync",
-  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_summary": "Doc 767 proof syncs the source-directory retrieval-augmented context packet runtime after PR #1371 and moves the next posture to select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync, with routes, DTOs, models, migrations, durable context-packet rows, vector, embedding, qualitative generation, prompt/model/provider, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, and raw-path behavior still blocked until separately frozen."
+  "latest_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync_summary": "Doc 767 proof syncs the source-directory retrieval-augmented context packet runtime after PR #1371 and moves the next posture to select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync, with routes, DTOs, models, migrations, durable context-packet rows, vector, embedding, qualitative generation, prompt/model/provider, package, connector, provider, frontend-durable, source-expansion, auth/security, credential, network, and raw-path behavior still blocked until separately frozen.",
+  "source_directory_material_qualitative_hybrid_analysis_authority_freeze_proof": {
+    "proof_kind": "branch_local_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+    "status": "branch_local_source_directory_material_qualitative_hybrid_analysis_authority_freeze_written",
+    "freeze_branch": "codex/l3-qual-analysis-selection",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/768_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/767_SOURCE_DIRECTORY_MATERIAL_RETRIEVAL_AUGMENTED_CONTEXT_PACKET_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_freeze": "c1b212faff625d81c030e00b99f746a01bd2adf8",
+    "predecessor_synced_result": "current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime",
+    "selected_from_posture": "select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync",
+    "selected_next_authority_question": "source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+    "selected_future_authority": "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+    "selected_future_analysis_mode": "context_packet_grounded_qualitative_hybrid_analysis",
+    "selected_input_authority": "source_directory_material_retrieval_augmented_context_packet_authority",
+    "selected_input_schema": "layer3.source_directory_context_packet.v1",
+    "selected_future_owner_service": "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+    "selected_future_proof_test": "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+    "runtime_behavior_change": false,
+    "proof_coverage": [
+      "selects source_directory_material_context_packet_qualitative_hybrid_analysis_contract as the next authority question",
+      "selects source_directory_material_context_packet_qualitative_hybrid_analysis_authority over layer3.source_directory_context_packet.v1",
+      "requires future contract before any qualitative-hybrid analysis runtime",
+      "keeps vector runtime embedding generation prompt model provider runtime network egress provider-public delivery durable qualitative rows and rendered frontend durable authority unselected",
+      "keeps routes DTOs models migrations package connector provider source expansion auth security credential network and raw-path behavior blocked"
+    ],
+    "next_posture_after_merge": "current_main_sync_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+    "next_posture_after_sync": "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime"
+  },
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_branch": "codex/l3-qual-analysis-selection",
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_doc": "next_milestone_plans/Layer3_planning_docs/768_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE.md",
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_status": "branch_local_source_directory_material_qualitative_hybrid_analysis_authority_freeze_written",
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_next_posture_after_merge": "current_main_sync_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_summary": "Doc 768 proof records the source-directory qualitative-hybrid analysis authority freeze after the context-packet runtime current-main sync, selects source_directory_material_context_packet_qualitative_hybrid_analysis_contract as the next authority question, and keeps runtime behavior, vector, embedding, prompt/model/provider, qualitative generation, package, connector, provider, frontend-durable, source expansion, auth/security, credential, network, and raw-path surfaces blocked until separately frozen."
 }
