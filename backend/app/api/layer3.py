@@ -2391,6 +2391,14 @@ class Layer3SourceDirectoryQualitativeAnalysisRequest(BaseModel):
     offset: int | None = Field(default=None, ge=0)
 
 
+class Layer3SourceDirectoryQualitativeAnalysisPackageCommitRequest(
+    Layer3SourceDirectoryQualitativeAnalysisRequest
+):
+    qualitative_analysis_hash: str = Field(min_length=64, max_length=64)
+    source_directory_package_review_preview_hash: str = Field(min_length=64, max_length=64)
+    operator_decision: Literal["commit_source_directory_qualitative_analysis_package"]
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -2533,6 +2541,47 @@ class Layer3SourceDirectoryQualitativeAnalysisResponse(Layer3BaseResponse):
     analysis_run_rows_written: bool
     package_rows_written: bool
     connector_rows_written: bool
+    negative_invariants: dict[str, bool]
+
+
+class Layer3SourceDirectoryQualitativeAnalysisPackageCommitResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    session_id: str
+    selection_manifest_id: str
+    material_snapshot_id: str
+    source_ingestion_batch_id: str
+    source_ingestion_file_id: str
+    content_sha256: str
+    file_identity_hash: str
+    authority_basis_hash: str
+    payload_hash: str
+    index_authority_hash: str
+    context_packet_hash: str
+    qualitative_analysis_hash: str
+    source_directory_package_review_preview_hash: str
+    construction_basis_hash: str | None
+    reconciliation_record_id: str
+    output_packages: list[dict[str, Any]]
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_hashes: list[str]
+    payload_refs_redacted: bool
+    package_rows_written: bool
+    package_payloads_written: bool
+    source_package_row_mutation_enabled: bool
+    package_payload_rewrite_enabled: bool
+    package_review_submit_enabled: bool
+    handoff_enabled: bool
+    external_export_download_enabled: bool
+    connector_dispatch_enabled: bool
+    provider_public_delivery_enabled: bool
+    network_egress_enabled: bool
+    frontend_durable_authority_enabled: bool
+    prompt_model_provider_runtime_enabled: bool
+    package_construction_source_gate: str
+    next_state: str
+    next_allowed_actions: list[str]
     negative_invariants: dict[str, bool]
 
 
@@ -7077,6 +7126,33 @@ def post_source_directory_qualitative_hybrid_analysis(
         )
     except (
         layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
+        layer3_source_directory_qualitative_analysis.SourceDirectoryQualitativeAnalysisError,
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/commit",
+    response_model=Layer3SourceDirectoryQualitativeAnalysisPackageCommitResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_qualitative_analysis_package_commit(
+    payload: Layer3SourceDirectoryQualitativeAnalysisPackageCommitRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return (
+            layer3_source_directory_qualitative_analysis
+            .source_directory_qualitative_analysis_package_commit(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
+        layer3_source_directory_qualitative_analysis.SourceDirectoryPackageCommitError,
         layer3_source_directory_qualitative_analysis.SourceDirectoryQualitativeAnalysisError,
         layer3_source_directory_text_index.SourceDirectoryTextIndexError,
         layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,

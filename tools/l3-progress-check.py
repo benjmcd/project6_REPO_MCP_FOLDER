@@ -2222,6 +2222,10 @@ LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_CURRENT_MAI
     PLANNING_DOCS
     / "803_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -70256,6 +70260,182 @@ def _check_source_directory_qualitative_analysis_package_preview_runtime_current
                 )
 
 
+def _check_source_directory_qualitative_analysis_package_construction_runtime_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze and runtime proof for `source_directory_qualitative_analysis_package_construction_commit_runtime`.",
+        "804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE.md",
+        "codex/l3-source-package-commit",
+        "97eae638b1a93cd1970ebe22fb693b4914e2fced",
+        "803_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_package_preview_sync",
+        "implement_source_directory_qualitative_analysis_package_construction_commit_after_package_preview_sync",
+        "source_directory_qualitative_analysis_package_construction_commit_runtime_implemented_branch_local",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/commit",
+        "commit_source_directory_qualitative_analysis_package",
+        "layer3.source_directory_qualitative_analysis_package_commit.v1",
+        "source_directory_qualitative_analysis_package_commit_authority",
+        "canonical_internal",
+        "user_facing",
+        "review_facing",
+        "payload_refs_redacted: True",
+        "source_directory_package_commit_preview_hash_mismatch",
+        "source_directory_package_commit_existing_package_state",
+        "7 passed",
+        "await_current_main_sync_for_source_directory_qualitative_analysis_package_construction_commit_runtime",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync",
+        "does not admit package-review submit",
+        "network egress",
+        "prompt/model/provider runtime",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY)} "
+                f"missing source-directory package construction runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Qualitative Analysis Package Construction Runtime Entry Freeze",
+            "804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE.md",
+            "codex/l3-source-package-commit",
+            "97eae638b1a93cd1970ebe22fb693b4914e2fced",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_package_preview_sync",
+            "source_directory_qualitative_analysis_package_construction_commit_runtime_implemented_branch_local",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/commit",
+            "layer3.source_directory_qualitative_analysis_package_commit.v1",
+            "source_directory_qualitative_analysis_package_commit_authority",
+            "commit_source_directory_qualitative_analysis_package",
+            "canonical_internal",
+            "user_facing",
+            "review_facing",
+            "7 passed",
+            "await_current_main_sync_for_source_directory_qualitative_analysis_package_construction_commit_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_qualitative_analysis_package_construction_commit_runtime_entry",
+            "source_directory_qualitative_analysis_package_construction_commit_runtime_implemented_branch_local",
+            "codex/l3-source-package-commit",
+            "804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE.md",
+            "97eae638b1a93cd1970ebe22fb693b4914e2fced",
+            "803_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "implement_source_directory_qualitative_analysis_package_construction_commit_after_package_preview_sync",
+            '"runtime_behavior_change": true',
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/commit",
+            "layer3.source_directory_qualitative_analysis_package_commit.v1",
+            "source_directory_qualitative_analysis_package_commit_authority",
+            '"package_construction_enabled": true',
+            '"reconciliation_record_written": true',
+            '"package_rows_written": true',
+            '"package_payload_write_enabled": true',
+            '"payload_refs_redacted": true',
+            '"package_review_submit_enabled": false',
+            '"network_egress_enabled": false',
+            '"frontend_durable_authority_enabled": false',
+            '"prompt_model_provider_runtime_enabled": false',
+            '"source_package_row_mutation_enabled": false',
+            '"package_mutation_reconstruction_enabled": false',
+            "await_current_main_sync_for_source_directory_qualitative_analysis_package_construction_commit_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_qualitative_analysis_package_construction_commit_runtime_entry_proof",
+            "branch_local_source_directory_qualitative_analysis_package_construction_commit_runtime_entry",
+            "source_directory_qualitative_analysis_package_construction_commit_runtime_implemented_branch_local",
+            "codex/l3-source-package-commit",
+            "804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE.md",
+            "source-directory qualitative-analysis package commit route is POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/commit",
+            "commit schema is layer3.source_directory_qualitative_analysis_package_commit.v1",
+            "commit mode is source_directory_qualitative_analysis_package_commit_authority",
+            "runtime writes one reconciliation record and exactly three package rows",
+            "payload references are redacted from the API response",
+            "stale source_directory_package_review_preview_hash is rejected",
+            "repeat commit against existing package state is rejected",
+            "no package-review submit handoff export provider connector network frontend durable prompt/model/provider mutation reconstruction source package row mutation or source expansion is admitted",
+            "await_current_main_sync_for_source_directory_qualitative_analysis_package_construction_commit_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package construction artifact term: {term}"
+                )
+
+    service_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE, errors
+    )
+    for term in (
+        "PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID",
+        "PACKAGE_CONSTRUCTION_COMMIT_MODE",
+        "PACKAGE_CONSTRUCTION_OPERATOR_DECISION",
+        "source_directory_qualitative_analysis_package_commit",
+        "source_directory_package_commit_preview_hash_mismatch",
+        "source_directory_package_commit_existing_package_state",
+        "payload_refs_redacted",
+        "package_construction_source_gate",
+    ):
+        if term not in service_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE)} "
+                f"missing source-directory package construction runtime term: {term}"
+            )
+
+    package_entry_text = _read_required_text(PACKAGE_ENTRY_SERVICE, errors)
+    for term in (
+        "SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE",
+        "materialize_source_directory_qualitative_analysis_package_commit",
+        "source_directory_qualitative_package_commit",
+        "layer3.source_directory_qualitative_analysis_package_commit_summary.v1",
+        "construction_basis_hash",
+        "package_review_submit_enabled",
+        "connector_dispatch_enabled",
+        "network_egress_enabled",
+    ):
+        if term not in package_entry_text:
+            errors.append(
+                f"{_rel(PACKAGE_ENTRY_SERVICE)} "
+                f"missing source-directory package construction helper term: {term}"
+            )
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "Layer3SourceDirectoryQualitativeAnalysisPackageCommitRequest",
+        "Layer3SourceDirectoryQualitativeAnalysisPackageCommitResponse",
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/commit",
+        "post_source_directory_qualitative_analysis_package_commit",
+        "SourceDirectoryPackageCommitError",
+    ):
+        if term not in api_text:
+            errors.append(
+                f"{_rel(LAYER3_API)} missing source-directory package construction API term: {term}"
+            )
+
+    test_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST, errors
+    )
+    for term in (
+        "test_source_directory_qualitative_analysis_package_commit_writes_bounded_packages",
+        "test_source_directory_qualitative_analysis_package_commit_rejects_stale_preview_hash",
+        "_assert_no_forbidden_package_commit_downstream",
+        "source_directory_package_commit_existing_package_state",
+        "source_directory_package_commit_preview_hash_mismatch",
+        "payload_refs_redacted",
+        "canonical_internal",
+        "user_facing",
+        "review_facing",
+    ):
+        if term not in test_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST)} "
+                f"missing source-directory package construction proof term: {term}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -70920,6 +71100,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_qualitative_analysis_package_preview_runtime_current_main_sync(
+        errors
+    )
+    _check_source_directory_qualitative_analysis_package_construction_runtime_entry(
         errors
     )
 
