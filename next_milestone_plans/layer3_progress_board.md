@@ -5970,3 +5970,31 @@ Runtime behavior introduced by this sync: `false`.
 No runtime behavior, backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, durable retrieval row write, vector database, persistent vector store, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package behavior, handoff/export rerun, connector/destination dispatch, credentials, network egress, provider-public delivery/use, auth/security broadening, rendered/frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
 
 The next exact current-main posture is `implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync`.
+
+## Source Directory Material Deterministic Vector Retrieval Runtime Proof
+
+Branch-local runtime proof: `788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md` follows the source-directory deterministic vector retrieval authority contract current-main sync.
+
+Runtime branch `codex/l3-vector-retrieval-runtime` starts from current-main checkpoint `fb37896f56843c6abcc7b1ebb9d98c59ea323230`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract`.
+
+Selected implementation action: `implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync`.
+
+Runtime status after implementation: `source_directory_material_deterministic_vector_retrieval_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented service: `backend/app/services/layer3_source_directory_vector_retrieval.py`.
+
+Focused proof test: `backend/tests/test_layer3_source_directory_vector_retrieval.py`.
+
+The runtime implements `source_directory_material_vector_retrieval(db, payload)` over the current-main synced `source_directory_material_deterministic_embedding_vector_index_authority`, `layer3.source_directory_embedding_vector_index.v1`, and `source-directory-hash-vector-v1` with `vector_dimensions == 4096`.
+
+The runtime calls `source_directory_material_embedding_vector_index(db, vector_index_payload)` before scoring, validates `embedding_index_authority_hash`, recovers segment text through text-index authority only for local scoring, computes deterministic normalized query-to-segment dot product scores, omits `vector_score <= 0` matches, and returns `layer3.source_directory_vector_retrieval.v1`.
+
+The focused proof covers deterministic score-ordered replay, stale embedding-index authority rejection, stale index authority rejection through vector-index authority, stale source/material authority rejection, empty query rejection, forbidden prompt/model/provider/RAG/vector fields, unknown fields, bounded `top_k`, no-match behavior without fallback, no raw vector/normalized feature exposure, and no `L3PassRun`, `AnalysisRun`, `L3OutputPackage`, `ConnectorRun`, or `ConnectorRunTarget` side effects.
+
+No backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, durable retrieval row write, vector database, persistent vector store, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package behavior, handoff/export rerun, connector/destination dispatch, credentials, network egress, provider-public delivery/use, auth/security broadening, rendered/frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this runtime.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof`.
