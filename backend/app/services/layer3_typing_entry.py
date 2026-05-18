@@ -19,7 +19,10 @@ from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED,
     SESSION_STATUS_COMPLETED_WITH_WARNINGS,
 )
-from app.services.layer3_source_boundary import SOURCE_INTAKE_GATE_B_SOURCE_CLASS
+from app.services.layer3_source_boundary import (
+    SOURCE_DIRECTORY_GATE_B_SOURCE_CLASS,
+    SOURCE_INTAKE_GATE_B_SOURCE_CLASS,
+)
 from app.services.layer3_utils import (
     json_clone as _json_clone,
     stable_hash as _hash_json,
@@ -102,6 +105,13 @@ SUPPORTED_TYPING_RULES = {
         chosen_modality=MODALITY_QUALITATIVE,
         confidence=1.0,
         confidence_basis="frozen_source_intake_text_document_default",
+    ),
+    SOURCE_DIRECTORY_GATE_B_SOURCE_CLASS: _TypingRule(
+        planning_shape_family="document_chunks",
+        candidate_modalities=(MODALITY_QUALITATIVE,),
+        chosen_modality=MODALITY_QUALITATIVE,
+        confidence=1.0,
+        confidence_basis="frozen_source_directory_text_table_document_default",
     ),
 }
 

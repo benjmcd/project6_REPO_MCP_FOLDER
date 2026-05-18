@@ -28891,5 +28891,49 @@
   "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_status": "current_main_synced_source_directory_ingestion_downstream_material_authority_freeze",
   "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_runtime_behavior_change": false,
   "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_next_posture": "implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync",
-  "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_summary": "Doc 747 syncs PR #1351 merge commit 950a419e25474bf64354cdfdaff066ac7b786744 to current main. Current main now selects source_directory_ingestion_gate_b_material_admission as the next code-bearing posture over persisted source-directory batch/file authority."
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_summary": "Doc 747 syncs PR #1351 merge commit 950a419e25474bf64354cdfdaff066ac7b786744 to current main. Current main now selects source_directory_ingestion_gate_b_material_admission as the next code-bearing posture over persisted source-directory batch/file authority.",
+  "source_directory_ingestion_gate_b_material_admission_runtime_proof": {
+    "status": "branch_local_source_directory_ingestion_gate_b_material_admission_runtime_proven",
+    "implementation_branch": "codex/l3-source-directory-material-admission",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_implementation": "0de713bb3a6ef465658c81c9cc829583afab726a",
+    "selected_downstream_mode": "source_directory_ingestion_gate_b_material_admission",
+    "selected_downstream_authority": "gate_b_material_candidate_from_source_directory_ingestion_file",
+    "canonical_upstream_authorities": [
+      "L3SourceDirectoryIngestionBatch",
+      "L3SourceDirectoryIngestionFile"
+    ],
+    "runtime_owner_service": "backend/app/services/layer3_source_directory_material_admission.py",
+    "api_owner": "backend/app/api/layer3.py",
+    "source_boundary_owner": "backend/app/services/layer3_source_boundary.py",
+    "material_preview_route": "POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+    "gate_b_route_reuse": "POST /api/v1/layer3/gate-b/decision",
+    "material_candidate_source_class": "server_configured_directory_file",
+    "material_candidate_prefix": "mat-server_configured_directory_file-",
+    "runtime_behavior_change": true,
+    "validation": {
+      "python -m py_compile source-directory material admission files": "PASS",
+      "python -m pytest source-directory material admission focused tests plus adjacent source contracts": "32 passed"
+    },
+    "proof_coverage": [
+      "material preview requires persisted batch/file ids plus file_identity_hash and authority_basis_hash",
+      "material preview re-reads only the configured direct-child file represented by persisted authority",
+      "Gate B validates server_configured_directory_file decision basis before commit",
+      "Gate B persists a server_configured_directory_file L3MaterialSnapshot",
+      "Gate C preview types server_configured_directory_file as document_chunks qualitative material",
+      "configuration drift and live file read failures are converted to blocked material-admission errors",
+      "stale supplied authority and live file drift fail closed",
+      "raw configured root and absolute file paths are not exposed",
+      "creates no ConnectorRun, ConnectorRunTarget, or L3OutputPackage rows"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof",
+    "next_posture_after_sync": "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync"
+  },
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_branch": "codex/l3-source-directory-material-admission",
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md",
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_status": "branch_local_source_directory_ingestion_gate_b_material_admission_runtime_proven",
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_runtime_behavior_change": true,
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof",
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_proof_summary": "Doc 748 implements the bounded source-directory Gate B material-admission reader. It emits server_configured_directory_file material candidates from persisted L3SourceDirectoryIngestionBatch/File authority, validates stale hashes and live file drift fail-closed, converts configuration/read drift into blocked errors, reuses Gate B to persist L3MaterialSnapshot rows, adds the matching Gate C qualitative document_chunks typing rule, and keeps RAG/vector, package, connector, provider, rendered/frontend-durable, broad source, and auth/security scope blocked."
 }
