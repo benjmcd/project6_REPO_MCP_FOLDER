@@ -4916,3 +4916,23 @@ Observed branch validation: `python -m py_compile .\backend\app\services\layer3_
 This pass does not admit PDFs, OCR, Office documents, arbitrary binaries, web connectors, arbitrary recursive ingestion, local upload expansion, RAG/vector indexing, qualitative-hybrid runtime, package construction or rewrite, source `L3OutputPackage` mutation, connector dispatch, provider-public behavior, credentialed network behavior, auth/security broadening, rendered controls, frontend-durable authority, or hidden LLM planning.
 
 The next exact posture after merge is `await_current_main_sync_for_server_configured_operator_directory_text_table_ingestion_runtime_proof`; after sync, the next exact posture is `select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync`.
+
+## Server Configured Operator Directory Text/Table Ingestion Runtime Current-Main Sync
+
+Current-main sync: `745_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1349` for `server_configured_operator_directory_text_table_ingestion_runtime_proof`.
+
+Runtime branch `codex/l3-source-directory-ingestion` landed branch commit `903462a80082aa2b7489d867f249e72f6589c6ce` into current main at merge commit `be89cd042af5e39e23cdbf01d092799d13b83767`.
+
+Synced result: `current_main_synced_server_configured_operator_directory_text_table_ingestion_runtime`.
+
+Current main now includes bounded server-configured operator directory text/table ingestion runtime, with `L3SourceDirectoryIngestionBatch` and `L3SourceDirectoryIngestionFile` as durable authorities.
+
+PR `#1349` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Post-merge validation at `be89cd042af5e39e23cdbf01d092799d13b83767` passed: `python .\tools\l3-progress-check.py`; `python .\tools\l3-target-selection-validate.py --expect frozen`; and `python -m pytest .\backend\tests\test_layer3_source_directory_ingestion.py .\backend\tests\test_layer3_source_boundary.py .\backend\tests\test_layer3_source_intake.py .\backend\tests\test_layer3_model_exports.py .\backend\tests\test_layer3_api.py::test_layer3_forbidden_sentinel_openapi_fields_are_impossible -q` -> `29 passed`.
+
+The synced runtime remains bounded to `LAYER3_SOURCE_INGESTION_DIR`, direct child `.csv`, `.json`, `.txt`, and `.md` files, redacted `server-configured://LAYER3_SOURCE_INGESTION_DIR` refs, and durable batch/file authority rows.
+
+This sync admits no additional runtime or rendered behavior. PDFs, OCR, Office documents, arbitrary binaries, web connectors, arbitrary recursive ingestion, local upload expansion, RAG/vector indexing, qualitative-hybrid runtime, package construction or rewrite, source `L3OutputPackage` mutation, connector dispatch, provider-public behavior, credentialed network behavior, auth/security broadening, rendered controls, frontend-durable authority, and hidden LLM planning remain blocked.
+
+The next exact current-main posture is `select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync`.

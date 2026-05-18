@@ -28779,5 +28779,44 @@
   "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_status": "branch_local_server_configured_operator_directory_text_table_ingestion_runtime_proven",
   "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_runtime_behavior_change": true,
   "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_server_configured_operator_directory_text_table_ingestion_runtime_proof",
-  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_summary": "Doc 744 implements the bounded server-configured operator directory text/table ingestion runtime. It records L3SourceDirectoryIngestionBatch and L3SourceDirectoryIngestionFile authority for direct child CSV, JSON, TXT, and MD files under LAYER3_SOURCE_INGESTION_DIR, exposes redacted refs only, proves replay behavior, and leaves RAG/vector, package construction, connector dispatch, provider-public behavior, auth/security broadening, rendered controls, and frontend-durable authority blocked."
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_summary": "Doc 744 implements the bounded server-configured operator directory text/table ingestion runtime. It records L3SourceDirectoryIngestionBatch and L3SourceDirectoryIngestionFile authority for direct child CSV, JSON, TXT, and MD files under LAYER3_SOURCE_INGESTION_DIR, exposes redacted refs only, proves replay behavior, and leaves RAG/vector, package construction, connector dispatch, provider-public behavior, auth/security broadening, rendered controls, and frontend-durable authority blocked.",
+  "server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync": {
+    "status": "current_main_synced_server_configured_operator_directory_text_table_ingestion_runtime",
+    "sync_branch": "codex/l3-source-directory-ingestion-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/745_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md",
+    "runtime_pr": "#1349",
+    "runtime_branch": "codex/l3-source-directory-ingestion",
+    "runtime_branch_commit": "903462a80082aa2b7489d867f249e72f6589c6ce",
+    "runtime_merge_commit": "be89cd042af5e39e23cdbf01d092799d13b83767",
+    "current_main_checkpoint_after_merge": "be89cd042af5e39e23cdbf01d092799d13b83767",
+    "runtime_result": "server_configured_operator_directory_text_table_ingestion_runtime_proven",
+    "runtime_behavior_introduced_by_runtime_proof": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": {
+      "python .\\tools\\l3-progress-check.py": "PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen": "PASS (frozen)",
+      "python -m pytest source-directory-ingestion focused tests plus API OpenAPI sentinel": "29 passed"
+    },
+    "durable_batch_authority": "L3SourceDirectoryIngestionBatch",
+    "durable_file_authority": "L3SourceDirectoryIngestionFile",
+    "scan_route": "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+    "status_route": "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+    "next_posture": "select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync"
+  },
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_branch": "codex/l3-source-directory-ingestion-sync",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/745_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_status": "current_main_synced_server_configured_operator_directory_text_table_ingestion_runtime",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_runtime_behavior_change": false,
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_next_posture": "select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_summary": "Doc 745 syncs PR #1349 merge commit be89cd042af5e39e23cdbf01d092799d13b83767 to current main. Current main now includes bounded server-configured operator directory text/table ingestion runtime, with downstream material/index authority left for separate selection."
 }
