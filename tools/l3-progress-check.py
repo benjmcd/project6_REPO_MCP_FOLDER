@@ -2171,6 +2171,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_CURRENT_
 LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_RUNTIME_SYNC = (
     PLANNING_DOCS / "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC_AFTER_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_RUNTIME_SYNC = (
+    PLANNING_DOCS
+    / "791_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -68614,6 +68618,111 @@ def _check_provider_public_delivery_use_runtime_authority_selection_after_source
                 )
 
 
+def _check_provider_public_delivery_use_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC_AFTER_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_RUNTIME_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync`.",
+        "791_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+        "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+        "#1395",
+        "codex/l3-provider-public-runtime-select",
+        "ceaf0071f989c8c4162810f11aa0ea68c5c0d387",
+        "e649f70446b4d2f533a5e33eec9bc3fbfb14065c",
+        "codex/l3-provider-public-runtime-select-sync",
+        "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+        "Runtime behavior introduced by selection PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "`backend-layer3-api`: `SUCCESS`, `2m47s`",
+        "`test`: `SUCCESS`, `3m42s`",
+        "reviewThreads totalCount: `0`",
+        "Current main now includes `790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md`.",
+        "provider_public_delivery_use",
+        "fake_provider_only_contract_runtime",
+        "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract",
+        "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime",
+        "raw_public_url_exposed: False",
+        "public_url_enabled: False",
+        "exposes no provider-public `/use` or `/deliver` runtime",
+        "No provider-public runtime implementation begins in this sync.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC_AFTER_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_RUNTIME_SYNC)} "
+                f"missing provider-public delivery/use runtime authority selection sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public Delivery/Use Runtime Authority Selection Current-Main Sync",
+            "791_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+            "#1395",
+            "codex/l3-provider-public-runtime-select",
+            "ceaf0071f989c8c4162810f11aa0ea68c5c0d387",
+            "e649f70446b4d2f533a5e33eec9bc3fbfb14065c",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+            "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+            "fake_provider_only_contract_runtime",
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract",
+            "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime",
+            "raw_public_url_exposed: False",
+            "public_url_enabled: False",
+            "no provider-public `/use` or `/deliver` runtime",
+            "Runtime behavior introduced by selection PR: `false`.",
+            "Runtime behavior introduced by this sync: `false`.",
+        ),
+        MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_current_main_sync",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+            "codex/l3-provider-public-runtime-select-sync",
+            "791_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+            "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+            "#1395",
+            "ceaf0071f989c8c4162810f11aa0ea68c5c0d387",
+            "e649f70446b4d2f533a5e33eec9bc3fbfb14065c",
+            '"selection_behavior_change": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api_duration": "2m47s"',
+            '"test_duration": "3m42s"',
+            "fake_provider_only_contract_runtime",
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract",
+            "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime",
+            '"current_main_raw_public_url_exposed": false',
+            '"current_main_public_url_enabled": false',
+            '"current_main_provider_public_use_or_deliver_route": false',
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_current_main_sync_proof",
+            "current_main_sync_provider_public_delivery_use_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync",
+            "codex/l3-provider-public-runtime-select-sync",
+            "791_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+            "790_PROVIDER_PUBLIC_DELIVERY_USE_RUNTIME_AUTHORITY_SELECTION_FREEZE.md",
+            "#1395",
+            "ceaf0071f989c8c4162810f11aa0ea68c5c0d387",
+            "e649f70446b4d2f533a5e33eec9bc3fbfb14065c",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no runtime behavior",
+            "provider_public_delivery_use is current-main synced as the selected major deferred lane",
+            "fake_provider_only_contract_runtime is current-main synced as the provider mode for the next contract question",
+            "provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract is current-main synced as the next authority question",
+            "raw_public_url_exposed remains false and public_url_enabled remains false",
+            "no provider-public use or deliver route is admitted by this sync",
+            "write_provider_public_delivery_use_exposure_security_revocation_runtime_authority_contract_before_runtime is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public delivery/use runtime authority selection sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -69251,6 +69360,9 @@ def main() -> int:
         errors
     )
     _check_provider_public_delivery_use_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_sync(
+        errors
+    )
+    _check_provider_public_delivery_use_runtime_authority_selection_after_source_directory_vector_retrieval_runtime_current_main_sync(
         errors
     )
 
