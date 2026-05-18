@@ -6580,3 +6580,25 @@ Proof: `python -m pytest .\backend\tests\test_layer3_bootstrap_contract.py .\bac
 Non-admitted: new routes, models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, a new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, and full mockup activation.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_package_handoff_operator_status_surface_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_package_handoff_operator_status_surface_sync` unless current-main evidence shows a concrete unresolved operator-status defect or named downstream reader.
+
+## Source Directory Package Handoff Operator Status Surface Runtime Current-Main Sync
+
+Current-main proof/control sync: `811_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1415` for `source_directory_package_handoff_operator_status_surface_runtime`.
+
+Runtime branch `codex/l3-source-intake-next` landed branch commit `c8cf49e0a98ee2c0eb4a04085c3871fd6d2f240d` into current main at merge commit `2024599e7e58dd7894d252c8a7de3e3c1eedda02`.
+
+Synced result: `current_main_synced_source_directory_package_handoff_operator_status_surface_runtime`.
+
+Current main now includes backend bootstrap/readiness operator status metadata for the already-admitted source-directory package commit, package-review submit, and handoff/export prepare endpoints.
+
+PR `#1415` had green `backend-layer3-api` (`3m4s`) and `test` (`3m31s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime keeps `new_routes_added: False`, `package_payload_write_enabled: False`, `package_mutation_reconstruction_enabled: False`, `aps_handoff_enabled: False`, `external_export_download_enabled: False`, `provider_public_delivery_enabled: False`, `connector_dispatch_enabled: False`, `network_egress_enabled: False`, `frontend_durable_authority_enabled: False`, `frontend_rendered_controls_enabled: False`, `prompt_model_provider_runtime_enabled: False`, `qualitative_generation_runtime_enabled: False`, `new_source_family_enabled: False`, and `source_package_row_mutation_enabled: False`.
+
+No new routes, models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this sync.
+
+The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_package_handoff_operator_status_surface_sync`.
