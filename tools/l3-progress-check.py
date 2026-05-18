@@ -2050,6 +2050,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE_CURRENT_MAIN
 LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT = (
     PLANNING_DOCS / "758_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -64690,6 +64694,101 @@ def _check_source_directory_material_lexical_retrieval_authority_contract(
                 )
 
 
+def _check_source_directory_material_lexical_retrieval_authority_contract_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_lexical_retrieval_authority_contract`.",
+        "759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "758_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT.md",
+        "#1363",
+        "codex/l3-retrieval-contract",
+        "c08dc222372100b431232946c3ede818731312e2",
+        "f22439007ae958d704932d4a3fb7c0cac0848d3b",
+        "codex/l3-retrieval-contract-sync",
+        "current_main_synced_source_directory_material_lexical_retrieval_authority_contract",
+        "Runtime behavior introduced by contract PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "test",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "source_directory_material_deterministic_lexical_retrieval_authority",
+        "deterministic_lexical_segment_retrieval",
+        "backend/app/services/layer3_source_directory_text_retrieval.py",
+        "backend/tests/test_layer3_source_directory_text_retrieval.py",
+        "backend/app/services/layer3_source_directory_text_index.py",
+        "source_directory_material_deterministic_text_index_authority",
+        "layer3.source_directory_text_retrieval.v1",
+        "python -m py_compile .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC)} "
+                f"missing source directory lexical retrieval authority contract sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Lexical Retrieval Authority Contract Current-Main Sync",
+            "759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "#1363",
+            "c08dc222372100b431232946c3ede818731312e2",
+            "f22439007ae958d704932d4a3fb7c0cac0848d3b",
+            "current_main_synced_source_directory_material_lexical_retrieval_authority_contract",
+            "backend/app/services/layer3_source_directory_text_retrieval.py",
+            "backend/tests/test_layer3_source_directory_text_retrieval.py",
+            "reviewThreads totalCount `0`",
+            "unresolved reviewThreads totalCount `0`",
+            "Runtime behavior introduced by this sync: `false`.",
+            "implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_lexical_retrieval_authority_contract_current_main_sync",
+            "current_main_synced_source_directory_material_lexical_retrieval_authority_contract",
+            "codex/l3-retrieval-contract-sync",
+            "759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "758_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT.md",
+            "#1363",
+            "c08dc222372100b431232946c3ede818731312e2",
+            "f22439007ae958d704932d4a3fb7c0cac0848d3b",
+            '"runtime_behavior_introduced_by_contract": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"unresolvedReviewThreads": 0',
+            "source_directory_material_deterministic_lexical_retrieval_authority",
+            "deterministic_lexical_segment_retrieval",
+            "backend/app/services/layer3_source_directory_text_retrieval.py",
+            "backend/tests/test_layer3_source_directory_text_retrieval.py",
+            "implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_lexical_retrieval_authority_contract_current_main_sync_proof",
+            "current_main_sync_source_directory_material_lexical_retrieval_authority_contract",
+            "current_main_synced_source_directory_material_lexical_retrieval_authority_contract",
+            "759_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "#1363",
+            "f22439007ae958d704932d4a3fb7c0cac0848d3b",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "no runtime behavior introduced by this sync",
+            "implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory lexical retrieval authority contract sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -65291,6 +65390,7 @@ def main() -> int:
     _check_source_directory_material_lexical_retrieval_authority_freeze(errors)
     _check_source_directory_material_lexical_retrieval_authority_freeze_current_main_sync(errors)
     _check_source_directory_material_lexical_retrieval_authority_contract(errors)
+    _check_source_directory_material_lexical_retrieval_authority_contract_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
