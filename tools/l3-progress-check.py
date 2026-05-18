@@ -1954,6 +1954,10 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_E
     PLANNING_DOCS
     / "733_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION = (
+    PLANNING_DOCS
+    / "734_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -61721,6 +61725,90 @@ def _check_corrected_artifact_active_authority_connector_local_destination_recei
                 )
 
 
+def _check_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `corrected_artifact_active_authority_server_owned_local_outbox_fake_target`.",
+        "734_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION.md",
+        "733_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_CONNECTOR_LOCAL_DESTINATION_RECEIPT_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-outbox-fake-target",
+        "f68f26686c600c0af074033e049d87538f62b2f7",
+        "Selected downstream reader path: `server_owned_local_outbox_fake_target`.",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/fake-target",
+        "recorded `connector_local_destination_receipt` authority",
+        "corrected_artifact_active_authority_server_owned_local_outbox_fake_target_proven",
+        "Runtime behavior change in this pass: `false`",
+        "Test/proof behavior change in this pass: `true`",
+        "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+        "Result observed: `1 passed`",
+        "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation",
+        "select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_fake_target_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION)} "
+                f"missing corrected-artifact active authority server-owned local outbox fake-target term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority Server Owned Local Outbox Fake Target Evaluation",
+            "734_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION.md",
+            "codex/l3-corrected-outbox-fake-target",
+            "f68f26686c600c0af074033e049d87538f62b2f7",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/fake-target",
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation",
+            "branch_local_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_proven",
+            "codex/l3-corrected-outbox-fake-target",
+            "734_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION.md",
+            "f68f26686c600c0af074033e049d87538f62b2f7",
+            "server_owned_local_outbox_fake_target",
+            '"runtime_behavior_change": false',
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_fake_target_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation_proof",
+            "branch_local_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation",
+            "branch_local_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_proven",
+            "734_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_EVALUATION.md",
+            "f68f26686c600c0af074033e049d87538f62b2f7",
+            "POST /api/v1/layer3/handoff/connector/local-outbox/fake-target",
+            '"runtime_behavior_change": false',
+            "real corrected-artifact API route chain reaches server-owned local outbox fake target",
+            "duplicate server-owned local outbox fake-target receipt replays as already_recorded",
+            "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority",
+            "_server_owned_local_outbox_fake_target_payload",
+            '"/api/v1/layer3/handoff/connector/local-outbox/fake-target"',
+            "L3ServerOwnedLocalOutboxTargetReceipt",
+            "artifact://server-owned-local-outbox-fake-target-redacted",
+            "server_owned_local_outbox_fake_target_replay",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority server-owned local outbox fake-target "
+                    f"artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -62297,6 +62385,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_external_export_download_deliver_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation(errors)
     _check_corrected_artifact_active_authority_connector_local_destination_receipt_evaluation_current_main_sync(errors)
+    _check_corrected_artifact_active_authority_server_owned_local_outbox_fake_target_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
