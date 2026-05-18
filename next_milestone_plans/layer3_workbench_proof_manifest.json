@@ -29911,5 +29911,49 @@
   "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md",
   "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_status": "branch_local_server_configured_operator_directory_text_table_ingestion_runtime_proven",
   "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_server_configured_operator_directory_text_table_ingestion_runtime_proof",
-  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_summary": "Doc 744 proves bounded server-configured operator directory text/table ingestion runtime and keeps downstream material/index authority as the next separately selected posture."
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_proof_summary": "Doc 744 proves bounded server-configured operator directory text/table ingestion runtime and keeps downstream material/index authority as the next separately selected posture.",
+  "server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_server_configured_operator_directory_text_table_ingestion_runtime",
+    "status": "current_main_synced_server_configured_operator_directory_text_table_ingestion_runtime",
+    "sync_branch": "codex/l3-source-directory-ingestion-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/745_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/744_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_PROOF.md",
+    "runtime_pr": "#1349",
+    "runtime_branch_commit": "903462a80082aa2b7489d867f249e72f6589c6ce",
+    "runtime_merge_commit": "be89cd042af5e39e23cdbf01d092799d13b83767",
+    "current_main_checkpoint_after_merge": "be89cd042af5e39e23cdbf01d092799d13b83767",
+    "runtime_behavior_introduced_by_runtime_proof": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen: PASS (frozen)",
+      "python -m pytest source-directory-ingestion focused tests plus API OpenAPI sentinel: 29 passed"
+    ],
+    "proof_coverage": [
+      "current main includes Doc 744 source directory ingestion runtime proof",
+      "current main records PR #1349 merged at be89cd042af5e39e23cdbf01d092799d13b83767",
+      "current main records green backend-layer3-api and test checks for PR #1349",
+      "current main records zero PR comments, reviews, latest reviews, and review threads",
+      "current main post-merge progress checker passes",
+      "current main post-merge target-selection validation remains frozen",
+      "focused source directory ingestion runtime/API tests pass after merge",
+      "no runtime behavior introduced by this sync",
+      "downstream material/index authority remains a separate future selection"
+    ],
+    "next_posture": "select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync"
+  },
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_branch": "codex/l3-source-directory-ingestion-sync",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/745_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_status": "current_main_synced_server_configured_operator_directory_text_table_ingestion_runtime",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_next_posture": "select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync",
+  "latest_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync_summary": "Doc 745 proof syncs server-configured operator directory text/table ingestion runtime after PR #1349 and leaves downstream material/index authority for separate selection."
 }
