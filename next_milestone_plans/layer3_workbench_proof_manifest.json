@@ -31746,5 +31746,48 @@
   "latest_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry_doc": "next_milestone_plans/Layer3_planning_docs/794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md",
   "latest_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry_status": "provider_public_delivery_use_fake_provider_redacted_runtime_implemented_branch_local",
   "latest_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry_next_posture_after_merge": "await_current_main_sync_for_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
-  "latest_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry_summary": "Doc 794 proof records the bounded provider-public delivery/use fake-provider runtime implementation and focused 9-test proof. It admits only response-safe read-only use decisions over existing provider-public receipt/object-authority state and keeps raw URL exposure, provider network/object writes, public redirect, byte streaming, durable use/audit row creation, connector dispatch, package mutation, source expansion, RAG/vector indexing, and frontend durable authority disabled."
+  "latest_provider_public_delivery_use_fake_provider_redacted_runtime_implementation_entry_summary": "Doc 794 proof records the bounded provider-public delivery/use fake-provider runtime implementation and focused 9-test proof. It admits only response-safe read-only use decisions over existing provider-public receipt/object-authority state and keeps raw URL exposure, provider network/object writes, public redirect, byte streaming, durable use/audit row creation, connector dispatch, package mutation, source expansion, RAG/vector indexing, and frontend durable authority disabled.",
+  "provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+    "status": "current_main_synced_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+    "sync_branch": "codex/l3-pp-use-main-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/794_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_IMPLEMENTATION_ENTRY_FREEZE.md",
+    "runtime_pr": "#1399",
+    "runtime_branch_commit": "81625823561540d2c4ae17d5ee20e24cdd0515b9",
+    "runtime_merge_commit": "15cd06a6c394d0fd49db1a5bc2e00956b2431834",
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes backend/app/services/layer3_provider_public_url_delivery_use.py",
+      "current main includes backend/tests/test_layer3_provider_public_url_delivery_use.py",
+      "current main exposes POST /handoff/export/download/provider-public-url/use",
+      "current main exposes layer3.provider_public_url.delivery_use.v1",
+      "current main sync records PR #1399 merged at 15cd06a6c394d0fd49db1a5bc2e00956b2431834",
+      "current main records green backend-layer3-api and test checks for PR #1399",
+      "current main records zero PR comments reviews and review threads",
+      "current main runtime reads L3ProviderPublicUrlReceipt and L3ProviderPublicUrlObjectAuthority only",
+      "raw_public_url_exposed false and public_url_enabled false",
+      "provider_network_enabled false and provider_object_write_enabled false",
+      "public_redirect_enabled false and byte_streaming_enabled false",
+      "durable_use_row_created false and audit_row_created false",
+      "connector_dispatch_enabled false package_mutation_enabled false source_expansion_enabled false rag_vector_indexing_enabled false frontend_durable_authority_enabled false",
+      "current main sync introduces no additional runtime behavior",
+      "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync is selected as the next posture"
+    ],
+    "next_posture": "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync"
+  },
+  "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_branch": "codex/l3-pp-use-main-sync",
+  "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_status": "current_main_synced_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+  "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_next_posture": "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+  "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_summary": "Doc 795 proof syncs the provider-public delivery/use fake-provider runtime implementation after PR #1399 and pivots to source expansion ingestion named source family selection."
 }
