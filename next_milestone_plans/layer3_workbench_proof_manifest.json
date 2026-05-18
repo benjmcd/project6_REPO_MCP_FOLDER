@@ -30821,5 +30821,39 @@
   "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/769_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_status": "current_main_synced_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
   "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_next_posture": "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
-  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_summary": "Doc 769 proof syncs the source-directory qualitative-hybrid analysis authority freeze after PR #1373 and moves the next posture to write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime, with runtime, vector, embedding, prompt/model/provider, qualitative generation, package, connector, provider, frontend-durable, source expansion, auth/security, credential, network, and raw-path behavior still blocked until separately frozen."
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_summary": "Doc 769 proof syncs the source-directory qualitative-hybrid analysis authority freeze after PR #1373 and moves the next posture to write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime, with runtime, vector, embedding, prompt/model/provider, qualitative generation, package, connector, provider, frontend-durable, source expansion, auth/security, credential, network, and raw-path behavior still blocked until separately frozen.",
+  "source_directory_material_context_packet_qualitative_hybrid_analysis_contract_proof": {
+    "proof_kind": "branch_local_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+    "status": "branch_local_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_written",
+    "contract_branch": "codex/l3-qual-analysis-contract",
+    "contract_doc": "next_milestone_plans/Layer3_planning_docs/770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/769_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_contract": "2fb5ace714eac8c3b1fa509a1fd9dd3afb0068b2",
+    "predecessor_synced_result": "current_main_synced_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+    "selected_from_posture": "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
+    "selected_contract": "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+    "selected_analysis_mode": "context_packet_grounded_qualitative_hybrid_analysis",
+    "selected_input_authority": "source_directory_material_retrieval_augmented_context_packet_authority",
+    "selected_input_schema": "layer3.source_directory_context_packet.v1",
+    "selected_future_owner_service": "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+    "selected_future_proof_test": "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+    "future_response_schema": "layer3.source_directory_qualitative_analysis.v1",
+    "runtime_behavior_change": false,
+    "proof_coverage": [
+      "selects source_directory_material_context_packet_qualitative_hybrid_analysis_authority over layer3.source_directory_context_packet.v1",
+      "requires future runtime to call source_directory_material_retrieval_augmented_context_packet(db, payload)",
+      "requires context_packet_contract_id context_packet_mode schema_id validation",
+      "requires stable qualitative_analysis_hash replay",
+      "requires deterministic extractive evidence_summary salient_terms supporting_segments coverage_notes and analysis_limits",
+      "requires no L3PassRun AnalysisRun L3OutputPackage ConnectorRun or ConnectorRunTarget side effects",
+      "keeps runtime routes DTOs models migrations durable qualitative analysis rows vector embedding qualitative generation prompt model provider package connector provider frontend durable source expansion auth security credential network and raw-path behavior blocked"
+    ],
+    "next_posture_after_merge": "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+    "next_posture_after_sync": "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync"
+  },
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_branch": "codex/l3-qual-analysis-contract",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_doc": "next_milestone_plans/Layer3_planning_docs/770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_status": "branch_local_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_written",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_next_posture_after_merge": "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_summary": "Doc 770 proof records the source-directory context-packet qualitative-hybrid analysis contract over current context packet authority, future response schema layer3.source_directory_qualitative_analysis.v1, future owner backend/app/services/layer3_source_directory_qualitative_analysis.py, future proof backend/tests/test_layer3_source_directory_qualitative_analysis.py, deterministic extractive analysis, and qualitative_analysis_hash while preserving blocked runtime, vector, embedding, prompt/model/provider, qualitative generation, package, connector, provider, frontend durable, source expansion, auth/security, credential, network, and raw-path surfaces."
 }
