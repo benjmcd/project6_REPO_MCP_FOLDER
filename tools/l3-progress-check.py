@@ -2016,6 +2016,10 @@ LAYER3_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN
     PLANNING_DOCS
     / "749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE = (
+    PLANNING_DOCS
+    / "750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -63729,6 +63733,105 @@ def _check_source_directory_ingestion_gate_b_material_admission_runtime_current_
                 )
 
 
+def _check_source_directory_material_source_index_authority_freeze(
+    errors: list[str],
+) -> None:
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: branch-local source/index authority selection freeze for `source_directory_material_source_index_authority`.",
+        "750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md",
+        "codex/l3-source-index-freeze",
+        "11a027b3f8a97b9b628a09c0acc6d08ba547c3b6",
+        "749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime",
+        "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync",
+        "source_directory_material_source_index_authority_contract",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "L3MaterialSnapshot",
+        "server_configured_directory_file",
+        "document_chunks",
+        "qualitative",
+        "backend/app/services/layer3_source_boundary.py",
+        "rag_vector_enabled: False",
+        "backend/app/services/layer3_source_directory_material_admission.py",
+        "eligible_for_rag_vector_index: False",
+        "backend/app/services/layer3_qual_aps_execution.py",
+        "hybrid_execution_enabled: False",
+        "rag_vector_retrieval_enabled: False",
+        "backend/app/services/aps_retrieval_plane_contract.py",
+        "ApsRetrievalChunk",
+        "current_main_sync_source_directory_material_source_index_authority_freeze",
+        "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE)} "
+                f"missing source directory source/index authority freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Source Index Authority Freeze",
+            "750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md",
+            "source_directory_material_source_index_authority",
+            "source_directory_material_source_index_authority_contract",
+            "11a027b3f8a97b9b628a09c0acc6d08ba547c3b6",
+            "rag_vector_enabled: False",
+            "eligible_for_rag_vector_index: False",
+            "hybrid_execution_enabled: False",
+            "rag_vector_retrieval_enabled: False",
+            "ApsRetrievalChunk",
+            "Runtime behavior introduced by this freeze: `false`.",
+            "current_main_sync_source_directory_material_source_index_authority_freeze",
+            "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_material_source_index_authority_freeze",
+            "branch_local_source_directory_material_source_index_authority_selected",
+            "codex/l3-source-index-freeze",
+            "750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md",
+            "source_directory_material_source_index_authority",
+            "source_directory_material_source_index_authority_contract",
+            '"runtime_behavior_change": false',
+            "layer3_source_boundary rag_vector_enabled False",
+            "layer3_source_directory_material_admission eligible_for_rag_vector_index False",
+            "layer3_qual_aps_execution hybrid_execution_enabled False",
+            "layer3_qual_aps_execution rag_vector_retrieval_enabled False",
+            "aps_retrieval_plane_contract is APS-specific ApsRetrievalChunk authority",
+            "current_main_sync_source_directory_material_source_index_authority_freeze",
+            "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_source_index_authority_freeze_proof",
+            "branch_local_source_directory_material_source_index_authority_freeze",
+            "branch_local_source_directory_material_source_index_authority_selected",
+            "750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md",
+            "source_directory_material_source_index_authority",
+            "source_directory_material_source_index_authority_contract",
+            '"runtime_behavior_change": false',
+            "current main proves server_configured_directory_file material reaches L3MaterialSnapshot",
+            "layer3_source_boundary still reports rag_vector_enabled False",
+            "layer3_source_directory_material_admission still reports eligible_for_rag_vector_index False",
+            "layer3_qual_aps_execution still reports hybrid_execution_enabled False",
+            "layer3_qual_aps_execution still reports rag_vector_retrieval_enabled False",
+            "aps_retrieval_plane_contract remains APS-specific ApsRetrievalChunk authority",
+            "current_main_sync_source_directory_material_source_index_authority_freeze",
+            "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory source/index authority freeze artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -64321,6 +64424,7 @@ def main() -> int:
     _check_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync(errors)
     _check_source_directory_ingestion_gate_b_material_admission_runtime_proof(errors)
     _check_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync(errors)
+    _check_source_directory_material_source_index_authority_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
