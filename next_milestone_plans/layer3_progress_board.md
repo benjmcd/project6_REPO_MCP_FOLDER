@@ -5174,3 +5174,31 @@ Runtime behavior introduced by this sync: `false`.
 This sync admits no runtime behavior, backend route, API DTO, model change, migration, source-index durable row writes, vector indexing, embedding generation, retrieval query runtime, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, credentials, network egress, raw local path exposure, or prompt/model/provider runtime.
 
 The next exact current-main posture is `write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime`.
+
+## Source Directory Material Lexical Retrieval Authority Contract
+
+Branch-local retrieval authority contract: `758_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_CONTRACT.md` follows the source-directory lexical retrieval authority freeze current-main sync.
+
+Contract branch `codex/l3-retrieval-contract` starts from current-main checkpoint `206b1be98daa243e3faa036b2f7052afbe047044`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_lexical_retrieval_authority_freeze`.
+
+Selected contract: `source_directory_material_deterministic_lexical_retrieval_authority`.
+
+Selected retrieval mode: `deterministic_lexical_segment_retrieval`.
+
+Selected future owner service: `backend/app/services/layer3_source_directory_text_retrieval.py`.
+
+Selected future proof test: `backend/tests/test_layer3_source_directory_text_retrieval.py`.
+
+Runtime behavior introduced by this contract: `false`.
+
+The contract binds future retrieval to `L3SourceDirectoryIngestionBatch`, `L3SourceDirectoryIngestionFile`, `L3MaterialSnapshot`, `server_configured_directory_file`, `source_directory_material_deterministic_text_index_authority`, `deterministic_text_segments`, `line-window-v1`, and `index_authority_hash`.
+
+The future request is limited to `client_request_id`, source/material/index authority fields, `index_authority_hash`, deterministic `query_text`, bounded `limit`, and bounded `offset`.
+
+The future ranking is deterministic lexical segment retrieval only: normalized unique query tokens, all-token segment match, `matched_unique_query_terms`, `summed_term_frequency`, segment length, `segment_sequence`, and `segment_id`. No embeddings, vector distances, prompt scores, semantic scores, model summaries, or qualitative labels are admitted.
+
+This contract admits no runtime behavior, backend route/API DTO/model/migration behavior, source-index rows, retrieval rows, vector index, embedding generation, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, prompt/model/provider runtime, credentials, network, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_lexical_retrieval_authority_contract`; after sync, the next exact posture is `implement_source_directory_material_deterministic_lexical_retrieval_authority_after_contract_sync`.
