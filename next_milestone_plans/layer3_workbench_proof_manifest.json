@@ -29583,5 +29583,51 @@
   "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md",
   "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_status": "branch_local_corrected_artifact_active_authority_server_owned_local_outbox_write_proven",
   "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
-  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_summary": "Doc 736 proves current main already carries corrected-artifact active authority to server-owned local outbox write and leaves provider-private handoff plus external local export adoption to separate selected proof/control records."
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_summary": "Doc 736 proves current main already carries corrected-artifact active authority to server-owned local outbox write and leaves provider-private handoff plus external local export adoption to separate selected proof/control records.",
+  "corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+    "status": "current_main_synced_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+    "sync_branch": "codex/l3-corrected-outbox-write-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/737_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/736_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION.md",
+    "evaluation_pr": "#1341",
+    "evaluation_branch_commit": "444b9d63aa0c692de0bb49fab91c67a322355928",
+    "evaluation_merge_commit": "6347435bc9c42f1bb281265e4deb0a57947ef818",
+    "current_main_checkpoint_after_merge": "6347435bc9c42f1bb281265e4deb0a57947ef818",
+    "evaluation_result": "corrected_artifact_active_authority_server_owned_local_outbox_write_proven",
+    "runtime_behavior_introduced_by_evaluation": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen: PASS (frozen)"
+    ],
+    "synced_runtime_route": "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+    "synced_reader": "recorded server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, and external_export_download_prepare state",
+    "proof_coverage": [
+      "current main includes Doc 736 corrected-artifact server-owned local outbox write evaluation",
+      "current main includes focused corrected-artifact outbox-write API regression evidence",
+      "current main records PR #1341 merged at 6347435bc9c42f1bb281265e4deb0a57947ef818",
+      "current main records green backend-layer3-api and test checks for PR #1341",
+      "current main records zero PR comments, reviews, latest reviews, and review threads",
+      "current main post-merge progress checker passes",
+      "current main post-merge target-selection validation remains frozen",
+      "no runtime behavior introduced by the evaluation or this sync",
+      "next downstream active-package-authority reader selection is deferred to a separate current-main posture"
+    ],
+    "next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_write_sync"
+  },
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_current_main_sync_branch": "codex/l3-corrected-outbox-write-sync",
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/737_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_SERVER_OWNED_LOCAL_OUTBOX_WRITE_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation",
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_server_owned_local_outbox_write_sync",
+  "latest_corrected_artifact_active_authority_server_owned_local_outbox_write_evaluation_current_main_sync_summary": "Doc 737 proof syncs corrected-artifact active authority server-owned local outbox write evaluation after PR #1341 and selects the next downstream active-package-authority reader after server-owned local outbox write."
 }
