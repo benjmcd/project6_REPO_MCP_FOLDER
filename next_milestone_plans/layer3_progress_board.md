@@ -5416,3 +5416,35 @@ Post-merge validation passed: JSON manifest load; `python -m py_compile .\tools\
 This sync admits no new runtime behavior beyond the already-merged context-packet service, and admits no backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, durable context-packet row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered control, full mockup activation, frontend-durable authority, source expansion, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact current-main posture is `select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync`. Do not continue additional same-family context-packet proof loops unless current-main evidence shows a concrete unresolved defect or named downstream reader.
+
+## Source Directory Material Qualitative-Hybrid Analysis Authority Freeze
+
+Branch-local qualitative-hybrid analysis authority selection freeze: `768_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE.md` follows the source-directory retrieval-augmented context-packet runtime current-main sync.
+
+Freeze branch `codex/l3-qual-analysis-selection` starts from current-main checkpoint `c1b212faff625d81c030e00b99f746a01bd2adf8`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_retrieval_augmented_context_packet_runtime`.
+
+Selected from posture: `select_next_qualitative_hybrid_analysis_authority_after_context_packet_runtime_sync`.
+
+Selected next authority question: `source_directory_material_context_packet_qualitative_hybrid_analysis_contract`.
+
+Selected future authority: `source_directory_material_context_packet_qualitative_hybrid_analysis_authority`.
+
+Selected future analysis mode: `context_packet_grounded_qualitative_hybrid_analysis`.
+
+Selected input authority: `source_directory_material_retrieval_augmented_context_packet_authority`.
+
+Selected input schema: `layer3.source_directory_context_packet.v1`.
+
+Selected future owner service: `backend/app/services/layer3_source_directory_qualitative_analysis.py`.
+
+Selected future proof test: `backend/tests/test_layer3_source_directory_qualitative_analysis.py`.
+
+Runtime behavior introduced by this freeze: `false`.
+
+Current main now proves response-safe context-packet assembly over source-directory deterministic lexical retrieval, but it still does not select vector storage, embedding generation, prompt/model/provider runtime, output package compatibility changes, rendered controls, auth/security broadening, provider/public delivery/use, or connector/destination dispatch.
+
+This freeze selects the next qualitative-hybrid analysis contract question only. It admits no runtime behavior, backend route, API DTO, response model, database model, migration, durable qualitative analysis row write, durable context-packet row write, vector indexing, embedding generation, qualitative generation runtime, prompt/model/provider runtime, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_qualitative_hybrid_analysis_authority_freeze`; after sync, the next exact posture is `write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime`.
