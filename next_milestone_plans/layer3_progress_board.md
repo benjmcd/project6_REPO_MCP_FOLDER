@@ -6164,3 +6164,25 @@ The runtime keeps `raw_public_url_exposed: False`, `public_url_enabled: False`, 
 No real provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, public anonymous access, public redirect, byte streaming, rendered delivery/use control, frontend-durable authority, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, source expansion, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, RAG/vector indexing expansion, embedding generation expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this runtime.
 
 The next exact posture after merge is `await_current_main_sync_for_provider_public_delivery_use_fake_provider_redacted_runtime_implementation`; after sync, pivot to `select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync` unless current-main evidence shows a concrete unresolved provider-public defect or named downstream reader.
+
+## Provider-Public Delivery/Use Fake-Provider Runtime Current-Main Sync
+
+Current-main proof/control sync: `795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1399` for `provider_public_delivery_use_fake_provider_redacted_runtime_implementation`.
+
+Runtime branch `codex/l3-pp-use-runtime` landed branch commit `81625823561540d2c4ae17d5ee20e24cdd0515b9` into current main at merge commit `15cd06a6c394d0fd49db1a5bc2e00956b2431834`.
+
+Synced result: `current_main_synced_provider_public_delivery_use_fake_provider_redacted_runtime_implementation`.
+
+Current main now includes `backend/app/services/layer3_provider_public_url_delivery_use.py`, `backend/tests/test_layer3_provider_public_url_delivery_use.py`, `POST /handoff/export/download/provider-public-url/use`, and response schema `layer3.provider_public_url.delivery_use.v1`.
+
+The current-main synced runtime implements only a read-only fake-provider redacted delivery/use decision over existing `L3ProviderPublicUrlReceipt` and `L3ProviderPublicUrlObjectAuthority` state. It keeps `raw_public_url_exposed: False`, `public_url_enabled: False`, `provider_network_enabled: False`, `provider_object_write_enabled: False`, `public_redirect_enabled: False`, `byte_streaming_enabled: False`, `durable_use_row_created: False`, `audit_row_created: False`, `connector_dispatch_enabled: False`, `package_mutation_enabled: False`, `source_expansion_enabled: False`, `rag_vector_indexing_enabled: False`, and `frontend_durable_authority_enabled: False`.
+
+PR `#1399` had green `backend-layer3-api` (`3m6s`) and `test` (`3m40s`) checks, comments totalCount `0`, reviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+No real provider adapter, provider credential, provider object write/copy/mutation/ACL change, raw public URL exposure, `public_url_enabled: true` rail, public proxy route, public anonymous access, public redirect, byte streaming, rendered delivery/use control, frontend-durable authority, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, source expansion, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, RAG/vector indexing expansion, embedding generation expansion, prompt/model/provider runtime, broad qualitative generation, auth/security behavior change, full mockup activation, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
+
+The next exact current-main posture is `select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync`.
