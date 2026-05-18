@@ -31180,5 +31180,41 @@
   "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/779_RAG_VECTOR_AUTH_SYNC.md",
   "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_status": "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
   "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_next_posture": "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
-  "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_summary": "Doc 779 proof syncs the RAG/vector retrieval authority selection freeze after PR #1383 and moves the next posture to write_source_directory_material_embedding_vector_index_authority_contract_before_runtime, with no RAG/vector runtime admitted by the sync."
+  "latest_rag_vector_retrieval_authority_selection_after_provider_public_delivery_use_authority_contract_current_main_sync_summary": "Doc 779 proof syncs the RAG/vector retrieval authority selection freeze after PR #1383 and moves the next posture to write_source_directory_material_embedding_vector_index_authority_contract_before_runtime, with no RAG/vector runtime admitted by the sync.",
+  "source_directory_material_embedding_vector_index_authority_contract_proof": {
+    "proof_kind": "planning_control_authority_contract_source_directory_material_embedding_vector_index_no_runtime",
+    "status": "planning_control_authority_contract_no_runtime",
+    "branch": "codex/l3-vector-contract",
+    "contract_doc": "next_milestone_plans/Layer3_planning_docs/780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md",
+    "current_main_preflight_checkpoint": "3f17fa3903e4e177505fcbc60cd31688a9c8dd5a",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/779_RAG_VECTOR_AUTH_SYNC.md",
+    "predecessor_synced_result": "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+    "selected_from_posture": "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+    "selected_contract": "source_directory_material_deterministic_embedding_vector_index_authority",
+    "selected_embedding_mode": "deterministic_local_hashing_vector_embedding",
+    "selected_vector_index_mode": "deterministic_source_directory_segment_vector_index",
+    "selected_input_authority": "source_directory_material_deterministic_text_index_authority",
+    "selected_vector_source": "deterministic_text_segments",
+    "runtime_behavior_change": false,
+    "proof_coverage": [
+      "current main includes Doc 779 RAG/vector retrieval authority selection current-main sync",
+      "source_directory_material_embedding_vector_index_authority_contract is the selected next authority question",
+      "the contract selects source_directory_material_deterministic_embedding_vector_index_authority",
+      "the contract selects deterministic_local_hashing_vector_embedding",
+      "the contract selects deterministic_source_directory_segment_vector_index",
+      "the contract requires source_directory_material_text_index authority before vector descriptors",
+      "feature_hash_version source-directory-hash-vector-v1 and vector_dimensions 4096 are frozen for the future implementation",
+      "no embedding model provider network backend route vector store durable embedding row RAG package connector source expansion auth security frontend durable full mockup or raw local path behavior is admitted",
+      "the next posture after merge is current_main_sync_source_directory_material_embedding_vector_index_authority_contract"
+    ],
+    "future_proof_test": "backend/tests/test_layer3_source_directory_vector_index.py",
+    "future_owner_service": "backend/app/services/layer3_source_directory_vector_index.py",
+    "next_posture_after_merge": "current_main_sync_source_directory_material_embedding_vector_index_authority_contract",
+    "next_posture_after_sync": "implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync"
+  },
+  "latest_source_directory_material_embedding_vector_index_authority_contract_branch": "codex/l3-vector-contract",
+  "latest_source_directory_material_embedding_vector_index_authority_contract_doc": "next_milestone_plans/Layer3_planning_docs/780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md",
+  "latest_source_directory_material_embedding_vector_index_authority_contract_status": "planning_control_authority_contract_no_runtime",
+  "latest_source_directory_material_embedding_vector_index_authority_contract_next_posture_after_merge": "current_main_sync_source_directory_material_embedding_vector_index_authority_contract",
+  "latest_source_directory_material_embedding_vector_index_authority_contract_summary": "Doc 780 proof freezes source_directory_material_embedding_vector_index_authority_contract as no-runtime and selects deterministic local hashed lexical segment vectors over the admitted source-directory text index, with provider/model/network/route/vector-store/durable embedding/RAG/package/connector/source-expansion/auth/frontend-durable behavior still blocked."
 }

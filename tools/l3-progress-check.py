@@ -2128,6 +2128,10 @@ LAYER3_RAG_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_AFTER_PROVIDER_PUBLIC_NO_RUNTIME
 LAYER3_RAG_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_AFTER_PROVIDER_PUBLIC_NO_RUNTIME_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "779_RAG_VECTOR_AUTH_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT = (
+    PLANNING_DOCS
+    / "780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -67119,6 +67123,130 @@ def _check_rag_vector_retrieval_authority_selection_after_provider_public_no_run
                 )
 
 
+def _check_source_directory_material_embedding_vector_index_authority_contract(
+    errors: list[str],
+) -> None:
+    contract_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local embedding/vector-index authority contract for `source_directory_material_embedding_vector_index_authority_contract`.",
+        "780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md",
+        "codex/l3-vector-contract",
+        "3f17fa3903e4e177505fcbc60cd31688a9c8dd5a",
+        "779_RAG_VECTOR_AUTH_SYNC.md",
+        "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+        "write_source_directory_material_embedding_vector_index_authority_contract_before_runtime",
+        "Runtime behavior introduced by this contract: `false`.",
+        "source_directory_material_deterministic_embedding_vector_index_authority",
+        "deterministic_local_hashing_vector_embedding",
+        "deterministic_source_directory_segment_vector_index",
+        "source_directory_material_deterministic_text_index_authority",
+        "layer3.source_directory_text_index.v1",
+        "backend/app/services/layer3_source_directory_vector_index.py",
+        "backend/tests/test_layer3_source_directory_vector_index.py",
+        "implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync",
+        "layer3.source_directory_embedding_vector_index.v1",
+        "deterministic_text_segments",
+        "feature_hash_version == source-directory-hash-vector-v1",
+        "vector_dimensions == 4096",
+        "stable SHA-256 token hash modulo `vector_dimensions`",
+        "L2 normalization for cosine-compatible dot-product scoring",
+        "source_directory_material_embedding_vector_index(db, payload)",
+        "source_directory_material_text_index(db, payload)",
+        "embedding_index_authority_hash",
+        "embedding_vector_hash",
+        "nonzero_feature_count",
+        "vector_l2_norm",
+        "source_index_rows_written: False",
+        "embedding_vector_rows_written: False",
+        "vector_index_rows_written: False",
+        "retrieval_rows_written: False",
+        "Durable vector-store rows selected: `false`.",
+        "Durable embedding rows selected: `false`.",
+        "This contract admits no runtime behavior",
+        "persistent vector store",
+        "vector query",
+        "RAG execution",
+        "current_main_sync_source_directory_material_embedding_vector_index_authority_contract",
+    ):
+        if term not in contract_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT)} "
+                f"missing source directory embedding/vector index authority contract term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Embedding Vector Index Authority Contract",
+            "780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md",
+            "codex/l3-vector-contract",
+            "3f17fa3903e4e177505fcbc60cd31688a9c8dd5a",
+            "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "deterministic_local_hashing_vector_embedding",
+            "deterministic_source_directory_segment_vector_index",
+            "source_directory_material_deterministic_text_index_authority",
+            "deterministic_text_segments",
+            "backend/app/services/layer3_source_directory_vector_index.py",
+            "backend/tests/test_layer3_source_directory_vector_index.py",
+            "implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync",
+            "Runtime behavior introduced by this contract: `false`.",
+            "source-directory-hash-vector-v1",
+            "vector_dimensions == 4096",
+            "current_main_sync_source_directory_material_embedding_vector_index_authority_contract",
+        ),
+        MANIFEST: (
+            "source_directory_material_embedding_vector_index_authority_contract",
+            "planning_control_authority_contract_no_runtime",
+            "codex/l3-vector-contract",
+            "780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md",
+            "3f17fa3903e4e177505fcbc60cd31688a9c8dd5a",
+            "779_RAG_VECTOR_AUTH_SYNC.md",
+            "current_main_synced_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "deterministic_local_hashing_vector_embedding",
+            "deterministic_source_directory_segment_vector_index",
+            "source_directory_material_deterministic_text_index_authority",
+            "layer3.source_directory_text_index.v1",
+            "deterministic_text_segments",
+            "backend/app/services/layer3_source_directory_vector_index.py",
+            "backend/tests/test_layer3_source_directory_vector_index.py",
+            "implement_source_directory_material_deterministic_embedding_vector_index_authority_after_contract_sync",
+            "layer3.source_directory_embedding_vector_index.v1",
+            '"runtime_behavior_change": false',
+            '"vector_dimensions": 4096',
+            "source-directory-hash-vector-v1",
+            "stable_sha256_token_hash_mod_vector_dimensions",
+            "current_main_sync_source_directory_material_embedding_vector_index_authority_contract",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_embedding_vector_index_authority_contract_proof",
+            "planning_control_authority_contract_source_directory_material_embedding_vector_index_no_runtime",
+            "planning_control_authority_contract_no_runtime",
+            "codex/l3-vector-contract",
+            "780_SOURCE_DIRECTORY_MATERIAL_EMBEDDING_VECTOR_INDEX_AUTHORITY_CONTRACT.md",
+            "3f17fa3903e4e177505fcbc60cd31688a9c8dd5a",
+            "source_directory_material_embedding_vector_index_authority_contract is the selected next authority question",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "deterministic_local_hashing_vector_embedding",
+            "deterministic_source_directory_segment_vector_index",
+            "source_directory_material_text_index authority before vector descriptors",
+            "feature_hash_version source-directory-hash-vector-v1 and vector_dimensions 4096",
+            "backend/tests/test_layer3_source_directory_vector_index.py",
+            "backend/app/services/layer3_source_directory_vector_index.py",
+            "current_main_sync_source_directory_material_embedding_vector_index_authority_contract",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory embedding/vector index authority contract artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -67741,6 +67869,7 @@ def main() -> int:
     _check_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync(errors)
     _check_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_sync(errors)
     _check_rag_vector_retrieval_authority_selection_after_provider_public_no_runtime_current_main_sync(errors)
+    _check_source_directory_material_embedding_vector_index_authority_contract(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
