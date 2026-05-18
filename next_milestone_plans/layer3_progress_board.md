@@ -4950,3 +4950,21 @@ The selected canonical upstream authorities are `L3SourceDirectoryIngestionBatch
 This freeze admits no runtime behavior by itself. It selects material admission before indexing and keeps RAG/vector indexing, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, and source `L3OutputPackage` mutation blocked.
 
 The next exact posture after merge is `current_main_sync_source_directory_ingestion_downstream_material_authority_freeze`; after sync, the next exact posture is `implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync`.
+
+## Source Directory Ingestion Downstream Material Authority Freeze Current-Main Sync
+
+Current-main sync: `747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md` syncs freeze PR `#1351` for `source_directory_ingestion_downstream_material_authority_freeze`.
+
+Freeze branch `codex/l3-source-directory-downstream-selection` landed branch commit `7044b977ce350cf989dda42909f92c8791c69e6c` into current main at merge commit `950a419e25474bf64354cdfdaff066ac7b786744`.
+
+Synced result: `current_main_synced_source_directory_ingestion_downstream_material_authority_freeze`.
+
+Current main now records `source_directory_ingestion_gate_b_material_admission` as the selected downstream material authority over persisted `L3SourceDirectoryIngestionBatch` and `L3SourceDirectoryIngestionFile` rows.
+
+PR `#1351` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Post-merge validation at `950a419e25474bf64354cdfdaff066ac7b786744` passed: `python .\tools\l3-progress-check.py`; and `python .\tools\l3-target-selection-validate.py --expect frozen`.
+
+This sync admits no runtime behavior. RAG/vector indexing, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, and source `L3OutputPackage` mutation remain blocked.
+
+The next exact current-main posture is `implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync`.

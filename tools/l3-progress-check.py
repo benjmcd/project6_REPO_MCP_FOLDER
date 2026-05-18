@@ -2004,6 +2004,10 @@ LAYER3_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE = (
     PLANNING_DOCS
     / "746_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -63387,6 +63391,131 @@ def _check_source_directory_ingestion_downstream_material_authority_freeze(
                 )
 
 
+def _check_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_ingestion_downstream_material_authority_freeze`.",
+        "747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "746_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE.md",
+        "#1351",
+        "codex/l3-source-directory-downstream-selection",
+        "7044b977ce350cf989dda42909f92c8791c69e6c",
+        "950a419e25474bf64354cdfdaff066ac7b786744",
+        "codex/l3-source-directory-downstream-selection-sync",
+        "current_main_synced_source_directory_ingestion_downstream_material_authority_freeze",
+        "Runtime behavior introduced by freeze: `false`.",
+        "Runtime behavior in this sync: `false`.",
+        "backend-layer3-api",
+        "test",
+        "Layer 3 progress state check `PASS`",
+        "Layer 3 target-selection validation `PASS (frozen)`",
+        "source_directory_ingestion_gate_b_material_admission",
+        "source_directory_ingestion_material_authority",
+        "gate_b_material_candidate_from_source_directory_ingestion_file",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "backend/app/services/layer3_source_directory_material_admission.py",
+        "backend/app/api/layer3.py",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        "POST /api/v1/layer3/gate-b/decision",
+        "implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source directory downstream material authority sync term: {term}"
+            )
+
+    for blocked in (
+        "RAG/vector indexing",
+        "qualitative-hybrid analysis runtime",
+        "package construction",
+        "package mutation/reconstruction",
+        "connector/destination dispatch",
+        "provider-public delivery/use",
+        "provider-private signed URL generation/use",
+        "auth/security broadening",
+        "rendered UI control",
+        "frontend-durable authority",
+        "arbitrary source ingestion",
+        "arbitrary recursive ingestion",
+        "PDFs",
+        "OCR",
+        "Office documents",
+        "arbitrary binaries",
+        "web connectors",
+        "caller-supplied paths/URLs/globs",
+        "browser-supplied file bytes",
+        "browser/operator path editing",
+        "source `L3OutputPackage` mutation",
+    ):
+        if blocked not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source directory downstream material authority sync blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Ingestion Downstream Material Authority Freeze Current-Main Sync",
+            "747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1351",
+            "7044b977ce350cf989dda42909f92c8791c69e6c",
+            "950a419e25474bf64354cdfdaff066ac7b786744",
+            "current_main_synced_source_directory_ingestion_downstream_material_authority_freeze",
+            "source_directory_ingestion_gate_b_material_admission",
+            "L3SourceDirectoryIngestionBatch",
+            "L3SourceDirectoryIngestionFile",
+            "backend-layer3-api",
+            "test",
+            "implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync",
+        ),
+        MANIFEST: (
+            "source_directory_ingestion_downstream_material_authority_freeze_current_main_sync",
+            "current_main_synced_source_directory_ingestion_downstream_material_authority_freeze",
+            "codex/l3-source-directory-downstream-selection-sync",
+            "747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "746_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE.md",
+            "#1351",
+            "7044b977ce350cf989dda42909f92c8791c69e6c",
+            "950a419e25474bf64354cdfdaff066ac7b786744",
+            "source_directory_ingestion_gate_b_material_admission",
+            "gate_b_material_candidate_from_source_directory_ingestion_file",
+            '"runtime_behavior_introduced_by_freeze": false',
+            '"runtime_behavior_in_this_sync": false',
+            "implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_proof",
+            "current_main_sync_source_directory_ingestion_downstream_material_authority_freeze",
+            "current_main_synced_source_directory_ingestion_downstream_material_authority_freeze",
+            "747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+            "746_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE.md",
+            "#1351",
+            "7044b977ce350cf989dda42909f92c8791c69e6c",
+            "950a419e25474bf64354cdfdaff066ac7b786744",
+            "source_directory_ingestion_gate_b_material_admission",
+            '"runtime_behavior_introduced_by_freeze": false',
+            '"runtime_behavior_in_this_sync": false',
+            "current main includes Doc 746 source directory downstream material authority freeze",
+            "current main records green backend-layer3-api and test checks for PR #1351",
+            "source_directory_ingestion_gate_b_material_admission is selected for the next code-bearing posture",
+            "implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory downstream material authority sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -63976,6 +64105,7 @@ def main() -> int:
     _check_server_configured_operator_directory_text_table_ingestion_runtime_proof(errors)
     _check_server_configured_operator_directory_text_table_ingestion_runtime_current_main_sync(errors)
     _check_source_directory_ingestion_downstream_material_authority_freeze(errors)
+    _check_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

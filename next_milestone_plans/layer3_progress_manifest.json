@@ -28852,5 +28852,44 @@
   "latest_source_directory_ingestion_downstream_material_authority_freeze_status": "branch_local_source_directory_ingestion_downstream_material_authority_selected",
   "latest_source_directory_ingestion_downstream_material_authority_freeze_runtime_behavior_change": false,
   "latest_source_directory_ingestion_downstream_material_authority_freeze_next_posture_after_merge": "current_main_sync_source_directory_ingestion_downstream_material_authority_freeze",
-  "latest_source_directory_ingestion_downstream_material_authority_freeze_summary": "Doc 746 selects source_directory_ingestion_gate_b_material_admission as the next source-directory downstream material authority, over persisted L3SourceDirectoryIngestionBatch and L3SourceDirectoryIngestionFile rows. It admits no runtime behavior and keeps RAG/vector indexing, package construction, connector dispatch, provider URL behavior, rendered controls, and frontend-durable authority blocked."
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_summary": "Doc 746 selects source_directory_ingestion_gate_b_material_admission as the next source-directory downstream material authority, over persisted L3SourceDirectoryIngestionBatch and L3SourceDirectoryIngestionFile rows. It admits no runtime behavior and keeps RAG/vector indexing, package construction, connector dispatch, provider URL behavior, rendered controls, and frontend-durable authority blocked.",
+  "source_directory_ingestion_downstream_material_authority_freeze_current_main_sync": {
+    "status": "current_main_synced_source_directory_ingestion_downstream_material_authority_freeze",
+    "sync_branch": "codex/l3-source-directory-downstream-selection-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "synced_freeze_doc": "next_milestone_plans/Layer3_planning_docs/746_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE.md",
+    "freeze_pr": "#1351",
+    "freeze_branch": "codex/l3-source-directory-downstream-selection",
+    "freeze_branch_commit": "7044b977ce350cf989dda42909f92c8791c69e6c",
+    "freeze_merge_commit": "950a419e25474bf64354cdfdaff066ac7b786744",
+    "current_main_checkpoint_after_merge": "950a419e25474bf64354cdfdaff066ac7b786744",
+    "selected_downstream_mode": "source_directory_ingestion_gate_b_material_admission",
+    "selected_downstream_authority": "gate_b_material_candidate_from_source_directory_ingestion_file",
+    "canonical_upstream_authorities": [
+      "L3SourceDirectoryIngestionBatch",
+      "L3SourceDirectoryIngestionFile"
+    ],
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "runtime_behavior_introduced_by_freeze": false,
+    "runtime_behavior_in_this_sync": false,
+    "post_merge_validation": {
+      "python .\\tools\\l3-progress-check.py": "PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen": "PASS (frozen)"
+    },
+    "next_posture": "implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync"
+  },
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_branch": "codex/l3-source-directory-downstream-selection-sync",
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/747_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_status": "current_main_synced_source_directory_ingestion_downstream_material_authority_freeze",
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_runtime_behavior_change": false,
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_next_posture": "implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync",
+  "latest_source_directory_ingestion_downstream_material_authority_freeze_current_main_sync_summary": "Doc 747 syncs PR #1351 merge commit 950a419e25474bf64354cdfdaff066ac7b786744 to current main. Current main now selects source_directory_ingestion_gate_b_material_admission as the next code-bearing posture over persisted source-directory batch/file authority."
 }
