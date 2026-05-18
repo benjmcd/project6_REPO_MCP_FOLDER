@@ -142,6 +142,21 @@ def build_readiness_contract(
         "source_directory_qualitative_hybrid_analysis_endpoint": (
             f"{api_root}/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
         ),
+        "source_directory_package_commit_admitted": True,
+        "source_directory_package_commit_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/commit"
+        ),
+        "source_directory_package_review_submit_admitted": True,
+        "source_directory_package_review_submit_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/review/submit"
+        ),
+        "source_directory_handoff_export_prepare_admitted": True,
+        "source_directory_handoff_export_prepare_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/handoff/export/prepare"
+        ),
         "source_directory_operator_status_surface": "server_configured_operator_directory_text_table_source_family",
         "package_review_admitted": False,
         "external_handoff_admitted": False,
@@ -184,6 +199,9 @@ def build_readiness_contract(
             "client_request_id_required_for_source_directory_material_preview": False,
             "client_request_id_required_for_source_directory_vector_retrieval": False,
             "client_request_id_required_for_source_directory_qualitative_hybrid_analysis": False,
+            "client_request_id_required_for_source_directory_package_commit": True,
+            "client_request_id_required_for_source_directory_package_review_submit": True,
+            "client_request_id_required_for_source_directory_handoff_export_prepare": True,
             "duplicate_gate_b_decision": "same required client_request_id, provided source context, provided material_preview_id, and decision manifest uses a durable Gate B idempotency claim and returns existing Gate B session; conflicts fail closed",
             "gate_b_decision_idempotency_scope": "durable_claim_and_post_commit_retry",
             "gate_b_decision_concurrent_duplicate_lock": True,
@@ -212,6 +230,9 @@ def build_readiness_contract(
             "duplicate_source_directory_material_preview": "read-only material preview revalidates recorded source-directory material authority",
             "duplicate_source_directory_vector_retrieval": "read-only deterministic vector retrieval revalidates source-directory material, text-index, vector-index, and embedding-index authority",
             "duplicate_source_directory_qualitative_hybrid_analysis": "read-only deterministic qualitative-hybrid analysis revalidates source-directory material, retrieval, and context-packet authority",
+            "duplicate_source_directory_package_commit": "same client_request_id and same source-directory qualitative-analysis package authority returns existing package rows; conflicts fail closed",
+            "duplicate_source_directory_package_review_submit": "same authority basis and same source-directory operator decision returns existing package-review state; conflicts fail closed",
+            "duplicate_source_directory_handoff_export_prepare": "same authority basis and same source-directory operator decision returns existing handoff/export prepare state; conflicts fail closed",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
             "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
         },
@@ -247,6 +268,9 @@ def build_readiness_contract(
             "source_directory_material_preview_is_read_only": True,
             "source_directory_vector_retrieval_is_read_only": True,
             "source_directory_qualitative_hybrid_analysis_is_read_only": True,
+            "source_directory_package_commit_uses_session_reconciliation_and_package_locks": True,
+            "source_directory_package_review_submit_uses_session_reconciliation_and_package_locks": True,
+            "source_directory_handoff_export_prepare_uses_session_reconciliation_and_package_locks": True,
             "broad_analysis_execution_requires_later_freeze": True,
         },
         "deferred_decisions": {
@@ -269,6 +293,6 @@ def build_readiness_contract(
             "replacement_package_artifact_manifest": "admitted only as server-side manifest verification of existing replacement refs and hashes; artifact generation, package row mutation, payload writes, and broad package mutation remain blocked",
             "replacement_package_namespace": "admitted only as separate replacement output-package namespace rows over verified manifest artifacts; source L3OutputPackage rows, payload writes, and broad package mutation remain blocked",
             "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
-            "source_directory_operator_status": "admitted only as backend bootstrap/readiness exposure for the already-admitted server-configured local directory scan, status, material-preview, vector-retrieval, and qualitative-hybrid analysis routes",
+            "source_directory_operator_status": "admitted only as backend bootstrap/readiness exposure for the already-admitted server-configured local directory scan, status, material-preview, vector-retrieval, qualitative-hybrid analysis, package commit, package-review submit, and handoff/export prepare routes",
         },
     }

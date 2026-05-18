@@ -2246,6 +2246,10 @@ LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURR
     PLANNING_DOCS
     / "809_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "810_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -71059,6 +71063,83 @@ def _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_
                 )
 
 
+def _check_source_directory_package_handoff_operator_status_surface_runtime_entry(
+    errors: list[str],
+) -> None:
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze and runtime proof for `source_directory_package_handoff_operator_status_surface_runtime_entry`.",
+        "810_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+        "codex/l3-source-intake-next",
+        "9fc019295f8ae202e62c9b91cdfc7eda62191cd1",
+        "809_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync",
+        "implement_source_directory_package_handoff_operator_status_surface_after_handoff_export_prepare_sync",
+        "source_directory_package_handoff_operator_status_surface_runtime_implemented_branch_local",
+        "source_directory_package_commit",
+        "source_directory_package_review_submit",
+        "source_directory_handoff_export_prepare",
+        "source_directory_package_commit_endpoint",
+        "source_directory_package_review_submit_endpoint",
+        "source_directory_handoff_export_prepare_endpoint",
+        "PASS`, `2 passed",
+        "PASS`, `1 passed",
+        "await_current_main_sync_for_source_directory_package_handoff_operator_status_surface_runtime",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_package_handoff_operator_status_surface_sync",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_ENTRY)} "
+                f"missing source-directory package handoff operator status runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Package Handoff Operator Status Surface Runtime Entry Freeze",
+            "810_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+            "source_directory_package_handoff_operator_status_surface_runtime_implemented_branch_local",
+            "source_directory_package_commit",
+            "source_directory_package_review_submit",
+            "source_directory_handoff_export_prepare",
+            "backend/app/services/layer3_bootstrap_contract.py",
+            "backend/app/services/layer3_readiness_contract.py",
+            "await_current_main_sync_for_source_directory_package_handoff_operator_status_surface_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_package_handoff_operator_status_surface_runtime_entry",
+            "source_directory_package_handoff_operator_status_surface_runtime_implemented_branch_local",
+            "codex/l3-source-intake-next",
+            "810_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+            "source_directory_package_commit_admitted",
+            "source_directory_package_review_submit_admitted",
+            "source_directory_handoff_export_prepare_admitted",
+            '"new_routes_added": false',
+            '"package_payload_write_enabled": false',
+            '"connector_dispatch_enabled": false',
+            '"frontend_rendered_controls_enabled": false',
+            "await_current_main_sync_for_source_directory_package_handoff_operator_status_surface_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_package_handoff_operator_status_surface_runtime_entry_proof",
+            "branch_local_source_directory_package_handoff_operator_status_surface_runtime_entry",
+            "source_directory_package_handoff_operator_status_surface_runtime_implemented_branch_local",
+            "810_SOURCE_DIRECTORY_PACKAGE_HANDOFF_OPERATOR_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md",
+            "bootstrap exposes source_directory_package_commit source_directory_package_review_submit and source_directory_handoff_export_prepare feature flags",
+            "readiness records idempotency and concurrency metadata",
+            "no new routes models migrations package rows package payload writes frontend controls provider connector network source expansion or package mutation behavior are admitted",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package handoff operator status runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -71737,6 +71818,9 @@ def main() -> int:
     )
     _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_entry(errors)
     _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_current_main_sync(
+        errors
+    )
+    _check_source_directory_package_handoff_operator_status_surface_runtime_entry(
         errors
     )
 

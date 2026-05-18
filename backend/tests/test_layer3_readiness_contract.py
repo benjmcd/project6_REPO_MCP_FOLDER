@@ -63,6 +63,21 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["source_directory_qualitative_hybrid_analysis_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
     )
+    assert direct["source_directory_package_commit_admitted"] is True
+    assert direct["source_directory_package_commit_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/commit"
+    )
+    assert direct["source_directory_package_review_submit_admitted"] is True
+    assert direct["source_directory_package_review_submit_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/review/submit"
+    )
+    assert direct["source_directory_handoff_export_prepare_admitted"] is True
+    assert direct["source_directory_handoff_export_prepare_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/handoff/export/prepare"
+    )
     assert direct["source_directory_operator_status_surface"] == (
         "server_configured_operator_directory_text_table_source_family"
     )
@@ -76,12 +91,37 @@ def test_layer3_readiness_contract_is_shared() -> None:
         ]
         is False
     )
+    assert direct["idempotency_contract"]["client_request_id_required_for_source_directory_package_commit"] is True
+    assert (
+        direct["idempotency_contract"]["client_request_id_required_for_source_directory_package_review_submit"]
+        is True
+    )
+    assert (
+        direct["idempotency_contract"]["client_request_id_required_for_source_directory_handoff_export_prepare"]
+        is True
+    )
     assert direct["concurrency_contract"]["approved_plan_cancel_without_replacement_only"] is True
     assert direct["concurrency_contract"]["source_directory_ingestion_scan_uses_configured_source_root"] is True
     assert direct["concurrency_contract"]["source_directory_status_is_read_only"] is True
     assert direct["concurrency_contract"]["source_directory_material_preview_is_read_only"] is True
     assert direct["concurrency_contract"]["source_directory_vector_retrieval_is_read_only"] is True
     assert direct["concurrency_contract"]["source_directory_qualitative_hybrid_analysis_is_read_only"] is True
+    assert (
+        direct["concurrency_contract"]["source_directory_package_commit_uses_session_reconciliation_and_package_locks"]
+        is True
+    )
+    assert (
+        direct["concurrency_contract"][
+            "source_directory_package_review_submit_uses_session_reconciliation_and_package_locks"
+        ]
+        is True
+    )
+    assert (
+        direct["concurrency_contract"][
+            "source_directory_handoff_export_prepare_uses_session_reconciliation_and_package_locks"
+        ]
+        is True
+    )
     assert direct["deferred_decisions"]["source_breadth"] == (
         "requires later freeze before RAG/vector/upload/local-directory expansion"
     )
