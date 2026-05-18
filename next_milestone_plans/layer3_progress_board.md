@@ -6294,3 +6294,31 @@ The synced runtime keeps `raw_local_path_exposed: False`, `full_segment_text_exp
 No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable context-packet row write, durable qualitative-analysis row write, durable qualitative-generation row write, durable retrieval row write, durable vector-store row write, durable embedding row write, vector database, persistent vector store, new RAG execution, vector indexing, embedding generation, prompt/model/provider runtime, provider-public delivery/use broadening, provider-private signed URL generation/use, package construction, package mutation/reconstruction, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
 
 The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync`.
+
+## Source Directory Operator Readiness Status Surface Runtime Entry Freeze
+
+Branch-local implementation-entry freeze and runtime proof: `800_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_ENTRY_FREEZE.md` follows the source-directory qualitative-hybrid analysis API runtime current-main sync and resolves `select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync` by selecting the backend operator-visible readiness/bootstrap status surface for the already-admitted `server_configured_operator_directory_text_table_source_family`.
+
+Runtime branch `codex/l3-source-readiness` starts from current-main checkpoint `0dd3f1fb6aa7d29ef3f48c54c75fb0788336798e`.
+
+Selected implementation action: `implement_source_directory_operator_readiness_bootstrap_status_surface_after_qualitative_hybrid_analysis_api_sync`.
+
+Runtime status after implementation: `source_directory_operator_readiness_bootstrap_status_surface_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented status surface owners: `backend/app/services/layer3_bootstrap_contract.py`, `backend/app/services/layer3_readiness_contract.py`, and `backend/app/api/layer3.py`.
+
+Implemented proof tests: `backend/tests/test_layer3_bootstrap_contract.py`, `backend/tests/test_layer3_readiness_contract.py`, and `backend/tests/test_layer3_api.py`.
+
+The `/bootstrap` response now exposes feature flags for `source_directory_ingestion_scan`, `source_directory_ingestion_status`, `source_directory_material_preview`, `source_directory_vector_retrieval`, and `source_directory_qualitative_hybrid_analysis`.
+
+The `/bootstrap` nested `execution_readiness` surface and `/readiness` response now expose admitted endpoint metadata for `POST /api/v1/layer3/source/ingestion/server-configured-directory/scan`, `GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}`, `POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview`, `POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval`, and `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis`.
+
+The readiness contract records `source-directory-operator-status` as an implemented gate and exposes `source_directory_operator_status_surface: server_configured_operator_directory_text_table_source_family`.
+
+The focused proof passed with `2 passed` for shared bootstrap/readiness contracts and `187 passed` for the Layer 3 API suite.
+
+No new source family, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, archives, web connectors, caller-supplied paths, caller-supplied URLs, browser-supplied file bytes, local upload expansion, durable frontend authority, frontend-rendered controls, source package row mutation, package payload rewrite, package construction, package mutation/reconstruction, handoff/export rerun, provider-public delivery/use broadening, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, vector indexing expansion, embedding generation expansion, persistent vector store, prompt/model/provider runtime, qualitative generation runtime, new RAG execution, raw local path exposure, full segment text exposure, raw vector exposure, or source `L3OutputPackage` mutation is admitted by this runtime.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_operator_readiness_bootstrap_status_surface_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync` unless current-main evidence shows a concrete unresolved operator-status defect or named downstream reader.

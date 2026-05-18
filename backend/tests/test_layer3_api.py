@@ -7246,6 +7246,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["replacement_package_namespace"] is True
     assert bootstrap_body["features"]["plan_revision_recovery"] is True
     assert bootstrap_body["features"]["approved_plan_cancel"] is True
+    assert bootstrap_body["features"]["source_directory_ingestion_scan"] is True
+    assert bootstrap_body["features"]["source_directory_ingestion_status"] is True
+    assert bootstrap_body["features"]["source_directory_material_preview"] is True
+    assert bootstrap_body["features"]["source_directory_vector_retrieval"] is True
+    assert bootstrap_body["features"]["source_directory_qualitative_hybrid_analysis"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -7322,6 +7327,35 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         bootstrap_body["execution_readiness"]["approved_plan_cancel_endpoint"]
         == "/api/v1/layer3/plan/approved/cancel"
     )
+    assert bootstrap_body["execution_readiness"]["source_directory_ingestion_scan_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["source_directory_ingestion_scan_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/scan"
+    )
+    assert bootstrap_body["execution_readiness"]["source_directory_ingestion_status_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["source_directory_ingestion_status_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}"
+    )
+    assert bootstrap_body["execution_readiness"]["source_directory_material_preview_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["source_directory_material_preview_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview"
+    )
+    assert bootstrap_body["execution_readiness"]["source_directory_vector_retrieval_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["source_directory_vector_retrieval_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval"
+    )
+    assert bootstrap_body["execution_readiness"]["source_directory_qualitative_hybrid_analysis_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["source_directory_qualitative_hybrid_analysis_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
+    )
+    assert (
+        bootstrap_body["execution_readiness"]["source_directory_operator_status_surface"]
+        == "server_configured_operator_directory_text_table_source_family"
+    )
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_export_admitted"] is False
@@ -7335,6 +7369,35 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["schema_id"] == "layer3.execution_readiness_contract.v1"
     assert readiness_body["execution_admitted"] is False
     assert readiness_body["execution_enabled"] is False
+    assert readiness_body["source_directory_ingestion_scan_admitted"] is True
+    assert (
+        readiness_body["source_directory_ingestion_scan_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/scan"
+    )
+    assert readiness_body["source_directory_ingestion_status_admitted"] is True
+    assert (
+        readiness_body["source_directory_ingestion_status_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}"
+    )
+    assert readiness_body["source_directory_material_preview_admitted"] is True
+    assert (
+        readiness_body["source_directory_material_preview_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview"
+    )
+    assert readiness_body["source_directory_vector_retrieval_admitted"] is True
+    assert (
+        readiness_body["source_directory_vector_retrieval_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval"
+    )
+    assert readiness_body["source_directory_qualitative_hybrid_analysis_admitted"] is True
+    assert (
+        readiness_body["source_directory_qualitative_hybrid_analysis_endpoint"]
+        == "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
+    )
+    assert (
+        readiness_body["source_directory_operator_status_surface"]
+        == "server_configured_operator_directory_text_table_source_family"
+    )
     assert readiness_body["analysis_execution_start_admitted"] is True
     assert readiness_body["analysis_execution_start_endpoint"] == "/api/v1/layer3/execution/start"
     assert readiness_body["execution_result_status_admitted"] is True
