@@ -29668,5 +29668,53 @@
   "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/738_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION.md",
   "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_status": "branch_local_corrected_artifact_active_authority_local_outbox_provider_private_handoff_proven",
   "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
-  "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_summary": "Doc 738 proves corrected-artifact active authority reaches local-outbox provider-private handoff after server-owned local outbox write and keeps external local export adoption separately blocked."
+  "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_summary": "Doc 738 proves corrected-artifact active authority reaches local-outbox provider-private handoff after server-owned local outbox write and keeps external local export adoption separately blocked.",
+  "corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
+    "status": "current_main_synced_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
+    "sync_branch": "codex/l3-corrected-provider-private-handoff-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/739_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/738_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION.md",
+    "evaluation_pr": "#1343",
+    "evaluation_branch_commit": "2e86442c2347ad9bd013e1399d3f72397e025c38",
+    "evaluation_merge_commit": "dbebfe0e0ad9bd660041da02a5ca48b28ea13996",
+    "current_main_checkpoint_after_merge": "dbebfe0e0ad9bd660041da02a5ca48b28ea13996",
+    "evaluation_result": "corrected_artifact_active_authority_local_outbox_provider_private_handoff_proven",
+    "runtime_behavior_introduced_by_evaluation": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen: PASS (frozen)",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_connector_local_destination_receipt_applies_corrected_artifact_active_authority -q: 1 passed"
+    ],
+    "synced_runtime_route": "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+    "synced_reader": "recorded server_owned_local_outbox_write, server_owned_local_outbox_target, connector_local_destination_receipt, connector_dispatch_record, and external_export_download_prepare state",
+    "proof_coverage": [
+      "current main includes Doc 738 corrected-artifact provider-private handoff evaluation",
+      "current main includes focused corrected-artifact provider-private handoff API regression evidence",
+      "current main records PR #1343 merged at dbebfe0e0ad9bd660041da02a5ca48b28ea13996",
+      "current main records green backend-layer3-api and test checks for PR #1343",
+      "current main records zero PR comments, reviews, latest reviews, and review threads",
+      "current main post-merge progress checker passes",
+      "current main post-merge target-selection validation remains frozen",
+      "focused corrected-artifact API regression passes after merge",
+      "no runtime behavior introduced by the evaluation or this sync",
+      "next downstream active-package-authority reader selection is deferred to a separate current-main posture"
+    ],
+    "next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_local_outbox_provider_private_handoff_sync"
+  },
+  "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_current_main_sync_branch": "codex/l3-corrected-provider-private-handoff-sync",
+  "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/739_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation",
+  "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_local_outbox_provider_private_handoff_sync",
+  "latest_corrected_artifact_active_authority_local_outbox_provider_private_handoff_evaluation_current_main_sync_summary": "Doc 739 proof syncs corrected-artifact active authority local-outbox provider-private handoff evaluation after PR #1343 and selects the next downstream active-package-authority reader after provider-private handoff."
 }
