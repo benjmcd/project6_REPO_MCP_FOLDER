@@ -2690,6 +2690,9 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisResponse(Layer3BaseRe
     authority_basis_hash: str
     payload_hash: str
     source_directory_package_review_preview_enabled: bool
+    source_directory_hybrid_package_review_preview_hash: str
+    source_directory_hybrid_package_review_preview: dict[str, Any]
+    candidate_package_kinds: list[str]
     package_commit_enabled: bool
     package_review_submit_enabled: bool
     handoff_enabled: bool

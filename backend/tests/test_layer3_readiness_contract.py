@@ -68,6 +68,11 @@ def test_layer3_readiness_contract_is_shared() -> None:
         "/api/v1/layer3/source/ingestion/server-configured-directory/"
         "hybrid-context-packet/qualitative-analysis"
     )
+    assert direct["source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview_admitted"] is True
+    assert direct["source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "hybrid-context-packet/qualitative-analysis"
+    )
     assert direct["source_directory_qualitative_hybrid_analysis_admitted"] is True
     assert direct["source_directory_qualitative_hybrid_analysis_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
@@ -116,6 +121,12 @@ def test_layer3_readiness_contract_is_shared() -> None:
     )
     assert (
         direct["idempotency_contract"][
+            "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview"
+        ]
+        is False
+    )
+    assert (
+        direct["idempotency_contract"][
             "client_request_id_required_for_source_directory_qualitative_hybrid_analysis"
         ]
         is False
@@ -149,6 +160,12 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["concurrency_contract"]["source_directory_hybrid_context_packet_is_read_only"] is True
     assert (
         direct["concurrency_contract"]["source_directory_hybrid_context_packet_qualitative_analysis_is_read_only"]
+        is True
+    )
+    assert (
+        direct["concurrency_contract"][
+            "source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview_is_read_only"
+        ]
         is True
     )
     assert direct["concurrency_contract"]["source_directory_qualitative_hybrid_analysis_is_read_only"] is True
@@ -187,6 +204,9 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["deferred_decisions"]["source_directory_hybrid_context_packet_qualitative_analysis"].startswith(
         "admitted only as a read-only deterministic qualitative-analysis reader"
     )
+    assert direct["deferred_decisions"][
+        "source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview"
+    ].startswith("admitted only as a read-only package-review preview")
     assert direct["deferred_decisions"]["source_directory_package_supersession_preview"].startswith(
         "admitted only as a read-only source-directory package mutation"
     )
