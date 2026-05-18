@@ -5908,3 +5908,39 @@ Runtime behavior introduced by this sync: `false`.
 No vector query runtime, semantic retrieval ranking, RAG execution, context-packet mutation, qualitative generation runtime, backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, durable retrieval row write, prompt/model/provider runtime, credentials, network egress, provider-public delivery/use, package behavior, connector dispatch, rendered/frontend-durable authority, source expansion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this sync.
 
 The next exact current-main posture is `write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime`.
+
+## Source Directory Material Deterministic Vector Retrieval Authority Contract
+
+Branch-local authority contract: `786_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT.md` follows the source-directory vector retrieval authority selection current-main sync.
+
+Contract branch `codex/l3-vector-retrieval-contract` starts from current-main checkpoint `000cd409f7e1af3c59f8160cdffbcd45711dda73`.
+
+Predecessor sync result: `current_main_synced_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync`.
+
+Selected from posture: `write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime`.
+
+Selected contract: `source_directory_material_deterministic_vector_retrieval_authority`.
+
+Selected retrieval mode: `deterministic_local_hash_vector_similarity_retrieval`.
+
+Selected input authority: `source_directory_material_deterministic_embedding_vector_index_authority`.
+
+Selected input schema: `layer3.source_directory_embedding_vector_index.v1`.
+
+Selected vector-index source: `safe_vector_descriptors`.
+
+Selected future owner service: `backend/app/services/layer3_source_directory_vector_retrieval.py`.
+
+Selected future proof test: `backend/tests/test_layer3_source_directory_vector_retrieval.py`.
+
+Selected future implementation action: `implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync`.
+
+Future response schema: `layer3.source_directory_vector_retrieval.v1`.
+
+Runtime behavior introduced by this contract: `false`.
+
+The contract freezes deterministic local hashed-vector similarity retrieval over already-admitted source-directory embedding/vector-index authority. The future runtime must call `source_directory_material_embedding_vector_index(db, vector_index_payload)`, validate `embedding_index_authority_hash`, use `source-directory-hash-vector-v1` and `vector_dimensions == 4096`, compute cosine-compatible dot-product scores locally, omit non-positive matches without fallback, and keep row-write flags and negative invariants false.
+
+No runtime behavior, backend route, API DTO, response model, database model, migration, durable vector-store row write, durable embedding row write, durable retrieval row write, vector database, persistent vector store, RAG execution, context-packet mutation, qualitative generation runtime, prompt/model/provider runtime, hidden LLM planning, package behavior, handoff/export rerun, connector/destination dispatch, credentials, network egress, provider-public delivery/use, auth/security broadening, rendered/frontend-durable authority, source expansion, arbitrary source ingestion, raw local path exposure, or source `L3OutputPackage` mutation is admitted by this contract.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_deterministic_vector_retrieval_authority_contract`; after sync, the next exact posture is `implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync`.
