@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 import sys
@@ -25,6 +26,7 @@ from app.models.models import (
     L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,
+    L3ReconciliationRecord,
 )
 from app.services.layer3_source_directory_text_index import (
     SourceDirectoryTextIndexError,
@@ -217,6 +219,13 @@ def _assert_no_downstream_side_effects(db) -> None:
     assert db.query(L3PassRun).count() == 0
     assert db.query(AnalysisRun).count() == 0
     assert db.query(L3OutputPackage).count() == 0
+    assert db.query(ConnectorRun).count() == 0
+    assert db.query(ConnectorRunTarget).count() == 0
+
+
+def _assert_no_forbidden_package_commit_downstream(db) -> None:
+    assert db.query(L3PassRun).count() == 0
+    assert db.query(AnalysisRun).count() == 0
     assert db.query(ConnectorRun).count() == 0
     assert db.query(ConnectorRunTarget).count() == 0
 
@@ -661,6 +670,198 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_uses_hybrid
         }
 
         _assert_no_downstream_side_effects(db)
+    finally:
+        db.close()
+
+
+def test_source_directory_hybrid_context_packet_qualitative_analysis_package_commit_writes_bounded_packages(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _source_dir, snapshot_info, index_authority_hash, embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    analysis_payload = {
+        **_vector_retrieval_payload(
+            snapshot_info,
+            index_authority_hash,
+            embedding_index_authority_hash,
+            "BETA alpha alpha",
+        ),
+        "client_request_id": "source-directory-hybrid-package-commit-analysis",
+        "analysis_question": "What does the alpha beta evidence support?",
+        "analysis_focus": "deterministic hybrid package construction evidence",
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+    analysis = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis"
+        ),
+        json=analysis_payload,
+    )
+    assert analysis.status_code == 200, analysis.text
+    analysis_body = analysis.json()
+
+    commit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/commit"
+        ),
+        json={
+            **analysis_payload,
+            "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+            "source_directory_hybrid_package_review_preview_hash": (
+                analysis_body["source_directory_hybrid_package_review_preview_hash"]
+            ),
+            "operator_decision": "commit_source_directory_hybrid_context_packet_qualitative_analysis_package",
+        },
+    )
+    assert commit.status_code == 200, commit.text
+    body = commit.json()
+    assert body["schema_id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_commit.v1"
+    )
+    assert body["status"] == "committed"
+    assert body["mode"] == "source_directory_hybrid_context_packet_qualitative_analysis_package_commit_authority"
+    assert body["package_construction_source_gate"] == (
+        "828_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE"
+    )
+    assert body["qualitative_analysis_hash"] == analysis_body["qualitative_analysis_hash"]
+    assert body["source_directory_hybrid_package_review_preview_hash"] == (
+        analysis_body["source_directory_hybrid_package_review_preview_hash"]
+    )
+    assert body["hybrid_context_packet_hash"] == analysis_body["hybrid_context_packet_hash"]
+    assert body["embedding_index_authority_hash"] == embedding_index_authority_hash
+    assert body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["package_rows_written"] is True
+    assert body["package_payloads_written"] is True
+    assert body["payload_refs_redacted"] is True
+    assert body["package_review_submit_enabled"] is False
+    assert body["handoff_enabled"] is False
+    assert body["external_export_download_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["provider_public_delivery_enabled"] is False
+    assert body["network_egress_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["prompt_model_provider_runtime_enabled"] is False
+    assert body["negative_invariants"]["package_review_submit_enabled"] is False
+
+    db = client.layer3_session_factory()
+    try:
+        _assert_no_forbidden_package_commit_downstream(db)
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        assert reconciliation.reconciliation_record_id == body["reconciliation_record_id"]
+        commit_summary = reconciliation.summary_json["source_directory_hybrid_context_qualitative_package_commit"]
+        assert commit_summary["schema_id"] == (
+            "layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_commit_summary.v1"
+        )
+        assert commit_summary["package_review_submit_enabled"] is False
+        assert commit_summary["handoff_enabled"] is False
+        assert commit_summary["external_export_download_enabled"] is False
+        assert commit_summary["connector_dispatch_enabled"] is False
+        assert commit_summary["provider_public_delivery_enabled"] is False
+        assert commit_summary["network_egress_enabled"] is False
+        assert commit_summary["authority_basis"]["hybrid_context_packet_hash"] == (
+            analysis_body["hybrid_context_packet_hash"]
+        )
+        assert commit_summary["authority_basis"]["embedding_index_authority_hash"] == (
+            embedding_index_authority_hash
+        )
+        packages = db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        assert {package.package_kind for package in packages} == {
+            "canonical_internal",
+            "user_facing",
+            "review_facing",
+        }
+        assert {package.payload_hash for package in packages} == set(body["payload_hashes"])
+        for package in packages:
+            payload_path = Path(package.payload_ref)
+            assert payload_path.exists()
+            assert payload_path.is_file()
+            payload = json.loads(payload_path.read_text(encoding="utf-8"))
+            assert payload["package_header"]["source_gate"] == (
+                "828_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE"
+            )
+            assert package.summary_json["construction_basis_hash"] == body["construction_basis_hash"]
+    finally:
+        db.close()
+
+    replay = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/commit"
+        ),
+        json={
+            **analysis_payload,
+            "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+            "source_directory_hybrid_package_review_preview_hash": (
+                analysis_body["source_directory_hybrid_package_review_preview_hash"]
+            ),
+            "operator_decision": "commit_source_directory_hybrid_context_packet_qualitative_analysis_package",
+        },
+    )
+    assert replay.status_code == 409
+    assert replay.json()["error"]["code"] == "source_directory_hybrid_package_commit_existing_package_state"
+
+
+def test_source_directory_hybrid_context_packet_qualitative_analysis_package_commit_rejects_stale_preview_hash(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _source_dir, snapshot_info, index_authority_hash, embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    analysis_payload = {
+        **_vector_retrieval_payload(
+            snapshot_info,
+            index_authority_hash,
+            embedding_index_authority_hash,
+            "BETA alpha alpha",
+        ),
+        "client_request_id": "source-directory-hybrid-package-stale-preview-analysis",
+        "analysis_question": "What does the alpha beta evidence support?",
+        "analysis_focus": "deterministic hybrid package construction evidence",
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+    analysis = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis"
+        ),
+        json=analysis_payload,
+    )
+    assert analysis.status_code == 200, analysis.text
+
+    stale = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/commit"
+        ),
+        json={
+            **analysis_payload,
+            "qualitative_analysis_hash": analysis.json()["qualitative_analysis_hash"],
+            "source_directory_hybrid_package_review_preview_hash": "0" * 64,
+            "operator_decision": "commit_source_directory_hybrid_context_packet_qualitative_analysis_package",
+        },
+    )
+    assert stale.status_code == 409
+    assert stale.json()["error"]["code"] == "source_directory_hybrid_package_commit_preview_hash_mismatch"
+
+    db = client.layer3_session_factory()
+    try:
+        _assert_no_downstream_side_effects(db)
+        assert db.query(L3ReconciliationRecord).count() == 0
     finally:
         db.close()
 
