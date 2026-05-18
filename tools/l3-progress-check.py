@@ -2160,6 +2160,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRA
     PLANNING_DOCS
     / "787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -2192,6 +2196,12 @@ LAYER3_SOURCE_DIRECTORY_VECTOR_INDEX_SERVICE = (
 )
 LAYER3_SOURCE_DIRECTORY_VECTOR_INDEX_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_source_directory_vector_index.py"
+)
+LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_directory_vector_retrieval.py"
+)
+LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_source_directory_vector_retrieval.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0034_layer3_source_directory_ingestion.py"
@@ -68216,6 +68226,177 @@ def _check_source_directory_material_deterministic_vector_retrieval_authority_co
                 )
 
 
+def _check_source_directory_material_deterministic_vector_retrieval_runtime_proof(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime proof for `source_directory_material_deterministic_vector_retrieval_runtime_proof`.",
+        "788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+        "codex/l3-vector-retrieval-runtime",
+        "fb37896f56843c6abcc7b1ebb9d98c59ea323230",
+        "787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+        "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync",
+        "source_directory_material_deterministic_vector_retrieval_runtime_implemented_branch_local",
+        "Runtime behavior introduced by this pass: `true`.",
+        "backend/app/services/layer3_source_directory_vector_retrieval.py",
+        "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+        "source_directory_material_vector_retrieval(db, payload)",
+        "source_directory_material_embedding_vector_index(db, vector_index_payload)",
+        "embedding_index_authority_hash",
+        "source_directory_vector_retrieval_stale_embedding_index_authority",
+        "layer3.source_directory_vector_retrieval.v1",
+        "source_directory_material_deterministic_vector_retrieval_authority",
+        "deterministic_local_hash_vector_similarity_retrieval",
+        "source-directory-hash-vector-v1",
+        "vector_dimensions == 4096",
+        "deterministic normalized query-to-segment dot product",
+        "vector_score <= 0",
+        "retrieval_rows_written: False",
+        "no-match response behavior without fallback",
+        "no raw vector or normalized feature exposure",
+        "await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF)} "
+                f"missing source directory deterministic vector retrieval runtime proof term: {term}"
+            )
+
+    service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_SERVICE, errors)
+    for term in (
+        'SCHEMA_ID = "layer3.source_directory_vector_retrieval.v1"',
+        'MODE = "source_directory_material_deterministic_vector_retrieval_authority"',
+        'RETRIEVAL_MODE = "deterministic_local_hash_vector_similarity_retrieval"',
+        "DEFAULT_TOP_K = 10",
+        "MAX_TOP_K = 20",
+        "class SourceDirectoryVectorRetrievalError",
+        "def source_directory_material_vector_retrieval(",
+        "source_directory_material_embedding_vector_index(db, _vector_index_payload(fields))",
+        "source_directory_material_text_index(db, _text_index_payload(fields))",
+        "source_directory_vector_retrieval_stale_embedding_index_authority",
+        "source_directory_vector_retrieval_empty_query",
+        "source_directory_vector_retrieval_forbidden_field_not_admitted",
+        "source_directory_vector_retrieval_unknown_field",
+        "source_directory_vector_retrieval_top_k_out_of_bounds",
+        "source_directory_vector_retrieval_integer_field_invalid",
+        "FEATURE_HASH_VERSION",
+        "vector_dimensions",
+        "vector_score",
+        "matched_unique_query_terms",
+        "summed_query_term_frequency",
+        "embedding_vector_hash",
+        "retrieval_rows_written",
+        "persistent_vector_store_enabled",
+        "durable_retrieval_rows_enabled",
+        "rag_execution_enabled",
+        "prompt_model_provider_runtime_enabled",
+        "network_egress_enabled",
+    ):
+        if term not in service_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_SERVICE)} "
+                f"missing source directory deterministic vector retrieval service term: {term}"
+            )
+
+    test_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_TEST, errors)
+    for term in (
+        "test_source_directory_vector_retrieval_returns_deterministic_ranked_segments_without_side_effects",
+        "test_source_directory_vector_retrieval_rejects_stale_authority_hashes",
+        "test_source_directory_vector_retrieval_uses_vector_index_fail_closed_authority_path",
+        "test_source_directory_vector_retrieval_validates_query_top_k_and_contract_fields",
+        "source_directory_material_vector_retrieval",
+        "source_directory_vector_retrieval_stale_embedding_index_authority",
+        "source_directory_vector_index_stale_index_authority",
+        "source_directory_text_index_file_identity_mismatch",
+        "source_directory_vector_retrieval_empty_query",
+        "source_directory_vector_retrieval_forbidden_field_not_admitted",
+        "source_directory_vector_retrieval_unknown_field",
+        "source_directory_vector_retrieval_top_k_out_of_bounds",
+        "source_directory_vector_retrieval_integer_field_invalid",
+        "nohitbucketxqzv",
+        "normalized_features",
+        "L3PassRun",
+        "AnalysisRun",
+        "L3OutputPackage",
+        "ConnectorRunTarget",
+    ):
+        if term not in test_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_TEST)} "
+                f"missing source directory deterministic vector retrieval test term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Deterministic Vector Retrieval Runtime Proof",
+            "788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+            "codex/l3-vector-retrieval-runtime",
+            "fb37896f56843c6abcc7b1ebb9d98c59ea323230",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync",
+            "source_directory_material_deterministic_vector_retrieval_runtime_implemented_branch_local",
+            "Runtime behavior introduced by this pass: `true`.",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            "source_directory_material_vector_retrieval(db, payload)",
+            "source_directory_material_embedding_vector_index(db, vector_index_payload)",
+            "layer3.source_directory_vector_retrieval.v1",
+            "deterministic normalized query-to-segment dot product",
+            "await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof",
+        ),
+        MANIFEST: (
+            "source_directory_material_deterministic_vector_retrieval_runtime_proof",
+            "source_directory_material_deterministic_vector_retrieval_runtime_implemented_branch_local",
+            "codex/l3-vector-retrieval-runtime",
+            "788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+            "fb37896f56843c6abcc7b1ebb9d98c59ea323230",
+            "787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            '"runtime_behavior_change": true',
+            "layer3.source_directory_vector_retrieval.v1",
+            "source_directory_material_deterministic_vector_retrieval_authority",
+            "deterministic_local_hash_vector_similarity_retrieval",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "source-directory-hash-vector-v1",
+            '"vector_dimensions": 4096',
+            "embedding_index_authority_hash validation",
+            "no-match response without fallback",
+            '"retrieval_rows_written": false',
+            "await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_deterministic_vector_retrieval_runtime_proof",
+            "runtime_proof_source_directory_material_deterministic_vector_retrieval",
+            "source_directory_material_deterministic_vector_retrieval_runtime_implemented_branch_local",
+            "codex/l3-vector-retrieval-runtime",
+            "788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+            "source_directory_material_vector_retrieval(db, payload) is implemented",
+            "runtime calls source_directory_material_embedding_vector_index(db, vector_index_payload) before scoring",
+            "runtime validates embedding_index_authority_hash against current embedding vector index authority",
+            "runtime returns layer3.source_directory_vector_retrieval.v1",
+            "focused proof covers stale embedding_index_authority_hash rejection",
+            "focused proof covers no raw vector or normalized feature exposure",
+            "focused proof covers no L3PassRun AnalysisRun L3OutputPackage ConnectorRun or ConnectorRunTarget side effects",
+            "await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory deterministic vector retrieval runtime proof artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -68848,6 +69029,7 @@ def main() -> int:
     _check_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync(
         errors
     )
+    _check_source_directory_material_deterministic_vector_retrieval_runtime_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

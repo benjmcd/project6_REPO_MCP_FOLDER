@@ -31483,5 +31483,38 @@
   "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_status": "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
   "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_next_posture": "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync",
-  "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_summary": "Doc 787 proof syncs the source-directory deterministic vector retrieval authority contract after PR #1391 and moves the next posture to implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync, with no runtime admitted by the sync."
+  "latest_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_summary": "Doc 787 proof syncs the source-directory deterministic vector retrieval authority contract after PR #1391 and moves the next posture to implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync, with no runtime admitted by the sync.",
+  "source_directory_material_deterministic_vector_retrieval_runtime_proof": {
+    "proof_kind": "runtime_proof_source_directory_material_deterministic_vector_retrieval",
+    "status": "source_directory_material_deterministic_vector_retrieval_runtime_implemented_branch_local",
+    "runtime_branch": "codex/l3-vector-retrieval-runtime",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+    "current_main_checkpoint_before_implementation": "fb37896f56843c6abcc7b1ebb9d98c59ea323230",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+    "predecessor_synced_result": "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+    "implemented_service": "backend/app/services/layer3_source_directory_vector_retrieval.py",
+    "proof_test": "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+    "runtime_behavior_change": true,
+    "proof_coverage": [
+      "source_directory_material_vector_retrieval(db, payload) is implemented",
+      "runtime calls source_directory_material_embedding_vector_index(db, vector_index_payload) before scoring",
+      "runtime validates embedding_index_authority_hash against current embedding vector index authority",
+      "runtime scores admitted text-index segments with source-directory-hash-vector-v1 vector_dimensions 4096 deterministic normalized query-to-segment dot product",
+      "runtime returns layer3.source_directory_vector_retrieval.v1",
+      "focused proof covers deterministic score-ordered replay and vector_score",
+      "focused proof covers stale embedding_index_authority_hash rejection",
+      "focused proof covers stale index_authority_hash rejection through vector-index authority",
+      "focused proof covers stale source material rejection through vector-index text-index path",
+      "focused proof covers empty query forbidden fields unknown fields bounded top_k and no-match behavior",
+      "focused proof covers no raw vector or normalized feature exposure",
+      "focused proof covers no L3PassRun AnalysisRun L3OutputPackage ConnectorRun or ConnectorRunTarget side effects",
+      "routes DTOs models migrations durable retrieval rows vector stores RAG provider model network package connector source expansion auth security frontend durable full mockup and raw-path behavior remain blocked"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof"
+  },
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_branch": "codex/l3-vector-retrieval-runtime",
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/788_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_RUNTIME_PROOF.md",
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_status": "source_directory_material_deterministic_vector_retrieval_runtime_implemented_branch_local",
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof",
+  "latest_source_directory_material_deterministic_vector_retrieval_runtime_proof_summary": "Doc 788 proof implements deterministic local source-directory vector retrieval runtime and moves the next posture to await_current_main_sync_for_source_directory_material_deterministic_vector_retrieval_runtime_proof."
 }
