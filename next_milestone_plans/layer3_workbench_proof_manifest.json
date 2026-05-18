@@ -31899,5 +31899,49 @@
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/798_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_ENTRY_FREEZE.md",
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_entry_status": "source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_implemented_branch_local",
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
-  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_entry_summary": "Doc 798 proof records the bounded source-directory qualitative-hybrid analysis API runtime entry and focused 5-test proof. It admits only the backend API wrapper over existing deterministic context-packet qualitative-hybrid analysis authority and keeps raw paths, full segment text, vectors, durable qualitative/context rows, new RAG execution, prompt/model/provider runtime, connector dispatch, package mutation, network egress, and frontend durable authority disabled."
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_entry_summary": "Doc 798 proof records the bounded source-directory qualitative-hybrid analysis API runtime entry and focused 5-test proof. It admits only the backend API wrapper over existing deterministic context-packet qualitative-hybrid analysis authority and keeps raw paths, full segment text, vectors, durable qualitative/context rows, new RAG execution, prompt/model/provider runtime, connector dispatch, package mutation, network egress, and frontend durable authority disabled.",
+  "source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
+    "status": "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
+    "sync_branch": "codex/l3-qual-api-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/798_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_ENTRY_FREEZE.md",
+    "runtime_pr": "#1403",
+    "runtime_branch_commit": "39dc407c91f70c811d8754f4ed22d4e3020e8610",
+    "runtime_merge_commit": "578880feee19c69e9f2a70afce47e8a0d7822c48",
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+      "current main includes Layer3SourceDirectoryQualitativeAnalysisRequest",
+      "current main includes Layer3SourceDirectoryQualitativeAnalysisResponse",
+      "current main exposes layer3.source_directory_qualitative_analysis.v1",
+      "current main records PR #1403 merged at 578880feee19c69e9f2a70afce47e8a0d7822c48",
+      "current main records green backend-layer3-api and test checks for PR #1403",
+      "current main records zero PR comments reviews and review threads",
+      "source_directory_material_context_packet_qualitative_hybrid_analysis(db, payload) remains the service authority",
+      "server_configured_operator_directory_text_table_source_family remains the source family",
+      "source_directory_material_retrieval_augmented_context_packet_authority remains the context-packet authority",
+      "source_directory_material_context_packet_qualitative_hybrid_analysis_authority remains the qualitative-hybrid authority",
+      "raw_local_path_exposed false full_segment_text_exposed false raw_vector_exposed false embedding_exposed false",
+      "durable_context_packet_rows_written false durable_qualitative_analysis_rows_written false durable_qualitative_generation_rows_written false durable_retrieval_rows_written false",
+      "new_rag_execution_enabled false vector_indexing_enabled false embedding_generation_enabled false prompt_model_provider_runtime_enabled false connector_dispatch_enabled false package_mutation_enabled false network_egress_enabled false frontend_durable_authority_enabled false",
+      "current main sync introduces no additional runtime behavior",
+      "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync is selected as the next posture"
+    ],
+    "next_posture": "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync"
+  },
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_branch": "codex/l3-qual-api-sync",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/799_SOURCE_DIRECTORY_QUALITATIVE_HYBRID_ANALYSIS_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_status": "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_qualitative_hybrid_analysis_api_sync",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_api_runtime_current_main_sync_summary": "Doc 799 proof syncs the source-directory qualitative-hybrid analysis API runtime implementation after PR #1403 and pivots to the next named Layer 3 end-to-end gap selection."
 }
