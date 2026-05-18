@@ -6374,3 +6374,25 @@ The focused proof passed with `5 passed`.
 No package construction, package-review submit, package payload write, package payload rewrite, source package row mutation, package mutation/reconstruction, replacement package row creation, handoff/export rerun, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this runtime.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_qualitative_analysis_package_preview_runtime`; after sync, pivot to the next named Layer 3 end-to-end gap unless current-main evidence shows a concrete unresolved package-preview defect or named downstream reader.
+
+## Source Directory Qualitative Analysis Package Preview Runtime Current-Main Sync
+
+Current-main proof/control sync: `803_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1407` for `source_directory_qualitative_analysis_package_preview_runtime`.
+
+Runtime branch `codex/l3-source-package-preview` landed branch commit `5f9f20b67536ac3a6a4cdf1736ea7d13bf0bc0dd` into current main at merge commit `80e07ef84f41e97af2123dcb8581259af75f59e6`.
+
+Synced result: `current_main_synced_source_directory_qualitative_analysis_package_preview_runtime`.
+
+Current main now includes read-only source-directory qualitative-analysis package preview response fields, schema `layer3.source_directory_qualitative_analysis_package_review_preview.v1`, mode `read_only_source_directory_qualitative_analysis_package_review_preview`, and source gate `802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE`.
+
+PR `#1407` had green `backend-layer3-api` (`3m16s`) and `test` (`3m51s`) checks, comments totalCount `0`, reviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime keeps `package_construction_enabled: False`, `package_review_submit_enabled: False`, `package_payload_write_enabled: False`, `source_package_row_mutation_enabled: False`, `package_mutation_reconstruction_enabled: False`, `handoff_export_enabled: False`, `provider_public_delivery_enabled: False`, `connector_dispatch_enabled: False`, `network_egress_enabled: False`, `frontend_durable_authority_enabled: False`, `prompt_model_provider_runtime_enabled: False`, `qualitative_generation_runtime_enabled: False`, and `new_source_family_enabled: False`.
+
+No package construction, package-review submit, package payload write, package payload rewrite, source package row mutation, package mutation/reconstruction, replacement package row creation, handoff/export rerun, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this sync.
+
+The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_package_preview_sync`.
