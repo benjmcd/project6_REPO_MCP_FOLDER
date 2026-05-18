@@ -31364,5 +31364,45 @@
   "latest_source_directory_material_vector_retrieval_authority_selection_doc": "next_milestone_plans/Layer3_planning_docs/784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
   "latest_source_directory_material_vector_retrieval_authority_selection_status": "branch_local_source_directory_material_vector_retrieval_authority_selection_freeze",
   "latest_source_directory_material_vector_retrieval_authority_selection_next_posture_after_merge": "current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
-  "latest_source_directory_material_vector_retrieval_authority_selection_summary": "Doc 784 proof freezes source-directory vector retrieval as the next no-runtime authority question after deterministic embedding/vector-index current-main sync and moves the next posture to current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync."
+  "latest_source_directory_material_vector_retrieval_authority_selection_summary": "Doc 784 proof freezes source-directory vector retrieval as the next no-runtime authority question after deterministic embedding/vector-index current-main sync and moves the next posture to current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync.",
+  "source_directory_material_vector_retrieval_authority_selection_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+    "status": "current_main_synced_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+    "sync_branch": "codex/l3-vector-retrieval-select-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/785_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+    "selection_doc": "next_milestone_plans/Layer3_planning_docs/784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
+    "selection_pr": "#1389",
+    "selection_branch_commit": "1cef06ab450e78d0666bed85efadef04fabfe139",
+    "selection_merge_commit": "07a80d049cc4ad7390b98ececcb78102a20679c1",
+    "current_main_checkpoint_after_merge": "07a80d049cc4ad7390b98ececcb78102a20679c1",
+    "runtime_behavior_introduced_by_selection_pr": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 784 source-directory vector retrieval authority selection freeze",
+      "current main records PR #1389 merged at 07a80d049cc4ad7390b98ececcb78102a20679c1",
+      "current main records green backend-layer3-api and test checks for PR #1389",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main sync introduces no additional runtime behavior",
+      "source_directory_material_deterministic_vector_retrieval_authority_contract is current-main selected",
+      "source_directory_material_deterministic_embedding_vector_index_authority and layer3.source_directory_embedding_vector_index.v1 are selected inputs",
+      "backend/app/services/layer3_source_directory_vector_retrieval.py and backend/tests/test_layer3_source_directory_vector_retrieval.py are selected for the future contract/runtime lane",
+      "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime is selected for the next authority posture"
+    ],
+    "next_posture": "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime"
+  },
+  "latest_source_directory_material_vector_retrieval_authority_selection_current_main_sync_branch": "codex/l3-vector-retrieval-select-sync",
+  "latest_source_directory_material_vector_retrieval_authority_selection_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/785_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_vector_retrieval_authority_selection_current_main_sync_status": "current_main_synced_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+  "latest_source_directory_material_vector_retrieval_authority_selection_current_main_sync_next_posture": "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime",
+  "latest_source_directory_material_vector_retrieval_authority_selection_current_main_sync_summary": "Doc 785 proof syncs the source-directory vector retrieval authority selection after PR #1389 and moves the next posture to write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime, with no runtime admitted by the sync."
 }
