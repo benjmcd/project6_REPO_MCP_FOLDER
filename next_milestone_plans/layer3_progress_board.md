@@ -5132,3 +5132,27 @@ Post-merge validation at `c0403c860b3e8903b4ee1e80ab9fca04f92301ad` passed: JSON
 This sync admits no additional runtime behavior, backend route, API DTO, model change, migration, source-index durable row writes, vector indexing, embedding generation, retrieval query runtime, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, source expansion, credentials, network egress, or raw local path exposure.
 
 The next exact current-main posture is `select_next_retrieval_or_qualitative_hybrid_authority_after_text_index_runtime_sync`. Do not continue same-family source-directory text-index loops unless current-main evidence names a concrete unresolved defect or downstream reader.
+
+## Source Directory Material Lexical Retrieval Authority Freeze
+
+Branch-local retrieval authority selection freeze: `756_SOURCE_DIRECTORY_MATERIAL_LEXICAL_RETRIEVAL_AUTHORITY_FREEZE.md` follows the source-directory deterministic text index runtime current-main sync and selects `source_directory_material_lexical_retrieval_authority`.
+
+Planning branch `codex/l3-retrieval-selection` starts from current-main checkpoint `3cbf4dda3640e58210f93b4ff6aa81bf84dede5d`.
+
+The selected exact next authority question is `source_directory_material_lexical_retrieval_authority_contract`, to be written before any qualitative-hybrid runtime work.
+
+Current main proves `server_configured_directory_file` material reaches deterministic `deterministic_text_segments` with `line-window-v1` segmentation and replay-stable `index_authority_hash`, but `backend/app/services/layer3_source_directory_text_index.py` still reports `retrieval_query_enabled: False`, `vector_index_enabled: False`, `embedding_generation_enabled: False`, and `qualitative_hybrid_runtime_enabled: False`.
+
+The APS retrieval plane remains APS-specific authority over `ApsRetrievalChunk`; it provides a deterministic lexical precedent but is not source-directory retrieval authority.
+
+Selected first retrieval mode: `deterministic_lexical_segment_retrieval`.
+
+Selected future retrieval authority: `source_directory_material_deterministic_lexical_retrieval_authority`.
+
+Selected future owner service: `backend/app/services/layer3_source_directory_text_retrieval.py`.
+
+Runtime behavior introduced by this freeze: `false`.
+
+This freeze admits no runtime behavior, backend route/service/model/migration behavior, source-index rows, vector index, embedding generation, retrieval query runtime, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, prompt/model/provider runtime, credentials, network, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_lexical_retrieval_authority_freeze`; after sync, the next exact posture is `write_source_directory_material_lexical_retrieval_authority_contract_before_qualitative_hybrid_runtime`.
