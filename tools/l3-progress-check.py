@@ -2094,6 +2094,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE_CU
     PLANNING_DOCS
     / "769_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT = (
+    PLANNING_DOCS
+    / "770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -65940,6 +65944,138 @@ def _check_source_directory_material_qualitative_hybrid_analysis_authority_freez
                 )
 
 
+def _check_source_directory_material_context_packet_qualitative_hybrid_analysis_contract(
+    errors: list[str],
+) -> None:
+    contract_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT,
+        errors,
+    )
+    for term in (
+        "Status: branch-local qualitative-hybrid analysis contract for `source_directory_material_context_packet_qualitative_hybrid_analysis_contract`.",
+        "770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md",
+        "codex/l3-qual-analysis-contract",
+        "2fb5ace714eac8c3b1fa509a1fd9dd3afb0068b2",
+        "769_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+        "current_main_synced_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+        "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
+        "Runtime behavior introduced by this contract: `false`.",
+        "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+        "context_packet_grounded_qualitative_hybrid_analysis",
+        "source_directory_material_retrieval_augmented_context_packet_authority",
+        "layer3.source_directory_context_packet.v1",
+        "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+        "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+        "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync",
+        "layer3.source_directory_qualitative_analysis.v1",
+        "deterministic extractive analysis over context-packet items only",
+        "Vector runtime selected: `false`.",
+        "Embedding generation selected: `false`.",
+        "Prompt/model/provider runtime selected: `false`.",
+        "Network egress selected: `false`.",
+        "Provider-public delivery/use selected: `false`.",
+        "Durable qualitative analysis rows selected: `false`.",
+        "Backend route selected: `false`.",
+        "Rendered/frontend-durable authority selected: `false`.",
+        "`analysis_question`",
+        "`analysis_focus`",
+        "source_directory_material_retrieval_augmented_context_packet(db, payload)",
+        "context_packet_contract_id",
+        "context_packet_mode",
+        "schema_id",
+        "qualitative_analysis_hash",
+        "evidence_summary",
+        "salient_terms",
+        "supporting_segments",
+        "coverage_notes",
+        "analysis_limits",
+        "context_packet_rows_written: False",
+        "qualitative_analysis_rows_written: False",
+        "qualitative_generation_rows_written: False",
+        "analysis_run_rows_written: False",
+        "package_rows_written: False",
+        "connector_rows_written: False",
+        "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+    ):
+        if term not in contract_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT)} "
+                f"missing source directory context packet qualitative hybrid analysis contract term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Context-Packet Qualitative-Hybrid Analysis Contract",
+            "770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md",
+            "codex/l3-qual-analysis-contract",
+            "2fb5ace714eac8c3b1fa509a1fd9dd3afb0068b2",
+            "current_main_synced_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+            "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+            "context_packet_grounded_qualitative_hybrid_analysis",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "layer3.source_directory_context_packet.v1",
+            "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+            "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+            "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync",
+            "layer3.source_directory_qualitative_analysis.v1",
+            "Runtime behavior introduced by this contract: `false`.",
+            "source_directory_material_retrieval_augmented_context_packet(db, payload)",
+            "qualitative_analysis_hash",
+            "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+        ),
+        MANIFEST: (
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+            "branch_local_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_written",
+            "codex/l3-qual-analysis-contract",
+            "770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md",
+            "2fb5ace714eac8c3b1fa509a1fd9dd3afb0068b2",
+            "current_main_synced_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+            "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+            "context_packet_grounded_qualitative_hybrid_analysis",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "layer3.source_directory_context_packet.v1",
+            "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+            "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+            "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync",
+            "layer3.source_directory_qualitative_analysis.v1",
+            '"runtime_behavior_change": false',
+            '"selected_vector_runtime": false',
+            '"selected_embedding_generation": false',
+            '"selected_prompt_model_provider_runtime": false',
+            '"selected_backend_route": false',
+            "future runtime must call source_directory_material_retrieval_augmented_context_packet(db, payload)",
+            "future runtime must compute qualitative_analysis_hash",
+            "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_contract_proof",
+            "branch_local_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+            "branch_local_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_written",
+            "770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+            "context_packet_grounded_qualitative_hybrid_analysis",
+            "source_directory_material_retrieval_augmented_context_packet_authority",
+            "layer3.source_directory_context_packet.v1",
+            "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+            "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+            "layer3.source_directory_qualitative_analysis.v1",
+            '"runtime_behavior_change": false',
+            "requires future runtime to call source_directory_material_retrieval_augmented_context_packet(db, payload)",
+            "requires stable qualitative_analysis_hash replay",
+            "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+            "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory context packet qualitative hybrid analysis contract artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -66552,6 +66688,7 @@ def main() -> int:
     _check_source_directory_material_retrieval_augmented_context_packet_runtime_current_main_sync(errors)
     _check_source_directory_material_qualitative_hybrid_analysis_authority_freeze(errors)
     _check_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync(errors)
+    _check_source_directory_material_context_packet_qualitative_hybrid_analysis_contract(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
