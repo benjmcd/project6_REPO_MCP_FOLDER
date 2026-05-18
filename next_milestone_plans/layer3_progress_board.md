@@ -6426,3 +6426,27 @@ The branch-local proof also passed JSON manifest load, Python compile, `python .
 No package-review submit, handoff/export rerun, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, package payload rewrite, package mutation/reconstruction, source package row mutation, replacement package row creation, or full mockup activation is admitted by this runtime.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_qualitative_analysis_package_construction_commit_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync` unless current-main evidence shows a concrete unresolved package-construction defect or named downstream reader.
+
+## Source Directory Qualitative Analysis Package Construction Runtime Current-Main Sync
+
+Current-main proof/control sync: `805_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1409` for `source_directory_qualitative_analysis_package_construction_commit_runtime`.
+
+Runtime branch `codex/l3-source-package-commit` landed branch commit `bbf25487908c15e68d327d70140b005e46afedf0` into current main at merge commit `2a403e857408b09044acd7329503a99a6d83c327`.
+
+Synced result: `current_main_synced_source_directory_qualitative_analysis_package_construction_commit_runtime`.
+
+Current main now includes the bounded source-directory qualitative-analysis package commit route, schema `layer3.source_directory_qualitative_analysis_package_commit.v1`, mode `source_directory_qualitative_analysis_package_commit_authority`, operator decision `commit_source_directory_qualitative_analysis_package`, source gate `804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE`, and helper `materialize_source_directory_qualitative_analysis_package_commit`.
+
+PR `#1409` had green `backend-layer3-api` (`3m21s`) and `test` (`3m52s`) checks, comments totalCount `0`, reviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime admits bounded package construction, one reconciliation record, exactly three package rows for `canonical_internal`, `user_facing`, and `review_facing`, package payload writes through the existing artifact writer, and redacted package payload references in the API response.
+
+The synced runtime keeps `package_review_submit_enabled: False`, `handoff_enabled: False`, `external_export_download_enabled: False`, `provider_public_delivery_enabled: False`, `connector_dispatch_enabled: False`, `network_egress_enabled: False`, `frontend_durable_authority_enabled: False`, `prompt_model_provider_runtime_enabled: False`, `qualitative_generation_runtime_enabled: False`, `new_source_family_enabled: False`, `source_package_row_mutation_enabled: False`, `package_mutation_reconstruction_enabled: False`, and `package_payload_rewrite_enabled: False`.
+
+No package-review submit, handoff/export rerun, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, package payload rewrite, package mutation/reconstruction, source package row mutation, replacement package row creation, or full mockup activation is admitted by this sync.
+
+The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync`.
