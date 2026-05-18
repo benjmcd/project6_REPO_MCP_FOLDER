@@ -29962,5 +29962,50 @@
   "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_status": "branch_local_source_directory_material_qualitative_hybrid_analysis_authority_freeze_written",
   "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_runtime_behavior_change": false,
   "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_next_posture_after_merge": "current_main_sync_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
-  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_summary": "Doc 768 selects source_directory_material_context_packet_qualitative_hybrid_analysis_contract as the next qualitative-hybrid analysis authority question after the context-packet runtime reached current main. It selects source_directory_material_context_packet_qualitative_hybrid_analysis_authority over source_directory_material_retrieval_augmented_context_packet_authority and layer3.source_directory_context_packet.v1, with future owner backend/app/services/layer3_source_directory_qualitative_analysis.py and future proof backend/tests/test_layer3_source_directory_qualitative_analysis.py, while keeping runtime behavior, routes, DTOs, models, migrations, durable qualitative analysis rows, vector, embedding, qualitative generation, prompt/model/provider, package, connector, provider, rendered/frontend-durable, source expansion, auth/security, credential, network, and raw-path behavior blocked."
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_summary": "Doc 768 selects source_directory_material_context_packet_qualitative_hybrid_analysis_contract as the next qualitative-hybrid analysis authority question after the context-packet runtime reached current main. It selects source_directory_material_context_packet_qualitative_hybrid_analysis_authority over source_directory_material_retrieval_augmented_context_packet_authority and layer3.source_directory_context_packet.v1, with future owner backend/app/services/layer3_source_directory_qualitative_analysis.py and future proof backend/tests/test_layer3_source_directory_qualitative_analysis.py, while keeping runtime behavior, routes, DTOs, models, migrations, durable qualitative analysis rows, vector, embedding, qualitative generation, prompt/model/provider, package, connector, provider, rendered/frontend-durable, source expansion, auth/security, credential, network, and raw-path behavior blocked.",
+  "source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync": {
+    "status": "current_main_synced_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+    "sync_branch": "codex/l3-qual-analysis-selection-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/769_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/768_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE.md",
+    "freeze_pr": "#1373",
+    "freeze_branch": "codex/l3-qual-analysis-selection",
+    "freeze_branch_commit": "e3ab65c46cd24feacadf01b1a29487e63f016deb",
+    "freeze_merge_commit": "7439e98415febe5e0bd3f12fd022d17c14897149",
+    "current_main_checkpoint_after_merge": "7439e98415febe5e0bd3f12fd022d17c14897149",
+    "runtime_behavior_introduced_by_freeze": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "selected_next_authority_question": "source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+    "selected_future_authority": "source_directory_material_context_packet_qualitative_hybrid_analysis_authority",
+    "selected_future_analysis_mode": "context_packet_grounded_qualitative_hybrid_analysis",
+    "selected_input_authority": "source_directory_material_retrieval_augmented_context_packet_authority",
+    "selected_input_schema": "layer3.source_directory_context_packet.v1",
+    "selected_future_owner_service": "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+    "selected_future_proof_test": "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+    "post_merge_validation": [
+      "json manifest load PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime"
+  },
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_branch": "codex/l3-qual-analysis-selection-sync",
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/769_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_ANALYSIS_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_status": "current_main_synced_source_directory_material_qualitative_hybrid_analysis_authority_freeze",
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_runtime_behavior_change": false,
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_next_posture": "write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime",
+  "latest_source_directory_material_qualitative_hybrid_analysis_authority_freeze_current_main_sync_summary": "Doc 769 syncs PR #1373 merge commit 7439e98415febe5e0bd3f12fd022d17c14897149 to current main. The source-directory qualitative-hybrid analysis authority freeze is current-main truth; no runtime behavior is introduced by the sync, and the next posture is write_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_before_runtime."
 }
