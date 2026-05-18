@@ -29635,5 +29635,49 @@
   "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_status": "branch_local_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_written",
   "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_runtime_behavior_change": false,
   "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_next_posture_after_merge": "current_main_sync_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
-  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_summary": "Doc 762 selects source_directory_material_qualitative_hybrid_context_packet_authority_contract as the next authority question after the source-directory deterministic lexical retrieval runtime current-main sync. It selects source_directory_material_retrieval_augmented_context_packet_authority and retrieval_augmented_qualitative_context_packet over current deterministic lexical retrieval, while keeping runtime behavior, routes, DTOs, models, migrations, durable context-packet rows, vector, embedding, qualitative generation, prompt/model/provider runtime, package, connector, provider, rendered/frontend-durable, source-expansion, auth/security, credential, network, and raw-path behavior blocked."
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_summary": "Doc 762 selects source_directory_material_qualitative_hybrid_context_packet_authority_contract as the next authority question after the source-directory deterministic lexical retrieval runtime current-main sync. It selects source_directory_material_retrieval_augmented_context_packet_authority and retrieval_augmented_qualitative_context_packet over current deterministic lexical retrieval, while keeping runtime behavior, routes, DTOs, models, migrations, durable context-packet rows, vector, embedding, qualitative generation, prompt/model/provider runtime, package, connector, provider, rendered/frontend-durable, source-expansion, auth/security, credential, network, and raw-path behavior blocked.",
+  "source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync": {
+    "status": "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
+    "sync_branch": "codex/l3-rag-qual-selection-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/763_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/762_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE.md",
+    "freeze_pr": "#1367",
+    "freeze_branch": "codex/l3-rag-qual-selection",
+    "freeze_branch_commit": "898b18cd5e31800612170b7bb3b4331c2f034488",
+    "freeze_merge_commit": "add262b96ba510eef0fd65bff6ea1da33823defd",
+    "current_main_checkpoint_after_merge": "add262b96ba510eef0fd65bff6ea1da33823defd",
+    "runtime_behavior_introduced_by_freeze": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "selected_next_authority_question": "source_directory_material_qualitative_hybrid_context_packet_authority_contract",
+    "selected_future_authority": "source_directory_material_retrieval_augmented_context_packet_authority",
+    "selected_future_mode": "retrieval_augmented_qualitative_context_packet",
+    "selected_retrieval_authority": "source_directory_material_deterministic_lexical_retrieval_authority",
+    "selected_future_owner_service": "backend/app/services/layer3_source_directory_context_packet.py",
+    "selected_future_proof_test": "backend/tests/test_layer3_source_directory_context_packet.py",
+    "post_merge_validation": [
+      "json manifest load PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime"
+  },
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync_branch": "codex/l3-rag-qual-selection-sync",
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/763_SOURCE_DIRECTORY_MATERIAL_QUALITATIVE_HYBRID_CONTEXT_PACKET_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync_status": "current_main_synced_source_directory_material_qualitative_hybrid_context_packet_authority_freeze",
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync_runtime_behavior_change": false,
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync_next_posture": "write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime",
+  "latest_source_directory_material_qualitative_hybrid_context_packet_authority_freeze_current_main_sync_summary": "Doc 763 syncs PR #1367 merge commit add262b96ba510eef0fd65bff6ea1da33823defd to current main. The source-directory qualitative-hybrid context-packet authority freeze is current-main truth; no runtime behavior is introduced by the sync, and the next posture is write_source_directory_material_qualitative_hybrid_context_packet_authority_contract_before_prompt_model_provider_or_vector_runtime."
 }
