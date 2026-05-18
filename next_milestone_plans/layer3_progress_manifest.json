@@ -29527,5 +29527,48 @@
   "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_status": "source_directory_material_deterministic_lexical_retrieval_runtime_implemented_branch_local",
   "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_runtime_behavior_change": true,
   "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof",
-  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_summary": "Doc 760 implements source_directory_material_deterministic_lexical_retrieval_authority in backend/app/services/layer3_source_directory_text_retrieval.py with focused proof test backend/tests/test_layer3_source_directory_text_retrieval.py. It admits deterministic lexical retrieval over existing deterministic_text_segments only, while keeping routes, DTOs, models, migrations, durable retrieval rows, vector, embedding, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path behavior blocked."
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_proof_summary": "Doc 760 implements source_directory_material_deterministic_lexical_retrieval_authority in backend/app/services/layer3_source_directory_text_retrieval.py with focused proof test backend/tests/test_layer3_source_directory_text_retrieval.py. It admits deterministic lexical retrieval over existing deterministic_text_segments only, while keeping routes, DTOs, models, migrations, durable retrieval rows, vector, embedding, qualitative-hybrid, package, connector, provider, rendered/frontend-durable, source-expansion, auth/security, credential, network, prompt/model/provider, and raw-path behavior blocked.",
+  "source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync": {
+    "status": "current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime",
+    "sync_branch": "codex/l3-retrieval-impl-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
+    "runtime_pr": "#1365",
+    "runtime_branch": "codex/l3-retrieval-impl",
+    "runtime_branch_commit": "8483d79e16f59e51759dbf2724d7a397bf817b0f",
+    "runtime_merge_commit": "8275da065e0f7dabbb603dbaecb84445c8b10a45",
+    "current_main_checkpoint_after_merge": "8275da065e0f7dabbb603dbaecb84445c8b10a45",
+    "runtime_behavior_already_merged": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "implemented_files": [
+      "backend/app/services/layer3_source_directory_text_retrieval.py",
+      "backend/tests/test_layer3_source_directory_text_retrieval.py"
+    ],
+    "post_merge_validation": [
+      "json manifest load PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\backend\\app\\services\\layer3_source_directory_text_retrieval.py .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py -q PASS 4 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_ingestion.py -q PASS 13 passed",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync"
+  },
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_branch": "codex/l3-retrieval-impl-sync",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_status": "current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_next_posture": "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync",
+  "latest_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_summary": "Doc 761 syncs PR #1365 merge commit 8275da065e0f7dabbb603dbaecb84445c8b10a45 to current main. The source-directory deterministic lexical retrieval runtime is current-main truth; no runtime behavior is introduced by the sync, and the next posture is select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync."
 }
