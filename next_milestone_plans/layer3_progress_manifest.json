@@ -32354,5 +32354,63 @@
   "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_status": "current_main_synced_source_directory_qualitative_analysis_package_construction_commit_runtime",
   "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_runtime_behavior_change": false,
   "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync",
-  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_summary": "Doc 805 syncs PR #1409 merge commit 2a403e857408b09044acd7329503a99a6d83c327 to current main. The bounded source-directory qualitative-analysis package-construction commit runtime is current-main synced, no behavior is introduced by the sync itself, and the next posture pivots to select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync."
+  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_summary": "Doc 805 syncs PR #1409 merge commit 2a403e857408b09044acd7329503a99a6d83c327 to current main. The bounded source-directory qualitative-analysis package-construction commit runtime is current-main synced, no behavior is introduced by the sync itself, and the next posture pivots to select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync.",
+  "source_directory_qualitative_analysis_package_review_submit_runtime_entry": {
+    "status": "source_directory_qualitative_analysis_package_review_submit_runtime_implemented_branch_local",
+    "runtime_branch": "codex/l3-source-package-review-submit",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
+    "current_main_preflight_checkpoint": "4f4c6229f456a2c8482b7e94e595bac5db5bc079",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/805_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "selected_from_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync",
+    "selected_implementation_action": "implement_source_directory_qualitative_analysis_package_review_submit_after_package_construction_commit_sync",
+    "runtime_behavior_change": true,
+    "source_family": "server_configured_operator_directory_text_table_source_family",
+    "api_route": "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/review/submit",
+    "submit_schema_id": "layer3.source_directory_qualitative_analysis_package_review_submit.v1",
+    "submit_mode": "source_directory_qualitative_analysis_package_review_submit_authority",
+    "submit_state_schema_id": "layer3.package_review_submit_state.v1",
+    "package_review_submit_source_gate": "806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE",
+    "runtime_owners": [
+      "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+      "backend/app/api/layer3.py"
+    ],
+    "proof_tests": [
+      "backend/tests/test_layer3_source_directory_qualitative_analysis.py"
+    ],
+    "package_review_submit_enabled": true,
+    "package_review_states": [
+      "package_review_approved",
+      "package_review_changes_requested",
+      "package_review_rejected",
+      "package_review_blocked"
+    ],
+    "idempotent_replay_status": "already_submitted",
+    "package_rows_written": false,
+    "package_payload_write_enabled": false,
+    "payload_refs_redacted": true,
+    "handoff_enabled": false,
+    "export_enabled": false,
+    "external_export_download_enabled": false,
+    "provider_public_delivery_enabled": false,
+    "connector_dispatch_enabled": false,
+    "network_egress_enabled": false,
+    "frontend_durable_authority_enabled": false,
+    "prompt_model_provider_runtime_enabled": false,
+    "qualitative_generation_runtime_enabled": false,
+    "new_source_family_enabled": false,
+    "source_package_row_mutation_enabled": false,
+    "package_mutation_reconstruction_enabled": false,
+    "package_payload_rewrite_enabled": false,
+    "validation": [
+      "python -m pytest backend/tests/test_layer3_source_directory_qualitative_analysis.py -q PASS 9 passed"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_qualitative_analysis_package_review_submit_runtime",
+    "next_posture_after_sync": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync"
+  },
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_branch": "codex/l3-source-package-review-submit",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_status": "source_directory_qualitative_analysis_package_review_submit_runtime_implemented_branch_local",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_runtime_behavior_change": true,
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_qualitative_analysis_package_review_submit_runtime",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_summary": "Doc 806 and branch codex/l3-source-package-review-submit implement a bounded source-directory qualitative-analysis package-review submit route that records package-review state for the already constructed package set while preserving payload-ref redaction and all handoff/export, provider, connector, network, frontend, prompt/model/provider, package mutation/reconstruction, source package row mutation, and source-expansion non-admissions."
 }

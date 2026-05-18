@@ -32180,5 +32180,42 @@
   "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/805_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_status": "current_main_synced_source_directory_qualitative_analysis_package_construction_commit_runtime",
   "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync",
-  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_summary": "Doc 805 proof syncs the source-directory qualitative-analysis package-construction commit runtime after PR #1409 and pivots to the next named Layer 3 end-to-end gap selection."
+  "latest_source_directory_qualitative_analysis_package_construction_commit_runtime_current_main_sync_summary": "Doc 805 proof syncs the source-directory qualitative-analysis package-construction commit runtime after PR #1409 and pivots to the next named Layer 3 end-to-end gap selection.",
+  "source_directory_qualitative_analysis_package_review_submit_runtime_entry_proof": {
+    "proof_kind": "branch_local_source_directory_qualitative_analysis_package_review_submit_runtime_entry",
+    "status": "source_directory_qualitative_analysis_package_review_submit_runtime_implemented_branch_local",
+    "runtime_branch": "codex/l3-source-package-review-submit",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
+    "current_main_preflight_checkpoint": "4f4c6229f456a2c8482b7e94e595bac5db5bc079",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/805_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "selected_from_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_construction_commit_sync",
+    "runtime_behavior_change": true,
+    "proof_commands": [
+      "python -m pytest backend/tests/test_layer3_source_directory_qualitative_analysis.py -q"
+    ],
+    "proof_results": [
+      "PASS 9 passed"
+    ],
+    "proof_coverage": [
+      "source-directory qualitative-analysis package-review submit route is POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/review/submit",
+      "submit schema is layer3.source_directory_qualitative_analysis_package_review_submit.v1",
+      "submit mode is source_directory_qualitative_analysis_package_review_submit_authority",
+      "submit state schema is layer3.package_review_submit_state.v1",
+      "submit source gate is 806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE",
+      "runtime validates qualitative_analysis_hash source_directory_package_review_preview_hash construction_basis_hash reconciliation_record_id output_package_ids package_kinds and payload_hashes",
+      "runtime records package_review_approved package_review_changes_requested package_review_rejected or package_review_blocked",
+      "runtime replay returns already_submitted",
+      "stale construction_basis_hash is rejected",
+      "payload references are redacted from the API response",
+      "no new package rows package payloads L3PassRun AnalysisRun ConnectorRun or ConnectorRunTarget rows are written",
+      "no handoff export provider connector network frontend durable prompt/model/provider mutation reconstruction source package row mutation or source expansion is admitted"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_qualitative_analysis_package_review_submit_runtime",
+    "next_posture_after_sync": "select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync"
+  },
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_branch": "codex/l3-source-package-review-submit",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/806_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE.md",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_status": "source_directory_qualitative_analysis_package_review_submit_runtime_implemented_branch_local",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_qualitative_analysis_package_review_submit_runtime",
+  "latest_source_directory_qualitative_analysis_package_review_submit_runtime_entry_summary": "Doc 806 proof records the bounded source-directory qualitative-analysis package-review submit runtime, including durable submit state, idempotent replay, stale construction-basis rejection, redacted payload refs, and all downstream non-admissions."
 }
