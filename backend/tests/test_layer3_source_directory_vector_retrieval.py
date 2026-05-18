@@ -309,6 +309,82 @@ def test_source_directory_vector_retrieval_returns_deterministic_ranked_segments
         db.close()
 
 
+def test_source_directory_vector_retrieval_api_route_is_bounded_and_redacted(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir, snapshot_info, index_authority_hash, embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    payload = {
+        **_vector_retrieval_payload(
+            snapshot_info,
+            index_authority_hash,
+            embedding_index_authority_hash,
+            "alpha beta",
+        ),
+        "top_k": 1,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.source_directory_vector_retrieval.v1"
+    assert body["mode"] == "source_directory_material_deterministic_vector_retrieval_authority"
+    assert body["status"] == "available"
+    assert body["retrieval_mode"] == "deterministic_local_hash_vector_similarity_retrieval"
+    assert body["embedding_index_authority_hash"] == embedding_index_authority_hash
+    assert body["index_authority_hash"] == index_authority_hash
+    assert body["top_k"] == 1
+    assert len(body["items"]) == 1
+    assert body["source_index_rows_written"] is False
+    assert body["embedding_vector_rows_written"] is False
+    assert body["vector_index_rows_written"] is False
+    assert body["retrieval_rows_written"] is False
+    assert body["context_packet_rows_written"] is False
+    assert body["qualitative_analysis_rows_written"] is False
+    assert body["analysis_run_rows_written"] is False
+    assert body["package_rows_written"] is False
+    assert body["connector_rows_written"] is False
+    assert body["negative_invariants"]["persistent_vector_store_enabled"] is False
+    assert body["negative_invariants"]["rag_execution_enabled"] is False
+    assert body["negative_invariants"]["prompt_model_provider_runtime_enabled"] is False
+    assert body["negative_invariants"]["network_egress_enabled"] is False
+    assert str(source_dir) not in response.text
+
+    stale = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+        json={**payload, "embedding_index_authority_hash": "0" * 64},
+    )
+    assert stale.status_code == 409
+    assert stale.json()["error"]["code"] == (
+        "source_directory_vector_retrieval_stale_embedding_index_authority"
+    )
+
+    forbidden = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+        json={**payload, "prompt": "not-admitted", "provider_model": "not-admitted"},
+    )
+    assert forbidden.status_code == 422
+    assert {tuple(error["loc"]) for error in forbidden.json()["detail"]} >= {
+        ("body", "prompt"),
+        ("body", "provider_model"),
+    }
+
+    db = client.layer3_session_factory()
+    try:
+        _assert_no_downstream_side_effects(db)
+    finally:
+        db.close()
+
+
 def test_source_directory_vector_retrieval_rejects_stale_authority_hashes(
     client: TestClient,
     tmp_path,

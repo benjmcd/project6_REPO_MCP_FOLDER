@@ -31789,5 +31789,39 @@
   "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_status": "current_main_synced_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
   "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_next_posture": "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
-  "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_summary": "Doc 795 proof syncs the provider-public delivery/use fake-provider runtime implementation after PR #1399 and pivots to source expansion ingestion named source family selection."
+  "latest_provider_public_delivery_use_fake_provider_redacted_runtime_current_main_sync_summary": "Doc 795 proof syncs the provider-public delivery/use fake-provider runtime implementation after PR #1399 and pivots to source expansion ingestion named source family selection.",
+  "source_directory_material_vector_retrieval_api_runtime_entry_proof": {
+    "proof_kind": "branch_local_source_directory_material_vector_retrieval_api_runtime_entry",
+    "status": "source_directory_material_vector_retrieval_api_runtime_implemented_branch_local",
+    "runtime_branch": "codex/l3-source-ingest-family",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md",
+    "current_main_preflight_checkpoint": "8da8cc2ee419512b494d1f8ebafa528ac4e9c23c",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "selected_from_posture": "select_source_expansion_ingestion_named_source_family_after_provider_public_delivery_use_runtime_sync",
+    "runtime_behavior_change": true,
+    "proof_command": "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py -q",
+    "proof_result": "PASS 5 passed",
+    "proof_coverage": [
+      "backend/app/api/layer3.py exposes POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+      "backend/tests/test_layer3_source_directory_vector_retrieval.py proves the vector retrieval API route",
+      "source_directory_material_vector_retrieval(db, payload) remains the service authority",
+      "route returns layer3.source_directory_vector_retrieval.v1",
+      "route returns deterministic ranked items for admitted source-directory material",
+      "stale embedding authority fails closed through the API route",
+      "forbidden prompt and provider_model API fields are rejected",
+      "raw local path is not returned",
+      "raw vector and normalized features are not returned",
+      "source_index_rows_written false embedding_vector_rows_written false vector_index_rows_written false retrieval_rows_written false",
+      "context_packet_rows_written false qualitative_analysis_rows_written false analysis_run_rows_written false package_rows_written false connector_rows_written false",
+      "persistent_vector_store_enabled false rag_execution_enabled false prompt_model_provider_runtime_enabled false network_egress_enabled false",
+      "no new source family arbitrary source ingestion recursive ingestion PDF OCR Office binary web connector package connector provider network auth rendered frontend durable behavior is admitted"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_material_vector_retrieval_api_runtime",
+    "next_posture_after_sync": "select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync"
+  },
+  "latest_source_directory_material_vector_retrieval_api_runtime_entry_branch": "codex/l3-source-ingest-family",
+  "latest_source_directory_material_vector_retrieval_api_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md",
+  "latest_source_directory_material_vector_retrieval_api_runtime_entry_status": "source_directory_material_vector_retrieval_api_runtime_implemented_branch_local",
+  "latest_source_directory_material_vector_retrieval_api_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_vector_retrieval_api_runtime",
+  "latest_source_directory_material_vector_retrieval_api_runtime_entry_summary": "Doc 796 proof records the bounded source-directory vector retrieval API runtime entry and focused 5-test proof. It admits only the backend API wrapper over existing deterministic vector retrieval authority and keeps raw paths, raw vectors, durable retrieval/vector-store rows, RAG execution, prompt/model/provider runtime, connector dispatch, package mutation, network egress, and frontend durable authority disabled."
 }
