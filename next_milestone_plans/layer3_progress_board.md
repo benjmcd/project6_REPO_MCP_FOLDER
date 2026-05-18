@@ -5246,3 +5246,25 @@ Validation passed: `python -m py_compile .\backend\app\services\layer3_source_di
 This runtime proof admits no backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, vector indexing, embedding generation, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered control, full mockup activation, frontend-durable authority, source expansion, credential, network egress, prompt/model/provider runtime, raw local path exposure, or source `L3OutputPackage` mutation.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_material_deterministic_lexical_retrieval_runtime_proof`; after sync, pivot to `select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync` only if current-main evidence confirms this runtime is cleanly synced and no concrete same-family lexical retrieval defect remains.
+
+## Source Directory Material Deterministic Lexical Retrieval Runtime Current-Main Sync
+
+Current-main sync: `761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1365` for `source_directory_material_deterministic_lexical_retrieval_runtime_proof`.
+
+Runtime branch `codex/l3-retrieval-impl` landed branch commit `8483d79e16f59e51759dbf2724d7a397bf817b0f` into current main at merge commit `8275da065e0f7dabbb603dbaecb84445c8b10a45`.
+
+Synced result: `current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime`.
+
+Current main now includes `backend/app/services/layer3_source_directory_text_retrieval.py` and `backend/tests/test_layer3_source_directory_text_retrieval.py` as the bounded deterministic lexical retrieval runtime and proof over existing source-directory deterministic text segments.
+
+PR `#1365` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior already merged: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime validates `index_authority_hash`, calls `source_directory_material_text_index(db, payload)` before ranking, returns `layer3.source_directory_text_retrieval.v1`, and keeps `source_index_rows_written: False` plus `retrieval_rows_written: False`.
+
+This sync admits no new runtime behavior beyond the already-merged deterministic lexical retrieval service, and admits no backend route, API DTO, response model, database model, migration, source-index durable row write, retrieval durable row write, vector indexing, embedding generation, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered control, full mockup activation, frontend-durable authority, source expansion, credential, network egress, prompt/model/provider runtime, raw local path exposure, or source `L3OutputPackage` mutation.
+
+The next exact current-main posture is `select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync`. Do not continue same-family source-directory lexical retrieval proof loops unless current-main evidence names a concrete unresolved defect or downstream reader.
