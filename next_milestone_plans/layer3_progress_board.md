@@ -4936,3 +4936,17 @@ The synced runtime remains bounded to `LAYER3_SOURCE_INGESTION_DIR`, direct chil
 This sync admits no additional runtime or rendered behavior. PDFs, OCR, Office documents, arbitrary binaries, web connectors, arbitrary recursive ingestion, local upload expansion, RAG/vector indexing, qualitative-hybrid runtime, package construction or rewrite, source `L3OutputPackage` mutation, connector dispatch, provider-public behavior, credentialed network behavior, auth/security broadening, rendered controls, frontend-durable authority, and hidden LLM planning remain blocked.
 
 The next exact current-main posture is `select_source_directory_ingestion_downstream_material_or_index_authority_after_runtime_sync`.
+
+## Source Directory Ingestion Downstream Material Authority Freeze
+
+Branch-local downstream authority selection freeze: `746_SOURCE_DIRECTORY_INGESTION_DOWNSTREAM_MATERIAL_AUTHORITY_FREEZE.md` selects `source_directory_ingestion_gate_b_material_admission` after the source directory ingestion runtime current-main sync.
+
+Planning branch `codex/l3-source-directory-downstream-selection` starts from current-main checkpoint `4f909e63721bd1fd050fd9b4ae776b2898524c5b`.
+
+The selected upstream runtime is `server_configured_operator_directory_text_table_ingestion`; the selected source family is `server_configured_operator_directory_text_table_source_family`; the selected downstream family is `source_directory_ingestion_material_authority`; and the selected downstream authority is `gate_b_material_candidate_from_source_directory_ingestion_file`.
+
+The selected canonical upstream authorities are `L3SourceDirectoryIngestionBatch` and `L3SourceDirectoryIngestionFile`. The selected future owner service is `backend/app/services/layer3_source_directory_material_admission.py`; the selected future API owner is `backend/app/api/layer3.py`; the selected future material-preview route is `POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview`; and the selected future Gate B route reuse is `POST /api/v1/layer3/gate-b/decision`.
+
+This freeze admits no runtime behavior by itself. It selects material admission before indexing and keeps RAG/vector indexing, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, and source `L3OutputPackage` mutation blocked.
+
+The next exact posture after merge is `current_main_sync_source_directory_ingestion_downstream_material_authority_freeze`; after sync, the next exact posture is `implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync`.
