@@ -2119,6 +2119,9 @@ LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_AUTHORITY_SELECTION_AFTER_SOURCE_DIRECTORY_Q
 LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTRACT = (
     PLANNING_DOCS / "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md"
 )
+LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -66783,6 +66786,111 @@ def _check_provider_public_delivery_use_exposure_security_revocation_authority_c
                 )
 
 
+def _check_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `provider_public_delivery_use_exposure_security_revocation_authority_contract`.",
+        "777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md",
+        "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+        "#1381",
+        "codex/l3-provider-public-contract",
+        "b313f5bbb7a5a9b47824c79ede18b9ccb98734ed",
+        "c1861e7c85f9b674698f56585de3941a513a8474",
+        "codex/l3-provider-public-contract-sync",
+        "current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+        "Runtime behavior introduced by contract PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "3m12s",
+        "test",
+        "3m45s",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent",
+        "redacted prepare/status/revoke state only",
+        "raw_public_url_exposed: False",
+        "public_url_enabled: False",
+        "no provider-public delivery/use route",
+        "no raw public URL exposure",
+        "public_url_enabled: true",
+        "python -m py_compile .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_DELIVERY_USE_EXPOSURE_SECURITY_REVOCATION_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC)} "
+                f"missing provider-public exposure security revocation authority contract sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public Delivery/Use Authority Contract Current-Main Sync",
+            "777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md",
+            "#1381",
+            "b313f5bbb7a5a9b47824c79ede18b9ccb98734ed",
+            "c1861e7c85f9b674698f56585de3941a513a8474",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+            "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent",
+            "Runtime behavior introduced by contract PR: `false`.",
+            "Runtime behavior introduced by this sync: `false`.",
+            "backend-layer3-api",
+            "3m12s",
+            "test",
+            "3m45s",
+            "reviewThreads totalCount `0`",
+            "unresolved reviewThreads totalCount `0`",
+            "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+        ),
+        MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "codex/l3-provider-public-contract-sync",
+            "777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md",
+            "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+            "#1381",
+            "b313f5bbb7a5a9b47824c79ede18b9ccb98734ed",
+            "c1861e7c85f9b674698f56585de3941a513a8474",
+            '"runtime_behavior_introduced_by_contract_pr": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api": "SUCCESS"',
+            '"test": "SUCCESS"',
+            '"reviewThreads": 0',
+            '"unresolvedReviewThreads": 0',
+            "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent",
+            "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync_proof",
+            "current_main_sync_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "current_main_synced_provider_public_delivery_use_exposure_security_revocation_authority_contract",
+            "777_PROVIDER_PUBLIC_AUTH_CONTRACT_SYNC.md",
+            "776_PROVIDER_PUBLIC_AUTH_CONTRACT.md",
+            "#1381",
+            "c1861e7c85f9b674698f56585de3941a513a8474",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no additional runtime behavior",
+            "no_runtime_now_provider_public_delivery_use_exposure_security_revocation_authority_absent remains the provider-public delivery/use result",
+            "provider-public delivery/use route raw public URL exposure public_url_enabled true",
+            "select_next_major_layer3_deferred_lane_after_provider_public_delivery_use_authority_contract_no_runtime_sync is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing provider-public exposure security revocation authority contract sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -67402,6 +67510,7 @@ def main() -> int:
     _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_sync(errors)
     _check_provider_public_delivery_use_authority_selection_after_source_directory_qualitative_analysis_runtime_current_main_sync(errors)
     _check_provider_public_delivery_use_exposure_security_revocation_authority_contract(errors)
+    _check_provider_public_delivery_use_exposure_security_revocation_authority_contract_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
