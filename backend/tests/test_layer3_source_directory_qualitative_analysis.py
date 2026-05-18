@@ -219,6 +219,38 @@ def test_source_directory_qualitative_analysis_returns_deterministic_extract_wit
         assert body["context_packet_mode"] == CONTEXT_PACKET_MODE
         assert body["qualitative_analysis_hash"] == replay["qualitative_analysis_hash"]
         assert body["context_packet_hash"] == replay["context_packet_hash"]
+        assert body["source_directory_package_review_preview_enabled"] is True
+        assert (
+            body["source_directory_package_review_preview_hash"]
+            == replay["source_directory_package_review_preview_hash"]
+        )
+        package_preview = body["source_directory_package_review_preview"]
+        assert package_preview["schema_id"] == (
+            "layer3.source_directory_qualitative_analysis_package_review_preview.v1"
+        )
+        assert package_preview["mode"] == "read_only_source_directory_qualitative_analysis_package_review_preview"
+        assert package_preview["source_gate"] == (
+            "802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE"
+        )
+        assert package_preview["source_authority"]["qualitative_analysis_hash"] == body["qualitative_analysis_hash"]
+        assert package_preview["candidate_package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+        assert [item["package_kind"] for item in package_preview["candidate_packages"]] == [
+            "canonical_internal",
+            "user_facing",
+            "review_facing",
+        ]
+        assert package_preview["package_review_preview_enabled"] is True
+        assert package_preview["package_commit_enabled"] is False
+        assert package_preview["package_review_submit_enabled"] is False
+        assert package_preview["handoff_enabled"] is False
+        assert package_preview["external_export_download_enabled"] is False
+        assert package_preview["negative_invariants"]["package_payload_written"] is False
+        assert package_preview["negative_invariants"]["source_package_row_mutation_enabled"] is False
+        assert body["candidate_package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+        assert body["package_commit_enabled"] is False
+        assert body["package_review_submit_enabled"] is False
+        assert body["handoff_enabled"] is False
+        assert body["external_export_download_enabled"] is False
         assert body["query_tokens"] == ["alpha", "beta"]
         assert body["total"] == 2
         assert body["limit"] == 2
@@ -446,6 +478,18 @@ def test_source_directory_qualitative_hybrid_analysis_api_route_is_bounded_and_r
     assert body["analysis_mode"] == "context_packet_grounded_qualitative_hybrid_analysis"
     assert body["context_packet_contract_id"] == CONTEXT_PACKET_CONTRACT_ID
     assert body["context_packet_mode"] == CONTEXT_PACKET_MODE
+    assert body["source_directory_package_review_preview_enabled"] is True
+    assert body["source_directory_package_review_preview_hash"]
+    assert body["source_directory_package_review_preview"]["schema_id"] == (
+        "layer3.source_directory_qualitative_analysis_package_review_preview.v1"
+    )
+    assert body["source_directory_package_review_preview"]["package_commit_enabled"] is False
+    assert body["source_directory_package_review_preview"]["negative_invariants"]["package_rows_written"] is False
+    assert body["candidate_package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["package_commit_enabled"] is False
+    assert body["package_review_submit_enabled"] is False
+    assert body["handoff_enabled"] is False
+    assert body["external_export_download_enabled"] is False
     assert body["query_tokens"] == ["alpha", "beta"]
     assert body["total"] == 2
     assert body["limit"] == 2

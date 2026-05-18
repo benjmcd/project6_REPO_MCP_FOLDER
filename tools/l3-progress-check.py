@@ -2214,6 +2214,10 @@ LAYER3_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_S
     PLANNING_DOCS
     / "801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -70038,6 +70042,113 @@ def _check_source_directory_operator_readiness_status_surface_runtime_current_ma
                 )
 
 
+def _check_source_directory_qualitative_analysis_package_preview_runtime_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local implementation-entry freeze and runtime proof for `source_directory_qualitative_analysis_package_preview_runtime`.",
+        "802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE.md",
+        "codex/l3-source-package-preview",
+        "7da0b5bd3f4d992f24de250956360d1515bdfa65",
+        "801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync",
+        "implement_source_directory_qualitative_analysis_read_only_package_review_preview_after_operator_status_surface_sync",
+        "source_directory_qualitative_analysis_package_preview_runtime_implemented_branch_local",
+        "layer3.source_directory_qualitative_analysis_package_review_preview.v1",
+        "read_only_source_directory_qualitative_analysis_package_review_preview",
+        "canonical_internal",
+        "user_facing",
+        "review_facing",
+        "backend/app/services/layer3_source_directory_qualitative_analysis.py",
+        "backend/app/api/layer3.py",
+        "backend/tests/test_layer3_source_directory_qualitative_analysis.py",
+        "5 passed",
+        "await_current_main_sync_for_source_directory_qualitative_analysis_package_preview_runtime",
+        "does not admit package construction",
+        "package payload rewrite",
+        "network egress",
+        "prompt/model/provider runtime",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY)} "
+                f"missing source-directory package preview runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Qualitative Analysis Package Preview Runtime Entry Freeze",
+            "802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE.md",
+            "codex/l3-source-package-preview",
+            "7da0b5bd3f4d992f24de250956360d1515bdfa65",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_operator_status_surface_sync",
+            "source_directory_qualitative_analysis_package_preview_runtime_implemented_branch_local",
+            "source_directory_package_review_preview_enabled",
+            "source_directory_package_review_preview_hash",
+            "layer3.source_directory_qualitative_analysis_package_review_preview.v1",
+            "read_only_source_directory_qualitative_analysis_package_review_preview",
+            "5 passed",
+            "await_current_main_sync_for_source_directory_qualitative_analysis_package_preview_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_qualitative_analysis_package_preview_runtime_entry",
+            "source_directory_qualitative_analysis_package_preview_runtime_implemented_branch_local",
+            "codex/l3-source-package-preview",
+            "802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE.md",
+            "7da0b5bd3f4d992f24de250956360d1515bdfa65",
+            "801_SOURCE_DIRECTORY_OPERATOR_READINESS_STATUS_SURFACE_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "implement_source_directory_qualitative_analysis_read_only_package_review_preview_after_operator_status_surface_sync",
+            '"runtime_behavior_change": true',
+            "layer3.source_directory_qualitative_analysis_package_review_preview.v1",
+            "read_only_source_directory_qualitative_analysis_package_review_preview",
+            '"package_construction_enabled": false',
+            '"package_payload_write_enabled": false',
+            '"source_package_row_mutation_enabled": false',
+            '"network_egress_enabled": false',
+            '"prompt_model_provider_runtime_enabled": false',
+            "await_current_main_sync_for_source_directory_qualitative_analysis_package_preview_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_qualitative_analysis_package_preview_runtime_entry_proof",
+            "branch_local_source_directory_qualitative_analysis_package_preview_runtime_entry",
+            "source_directory_qualitative_analysis_package_preview_runtime_implemented_branch_local",
+            "codex/l3-source-package-preview",
+            "802_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE.md",
+            "source-directory qualitative-hybrid analysis response exposes source_directory_package_review_preview_enabled",
+            "source-directory qualitative-hybrid analysis response exposes deterministic source_directory_package_review_preview_hash",
+            "package preview schema is layer3.source_directory_qualitative_analysis_package_review_preview.v1",
+            "package commit package-review submit handoff and external export/download remain disabled",
+            "no package rows payload writes source package row mutation connector provider network frontend durable prompt/model/provider or qualitative generation runtime is admitted",
+            "await_current_main_sync_for_source_directory_qualitative_analysis_package_preview_runtime",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package preview artifact term: {term}"
+                )
+
+    service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE, errors)
+    for term in (
+        "PACKAGE_REVIEW_PREVIEW_SCHEMA_ID",
+        "source_directory_package_review_preview_enabled",
+        "source_directory_package_review_preview_hash",
+        "_source_directory_package_review_preview",
+        "package_payload_written",
+        "source_package_row_mutation_enabled",
+    ):
+        if term not in service_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_SERVICE)} "
+                f"missing source-directory package preview runtime term: {term}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -70696,6 +70807,9 @@ def main() -> int:
     )
     _check_source_directory_operator_readiness_status_surface_runtime_entry(errors)
     _check_source_directory_operator_readiness_status_surface_runtime_current_main_sync(
+        errors
+    )
+    _check_source_directory_qualitative_analysis_package_preview_runtime_entry(
         errors
     )
 
