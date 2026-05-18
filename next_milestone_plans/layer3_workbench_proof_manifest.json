@@ -30855,5 +30855,43 @@
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_doc": "next_milestone_plans/Layer3_planning_docs/770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md",
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_status": "branch_local_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_written",
   "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_next_posture_after_merge": "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
-  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_summary": "Doc 770 proof records the source-directory context-packet qualitative-hybrid analysis contract over current context packet authority, future response schema layer3.source_directory_qualitative_analysis.v1, future owner backend/app/services/layer3_source_directory_qualitative_analysis.py, future proof backend/tests/test_layer3_source_directory_qualitative_analysis.py, deterministic extractive analysis, and qualitative_analysis_hash while preserving blocked runtime, vector, embedding, prompt/model/provider, qualitative generation, package, connector, provider, frontend durable, source expansion, auth/security, credential, network, and raw-path surfaces."
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_summary": "Doc 770 proof records the source-directory context-packet qualitative-hybrid analysis contract over current context packet authority, future response schema layer3.source_directory_qualitative_analysis.v1, future owner backend/app/services/layer3_source_directory_qualitative_analysis.py, future proof backend/tests/test_layer3_source_directory_qualitative_analysis.py, deterministic extractive analysis, and qualitative_analysis_hash while preserving blocked runtime, vector, embedding, prompt/model/provider, qualitative generation, package, connector, provider, frontend durable, source expansion, auth/security, credential, network, and raw-path surfaces.",
+  "source_directory_material_context_packet_qualitative_hybrid_analysis_contract_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+    "status": "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+    "sync_branch": "codex/l3-qual-analysis-contract-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/771_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT_CURRENT_MAIN_SYNC.md",
+    "contract_doc": "next_milestone_plans/Layer3_planning_docs/770_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT.md",
+    "contract_pr": "#1375",
+    "contract_branch_commit": "7b8d2b4a391b79c017a8928dbe44efab38b4e6bd",
+    "contract_merge_commit": "056e07cbbf79f8d9a848a3b119445438ff4a4fd1",
+    "current_main_checkpoint_after_merge": "056e07cbbf79f8d9a848a3b119445438ff4a4fd1",
+    "runtime_behavior_introduced_by_contract": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes Doc 770 source-directory context-packet qualitative-hybrid analysis contract",
+      "current main records PR #1375 merged at 056e07cbbf79f8d9a848a3b119445438ff4a4fd1",
+      "current main records green backend-layer3-api and test checks for PR #1375",
+      "current main records zero PR comments reviews latestReviews and review threads",
+      "current main selects source_directory_material_context_packet_qualitative_hybrid_analysis_authority as the future implementation authority",
+      "no runtime behavior introduced by this sync",
+      "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync is selected for the next authority posture"
+    ],
+    "next_posture": "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync"
+  },
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_current_main_sync_branch": "codex/l3-qual-analysis-contract-sync",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/771_SOURCE_DIRECTORY_MATERIAL_CONTEXT_PACKET_QUALITATIVE_HYBRID_ANALYSIS_CONTRACT_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_current_main_sync_status": "current_main_synced_source_directory_material_context_packet_qualitative_hybrid_analysis_contract",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_current_main_sync_next_posture": "implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync",
+  "latest_source_directory_material_context_packet_qualitative_hybrid_analysis_contract_current_main_sync_summary": "Doc 771 proof syncs the source-directory context-packet qualitative-hybrid analysis contract after PR #1375 and moves the next posture to implement_source_directory_material_context_packet_qualitative_hybrid_analysis_after_contract_sync, with prompt/model/provider, vector, embedding, durable qualitative rows, backend routes, package, connector, provider, frontend-durable, source expansion, auth/security, credential, network, and raw-path behavior still blocked until separately frozen."
 }
