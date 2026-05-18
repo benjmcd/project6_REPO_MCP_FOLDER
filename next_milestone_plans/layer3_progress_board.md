@@ -6504,3 +6504,27 @@ The synced runtime keeps `handoff_enabled: False`, `export_enabled: False`, `ext
 No handoff/export rerun, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, package payload rewrite, package mutation/reconstruction, source package row mutation, replacement package row creation, or full mockup activation is admitted by this sync.
 
 The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync`.
+
+## Source Directory Qualitative Analysis Handoff Export Prepare Runtime Entry Freeze
+
+Branch-local implementation-entry freeze and runtime proof: `808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE.md` follows the source-directory qualitative-analysis package-review submit runtime current-main sync and resolves `select_next_named_layer3_end_to_end_gap_after_source_directory_package_review_submit_sync` by selecting the bounded source-directory qualitative-analysis handoff/export prepare runtime.
+
+Runtime branch `codex/l3-source-handoff-export-prepare` starts from current-main checkpoint `15e276104367627f0f886cb00a22c10dffd9492e`.
+
+Selected implementation action: `implement_source_directory_qualitative_analysis_handoff_export_prepare_after_package_review_submit_sync`.
+
+Runtime status after implementation: `source_directory_qualitative_analysis_handoff_export_prepare_runtime_implemented_branch_local`.
+
+The source-directory qualitative-analysis handoff/export prepare route is `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare`.
+
+The prepare response uses schema `layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1`, mode `source_directory_qualitative_analysis_handoff_export_prepare_authority`, source gate `808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE`, and durable state schema `layer3.handoff_export_prepare_state.v1`.
+
+The runtime validates the server-recomputed qualitative-analysis hash, source-directory package-review preview hash, persisted construction basis hash, reconciliation id, output package ids, package kinds, payload hashes, and approved package-review submit record before recording prepare state.
+
+The runtime records `handoff_export_prepared`, `handoff_export_held`, `handoff_export_declined`, or `handoff_export_blocked`, supports idempotent replay as `already_prepared`, writes no new package rows or package payloads, keeps payload refs redacted from the API response, and returns only a prepare-only `layer3.source_directory_internal_export_envelope.v1` envelope.
+
+Proof: `python -m pytest backend/tests/test_layer3_source_directory_qualitative_analysis.py -q` passed with `11 passed`.
+
+Non-admitted: APS handoff dispatch, external export/download delivery, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, package payload rewrite, package mutation/reconstruction, source package row mutation, replacement package row creation, and full mockup activation.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_qualitative_analysis_handoff_export_prepare_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_handoff_export_prepare_sync` unless current-main evidence shows a concrete unresolved handoff/export prepare defect or named downstream reader.
