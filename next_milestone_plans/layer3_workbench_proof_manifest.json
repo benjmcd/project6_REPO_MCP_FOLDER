@@ -30106,5 +30106,33 @@
   "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_status": "current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime",
   "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_next_posture": "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync",
-  "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_summary": "Doc 749 proof syncs source-directory Gate B material admission after PR #1353 and applies the pivot rule away from same-family package/export/active-authority loops unless current-main evidence names a concrete defect or downstream reader."
+  "latest_source_directory_ingestion_gate_b_material_admission_runtime_current_main_sync_summary": "Doc 749 proof syncs source-directory Gate B material admission after PR #1353 and applies the pivot rule away from same-family package/export/active-authority loops unless current-main evidence names a concrete defect or downstream reader.",
+  "source_directory_material_source_index_authority_freeze_proof": {
+    "proof_kind": "branch_local_source_directory_material_source_index_authority_freeze",
+    "status": "branch_local_source_directory_material_source_index_authority_selected",
+    "implementation_branch": "codex/l3-source-index-freeze",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/749_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_freeze": "11a027b3f8a97b9b628a09c0acc6d08ba547c3b6",
+    "runtime_behavior_change": false,
+    "selected_authority": "source_directory_material_source_index_authority",
+    "selected_next_authority_question": "source_directory_material_source_index_authority_contract",
+    "proof_coverage": [
+      "current main proves server_configured_directory_file material reaches L3MaterialSnapshot",
+      "current main proves Gate C types server_configured_directory_file as document_chunks qualitative material",
+      "layer3_source_boundary still reports rag_vector_enabled False",
+      "layer3_source_directory_material_admission still reports eligible_for_rag_vector_index False",
+      "layer3_qual_aps_execution still reports hybrid_execution_enabled False",
+      "layer3_qual_aps_execution still reports rag_vector_retrieval_enabled False",
+      "aps_retrieval_plane_contract remains APS-specific ApsRetrievalChunk authority, not source-directory source/index authority",
+      "keeps source/index rows, vector index, embedding generation, retrieval query, qualitative-hybrid runtime, package, connector, provider, rendered/frontend-durable, source-expansion, and auth/security behavior blocked"
+    ],
+    "next_posture_after_merge": "current_main_sync_source_directory_material_source_index_authority_freeze",
+    "next_posture_after_sync": "write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime"
+  },
+  "latest_source_directory_material_source_index_authority_freeze_branch": "codex/l3-source-index-freeze",
+  "latest_source_directory_material_source_index_authority_freeze_doc": "next_milestone_plans/Layer3_planning_docs/750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md",
+  "latest_source_directory_material_source_index_authority_freeze_status": "branch_local_source_directory_material_source_index_authority_selected",
+  "latest_source_directory_material_source_index_authority_freeze_next_posture_after_merge": "current_main_sync_source_directory_material_source_index_authority_freeze",
+  "latest_source_directory_material_source_index_authority_freeze_summary": "Doc 750 freezes source/index authority selection after source-directory material admission sync and selects source_directory_material_source_index_authority_contract before any RAG/vector or qualitative-hybrid runtime."
 }

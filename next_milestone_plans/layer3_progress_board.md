@@ -5016,3 +5016,21 @@ Post-merge validation at `8e5a2814d4c63e0ee092169b124a26e1271ae2fc` passed: `pyt
 This sync admits no additional runtime behavior. RAG/vector indexing, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, and source `L3OutputPackage` mutation remain blocked.
 
 The source-directory material-admission reader is now cleanly synced through current main. Under the pivot rule, do not continue additional same-family source-directory package/export/active-authority proof loops unless current-main evidence shows a concrete unresolved defect or named downstream reader. The next authority question is `select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync` only after source/index authority is selected and frozen.
+
+## Source Directory Material Source Index Authority Freeze
+
+Branch-local source/index authority selection freeze: `750_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE.md` follows the source-directory Gate B material-admission runtime current-main sync and selects `source_directory_material_source_index_authority`.
+
+Planning branch `codex/l3-source-index-freeze` starts from current-main checkpoint `11a027b3f8a97b9b628a09c0acc6d08ba547c3b6`.
+
+The selected exact next authority question is `source_directory_material_source_index_authority_contract`, to be written before any RAG/vector or qualitative-hybrid runtime work.
+
+Current main proves `server_configured_directory_file` material reaches `L3MaterialSnapshot` and Gate C `document_chunks` / `qualitative` typing, but `backend/app/services/layer3_source_boundary.py` still reports `rag_vector_enabled: False`, `backend/app/services/layer3_source_directory_material_admission.py` still reports `eligible_for_rag_vector_index: False`, and `backend/app/services/layer3_qual_aps_execution.py` still reports `hybrid_execution_enabled: False` and `rag_vector_retrieval_enabled: False`.
+
+The APS retrieval plane remains APS-specific authority over `ApsRetrievalChunk`, not source-directory `server_configured_directory_file` source/index authority.
+
+Runtime behavior introduced by this freeze: `false`.
+
+This freeze admits no runtime behavior, backend route/service/model/migration behavior, source/index rows, vector index, embedding generation, retrieval query, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `current_main_sync_source_directory_material_source_index_authority_freeze`; after sync, the next exact posture is `write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime`.
