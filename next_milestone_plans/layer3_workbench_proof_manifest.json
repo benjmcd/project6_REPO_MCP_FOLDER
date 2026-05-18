@@ -29269,5 +29269,36 @@
   "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/728_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION.md",
   "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_status": "branch_local_corrected_artifact_active_authority_external_export_download_prepare_proven",
   "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_next_posture_after_merge": "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
-  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_summary": "Doc 728 proves the corrected-artifact active package authority chain reaches external export/download prepare through real API routes after APS dispatch."
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_summary": "Doc 728 proves the corrected-artifact active package authority chain reaches external export/download prepare through real API routes after APS dispatch.",
+  "corrected_artifact_active_authority_external_export_download_prepare_evaluation_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+    "status": "current_main_synced_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+    "sync_branch": "codex/l3-corrected-download-prepare-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/729_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+    "synced_evaluation_doc": "next_milestone_plans/Layer3_planning_docs/728_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION.md",
+    "evaluation_pr": "#1333",
+    "evaluation_branch_commit": "9242a471a249aa53724044a9217f4e037ce753b6",
+    "evaluation_merge_commit": "826e1df03c5e0440a62e4fe9f365b46a8a7291de",
+    "current_main_checkpoint_after_merge": "826e1df03c5e0440a62e4fe9f365b46a8a7291de",
+    "evaluation_result": "corrected_artifact_active_authority_external_export_download_prepare_proven",
+    "runtime_behavior_introduced_by_evaluation": false,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "merge_state": "CLEAN"
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py: PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen: PASS (frozen)"
+    ],
+    "synced_runtime_route": "POST /api/v1/layer3/handoff/export/download/prepare",
+    "synced_reader": "resolve_active_replacement_package_payload_authority",
+    "next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_prepare_sync"
+  },
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_current_main_sync_branch": "codex/l3-corrected-download-prepare-sync",
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/729_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_current_main_sync_status": "current_main_synced_corrected_artifact_active_authority_external_export_download_prepare_evaluation",
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_current_main_sync_next_posture": "select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_prepare_sync",
+  "latest_corrected_artifact_active_authority_external_export_download_prepare_evaluation_current_main_sync_summary": "Doc 729 proof syncs corrected-artifact active authority external export/download prepare evaluation after PR #1333 and selects the next downstream active-package-authority reader after external export/download prepare."
 }
