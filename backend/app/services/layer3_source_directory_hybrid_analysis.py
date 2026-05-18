@@ -13,6 +13,11 @@ from app.services.layer3_source_directory_hybrid_context import (
     SCHEMA_ID as HYBRID_CONTEXT_SCHEMA_ID,
     source_directory_material_hybrid_retrieval_context_packet,
 )
+from app.services.layer3_package_entry import (
+    PACKAGE_KIND_CANONICAL_INTERNAL,
+    PACKAGE_KIND_REVIEW_FACING,
+    PACKAGE_KIND_USER_FACING,
+)
 from app.services.layer3_source_directory_ingestion import _stable_hash
 from app.services.nrc_aps_content_index import normalize_query_tokens
 
@@ -21,6 +26,20 @@ MODE = "source_directory_hybrid_context_packet_qualitative_analysis_authority"
 ANALYSIS_CONTRACT_ID = "source_directory_hybrid_context_packet_qualitative_analysis_authority"
 ANALYSIS_MODE = "hybrid_context_packet_grounded_qualitative_analysis"
 SOURCE_GATE = "824_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_RUNTIME_ENTRY_FREEZE"
+PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = (
+    "layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview.v1"
+)
+PACKAGE_REVIEW_PREVIEW_MODE = (
+    "read_only_source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview"
+)
+PACKAGE_REVIEW_PREVIEW_SOURCE_GATE = (
+    "826_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_PACKAGE_PREVIEW_RUNTIME_ENTRY_FREEZE"
+)
+PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
+    PACKAGE_KIND_CANONICAL_INTERNAL,
+    PACKAGE_KIND_USER_FACING,
+    PACKAGE_KIND_REVIEW_FACING,
+)
 
 _REQUIRED_FIELDS = {
     "client_request_id",
@@ -153,6 +172,12 @@ def source_directory_hybrid_context_packet_qualitative_analysis(
         row_write_flags=row_write_flags,
         negative_invariants=negative_invariants,
     )
+    package_review_preview = _package_review_preview(
+        request_id=request_id,
+        fields=fields,
+        hybrid_context=hybrid_context,
+        qualitative_analysis_hash=qualitative_analysis_hash,
+    )
 
     return {
         "schema_id": SCHEMA_ID,
@@ -204,7 +229,12 @@ def source_directory_hybrid_context_packet_qualitative_analysis(
         "file_identity_hash": hybrid_context["file_identity_hash"],
         "authority_basis_hash": hybrid_context["authority_basis_hash"],
         "payload_hash": hybrid_context["payload_hash"],
-        "source_directory_package_review_preview_enabled": False,
+        "source_directory_package_review_preview_enabled": True,
+        "source_directory_hybrid_package_review_preview_hash": package_review_preview[
+            "package_review_preview_hash"
+        ],
+        "source_directory_hybrid_package_review_preview": package_review_preview,
+        "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
         "package_commit_enabled": False,
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
@@ -259,6 +289,91 @@ def _assert_hybrid_context_authority(context: Mapping[str, Any]) -> None:
             http_status=409,
             details={"blocked_fields": mismatches},
         )
+
+
+def _package_review_preview(
+    *,
+    request_id: str,
+    fields: Mapping[str, Any],
+    hybrid_context: Mapping[str, Any],
+    qualitative_analysis_hash: str,
+) -> dict[str, Any]:
+    source_authority = {
+        "source_ingestion_batch_id": hybrid_context["source_ingestion_batch_id"],
+        "source_ingestion_file_id": hybrid_context["source_ingestion_file_id"],
+        "material_snapshot_id": hybrid_context["material_snapshot_id"],
+        "content_sha256": hybrid_context["content_sha256"],
+        "file_identity_hash": hybrid_context["file_identity_hash"],
+        "authority_basis_hash": hybrid_context["authority_basis_hash"],
+        "payload_hash": hybrid_context["payload_hash"],
+        "index_authority_hash": hybrid_context["index_authority_hash"],
+        "embedding_index_authority_hash": hybrid_context["embedding_index_authority_hash"],
+        "lexical_context_packet_hash": hybrid_context["lexical_context_packet_hash"],
+        "hybrid_context_packet_hash": hybrid_context["hybrid_context_packet_hash"],
+        "qualitative_analysis_hash": qualitative_analysis_hash,
+    }
+    candidate_packages = [
+        {
+            "package_kind": package_kind,
+            "preview_only": True,
+            "package_commit_enabled": False,
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "external_export_download_enabled": False,
+            "readiness_reason": (
+                "source-directory hybrid qualitative-analysis package construction is not admitted in this boundary"
+            ),
+        }
+        for package_kind in PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS
+    ]
+    negative_invariants = {
+        "read_only_preview": True,
+        "package_rows_written": False,
+        "package_payload_written": False,
+        "package_construction_enabled": False,
+        "package_mutation_enabled": False,
+        "source_package_row_mutation_enabled": False,
+        "handoff_export_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "prompt_model_provider_runtime_enabled": False,
+    }
+    package_review_preview_hash = _stable_hash(
+        {
+            "schema_id": PACKAGE_REVIEW_PREVIEW_SCHEMA_ID,
+            "schema_version": 1,
+            "mode": PACKAGE_REVIEW_PREVIEW_MODE,
+            "source_gate": PACKAGE_REVIEW_PREVIEW_SOURCE_GATE,
+            "request_id": request_id,
+            "analysis_question": str(fields.get("analysis_question") or ""),
+            "analysis_focus": str(fields.get("analysis_focus") or ""),
+            "query_text": str(fields.get("query_text") or ""),
+            "source_authority": source_authority,
+            "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+            "negative_invariants": negative_invariants,
+        }
+    )
+    return {
+        "schema_id": PACKAGE_REVIEW_PREVIEW_SCHEMA_ID,
+        "schema_version": 1,
+        "mode": PACKAGE_REVIEW_PREVIEW_MODE,
+        "source_gate": PACKAGE_REVIEW_PREVIEW_SOURCE_GATE,
+        "status": "available",
+        "package_review_preview_hash": package_review_preview_hash,
+        "source_authority": source_authority,
+        "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        "candidate_packages": candidate_packages,
+        "package_review_preview_enabled": True,
+        "package_commit_enabled": False,
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "next_state": "source_directory_hybrid_package_review_preview_available",
+        "next_allowed_actions": [],
+        "negative_invariants": negative_invariants,
+    }
 
 
 def _supporting_segments(items: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
