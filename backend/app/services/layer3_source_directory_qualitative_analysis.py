@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import hashlib
 from collections import Counter
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.models import L3MaterialSnapshot, L3OutputPackage, L3ReconciliationRecord, L3Session
+from app.services.layer3_external_export_contract import ExternalExportDownloadDelivery
 from app.services.layer3_source_directory_context_packet import (
     CONTEXT_PACKET_CONTRACT_ID,
     CONTEXT_PACKET_MODE,
@@ -59,10 +63,22 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_downl
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_GATE = (
     "812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE"
 )
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = (
+    "layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1"
+)
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE = (
+    "source_directory_qualitative_analysis_external_export_download_delivery_authority"
+)
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SOURCE_GATE = (
+    "814_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE"
+)
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_source_directory_external_export_download"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_source_directory_external_export_download"
 EXTERNAL_EXPORT_DOWNLOAD_TARGET = "source_directory_qualitative_analysis_package_download_reference"
 EXTERNAL_EXPORT_DOWNLOAD_MODE = "reference_only_prepare"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE_VALUE = "same_origin_artifact_stream"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE = "external_export_download_prepared"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "external_export_download_delivered"
 PACKAGE_REVIEW_APPROVED_STATE = "package_review_approved"
 PACKAGE_REVIEW_CHANGES_REQUESTED_STATE = "package_review_changes_requested"
 PACKAGE_REVIEW_REJECTED_STATE = "package_review_rejected"
@@ -162,6 +178,15 @@ _EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUIRED_FIELDS = _HANDOFF_EXPORT_PREPARE_REQU
     "external_export_download_target",
     "download_mode",
 }
+_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS = _EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUIRED_FIELDS | {
+    "external_export_download_record_ref",
+    "export_download_descriptor_ref",
+    "external_export_download_state",
+    "delivery_mode",
+    "output_package_id",
+    "package_kind",
+    "package_payload_hash",
+}
 
 _CONTEXT_PACKET_FIELDS = (
     _REQUIRED_FIELDS
@@ -225,6 +250,24 @@ _EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS = _HANDOFF_EXPORT_PREPARE_FOR
     "network_egress",
     "provider_public_url",
     "raw_payload_ref",
+}
+_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS = (
+    _EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS - {"delivery_mode", "output_package_id"}
+) | {
+    "bucket",
+    "connector_run_id",
+    "connector_secret",
+    "destination",
+    "destination_id",
+    "download_token",
+    "external_target",
+    "local_file_path",
+    "object_key",
+    "provider_secret",
+    "provider_token",
+    "provider_url",
+    "public_url",
+    "signed_url",
 }
 
 
@@ -358,6 +401,32 @@ class SourceDirectoryExternalExportDownloadPrepareError(Exception):
             "request_id": "source-directory-external-export-download-prepare-error",
             "server_time": _server_time(),
             "mode": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_MODE,
+            "status": "blocked",
+            "error": {"code": self.code, "message": self.message, "details": self.details},
+        }
+
+
+class SourceDirectoryExternalExportDownloadDeliveryError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        http_status: int = 400,
+        details: Mapping[str, Any] | None = None,
+    ) -> None:
+        self.code = code
+        self.message = message
+        self.http_status = http_status
+        self.details = dict(details or {})
+
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+            "schema_version": 1,
+            "request_id": "source-directory-external-export-download-delivery-error",
+            "server_time": _server_time(),
+            "mode": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE,
             "status": "blocked",
             "error": {"code": self.code, "message": self.message, "details": self.details},
         }
@@ -1555,6 +1624,254 @@ def source_directory_qualitative_analysis_external_export_download_prepare(
     )
 
 
+def source_directory_qualitative_analysis_external_export_download_deliver(
+    db: Session,
+    payload: Mapping[str, Any],
+) -> ExternalExportDownloadDelivery:
+    fields = _normalise_external_export_download_delivery_payload(payload)
+    request_id = _require_external_export_download_delivery_field(fields, "client_request_id")
+    if str(fields.get("operator_decision") or "").strip() != EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_decision_not_admitted",
+            "operator_decision must be deliver_source_directory_external_export_download.",
+            http_status=409,
+            details={"field": "operator_decision"},
+        )
+    if str(fields.get("external_export_download_target") or "").strip() != EXTERNAL_EXPORT_DOWNLOAD_TARGET:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_target_not_admitted",
+            "external_export_download_target must be source_directory_qualitative_analysis_package_download_reference.",
+            http_status=409,
+            details={"blocked_fields": ["external_export_download_target"]},
+        )
+    if str(fields.get("download_mode") or "").strip() != EXTERNAL_EXPORT_DOWNLOAD_MODE:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_download_mode_not_admitted",
+            "download_mode must be reference_only_prepare for this tranche.",
+            http_status=409,
+            details={"blocked_fields": ["download_mode"]},
+        )
+    if str(fields.get("delivery_mode") or "").strip() != EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE_VALUE:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_mode_not_admitted",
+            "delivery_mode must be same_origin_artifact_stream.",
+            http_status=409,
+            details={"blocked_fields": ["delivery_mode"]},
+        )
+    if str(fields.get("external_export_download_state") or "").strip() != EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_requires_prepared_state",
+            "Source-directory external export/download delivery requires external_export_download_prepared state.",
+            http_status=409,
+            details={"blocked_fields": ["external_export_download_state"]},
+        )
+
+    qualitative_analysis = source_directory_material_context_packet_qualitative_hybrid_analysis(
+        db,
+        _qualitative_analysis_payload(fields),
+    )
+    expected_analysis_hash = str(qualitative_analysis["qualitative_analysis_hash"])
+    if str(fields.get("qualitative_analysis_hash") or "") != expected_analysis_hash:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_qualitative_analysis_hash_mismatch",
+            "External export/download delivery must reference the current server-recomputed qualitative-analysis hash.",
+            http_status=409,
+            details={"blocked_fields": ["qualitative_analysis_hash"]},
+        )
+    preview = qualitative_analysis["source_directory_package_review_preview"]
+    expected_preview_hash = str(preview["package_review_preview_hash"])
+    if str(fields.get("source_directory_package_review_preview_hash") or "") != expected_preview_hash:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_preview_hash_mismatch",
+            "External export/download delivery must reference the current server-recomputed package-review preview hash.",
+            http_status=409,
+            details={"blocked_fields": ["source_directory_package_review_preview_hash"]},
+        )
+
+    material_snapshot = _load_material_snapshot_for_external_export_download_delivery(
+        db,
+        material_snapshot_id=str(qualitative_analysis["material_snapshot_id"]),
+        source_authority=preview["source_authority"],
+    )
+    session = _load_external_export_download_delivery_session(db, material_snapshot=material_snapshot)
+    reconciliation_record_id = _require_external_export_download_delivery_field(fields, "reconciliation_record_id")
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            L3ReconciliationRecord.session_id == session.session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    if reconciliation is None:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_reconciliation_not_found",
+            "No source-directory package reconciliation record exists for the supplied delivery authority.",
+            http_status=404,
+            details={"reconciliation_record_id": reconciliation_record_id},
+        )
+    reconciliation_summary = _json_clone(reconciliation.summary_json or {})
+    readiness_state = reconciliation_summary.get("external_export_download_prepare")
+    if not isinstance(readiness_state, dict):
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_requires_prepare",
+            "Delivery requires existing source-directory external export/download prepare authority.",
+            http_status=409,
+            details={"reconciliation_record_id": reconciliation_record_id},
+        )
+    descriptor = readiness_state.get("external_export_download_descriptor")
+    if not isinstance(descriptor, dict):
+        descriptor = {}
+    stored_mismatches = [
+        field
+        for field, expected in {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+            "external_export_download_prepare_schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+            "external_export_download_record_ref": str(fields.get("external_export_download_record_ref") or ""),
+            "export_download_descriptor_ref": str(fields.get("export_download_descriptor_ref") or ""),
+            "external_export_download_state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
+            "external_export_download_target": EXTERNAL_EXPORT_DOWNLOAD_TARGET,
+            "download_mode": EXTERNAL_EXPORT_DOWNLOAD_MODE,
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "package_review_preview_hash": expected_preview_hash,
+            "construction_basis_hash": str(fields.get("construction_basis_hash") or ""),
+            "prepare_record_ref": str(fields.get("prepare_record_ref") or ""),
+            "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+            "handoff_export_envelope_ref": str(fields.get("handoff_export_envelope_ref") or ""),
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "source_gate": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_GATE,
+        }.items()
+        if str(readiness_state.get(field) or "") != str(expected)
+    ]
+    if str(descriptor.get("descriptor_ref") or "") != str(fields.get("export_download_descriptor_ref") or ""):
+        stored_mismatches.append("export_download_descriptor_ref")
+    if stored_mismatches:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_authority_mismatch",
+            "Stored source-directory external export/download prepare authority does not match the delivery basis.",
+            http_status=409,
+            details={"blocked_fields": sorted(set(stored_mismatches))},
+        )
+
+    packages = _source_directory_review_packages_for_external_export_download_delivery(
+        db,
+        session_id=session.session_id,
+        reconciliation_record_id=reconciliation_record_id,
+    )
+    supplied_package_ids = _external_export_download_delivery_string_list(
+        fields.get("output_package_ids"), field="output_package_ids"
+    )
+    supplied_package_kinds = _external_export_download_delivery_string_list(
+        fields.get("package_kinds"), field="package_kinds"
+    )
+    supplied_payload_hashes = _external_export_download_delivery_string_list(
+        fields.get("payload_hashes"), field="payload_hashes"
+    )
+    expected_package_ids = [package.output_package_id for package in packages]
+    expected_package_kinds = [package.package_kind for package in packages]
+    expected_payload_hashes = [package.payload_hash for package in packages]
+    list_mismatches = []
+    if supplied_package_ids != expected_package_ids:
+        list_mismatches.append("output_package_ids")
+    if supplied_package_kinds != expected_package_kinds:
+        list_mismatches.append("package_kinds")
+    if supplied_payload_hashes != expected_payload_hashes:
+        list_mismatches.append("payload_hashes")
+    if list_mismatches:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_package_authority_mismatch",
+            "Supplied package identity does not match the prepared source-directory package set.",
+            http_status=409,
+            details={"blocked_fields": list_mismatches},
+        )
+
+    selected_package_id = _require_external_export_download_delivery_field(fields, "output_package_id")
+    selected_package = next(
+        (package for package in packages if package.output_package_id == selected_package_id),
+        None,
+    )
+    if selected_package is None:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_package_not_found",
+            "Requested source-directory package is not part of the prepared package set.",
+            http_status=404,
+            details={"blocked_fields": ["output_package_id"]},
+        )
+    if selected_package.package_kind != str(fields.get("package_kind") or ""):
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_package_kind_mismatch",
+            "Requested source-directory package kind does not match the selected package row.",
+            http_status=409,
+            details={"blocked_fields": ["package_kind"]},
+        )
+    if selected_package.payload_hash != str(fields.get("package_payload_hash") or ""):
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_payload_hash_mismatch",
+            "Requested source-directory package payload hash does not match the selected package row.",
+            http_status=409,
+            details={"blocked_fields": ["package_payload_hash"]},
+        )
+
+    artifact_path = _source_directory_package_payload_path(selected_package)
+    artifact_hash = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+    if artifact_hash != selected_package.payload_hash:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_artifact_hash_mismatch",
+            "Stored source-directory package artifact hash does not match the selected package row.",
+            http_status=409,
+            details={"blocked_fields": ["output_package_id", "package_payload_hash"]},
+        )
+
+    authority = {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": request_id,
+        "mode": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE,
+        "delivery_state": EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
+        "source_gate": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SOURCE_GATE,
+        "session_id": session.session_id,
+        "selection_manifest_id": session.selection_manifest_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "reconciliation_record_id": reconciliation_record_id,
+        "external_export_download_record_ref": readiness_state["external_export_download_record_ref"],
+        "export_download_descriptor_ref": readiness_state["export_download_descriptor_ref"],
+        "output_package_id": selected_package.output_package_id,
+        "package_kind": selected_package.package_kind,
+        "package_payload_hash": selected_package.payload_hash,
+        "payload_ref_redacted": True,
+        "same_origin_delivery_enabled": True,
+        "browser_managed_same_origin_attachment_enabled": True,
+        "provider_public_delivery_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "package_payload_rewrite_enabled": False,
+        "source_package_row_mutation_enabled": False,
+    }
+    db.rollback()
+    return ExternalExportDownloadDelivery(
+        artifact_path=artifact_path,
+        media_type="application/json",
+        filename=_source_directory_delivery_filename(
+            session_id=session.session_id,
+            package_kind=selected_package.package_kind,
+        ),
+        headers={
+            "X-Layer3-Schema-Id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+            "X-Layer3-Delivery-State": EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
+            "X-Layer3-Source-Artifact-Hash": artifact_hash,
+            "X-Layer3-External-Export-Download-Record-Ref": str(
+                readiness_state["external_export_download_record_ref"]
+            ),
+            "X-Layer3-Source-Directory-Package-Kind": selected_package.package_kind,
+        },
+        authority=authority,
+    )
+
+
 def _source_directory_package_review_preview(
     *,
     request_id: str,
@@ -1755,6 +2072,32 @@ def _normalise_external_export_download_prepare_payload(payload: Mapping[str, An
         )
     for field in sorted(_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUIRED_FIELDS):
         _require_external_export_download_prepare_field(fields, field)
+    return fields
+
+
+def _normalise_external_export_download_delivery_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    forbidden = sorted(set(fields) & _EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS)
+    if forbidden:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_forbidden_field_not_admitted",
+            "The source-directory external export/download delivery request includes deferred or forbidden fields.",
+            details={"forbidden_fields": forbidden},
+        )
+    unknown = sorted(
+        set(fields)
+        - _EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS
+        - _OPTIONAL_FIELDS
+        - {"decision_notes"}
+    )
+    if unknown:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_unknown_field",
+            "The source-directory external export/download delivery request contract is intentionally scoped.",
+            details={"unknown_fields": unknown},
+        )
+    for field in sorted(_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS):
+        _require_external_export_download_delivery_field(fields, field)
     return fields
 
 
@@ -2024,6 +2367,17 @@ def _require_external_export_download_prepare_field(fields: Mapping[str, Any], k
     return str(value).strip()
 
 
+def _require_external_export_download_delivery_field(fields: Mapping[str, Any], key: str) -> str:
+    value = fields.get(key)
+    if value is None or (isinstance(value, str) and not value.strip()):
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_required_field_missing",
+            "A required source-directory external export/download delivery field is missing or empty.",
+            details={"field": key},
+        )
+    return str(value).strip()
+
+
 def _submit_string_list(value: Any, *, field: str) -> list[str]:
     if not isinstance(value, list):
         raise SourceDirectoryPackageReviewSubmitError(
@@ -2070,6 +2424,23 @@ def _external_export_download_prepare_string_list(value: Any, *, field: str) -> 
         raise SourceDirectoryExternalExportDownloadPrepareError(
             "source_directory_external_export_download_prepare_list_field_invalid",
             "External export/download prepare list fields must be supplied as non-empty string lists.",
+            details={"field": field},
+        )
+    return normalized
+
+
+def _external_export_download_delivery_string_list(value: Any, *, field: str) -> list[str]:
+    if not isinstance(value, list):
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_list_field_invalid",
+            "External export/download delivery list fields must be supplied as non-empty string lists.",
+            details={"field": field},
+        )
+    normalized = [str(item or "").strip() for item in value]
+    if not normalized or any(not item for item in normalized):
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_list_field_invalid",
+            "External export/download delivery list fields must be supplied as non-empty string lists.",
             details={"field": field},
         )
     return normalized
@@ -2146,6 +2517,27 @@ def _source_directory_review_packages_for_external_export_download_prepare(
         ) from exc
 
 
+def _source_directory_review_packages_for_external_export_download_delivery(
+    db: Session,
+    *,
+    session_id: str,
+    reconciliation_record_id: str,
+) -> list[L3OutputPackage]:
+    try:
+        return _source_directory_review_packages(
+            db,
+            session_id=session_id,
+            reconciliation_record_id=reconciliation_record_id,
+        )
+    except SourceDirectoryPackageReviewSubmitError as exc:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            exc.code.replace("package_review_submit", "external_export_download_delivery"),
+            exc.message.replace("Package-review submit", "External export/download delivery"),
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+
 def _load_material_snapshot_for_submit(
     db: Session,
     *,
@@ -2209,6 +2601,27 @@ def _load_material_snapshot_for_external_export_download_prepare(
         ) from exc
 
 
+def _load_material_snapshot_for_external_export_download_delivery(
+    db: Session,
+    *,
+    material_snapshot_id: str,
+    source_authority: Mapping[str, Any],
+) -> L3MaterialSnapshot:
+    try:
+        return _load_material_snapshot_for_commit(
+            db,
+            material_snapshot_id=material_snapshot_id,
+            source_authority=source_authority,
+        )
+    except SourceDirectoryPackageCommitError as exc:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            exc.code.replace("package_commit", "external_export_download_delivery"),
+            exc.message.replace("package commit", "external export/download delivery"),
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+
 def _load_package_review_submit_session(db: Session, *, material_snapshot: L3MaterialSnapshot) -> L3Session:
     try:
         return _load_package_commit_session(db, material_snapshot=material_snapshot)
@@ -2243,6 +2656,60 @@ def _load_external_export_download_prepare_session(db: Session, *, material_snap
             http_status=exc.http_status,
             details=exc.details,
         ) from exc
+
+
+def _load_external_export_download_delivery_session(db: Session, *, material_snapshot: L3MaterialSnapshot) -> L3Session:
+    try:
+        return _load_package_commit_session(db, material_snapshot=material_snapshot)
+    except SourceDirectoryPackageCommitError as exc:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            exc.code.replace("package_commit", "external_export_download_delivery"),
+            exc.message.replace("package construction", "external export/download delivery"),
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+
+def _source_directory_package_payload_path(package: L3OutputPackage) -> Path:
+    payload_ref = str(package.payload_ref or "").strip()
+    if not payload_ref:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_payload_ref_missing",
+            "Selected source-directory package row is missing its server-owned payload reference.",
+            http_status=409,
+            details={"blocked_fields": ["output_package_id"]},
+        )
+    artifact_root = Path(settings.artifact_storage_dir).resolve(strict=False)
+    payload_path = Path(payload_ref).resolve(strict=False)
+    try:
+        payload_path.relative_to(artifact_root)
+    except ValueError as exc:
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_payload_ref_not_server_owned",
+            "Selected source-directory package payload is not under the server-owned artifact storage root.",
+            http_status=409,
+            details={"blocked_fields": ["output_package_id"]},
+        ) from exc
+    if not payload_path.is_file():
+        raise SourceDirectoryExternalExportDownloadDeliveryError(
+            "source_directory_external_export_download_delivery_payload_ref_not_found",
+            "Selected source-directory package payload artifact was not found.",
+            http_status=404,
+            details={"blocked_fields": ["output_package_id"]},
+        )
+    return payload_path
+
+
+def _source_directory_delivery_filename(*, session_id: str, package_kind: str) -> str:
+    session_token = _safe_delivery_token(session_id, fallback="session")
+    kind_token = _safe_delivery_token(package_kind, fallback="package")
+    return f"layer3-source-directory-{session_token}-{kind_token}.json"
+
+
+def _safe_delivery_token(value: str, *, fallback: str) -> str:
+    token = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "-" for ch in str(value or "").strip())
+    token = token.strip(".-")
+    return (token or fallback)[:96]
 
 
 def _package_review_submit_response(

@@ -1051,6 +1051,77 @@ def test_source_directory_qualitative_analysis_external_export_download_prepare_
     assert replay_body["status"] == "already_prepared"
     assert replay_body["external_export_download_record_ref"] == body["external_export_download_record_ref"]
 
+    db = client.layer3_session_factory()
+    try:
+        selected_package = (
+            db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id == body["output_package_ids"][1])
+            .one()
+        )
+        expected_payload = Path(selected_package.payload_ref).read_bytes()
+        expected_payload_hash = selected_package.payload_hash
+    finally:
+        db.close()
+
+    delivery_payload = {
+        **readiness_payload,
+        "operator_decision": "deliver_source_directory_external_export_download",
+        "external_export_download_record_ref": body["external_export_download_record_ref"],
+        "export_download_descriptor_ref": body["export_download_descriptor_ref"],
+        "external_export_download_state": "external_export_download_prepared",
+        "delivery_mode": "same_origin_artifact_stream",
+        "output_package_id": body["output_package_ids"][1],
+        "package_kind": body["package_kinds"][1],
+        "package_payload_hash": body["payload_hashes"][1],
+    }
+    delivery = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/handoff/export/download/deliver"
+        ),
+        json=delivery_payload,
+    )
+    assert delivery.status_code == 200, delivery.text
+    assert delivery.content == expected_payload
+    assert delivery.headers["x-layer3-schema-id"] == (
+        "layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1"
+    )
+    assert delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    assert delivery.headers["x-layer3-source-artifact-hash"] == expected_payload_hash
+    assert (
+        delivery.headers["x-layer3-external-export-download-record-ref"]
+        == body["external_export_download_record_ref"]
+    )
+    assert delivery.headers["x-layer3-source-directory-package-kind"] == body["package_kinds"][1]
+    assert "download_url" not in delivery.headers
+    assert "public_url" not in delivery.headers
+    assert "signed_url" not in delivery.headers
+    assert "connector_run_id" not in delivery.headers
+    assert str(source_dir) not in str(delivery.headers)
+    assert str(Path(settings.storage_dir)) not in str(delivery.headers)
+
+    delivery_replay = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/handoff/export/download/deliver"
+        ),
+        json=delivery_payload,
+    )
+    assert delivery_replay.status_code == 200, delivery_replay.text
+    assert delivery_replay.content == expected_payload
+
+    stale_hash = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/handoff/export/download/deliver"
+        ),
+        json={**delivery_payload, "package_payload_hash": "0" * 64},
+    )
+    assert stale_hash.status_code == 409, stale_hash.text
+    assert stale_hash.json()["error"]["code"] == (
+        "source_directory_external_export_download_delivery_payload_hash_mismatch"
+    )
+
 
 def test_source_directory_qualitative_analysis_handoff_export_prepare_requires_approved_submit(
     client: TestClient,
