@@ -10,12 +10,16 @@ SUPPORTED_SOURCE_CLASSES = ("dataset_version", "aps_content_document")
 SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_MODE = "source_intake_gate_b_material_admission"
 SOURCE_INTAKE_GATE_B_SOURCE_CLASS = "operator_uploaded_single_source"
 SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX = "mat-source_intake_record-"
+SOURCE_DIRECTORY_GATE_B_MATERIAL_ADMISSION_MODE = "source_directory_ingestion_gate_b_material_admission"
+SOURCE_DIRECTORY_GATE_B_SOURCE_CLASS = "server_configured_directory_file"
+SOURCE_DIRECTORY_GATE_B_CANDIDATE_PREFIX = "mat-server_configured_directory_file-"
 SOURCE_INTAKE_SUPPORTED_MODES = (
     "operator_single_upload_source_intake",
     "operator_source_intake_inventory_read_only",
     "operator_source_intake_material_preview_read_only",
     SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_MODE,
     "server_configured_operator_directory_text_table_ingestion",
+    SOURCE_DIRECTORY_GATE_B_MATERIAL_ADMISSION_MODE,
 )
 UNSUPPORTED_SOURCE_CLASSES = (
     "rag_vector_index",
@@ -69,6 +73,8 @@ def source_class_from_material_candidate_id(candidate_id: str) -> str | None:
             return source_class
     if candidate_id.startswith(SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX):
         return SOURCE_INTAKE_GATE_B_SOURCE_CLASS
+    if candidate_id.startswith(SOURCE_DIRECTORY_GATE_B_CANDIDATE_PREFIX):
+        return SOURCE_DIRECTORY_GATE_B_SOURCE_CLASS
     return None
 
 
@@ -97,6 +103,12 @@ def source_boundary_contract() -> dict[str, Any]:
         "server_configured_directory_ingestion_status_route": (
             "/api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}"
         ),
+        "server_configured_directory_material_preview_enabled": True,
+        "server_configured_directory_material_preview_route": (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview"
+        ),
+        "server_configured_directory_gate_b_material_admission_route": "/api/v1/layer3/gate-b/decision",
+        "server_configured_directory_material_preview_requires_later_freeze": False,
         "server_configured_directory_ingestion_source_family": (
             "server_configured_operator_directory_text_table_source_family"
         ),

@@ -30,6 +30,7 @@ from app.services import (
     layer3_server_owned_local_outbox_target,
     layer3_server_owned_local_outbox_write,
     layer3_source_directory_ingestion,
+    layer3_source_directory_material_admission,
     layer3_source_intake,
     layer3_workbench,
 )
@@ -2281,6 +2282,18 @@ class Layer3SourceDirectoryIngestionScanRequest(BaseModel):
     ingestion_mode: Literal["server_configured_operator_directory_text_table_ingestion"] | None = None
 
 
+class Layer3SourceDirectoryMaterialPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    source_ingestion_batch_id: str = Field(min_length=1)
+    source_ingestion_file_id: str = Field(min_length=1)
+    file_identity_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    max_chars: int | None = None
+    actor: str | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -2329,6 +2342,20 @@ class Layer3SourceDirectoryIngestionResponse(Layer3BaseResponse):
     authority_basis_hash: str
     authority_snapshot: dict[str, Any]
     files: list[dict[str, Any]]
+    next_allowed_actions: list[str]
+    negative_invariants: dict[str, bool]
+
+
+class Layer3SourceDirectoryMaterialPreviewResponse(Layer3BaseResponse):
+    source_gate: dict[str, Any]
+    source_directory_preview_mode: str
+    source_ingestion_batch_id: str
+    source_ingestion_file_id: str
+    material_preview_id: str
+    material_preview_hash: str
+    material_candidate: dict[str, Any]
+    partial_retrieval: bool
+    downstream_eligibility: dict[str, bool]
     next_allowed_actions: list[str]
     negative_invariants: dict[str, bool]
 
@@ -6746,6 +6773,24 @@ def get_source_directory_ingestion_status(
             source_ingestion_batch_id,
         )
     except layer3_source_directory_ingestion.SourceDirectoryIngestionError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/material-preview",
+    response_model=Layer3SourceDirectoryMaterialPreviewResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_material_preview(
+    payload: Layer3SourceDirectoryMaterialPreviewRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_source_directory_material_admission.source_directory_material_preview(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_source_directory_material_admission.SourceDirectoryMaterialAdmissionError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

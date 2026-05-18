@@ -4968,3 +4968,31 @@ Post-merge validation at `950a419e25474bf64354cdfdaff066ac7b786744` passed: `pyt
 This sync admits no runtime behavior. RAG/vector indexing, qualitative-hybrid analysis runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, and source `L3OutputPackage` mutation remain blocked.
 
 The next exact current-main posture is `implement_source_directory_ingestion_gate_b_material_admission_after_downstream_selection_sync`.
+
+## Source Directory Ingestion Gate B Material Admission Runtime Proof
+
+Runtime proof: `748_SOURCE_DIRECTORY_INGESTION_GATE_B_MATERIAL_ADMISSION_RUNTIME_PROOF.md` implements `source_directory_ingestion_gate_b_material_admission` after downstream material-authority freeze current-main sync.
+
+Implementation branch `codex/l3-source-directory-material-admission` starts from current-main checkpoint `0de713bb3a6ef465658c81c9cc829583afab726a`.
+
+The canonical upstream authorities are `L3SourceDirectoryIngestionBatch` and `L3SourceDirectoryIngestionFile`.
+
+The runtime owner service is `backend/app/services/layer3_source_directory_material_admission.py`; the API owner is `backend/app/api/layer3.py`; the source-boundary owner is `backend/app/services/layer3_source_boundary.py`.
+
+The admitted material-preview route is `POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview`; the admitted Gate B route reuse is `POST /api/v1/layer3/gate-b/decision`.
+
+The admitted material candidate source class is `server_configured_directory_file`, with candidate prefix `mat-server_configured_directory_file-`.
+
+Runtime behavior change in this pass: `true`.
+
+The material-preview route requires persisted `source_ingestion_batch_id`, persisted `source_ingestion_file_id`, `file_identity_hash`, and `authority_basis_hash`. It re-reads only the configured direct-child file represented by that persisted row, rejects stale authority or live file drift, emits a bounded UTF-8 preview, and supplies a Gate B decision basis.
+
+Gate B now validates `server_configured_directory_file` decision basis before committing that candidate through the existing Layer 3 selection/session/material-snapshot path.
+
+Observed branch validation: `python -m py_compile .\backend\app\services\layer3_source_directory_material_admission.py .\backend\app\services\layer3_source_boundary.py .\backend\app\services\layer3_workbench.py .\backend\app\api\layer3.py`; and `python -m pytest .\backend\tests\test_layer3_source_directory_ingestion.py .\backend\tests\test_layer3_source_boundary.py .\backend\tests\test_layer3_source_intake.py .\backend\tests\test_layer3_model_exports.py .\backend\tests\test_layer3_api.py::test_layer3_forbidden_sentinel_openapi_fields_are_impossible -q` -> `32 passed`.
+
+This pass proves material preview reaches Gate B and persists a `server_configured_directory_file` `L3MaterialSnapshot`, while creating no `ConnectorRun`, `ConnectorRunTarget`, or `L3OutputPackage` rows.
+
+This pass does not admit RAG/vector indexing, qualitative-hybrid runtime, package construction, package mutation/reconstruction, source package row mutation, package payload rewrite, handoff/export rerun, connector/destination dispatch, real connector invocation, credentials, network egress, provider-public delivery/use, provider-private signed URL generation/use, rendered controls, frontend-durable authority, hidden LLM planning, arbitrary source ingestion, arbitrary recursive ingestion, broad local upload, PDFs, OCR, Office documents, arbitrary binaries, web connectors, caller-supplied paths/URLs/globs, browser-supplied file bytes, browser/operator path editing, auth/security broadening, or source `L3OutputPackage` mutation.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_ingestion_gate_b_material_admission_runtime_proof`; after sync, pivot to `select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_admission_sync` only if current-main evidence confirms that as the selected next authority question.

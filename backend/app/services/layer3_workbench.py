@@ -231,6 +231,11 @@ from app.services.layer3_source_intake import (
     SourceIntakeError,
     validate_source_intake_gate_b_decision_basis,
 )
+from app.services.layer3_source_directory_material_admission import (
+    SOURCE_CLASS as SOURCE_DIRECTORY_FILE_SOURCE_CLASS,
+    SourceDirectoryMaterialAdmissionError,
+    validate_source_directory_gate_b_decision_basis,
+)
 from app.services.layer3_raw_mixed_contract import RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM
 from app.services.layer3_preflight_request_contract import (
     manual_constraints_from_payload as _manual_constraints,
@@ -1836,6 +1841,23 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     blocked_fields=exc.details.get("blocked_fields")
                     or ["candidate_decisions.decision_basis"],
                     next_allowed_actions=["refresh_source_intake_material_preview"],
+                ) from exc
+        if source_class == SOURCE_DIRECTORY_FILE_SOURCE_CLASS:
+            try:
+                validate_source_directory_gate_b_decision_basis(
+                    db,
+                    candidate_id=candidate_id,
+                    decision_basis=decision_basis,
+                )
+            except SourceDirectoryMaterialAdmissionError as exc:
+                raise Layer3WorkbenchError(
+                    exc.code,
+                    exc.message,
+                    status="conflict" if exc.http_status == 409 else "blocked",
+                    http_status=exc.http_status,
+                    blocked_fields=exc.details.get("blocked_fields")
+                    or ["candidate_decisions.decision_basis"],
+                    next_allowed_actions=["refresh_source_directory_material_preview"],
                 ) from exc
         source_identity = decision_basis.get("source_identity") if isinstance(decision_basis.get("source_identity"), dict) else {}
         source_provenance = (
