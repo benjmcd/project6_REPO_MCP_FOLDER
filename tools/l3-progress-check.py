@@ -1938,6 +1938,10 @@ LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVAL
     PLANNING_DOCS
     / "729_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION = (
+    PLANNING_DOCS
+    / "730_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION.md"
+)
 LAYER3_CORRECTED_PACKAGE_ARTIFACT_SET_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_corrected_package_artifact_set.py"
 )
@@ -61219,6 +61223,131 @@ def _check_corrected_artifact_active_authority_external_export_download_prepare_
                 )
 
 
+def _check_corrected_artifact_active_authority_external_export_download_deliver_evaluation(
+    errors: list[str],
+) -> None:
+    evaluation_text = _read_required_text(
+        LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `corrected_artifact_active_authority_external_export_download_deliver`.",
+        "730_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION.md",
+        "729_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_EVALUATION_CURRENT_MAIN_SYNC.md",
+        "codex/l3-corrected-download-deliver",
+        "8a99731d7504a5efe8362d9777a8e1f97d853bc0",
+        "Selected downstream reader path: `external_export_download_deliver`.",
+        "POST /api/v1/layer3/handoff/export/download/deliver",
+        "_external_export_download_prepare_from_reconciliation",
+        "external_export_download_prepare",
+        "corrected_artifact_active_authority_external_export_download_deliver_proven",
+        "Runtime behavior change in this pass: `false`",
+        "Test/proof behavior change in this pass: `true`",
+        "test_layer3_api_external_export_download_deliver_applies_corrected_artifact_active_authority",
+        "Result observed: `1 passed`",
+        "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_deliver_evaluation",
+        "select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_deliver_sync",
+    ):
+        if term not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION)} "
+                f"missing corrected-artifact active authority external export/download deliver evaluation term: {term}"
+            )
+
+    for blocked in (
+        "service runtime behavior",
+        "connector invocation",
+        "connector-run creation",
+        "connector target creation",
+        "destination write",
+        "credentials",
+        "external network egress",
+        "provider-public delivery/use",
+        "raw public URL exposure",
+        "signed URL generation",
+        "provider-private signed URL generation",
+        "package payload rewrite",
+        "source `L3OutputPackage` mutation",
+        "downstream invalidation",
+        "handoff/export rerun",
+        "external export/download prepare rerun beyond delivery revalidation",
+        "connector-local receipt adoption",
+        "local outbox write adoption",
+        "provider-private handoff adoption",
+        "external local export adoption",
+        "source expansion",
+        "RAG/vector behavior",
+        "auth/security behavior",
+        "rendered UI authority",
+        "frontend-durable authority",
+        "caller-supplied arbitrary paths or URLs",
+        "browser-supplied refs/hashes/bytes",
+        "raw local path exposure",
+        "hidden LLM planning",
+    ):
+        if blocked not in evaluation_text:
+            errors.append(
+                f"{_rel(LAYER3_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION)} "
+                f"missing corrected-artifact active authority external export/download deliver blocked term: {blocked}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Corrected Artifact Active Authority External Export Download Deliver Evaluation",
+            "730_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION.md",
+            "codex/l3-corrected-download-deliver",
+            "8a99731d7504a5efe8362d9777a8e1f97d853bc0",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            "recorded `external_export_download_prepare` state",
+            "test_layer3_api_external_export_download_deliver_applies_corrected_artifact_active_authority",
+            "`1 passed`",
+            "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_deliver_evaluation",
+        ),
+        MANIFEST: (
+            "corrected_artifact_active_authority_external_export_download_deliver_evaluation",
+            "branch_local_corrected_artifact_active_authority_external_export_download_deliver_proven",
+            "codex/l3-corrected-download-deliver",
+            "730_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION.md",
+            "8a99731d7504a5efe8362d9777a8e1f97d853bc0",
+            "external_export_download_deliver",
+            '"runtime_behavior_change": false',
+            "test_layer3_api_external_export_download_deliver_applies_corrected_artifact_active_authority",
+            "1 passed",
+            "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_deliver_evaluation",
+            "select_next_downstream_active_package_authority_reader_after_corrected_artifact_external_export_download_deliver_sync",
+        ),
+        PROOF_MANIFEST: (
+            "corrected_artifact_active_authority_external_export_download_deliver_evaluation_proof",
+            "branch_local_corrected_artifact_active_authority_external_export_download_deliver_evaluation",
+            "branch_local_corrected_artifact_active_authority_external_export_download_deliver_proven",
+            "730_CORRECTED_ARTIFACT_ACTIVE_AUTHORITY_EXTERNAL_EXPORT_DOWNLOAD_DELIVER_EVALUATION.md",
+            "8a99731d7504a5efe8362d9777a8e1f97d853bc0",
+            "POST /api/v1/layer3/handoff/export/download/deliver",
+            '"runtime_behavior_change": false',
+            "real corrected-artifact API route chain reaches external export/download deliver",
+            "delivery consumes recorded external_export_download_prepare state",
+            "duplicate deliver replays the same bounded same-origin artifact stream",
+            "await_current_main_sync_for_corrected_artifact_active_authority_external_export_download_deliver_evaluation",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_external_export_download_deliver_applies_corrected_artifact_active_authority",
+            "_activate_corrected_replacement_package_authority",
+            "/api/v1/layer3/handoff/export/download/deliver",
+            'assert direct_delivery.authority["active_package_authority_applied"] is True',
+            'assert direct_delivery.authority["payload_refs"] == namespace_body["artifact_refs"]',
+            'assert delivery.content == expected_bytes',
+            'assert replay.content == expected_bytes',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing corrected-artifact active authority external export/download deliver "
+                    f"artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -61791,6 +61920,7 @@ def main() -> int:
     _check_corrected_artifact_active_authority_aps_handoff_dispatch_evaluation_current_main_sync(errors)
     _check_corrected_artifact_active_authority_external_export_download_prepare_evaluation(errors)
     _check_corrected_artifact_active_authority_external_export_download_prepare_evaluation_current_main_sync(errors)
+    _check_corrected_artifact_active_authority_external_export_download_deliver_evaluation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

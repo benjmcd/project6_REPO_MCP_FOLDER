@@ -13458,6 +13458,291 @@ def test_layer3_api_external_export_download_prepare_applies_corrected_artifact_
     assert replay_body["active_package_authority_applied"] is True
 
 
+def test_layer3_api_external_export_download_deliver_applies_corrected_artifact_active_authority(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    session_id, preview_body, approval_body = _approve_aps_handoff_plan(client, tmp_path)
+    request_id = "api-external-download-deliver-corrected-active-authority"
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": f"{request_id}-selection",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200, selection.json()
+    selection_body = selection.json()
+    start_body, _status_body, review_body = _start_and_approve_quant_result_review(
+        client,
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        request_id=request_id,
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_id}-package-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200, package_preview.json()
+    package_preview_body = package_preview.json()
+    package_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_id}-package-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": package_preview_body["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_commit.status_code == 200, package_commit.json()
+    commit_body = package_commit.json()
+    package_submit = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={
+            "client_request_id": f"{request_id}-package-submit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": commit_body["package_review_preview_hash"],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+            "payload_hashes": commit_body["payload_hashes"],
+            "operator_decision": "approved",
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_submit.status_code == 200, package_submit.json()
+    submit_body = package_submit.json()
+    activation_chain = _activate_corrected_replacement_package_authority(
+        client,
+        request_id=request_id,
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+    )
+    namespace_body = activation_chain["namespace_body"]
+    activation_body = activation_chain["activation_body"]
+
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_handoff_export_prepare_payload(
+            request_id=f"{request_id}-prepare",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200, prepare.json()
+    prepare_body = prepare.json()
+    assert prepare_body["active_package_authority_applied"] is True
+    assert prepare_body["active_payload_refs"] == namespace_body["artifact_refs"]
+    assert prepare_body["active_payload_hashes"] == namespace_body["artifact_hashes"]
+
+    canonical_index = commit_body["package_kinds"].index("canonical_internal")
+    Path(commit_body["payload_refs"][canonical_index]).write_text(
+        json.dumps({"tampered": "source package payload should not be read by corrected active download deliver"}),
+        encoding="utf-8",
+    )
+    dispatch_payload = _aps_handoff_dispatch_payload(
+        request_id=f"{request_id}-aps-dispatch",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+    )
+    dispatch_payload["payload_refs"] = prepare_body["payload_refs"]
+    dispatch_payload["payload_hashes"] = prepare_body["payload_hashes"]
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=dispatch_payload)
+    assert dispatch.status_code == 200, dispatch.json()
+    dispatch_body = dispatch.json()
+    assert dispatch_body["active_package_authority_applied"] is True
+    assert dispatch_body["payload_refs"] == namespace_body["artifact_refs"]
+    assert dispatch_body["payload_hashes"] == namespace_body["artifact_hashes"]
+
+    readiness_payload = _external_export_download_prepare_payload(
+        request_id=f"{request_id}-download-prepare",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+    )
+    readiness_payload["payload_refs"] = dispatch_body["payload_refs"]
+    readiness_payload["payload_hashes"] = dispatch_body["payload_hashes"]
+    readiness = client.post("/api/v1/layer3/handoff/export/download/prepare", json=readiness_payload)
+    assert readiness.status_code == 200, readiness.json()
+    readiness_body = readiness.json()
+    assert readiness_body["active_package_authority_applied"] is True
+    assert readiness_body["payload_refs"] == namespace_body["artifact_refs"]
+    assert readiness_body["payload_hashes"] == namespace_body["artifact_hashes"]
+    assert readiness_body["package_replacement_activation_id"] == activation_body["package_replacement_activation_id"]
+    assert readiness_body["source_artifact_ref"] == dispatch_body["aps_bundle_ref"]
+    assert readiness_body["source_artifact_hash"] == readiness_payload["aps_bundle_hash"]
+    assert readiness_body["source_artifact_size_bytes"] == readiness_payload["aps_bundle_size_bytes"]
+
+    deliver_payload = _external_export_download_deliver_payload(
+        request_id=f"{request_id}-deliver",
+        prepare_payload=readiness_payload,
+        readiness_body=readiness_body,
+        decision_notes="Deliver the corrected active authority APS bundle artifact.",
+    )
+    expected_bytes = Path(readiness_body["source_artifact_ref"]).read_bytes()
+
+    def files_under_tmp() -> set[str]:
+        return {str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file()}
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        readiness_state_before = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    from app.services import layer3_workbench
+
+    direct_db = client.layer3_session_factory()
+    try:
+        direct_delivery = layer3_workbench.external_export_download_deliver(direct_db, deliver_payload)
+    finally:
+        direct_db.close()
+
+    assert direct_delivery.artifact_path.read_bytes() == expected_bytes
+    assert direct_delivery.headers["X-Layer3-Delivery-State"] == "external_export_download_delivered"
+    assert direct_delivery.headers["X-Layer3-Source-Artifact-Hash"] == readiness_body["source_artifact_hash"]
+    assert direct_delivery.authority["active_package_authority_applied"] is True
+    assert direct_delivery.authority["package_replacement_activation_id"] == activation_body["package_replacement_activation_id"]
+    assert direct_delivery.authority["payload_refs"] == namespace_body["artifact_refs"]
+    assert direct_delivery.authority["payload_hashes"] == namespace_body["artifact_hashes"]
+    assert direct_delivery.authority["active_payload_refs"] == namespace_body["artifact_refs"]
+    assert direct_delivery.authority["active_payload_hashes"] == namespace_body["artifact_hashes"]
+    assert direct_delivery.authority["source_artifact_ref"] == dispatch_body["aps_bundle_ref"]
+    assert all(
+        ref.startswith("artifact://replacement-package-artifacts/")
+        for ref in direct_delivery.authority["active_payload_refs"]
+    )
+    assert str(tmp_path) not in json.dumps(direct_delivery.authority["active_payload_refs"], sort_keys=True)
+
+    delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
+    assert delivery.status_code == 200, delivery.text
+    assert delivery.content == expected_bytes
+    assert delivery.headers["x-layer3-schema-id"] == "layer3.external_export_download_delivery.v1"
+    assert delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    assert delivery.headers["x-layer3-source-artifact-hash"] == readiness_body["source_artifact_hash"]
+    assert delivery.headers["x-layer3-external-export-download-record-ref"] == readiness_body["external_export_download_record_ref"]
+    assert "attachment" in delivery.headers["content-disposition"]
+    for forbidden_header in ("download_url", "public_url", "signed_url", "connector_run_id"):
+        assert forbidden_header not in delivery.headers
+
+    replay = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
+    assert replay.status_code == 200, replay.text
+    assert replay.content == expected_bytes
+    assert replay.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "connector_run_targets": db.query(ConnectorRunTarget).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "replacement_namespaces": db.query(L3ReplacementOutputPackage).count(),
+        } == counts_before
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        readiness_state_after = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+        assert readiness_state_after == readiness_state_before
+        assert readiness_state_after["active_package_authority_applied"] is True
+        assert readiness_state_after["active_payload_refs"] == namespace_body["artifact_refs"]
+        assert readiness_state_after["active_payload_hashes"] == namespace_body["artifact_hashes"]
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+
+
 def test_layer3_api_connector_local_receipt_applies_active_replacement_authority_for_cohort(
     client: TestClient,
     tmp_path,
