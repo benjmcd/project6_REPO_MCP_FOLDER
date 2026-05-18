@@ -2156,6 +2156,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRA
     PLANNING_DOCS
     / "786_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -68073,6 +68077,145 @@ def _check_source_directory_material_deterministic_vector_retrieval_authority_co
                 )
 
 
+def _check_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_deterministic_vector_retrieval_authority_contract`.",
+        "787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+        "codex/l3-vector-retrieval-contract-sync",
+        "786_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT.md",
+        "#1391",
+        "codex/l3-vector-retrieval-contract",
+        "3725dc334c21007e1eac3a923f6a9fe6849df7ad",
+        "526b428a1a16f10ae6c5fe1ce4431cd466ab7266",
+        "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+        "Runtime behavior introduced by contract PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "`backend-layer3-api`: `SUCCESS` in `3m10s`",
+        "`test`: `SUCCESS` in `3m26s`",
+        "comments totalCount: `0`",
+        "reviews totalCount: `0`",
+        "latestReviews totalCount: `0`",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "source_directory_material_deterministic_vector_retrieval_authority",
+        "deterministic_local_hash_vector_similarity_retrieval",
+        "source_directory_material_deterministic_embedding_vector_index_authority",
+        "layer3.source_directory_embedding_vector_index.v1",
+        "safe_vector_descriptors",
+        "backend/app/services/layer3_source_directory_vector_retrieval.py",
+        "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+        "layer3.source_directory_vector_retrieval.v1",
+        "source_directory_material_embedding_vector_index(db, vector_index_payload)",
+        "embedding_index_authority_hash",
+        "source-directory-hash-vector-v1",
+        "vector_dimensions == 4096",
+        "deterministic normalized query-to-segment dot product",
+        "vector_score <= 0",
+        "JSON manifest load: `PASS`",
+        "python .\\tools\\l3-progress-check.py`: `PASS`",
+        "git diff --check`: `PASS`",
+        "The next exact current-main posture is `implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync`.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC)} "
+                f"missing source directory deterministic vector retrieval authority contract sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Deterministic Vector Retrieval Authority Contract Current-Main Sync",
+            "787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "#1391",
+            "3725dc334c21007e1eac3a923f6a9fe6849df7ad",
+            "526b428a1a16f10ae6c5fe1ce4431cd466ab7266",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "786_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT.md",
+            "source_directory_material_deterministic_vector_retrieval_authority",
+            "deterministic_local_hash_vector_similarity_retrieval",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "safe_vector_descriptors",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            "layer3.source_directory_vector_retrieval.v1",
+            "source_directory_material_embedding_vector_index(db, vector_index_payload)",
+            "embedding_index_authority_hash",
+            "source-directory-hash-vector-v1",
+            "vector_dimensions == 4096",
+            "deterministic normalized query-to-segment dot product",
+            "Runtime behavior introduced by contract PR: `false`.",
+            "Runtime behavior introduced by this sync: `false`.",
+            "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "codex/l3-vector-retrieval-contract-sync",
+            "787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "786_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT.md",
+            "#1391",
+            "3725dc334c21007e1eac3a923f6a9fe6849df7ad",
+            "526b428a1a16f10ae6c5fe1ce4431cd466ab7266",
+            '"runtime_behavior_introduced_by_contract_pr": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api": "SUCCESS"',
+            '"backend-layer3-api_duration": "3m10s"',
+            '"test": "SUCCESS"',
+            '"test_duration": "3m26s"',
+            '"comments": 0',
+            '"reviews": 0',
+            '"latestReviews": 0',
+            '"reviewThreads": 0',
+            '"unresolvedReviewThreads": 0',
+            '"merge_state_before_merge": "CLEAN"',
+            "source_directory_material_deterministic_vector_retrieval_authority",
+            "deterministic_local_hash_vector_similarity_retrieval",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "safe_vector_descriptors",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            "layer3.source_directory_vector_retrieval.v1",
+            '"feature_hash_version": "source-directory-hash-vector-v1"',
+            '"vector_dimensions": 4096',
+            "deterministic normalized query-to-segment dot product",
+            "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync_proof",
+            "current_main_sync_source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "current_main_synced_source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "787_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT_CURRENT_MAIN_SYNC.md",
+            "786_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_VECTOR_RETRIEVAL_AUTHORITY_CONTRACT.md",
+            "#1391",
+            "526b428a1a16f10ae6c5fe1ce4431cd466ab7266",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no additional runtime behavior",
+            "source_directory_material_deterministic_vector_retrieval_authority is current-main synced as the future runtime authority",
+            "deterministic_local_hash_vector_similarity_retrieval is current-main synced as the future retrieval mode",
+            "source_directory_material_deterministic_embedding_vector_index_authority and layer3.source_directory_embedding_vector_index.v1 are selected inputs",
+            "future runtime must call source_directory_material_embedding_vector_index(db, vector_index_payload) before scoring",
+            "future scoring uses source-directory-hash-vector-v1 vector_dimensions 4096 and deterministic normalized query-to-segment dot product",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py and backend/tests/test_layer3_source_directory_vector_retrieval.py are selected for the future implementation",
+            "implement_source_directory_material_deterministic_vector_retrieval_authority_after_contract_sync is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory deterministic vector retrieval authority contract sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -68702,6 +68845,9 @@ def main() -> int:
     _check_source_directory_material_vector_retrieval_authority_selection_freeze(errors)
     _check_source_directory_material_vector_retrieval_authority_selection_current_main_sync(errors)
     _check_source_directory_material_deterministic_vector_retrieval_authority_contract(errors)
+    _check_source_directory_material_deterministic_vector_retrieval_authority_contract_current_main_sync(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")
