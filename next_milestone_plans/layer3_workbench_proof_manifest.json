@@ -31823,5 +31823,48 @@
   "latest_source_directory_material_vector_retrieval_api_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md",
   "latest_source_directory_material_vector_retrieval_api_runtime_entry_status": "source_directory_material_vector_retrieval_api_runtime_implemented_branch_local",
   "latest_source_directory_material_vector_retrieval_api_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_material_vector_retrieval_api_runtime",
-  "latest_source_directory_material_vector_retrieval_api_runtime_entry_summary": "Doc 796 proof records the bounded source-directory vector retrieval API runtime entry and focused 5-test proof. It admits only the backend API wrapper over existing deterministic vector retrieval authority and keeps raw paths, raw vectors, durable retrieval/vector-store rows, RAG execution, prompt/model/provider runtime, connector dispatch, package mutation, network egress, and frontend durable authority disabled."
+  "latest_source_directory_material_vector_retrieval_api_runtime_entry_summary": "Doc 796 proof records the bounded source-directory vector retrieval API runtime entry and focused 5-test proof. It admits only the backend API wrapper over existing deterministic vector retrieval authority and keeps raw paths, raw vectors, durable retrieval/vector-store rows, RAG execution, prompt/model/provider runtime, connector dispatch, package mutation, network egress, and frontend durable authority disabled.",
+  "source_directory_material_vector_retrieval_api_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_material_vector_retrieval_api_runtime",
+    "status": "current_main_synced_source_directory_material_vector_retrieval_api_runtime",
+    "sync_branch": "codex/l3-vector-api-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/797_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/796_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_ENTRY_FREEZE.md",
+    "runtime_pr": "#1401",
+    "runtime_branch_commit": "96e0b7ef72aeb89bbadc7b3b2e729bf207c3a25b",
+    "runtime_merge_commit": "9c546460f2dd46c6d7a44479fa5a7c6ced3cc469",
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "state": "MERGED",
+      "backend-layer3-api": "SUCCESS",
+      "test": "SUCCESS",
+      "comments": 0,
+      "reviews": 0,
+      "reviewThreads": 0,
+      "unresolvedReviewThreads": 0
+    },
+    "proof_coverage": [
+      "current main includes POST /api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+      "current main includes Layer3SourceDirectoryVectorRetrievalRequest",
+      "current main includes Layer3SourceDirectoryVectorRetrievalResponse",
+      "current main exposes layer3.source_directory_vector_retrieval.v1",
+      "current main records PR #1401 merged at 9c546460f2dd46c6d7a44479fa5a7c6ced3cc469",
+      "current main records green backend-layer3-api and test checks for PR #1401",
+      "current main records zero PR comments reviews and review threads",
+      "source_directory_material_vector_retrieval(db, payload) remains the service authority",
+      "server_configured_operator_directory_text_table_source_family remains the source family",
+      "source_directory_material_deterministic_vector_retrieval_authority remains the retrieval authority",
+      "raw_local_path_exposed false raw_vector_exposed false normalized_features_exposed false",
+      "durable_vector_store_rows_written false durable_embedding_rows_written false durable_retrieval_rows_written false",
+      "rag_execution_enabled false prompt_model_provider_runtime_enabled false connector_dispatch_enabled false package_mutation_enabled false network_egress_enabled false frontend_durable_authority_enabled false",
+      "current main sync introduces no additional runtime behavior",
+      "select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync is selected as the next posture"
+    ],
+    "next_posture": "select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync"
+  },
+  "latest_source_directory_material_vector_retrieval_api_runtime_current_main_sync_branch": "codex/l3-vector-api-sync",
+  "latest_source_directory_material_vector_retrieval_api_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/797_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_API_RUNTIME_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_material_vector_retrieval_api_runtime_current_main_sync_status": "current_main_synced_source_directory_material_vector_retrieval_api_runtime",
+  "latest_source_directory_material_vector_retrieval_api_runtime_current_main_sync_next_posture": "select_source_directory_qualitative_hybrid_analysis_api_surface_after_vector_retrieval_api_sync",
+  "latest_source_directory_material_vector_retrieval_api_runtime_current_main_sync_summary": "Doc 797 proof syncs the source-directory vector retrieval API runtime implementation after PR #1401 and pivots to source-directory qualitative-hybrid analysis API surface selection."
 }
