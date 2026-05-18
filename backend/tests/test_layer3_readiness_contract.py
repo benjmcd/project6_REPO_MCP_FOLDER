@@ -59,6 +59,10 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["source_directory_vector_retrieval_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval"
     )
+    assert direct["source_directory_hybrid_context_packet_admitted"] is True
+    assert direct["source_directory_hybrid_context_packet_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet"
+    )
     assert direct["source_directory_qualitative_hybrid_analysis_admitted"] is True
     assert direct["source_directory_qualitative_hybrid_analysis_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis"
@@ -96,6 +100,10 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["idempotency_contract"]["client_request_id_required_for_source_directory_material_preview"] is False
     assert direct["idempotency_contract"]["client_request_id_required_for_source_directory_vector_retrieval"] is False
     assert (
+        direct["idempotency_contract"]["client_request_id_required_for_source_directory_hybrid_context_packet"]
+        is False
+    )
+    assert (
         direct["idempotency_contract"][
             "client_request_id_required_for_source_directory_qualitative_hybrid_analysis"
         ]
@@ -127,6 +135,7 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["concurrency_contract"]["source_directory_status_is_read_only"] is True
     assert direct["concurrency_contract"]["source_directory_material_preview_is_read_only"] is True
     assert direct["concurrency_contract"]["source_directory_vector_retrieval_is_read_only"] is True
+    assert direct["concurrency_contract"]["source_directory_hybrid_context_packet_is_read_only"] is True
     assert direct["concurrency_contract"]["source_directory_qualitative_hybrid_analysis_is_read_only"] is True
     assert (
         direct["concurrency_contract"]["source_directory_package_commit_uses_session_reconciliation_and_package_locks"]
@@ -156,6 +165,9 @@ def test_layer3_readiness_contract_is_shared() -> None:
     )
     assert direct["deferred_decisions"]["source_directory_operator_status"].startswith(
         "admitted only as backend bootstrap/readiness exposure"
+    )
+    assert direct["deferred_decisions"]["source_directory_hybrid_context_packet"].startswith(
+        "admitted only as a read-only deterministic fusion"
     )
     assert direct["deferred_decisions"]["source_directory_package_supersession_preview"].startswith(
         "admitted only as a read-only source-directory package mutation"

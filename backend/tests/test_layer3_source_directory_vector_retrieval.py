@@ -34,6 +34,9 @@ from app.services.layer3_source_directory_vector_index import (
     SourceDirectoryVectorIndexError,
     source_directory_material_embedding_vector_index,
 )
+from app.services.layer3_source_directory_hybrid_context import (
+    source_directory_material_hybrid_retrieval_context_packet,
+)
 from app.services.layer3_source_directory_vector_retrieval import (
     SourceDirectoryVectorRetrievalError,
     source_directory_material_vector_retrieval,
@@ -370,6 +373,106 @@ def test_source_directory_vector_retrieval_api_route_is_bounded_and_redacted(
 
     forbidden = client.post(
         "/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval",
+        json={**payload, "prompt": "not-admitted", "provider_model": "not-admitted"},
+    )
+    assert forbidden.status_code == 422
+    assert {tuple(error["loc"]) for error in forbidden.json()["detail"]} >= {
+        ("body", "prompt"),
+        ("body", "provider_model"),
+    }
+
+    db = client.layer3_session_factory()
+    try:
+        _assert_no_downstream_side_effects(db)
+    finally:
+        db.close()
+
+
+def test_source_directory_hybrid_context_packet_fuses_lexical_and_vector_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir, snapshot_info, index_authority_hash, embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    payload = {
+        **_vector_retrieval_payload(
+            snapshot_info,
+            index_authority_hash,
+            embedding_index_authority_hash,
+            "alpha beta",
+        ),
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+
+    db = client.layer3_session_factory()
+    try:
+        direct = source_directory_material_hybrid_retrieval_context_packet(db, payload)
+        replay = source_directory_material_hybrid_retrieval_context_packet(db, payload)
+    finally:
+        db.close()
+    assert direct["schema_id"] == "layer3.source_directory_hybrid_retrieval_context_packet.v1"
+    assert direct["mode"] == "source_directory_hybrid_retrieval_context_packet_authority"
+    assert direct["status"] == "available"
+    assert direct["hybrid_context_packet_hash"] == replay["hybrid_context_packet_hash"]
+    assert direct["lexical_context_packet_hash"] == replay["lexical_context_packet_hash"]
+    assert direct["vector_retrieval_contract_id"] == (
+        "source_directory_material_deterministic_vector_retrieval_authority"
+    )
+    assert direct["source_gate"] == "822_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_RUNTIME_ENTRY_FREEZE"
+    assert direct["index_authority_hash"] == index_authority_hash
+    assert direct["embedding_index_authority_hash"] == embedding_index_authority_hash
+    assert direct["hybrid_total"] >= 1
+    assert direct["items"] == replay["items"]
+    assert direct["items"][0]["hybrid_rank"] == 1
+    assert direct["items"][0]["included_by_lexical"] is True
+    assert direct["items"][0]["included_by_vector"] is True
+    assert "text_excerpt" in direct["items"][0]
+    assert "text" not in direct["items"][0]
+    assert "vector" not in direct["items"][0]
+    assert "normalized_features" not in direct["items"][0]
+    assert direct["source_index_rows_written"] is False
+    assert direct["embedding_vector_rows_written"] is False
+    assert direct["vector_index_rows_written"] is False
+    assert direct["retrieval_rows_written"] is False
+    assert direct["context_packet_rows_written"] is False
+    assert direct["qualitative_analysis_rows_written"] is False
+    assert direct["analysis_run_rows_written"] is False
+    assert direct["package_rows_written"] is False
+    assert direct["connector_rows_written"] is False
+    assert direct["negative_invariants"]["persistent_vector_store_enabled"] is False
+    assert direct["negative_invariants"]["rag_execution_enabled"] is False
+    assert direct["negative_invariants"]["prompt_model_provider_runtime_enabled"] is False
+    assert direct["negative_invariants"]["network_egress_enabled"] is False
+    assert str(source_dir) not in str(direct)
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet",
+        json=payload,
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == direct["schema_id"]
+    assert body["hybrid_context_packet_hash"] == direct["hybrid_context_packet_hash"]
+    assert body["items"] == direct["items"]
+    assert str(source_dir) not in response.text
+
+    stale = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet",
+        json={**payload, "embedding_index_authority_hash": "0" * 64},
+    )
+    assert stale.status_code == 409
+    assert stale.json()["error"]["code"] == (
+        "source_directory_vector_retrieval_stale_embedding_index_authority"
+    )
+
+    forbidden = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet",
         json={**payload, "prompt": "not-admitted", "provider_model": "not-admitted"},
     )
     assert forbidden.status_code == 422
