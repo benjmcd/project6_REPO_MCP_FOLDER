@@ -2148,6 +2148,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE = (
     PLANNING_DOCS
     / "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "785_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -67810,6 +67814,127 @@ def _check_source_directory_material_vector_retrieval_authority_selection_freeze
                 )
 
 
+def _check_source_directory_material_vector_retrieval_authority_selection_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync`.",
+        "785_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+        "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
+        "#1389",
+        "codex/l3-vector-retrieval-select",
+        "1cef06ab450e78d0666bed85efadef04fabfe139",
+        "07a80d049cc4ad7390b98ececcb78102a20679c1",
+        "codex/l3-vector-retrieval-select-sync",
+        "current_main_synced_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+        "Runtime behavior introduced by selection PR: `false`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "3m5s",
+        "test",
+        "3m37s",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "source_directory_material_deterministic_vector_retrieval_authority_contract",
+        "source_directory_material_deterministic_vector_retrieval_authority",
+        "deterministic_local_hash_vector_similarity_retrieval",
+        "source_directory_material_deterministic_embedding_vector_index_authority",
+        "layer3.source_directory_embedding_vector_index.v1",
+        "safe_vector_descriptors",
+        "backend/app/services/layer3_source_directory_vector_retrieval.py",
+        "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+        "python -m py_compile .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_index.py -q",
+        "git diff --check",
+        "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC)} "
+                f"missing source directory vector retrieval authority selection sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Vector Retrieval Authority Selection Current-Main Sync",
+            "785_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+            "#1389",
+            "1cef06ab450e78d0666bed85efadef04fabfe139",
+            "07a80d049cc4ad7390b98ececcb78102a20679c1",
+            "current_main_synced_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+            "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
+            "source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "source_directory_material_deterministic_vector_retrieval_authority",
+            "deterministic_local_hash_vector_similarity_retrieval",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "safe_vector_descriptors",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            "3m5s",
+            "3m37s",
+            "Runtime behavior introduced by selection PR: `false`.",
+            "Runtime behavior introduced by this sync: `false`.",
+            "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_material_vector_retrieval_authority_selection_current_main_sync",
+            "current_main_synced_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+            "codex/l3-vector-retrieval-select-sync",
+            "785_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+            "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
+            "#1389",
+            "1cef06ab450e78d0666bed85efadef04fabfe139",
+            "07a80d049cc4ad7390b98ececcb78102a20679c1",
+            '"runtime_behavior_introduced_by_selection_pr": false',
+            '"runtime_behavior_in_this_sync": false',
+            '"backend-layer3-api": "SUCCESS"',
+            '"backend-layer3-api_duration": "3m5s"',
+            '"test": "SUCCESS"',
+            '"test_duration": "3m37s"',
+            '"reviewThreads": 0',
+            '"unresolvedReviewThreads": 0',
+            "source_directory_material_deterministic_vector_retrieval_authority_contract",
+            "source_directory_material_deterministic_vector_retrieval_authority",
+            "deterministic_local_hash_vector_similarity_retrieval",
+            "source_directory_material_deterministic_embedding_vector_index_authority",
+            "layer3.source_directory_embedding_vector_index.v1",
+            "safe_vector_descriptors",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py",
+            "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+            "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_vector_retrieval_authority_selection_current_main_sync_proof",
+            "current_main_sync_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+            "current_main_synced_source_directory_material_vector_retrieval_authority_selection_after_embedding_vector_index_runtime_sync",
+            "785_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_CURRENT_MAIN_SYNC.md",
+            "784_SOURCE_DIRECTORY_MATERIAL_VECTOR_RETRIEVAL_AUTHORITY_SELECTION_FREEZE.md",
+            "#1389",
+            "07a80d049cc4ad7390b98ececcb78102a20679c1",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main sync introduces no additional runtime behavior",
+            "source_directory_material_deterministic_vector_retrieval_authority_contract is current-main selected",
+            "source_directory_material_deterministic_embedding_vector_index_authority and layer3.source_directory_embedding_vector_index.v1 are selected inputs",
+            "backend/app/services/layer3_source_directory_vector_retrieval.py and backend/tests/test_layer3_source_directory_vector_retrieval.py are selected for the future contract/runtime lane",
+            "write_source_directory_material_deterministic_vector_retrieval_authority_contract_before_runtime is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory vector retrieval authority selection sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -68437,6 +68562,7 @@ def main() -> int:
     _check_source_directory_material_deterministic_embedding_vector_index_runtime_proof(errors)
     _check_source_directory_material_deterministic_embedding_vector_index_runtime_current_main_sync(errors)
     _check_source_directory_material_vector_retrieval_authority_selection_freeze(errors)
+    _check_source_directory_material_vector_retrieval_authority_selection_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
