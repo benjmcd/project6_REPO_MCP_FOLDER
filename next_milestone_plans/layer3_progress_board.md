@@ -5034,3 +5034,21 @@ Runtime behavior introduced by this freeze: `false`.
 This freeze admits no runtime behavior, backend route/service/model/migration behavior, source/index rows, vector index, embedding generation, retrieval query, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, or source `L3OutputPackage` mutation.
 
 The next exact posture after merge is `current_main_sync_source_directory_material_source_index_authority_freeze`; after sync, the next exact posture is `write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime`.
+
+## Source Directory Material Source Index Authority Freeze Current-Main Sync
+
+Current-main sync: `751_SOURCE_DIRECTORY_MATERIAL_SOURCE_INDEX_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC.md` syncs freeze PR `#1355` for `source_directory_material_source_index_authority_freeze`.
+
+Freeze branch `codex/l3-source-index-freeze` landed branch commit `ba773ab5` into current main at merge commit `ab50df882fd2a28563df0f56f20351251757775c`.
+
+Synced result: `current_main_synced_source_directory_material_source_index_authority_freeze`.
+
+Current main now records `source_directory_material_source_index_authority` as selected after `current_main_synced_source_directory_ingestion_gate_b_material_admission_runtime`.
+
+PR `#1355` had green `backend-layer3-api` and `test` checks, comments totalCount `0`, reviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Post-merge validation at `ab50df882fd2a28563df0f56f20351251757775c` passed: JSON manifest load, `python -m py_compile .\tools\l3-progress-check.py`, `python .\tools\l3-progress-check.py`, `python .\tools\l3-target-selection-validate.py --expect frozen`, and `git diff --check`.
+
+This sync admits no runtime behavior. Source/index rows, vector index, embedding generation, retrieval query, qualitative-hybrid runtime, package construction, package mutation/reconstruction, connector/destination dispatch, provider-public delivery/use, provider-private signed URL generation/use, auth/security broadening, rendered controls, full mockup activation, frontend-durable authority, arbitrary source ingestion, arbitrary recursive ingestion, PDFs, OCR, Office documents, arbitrary binaries, web connectors, and source `L3OutputPackage` mutation remain blocked.
+
+The next exact current-main posture is `write_source_directory_material_source_index_authority_contract_before_rag_vector_or_qualitative_hybrid_runtime`.
