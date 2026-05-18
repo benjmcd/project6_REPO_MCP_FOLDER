@@ -66,11 +66,20 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_GATE = (
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = (
     "layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1"
 )
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SCHEMA_ID = (
+    "layer3.source_directory_qualitative_analysis_external_export_download_delivery_status.v1"
+)
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE = (
     "source_directory_qualitative_analysis_external_export_download_delivery_authority"
 )
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_MODE = (
+    "source_directory_qualitative_analysis_external_export_download_delivery_status_authority"
+)
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SOURCE_GATE = (
     "814_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE"
+)
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SOURCE_GATE = (
+    "816_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_RUNTIME_ENTRY_FREEZE"
 )
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_source_directory_external_export_download"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_source_directory_external_export_download"
@@ -1870,6 +1879,48 @@ def source_directory_qualitative_analysis_external_export_download_deliver(
         },
         authority=authority,
     )
+
+
+def source_directory_qualitative_analysis_external_export_download_delivery_status(
+    db: Session,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    delivery = source_directory_qualitative_analysis_external_export_download_deliver(db, payload)
+    authority = _json_clone(delivery.authority)
+    request_id = str(authority.get("request_id") or "")
+    return {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": request_id,
+        "server_time": _server_time(),
+        "mode": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_MODE,
+        "status": "ready",
+        "delivery_status": "source_directory_external_export_download_delivery_ready",
+        "delivery_available": True,
+        "delivery_streaming_performed": False,
+        "delivery_state": authority.get("delivery_state"),
+        "source_gate": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SOURCE_GATE,
+        "validated_delivery_source_gate": authority.get("source_gate"),
+        "external_export_download_record_ref": authority.get("external_export_download_record_ref"),
+        "export_download_descriptor_ref": authority.get("export_download_descriptor_ref"),
+        "output_package_id": authority.get("output_package_id"),
+        "package_kind": authority.get("package_kind"),
+        "package_payload_hash": authority.get("package_payload_hash"),
+        "payload_ref_redacted": True,
+        "raw_local_path_exposed": False,
+        "same_origin_delivery_enabled": True,
+        "browser_managed_same_origin_attachment_enabled": True,
+        "provider_public_delivery_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "package_payload_rewrite_enabled": False,
+        "source_package_row_mutation_enabled": False,
+        "delivery_headers": dict(delivery.headers),
+        "delivery_authority": authority,
+        "next_allowed_actions": ["deliver_source_directory_external_export_download"],
+    }
 
 
 def _source_directory_package_review_preview(
