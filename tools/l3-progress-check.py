@@ -2058,6 +2058,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF =
     PLANNING_DOCS
     / "760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -64942,6 +64946,106 @@ def _check_source_directory_material_deterministic_lexical_retrieval_runtime_pro
                 )
 
 
+def _check_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_material_deterministic_lexical_retrieval_runtime_proof`.",
+        "761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
+        "#1365",
+        "codex/l3-retrieval-impl",
+        "8483d79e16f59e51759dbf2724d7a397bf817b0f",
+        "8275da065e0f7dabbb603dbaecb84445c8b10a45",
+        "codex/l3-retrieval-impl-sync",
+        "current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime",
+        "Runtime behavior already merged: `true`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "backend-layer3-api",
+        "2m56s",
+        "test",
+        "3m28s",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "backend/app/services/layer3_source_directory_text_retrieval.py",
+        "backend/tests/test_layer3_source_directory_text_retrieval.py",
+        "source_directory_material_text_index(db, payload)",
+        "layer3.source_directory_text_retrieval.v1",
+        "source_index_rows_written: False",
+        "retrieval_rows_written: False",
+        "python -m py_compile .\\tools\\l3-progress-check.py .\\backend\\app\\services\\layer3_source_directory_text_retrieval.py .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py",
+        "python .\\tools\\l3-progress-check.py",
+        "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+        "python -m pytest .\\backend\\tests\\test_layer3_source_directory_text_retrieval.py -q",
+        "python -m pytest .\\backend\\tests\\test_layer3_source_directory_ingestion.py -q",
+        "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync",
+        "Do not continue same-family source-directory lexical retrieval proof loops",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing source directory deterministic lexical retrieval runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Material Deterministic Lexical Retrieval Runtime Current-Main Sync",
+            "761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1365",
+            "8483d79e16f59e51759dbf2724d7a397bf817b0f",
+            "8275da065e0f7dabbb603dbaecb84445c8b10a45",
+            "current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime",
+            "backend/app/services/layer3_source_directory_text_retrieval.py",
+            "backend/tests/test_layer3_source_directory_text_retrieval.py",
+            "reviewThreads totalCount `0`",
+            "unresolved reviewThreads totalCount `0`",
+            "Runtime behavior introduced by this sync: `false`.",
+            "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync",
+        ),
+        MANIFEST: (
+            "source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync",
+            "current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime",
+            "codex/l3-retrieval-impl-sync",
+            "761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "760_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_PROOF.md",
+            "#1365",
+            "8483d79e16f59e51759dbf2724d7a397bf817b0f",
+            "8275da065e0f7dabbb603dbaecb84445c8b10a45",
+            '"runtime_behavior_already_merged": true',
+            '"runtime_behavior_in_this_sync": false',
+            '"unresolvedReviewThreads": 0',
+            "backend/app/services/layer3_source_directory_text_retrieval.py",
+            "backend/tests/test_layer3_source_directory_text_retrieval.py",
+            "test_layer3_source_directory_text_retrieval.py -q PASS 4 passed",
+            "test_layer3_source_directory_ingestion.py -q PASS 13 passed",
+            "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync_proof",
+            "current_main_sync_source_directory_material_deterministic_lexical_retrieval_runtime",
+            "current_main_synced_source_directory_material_deterministic_lexical_retrieval_runtime",
+            "761_SOURCE_DIRECTORY_MATERIAL_DETERMINISTIC_LEXICAL_RETRIEVAL_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1365",
+            "8275da065e0f7dabbb603dbaecb84445c8b10a45",
+            "current main records zero PR comments reviews latestReviews and review threads",
+            "current main includes backend/app/services/layer3_source_directory_text_retrieval.py",
+            "no runtime behavior introduced by this sync",
+            "select_rag_vector_or_qualitative_hybrid_authority_after_source_directory_material_lexical_retrieval_runtime_sync is selected for the next authority posture",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source directory deterministic lexical retrieval runtime sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -65545,6 +65649,7 @@ def main() -> int:
     _check_source_directory_material_lexical_retrieval_authority_contract(errors)
     _check_source_directory_material_lexical_retrieval_authority_contract_current_main_sync(errors)
     _check_source_directory_material_deterministic_lexical_retrieval_runtime_proof(errors)
+    _check_source_directory_material_deterministic_lexical_retrieval_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
