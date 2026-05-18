@@ -37,6 +37,9 @@ from app.services.layer3_source_directory_vector_index import (
 from app.services.layer3_source_directory_hybrid_context import (
     source_directory_material_hybrid_retrieval_context_packet,
 )
+from app.services.layer3_source_directory_hybrid_analysis import (
+    source_directory_hybrid_context_packet_qualitative_analysis,
+)
 from app.services.layer3_source_directory_vector_retrieval import (
     SourceDirectoryVectorRetrievalError,
     source_directory_material_vector_retrieval,
@@ -483,6 +486,139 @@ def test_source_directory_hybrid_context_packet_fuses_lexical_and_vector_authori
 
     db = client.layer3_session_factory()
     try:
+        _assert_no_downstream_side_effects(db)
+    finally:
+        db.close()
+
+
+def test_source_directory_hybrid_context_packet_qualitative_analysis_uses_hybrid_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir, snapshot_info, index_authority_hash, embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    payload = {
+        **_vector_retrieval_payload(
+            snapshot_info,
+            index_authority_hash,
+            embedding_index_authority_hash,
+            "BETA alpha alpha",
+        ),
+        "client_request_id": "source-directory-hybrid-context-analysis",
+        "analysis_question": "What does the alpha beta evidence support?",
+        "analysis_focus": "deterministic hybrid context packet evidence",
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+
+    db = client.layer3_session_factory()
+    try:
+        direct = source_directory_hybrid_context_packet_qualitative_analysis(db, payload)
+        replay = source_directory_hybrid_context_packet_qualitative_analysis(db, payload)
+        hybrid_context = source_directory_material_hybrid_retrieval_context_packet(
+            db,
+            {
+                key: value
+                for key, value in payload.items()
+                if key not in {"analysis_question", "analysis_focus"}
+            },
+        )
+
+        assert direct["schema_id"] == (
+            "layer3.source_directory_hybrid_context_packet_qualitative_analysis.v1"
+        )
+        assert direct["mode"] == "source_directory_hybrid_context_packet_qualitative_analysis_authority"
+        assert direct["source_gate"] == (
+            "824_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_RUNTIME_ENTRY_FREEZE"
+        )
+        assert direct["status"] == "available"
+        assert direct["analysis_contract_id"] == (
+            "source_directory_hybrid_context_packet_qualitative_analysis_authority"
+        )
+        assert direct["analysis_mode"] == "hybrid_context_packet_grounded_qualitative_analysis"
+        assert direct["qualitative_analysis_hash"] == replay["qualitative_analysis_hash"]
+        assert direct["hybrid_context_packet_hash"] == hybrid_context["hybrid_context_packet_hash"]
+        assert direct["validated_hybrid_context_schema_id"] == hybrid_context["schema_id"]
+        assert direct["validated_hybrid_context_mode"] == hybrid_context["mode"]
+        assert direct["lexical_context_packet_hash"] == hybrid_context["lexical_context_packet_hash"]
+        assert direct["vector_retrieval_contract_id"] == hybrid_context["vector_retrieval_contract_id"]
+        assert direct["embedding_index_authority_hash"] == embedding_index_authority_hash
+        assert direct["hybrid_total"] == hybrid_context["hybrid_total"]
+        assert direct["supporting_segments"]
+        assert direct["supporting_segments"][0]["hybrid_rank"] == 1
+        assert direct["supporting_segments"][0]["included_by_lexical"] is True
+        assert direct["supporting_segments"][0]["included_by_vector"] is True
+        assert "quote_excerpt" in direct["supporting_segments"][0]
+        assert "text" not in direct["supporting_segments"][0]
+        assert "vector" not in direct["supporting_segments"][0]
+        assert direct["evidence_summary"]["summary_kind"] == (
+            "deterministic_hybrid_context_packet_evidence_summary"
+        )
+        assert direct["source_directory_package_review_preview_enabled"] is False
+        assert direct["package_commit_enabled"] is False
+        assert direct["package_review_submit_enabled"] is False
+        assert direct["handoff_enabled"] is False
+        assert direct["external_export_download_enabled"] is False
+        assert direct["source_index_rows_written"] is False
+        assert direct["embedding_vector_rows_written"] is False
+        assert direct["vector_index_rows_written"] is False
+        assert direct["retrieval_rows_written"] is False
+        assert direct["context_packet_rows_written"] is False
+        assert direct["qualitative_analysis_rows_written"] is False
+        assert direct["analysis_run_rows_written"] is False
+        assert direct["package_rows_written"] is False
+        assert direct["connector_rows_written"] is False
+        assert direct["negative_invariants"]["rag_execution_enabled"] is False
+        assert direct["negative_invariants"]["prompt_model_provider_runtime_enabled"] is False
+        assert direct["negative_invariants"]["package_construction_enabled"] is False
+        assert direct["negative_invariants"]["connector_dispatch_enabled"] is False
+        assert direct["negative_invariants"]["raw_vector_exposed"] is False
+        assert str(source_dir) not in str(direct)
+
+        response = client.post(
+            (
+                "/api/v1/layer3/source/ingestion/server-configured-directory/"
+                "hybrid-context-packet/qualitative-analysis"
+            ),
+            json=payload,
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["schema_id"] == direct["schema_id"]
+        assert body["qualitative_analysis_hash"] == direct["qualitative_analysis_hash"]
+        assert body["supporting_segments"] == direct["supporting_segments"]
+        assert str(source_dir) not in response.text
+
+        stale = client.post(
+            (
+                "/api/v1/layer3/source/ingestion/server-configured-directory/"
+                "hybrid-context-packet/qualitative-analysis"
+            ),
+            json={**payload, "embedding_index_authority_hash": "0" * 64},
+        )
+        assert stale.status_code == 409
+        assert stale.json()["error"]["code"] == (
+            "source_directory_vector_retrieval_stale_embedding_index_authority"
+        )
+
+        forbidden = client.post(
+            (
+                "/api/v1/layer3/source/ingestion/server-configured-directory/"
+                "hybrid-context-packet/qualitative-analysis"
+            ),
+            json={**payload, "prompt": "not-admitted", "provider_model": "not-admitted"},
+        )
+        assert forbidden.status_code == 422
+        assert {tuple(error["loc"]) for error in forbidden.json()["detail"]} >= {
+            ("body", "prompt"),
+            ("body", "provider_model"),
+        }
+
         _assert_no_downstream_side_effects(db)
     finally:
         db.close()
