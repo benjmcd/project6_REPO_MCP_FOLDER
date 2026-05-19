@@ -51,6 +51,13 @@ Docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH_CONTRACT.md`
 
 Docs `114_QUAL_APS_EXEC_FREEZE.md` and `115_QUAL_APS_EXEC_CONTRACT.md`, when present, are planning/control qualitative APS content document execution governance only. They freeze qualitative APS content document execution as not admitted after connector/destination dispatch governance. Do not classify them as live qualitative execution, document trace rendering, rendered workbench controls, package/handoff/export behavior, provider/public URLs, connector/destination dispatch, source ingestion, schema/model/migration/runtime widening, or route behavior by themselves.
 
+Current Sublayer 3C optional-tool planning state:
+- `844_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT.md` satisfies the public URL delivery prerequisite only for Sublayer 3C optional-tool planning. Do not classify it as optional-tool runtime, external delivery runtime, raw provider-public URL exposure, real provider adapter behavior, connector dispatch, destination writes, package mutation, source expansion, semantic/vector RAG widening, prompt/model/provider runtime, hidden model calls, rendered optional-tool controls, or auth/security behavior.
+- `845_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE.md`, `846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md`, and `847_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR.md` are evaluation-only planning/control authority for TabPFN and NRC RAG. Keep default posture `no_runtime_no_dependency_no_default_provider`.
+- `848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md` records `plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime`; it admits no runtime behavior, benchmark execution, fixture data creation, fixture materialization, dependency, provider credential, network egress, endpoint, rendered optional-tool controls, package/handoff/export/download integration, or Gate C/pass-entry admission.
+- `849_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE.md` records `stop_optional_tool_benchmark_progression_until_fixture_authority_selected`; the active current-main posture is `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
+- Keep selected TabPFN benchmark fixture authority as `none` until product authority names target column, feature columns, train/test split, leakage checks, classification/regression task, and no-adopt threshold. Keep selected NRC RAG benchmark fixture authority as `none` until product authority names fixed query ids/text, answerability labels, expected source identifiers, expected source spans, unsupported-query refusal behavior, citation rubric, and baseline surface set.
+
 ## Canonical Inputs
 
 ### GitHub authority for state
