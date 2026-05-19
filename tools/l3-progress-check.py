@@ -2344,6 +2344,9 @@ LAYER3_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE = (
 LAYER3_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_SYNC = (
     PLANNING_DOCS / "855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE = (
+    PLANNING_DOCS / "856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -73578,6 +73581,51 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                 f"missing recursive source ingestion current-main sync term: {term}"
             )
 
+    runtime_policy_text = _read_required_text(
+        LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime runtime-policy selection freeze for `recursive_server_configured_operator_directory_text_table_ingestion`.",
+        "856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
+        "Current-main preflight checkpoint: `8c943a273ac96dcec3b11bbb0f5277147a71ff8e`.",
+        "Predecessor current-main sync doc: `855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md`.",
+        "Selected implementation action: `implement_recursive_server_configured_operator_directory_text_table_ingestion`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Implementation-entry allowed next: true",
+        "Runtime policy id: `recursive_server_configured_directory_text_table_policy_v1`.",
+        "Selected source root authority: `LAYER3_SOURCE_INGESTION_DIR`.",
+        "maximum recursion depth: `2`",
+        "maximum normalized relative path segments: `3`, including the filename",
+        "maximum file count: `100`",
+        "maximum per-file bytes: `MAX_UPLOAD_MB * 1024 * 1024`",
+        "maximum aggregate bytes: `MAX_UPLOAD_MB * 1024 * 1024 * 100`",
+        "deterministic lexical order over normalized relative paths",
+        "recursive traversal must be server-owned and must not be caller selected",
+        "must not add a `recursive` request field",
+        "Normalized relative paths must",
+        "no drive letter, root prefix, device prefix, `..` segment, empty segment, or raw configured root path",
+        "symlink, junction, reparse-point, device path, socket, pipe, or non-regular-file entry",
+        "hidden file or hidden directory segment",
+        "unsupported extension anywhere under the traversed policy scope",
+        "duplicate normalized relative path",
+        "case-fold duplicate relative path",
+        "caller-supplied path, URL, glob, file bytes, recursive flag",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "layer3.source_directory_ingestion_batch.v1",
+        "direct child only: `false`",
+        "recursive traversal admitted: `true`",
+        "no runtime behavior by itself",
+        "current-main sync for `recursive_server_configured_directory_text_table_policy_v1`",
+        "implement_recursive_server_configured_operator_directory_text_table_ingestion",
+    ):
+        if term not in runtime_policy_text:
+            errors.append(
+                f"{_rel(LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE)} "
+                f"missing recursive source ingestion runtime policy term: {term}"
+            )
+
     service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE, errors)
     for term in (
         '"direct_child_only": True',
@@ -73596,65 +73644,91 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
         BOARD: (
             "## Recursive Source Ingestion Family Selection Freeze",
             "## Recursive Source Ingestion Family Selection Freeze Current-Main Sync",
+            "## Recursive Source Ingestion Runtime Policy Selection Freeze",
             "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
             "855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
             "PR `#1464`",
             "cd7cd385710102724c572615b33105956a22d52b",
             "recursive_server_configured_operator_directory_text_table_source_family",
             "recursive_server_configured_local_directory_text_table_ingestion",
+            "recursive_server_configured_directory_text_table_policy_v1",
             "Runtime behavior introduced by this freeze: `false`.",
             "Implementation-entry allowed next: false",
+            "Implementation-entry allowed next: true",
             "current_main_synced_recursive_source_ingestion_family_selection_freeze",
             "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze",
             "select_recursive_source_ingestion_runtime_policy_before_implementation",
+            "current_main_sync_recursive_server_configured_directory_text_table_policy_v1",
+            "implement_recursive_server_configured_operator_directory_text_table_ingestion",
         ),
         MANIFEST: (
             '"recursive_source_ingestion_family_selection_freeze"',
             '"recursive_source_ingestion_family_selection_freeze_current_main_sync"',
+            '"recursive_source_ingestion_runtime_policy_selection_freeze"',
             '"latest_recursive_source_ingestion_family_selection_freeze_doc"',
             '"latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_doc"',
+            '"latest_recursive_source_ingestion_runtime_policy_selection_freeze_doc"',
             '"status": "recursive_source_ingestion_family_selection_freeze_no_runtime"',
             '"status": "current_main_synced_recursive_source_ingestion_family_selection_freeze"',
+            '"status": "recursive_source_ingestion_runtime_policy_selection_freeze_no_runtime"',
             '"selected_source_family": "recursive_server_configured_operator_directory_text_table_source_family"',
             '"selected_source_family_class": "recursive_server_configured_local_directory_text_table_ingestion"',
+            '"runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1"',
             '"runtime_behavior_change": false',
             '"implementation_entry_allowed_next": false',
+            '"implementation_entry_allowed_next": true',
             '"current_recursive_traversal_admitted": false',
             '"freeze_merge_commit": "cd7cd385710102724c572615b33105956a22d52b"',
             '"freeze_pr": "#1464"',
             '"next_posture": "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy"',
             '"next_posture": "select_recursive_source_ingestion_runtime_policy_before_implementation"',
+            '"next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation"',
         ),
         PROOF_MANIFEST: (
             '"recursive_source_ingestion_family_selection_freeze_proof"',
             '"recursive_source_ingestion_family_selection_freeze_current_main_sync_proof"',
+            '"recursive_source_ingestion_runtime_policy_selection_freeze_proof"',
             '"no_runtime_recursive_source_ingestion_family_selection_freeze"',
             '"current_main_synced_recursive_source_ingestion_family_selection_freeze"',
+            '"no_runtime_recursive_source_ingestion_runtime_policy_selection_freeze"',
             '"recursive_server_configured_operator_directory_text_table_source_family"',
+            '"recursive_server_configured_directory_text_table_policy_v1"',
             '"implementation_entry_allowed_next": false',
+            '"implementation_entry_allowed_next": true',
             '"freeze_merge_commit": "cd7cd385710102724c572615b33105956a22d52b"',
             "current direct-child ingestion unchanged",
             "recursive_traversal_admitted False",
             "no recursive traversal in the live API",
+            "maximum recursion depth 2",
+            "maximum normalized relative path segments 3 including filename",
+            "no caller-selected recursive flag",
             "PR #1464 merged",
             "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy",
             "select_recursive_source_ingestion_runtime_policy_before_implementation",
+            "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation",
         ),
         PROGRESS_PROMPT: (
             "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
             "855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
             "recursive_server_configured_operator_directory_text_table_source_family",
+            "recursive_server_configured_directory_text_table_policy_v1",
             "cd7cd385710102724c572615b33105956a22d52b",
             "no recursive traversal in the live API",
             "no implementation-entry permission until a later freeze",
             "select_recursive_source_ingestion_runtime_policy_before_implementation",
+            "current_main_sync_recursive_server_configured_directory_text_table_policy_v1",
         ),
         REFRESH_SPEC: (
             "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
             "855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
             "branch-local no-runtime source-family selection governance",
+            "branch-local no-runtime runtime-policy selection governance",
             "classify only the no-runtime family selection as current-main governance",
             "current-main sync for the no-runtime recursive source-ingestion family selection",
+            "classify only the no-runtime recursive source-ingestion runtime policy selection as current-main governance",
             "direct-child `LAYER3_SOURCE_INGESTION_DIR` ingestion remains unchanged",
         ),
     }.items():
@@ -73699,6 +73773,20 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                 ),
                 "latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_next_posture": (
                     "select_recursive_source_ingestion_runtime_policy_before_implementation"
+                ),
+                "latest_recursive_source_ingestion_runtime_policy_selection_freeze_doc": (
+                    "next_milestone_plans/Layer3_planning_docs/856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md"
+                ),
+                "latest_recursive_source_ingestion_runtime_policy_selection_freeze_status": (
+                    "recursive_source_ingestion_runtime_policy_selection_freeze_no_runtime"
+                ),
+                "latest_recursive_source_ingestion_runtime_policy_selection_freeze_runtime_behavior_change": False,
+                "latest_recursive_source_ingestion_runtime_policy_selection_freeze_runtime_policy_id": (
+                    "recursive_server_configured_directory_text_table_policy_v1"
+                ),
+                "latest_recursive_source_ingestion_runtime_policy_selection_freeze_implementation_entry_allowed_next": True,
+                "latest_recursive_source_ingestion_runtime_policy_selection_freeze_next_posture": (
+                    "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation"
                 ),
             }
             for key, value in expected.items():
@@ -73756,6 +73844,75 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     errors.append(
                         f"{_rel(MANIFEST)} recursive_source_ingestion_family_selection_freeze_current_main_sync.{key} must be {value!r}"
                     )
+
+        runtime_policy = manifest_data.get("recursive_source_ingestion_runtime_policy_selection_freeze")
+        if not isinstance(runtime_policy, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing recursive_source_ingestion_runtime_policy_selection_freeze object"
+            )
+        else:
+            expected_runtime_policy_scalars = {
+                "status": "recursive_source_ingestion_runtime_policy_selection_freeze_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
+                "branch": "codex/l3-recursive-source-ingestion-policy",
+                "current_main_preflight_checkpoint": "8c943a273ac96dcec3b11bbb0f5277147a71ff8e",
+                "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+                "selected_implementation_action": "implement_recursive_server_configured_operator_directory_text_table_ingestion",
+                "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+                "selected_source_family": "recursive_server_configured_operator_directory_text_table_source_family",
+                "selected_source_family_class": "recursive_server_configured_local_directory_text_table_ingestion",
+                "selected_source_root_authority": "LAYER3_SOURCE_INGESTION_DIR",
+                "runtime_behavior_change": False,
+                "implementation_entry_allowed_next": True,
+                "current_direct_child_ingestion_unchanged": True,
+                "current_recursive_traversal_admitted": False,
+                "max_recursion_depth": 2,
+                "max_normalized_relative_path_segments_including_filename": 3,
+                "max_file_count": 100,
+                "max_per_file_bytes": "MAX_UPLOAD_MB * 1024 * 1024",
+                "max_aggregate_bytes": "MAX_UPLOAD_MB * 1024 * 1024 * 100",
+                "ordering": "deterministic_lexical_normalized_relative_path_order",
+                "caller_selected_recursive_flag_allowed": False,
+                "next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation",
+            }
+            for key, value in expected_runtime_policy_scalars.items():
+                if runtime_policy.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} recursive_source_ingestion_runtime_policy_selection_freeze.{key} must be {value!r}"
+                    )
+            allowed_extensions = runtime_policy.get("allowed_extensions")
+            if allowed_extensions != [".csv", ".json", ".txt", ".md"]:
+                errors.append(
+                    f"{_rel(MANIFEST)} recursive_source_ingestion_runtime_policy_selection_freeze.allowed_extensions must remain text/table only"
+                )
+            blocked_scope = runtime_policy.get("blocked_scope")
+            if not isinstance(blocked_scope, dict):
+                errors.append(
+                    f"{_rel(MANIFEST)} recursive_source_ingestion_runtime_policy_selection_freeze.blocked_scope must be an object"
+                )
+            else:
+                for key in (
+                    "runtime_behavior_before_sync_and_implementation",
+                    "caller_provided_paths_or_urls",
+                    "pdf_ocr_office_image_archive_binary_ingestion",
+                    "browser_upload_web_or_database_connector",
+                    "rendered_control_change",
+                    "source_authority_promotion",
+                    "package_handoff_export_download_integration",
+                    "connector_dispatch",
+                    "provider_urls",
+                    "credentials_or_network",
+                    "semantic_vector_rag_widening",
+                    "prompt_model_provider_qualitative_generation",
+                    "tabpfn_runtime",
+                    "nrc_rag_runtime",
+                    "optional_tool_gate_c_or_pass_entry_admission",
+                    "broad_auth_security_behavior",
+                ):
+                    if blocked_scope.get(key) is not False:
+                        errors.append(
+                            f"{_rel(MANIFEST)} recursive_source_ingestion_runtime_policy_selection_freeze.blocked_scope.{key} must be false"
+                        )
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
     if isinstance(proof_data, dict):
@@ -73847,6 +74004,56 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in sync_proof_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_family_selection_freeze_current_main_sync_proof.proof_terms missing {term}"
+                        )
+
+        runtime_policy_proof = proof_data.get("recursive_source_ingestion_runtime_policy_selection_freeze_proof")
+        if not isinstance(runtime_policy_proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing recursive_source_ingestion_runtime_policy_selection_freeze_proof object"
+            )
+        else:
+            expected_runtime_policy_proof_scalars = {
+                "proof_kind": "no_runtime_recursive_source_ingestion_runtime_policy_selection_freeze",
+                "status": "recursive_source_ingestion_runtime_policy_selection_freeze_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
+                "branch": "codex/l3-recursive-source-ingestion-policy",
+                "runtime_behavior_change": False,
+                "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+                "selected_implementation_action": "implement_recursive_server_configured_operator_directory_text_table_ingestion",
+                "implementation_entry_allowed_next": True,
+                "next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation",
+            }
+            for key, value in expected_runtime_policy_proof_scalars.items():
+                if runtime_policy_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_runtime_policy_selection_freeze_proof.{key} must be {value!r}"
+                    )
+            runtime_policy_proof_terms = runtime_policy_proof.get("proof_terms")
+            if not isinstance(runtime_policy_proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_runtime_policy_selection_freeze_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "no-runtime runtime-policy selection freeze",
+                    "recursive_server_configured_directory_text_table_policy_v1",
+                    "maximum recursion depth 2",
+                    "maximum normalized relative path segments 3 including filename",
+                    "maximum file count 100",
+                    "deterministic lexical normalized relative path order",
+                    "no caller-selected recursive flag",
+                    "no recursive request field",
+                    "fail closed on hidden path segment",
+                    "fail closed on symlink junction reparse device socket pipe or non-regular file",
+                    "fail closed on unsupported extension anywhere under traversed policy scope",
+                    "redact configured root and raw local nested paths",
+                    "current direct-child ingestion unchanged",
+                    "no runtime behavior by itself",
+                    "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation",
+                ):
+                    if term not in runtime_policy_proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_runtime_policy_selection_freeze_proof.proof_terms missing {term}"
                         )
 
 

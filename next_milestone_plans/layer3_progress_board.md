@@ -7126,3 +7126,21 @@ The recursive source-ingestion family selection is now current-main synced as `c
 Current main still does not implement recursive traversal. Direct-child `LAYER3_SOURCE_INGESTION_DIR` ingestion remains unchanged with `direct_child_only: True` and `recursive_traversal_admitted: False`.
 
 Next exact posture: `select_recursive_source_ingestion_runtime_policy_before_implementation`. Do not implement recursive traversal until a later runtime-entry freeze selects exact traversal limits, exclusion policy, stale-authority behavior, status/readiness projection, downstream material authority compatibility, and proof scope.
+
+## Recursive Source Ingestion Runtime Policy Selection Freeze
+
+No-runtime runtime-policy selection freeze: `856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md` selects `recursive_server_configured_directory_text_table_policy_v1`.
+
+Selected implementation action: `implement_recursive_server_configured_operator_directory_text_table_ingestion`.
+
+Runtime behavior introduced by this freeze: `false`.
+
+Implementation-entry allowed next: true, after current-main sync, for only the exact recursive source-ingestion runtime policy selected here.
+
+Selected traversal policy: server-configured `LAYER3_SOURCE_INGESTION_DIR` only; `.csv`, `.json`, `.txt`, and `.md` only; maximum recursion depth `2` directory levels below the configured root; maximum normalized relative path segments `3` including filename; maximum file count `100`; maximum per-file bytes `MAX_UPLOAD_MB * 1024 * 1024`; maximum aggregate bytes `MAX_UPLOAD_MB * 1024 * 1024 * 100`; deterministic lexical ordering over normalized relative paths; no caller-selected recursive flag.
+
+Selected fail-closed policy: reject path escape, symlink, junction/reparse point, device path, non-file entry, hidden path segment, unsupported extension, empty file, oversized file, oversized aggregate batch, too many files, duplicate/case-fold duplicate relative path, non-UTF-8 file, invalid JSON, stale file identity, empty configured root, no eligible files, caller-supplied paths/URLs/globs/file bytes/recursive flags/connector selectors/provider URLs/credentials/source package refs/package refs/destination refs/RAG-vector inputs/optional-tool inputs/auth-security overrides, and configured roots overlapping app-owned storage, local-outbox, or export staging.
+
+Still blocked: runtime behavior before current-main sync and implementation, rendered control changes, source authority promotion, PDFs, OCR, Office documents, images, archives, arbitrary binaries, browser uploads, web connectors, database connectors, package/handoff/export/download changes, connector dispatch, provider URL behavior, credentials or network behavior, semantic/vector RAG widening, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, and broad auth/security behavior.
+
+Next exact posture: `current_main_sync_recursive_server_configured_directory_text_table_policy_v1`, then `implement_recursive_server_configured_operator_directory_text_table_ingestion`.
