@@ -7144,3 +7144,19 @@ Selected fail-closed policy: reject path escape, symlink, junction/reparse point
 Still blocked: runtime behavior before current-main sync and implementation, rendered control changes, source authority promotion, PDFs, OCR, Office documents, images, archives, arbitrary binaries, browser uploads, web connectors, database connectors, package/handoff/export/download changes, connector dispatch, provider URL behavior, credentials or network behavior, semantic/vector RAG widening, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, and broad auth/security behavior.
 
 Next exact posture: `current_main_sync_recursive_server_configured_directory_text_table_policy_v1`, then `implement_recursive_server_configured_operator_directory_text_table_ingestion`.
+
+## Recursive Source Ingestion Runtime Policy Selection Current-Main Sync
+
+Current-main proof/control sync: PR `#1466` merged at merge commit `4afd496541649f68812b2c148817dd8e84259b83`.
+
+Sync doc: `857_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_CURRENT_MAIN_SYNC.md`.
+
+The merge gate passed: `backend-layer3-api` and `test` succeeded, PR comments/reviews were empty, reviewThreads totalCount was `0`, unresolved reviewThreads totalCount was `0`, and merge state before merge was `CLEAN`.
+
+Post-merge validation passed for `python .\tools\l3-progress-check.py`, `python .\tools\l3-target-selection-validate.py --expect frozen`, pending fixture validation, and checkpoint fixture validation.
+
+The recursive source-ingestion runtime policy selection is now current-main synced as `current_main_synced_recursive_source_ingestion_runtime_policy_selection_freeze`.
+
+Current main still does not implement recursive traversal. Direct-child `LAYER3_SOURCE_INGESTION_DIR` ingestion remains unchanged with `direct_child_only: True` and `recursive_traversal_admitted: False`.
+
+Next exact posture: `implement_recursive_server_configured_operator_directory_text_table_ingestion`. Keep implementation inside `recursive_server_configured_directory_text_table_policy_v1` and do not add rendered controls, caller-provided paths, downstream package/export/connector/provider/vector/model/optional-tool behavior, or broad auth/security behavior.
