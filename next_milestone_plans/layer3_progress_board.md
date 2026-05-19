@@ -7309,3 +7309,21 @@ Static proof passed: `node --check .\backend\app\review_ui\static\layer3.js` and
 Still blocked: backend route/API/DTO/model/migration/service behavior changes, new submit controls or operation dock steps, package/source/provider/connector/auth/security widening, frontend-only durable authority, browser-storage authority, package mutation/reconstruction, handoff/export/download or delivery reruns, connector dispatch, provider URLs, credentials/network behavior, vector/RAG or broad qualitative runtime, and optional-tool runtime.
 
 Next exact posture after merge: `current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime`.
+
+## Downstream Analysis Environment Rendered Projection Runtime Current-Main Sync
+
+Current-main proof/control sync: PR `#1484` merged `868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md` at merge commit `9862fe1eb09925889926bfb79febd9f7abe585ee`.
+
+Sync doc: `869_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md`.
+
+The merge gate passed: `backend-layer3-api` succeeded in `3m21s`, `test` succeeded in `3m53s`, PR comments/reviews/latestReviews were empty, reviewThreads totalCount was `0`, unresolved reviewThreads totalCount was `0`, and merge state before merge was `CLEAN`.
+
+Post-merge validation passed for JSON manifest parsing, checker py_compile, `python .\tools\l3-progress-check.py`, target-selection validation, fixture-authority validation, checkpoint fixture validation, and `python -m pytest .\backend\tests\test_layer3_page.py -q`.
+
+The downstream Analysis Environment rendered projection runtime is now current-main synced as `current_main_synced_downstream_analysis_environment_rendered_projection_read_only_panel_runtime`.
+
+Current main now renders the bounded read-only `/review/layer3` Analysis Environment server projection panel over `State.sessionSummary.analysis_environment_projection`.
+
+Rendered behavior introduced by this sync: `false`. Backend runtime behavior introduced by this sync: `false`.
+
+Next exact posture: `select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_rendered_projection_runtime_sync`.
