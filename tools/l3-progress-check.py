@@ -2326,6 +2326,9 @@ LAYER3_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE = (
     PLANNING_DOCS
     / "849_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE.md"
 )
+LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_VALIDATE = (
+    PLANNING_DOCS / "850_FIXTURE_VALIDATE_ONLY.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -2406,9 +2409,11 @@ LAYER3_PACKAGE_REPLACEMENT_ACTIVATION_TEST = (
 )
 LAYER3_CORE_CONFIG = ROOT / "backend" / "app" / "core" / "config.py"
 LAYER3_TARGET_SELECTION_VALIDATOR_CLI = ROOT / "tools" / "l3-target-selection-validate.py"
+LAYER3_FIXTURE_VALIDATE_CLI = ROOT / "tools" / "l3-fixture-validate.py"
 LAYER3_TARGET_SELECTION_VALIDATOR_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_target_selection_validate.py"
 )
+LAYER3_FIXTURE_VALIDATE_TEST = ROOT / "backend" / "tests" / "test_layer3_fixture_validate.py"
 AUTHORITY_MATRIX_CONTRACT_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_authority_matrix_contract.py"
 PROVIDER_PUBLIC_URL_API_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_provider_public_url.py"
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
@@ -72908,6 +72913,228 @@ def _check_sublayer3c_optional_tool_benchmark_fixture_authority_gate(
             )
 
 
+def _check_sublayer3c_optional_tool_fixture_validate(errors: list[str]) -> None:
+    doc_text = _read_required_text(
+        LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_VALIDATE,
+        errors,
+    )
+    for term in (
+        "Status: validate-only fixture-authority record contract for `sublayer3c_optional_tool_benchmark_fixture_authority_selection`.",
+        "850_FIXTURE_VALIDATE_ONLY.md",
+        "codex/l3-fixture-authority-validator",
+        "ccad39c85ec3257027a3706558a04f49f51ae13d",
+        "849_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE.md",
+        "Runtime behavior introduced by this validator: `false`.",
+        "Benchmark execution introduced by this validator: `false`.",
+        "Fixture materialization introduced by this validator: `false`.",
+        "Fixture authority selection introduced by this validator: `false`.",
+        "tools/l3-fixture-validate.py",
+        "backend/tests/test_layer3_fixture_validate.py",
+        "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1",
+        "candidate_tools: tabpfn,nrc_licensing_rag",
+        "tabpfn_fixture_authority: null",
+        "nrc_rag_fixture_authority: null",
+        "selection_complete: false",
+        "implementation_entry_freeze_written: false",
+        "accepts only this pending posture",
+        "`--expect selected` is reserved for a later product-authority record",
+        "`--expect frozen` is reserved for a later current-main implementation-entry freeze",
+        "dataset_version_supervised_tabular_micro_fixture",
+        "regulatory_context_grounding_query_set",
+        "python .\\tools\\l3-fixture-validate.py --expect pending",
+        "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_VALIDATE)} "
+                f"missing Sublayer 3C fixture validate-only term: {term}"
+            )
+
+    for path, terms in {
+        LAYER3_FIXTURE_VALIDATE_CLI: (
+            "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1",
+            '"candidate_tools": "tabpfn,nrc_licensing_rag"',
+            "TABPFN_FIELDS",
+            "NRC_RAG_FIELDS",
+            "pending_field_must_be_null",
+            "selected_freeze_written_must_be_false",
+            "frozen_freeze_written_must_be_true",
+            "invalid_tabpfn_fixture_kind",
+            "invalid_tabpfn_task_type",
+            "invalid_nrc_rag_fixture_kind",
+            "Layer 3 fixture-authority validation: PASS",
+        ),
+        LAYER3_FIXTURE_VALIDATE_TEST: (
+            "test_current_fixture_authority_record_validates_as_pending",
+            "test_selected_and_frozen_fixture_records_have_distinct_freeze_expectations",
+            "test_fixture_record_rejects_runtime_or_network_admission",
+            "test_fixture_record_rejects_invalid_tool_fixture_fields",
+            "test_duplicate_structured_fixture_authority_key_fails_closed",
+            'module.validate_text(text, "pending")',
+        ),
+        BOARD: (
+            "## Sublayer 3C Fixture Authority Validate-Only Contract",
+            "850_FIXTURE_VALIDATE_ONLY.md",
+            "Runtime behavior introduced by this validator: `false`.",
+            "Benchmark execution introduced by this validator: `false`.",
+            "Fixture authority selection introduced by this validator: `false`.",
+            "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1",
+            "tools/l3-fixture-validate.py --expect pending",
+            "dataset_version_supervised_tabular_micro_fixture",
+            "regulatory_context_grounding_query_set",
+            "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+        ),
+        MANIFEST: (
+            '"sublayer3c_optional_tool_fixture_validate"',
+            '"latest_sublayer3c_optional_tool_fixture_validate_doc"',
+            '"status": "sublayer3c_optional_tool_fixture_authority_validate_only_pending"',
+            '"schema_id": "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1"',
+            '"validator": "tools/l3-fixture-validate.py"',
+            '"selection_complete": false',
+            '"implementation_entry_freeze_written": false',
+            '"fixture_selection_change": false',
+            '"tabpfn_required_fields"',
+            '"nrc_rag_required_fields"',
+            '"next_posture": "await_product_authority_for_optional_tool_benchmark_fixture_selection"',
+        ),
+        PROOF_MANIFEST: (
+            '"sublayer3c_optional_tool_fixture_validate_proof"',
+            '"validate_only_sublayer3c_optional_tool_fixture_authority_record_contract"',
+            "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1",
+            "pending fixture authority record",
+            "selection_complete false",
+            "implementation_entry_freeze_written false",
+            "tools/l3-fixture-validate.py --expect pending",
+            "selected and frozen states require TabPFN and NRC RAG fields",
+            "dataset_version_supervised_tabular_micro_fixture",
+            "regulatory_context_grounding_query_set",
+            "no dependency/provider/network admission",
+            "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+        ),
+        PROGRESS_PROMPT: (
+            "850_FIXTURE_VALIDATE_ONLY.md",
+            "python .\\tools\\l3-fixture-validate.py --expect pending",
+            "do not treat the validator as fixture selection",
+        ),
+        REFRESH_SPEC: (
+            "850_FIXTURE_VALIDATE_ONLY.md",
+            "pending validate-only fixture-authority record contract",
+            "tools/l3-fixture-validate.py --expect pending",
+            "do not classify the validator as runtime behavior",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing Sublayer 3C fixture validate-only artifact term: {term}"
+                )
+
+    manifest_data = _load_json(MANIFEST, errors)
+    if isinstance(manifest_data, dict):
+        current_status = manifest_data.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} current_status missing for Sublayer 3C fixture validate-only contract"
+            )
+        else:
+            expected_current_status = {
+                "latest_sublayer3c_optional_tool_fixture_validate_doc": (
+                    "next_milestone_plans/Layer3_planning_docs/850_FIXTURE_VALIDATE_ONLY.md"
+                ),
+                "latest_sublayer3c_optional_tool_fixture_validate_status": (
+                    "sublayer3c_optional_tool_fixture_authority_validate_only_pending"
+                ),
+                "latest_sublayer3c_optional_tool_fixture_validate_runtime_behavior_change": False,
+                "latest_sublayer3c_optional_tool_fixture_validate_next_posture": (
+                    "await_product_authority_for_optional_tool_benchmark_fixture_selection"
+                ),
+            }
+            for key, expected in expected_current_status.items():
+                if current_status.get(key) != expected:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+            summary = current_status.get("latest_sublayer3c_optional_tool_fixture_validate_summary")
+            if not isinstance(summary, str) or "validate-only pending fixture-authority record contract" not in summary:
+                errors.append(
+                    f"{_rel(MANIFEST)} current_status.latest_sublayer3c_optional_tool_fixture_validate_summary "
+                    "must preserve the validate-only fixture-authority summary"
+                )
+
+        fixture_validate = manifest_data.get("sublayer3c_optional_tool_fixture_validate")
+        if not isinstance(fixture_validate, dict):
+            errors.append(f"{_rel(MANIFEST)} missing sublayer3c_optional_tool_fixture_validate object")
+        else:
+            expected_scalars = {
+                "status": "sublayer3c_optional_tool_fixture_authority_validate_only_pending",
+                "doc": "next_milestone_plans/Layer3_planning_docs/850_FIXTURE_VALIDATE_ONLY.md",
+                "branch": "codex/l3-fixture-authority-validator",
+                "schema_id": "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1",
+                "validator": "tools/l3-fixture-validate.py",
+                "validator_test": "backend/tests/test_layer3_fixture_validate.py",
+                "runtime_behavior_change": False,
+                "benchmark_execution_change": False,
+                "fixture_materialization_change": False,
+                "fixture_selection_change": False,
+                "selection_complete": False,
+                "implementation_entry_freeze_written": False,
+                "next_posture": "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+            }
+            for key, expected in expected_scalars.items():
+                if fixture_validate.get(key) != expected:
+                    errors.append(
+                        f"{_rel(MANIFEST)} sublayer3c_optional_tool_fixture_validate.{key} must be {expected!r}"
+                    )
+            for field in ("tabpfn_fixture_authority", "tabpfn_target_column", "tabpfn_no_adopt_threshold"):
+                if field not in fixture_validate.get("tabpfn_required_fields", []):
+                    errors.append(
+                        f"{_rel(MANIFEST)} sublayer3c_optional_tool_fixture_validate.tabpfn_required_fields missing {field}"
+                    )
+            for field in ("nrc_rag_query_ids", "nrc_rag_expected_source_spans", "nrc_rag_citation_rubric"):
+                if field not in fixture_validate.get("nrc_rag_required_fields", []):
+                    errors.append(
+                        f"{_rel(MANIFEST)} sublayer3c_optional_tool_fixture_validate.nrc_rag_required_fields missing {field}"
+                    )
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    if isinstance(proof_data, dict):
+        proof = proof_data.get("sublayer3c_optional_tool_fixture_validate_proof")
+        if not isinstance(proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing sublayer3c_optional_tool_fixture_validate_proof object"
+            )
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "validate_only_sublayer3c_optional_tool_fixture_authority_record_contract",
+                "status": "sublayer3c_optional_tool_fixture_authority_validate_only_pending",
+                "doc": "next_milestone_plans/Layer3_planning_docs/850_FIXTURE_VALIDATE_ONLY.md",
+                "validator": "tools/l3-fixture-validate.py",
+                "validator_test": "backend/tests/test_layer3_fixture_validate.py",
+                "next_posture": "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+            }
+            for key, expected in expected_proof_scalars.items():
+                if proof.get(key) != expected:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} sublayer3c_optional_tool_fixture_validate_proof.{key} must be {expected!r}"
+                    )
+            proof_terms = proof.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} sublayer3c_optional_tool_fixture_validate_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "runtime_behavior_change false",
+                    "benchmark execution forbidden",
+                    "fixture materialization forbidden",
+                    "fixture selection false",
+                    "no package/handoff/export/download integration",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} sublayer3c_optional_tool_fixture_validate_proof.proof_terms missing {term}"
+                        )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -73634,6 +73861,7 @@ def main() -> int:
     _check_nrc_rag_sublayer3c_optional_tool_adr(errors)
     _check_sublayer3c_optional_tool_static_benchmark_plan(errors)
     _check_sublayer3c_optional_tool_benchmark_fixture_authority_gate(errors)
+    _check_sublayer3c_optional_tool_fixture_validate(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
