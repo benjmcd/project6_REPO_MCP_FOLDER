@@ -7223,3 +7223,17 @@ The downstream Analysis Environment authority projection freeze is now current-m
 Runtime behavior introduced by this sync: `false`.
 
 Next exact posture: `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`. Keep implementation inside the existing session-summary route, future owner service `backend/app/services/layer3_analysis_environment_projection.py`, field `analysis_environment_projection: dict[str, Any]`, schema `layer3.analysis_environment_projection.v1`, and authority source `read_only_session_summary_projection`.
+
+## Downstream Analysis Environment Authority Projection Runtime Proof
+
+Runtime implementation proof: `863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md` implements only `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`.
+
+Implemented surface: `backend/app/services/layer3_analysis_environment_projection.py` projects `analysis_environment_projection: dict[str, Any]` through existing `backend/app/services/layer3_workbench.py::session_summary`, existing `GET /api/v1/layer3/session/{session_id}`, and `backend/app/api/layer3.py::Layer3SessionSummaryResponse`.
+
+Runtime behavior introduced by this pass: `true`, limited to read-only session-summary projection with schema `layer3.analysis_environment_projection.v1` and authority source `read_only_session_summary_projection`.
+
+Validation passed for py_compile of the touched runtime files, `python -m pytest .\backend\tests\test_layer3_analysis_environment_projection.py -q` with `3 passed`, and targeted `backend/tests/test_layer3_api.py` session-summary/OpenAPI assertions with `3 passed, 186 deselected`.
+
+Still blocked: write routes, new route family, model/migration changes, rendered controls, package mutation/reconstruction, source promotion, handoff/export/download or delivery reruns, connector dispatch, destination writes, provider URL behavior, credentials/network behavior, vector/RAG runtime, prompt/model/provider generation, optional-tool runtime, broad auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture after merge: `current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime`.

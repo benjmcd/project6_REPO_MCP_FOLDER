@@ -33782,5 +33782,51 @@
     ],
     "next_posture": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
     "summary": "Doc 862 records current-main sync for PR #1477 merge commit 9bb024d66be2b8fa8699403b063795feecc8aa94 with checks passed, review surfaces empty, post-merge validation passed, and the next posture set to the read-only session-summary projection implementation."
+  },
+  "downstream_analysis_environment_authority_projection_runtime_proof": {
+    "proof_kind": "downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+    "status": "downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+    "branch": "codex/l3-analysis-environment-projection-runtime",
+    "runtime_behavior_change": true,
+    "rendered_behavior_change": false,
+    "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+    "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+    "canonical_source_of_truth": "backend/app/services/layer3_workbench.py::session_summary",
+    "structural_source": "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+    "api_surface": "GET /api/v1/layer3/session/{session_id}",
+    "response_model": "backend/app/api/layer3.py::Layer3SessionSummaryResponse",
+    "response_field": "analysis_environment_projection",
+    "response_field_type": "analysis_environment_projection: dict[str, Any]",
+    "schema_id": "layer3.analysis_environment_projection.v1",
+    "authority_source": "read_only_session_summary_projection",
+    "proof_terms": [
+      "runtime proof for implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+      "863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+      "backend/app/services/layer3_analysis_environment_projection.py",
+      "backend/app/services/layer3_workbench.py::session_summary",
+      "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+      "GET /api/v1/layer3/session/{session_id}",
+      "Layer3SessionSummaryResponse",
+      "analysis_environment_projection: dict[str, Any]",
+      "layer3.analysis_environment_projection.v1",
+      "read_only_session_summary_projection",
+      "projection_state",
+      "available_for_downstream_analysis",
+      "plane_readiness",
+      "forbidden_runtime_authority",
+      "no input mutation",
+      "no rendered behavior introduced",
+      "no write route added",
+      "no model or migration change",
+      "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime"
+    ],
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_analysis_environment_projection.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\api\\layer3.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_analysis_environment_projection.py -q PASS 3 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"test_layer3_special_route_openapi_contracts or test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_session or test_layer3_api_analysis_execution_start_runs_selected_pass_once\" PASS 3 passed 186 deselected"
+    ],
+    "next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+    "summary": "Read-only session-summary projection is implemented through analysis_environment_projection with schema layer3.analysis_environment_projection.v1, authority source read_only_session_summary_projection, fail-closed blocked upstream handling, no input mutation, and no rendered/write/model/package/source/provider/connector/auth/security widening."
   }
 }

@@ -36153,5 +36153,38 @@
     },
     "next_posture": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
     "summary": "Doc 862 syncs PR #1477 to current main as the no-runtime downstream Analysis Environment authority projection freeze. The next admitted posture is only implement_downstream_analysis_environment_authority_projection_read_only_session_summary over existing session-summary state."
+  },
+  "downstream_analysis_environment_authority_projection_runtime_proof": {
+    "status": "downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+    "branch": "codex/l3-analysis-environment-projection-runtime",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "runtime_behavior_change": true,
+    "rendered_behavior_change": false,
+    "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+    "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+    "canonical_source_of_truth": "backend/app/services/layer3_workbench.py::session_summary",
+    "structural_source": "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+    "api_surface": "GET /api/v1/layer3/session/{session_id}",
+    "response_model": "backend/app/api/layer3.py::Layer3SessionSummaryResponse",
+    "response_field": "analysis_environment_projection",
+    "response_field_type": "analysis_environment_projection: dict[str, Any]",
+    "schema_id": "layer3.analysis_environment_projection.v1",
+    "authority_source": "read_only_session_summary_projection",
+    "targeted_validation": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_analysis_environment_projection.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\api\\layer3.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_analysis_environment_projection.py -q PASS 3 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"test_layer3_special_route_openapi_contracts or test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_session or test_layer3_api_analysis_execution_start_runs_selected_pass_once\" PASS 3 passed 186 deselected"
+    ],
+    "write_route_added": false,
+    "new_route_family_added": false,
+    "model_migration_change": false,
+    "package_mutation_enabled": false,
+    "source_promotion_enabled": false,
+    "connector_dispatch_enabled": false,
+    "provider_url_enabled": false,
+    "frontend_durable_authority_enabled": false,
+    "next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+    "summary": "Doc 863 implements only the read-only analysis_environment_projection session-summary field over existing Layer 3 session-summary and sublayer state, with fail-closed missing upstream projection, no input mutation, no rendered behavior, and no adjacent package/source/provider/connector/auth/security widening."
   }
 }
