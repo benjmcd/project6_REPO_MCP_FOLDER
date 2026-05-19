@@ -33411,5 +33411,52 @@
     ],
     "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
     "summary": "Current-main proof covers the exact doc 852 runtime slice from PR #1462 and keeps adjacent connector, provider URL, credential, package mutation, source expansion, vector/RAG, optional-tool, rendered-control, and broad auth/security surfaces blocked."
+  },
+  "recursive_source_ingestion_family_selection_freeze_proof": {
+    "proof_kind": "no_runtime_recursive_source_ingestion_family_selection_freeze",
+    "status": "recursive_source_ingestion_family_selection_freeze_no_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
+    "branch": "codex/l3-recursive-source-ingestion-freeze",
+    "runtime_behavior_change": false,
+    "selected_deferred_lane": "broader_source_ingestion_family_selection",
+    "selected_source_family": "recursive_server_configured_operator_directory_text_table_source_family",
+    "selected_source_family_class": "recursive_server_configured_local_directory_text_table_ingestion",
+    "implementation_entry_allowed_next": false,
+    "proof_terms": [
+      "no-runtime source-family selection freeze",
+      "recursive_server_configured_operator_directory_text_table_source_family",
+      "recursive_server_configured_local_directory_text_table_ingestion",
+      "current direct-child ingestion unchanged",
+      "direct_child_only True",
+      "recursive_traversal_admitted False",
+      "implementation-entry allowed next false",
+      "later runtime-entry freeze required",
+      "maximum recursion depth still required",
+      "hidden file and hidden directory policy still required",
+      "symlink junction device path and path escape rejection policy still required",
+      "relative path normalization and redaction contract still required",
+      "no recursive traversal in the live API",
+      "no request-schema change",
+      "no rendered control change",
+      "no source authority promotion",
+      "no package/handoff/export/download integration",
+      "no connector dispatch",
+      "no provider URLs",
+      "no credentials or network behavior",
+      "no semantic/vector RAG widening",
+      "no prompt/model/provider qualitative generation",
+      "no optional-tool runtime",
+      "no broad auth/security behavior",
+      "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy"
+    ],
+    "proof_commands": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy",
+    "summary": "Doc 854 records the next broader source-ingestion family as recursive server-configured local directory text/table ingestion while keeping runtime blocked. It proves only the no-runtime selection boundary; direct-child source-directory ingestion remains unchanged and recursive traversal requires a later runtime-entry freeze."
   }
 }

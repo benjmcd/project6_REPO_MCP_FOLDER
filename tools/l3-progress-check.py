@@ -2338,6 +2338,9 @@ LAYER3_INTERNAL_WEBHOOK_CONNECTOR_FREEZE = (
 LAYER3_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_SYNC = (
     PLANNING_DOCS / "853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE = (
+    PLANNING_DOCS / "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -73505,6 +73508,208 @@ def _check_internal_webhook_connector_freeze(errors: list[str]) -> None:
                     )
 
 
+def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(
+        LAYER3_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime source-family selection freeze for `recursive_server_configured_operator_directory_text_table_source_family`.",
+        "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
+        "Current-main preflight checkpoint: `19a1482dc2a8bc18b8e34f015922f8f50c8a5c66`.",
+        "Predecessor current-main sync doc: `853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md`.",
+        "Selected deferred lane: `broader_source_ingestion_family_selection`.",
+        "Selected source family: `recursive_server_configured_operator_directory_text_table_source_family`.",
+        "Selected source-family class: `recursive_server_configured_local_directory_text_table_ingestion`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Implementation-entry allowed next: false",
+        "direct_child_only: True",
+        "recursive_traversal_admitted: False",
+        "maximum recursion depth",
+        "relative path normalization and redaction contract",
+        "hidden file and hidden directory policy",
+        "symlink, junction, device path, and path escape rejection policy",
+        "no recursive traversal in the live API",
+        "no request-schema change",
+        "no rendered control change",
+        "no source authority promotion",
+        "no package/handoff/export/download integration",
+        "no connector dispatch",
+        "no provider-private or provider-public URL behavior",
+        "no credential or network behavior",
+        "no semantic/vector RAG widening",
+        "no prompt/model/provider qualitative generation",
+        "no optional-tool Gate C/pass-entry admission",
+        "select_recursive_source_ingestion_runtime_policy_before_implementation",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE)} "
+                f"missing recursive source ingestion family freeze term: {term}"
+            )
+
+    service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE, errors)
+    for term in (
+        '"direct_child_only": True',
+        '"recursive_traversal_admitted": False',
+        '"recursive_traversal_enabled": False',
+        "children = sorted(root.iterdir(), key=lambda item: item.name.lower())",
+        "source_directory_ingestion_non_file_not_admitted",
+    ):
+        if term not in service_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE)} "
+                f"must still prove direct-child-only recursive block term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Recursive Source Ingestion Family Selection Freeze",
+            "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
+            "recursive_server_configured_operator_directory_text_table_source_family",
+            "recursive_server_configured_local_directory_text_table_ingestion",
+            "Runtime behavior introduced by this freeze: `false`.",
+            "Implementation-entry allowed next: false",
+            "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze",
+            "select_recursive_source_ingestion_runtime_policy_before_implementation",
+        ),
+        MANIFEST: (
+            '"recursive_source_ingestion_family_selection_freeze"',
+            '"latest_recursive_source_ingestion_family_selection_freeze_doc"',
+            '"status": "recursive_source_ingestion_family_selection_freeze_no_runtime"',
+            '"selected_source_family": "recursive_server_configured_operator_directory_text_table_source_family"',
+            '"selected_source_family_class": "recursive_server_configured_local_directory_text_table_ingestion"',
+            '"runtime_behavior_change": false',
+            '"implementation_entry_allowed_next": false',
+            '"current_recursive_traversal_admitted": false',
+            '"next_posture": "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy"',
+        ),
+        PROOF_MANIFEST: (
+            '"recursive_source_ingestion_family_selection_freeze_proof"',
+            '"no_runtime_recursive_source_ingestion_family_selection_freeze"',
+            '"recursive_server_configured_operator_directory_text_table_source_family"',
+            '"implementation_entry_allowed_next": false',
+            "current direct-child ingestion unchanged",
+            "recursive_traversal_admitted False",
+            "no recursive traversal in the live API",
+            "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy",
+        ),
+        PROGRESS_PROMPT: (
+            "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
+            "recursive_server_configured_operator_directory_text_table_source_family",
+            "no recursive traversal in the live API",
+            "no implementation-entry permission until a later freeze",
+        ),
+        REFRESH_SPEC: (
+            "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
+            "branch-local no-runtime source-family selection governance",
+            "classify only the no-runtime family selection as current-main governance",
+            "direct-child `LAYER3_SOURCE_INGESTION_DIR` ingestion remains unchanged",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing recursive source ingestion freeze artifact term: {term}"
+                )
+
+    manifest_data = _load_json(MANIFEST, errors)
+    if isinstance(manifest_data, dict):
+        current_status = manifest_data.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(MANIFEST)} current_status missing for recursive source ingestion freeze")
+        else:
+            expected = {
+                "latest_recursive_source_ingestion_family_selection_freeze_doc": (
+                    "next_milestone_plans/Layer3_planning_docs/854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md"
+                ),
+                "latest_recursive_source_ingestion_family_selection_freeze_status": (
+                    "recursive_source_ingestion_family_selection_freeze_no_runtime"
+                ),
+                "latest_recursive_source_ingestion_family_selection_freeze_runtime_behavior_change": False,
+                "latest_recursive_source_ingestion_family_selection_freeze_selected_family": (
+                    "recursive_server_configured_operator_directory_text_table_source_family"
+                ),
+                "latest_recursive_source_ingestion_family_selection_freeze_implementation_entry_allowed_next": False,
+                "latest_recursive_source_ingestion_family_selection_freeze_next_posture": (
+                    "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy"
+                ),
+            }
+            for key, value in expected.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+        freeze = manifest_data.get("recursive_source_ingestion_family_selection_freeze")
+        if not isinstance(freeze, dict):
+            errors.append(f"{_rel(MANIFEST)} missing recursive_source_ingestion_family_selection_freeze object")
+        else:
+            expected_scalars = {
+                "status": "recursive_source_ingestion_family_selection_freeze_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
+                "branch": "codex/l3-recursive-source-ingestion-freeze",
+                "current_main_preflight_checkpoint": "19a1482dc2a8bc18b8e34f015922f8f50c8a5c66",
+                "selected_deferred_lane": "broader_source_ingestion_family_selection",
+                "selected_source_family": "recursive_server_configured_operator_directory_text_table_source_family",
+                "selected_source_family_class": "recursive_server_configured_local_directory_text_table_ingestion",
+                "runtime_behavior_change": False,
+                "implementation_entry_allowed_next": False,
+                "current_direct_child_ingestion_unchanged": True,
+                "current_recursive_traversal_admitted": False,
+                "next_posture": "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy",
+            }
+            for key, value in expected_scalars.items():
+                if freeze.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} recursive_source_ingestion_family_selection_freeze.{key} must be {value!r}"
+                    )
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    if isinstance(proof_data, dict):
+        proof = proof_data.get("recursive_source_ingestion_family_selection_freeze_proof")
+        if not isinstance(proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing recursive_source_ingestion_family_selection_freeze_proof object"
+            )
+        else:
+            expected_scalars = {
+                "proof_kind": "no_runtime_recursive_source_ingestion_family_selection_freeze",
+                "status": "recursive_source_ingestion_family_selection_freeze_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
+                "branch": "codex/l3-recursive-source-ingestion-freeze",
+                "runtime_behavior_change": False,
+                "selected_source_family": "recursive_server_configured_operator_directory_text_table_source_family",
+                "selected_source_family_class": "recursive_server_configured_local_directory_text_table_ingestion",
+                "implementation_entry_allowed_next": False,
+                "next_posture": "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy",
+            }
+            for key, value in expected_scalars.items():
+                if proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_family_selection_freeze_proof.{key} must be {value!r}"
+                    )
+            proof_terms = proof.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_family_selection_freeze_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "current direct-child ingestion unchanged",
+                    "recursive_traversal_admitted False",
+                    "later runtime-entry freeze required",
+                    "no recursive traversal in the live API",
+                    "no request-schema change",
+                    "no rendered control change",
+                    "no source authority promotion",
+                    "no package/handoff/export/download integration",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_family_selection_freeze_proof.proof_terms missing {term}"
+                        )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -74233,6 +74438,7 @@ def main() -> int:
     _check_sublayer3c_optional_tool_benchmark_fixture_authority_gate(errors)
     _check_sublayer3c_optional_tool_fixture_validate(errors)
     _check_internal_webhook_connector_freeze(errors)
+    _check_recursive_source_ingestion_family_selection_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
