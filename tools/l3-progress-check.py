@@ -2306,6 +2306,10 @@ LAYER3_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT = (
     PLANNING_DOCS
     / "844_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT.md"
 )
+LAYER3_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE = (
+    PLANNING_DOCS
+    / "845_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -72286,6 +72290,83 @@ def _check_public_url_delivery_sublayer3c_prerequisite_closeout(
                 )
 
 
+def _check_sublayer3c_optional_tool_planning_index_adr_gate(
+    errors: list[str],
+) -> None:
+    index_text = _read_required_text(
+        LAYER3_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control index and ADR gate for `sublayer3c_optional_tool_planning_index_adr_gate`.",
+        "845_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE.md",
+        "codex/l3-sublayer3c-optional-tool-adr-gate",
+        "0e192941f5a7a5b9f13cccf9eca99638ac5a3c70",
+        "select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout",
+        "planning_index_and_adr_gate_only",
+        "Runtime behavior introduced by this index: `false`.",
+        "l3_tabpfn_sublayer3c_tool_planning_pack",
+        "l3_nrc_rag_sublayer3c_tool_planning_pack",
+        "PR `#1450`",
+        "ADR: evaluate or no-adopt TabPFN for Layer 3 Sublayer 3C optional predictive-method use",
+        "ADR: evaluate or no-adopt nrc-licensing-rag for Layer 3 Sublayer 3C optional-tool use",
+        "no_runtime_no_dependency_no_default_provider",
+        "no TabPFN runtime",
+        "no NRC RAG runtime",
+        "no Chroma/vector provider runtime",
+        "no rendered optional-tool controls",
+        "no package/handoff/export/download use",
+        "select_first_sublayer3c_optional_tool_adr_from_planning_index",
+    ):
+        if term not in index_text:
+            errors.append(
+                f"{_rel(LAYER3_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE)} "
+                f"missing Sublayer 3C optional-tool planning index ADR gate term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Sublayer 3C Optional Tool Planning Index ADR Gate",
+            "845_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE.md",
+            "planning_index_and_adr_gate_only",
+            "Runtime behavior introduced by this index: `false`.",
+            "ADR: evaluate or no-adopt TabPFN for Layer 3 Sublayer 3C optional predictive-method use",
+            "ADR: evaluate or no-adopt nrc-licensing-rag for Layer 3 Sublayer 3C optional-tool use",
+            "no_runtime_no_dependency_no_default_provider",
+            "select_first_sublayer3c_optional_tool_adr_from_planning_index",
+        ),
+        MANIFEST: (
+            '"sublayer3c_optional_tool_planning_index_adr_gate"',
+            '"latest_sublayer3c_optional_tool_planning_index_adr_gate_doc"',
+            '"runtime_behavior_change": false',
+            '"planning_context_only": true',
+            '"runtime_activation_authorized": false',
+            '"default_provider_enabled": false',
+            '"tabpfn_runtime": false',
+            '"nrc_rag_runtime": false',
+            '"next_posture": "select_first_sublayer3c_optional_tool_adr_from_planning_index"',
+        ),
+        PROOF_MANIFEST: (
+            '"sublayer3c_optional_tool_planning_index_adr_gate_proof"',
+            '"planning_control_sublayer3c_optional_tool_planning_index_adr_gate"',
+            "runtime_behavior_change false",
+            "planning context only",
+            "no TabPFN runtime",
+            "no NRC RAG runtime",
+            "no Chroma/vector provider runtime",
+            "no rendered optional-tool control",
+            "no package/handoff/export/download integration",
+            "select_first_sublayer3c_optional_tool_adr_from_planning_index",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing Sublayer 3C optional-tool planning index artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -73007,6 +73088,7 @@ def main() -> int:
         errors
     )
     _check_public_url_delivery_sublayer3c_prerequisite_closeout(errors)
+    _check_sublayer3c_optional_tool_planning_index_adr_gate(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
