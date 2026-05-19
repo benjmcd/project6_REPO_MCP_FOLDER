@@ -7389,3 +7389,17 @@ Proof status: targeted backend/static tests passed, in-app headed browser proof 
 Still blocked: internal webhook rerun/retry/cancel/queue/background-worker behavior, rendered dispatch/submit controls, URL/credential inputs, destination selectors, operator-supplied destination URL authority, raw target URL/token/header/local-path/package-payload/package-bytes exposure, `ConnectorRun` or `ConnectorRunTarget` creation, provider URL behavior, cloud object-store write, package mutation, source expansion, RAG/vector, optional-tool runtime, auth/security implementation, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture after merge: `current_main_sync_internal_webhook_rendered_status_runtime`.
+
+## Internal Webhook Rendered Status Runtime Current-Main Sync
+
+Current-main sync: `875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md` records PR `#1490` merge commit `61bb8338176e704877b1883dfaa1b0ee04874ffc`.
+
+Synced result: `current_main_synced_internal_webhook_rendered_status_runtime`.
+
+Synced behavior: current `main` now includes only the bounded read-only `internal_webhook_dispatch: dict[str, Any]` session-summary projection and `/review/layer3` `#internal-webhook-dispatch-panel` rendered status surface from `State.sessionSummary.internal_webhook_dispatch`.
+
+Checks: `backend-layer3-api` passed in `3m24s`, `test` passed in `3m30s`, reviewThreads totalCount was `0`, PR comments were `0`, and post-merge local progress plus targeted pytest validation passed at `61bb8338176e704877b1883dfaa1b0ee04874ffc`.
+
+Still blocked: dispatch rerun/retry/cancel/queue/background-worker behavior, rendered dispatch/submit controls, URL/credential inputs, destination selection, operator-supplied destination URL authority, raw URL/token/header/local-path/package exposure, `ConnectorRun`/`ConnectorRunTarget` creation, provider URL behavior, optional-tool runtime, frontend-only durable authority, and any runtime beyond PR `#1490`.
+
+Next exact posture: `select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync`.
