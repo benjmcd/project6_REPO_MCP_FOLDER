@@ -35498,5 +35498,61 @@
     },
     "next_posture": "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation",
     "summary": "Doc 852 freezes the first real connector/destination target as a server-configured allowlisted internal webhook dispatch of one redacted handoff/export envelope. Runtime remains blocked until the freeze is synced and an implementation pass proves authority binding, idempotency, redaction, fake/internal receiver behavior, and forbidden-adjacent-surface guards."
+  },
+  "internal_webhook_connector_runtime_implementation": {
+    "status": "branch_local_internal_webhook_connector_runtime_implemented_targeted_tests_passed",
+    "branch": "codex/l3-internal-webhook-runtime",
+    "governing_freeze_doc": "next_milestone_plans/Layer3_planning_docs/852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+    "runtime_behavior_change": true,
+    "selected_implementation_action": "implement_server_configured_internal_webhook_destination_dispatch",
+    "target_identity": "server_configured_internal_webhook_destination",
+    "target_class": "real_connector_invocation",
+    "dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
+    "destination_address_model": "server_configured_allowlisted_url",
+    "credential_model": "no_credentials",
+    "operator_surface": "read_only_status_only",
+    "implemented_files": [
+      "backend/app/services/layer3_internal_webhook_connector.py",
+      "backend/app/api/layer3.py",
+      "backend/app/models/models.py",
+      "backend/alembic/versions/0035_layer3_internal_webhook_connector.py",
+      "backend/app/core/config.py",
+      "backend/tests/test_layer3_api.py"
+    ],
+    "api_routes": [
+      "POST /api/v1/layer3/handoff/export/internal-webhook/dispatch",
+      "GET /api/v1/layer3/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}"
+    ],
+    "durable_state": [
+      "L3InternalWebhookDispatchReceipt",
+      "L3InternalWebhookDispatchAuditEvent"
+    ],
+    "proof_status": "targeted_branch_local_tests_passed",
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_internal_webhook_connector.py .\\backend\\app\\api\\layer3.py .\\backend\\app\\models\\models.py .\\backend\\app\\core\\config.py PASS",
+      "python -m py_compile .\\backend\\alembic\\versions\\0035_layer3_internal_webhook_connector.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"internal_webhook or provider_private_signed_url_openapi_prepare_status_schema\" PASS"
+    ],
+    "blocked_scope": {
+      "arbitrary_connector_dispatch": false,
+      "arbitrary_destination_url": false,
+      "operator_supplied_url": false,
+      "provider_public_url": false,
+      "provider_private_signed_url": false,
+      "cloud_object_store_write": false,
+      "oauth_or_provider_credentials": false,
+      "connector_run": false,
+      "connector_run_target": false,
+      "package_mutation": false,
+      "source_expansion": false,
+      "vector_rag_widening": false,
+      "tabpfn_runtime": false,
+      "nrc_rag_runtime": false,
+      "optional_tool_gate_c_or_pass_entry_admission": false,
+      "rendered_write_submit_control": false,
+      "broad_auth_security_behavior": false
+    },
+    "next_posture": "open_review_pr_then_sync_current_main_or_fix_review_ci_defects",
+    "summary": "Branch-local runtime implementation adds the exact server-configured internal webhook dispatch selected by doc 852: durable receipt/audit/status state, redacted envelope POST to one configured internal destination, idempotency and conflict handling, stale-authority and forbidden-input rejection, fake/internal receiver proof, and no new ConnectorRun or ConnectorRunTarget rows."
   }
 }

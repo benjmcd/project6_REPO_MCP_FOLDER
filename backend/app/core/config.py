@@ -61,6 +61,11 @@ class Settings(BaseSettings):
     database_url: str = Field(default=DEFAULT_DATABASE_URL, alias="DATABASE_URL")
     storage_dir: str = Field(default=str(DEFAULT_STORAGE_PATH.resolve()), alias="STORAGE_DIR")
     layer3_external_local_export_dir: str = Field(default="", alias="LAYER3_EXTERNAL_LOCAL_EXPORT_DIR")
+    layer3_internal_webhook_url: str = Field(default="", alias="LAYER3_INTERNAL_WEBHOOK_URL")
+    layer3_internal_webhook_display_name: str = Field(
+        default="server-configured-internal-webhook",
+        alias="LAYER3_INTERNAL_WEBHOOK_DISPLAY_NAME",
+    )
     layer3_source_ingestion_dir: str = Field(default="", alias="LAYER3_SOURCE_INGESTION_DIR")
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
     cors_allow_credentials: bool | None = Field(default=None, alias="CORS_ALLOW_CREDENTIALS")
