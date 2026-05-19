@@ -33354,5 +33354,49 @@
     ],
     "next_posture": "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation",
     "summary": "Doc 852 records the selected server-configured internal webhook target and freezes the next exact runtime slice without implementing it. It prepares the implementation pass while keeping arbitrary destinations, public/provider URL behavior, credentials, ConnectorRun/ConnectorRunTarget, package mutation, source expansion, vector/RAG widening, optional-tool runtime, rendered write controls, and broad auth/security behavior blocked."
+  },
+  "internal_webhook_connector_runtime_implementation_proof": {
+    "proof_kind": "branch_local_internal_webhook_connector_runtime_implementation",
+    "status": "targeted_tests_passed",
+    "branch": "codex/l3-internal-webhook-runtime",
+    "governing_freeze_doc": "next_milestone_plans/Layer3_planning_docs/852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+    "runtime_behavior_change": true,
+    "target_identity": "server_configured_internal_webhook_destination",
+    "target_class": "real_connector_invocation",
+    "selected_dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
+    "proof_terms": [
+      "server-configured allowlisted internal webhook URL only",
+      "redacted handoff/export delivery envelope POST",
+      "approved package-review submit authority required",
+      "handoff/export prepare authority required",
+      "external export/download readiness authority required",
+      "server-owned local outbox receipt authority required",
+      "durable dispatch receipt",
+      "durable audit events",
+      "read-only status endpoint",
+      "same client_request_id same basis returns same durable receipt",
+      "same package/export basis new client_request_id returns existing status",
+      "same client_request_id different basis fails closed",
+      "caller-supplied destination URL rejected",
+      "wrong target rejected",
+      "stale handoff/export authority rejected",
+      "raw target URL redacted from response envelope receipt audit state",
+      "no raw package payload or package bytes",
+      "no ConnectorRun or ConnectorRunTarget rows",
+      "no provider-public URL",
+      "no provider-private signed URL",
+      "no package mutation",
+      "no source expansion",
+      "no vector/RAG widening",
+      "no optional-tool runtime",
+      "no rendered write/submit control"
+    ],
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_internal_webhook_connector.py .\\backend\\app\\api\\layer3.py .\\backend\\app\\models\\models.py .\\backend\\app\\core\\config.py PASS",
+      "python -m py_compile .\\backend\\alembic\\versions\\0035_layer3_internal_webhook_connector.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"internal_webhook or provider_private_signed_url_openapi_prepare_status_schema\" PASS"
+    ],
+    "next_posture": "open_review_pr_then_sync_current_main_or_fix_review_ci_defects",
+    "summary": "Branch-local proof covers the exact doc 852 runtime slice and keeps adjacent connector, provider URL, credential, package mutation, source expansion, vector/RAG, optional-tool, rendered-control, and broad auth/security surfaces blocked."
   }
 }
