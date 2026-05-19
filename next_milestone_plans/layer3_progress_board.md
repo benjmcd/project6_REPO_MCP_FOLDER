@@ -6744,3 +6744,34 @@ The synced runtime keeps `same_origin_delivery_enabled: True`, `browser_managed_
 No provider-public delivery/use, provider-private signed URL behavior, signed-reference use, connector/destination dispatch, real connector invocation, credentials, destination writes, receipts, network egress, frontend-durable authority, frontend-rendered controls, durable delivery rows, delivery audit rows, package mutation, package payload rewrite, source package row mutation, replacement package row creation, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, prompt/model/provider runtime, qualitative generation runtime, raw local path exposure, raw payload ref exposure, raw package payload path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this sync.
 
 The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync`.
+
+## Source Directory Hybrid Context Qualitative Analysis External Export Download Rendered Delivery Control Runtime Entry
+
+Branch-local rendered control runtime entry: `840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md` follows the current-main-synced 839 delivery runtime and satisfies the selected posture `select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync`.
+
+Runtime branch `codex/l3-next-gap-after-hybrid-delivery` adds only rendered `/review/layer3` operator controls for the already current-main source-directory hybrid external export/download delivery backend.
+
+The rendered control is `rendered_source_directory_hybrid_external_export_download_delivery_control`.
+
+The pass adds:
+
+- form `#source-directory-hybrid-external-export-download-delivery-form`;
+- authority textarea `#source-directory-hybrid-external-export-download-delivery-authority`;
+- status button `#source-directory-hybrid-external-export-download-delivery-status`;
+- submit button `#source-directory-hybrid-external-export-download-delivery-submit`.
+
+The control sanitizes a server-derived authority payload through an allowlist, requires status proof from `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status`, and submits browser-managed same-origin attachment delivery only to `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver`.
+
+The required rendered-control terms are `deliver_source_directory_hybrid_external_export_download`, `source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference`, `reference_only_prepare`, `external_export_download_prepared`, `same_origin_artifact_stream`, `layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status.v1`, and `layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery.v1`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Frontend rendered controls introduced by this pass: `true`.
+
+Frontend durable authority introduced by this pass: `false`.
+
+Provider-public delivery/use, provider-private signed URL behavior, signed-reference use, connector dispatch, real connector invocation, credentials, destination writes, receipts, network egress, durable delivery rows, delivery audit rows, package mutation, package payload rewrite, source package row mutation, replacement package rows, new source families, arbitrary ingestion, recursive ingestion, persistent vector stores, prompt/model/provider runtime, qualitative generation runtime, raw local path exposure, raw payload refs, raw package payload paths, full segment text exposure, and raw vector exposure remain blocked.
+
+Validation: `node --check .\backend\app\review_ui\static\layer3.js` passed; `python -m py_compile .\tools\l3-progress-check.py` passed; `python -m pytest .\backend\tests\test_layer3_page.py -q` passed with `4 passed`, `3 warnings`; `python -m pytest .\backend\tests\test_layer3_page.py .\backend\tests\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivers_selected_package -q` passed with `5 passed`, `3 warnings`; JSON manifest validation passed; `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed; `git diff --check` passed with CRLF normalization warnings only.
+
+The next required action after merge is `current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime`; after that sync, pivot to `select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync` unless current-main evidence names a concrete unresolved rendered delivery-control defect or required downstream reader.
