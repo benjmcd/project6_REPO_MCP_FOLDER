@@ -2332,6 +2332,9 @@ LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_VALIDATE = (
 LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_CHECKPOINT = (
     PLANNING_DOCS / "851_FIXTURE_CHECKPOINT.md"
 )
+LAYER3_INTERNAL_WEBHOOK_CONNECTOR_FREEZE = (
+    PLANNING_DOCS / "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -73198,6 +73201,186 @@ def _check_sublayer3c_optional_tool_fixture_validate(errors: list[str]) -> None:
                     if term not in proof_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} sublayer3c_optional_tool_fixture_validate_proof.proof_terms missing {term}"
+                    )
+
+
+def _check_internal_webhook_connector_freeze(errors: list[str]) -> None:
+    doc_text = _read_required_text(LAYER3_INTERNAL_WEBHOOK_CONNECTOR_FREEZE, errors)
+    for term in (
+        "Status: implementation-entry freeze for `server_configured_internal_webhook_destination`.",
+        "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+        "10ebfbbe9422ca92907f320a2b0efed75b0fc544",
+        "609_REAL_CONNECTOR_DESTINATION_DECISION_PACKET_AFTER_LOCAL_OUTBOX_WRITE.md",
+        "Selected implementation action: `implement_server_configured_internal_webhook_destination_dispatch`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Implementation-entry allowed next: true",
+        "Target class: `real_connector_invocation`.",
+        "Selected dispatch mode: `server_configured_allowlisted_internal_webhook_post`.",
+        "Selected destination address model: `server_configured_allowlisted_url`.",
+        "Operator surface for the first slice: `read_only_status_only`.",
+        "backend/app/services/layer3_internal_webhook_connector.py",
+        "POST /api/v1/layer3/handoff/export/internal-webhook/dispatch",
+        "GET /api/v1/layer3/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}",
+        "server-configured fake/internal webhook receiver",
+        "Do not send raw package bytes in this first slice.",
+        "Credential model: `no_credentials`.",
+        "Network posture: `private_internal_only_server_configured_allowlist`.",
+        "same `client_request_id` plus same authority/artifact basis returns the same durable receipt and status",
+        "same package/export basis plus a new `client_request_id` returns existing status",
+        "No rendered write/submit control is admitted by this freeze.",
+        "no `ConnectorRun`",
+        "no `ConnectorRunTarget`",
+        "no source expansion",
+        "no vector/RAG widening",
+        "no TabPFN runtime",
+        "no NRC RAG runtime",
+        "no broad auth/security behavior",
+        "implement_server_configured_internal_webhook_destination_dispatch",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_INTERNAL_WEBHOOK_CONNECTOR_FREEZE)} "
+                f"missing internal webhook connector freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Internal Webhook Connector Freeze",
+            "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+            "server_configured_internal_webhook_destination",
+            "server_configured_allowlisted_internal_webhook_post",
+            "Runtime behavior introduced by this freeze: `false`.",
+            "implement_server_configured_internal_webhook_destination_dispatch",
+        ),
+        MANIFEST: (
+            '"internal_webhook_connector_freeze"',
+            '"latest_internal_webhook_connector_freeze_doc"',
+            '"status": "internal_webhook_connector_implementation_entry_freeze_no_runtime"',
+            '"runtime_behavior_change": false',
+            '"implementation_entry_allowed_next": true',
+            '"target_identity": "server_configured_internal_webhook_destination"',
+            '"target_class": "real_connector_invocation"',
+            '"dispatch_mode": "server_configured_allowlisted_internal_webhook_post"',
+            '"credential_model": "no_credentials"',
+            '"next_posture": "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation"',
+        ),
+        PROOF_MANIFEST: (
+            '"internal_webhook_connector_freeze_proof"',
+            '"implementation_entry_freeze_internal_webhook_connector_no_runtime"',
+            '"server_configured_internal_webhook_destination"',
+            '"server_configured_allowlisted_internal_webhook_post"',
+            "redacted handoff/export delivery envelope only",
+            "server-configured fake/internal webhook receiver first",
+            "no ConnectorRun or ConnectorRunTarget",
+            "no vector/RAG widening",
+            "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation",
+        ),
+        PROGRESS_PROMPT: (
+            "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+            "server_configured_internal_webhook_destination",
+            "implement_server_configured_internal_webhook_destination_dispatch",
+            "it admits no runtime behavior by itself",
+        ),
+        REFRESH_SPEC: (
+            "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+            "server_configured_internal_webhook_destination",
+            "Do not treat it as live runtime until GitHub and current `main` confirm the freeze",
+            "server-configured fake/internal webhook receiver proof",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing internal webhook connector freeze artifact term: {term}"
+                )
+
+    manifest_data = _load_json(MANIFEST, errors)
+    if isinstance(manifest_data, dict):
+        current_status = manifest_data.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(MANIFEST)} current_status missing for internal webhook freeze")
+        else:
+            expected = {
+                "latest_internal_webhook_connector_freeze_doc": (
+                    "next_milestone_plans/Layer3_planning_docs/852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md"
+                ),
+                "latest_internal_webhook_connector_freeze_status": (
+                    "internal_webhook_connector_implementation_entry_freeze_no_runtime"
+                ),
+                "latest_internal_webhook_connector_freeze_runtime_behavior_change": False,
+                "latest_internal_webhook_connector_freeze_selected_target_identity": (
+                    "server_configured_internal_webhook_destination"
+                ),
+                "latest_internal_webhook_connector_freeze_next_posture": (
+                    "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation"
+                ),
+            }
+            for key, value in expected.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+        freeze = manifest_data.get("internal_webhook_connector_freeze")
+        if not isinstance(freeze, dict):
+            errors.append(f"{_rel(MANIFEST)} missing internal_webhook_connector_freeze object")
+        else:
+            expected_scalars = {
+                "status": "internal_webhook_connector_implementation_entry_freeze_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+                "branch": "codex/l3-internal-webhook-freeze",
+                "runtime_behavior_change": False,
+                "implementation_entry_allowed_next": True,
+                "selected_implementation_action": "implement_server_configured_internal_webhook_destination_dispatch",
+                "target_identity": "server_configured_internal_webhook_destination",
+                "target_class": "real_connector_invocation",
+                "dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
+                "credential_model": "no_credentials",
+                "next_posture": "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation",
+            }
+            for key, value in expected_scalars.items():
+                if freeze.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} internal_webhook_connector_freeze.{key} must be {value!r}"
+                    )
+
+    proof_data = _load_json(PROOF_MANIFEST, errors)
+    if isinstance(proof_data, dict):
+        proof = proof_data.get("internal_webhook_connector_freeze_proof")
+        if not isinstance(proof, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing internal_webhook_connector_freeze_proof object")
+        else:
+            expected_scalars = {
+                "proof_kind": "implementation_entry_freeze_internal_webhook_connector_no_runtime",
+                "status": "internal_webhook_connector_implementation_entry_freeze_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+                "branch": "codex/l3-internal-webhook-freeze",
+                "runtime_behavior_change": False,
+                "target_identity": "server_configured_internal_webhook_destination",
+                "target_class": "real_connector_invocation",
+                "selected_dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
+                "next_posture": "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation",
+            }
+            for key, value in expected_scalars.items():
+                if proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} internal_webhook_connector_freeze_proof.{key} must be {value!r}"
+                    )
+            proof_terms = proof.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} internal_webhook_connector_freeze_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "redacted handoff/export delivery envelope only",
+                    "no raw package bytes",
+                    "server-configured fake/internal webhook receiver first",
+                    "no ConnectorRun or ConnectorRunTarget",
+                    "no optional-tool runtime",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} internal_webhook_connector_freeze_proof.proof_terms missing {term}"
                         )
 
 
@@ -73928,6 +74111,7 @@ def main() -> int:
     _check_sublayer3c_optional_tool_static_benchmark_plan(errors)
     _check_sublayer3c_optional_tool_benchmark_fixture_authority_gate(errors)
     _check_sublayer3c_optional_tool_fixture_validate(errors)
+    _check_internal_webhook_connector_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
