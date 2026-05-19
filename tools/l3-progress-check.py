@@ -2406,6 +2406,9 @@ LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE = (
 LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_SYNC = (
     PLANNING_DOCS / "873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF = (
+    PLANNING_DOCS / "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -77029,6 +77032,177 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in proof_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_freeze_current_main_sync_proof.proof_terms missing {term}"
+                        )
+
+    internal_webhook_rendered_status_runtime_text = _read_required_text(
+        LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime/rendered proof for `implement_internal_webhook_rendered_read_only_status_projection`.",
+        "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+        "873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+        "codex/l3-internal-webhook-rendered-status-runtime",
+        "374e5576f5c2841de9eecffb711500f881af51a6",
+        "Implemented result: `internal_webhook_rendered_read_only_status_projection_runtime_proved`.",
+        "Runtime behavior introduced by this proof: `true`",
+        "Rendered behavior introduced by this proof: `true`",
+        "Dispatch behavior introduced by this proof: `false`.",
+        "Layer3SessionSummaryResponse.internal_webhook_dispatch",
+        "#internal-webhook-dispatch-panel",
+        "current_main_sync_internal_webhook_rendered_status_runtime",
+    ):
+        if term not in internal_webhook_rendered_status_runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF)} "
+                f"missing internal webhook rendered status runtime proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Internal Webhook Rendered Status Runtime Proof",
+            "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+            "internal_webhook_dispatch: dict[str, Any]",
+            "#internal-webhook-dispatch-panel",
+            "current_main_sync_internal_webhook_rendered_status_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 internal webhook rendered status runtime proof to preserve when present",
+            "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+            "internal_webhook_dispatch: dict[str, Any]",
+            "State.sessionSummary.internal_webhook_dispatch",
+            "headless Chromium proof with console errors 0",
+            "current_main_sync_internal_webhook_rendered_status_runtime",
+        ),
+        REFRESH_SPEC: (
+            "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+            "internal_webhook_rendered_read_only_status_projection_runtime_proved",
+            "internal_webhook_dispatch: dict[str, Any]",
+            "State.sessionSummary.internal_webhook_dispatch",
+            "rendered_internal_webhook_dispatch_read_only_status_surface",
+            "Do not render doc `874` as dispatch runtime",
+            "current_main_sync_internal_webhook_rendered_status_runtime",
+        ),
+        MANIFEST: (
+            '"internal_webhook_rendered_status_runtime_proof"',
+            '"status": "internal_webhook_rendered_read_only_status_projection_runtime_proved"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md"',
+            '"runtime_behavior_change": true',
+            '"rendered_behavior_change": true',
+            '"dispatch_behavior_change": false',
+            '"next_posture": "current_main_sync_internal_webhook_rendered_status_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"internal_webhook_rendered_status_runtime_proof"',
+            '"proof_kind": "internal_webhook_rendered_read_only_status_projection_runtime_proof"',
+            '"rendered_internal_webhook_dispatch_read_only_status_surface"',
+            '"headless Chromium proof consoleErrors 0"',
+            '"no ConnectorRun or ConnectorRunTarget creation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing internal webhook rendered status runtime proof term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        runtime_entry = manifest.get("internal_webhook_rendered_status_runtime_proof")
+        if not isinstance(runtime_entry, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing internal_webhook_rendered_status_runtime_proof object"
+            )
+        else:
+            expected_runtime_scalars = {
+                "status": "internal_webhook_rendered_read_only_status_projection_runtime_proved",
+                "doc": "next_milestone_plans/Layer3_planning_docs/874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-runtime",
+                "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint_before_implementation": "374e5576f5c2841de9eecffb711500f881af51a6",
+                "implemented_action": "implement_internal_webhook_rendered_read_only_status_projection",
+                "session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+                "rendered_response_authority": "State.sessionSummary.internal_webhook_dispatch",
+                "rendered_panel": "#internal-webhook-dispatch-panel",
+                "rendered_route": "/review/layer3",
+                "runtime_behavior_change": True,
+                "rendered_behavior_change": True,
+                "dispatch_behavior_change": False,
+                "next_posture": "current_main_sync_internal_webhook_rendered_status_runtime",
+            }
+            for key, value in expected_runtime_scalars.items():
+                if runtime_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} internal_webhook_rendered_status_runtime_proof.{key} must be {value!r}"
+                    )
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_internal_webhook_rendered_status_runtime_branch": "codex/l3-internal-webhook-rendered-status-runtime",
+                    "latest_internal_webhook_rendered_status_runtime_doc": "next_milestone_plans/Layer3_planning_docs/874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+                    "latest_internal_webhook_rendered_status_runtime_status": "internal_webhook_rendered_read_only_status_projection_runtime_proved",
+                    "latest_internal_webhook_rendered_status_runtime_runtime_behavior_change": True,
+                    "latest_internal_webhook_rendered_status_runtime_rendered_behavior_change": True,
+                    "latest_internal_webhook_rendered_status_runtime_dispatch_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_runtime_next_posture": "current_main_sync_internal_webhook_rendered_status_runtime",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("internal_webhook_rendered_status_runtime_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing internal_webhook_rendered_status_runtime_proof object"
+            )
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "internal_webhook_rendered_read_only_status_projection_runtime_proof",
+                "status": "internal_webhook_rendered_read_only_status_projection_runtime_proved",
+                "doc": "next_milestone_plans/Layer3_planning_docs/874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-runtime",
+                "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint_before_implementation": "374e5576f5c2841de9eecffb711500f881af51a6",
+                "implemented_action": "implement_internal_webhook_rendered_read_only_status_projection",
+                "session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+                "rendered_response_authority": "State.sessionSummary.internal_webhook_dispatch",
+                "rendered_panel": "#internal-webhook-dispatch-panel",
+                "rendered_route": "/review/layer3",
+                "runtime_behavior_change": True,
+                "rendered_behavior_change": True,
+                "dispatch_behavior_change": False,
+                "next_posture": "current_main_sync_internal_webhook_rendered_status_runtime",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_runtime_proof.{key} must be {value!r}"
+                    )
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_runtime_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+                    "implement_internal_webhook_rendered_read_only_status_projection",
+                    "internal_webhook_dispatch: dict[str, Any]",
+                    "State.sessionSummary.internal_webhook_dispatch",
+                    "#internal-webhook-dispatch-panel",
+                    "rendered_internal_webhook_dispatch_read_only_status_surface",
+                    "L3InternalWebhookDispatchReceipt",
+                    "L3InternalWebhookDispatchAuditEvent",
+                    "GET /api/v1/layer3/session/{session_id}",
+                    "headless Chromium proof consoleErrors 0",
+                    "no ConnectorRun or ConnectorRunTarget creation",
+                    "current_main_sync_internal_webhook_rendered_status_runtime",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_runtime_proof.proof_terms missing {term}"
                         )
 
 
