@@ -7066,3 +7066,19 @@ The freeze selects a redacted handoff/export delivery envelope over approved pac
 The first implementation proof path must use a server-configured fake/internal webhook receiver. No arbitrary destination URL, operator-supplied URL, public URL, provider-private signed URL, provider-public URL, cloud object-store write, OAuth/provider credential, stored provider credential, `ConnectorRun`, `ConnectorRunTarget`, package mutation, source expansion, vector/RAG widening, optional-tool runtime, Gate C/pass-entry optional-tool admission, rendered write/submit control, or broad auth/security behavior is admitted.
 
 The next exact posture after this freeze is current-main sync for `server_configured_internal_webhook_destination`, followed by `implement_server_configured_internal_webhook_destination_dispatch`.
+
+## Internal Webhook Connector Runtime Implementation
+
+Branch-local implementation: `codex/l3-internal-webhook-runtime` implements only the selected `server_configured_internal_webhook_destination` slice from doc `852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md`.
+
+Runtime behavior introduced by this implementation: `true`, limited to `POST /api/v1/layer3/handoff/export/internal-webhook/dispatch` sending exactly one redacted handoff/export delivery envelope to a server-configured allowlisted internal webhook URL after package-review submit, handoff/export prepare, export/download readiness, and server-owned local outbox receipt authority are verified.
+
+Read-only status endpoint: `GET /api/v1/layer3/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}`.
+
+Durable state: `L3InternalWebhookDispatchReceipt` and `L3InternalWebhookDispatchAuditEvent`.
+
+Proof status: targeted branch-local API proof passes for OpenAPI schema, happy path fake/internal receiver dispatch, same-key replay, same-package/new-key replay, same-key/different-basis conflict, caller-supplied destination URL rejection, wrong target rejection, stale handoff/export authority rejection, redaction, and no new `ConnectorRun` or `ConnectorRunTarget` rows.
+
+Still blocked: arbitrary connector dispatch, arbitrary/operator-supplied destination URL, public/provider URLs, cloud object-store write, OAuth/provider credentials, package mutation, source expansion, vector/RAG widening, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, rendered write/submit control, and broad auth/security behavior.
+
+Next exact posture: open review PR for `server_configured_internal_webhook_destination_dispatch`; after merge, sync current main and pivot away from connector/destination repetition unless checks or review identify a defect.
