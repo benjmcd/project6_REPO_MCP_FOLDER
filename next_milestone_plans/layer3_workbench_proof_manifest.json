@@ -34097,5 +34097,45 @@
     ],
     "next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_rendered_projection_runtime_sync",
     "summary": "Doc 869 records current-main sync for PR #1484 merge commit 9862fe1eb09925889926bfb79febd9f7abe585ee with checks passed, review surfaces empty, post-merge validation passed, and the next posture set to selecting the next exact Layer 3 end-to-end gap after rendered projection runtime sync."
+  },
+  "sublayer3c_optional_tool_authority_revalidation_selection_proof": {
+    "proof_kind": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked",
+    "status": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked",
+    "doc": "next_milestone_plans/Layer3_planning_docs/870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+    "branch": "codex/l3-optional-tool-authority-selection",
+    "runtime_behavior_change": false,
+    "benchmark_execution_change": false,
+    "fixture_materialization_change": false,
+    "fixture_authority_selection_change": false,
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/869_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint": "cbf084839573b70880a478eea43705770170ef8a",
+    "decision": "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+    "proof_terms": [
+      "870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+      "sublayer3c_optional_tool_fixture_authority_revalidation_after_analysis_environment_sync",
+      "850_FIXTURE_VALIDATE_ONLY.md remains pending",
+      "851_FIXTURE_CHECKPOINT.md remains checkpoint",
+      "tools/l3-fixture-validate.py --expect pending",
+      "tools/l3-fixture-validate.py --expect checkpoint",
+      "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+      "no TabPFN supervised micro-fixture selected",
+      "no NRC RAG regulatory query set selected",
+      "no runtime behavior",
+      "no benchmark execution",
+      "no fixture materialization",
+      "no fixture authority selection",
+      "no dependency/provider/network admission",
+      "no rendered optional-tool controls",
+      "no package/handoff/export/download integration",
+      "no Gate C/pass-entry admission",
+      "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation"
+    ],
+    "proof_commands": [
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
+      "python .\\tools\\l3-progress-check.py PASS"
+    ],
+    "next_posture": "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+    "summary": "Doc 870 proves a no-runtime optional-tool authority revalidation selection: current main still has no selected TabPFN fixture or NRC RAG query set, so optional-tool runtime stays blocked until product authority supplies a selected or frozen validator-backed record."
   }
 }
