@@ -2298,6 +2298,10 @@ LAYER3_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENT
     PLANNING_DOCS
     / "842_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY.md"
 )
+LAYER3_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "843_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -72137,6 +72141,81 @@ def _check_server_configured_source_directory_ingestion_rendered_control_runtime
                 )
 
 
+def _check_server_configured_source_directory_ingestion_rendered_control_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `server_configured_source_directory_ingestion_rendered_control_runtime`.",
+        "843_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+        "842_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY.md",
+        "Runtime PR: `#1448`",
+        "63f6c2ebf98ce849aad14b02c67e8dc79a2cdd03",
+        "d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42",
+        "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
+        "Runtime behavior introduced by this sync: `false`.",
+        "rendered_server_configured_source_directory_ingestion_control",
+        "`backend-layer3-api`: `SUCCESS`, `3m13s`",
+        "`test`: `SUCCESS`, `3m32s`",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "current-main sync introduces no additional runtime behavior",
+        "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory ingestion rendered-control current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Server Configured Source Directory Ingestion Rendered Control Current-Main Sync",
+            "843_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+            "PR `#1448`",
+            "d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42",
+            "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
+            "Runtime behavior introduced by this sync: `false`.",
+            "reviewThreads totalCount `0`",
+            "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+        ),
+        MANIFEST: (
+            "server_configured_source_directory_ingestion_rendered_control_current_main_sync",
+            "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
+            '"runtime_pr": "#1448"',
+            "63f6c2ebf98ce849aad14b02c67e8dc79a2cdd03",
+            "d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42",
+            '"runtime_behavior_in_this_sync": false',
+            '"pr_1448_backend_layer3_api": "SUCCESS"',
+            '"pr_1448_test": "SUCCESS"',
+            '"pr_1448_reviewThreads": 0',
+            '"frontend_rendered_controls_enabled": true',
+            '"frontend_durable_authority_enabled": false',
+            "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+        ),
+        PROOF_MANIFEST: (
+            "server_configured_source_directory_ingestion_rendered_control_current_main_sync_proof",
+            "current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime",
+            "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
+            '"runtime_pr": "#1448"',
+            "d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42",
+            "backend-layer3-api SUCCESS 3m13s",
+            "PR #1448 reviewThreads totalCount 0",
+            "current-main sync introduces no additional runtime behavior",
+            "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory ingestion rendered-control sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -72852,6 +72931,9 @@ def main() -> int:
         errors
     )
     _check_server_configured_source_directory_ingestion_rendered_control_runtime_entry(
+        errors
+    )
+    _check_server_configured_source_directory_ingestion_rendered_control_current_main_sync(
         errors
     )
 

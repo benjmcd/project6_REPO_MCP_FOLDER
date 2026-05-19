@@ -34555,5 +34555,62 @@
   "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_status": "server_configured_source_directory_ingestion_rendered_control_runtime_implemented_branch_local",
   "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_runtime_behavior_change": true,
   "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_next_posture_after_merge": "current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime",
-  "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_summary": "Doc 842 and branch codex/l3-source-ingestion-runtime add bounded rendered /review/layer3 scan/status controls over the already current-main server-configured operator directory text/table ingestion runtime from docs 744 and 745, without adding backend routes, models, migrations, scanner breadth, caller-supplied paths, recursive ingestion, browser file bytes, RAG/vector behavior, qualitative-hybrid runtime, provider delivery, connector dispatch, package mutation, auth/security broadening, full mockup activation, or frontend durable authority."
+  "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_summary": "Doc 842 and branch codex/l3-source-ingestion-runtime add bounded rendered /review/layer3 scan/status controls over the already current-main server-configured operator directory text/table ingestion runtime from docs 744 and 745, without adding backend routes, models, migrations, scanner breadth, caller-supplied paths, recursive ingestion, browser file bytes, RAG/vector behavior, qualitative-hybrid runtime, provider delivery, connector dispatch, package mutation, auth/security broadening, full mockup activation, or frontend durable authority.",
+  "server_configured_source_directory_ingestion_rendered_control_current_main_sync": {
+    "status": "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/843_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/842_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY.md",
+    "runtime_pr": "#1448",
+    "runtime_branch": "codex/l3-source-ingestion-runtime",
+    "runtime_branch_commit": "63f6c2ebf98ce849aad14b02c67e8dc79a2cdd03",
+    "runtime_merge_commit": "d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42",
+    "sync_branch": "codex/l3-source-ingestion-runtime-sync",
+    "runtime_behavior_in_implementation_pr": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "pr_1448_backend_layer3_api": "SUCCESS",
+      "pr_1448_backend_layer3_api_duration": "3m13s",
+      "pr_1448_test": "SUCCESS",
+      "pr_1448_test_duration": "3m32s",
+      "pr_1448_comments": 0,
+      "pr_1448_reviews": 0,
+      "pr_1448_latestReviews": 0,
+      "pr_1448_reviewThreads": 0,
+      "pr_1448_unresolvedReviewThreads": 0
+    },
+    "current_main_runtime": {
+      "rendered_mode": "rendered_server_configured_source_directory_ingestion_control",
+      "frontend_rendered_controls_enabled": true,
+      "frontend_durable_authority_enabled": false,
+      "backend_route_behavior_change": false,
+      "database_model_or_migration_change": false,
+      "caller_supplied_path_or_url_enabled": false,
+      "recursive_ingestion_enabled": false,
+      "browser_file_bytes_enabled": false,
+      "rag_vector_indexing_enabled": false,
+      "qualitative_hybrid_runtime_enabled": false,
+      "provider_public_delivery_use_enabled": false,
+      "provider_private_signed_url_behavior_enabled": false,
+      "connector_dispatch_enabled": false,
+      "network_egress_enabled": false,
+      "package_construction_or_mutation_enabled": false,
+      "package_payload_rewrite_enabled": false,
+      "source_package_row_mutation_enabled": false,
+      "raw_local_path_exposure_enabled": false,
+      "raw_vector_exposure_enabled": false
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence"
+  },
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_branch": "codex/l3-source-ingestion-runtime-sync",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/843_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_pr": "#1448",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_merge_commit": "d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_status": "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_runtime_behavior_change": false,
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_summary": "Doc 843 syncs PR #1448 to current main. The server-configured source-directory ingestion rendered control runtime is current-main truth; this sync adds no runtime behavior and pivots to selecting the next major Layer 3 end-to-end gap from current-main evidence."
 }

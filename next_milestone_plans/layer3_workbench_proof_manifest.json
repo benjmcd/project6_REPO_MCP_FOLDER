@@ -32918,5 +32918,40 @@
   "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/842_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY.md",
   "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_status": "server_configured_source_directory_ingestion_rendered_control_runtime_implemented_branch_local",
   "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_next_posture_after_merge": "current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime",
-  "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_summary": "Doc 842 proof records bounded rendered /review/layer3 source-directory ingestion scan/status controls over the already current-main backend scanner from docs 744 and 745."
+  "latest_server_configured_source_directory_ingestion_rendered_control_runtime_entry_summary": "Doc 842 proof records bounded rendered /review/layer3 source-directory ingestion scan/status controls over the already current-main backend scanner from docs 744 and 745.",
+  "server_configured_source_directory_ingestion_rendered_control_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime",
+    "status": "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/843_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/842_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY.md",
+    "runtime_pr": "#1448",
+    "runtime_branch": "codex/l3-source-ingestion-runtime",
+    "runtime_branch_commit": "63f6c2ebf98ce849aad14b02c67e8dc79a2cdd03",
+    "runtime_merge_commit": "d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42",
+    "proof_terms": [
+      "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
+      "backend-layer3-api SUCCESS 3m13s",
+      "test SUCCESS 3m32s",
+      "PR #1448 reviewThreads totalCount 0",
+      "unresolved reviewThreads totalCount 0",
+      "rendered_server_configured_source_directory_ingestion_control",
+      "scan_server_configured_operator_directory",
+      "server_configured_operator_directory_text_table_ingestion",
+      "frontend durable authority remains blocked",
+      "current-main sync introduces no additional runtime behavior",
+      "select_next_major_layer3_end_to_end_gap_from_current_main_evidence"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence"
+  },
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_branch": "codex/l3-source-ingestion-runtime-sync",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/843_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_pr": "#1448",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_merge_commit": "d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_status": "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_summary": "Doc 843 proof records current-main sync for PR #1448 merge commit d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42 with green backend-layer3-api and test checks, zero reviewThreads, and next posture select_next_major_layer3_end_to_end_gap_from_current_main_evidence."
 }
