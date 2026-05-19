@@ -2400,6 +2400,9 @@ LAYER3_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION = (
 LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION = (
     PLANNING_DOCS / "871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md"
 )
+LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE = (
+    PLANNING_DOCS / "872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -76631,6 +76634,210 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in proof_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_gap_selection_proof.proof_terms missing {term}"
+                        )
+
+    internal_webhook_rendered_status_freeze_text = _read_required_text(
+        LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime implementation-entry freeze for `server_configured_internal_webhook_rendered_read_only_status_projection`.",
+        "872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+        "871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+        "df811aa9f9e8263ed8b233d5f530b82267be7b93",
+        "Selected implementation action: `implement_internal_webhook_rendered_read_only_status_projection`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Implementation-entry allowed next: true only after current-main sync for this freeze",
+        "internal_webhook_dispatch: dict[str, Any]",
+        "State.sessionSummary.internal_webhook_dispatch",
+        "backend/app/services/layer3_internal_webhook_connector.py",
+        "L3InternalWebhookDispatchReceipt",
+        "L3InternalWebhookDispatchAuditEvent",
+        "internalWebhookDispatchStatusState()",
+        "renderInternalWebhookDispatchStatusPanel()",
+        "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+    ):
+        if term not in internal_webhook_rendered_status_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE)} "
+                f"missing internal webhook rendered status freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Internal Webhook Rendered Status Freeze",
+            "872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+            "implement_internal_webhook_rendered_read_only_status_projection",
+            "internal_webhook_dispatch: dict[str, Any]",
+            "State.sessionSummary.internal_webhook_dispatch",
+            "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 internal webhook rendered status freeze to preserve when present",
+            "872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+            "implement_internal_webhook_rendered_read_only_status_projection",
+            "internal_webhook_dispatch: dict[str, Any]",
+            "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+        ),
+        REFRESH_SPEC: (
+            "872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+            "implement_internal_webhook_rendered_read_only_status_projection",
+            "Do not render doc `872` as implementation before current-main sync",
+            "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+        ),
+        MANIFEST: (
+            '"internal_webhook_rendered_status_freeze"',
+            '"status": "frozen_internal_webhook_rendered_status_no_runtime_no_rendered"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md"',
+            '"selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection"',
+            '"future_session_summary_field": "internal_webhook_dispatch: dict[str, Any]"',
+            '"future_response_authority": "State.sessionSummary.internal_webhook_dispatch"',
+            '"implementation_entry_allowed_next_after_current_main_sync": true',
+            '"implementation_before_current_main_sync": false',
+            '"frontend_only_durable_authority": false',
+            '"next_posture": "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation"',
+        ),
+        PROOF_MANIFEST: (
+            '"internal_webhook_rendered_status_freeze_proof"',
+            '"proof_kind": "frozen_internal_webhook_rendered_status_no_runtime_no_rendered"',
+            '"implement_internal_webhook_rendered_read_only_status_projection"',
+            '"internal_webhook_dispatch: dict[str, Any]"',
+            '"State.sessionSummary.internal_webhook_dispatch"',
+            '"no implementation before current-main sync"',
+            '"no dispatch rerun"',
+            '"no rendered dispatch/submit control"',
+            '"no URL or credential input"',
+            '"no frontend-only durable authority"',
+            '"current_main_sync_internal_webhook_rendered_status_freeze_then_implementation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing internal webhook rendered status freeze term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        webhook_freeze = manifest.get("internal_webhook_rendered_status_freeze")
+        if not isinstance(webhook_freeze, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing internal_webhook_rendered_status_freeze object"
+            )
+        else:
+            expected_freeze_scalars = {
+                "status": "frozen_internal_webhook_rendered_status_no_runtime_no_rendered",
+                "doc": "next_milestone_plans/Layer3_planning_docs/872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-freeze",
+                "predecessor_gap_selection_doc": "next_milestone_plans/Layer3_planning_docs/871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+                "current_main_checkpoint": "df811aa9f9e8263ed8b233d5f530b82267be7b93",
+                "selected_gap": "server_configured_internal_webhook_rendered_read_only_status_projection",
+                "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+                "future_session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+                "future_response_authority": "State.sessionSummary.internal_webhook_dispatch",
+                "rendered_route": "/review/layer3",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "implementation_entry_allowed_next_after_current_main_sync": True,
+                "implementation_before_current_main_sync": False,
+                "dispatch_rerun_admitted": False,
+                "rendered_dispatch_submit_control": False,
+                "url_or_credential_input": False,
+                "connector_run_creation": False,
+                "provider_public_signed_url_behavior": False,
+                "package_source_auth_security_widening": False,
+                "optional_tool_runtime": False,
+                "browser_storage_authority": False,
+                "frontend_only_durable_authority": False,
+                "next_posture": "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+            }
+            for key, value in expected_freeze_scalars.items():
+                if webhook_freeze.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} internal_webhook_rendered_status_freeze.{key} must be {value!r}"
+                    )
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_internal_webhook_rendered_status_freeze_status": "frozen_internal_webhook_rendered_status_no_runtime_no_rendered",
+                    "latest_internal_webhook_rendered_status_freeze_action": "implement_internal_webhook_rendered_read_only_status_projection",
+                    "latest_internal_webhook_rendered_status_freeze_runtime_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_freeze_rendered_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_freeze_next_posture": "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("internal_webhook_rendered_status_freeze_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing internal_webhook_rendered_status_freeze_proof object"
+            )
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "frozen_internal_webhook_rendered_status_no_runtime_no_rendered",
+                "status": "frozen_internal_webhook_rendered_status_no_runtime_no_rendered",
+                "doc": "next_milestone_plans/Layer3_planning_docs/872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-freeze",
+                "predecessor_gap_selection_doc": "next_milestone_plans/Layer3_planning_docs/871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+                "current_main_checkpoint": "df811aa9f9e8263ed8b233d5f530b82267be7b93",
+                "selected_gap": "server_configured_internal_webhook_rendered_read_only_status_projection",
+                "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+                "future_session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+                "future_response_authority": "State.sessionSummary.internal_webhook_dispatch",
+                "rendered_route": "/review/layer3",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "implementation_entry_allowed_next_after_current_main_sync": True,
+                "implementation_before_current_main_sync": False,
+                "dispatch_rerun_admitted": False,
+                "rendered_dispatch_submit_control": False,
+                "url_or_credential_input": False,
+                "connector_run_creation": False,
+                "provider_public_signed_url_behavior": False,
+                "optional_tool_runtime": False,
+                "browser_storage_authority": False,
+                "frontend_only_durable_authority": False,
+                "next_posture": "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_freeze_proof.{key} must be {value!r}"
+                    )
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_freeze_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+                    "implement_internal_webhook_rendered_read_only_status_projection",
+                    "server_configured_internal_webhook_rendered_read_only_status_projection",
+                    "internal_webhook_dispatch: dict[str, Any]",
+                    "State.sessionSummary.internal_webhook_dispatch",
+                    "backend/app/services/layer3_internal_webhook_connector.py",
+                    "no runtime behavior",
+                    "no rendered behavior",
+                    "no implementation before current-main sync",
+                    "no dispatch rerun",
+                    "no rendered dispatch/submit control",
+                    "no URL or credential input",
+                    "no connector run creation",
+                    "no provider/public/signed URL behavior",
+                    "no optional-tool runtime",
+                    "no browser-storage authority",
+                    "no frontend-only durable authority",
+                    "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_freeze_proof.proof_terms missing {term}"
                         )
 
 

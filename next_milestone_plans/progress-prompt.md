@@ -350,3 +350,10 @@ Current Layer 3 internal webhook rendered status gap selection to preserve when 
 - preserve the gap as missing read-only `State.sessionSummary.internal_webhook_dispatch` projection into `/review/layer3`, not a missing dispatch runtime
 - do not treat this selection as runtime behavior, rendered behavior, route/API/DTO/model/migration/service behavior change, internal webhook dispatch rerun, rendered write/submit control, connector run creation, arbitrary destination URL, provider/public/signed URL behavior, package/source/auth/security widening, optional-tool runtime, or frontend-only durable authority
 - preserve the next posture as `freeze_internal_webhook_rendered_read_only_status_projection_before_runtime`
+
+Current Layer 3 internal webhook rendered status freeze to preserve when present:
+- `872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md` records a no-runtime/no-rendered implementation-entry freeze for `implement_internal_webhook_rendered_read_only_status_projection`
+- canonical backend authority remains durable `L3InternalWebhookDispatchReceipt` / `L3InternalWebhookDispatchAuditEvent` state through `backend/app/services/layer3_internal_webhook_connector.py`
+- preserve the only future session-summary field as `internal_webhook_dispatch: dict[str, Any]` on existing `GET /api/v1/layer3/session/{session_id}`, rendered only through `State.sessionSummary.internal_webhook_dispatch` in `/review/layer3`
+- do not treat this freeze as runtime behavior, rendered behavior, implementation before current-main sync, dispatch rerun, rendered dispatch/submit control, URL or credential input, connector run creation, provider/public/signed URL behavior, package/source/auth/security widening, optional-tool runtime, browser-storage authority, or frontend-only durable authority
+- preserve the next posture as `current_main_sync_internal_webhook_rendered_status_freeze_then_implementation`

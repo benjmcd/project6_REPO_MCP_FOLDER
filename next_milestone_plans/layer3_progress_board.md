@@ -7349,3 +7349,13 @@ Current-main evidence separates the already-synced internal webhook backend auth
 This selection admits no runtime behavior, no rendered behavior, no route/API/DTO/model/migration/service behavior change, no internal webhook dispatch rerun, no rendered write/submit control, no connector run creation, no arbitrary destination URL, no provider/public/signed URL behavior, no package/source/auth/security widening, no optional-tool runtime, and no frontend-only durable authority.
 
 Next exact posture: `freeze_internal_webhook_rendered_read_only_status_projection_before_runtime`.
+
+## Internal Webhook Rendered Status Freeze
+
+Implementation-entry freeze: `872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md` selects only `implement_internal_webhook_rendered_read_only_status_projection`.
+
+Canonical backend authority remains `backend/app/services/layer3_internal_webhook_connector.py`, `L3InternalWebhookDispatchReceipt`, `L3InternalWebhookDispatchAuditEvent`, and the already-current-main internal webhook dispatch/status endpoints. The only future session-summary addition is `internal_webhook_dispatch: dict[str, Any]`, projected read-only through existing `GET /api/v1/layer3/session/{session_id}` and read by `/review/layer3` as `State.sessionSummary.internal_webhook_dispatch`.
+
+This freeze admits no runtime behavior and no rendered behavior now. Still blocked: implementation before current-main sync, dispatch rerun, rendered dispatch/submit controls, destination selection, URL or credential inputs, connector run creation, provider/public/signed URL behavior, package/source/auth/security widening, optional-tool runtime, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `current_main_sync_internal_webhook_rendered_status_freeze_then_implementation`. After that sync, the only admitted implementation action is `implement_internal_webhook_rendered_read_only_status_projection`.
