@@ -72845,6 +72845,40 @@ def _check_sublayer3c_optional_tool_benchmark_fixture_authority_gate(
                     f"{_rel(path)} missing Sublayer 3C optional-tool benchmark fixture authority gate artifact term: {term}"
                 )
 
+    manifest_data = _load_json(MANIFEST, errors)
+    current_status = manifest_data.get("current_status") if isinstance(manifest_data, dict) else None
+    if not isinstance(current_status, dict):
+        errors.append(
+            f"{_rel(MANIFEST)} current_status missing for Sublayer 3C optional-tool benchmark fixture authority gate"
+        )
+    else:
+        expected_current_status = {
+            "latest_sublayer3c_optional_tool_benchmark_fixture_authority_gate_doc": (
+                "next_milestone_plans/Layer3_planning_docs/849_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE.md"
+            ),
+            "latest_sublayer3c_optional_tool_benchmark_fixture_authority_gate_status": (
+                "sublayer3c_optional_tool_benchmark_fixture_authority_absent_no_runtime_stop"
+            ),
+            "latest_sublayer3c_optional_tool_benchmark_fixture_authority_gate_decision": (
+                "stop_optional_tool_benchmark_progression_until_fixture_authority_selected"
+            ),
+            "latest_sublayer3c_optional_tool_benchmark_fixture_authority_gate_runtime_behavior_change": False,
+            "latest_sublayer3c_optional_tool_benchmark_fixture_authority_gate_next_posture": (
+                "await_product_authority_for_optional_tool_benchmark_fixture_selection"
+            ),
+        }
+        for key, expected in expected_current_status.items():
+            if current_status.get(key) != expected:
+                errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {expected!r}")
+        summary = current_status.get(
+            "latest_sublayer3c_optional_tool_benchmark_fixture_authority_gate_summary"
+        )
+        if not isinstance(summary, str) or "Current main does not select supervised TabPFN fixture authority" not in summary:
+            errors.append(
+                f"{_rel(MANIFEST)} current_status.latest_sublayer3c_optional_tool_benchmark_fixture_authority_gate_summary "
+                "must preserve the current-main fixture-authority stop summary"
+            )
+
 
 def main() -> int:
     errors: list[str] = []
