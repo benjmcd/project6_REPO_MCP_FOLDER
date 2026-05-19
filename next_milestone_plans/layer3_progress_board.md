@@ -6894,3 +6894,23 @@ The accepted planning packs remain planning context only: `C:\Users\benny\Downlo
 No raw provider-public URL exposure, real provider adapter, provider credential, provider object write, provider ACL change, public proxy, public anonymous access, public redirect, byte streaming, rendered provider-public controls, frontend durable authority, connector dispatch, destination write, network egress, package mutation, source expansion, semantic/vector RAG widening, prompt/model/provider runtime, hidden model call, TabPFN runtime, NRC RAG runtime, Chroma/vector provider integration, optional-tool rendered control, agent tool-call runtime, Gate C/pass-entry admission, package/handoff/export/download integration for optional tools, or auth/security behavior is admitted by this closeout.
 
 If a later Sublayer 3C lane requires an external/public/credentialed surface, the provider-public/provider-private URL, connector/network, and auth/security gates must be reopened with exact product authority before implementation.
+
+## Sublayer 3C Optional Tool Planning Index ADR Gate
+
+Planning/control index and ADR gate: `845_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE.md` follows the public URL delivery prerequisite closeout and satisfies `select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout`.
+
+Entry decision: `planning_index_and_adr_gate_only`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this index: `false`.
+
+The accepted planning packs remain planning context only: `C:\Users\benny\Downloads\Planning_packs\accepted\l3_tabpfn_sublayer3c_tool_planning_pack` and `C:\Users\benny\Downloads\Planning_packs\accepted\l3_nrc_rag_sublayer3c_tool_planning_pack`. Their manifests observed project6 through PR `#1449`; current main has since landed PR `#1450`, the public URL delivery prerequisite closeout, with no runtime behavior introduced.
+
+Selected ADR gates: `ADR: evaluate or no-adopt TabPFN for Layer 3 Sublayer 3C optional predictive-method use` and `ADR: evaluate or no-adopt nrc-licensing-rag for Layer 3 Sublayer 3C optional-tool use`.
+
+Default posture before each ADR: `no_runtime_no_dependency_no_default_provider`.
+
+No TabPFN runtime, TabPFN dependency, TabPFN fit/predict execution, TabPFN model/checkpoint loading, hidden TabPFN download, NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, OpenAI/Claude/provider runtime, new Layer 3 retrieval endpoint, rendered optional-tool control, source-authority promotion, quantitative method-selection behavior, agent tool-call runtime, Gate C/pass-entry admission, package/handoff/export/download integration, provider credential, network egress, hidden model call, or auth/security behavior is admitted by this index.
+
+The next exact posture is `select_first_sublayer3c_optional_tool_adr_from_planning_index`.
