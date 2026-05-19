@@ -2294,6 +2294,10 @@ LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPO
     PLANNING_DOCS
     / "841_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "842_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -72016,6 +72020,123 @@ def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_
                 )
 
 
+def _check_server_configured_source_directory_ingestion_rendered_control_runtime_entry(
+    errors: list[str],
+) -> None:
+    entry_text = _read_required_text(
+        LAYER3_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local rendered control runtime entry for `server_configured_source_directory_ingestion_rendered_control_runtime`.",
+        "842_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY.md",
+        "codex/l3-source-ingestion-runtime",
+        "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+        "745_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "rendered_server_configured_source_directory_ingestion_control",
+        "Runtime behavior introduced by this pass: `true`.",
+        "Frontend rendered controls introduced by this pass: `true`.",
+        "Frontend durable authority introduced by this pass: `false`.",
+        "Backend route behavior introduced by this pass: `false`.",
+        "Database model or migration behavior introduced by this pass: `false`.",
+        "scan_server_configured_operator_directory",
+        "server_configured_operator_directory_text_table_source_family",
+        "server_configured_operator_directory_text_table_ingestion",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime",
+        "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+    ):
+        if term not in entry_text:
+            errors.append(
+                f"{_rel(LAYER3_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY)} "
+                f"missing source-directory ingestion rendered-control runtime entry term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Server Configured Source Directory Ingestion Rendered Control Runtime Entry",
+            "842_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY.md",
+            "codex/l3-source-ingestion-runtime",
+            "rendered_server_configured_source_directory_ingestion_control",
+            "source-directory-ingestion-rendered-controls",
+            "source-directory-ingestion-scan-form",
+            "source-directory-ingestion-status",
+            "scan_server_configured_operator_directory",
+            "Runtime behavior introduced by this pass: `true`.",
+            "Backend route behavior introduced by this pass: `false`.",
+            "current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime",
+        ),
+        MANIFEST: (
+            "server_configured_source_directory_ingestion_rendered_control_runtime_entry",
+            "server_configured_source_directory_ingestion_rendered_control_runtime_implemented_branch_local",
+            "codex/l3-source-ingestion-runtime",
+            "rendered_server_configured_source_directory_ingestion_control",
+            '"current_main_backend_runtime_already_satisfied": true',
+            '"backend_route_behavior_change": false',
+            '"database_model_or_migration_change": false',
+            '"frontend_rendered_controls_enabled": true',
+            '"frontend_durable_authority_enabled": false',
+            "scan_server_configured_operator_directory",
+            "server_configured_operator_directory_text_table_ingestion",
+            "current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime",
+            "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+        ),
+        PROOF_MANIFEST: (
+            "server_configured_source_directory_ingestion_rendered_control_runtime_entry_proof",
+            "runtime_entry_server_configured_source_directory_ingestion_rendered_control",
+            "current_main_synced_server_configured_operator_directory_text_table_ingestion_runtime",
+            "sourceDirectoryIngestionPayload",
+            "sourceDirectoryIngestionForbiddenPayloadTerms",
+            "scanSourceDirectory",
+            "inspectSourceDirectoryBatch",
+            "frontend durable authority remains blocked",
+            "current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime",
+        ),
+        LAYER3_HTML: (
+            "source-directory-ingestion-rendered-controls",
+            "data-rendered-mode=\"rendered_server_configured_source_directory_ingestion_control\"",
+            "source-directory-ingestion-scan-form",
+            "source-directory-ingestion-client-request-id",
+            "source-directory-ingestion-batch-id",
+            "source-directory-ingestion-status",
+            "source-directory-ingestion-scan-submit",
+            "source-directory-ingestion-panel",
+        ),
+        LAYER3_JS: (
+            "sourceDirectoryIngestionRenderedControls",
+            "SOURCE_DIRECTORY_INGESTION_SCAN_PATH",
+            "SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX",
+            "SOURCE_DIRECTORY_INGESTION_SCHEMA_ID",
+            "scan_server_configured_operator_directory",
+            "server_configured_operator_directory_text_table_source_family",
+            "server_configured_operator_directory_text_table_ingestion",
+            "postJson(SOURCE_DIRECTORY_INGESTION_SCAN_PATH",
+            "getJson(`${SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX}",
+            "'caller_supplied_path'",
+            "'rag_vector_index'",
+            "'frontend_durable_authority'",
+        ),
+        LAYER3_PAGE_TEST: (
+            "test_layer3_source_directory_ingestion_rendered_control_is_bounded",
+            "rendered_server_configured_source_directory_ingestion_control",
+            "sourceDirectoryIngestionRenderedControls",
+            "sourceDirectoryIngestionPayload",
+            "sourceDirectoryIngestionForbiddenPayloadTerms",
+            "scan_server_configured_operator_directory",
+            "postJson(SOURCE_DIRECTORY_INGESTION_SCAN_PATH",
+            "getJson(`${SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX}",
+            "package_payload_rewrite:",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory ingestion rendered-control artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -72728,6 +72849,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync(
+        errors
+    )
+    _check_server_configured_source_directory_ingestion_rendered_control_runtime_entry(
         errors
     )
 
