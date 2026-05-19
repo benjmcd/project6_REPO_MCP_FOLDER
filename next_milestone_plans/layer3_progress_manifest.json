@@ -36240,5 +36240,50 @@
     "frontend_durable_authority_enabled": false,
     "next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync",
     "summary": "Doc 864 records current-main sync for PR #1479 merge commit 3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34 with checks passed, review surfaces empty, post-merge validation passed, and the next posture set to selecting the next exact Layer 3 end-to-end gap after the read-only Analysis Environment projection runtime sync."
+  },
+  "downstream_analysis_environment_rendered_projection_gap_selection": {
+    "status": "selected_downstream_analysis_environment_rendered_projection_read_only_gap",
+    "doc": "next_milestone_plans/Layer3_planning_docs/865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+    "branch": "codex/l3-analysis-environment-rendered-gap-selection",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint": "61441742337a66f6793a5985987fec8a94d9d518",
+    "selected_gap": "downstream_analysis_environment_rendered_projection_read_only",
+    "selected_next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "implementation_entry_allowed_next": false,
+    "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+    "server_owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+    "api_surface": "GET /api/v1/layer3/session/{session_id}",
+    "response_field": "analysis_environment_projection: dict[str, Any]",
+    "schema_id": "layer3.analysis_environment_projection.v1",
+    "authority_source": "read_only_session_summary_projection",
+    "candidate_rendered_surface": "backend/app/review_ui/static/layer3.js",
+    "candidate_rendered_path": "/review/layer3",
+    "candidate_rendered_functions": [
+      "State.sessionSummary",
+      "currentSublayerVisualizationModel()",
+      "renderAnalysisPlane()"
+    ],
+    "blocked_scope": {
+      "implementation_before_freeze": false,
+      "route_api_dto_model_migration_service_change": false,
+      "rendered_behavior_change": false,
+      "frontend_only_durable_authority": false,
+      "browser_storage_authority": false,
+      "package_mutation_or_reconstruction": false,
+      "handoff_export_or_delivery_rerun": false,
+      "source_authority_promotion": false,
+      "caller_provided_paths_or_urls": false,
+      "connector_dispatch_or_destination_write": false,
+      "provider_urls": false,
+      "credentials_or_network": false,
+      "semantic_vector_rag_widening": false,
+      "prompt_model_provider_qualitative_generation": false,
+      "optional_tool_runtime": false,
+      "broad_auth_security_behavior": false
+    },
+    "next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+    "summary": "Doc 865 selects the next no-runtime/no-rendered gap as a read-only rendered projection over server-owned State.sessionSummary.analysis_environment_projection, with future work limited to a freeze before any /review/layer3 UI implementation."
   }
 }
