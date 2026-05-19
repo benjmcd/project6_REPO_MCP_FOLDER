@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import hashlib
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
@@ -12,7 +12,9 @@ from app.services.layer3_gate_b_state import material_candidate_basis_from_previ
 from app.services.layer3_source_directory_ingestion import (
     ALLOWED_EXTENSIONS,
     CONFIG_AUTHORITY,
+    MAX_RELATIVE_PATH_SEGMENTS,
     MODE as INGESTION_MODE,
+    RUNTIME_POLICY_ID,
     SCHEMA_ID as INGESTION_SCHEMA_ID,
     SOURCE_FAMILY,
     STATUS_RECORDED,
@@ -141,6 +143,7 @@ def source_directory_material_preview(db: Session, payload: Mapping[str, Any]) -
         "current_decision_state": "candidate",
     }
     preview_hash = material_preview_hash([material_candidate_basis_from_preview(material_candidate)])
+    authority_snapshot = batch.authority_snapshot_json or {}
     return {
         "schema_id": SCHEMA_ID,
         "schema_version": 1,
@@ -159,6 +162,9 @@ def source_directory_material_preview(db: Session, payload: Mapping[str, Any]) -
             ),
             "preview_route": "POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
             "gate_b_material_admission_route": "POST /api/v1/layer3/gate-b/decision",
+            "runtime_policy_id": authority_snapshot.get("runtime_policy_id", RUNTIME_POLICY_ID),
+            "direct_child_only": authority_snapshot.get("direct_child_only", True),
+            "recursive_traversal_admitted": authority_snapshot.get("recursive_traversal_admitted", False),
             "absolute_path_exposed": False,
             "bounded_text_preview": True,
             "rag_vector_index_enabled": False,
@@ -343,15 +349,20 @@ def _read_live_file(file_record: L3SourceDirectoryIngestionFile, *, max_chars: i
             details={"source_ingestion_file_id": file_record.source_ingestion_file_id, **exc.details},
         ) from exc
     relative = PurePosixPath(file_record.relative_name)
-    if len(relative.parts) != 1 or relative.name != file_record.relative_name:
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or len(relative.parts) > MAX_RELATIVE_PATH_SEGMENTS
+        or any(part in {"", ".", ".."} for part in relative.parts)
+    ):
         raise SourceDirectoryMaterialAdmissionError(
             "source_directory_material_relative_name_not_admitted",
-            "The persisted source-directory file name is outside the admitted direct-child shape.",
+            "The persisted source-directory file name is outside the admitted relative-path shape.",
             http_status=409,
             details={"source_ingestion_file_id": file_record.source_ingestion_file_id},
         )
     resolved_root = root.resolve()
-    resolved_path = (root / file_record.relative_name).resolve()
+    resolved_path = (root / Path(*relative.parts)).resolve()
     if resolved_root not in resolved_path.parents:
         raise SourceDirectoryMaterialAdmissionError(
             "source_directory_material_path_not_admitted",
@@ -467,14 +478,17 @@ def _source_provenance(
     *,
     source_ref: str,
 ) -> dict[str, Any]:
+    authority_snapshot = batch.authority_snapshot_json or {}
     return {
         "schema_id": INGESTION_SCHEMA_ID,
         "mode": MODE,
+        "runtime_policy_id": authority_snapshot.get("runtime_policy_id", RUNTIME_POLICY_ID),
         "source_ref": source_ref,
         "config_authority": CONFIG_AUTHORITY,
         "source_root_ref": _source_root_ref(),
         "source_root_absolute_path_exposed": False,
-        "direct_child_only": True,
+        "direct_child_only": authority_snapshot.get("direct_child_only", True),
+        "recursive_traversal_admitted": authority_snapshot.get("recursive_traversal_admitted", False),
         "source_ingestion_batch_id": batch.source_ingestion_batch_id,
         "source_ingestion_file_id": file_record.source_ingestion_file_id,
         "directory_fingerprint_hash": batch.directory_fingerprint_hash,

@@ -7160,3 +7160,17 @@ The recursive source-ingestion runtime policy selection is now current-main sync
 Current main still does not implement recursive traversal. Direct-child `LAYER3_SOURCE_INGESTION_DIR` ingestion remains unchanged with `direct_child_only: True` and `recursive_traversal_admitted: False`.
 
 Next exact posture: `implement_recursive_server_configured_operator_directory_text_table_ingestion`. Keep implementation inside `recursive_server_configured_directory_text_table_policy_v1` and do not add rendered controls, caller-provided paths, downstream package/export/connector/provider/vector/model/optional-tool behavior, or broad auth/security behavior.
+
+## Recursive Source Ingestion Runtime Proof
+
+Runtime implementation proof: `858_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF.md` implements only `recursive_server_configured_directory_text_table_policy_v1` as `recursive_source_ingestion_runtime_implementation_proof`.
+
+Runtime behavior introduced by this pass: `true`, limited to recursive enumeration under server-configured `LAYER3_SOURCE_INGESTION_DIR` through the existing source-directory scan/status route family.
+
+Implemented policy: `.csv`, `.json`, `.txt`, and `.md` only; maximum recursion depth `2`; maximum normalized relative path segments `3` including filename; maximum file count `100`; `MAX_UPLOAD_MB` per-file and aggregate-derived limits; deterministic lexical normalized relative path ordering; no caller-selected recursive flag; normalized relative paths only.
+
+Proof status: `python -m pytest .\backend\tests\test_layer3_source_directory_ingestion.py -q` passed with `15 passed, 1 skipped`. The skipped branch is symlink creation when unavailable in the local environment.
+
+Still blocked: caller-provided paths/URLs/globs/file bytes/recursive flags, rendered controls, source authority promotion, package/handoff/export/download behavior changes, connector dispatch, provider URL behavior, credentials or network behavior, semantic/vector RAG widening beyond current deterministic local source-directory surfaces, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, broad auth/security behavior, PDFs/OCR/Office/images/archives/arbitrary binaries, browser uploads, web connectors, and database connectors.
+
+Next exact posture: `current_main_sync_recursive_server_configured_directory_text_table_policy_v1`. After sync, pivot to the next highest-value deferred platform lane unless current-main evidence names a concrete recursive-ingestion defect or blocker.
