@@ -7237,3 +7237,21 @@ Validation passed for py_compile of the touched runtime files, `python -m pytest
 Still blocked: write routes, new route family, model/migration changes, rendered controls, package mutation/reconstruction, source promotion, handoff/export/download or delivery reruns, connector dispatch, destination writes, provider URL behavior, credentials/network behavior, vector/RAG runtime, prompt/model/provider generation, optional-tool runtime, broad auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture after merge: `current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime`.
+
+## Downstream Analysis Environment Authority Projection Runtime Current-Main Sync
+
+Current-main proof/control sync: PR `#1479` merged `863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md` at merge commit `3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34`.
+
+Sync doc: `864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md`.
+
+The merge gate passed: `backend-layer3-api` succeeded in `3m14s`, `test` succeeded in `3m52s`, PR comments/reviews/latestReviews were empty, reviewThreads totalCount was `0`, unresolved reviewThreads totalCount was `0`, and merge state before merge was `CLEAN`.
+
+Post-merge validation passed for py_compile, projection helper tests, targeted API session-summary/OpenAPI tests, `python .\tools\l3-progress-check.py`, target-selection validation, fixture-authority validation, checkpoint fixture validation, and `git diff --check`.
+
+The downstream Analysis Environment authority projection runtime is now current-main synced as `current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime`.
+
+Runtime behavior introduced by this sync: `false`. Current main already contains the bounded read-only `analysis_environment_projection: dict[str, Any]` session-summary projection with schema `layer3.analysis_environment_projection.v1` and authority source `read_only_session_summary_projection`.
+
+Still blocked: write routes, new route family, model/migration changes, rendered controls, package mutation/reconstruction, source promotion, handoff/export/download or delivery reruns, connector dispatch, destination writes, provider URL behavior, credentials/network behavior, vector/RAG runtime, prompt/model/provider generation, optional-tool runtime, broad auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync`.
