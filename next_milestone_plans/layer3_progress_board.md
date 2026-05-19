@@ -7094,3 +7094,19 @@ Post-merge validation passed for `python .\tools\l3-progress-check.py`, `python 
 The server-configured internal webhook connector runtime is now current-main synced as `current_main_synced_internal_webhook_connector_runtime_implementation`.
 
 Next exact posture: `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`. Do not continue connector/destination repetition unless current-main evidence shows a concrete unresolved defect, failed check, review item, or named downstream operator-flow blocker.
+
+## Recursive Source Ingestion Family Selection Freeze
+
+No-runtime source-family selection freeze: `854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md` selects `recursive_server_configured_operator_directory_text_table_source_family` as the next broader source-ingestion family.
+
+Selected family class: `recursive_server_configured_local_directory_text_table_ingestion`.
+
+Runtime behavior introduced by this freeze: `false`.
+
+Implementation-entry allowed next: false until a later runtime-entry freeze selects exact traversal limits, exclusion policy, stale-authority behavior, status/readiness projection, downstream material authority compatibility, and proof scope.
+
+Current direct-child server-configured source-directory ingestion remains unchanged: `direct_child_only: True`, `recursive_traversal_admitted: False`, and `.csv`, `.json`, `.txt`, and `.md` only under `LAYER3_SOURCE_INGESTION_DIR`.
+
+Still blocked: recursive traversal in the live API, request-schema changes, rendered control changes, source authority promotion, package/handoff/export/download integration, connector dispatch, provider URLs, credentials, network behavior, semantic/vector RAG widening, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, broad auth/security behavior, PDFs, OCR, Office documents, images, archives, arbitrary binaries, browser uploads, web connectors, database connectors, arbitrary caller-provided paths, and local upload behavior.
+
+Next exact posture: `current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze`, then `select_recursive_source_ingestion_runtime_policy_before_implementation`.
