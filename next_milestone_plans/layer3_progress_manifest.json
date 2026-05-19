@@ -7277,7 +7277,14 @@
     "latest_internal_webhook_rendered_status_runtime_rendered_behavior_change": true,
     "latest_internal_webhook_rendered_status_runtime_dispatch_behavior_change": false,
     "latest_internal_webhook_rendered_status_runtime_next_posture": "current_main_sync_internal_webhook_rendered_status_runtime",
-    "latest_internal_webhook_rendered_status_runtime_summary": "Doc 874 proves the bounded internal webhook rendered read-only status projection runtime: session summary now exposes internal_webhook_dispatch from durable receipt/audit authority, /review/layer3 renders #internal-webhook-dispatch-panel from State.sessionSummary.internal_webhook_dispatch, and headed plus headless browser proof passed without admitting dispatch rerun, destination selection, connector rows, raw URL/token/package exposure, provider URL behavior, optional-tool runtime, or frontend-only durable authority."
+    "latest_internal_webhook_rendered_status_runtime_summary": "Doc 874 proves the bounded internal webhook rendered read-only status projection runtime: session summary now exposes internal_webhook_dispatch from durable receipt/audit authority, /review/layer3 renders #internal-webhook-dispatch-panel from State.sessionSummary.internal_webhook_dispatch, and headed plus headless browser proof passed without admitting dispatch rerun, destination selection, connector rows, raw URL/token/package exposure, provider URL behavior, optional-tool runtime, or frontend-only durable authority.",
+    "latest_internal_webhook_rendered_status_runtime_current_main_sync_status": "current_main_synced_internal_webhook_rendered_status_runtime",
+    "latest_internal_webhook_rendered_status_runtime_current_main_sync_pr": "#1490",
+    "latest_internal_webhook_rendered_status_runtime_current_main_sync_merge_commit": "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+    "latest_internal_webhook_rendered_status_runtime_current_main_sync_runtime_behavior_change": false,
+    "latest_internal_webhook_rendered_status_runtime_current_main_sync_rendered_behavior_change": false,
+    "latest_internal_webhook_rendered_status_runtime_current_main_sync_dispatch_behavior_change": false,
+    "latest_internal_webhook_rendered_status_runtime_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync"
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -36692,5 +36699,40 @@
     ],
     "next_posture": "current_main_sync_internal_webhook_rendered_status_runtime",
     "summary": "Doc 874 proves the bounded internal webhook rendered read-only status projection runtime: session summary now exposes internal_webhook_dispatch from durable receipt/audit authority, /review/layer3 renders #internal-webhook-dispatch-panel from State.sessionSummary.internal_webhook_dispatch, and headed plus headless browser proof passed without admitting dispatch rerun, destination selection, connector rows, raw URL/token/package exposure, provider URL behavior, optional-tool runtime, or frontend-only durable authority."
+  },
+  "internal_webhook_rendered_status_runtime_current_main_sync": {
+    "status": "current_main_synced_internal_webhook_rendered_status_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-internal-webhook-rendered-status-runtime-sync",
+    "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+    "runtime_pr": "#1490",
+    "runtime_branch": "codex/l3-internal-webhook-rendered-status-runtime",
+    "runtime_branch_commit": "572f147781433ffe920410f5c77ba7ea5ba9ecd4",
+    "runtime_merge_commit": "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+    "synced_result": "current_main_synced_internal_webhook_rendered_status_runtime",
+    "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+    "runtime_behavior_introduced_by_runtime": true,
+    "rendered_behavior_introduced_by_runtime": true,
+    "dispatch_behavior_introduced_by_runtime": false,
+    "runtime_behavior_introduced_by_sync": false,
+    "rendered_behavior_introduced_by_sync": false,
+    "dispatch_behavior_introduced_by_sync": false,
+    "session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+    "response_authority": "State.sessionSummary.internal_webhook_dispatch",
+    "rendered_panel": "#internal-webhook-dispatch-panel",
+    "rendered_route": "/review/layer3",
+    "checks": {
+      "backend-layer3-api": "SUCCESS 3m24s",
+      "test": "SUCCESS 3m30s",
+      "reviewThreads_totalCount": 0,
+      "comments": 0,
+      "latest_reviews": 0
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_internal_webhook_dispatch_success_idempotent_and_redacted .\\backend\\tests\\test_layer3_page.py::test_layer3_page_route_serves_workbench_shell .\\backend\\tests\\test_layer3_page.py::test_layer3_static_assets_are_mounted -q PASS 3 passed"
+    ],
+    "next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+    "summary": "Doc 875 syncs PR #1490 merge commit 61bb8338176e704877b1883dfaa1b0ee04874ffc to current main. The internal webhook rendered status runtime is current-main synced with live behavior limited to the read-only internal_webhook_dispatch session-summary projection and /review/layer3 status rendering over State.sessionSummary.internal_webhook_dispatch."
   }
 }
