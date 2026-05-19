@@ -311,6 +311,60 @@ def _hybrid_package_review_submit_authority(
     return analysis_body, commit_body, submit.json(), submit_payload, embedding_index_authority_hash
 
 
+def _hybrid_external_export_download_prepare_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+    *,
+    client_request_id: str,
+) -> tuple[dict, dict, dict]:
+    analysis_body, _commit_body, submit_body, submit_payload, _embedding_index_authority_hash = (
+        _hybrid_package_review_submit_authority(
+            client,
+            tmp_path,
+            monkeypatch,
+            client_request_id=client_request_id,
+        )
+    )
+    handoff_payload = {
+        **submit_payload,
+        "operator_decision": "authorize_prepare",
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": "package_review_approved",
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+    }
+    handoff = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/prepare"
+        ),
+        json=handoff_payload,
+    )
+    assert handoff.status_code == 200, handoff.text
+    handoff_body = handoff.json()
+    prepare_payload = {
+        **handoff_payload,
+        "operator_decision": "prepare_source_directory_hybrid_external_export_download",
+        "prepare_record_ref": handoff_body["prepare_record_ref"],
+        "handoff_export_state": "handoff_export_prepared",
+        "handoff_export_envelope_ref": handoff_body["handoff_export_envelope"]["envelope_ref"],
+        "external_export_download_target": (
+            "source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference"
+        ),
+        "download_mode": "reference_only_prepare",
+    }
+    prepare = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/prepare"
+        ),
+        json=prepare_payload,
+    )
+    assert prepare.status_code == 200, prepare.text
+    return analysis_body, prepare.json(), prepare_payload
+
+
 def test_source_directory_vector_retrieval_returns_deterministic_ranked_segments_without_side_effects(
     client: TestClient,
     tmp_path,
@@ -1499,6 +1553,105 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_external_ex
     assert stale.status_code == 409
     assert stale.json()["error"]["code"] == (
         "source_directory_hybrid_external_export_download_prepare_package_authority_mismatch"
+    )
+
+
+def test_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivers_selected_package(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _analysis_body, prepare_body, prepare_payload = _hybrid_external_export_download_prepare_authority(
+        client,
+        tmp_path,
+        monkeypatch,
+        client_request_id="source-directory-hybrid-external-export-download-delivery",
+    )
+    selected_package = next(
+        package for package in prepare_body["output_packages"] if package["package_kind"] == "user_facing"
+    )
+    delivery_payload = {
+        **prepare_payload,
+        "operator_decision": "deliver_source_directory_hybrid_external_export_download",
+        "external_export_download_record_ref": prepare_body["external_export_download_record_ref"],
+        "export_download_descriptor_ref": prepare_body["export_download_descriptor_ref"],
+        "external_export_download_state": "external_export_download_prepared",
+        "delivery_mode": "same_origin_artifact_stream",
+        "output_package_id": selected_package["output_package_id"],
+        "package_kind": selected_package["package_kind"],
+        "package_payload_hash": selected_package["payload_hash"],
+    }
+
+    status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status"
+        ),
+        json=delivery_payload,
+    )
+    assert status.status_code == 200, status.text
+    status_body = status.json()
+    assert status_body["schema_id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status.v1"
+    )
+    assert status_body["delivery_available"] is True
+    assert status_body["delivery_streaming_performed"] is False
+    assert status_body["delivery_state"] == "external_export_download_delivered"
+    assert status_body["same_origin_delivery_enabled"] is True
+    assert status_body["browser_managed_same_origin_attachment_enabled"] is True
+    assert status_body["provider_public_delivery_enabled"] is False
+    assert status_body["provider_private_signed_url_enabled"] is False
+    assert status_body["connector_dispatch_enabled"] is False
+    assert status_body["network_egress_enabled"] is False
+    assert status_body["frontend_durable_authority_enabled"] is False
+    assert status_body["package_payload_rewrite_enabled"] is False
+    assert status_body["source_package_row_mutation_enabled"] is False
+    assert status_body["payload_ref_redacted"] is True
+    assert status_body["raw_local_path_exposed"] is False
+    assert status_body["output_package_id"] == selected_package["output_package_id"]
+    assert status_body["package_payload_hash"] == selected_package["payload_hash"]
+
+    delivery = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver"
+        ),
+        json=delivery_payload,
+    )
+    assert delivery.status_code == 200, delivery.text
+    assert delivery.headers["X-Layer3-Schema-Id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery.v1"
+    )
+    assert delivery.headers["X-Layer3-Delivery-State"] == "external_export_download_delivered"
+    assert (
+        delivery.headers["X-Layer3-External-Export-Download-Record-Ref"]
+        == prepare_body["external_export_download_record_ref"]
+    )
+    assert delivery.headers["X-Layer3-Source-Directory-Hybrid-Package-Kind"] == "user_facing"
+    assert str(tmp_path) not in delivery.text
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3OutputPackage).count() == 3
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
+        readiness = db.query(L3ReconciliationRecord).one().summary_json["external_export_download_prepare"]
+        assert readiness["external_export_download_record_ref"] == prepare_body["external_export_download_record_ref"]
+        assert "external_export_download_delivery" not in db.query(L3ReconciliationRecord).one().summary_json
+    finally:
+        db.close()
+
+    stale = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status"
+        ),
+        json={**delivery_payload, "package_payload_hash": "0" * 64},
+    )
+    assert stale.status_code == 409
+    assert stale.json()["error"]["code"] == (
+        "source_directory_hybrid_external_export_download_delivery_payload_hash_mismatch"
     )
 
 

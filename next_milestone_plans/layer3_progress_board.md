@@ -6700,3 +6700,20 @@ The synced runtime keeps `same_origin_delivery_enabled: False`, `browser_downloa
 No models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, same-origin delivery/streaming, browser download, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this sync.
 
 The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync`.
+
+## Source Directory Hybrid Context Qualitative Analysis External Export Download Delivery Runtime Entry
+
+Branch-local runtime entry freeze and implementation: `838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md` follows the current-main-synced 837 prepare runtime and satisfies the selected posture `select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync`.
+
+The pass adds only same-origin attachment delivery and delivery-status readers for an already prepared source-directory hybrid context-packet qualitative-analysis external export/download package:
+
+- `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status`
+- `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver`
+
+The reader validates current source-directory hybrid qualitative-analysis authority, package-review preview hash, package construction basis, package-review submit state, handoff/export prepare authority, external export/download prepare state, selected package id/kind/hash, and server-owned artifact-storage containment before exposing a `FileResponse` attachment. The delivery status route uses the same reader but reports readiness with `delivery_streaming_performed: False`.
+
+Provider-public delivery/use, provider-private signed URL behavior, signed-reference use, connector dispatch, real connector invocation, credentials, destination writes, receipts, network egress, frontend durable authority, rendered controls, durable delivery rows, delivery audit rows, package mutation, package payload rewrite, source package row mutation, replacement package rows, new source families, arbitrary ingestion, persistent vector stores, prompt/model/provider runtime, qualitative generation runtime, raw local path exposure, raw payload refs, raw package payload paths, full segment text exposure, and raw vector exposure remain blocked.
+
+Validation: `python -m py_compile .\backend\app\services\layer3_source_directory_hybrid_analysis.py .\backend\app\api\layer3.py .\backend\tests\test_layer3_source_directory_vector_retrieval.py .\tools\l3-progress-check.py` passed; targeted delivery pytest passed with `1 passed`, `3 warnings`; focused Layer 3 source-directory/readiness suite passed with `19 passed`, `3 warnings`; JSON manifest validation passed; `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed.
+
+The next required action after merge is `current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime`; after that sync, select the next named Layer 3 end-to-end gap rather than continuing same-family source-directory package/export loops without a named defect or downstream reader.
