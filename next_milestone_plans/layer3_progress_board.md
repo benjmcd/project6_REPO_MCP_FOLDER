@@ -7255,3 +7255,13 @@ Runtime behavior introduced by this sync: `false`. Current main already contains
 Still blocked: write routes, new route family, model/migration changes, rendered controls, package mutation/reconstruction, source promotion, handoff/export/download or delivery reruns, connector dispatch, destination writes, provider URL behavior, credentials/network behavior, vector/RAG runtime, prompt/model/provider generation, optional-tool runtime, broad auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync`.
+
+## Downstream Analysis Environment Rendered Projection Gap Selection
+
+Gap selection: `865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md` records the no-runtime current-main selection of `downstream_analysis_environment_rendered_projection_read_only` after the read-only `analysis_environment_projection` session-summary runtime was synced to current main.
+
+Current-main evidence separates the server-owned `State.sessionSummary.analysis_environment_projection` authority from the existing `/review/layer3` rendered Sublayer 3C Analysis Execution Environments path in `backend/app/review_ui/static/layer3.js`, including `currentSublayerVisualizationModel()` and `renderAnalysisPlane()`.
+
+This selection admits no runtime behavior, no rendered behavior, no route/API/DTO/model/migration/service behavior change, no package/source/provider/connector/auth/security widening, no optional-tool runtime, and no frontend-only durable authority.
+
+Next exact posture: `freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime`. Do not implement rendered Analysis Environment projection behavior until that freeze is current-main selected, review-cleared, and checker-backed.

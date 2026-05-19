@@ -2374,6 +2374,10 @@ LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN
     PLANNING_DOCS
     / "864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION = (
+    PLANNING_DOCS
+    / "865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -75330,6 +75334,176 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in runtime_sync_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_runtime_current_main_sync_proof.proof_terms missing {term}"
+                        )
+
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+
+    rendered_projection_gap_text = _read_required_text(
+        LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime current-main gap-selection control for `downstream_analysis_environment_rendered_projection_read_only`.",
+        "865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+        "Predecessor current-main sync doc: `864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md`.",
+        "Current-main checkpoint before this selection: `61441742337a66f6793a5985987fec8a94d9d518`.",
+        "Selected gap: `downstream_analysis_environment_rendered_projection_read_only`.",
+        "Selected next posture: `freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime`.",
+        "Runtime behavior introduced by this selection: `false`.",
+        "Rendered behavior introduced by this selection: `false`.",
+        "`State.sessionSummary.analysis_environment_projection`",
+        "`backend/app/review_ui/static/layer3.js`",
+        "`currentSublayerVisualizationModel()`",
+        "`renderAnalysisPlane()`",
+        "The next exact posture is `freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime`.",
+    ):
+        if term not in rendered_projection_gap_text:
+            errors.append(
+                f"{_rel(LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION)} "
+                f"missing downstream Analysis Environment rendered projection gap-selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Analysis Environment Rendered Projection Gap Selection",
+            "865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+            "downstream_analysis_environment_rendered_projection_read_only",
+            "State.sessionSummary.analysis_environment_projection",
+            "currentSublayerVisualizationModel()",
+            "renderAnalysisPlane()",
+            "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+            "downstream_analysis_environment_rendered_projection_read_only",
+            "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+        ),
+        REFRESH_SPEC: (
+            "865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+            "downstream_analysis_environment_rendered_projection_read_only",
+            "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+        ),
+        MANIFEST: (
+            '"downstream_analysis_environment_rendered_projection_gap_selection"',
+            '"status": "selected_downstream_analysis_environment_rendered_projection_read_only_gap"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md"',
+            '"selected_gap": "downstream_analysis_environment_rendered_projection_read_only"',
+            '"next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"downstream_analysis_environment_rendered_projection_gap_selection_proof"',
+            '"proof_kind": "selected_downstream_analysis_environment_rendered_projection_read_only_gap"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md"',
+            '"selected_gap": "downstream_analysis_environment_rendered_projection_read_only"',
+            '"next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing downstream Analysis Environment rendered projection gap-selection term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        rendered_gap = manifest.get("downstream_analysis_environment_rendered_projection_gap_selection")
+        if not isinstance(rendered_gap, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing downstream_analysis_environment_rendered_projection_gap_selection object"
+            )
+        else:
+            expected_rendered_gap_scalars = {
+                "status": "selected_downstream_analysis_environment_rendered_projection_read_only_gap",
+                "doc": "next_milestone_plans/Layer3_planning_docs/865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+                "branch": "codex/l3-analysis-environment-rendered-gap-selection",
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint": "61441742337a66f6793a5985987fec8a94d9d518",
+                "selected_gap": "downstream_analysis_environment_rendered_projection_read_only",
+                "selected_next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "implementation_entry_allowed_next": False,
+                "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+                "server_owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+                "api_surface": "GET /api/v1/layer3/session/{session_id}",
+                "response_field": "analysis_environment_projection: dict[str, Any]",
+                "schema_id": "layer3.analysis_environment_projection.v1",
+                "authority_source": "read_only_session_summary_projection",
+                "candidate_rendered_surface": "backend/app/review_ui/static/layer3.js",
+                "candidate_rendered_path": "/review/layer3",
+                "next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+            }
+            for key, value in expected_rendered_gap_scalars.items():
+                if rendered_gap.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} downstream_analysis_environment_rendered_projection_gap_selection.{key} must be {value!r}"
+                    )
+            if rendered_gap.get("candidate_rendered_functions") != [
+                "State.sessionSummary",
+                "currentSublayerVisualizationModel()",
+                "renderAnalysisPlane()",
+            ]:
+                errors.append(
+                    f"{_rel(MANIFEST)} downstream_analysis_environment_rendered_projection_gap_selection.candidate_rendered_functions must name State.sessionSummary, currentSublayerVisualizationModel(), and renderAnalysisPlane()"
+                )
+
+    if isinstance(proof_manifest, dict):
+        rendered_gap_proof = proof_manifest.get(
+            "downstream_analysis_environment_rendered_projection_gap_selection_proof"
+        )
+        if not isinstance(rendered_gap_proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing downstream_analysis_environment_rendered_projection_gap_selection_proof object"
+            )
+        else:
+            expected_rendered_gap_proof_scalars = {
+                "proof_kind": "selected_downstream_analysis_environment_rendered_projection_read_only_gap",
+                "status": "selected_downstream_analysis_environment_rendered_projection_read_only_gap",
+                "doc": "next_milestone_plans/Layer3_planning_docs/865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+                "branch": "codex/l3-analysis-environment-rendered-gap-selection",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint": "61441742337a66f6793a5985987fec8a94d9d518",
+                "selected_gap": "downstream_analysis_environment_rendered_projection_read_only",
+                "selected_next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+                "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+                "candidate_rendered_surface": "backend/app/review_ui/static/layer3.js",
+                "next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+            }
+            for key, value in expected_rendered_gap_proof_scalars.items():
+                if rendered_gap_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_gap_selection_proof.{key} must be {value!r}"
+                    )
+            rendered_gap_terms = rendered_gap_proof.get("proof_terms")
+            if not isinstance(rendered_gap_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_gap_selection_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "no-runtime current-main gap-selection control",
+                    "865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+                    "downstream_analysis_environment_rendered_projection_read_only",
+                    "61441742337a66f6793a5985987fec8a94d9d518",
+                    "State.sessionSummary.analysis_environment_projection",
+                    "backend/app/services/layer3_analysis_environment_projection.py",
+                    "analysis_environment_projection: dict[str, Any]",
+                    "layer3.analysis_environment_projection.v1",
+                    "read_only_session_summary_projection",
+                    "backend/app/review_ui/static/layer3.js",
+                    "/review/layer3",
+                    "currentSublayerVisualizationModel()",
+                    "renderAnalysisPlane()",
+                    "no runtime behavior introduced",
+                    "no rendered behavior introduced",
+                    "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+                ):
+                    if term not in rendered_gap_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_gap_selection_proof.proof_terms missing {term}"
                         )
 
 
