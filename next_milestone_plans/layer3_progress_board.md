@@ -204,7 +204,7 @@ As of `2026-05-06`:
 
 ## Program State Summary
 
-- Done now on `main`: current `project6-origin/main` is synced through the bounded recursive source-directory runtime current-main sync in doc `859`, plus the later docs/control posture corrections from PRs `#1470`, `#1471`, and `#1472`.
+- Done now on `main`: current `project6-origin/main` is synced through the bounded recursive source-directory runtime current-main sync in doc `859`, plus the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
 - Current focus: no new runtime implementation lane is admitted by default. The active current-main posture is `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`; recursive source-ingestion polish remains blocked unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, or operator-flow blocker.
 - Candidate next consumers: future work must start from current-main evidence for a named Layer 3 gap, or from exact product/use-case authority for a deferred lane such as optional-tool fixture/query-set selection. Candidate history below remains boundary evidence, not a current implementation recommendation.
 - Deferred but not active: deferred platform lanes remain out until later freezes or authority packets admit them; see the activation-criteria section below for candidate-next and current-focus gates.
@@ -474,7 +474,7 @@ flowchart LR
 
 ## Current Focus
 
-Current `main` is synced through `859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md` and the docs/control posture corrections from PRs `#1470`, `#1471`, and `#1472`.
+Current `main` is synced through `859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md` and the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
 
 Current focus is a selection posture, not an implementation lane: `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`.
 
@@ -489,7 +489,7 @@ Hard rule:
 
 ## Candidate Next Consumers
 
-Near-term direction after doc `859` and PRs `#1470`/`#1471`/`#1472`:
+Near-term direction after doc `859` and the current docs/control posture corrections:
 
 - select the next major Layer 3 gap only from current-main evidence; do not infer a new implementation lane from adjacency alone
 - optional-tool progression remains blocked until product authority selects exact fixture/query-set authority
@@ -513,7 +513,7 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after doc 859 and PRs #1470/#1471/#1472"] --> B["Selection posture only: no runtime lane admitted"]
+    A["Current main after doc 859 and current posture corrections"] --> B["Selection posture only: no runtime lane admitted"]
     B -.-> C["Select next major gap only from current-main evidence"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
