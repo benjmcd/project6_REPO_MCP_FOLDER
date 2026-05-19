@@ -2314,6 +2314,10 @@ LAYER3_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR = (
     PLANNING_DOCS
     / "846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md"
 )
+LAYER3_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR = (
+    PLANNING_DOCS
+    / "847_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -72473,6 +72477,108 @@ def _check_tabpfn_sublayer3c_optional_predictive_method_adr(
                 )
 
 
+def _check_nrc_rag_sublayer3c_optional_tool_adr(
+    errors: list[str],
+) -> None:
+    adr_text = _read_required_text(
+        LAYER3_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR,
+        errors,
+    )
+    for term in (
+        "Status: evaluation-only ADR for `nrc_rag_sublayer3c_optional_tool_adr`.",
+        "847_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR.md",
+        "codex/l3-nrc-rag-optional-tool-adr",
+        "1405234f6d44634b059b33a63787948b1e7fecb3",
+        "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan",
+        "evaluate_nrc_rag_static_benchmark_planning_only",
+        "Runtime behavior introduced by this ADR: `false`.",
+        "https://huggingface.co/datasets/davenporten/nrc-regulatory-embeddings",
+        "https://github.com/chroma-core/chroma",
+        "OpenAI `text-embedding-3-small` embeddings",
+        "Chroma loading examples",
+        "source_directory_material_preview",
+        "source_directory_vector_retrieval",
+        "source_directory_hybrid_context_packet",
+        "source_directory_qualitative_hybrid_analysis",
+        "source_directory_hybrid_context_packet_qualitative_analysis",
+        "no NRC RAG runtime",
+        "no nrc-licensing-rag dependency",
+        "no Chroma/vector provider runtime",
+        "no OpenAI embedding provider",
+        "no external embeddings dataset load",
+        "no new Layer 3 retrieval endpoint",
+        "no rendered retrieval controls",
+        "no source-authority promotion",
+        "no package/handoff/export/download use",
+        "no agent tool-call runtime",
+        "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority",
+    ):
+        if term not in adr_text:
+            errors.append(
+                f"{_rel(LAYER3_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR)} "
+                f"missing NRC RAG Sublayer 3C optional tool ADR term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## NRC RAG Sublayer 3C Optional Tool ADR",
+            "847_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR.md",
+            "evaluate_nrc_rag_static_benchmark_planning_only",
+            "Runtime behavior introduced by this ADR: `false`.",
+            "davenporten/nrc-regulatory-embeddings",
+            "OpenAI `text-embedding-3-small` embeddings",
+            "source_directory_vector_retrieval",
+            "source_directory_hybrid_context_packet",
+            "source_directory_qualitative_hybrid_analysis",
+            "no NRC RAG runtime",
+            "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority",
+        ),
+        MANIFEST: (
+            '"nrc_rag_sublayer3c_optional_tool_adr"',
+            '"latest_nrc_rag_sublayer3c_optional_tool_adr_doc"',
+            '"decision": "evaluate_nrc_rag_static_benchmark_planning_only"',
+            '"runtime_behavior_change": false',
+            '"dataset_built_for_nrc_licensing_rag": true',
+            '"uses_openai_text_embedding_3_small_embeddings": true',
+            '"has_chroma_loading_examples": true',
+            '"nrc_rag_runtime": false',
+            '"nrc_licensing_rag_dependency": false',
+            '"chroma_vector_provider_runtime": false',
+            '"new_layer3_retrieval_endpoint": false',
+            '"next_posture": "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority"',
+        ),
+        PROOF_MANIFEST: (
+            '"nrc_rag_sublayer3c_optional_tool_adr_proof"',
+            '"planning_control_nrc_rag_sublayer3c_optional_tool_adr"',
+            "evaluate_nrc_rag_static_benchmark_planning_only",
+            "runtime_behavior_change false",
+            "davenporten/nrc-regulatory-embeddings",
+            "OpenAI text-embedding-3-small embeddings",
+            "Chroma loading examples",
+            "source_directory_vector_retrieval",
+            "source_directory_hybrid_context_packet",
+            "source_directory_qualitative_hybrid_analysis",
+            "no NRC RAG runtime",
+            "no nrc-licensing-rag dependency",
+            "no Chroma/vector provider runtime",
+            "no OpenAI embedding provider",
+            "no external embeddings dataset load",
+            "no new Layer 3 retrieval endpoint",
+            "no rendered retrieval controls",
+            "no source-authority promotion",
+            "no package/handoff/export/download use",
+            "no agent tool-call runtime",
+            "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing NRC RAG Sublayer 3C optional tool ADR artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -73196,6 +73302,7 @@ def main() -> int:
     _check_public_url_delivery_sublayer3c_prerequisite_closeout(errors)
     _check_sublayer3c_optional_tool_planning_index_adr_gate(errors)
     _check_tabpfn_sublayer3c_optional_predictive_method_adr(errors)
+    _check_nrc_rag_sublayer3c_optional_tool_adr(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
