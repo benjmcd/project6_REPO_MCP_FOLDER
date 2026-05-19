@@ -153,6 +153,9 @@ const LOCAL_OUTBOX_PROVIDER_PRIVATE_HANDOFF_STATUS_RESPONSE_AUTHORITY = 'State.s
 const EXTERNAL_LOCAL_EXPORT_STATUS_SURFACE_MODE = 'rendered_external_local_export_read_only_status_surface';
 const EXTERNAL_LOCAL_EXPORT_STATUS_USE_CASE = 'operator_reviews_server_configured_external_local_export_status_without_path_editing_or_generic_dispatch';
 const EXTERNAL_LOCAL_EXPORT_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.external_local_export';
+const INTERNAL_WEBHOOK_DISPATCH_STATUS_SURFACE_MODE = 'rendered_internal_webhook_dispatch_read_only_status_surface';
+const INTERNAL_WEBHOOK_DISPATCH_STATUS_USE_CASE = 'operator_reviews_internal_webhook_dispatch_status_without_dispatch_rerun_or_destination_selection';
+const INTERNAL_WEBHOOK_DISPATCH_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.internal_webhook_dispatch';
 const DOWNSTREAM_ACCESS_LIFECYCLE_DASHBOARD_MODE = 'rendered_downstream_access_lifecycle_read_only_dashboard';
 const DOWNSTREAM_ACCESS_LIFECYCLE_USE_CASE = 'operator_inspects_downstream_access_lifecycle_without_dispatch_or_raw_url_use';
 const DOWNSTREAM_ACCESS_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
@@ -360,6 +363,7 @@ const elements = {
     serverOwnedLocalOutboxWritePanel: document.getElementById('server-owned-local-outbox-write-panel'),
     localOutboxProviderPrivateHandoffPanel: document.getElementById('local-outbox-provider-private-handoff-panel'),
     externalLocalExportPanel: document.getElementById('external-local-export-panel'),
+    internalWebhookDispatchPanel: document.getElementById('internal-webhook-dispatch-panel'),
     providerPrivateSignedUrlForm: document.getElementById('provider-private-signed-url-form'),
     providerPrivateSignedUrlPanel: document.getElementById('provider-private-signed-url-panel'),
     providerPrivateSignedUrlPrepare: document.getElementById('provider-private-signed-url-prepare'),
@@ -7635,6 +7639,234 @@ function renderExternalLocalExportStatusPanel() {
     `;
 }
 
+function internalWebhookDispatchStatusState() {
+    return State.sessionSummary?.internal_webhook_dispatch || null;
+}
+
+function internalWebhookDispatchStateName(status = internalWebhookDispatchStatusState()) {
+    return status?.internal_webhook_dispatch_state || status?.next_state || status?.state || null;
+}
+
+function internalWebhookDispatchPanelState() {
+    const status = internalWebhookDispatchStatusState() || {};
+    const stateName = internalWebhookDispatchStateName(status);
+    if (stateName === 'internal_webhook_dispatched') {
+        return {
+            label: 'internal_webhook_dispatched',
+            pill: 'ok',
+            message: 'The server recorded a configured internal webhook dispatch receipt.',
+        };
+    }
+    if (status.available === true && stateName === 'internal_webhook_dispatch_ready') {
+        return {
+            label: 'internal_webhook_dispatch_ready',
+            pill: 'ok',
+            message: 'Server-owned local outbox authority can support configured internal webhook dispatch.',
+        };
+    }
+    if (stateName === 'internal_webhook_failed') {
+        return {
+            label: 'internal_webhook_failed',
+            pill: 'warn',
+            message: 'The read-only status surface is showing a recorded internal webhook failure.',
+        };
+    }
+    return {
+        label: status.blocked_reason || 'internal_webhook_dispatch_not_ready',
+        pill: 'blocked',
+        message: 'The read-only status surface is waiting on server-owned local outbox authority.',
+    };
+}
+
+function internalWebhookDispatchLifecycle(status) {
+    return status?.lifecycle_status_surface || {};
+}
+
+function internalWebhookDispatchHistoryRows(status) {
+    const lifecycle = internalWebhookDispatchLifecycle(status);
+    if (Array.isArray(lifecycle.internal_webhook_dispatch_history)) return lifecycle.internal_webhook_dispatch_history;
+    if (Array.isArray(status?.internal_webhook_dispatch_history)) return status.internal_webhook_dispatch_history;
+    return [];
+}
+
+function internalWebhookDispatchAuditRows(status) {
+    const lifecycle = internalWebhookDispatchLifecycle(status);
+    if (Array.isArray(lifecycle.audit_event_history)) return lifecycle.audit_event_history;
+    if (Array.isArray(status?.audit_event_history)) return status.audit_event_history;
+    return [];
+}
+
+function internalWebhookDispatchFailureRows(status) {
+    const lifecycle = internalWebhookDispatchLifecycle(status);
+    if (Array.isArray(lifecycle.failure_state_projection)) return lifecycle.failure_state_projection;
+    if (Array.isArray(status?.failure_state_projection)) return status.failure_state_projection;
+    return [];
+}
+
+function renderInternalWebhookDispatchHistory(status) {
+    const history = internalWebhookDispatchHistoryRows(status);
+    if (!history.length) {
+        return '<li>history: none</li>';
+    }
+    return history.slice(0, 4).map((row) => (
+        `<li><code>${escapeHtml(row.internal_webhook_dispatch_receipt_id || 'pending')}</code>: ${escapeHtml(row.internal_webhook_dispatch_state || 'unknown')} / <code>${escapeHtml(row.authority_basis_hash || 'no-authority-hash')}</code></li>`
+    )).join('');
+}
+
+function renderInternalWebhookDispatchAuditHistory(status) {
+    const audit = internalWebhookDispatchAuditRows(status);
+    if (!audit.length) {
+        return '<li>audit: none</li>';
+    }
+    return audit.slice(0, 4).map((row) => (
+        `<li><code>${escapeHtml(row.internal_webhook_dispatch_audit_event_id || 'pending')}</code>: ${escapeHtml(row.event_type || 'event')} / ${escapeHtml(row.reason_code || row.event_status || 'status-only')}</li>`
+    )).join('');
+}
+
+function renderInternalWebhookDispatchFailureProjection(status) {
+    const rows = internalWebhookDispatchFailureRows(status);
+    if (!rows.length) {
+        return '<li>guardrails: unavailable</li>';
+    }
+    return rows.slice(0, 10).map((row) => (
+        `<li>${escapeHtml(row.case)}: ${escapeHtml(row.projected_error_code || row.operator_status || 'status-only')}</li>`
+    )).join('');
+}
+
+function renderInternalWebhookDispatchStatusPanel() {
+    const status = internalWebhookDispatchStatusState() || {};
+    const panelState = internalWebhookDispatchPanelState();
+    const lifecycle = internalWebhookDispatchLifecycle(status);
+    const idempotency = status.idempotency_policy || lifecycle.idempotency_policy || {};
+    const retry = status.retry_policy || lifecycle.retry_policy || {};
+    const downstream = status.downstream_unavailable || [
+        'operator_destination_url',
+        'raw_target_url_exposure',
+        'raw_token_exposure',
+        'raw_headers_exposure',
+        'raw_local_path_exposure',
+        'raw_package_payload_exposure',
+        'raw_package_bytes_exposure',
+        'connector_run_creation',
+        'connector_run_target_creation',
+        'credentials',
+        'provider_public_url',
+        'provider_private_signed_url',
+        'cloud_object_store_write',
+        'package_mutation_reconstruction',
+        'source_expansion',
+        'rag_vector',
+        'optional_tool_runtime',
+        'auth_security_implementation',
+        'rendered_write_submit_control',
+    ];
+    elements.internalWebhookDispatchPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Internal Webhook Dispatch</strong>
+                <ul>
+                    ${fieldItem('rendered mode', INTERNAL_WEBHOOK_DISPATCH_STATUS_SURFACE_MODE)}
+                    ${fieldItem('use case', INTERNAL_WEBHOOK_DISPATCH_STATUS_USE_CASE)}
+                    ${fieldItem('response authority', INTERNAL_WEBHOOK_DISPATCH_STATUS_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('schema', status.schema_id)}
+                    ${fieldItem('state', internalWebhookDispatchStateName(status))}
+                    ${fieldItem('available', status.available)}
+                    ${fieldItem('blocked reason', status.blocked_reason)}
+                    ${fieldItem('history count', status.internal_webhook_dispatch_history_count ?? lifecycle.history_count)}
+                    ${fieldItem('audit count', status.audit_event_history_count ?? lifecycle.audit_event_history_count)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Chain</strong>
+                <ul>
+                    ${fieldItem('session', status.session_id || currentSessionId(), { code: true })}
+                    ${fieldItem('pass run', status.pass_run_id || selectedResultAuthority().passRunId, { code: true })}
+                    ${fieldItem('reconciliation', status.reconciliation_record_id, { code: true })}
+                    ${fieldItem('connector record', status.connector_dispatch_record_ref, { code: true })}
+                    ${fieldItem('local receipt', status.connector_local_destination_receipt_id, { code: true })}
+                    ${fieldItem('outbox target receipt', status.server_owned_local_outbox_target_receipt_id, { code: true })}
+                    ${fieldItem('outbox write receipt', status.server_owned_local_outbox_write_receipt_id, { code: true })}
+                    ${fieldItem('external readiness', status.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('authority hash', status.authority_basis_hash, { code: true })}
+                    ${fieldItem('request hash', status.request_basis_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Dispatch Receipt</strong>
+                <ul>
+                    ${fieldItem('receipt id', status.internal_webhook_dispatch_receipt_id, { code: true })}
+                    ${fieldItem('target', status.target_identity || 'server_configured_internal_webhook_destination')}
+                    ${fieldItem('target class', status.target_class || 'real_connector_invocation')}
+                    ${fieldItem('mode', status.dispatch_mode || 'server_configured_allowlisted_internal_webhook_post')}
+                    ${fieldItem('destination', status.redacted_destination_display_name)}
+                    ${fieldItem('package kind', status.package_kind)}
+                    ${fieldItem('package ref', status.package_artifact_ref, { code: true })}
+                    ${fieldItem('package hash', status.package_artifact_hash, { code: true })}
+                    ${fieldItem('package size bytes', status.package_artifact_size_bytes)}
+                    ${fieldItem('response status', status.response_status_code)}
+                    ${fieldItem('failure code', status.failure_code)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Lifecycle Policy</strong>
+                <ul>
+                    ${fieldItem('history authority', lifecycle.history_listing_authority)}
+                    ${fieldItem('audit authority', lifecycle.audit_trail_authority)}
+                    ${fieldItem('same key replay', idempotency.same_key_same_payload_replay)}
+                    ${fieldItem('same key conflict', idempotency.same_key_different_payload_conflict)}
+                    ${fieldItem('same basis new key', idempotency.same_basis_different_client_request_id)}
+                    ${fieldItem('retry fields', retry.retry_fields_admitted === false ? 'blocked' : retry.retry_fields_admitted)}
+                    ${fieldItem('replay semantics', retry.replay_semantics)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Dispatch History</strong>
+                <ul>
+                    ${renderInternalWebhookDispatchHistory(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Audit History</strong>
+                <ul>
+                    ${renderInternalWebhookDispatchAuditHistory(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Guardrail Projection</strong>
+                <ul>
+                    ${renderInternalWebhookDispatchFailureProjection(status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Boundary Status</strong>
+                <ul>
+                    ${fieldItem('internal webhook post', status.internal_webhook_post_performed === true ? 'performed' : status.server_configured_internal_webhook_enabled === true ? 'ready' : 'blocked')}
+                    ${fieldItem('allowlisted URL authority', status.server_configured_allowlisted_url_enabled === true ? 'server configured' : 'blocked')}
+                    ${fieldItem('operator URL authority', status.operator_destination_url_enabled === false ? 'blocked' : status.operator_destination_url_enabled)}
+                    ${fieldItem('raw target URL', status.raw_target_url_exposed === false ? 'blocked' : status.raw_target_url_exposed)}
+                    ${fieldItem('raw headers', status.raw_headers_exposed === false ? 'blocked' : status.raw_headers_exposed)}
+                    ${fieldItem('raw package payload', status.raw_package_payload_exposed === false ? 'blocked' : status.raw_package_payload_exposed)}
+                    ${fieldItem('raw package bytes', status.raw_package_bytes_exposed === false ? 'blocked' : status.raw_package_bytes_exposed)}
+                    ${fieldItem('connector run created', status.connector_run_created === false ? 'blocked' : status.connector_run_created)}
+                    ${fieldItem('connector target created', status.connector_run_target_created === false ? 'blocked' : status.connector_run_target_created)}
+                    ${fieldItem('provider public URL', status.provider_public_url_enabled === false ? 'blocked' : status.provider_public_url_enabled)}
+                    ${fieldItem('provider-private signed URL', status.provider_private_signed_url_enabled === false ? 'blocked' : status.provider_private_signed_url_enabled)}
+                    ${fieldItem('cloud object store write', status.cloud_object_store_write_enabled === false ? 'blocked' : status.cloud_object_store_write_enabled)}
+                    ${fieldItem('rendered write submit control', status.rendered_write_submit_control_enabled === false ? 'blocked' : status.rendered_write_submit_control_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Still Disabled</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -8149,6 +8381,7 @@ function renderAll() {
     renderServerOwnedLocalOutboxWriteStatusPanel();
     renderLocalOutboxProviderPrivateHandoffStatusPanel();
     renderExternalLocalExportStatusPanel();
+    renderInternalWebhookDispatchStatusPanel();
     renderProviderPrivateSignedUrlPanel();
     renderProviderPublicUrlPanel();
     setGateControls();

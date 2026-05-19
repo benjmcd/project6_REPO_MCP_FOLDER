@@ -187,6 +187,8 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     )
     assert 'id="external-local-export-panel"' in response.text
     assert 'data-rendered-mode="rendered_external_local_export_read_only_status_surface"' in response.text
+    assert 'id="internal-webhook-dispatch-panel"' in response.text
+    assert 'data-rendered-mode="rendered_internal_webhook_dispatch_read_only_status_surface"' in response.text
     assert 'id="provider-public-url-form"' in response.text
     assert 'data-rendered-mode="provider_public_url_prepare_status_revoke_controls"' in response.text
     assert 'id="provider-public-url-panel"' in response.text
@@ -354,6 +356,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function externalLocalExportStatusState" in js.text
     assert "function renderExternalLocalExportStatusPanel" in js.text
     assert "renderExternalLocalExportStatusPanel()" in js.text
+    assert "INTERNAL_WEBHOOK_DISPATCH_STATUS_SURFACE_MODE = 'rendered_internal_webhook_dispatch_read_only_status_surface'" in js.text
+    assert "INTERNAL_WEBHOOK_DISPATCH_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.internal_webhook_dispatch'" in js.text
+    assert "function internalWebhookDispatchStatusState" in js.text
+    assert "function renderInternalWebhookDispatchStatusPanel" in js.text
+    assert "renderInternalWebhookDispatchStatusPanel()" in js.text
     assert "function renderConnectorLocalDestinationReceiptStatusPanel" in js.text
     assert "function connectorLocalDestinationReceiptHistoryRows" in js.text
     assert "function renderConnectorLocalDestinationReceiptFailureProjection" in js.text

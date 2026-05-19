@@ -7859,6 +7859,7 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     server_owned_local_outbox_write: dict[str, Any]
     local_outbox_provider_private_handoff: dict[str, Any]
     external_local_export: dict[str, Any]
+    internal_webhook_dispatch: dict[str, Any]
     pdf_location_projection: dict[str, Any]
     sublayer_visualization: dict[str, Any]
     analysis_environment_projection: dict[str, Any]
