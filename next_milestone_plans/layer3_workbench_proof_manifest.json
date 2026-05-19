@@ -32814,5 +32814,38 @@
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_implemented_branch_local",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_next_posture_after_merge": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
-  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_summary": "Doc 840 proof records bounded rendered /review/layer3 source-directory hybrid external export/download delivery controls over existing current-main delivery status and attachment routes."
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_summary": "Doc 840 proof records bounded rendered /review/layer3 source-directory hybrid external export/download delivery controls over existing current-main delivery status and attachment routes.",
+  "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+    "status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/841_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md",
+    "runtime_pr": "#1446",
+    "runtime_branch": "codex/l3-next-gap-after-hybrid-delivery",
+    "runtime_branch_commit": "ba3948e9",
+    "runtime_merge_commit": "1b71c4aa7c5f8792abfa6242cec0315e9d687367",
+    "proof_terms": [
+      "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+      "backend-layer3-api SUCCESS 3m35s",
+      "test SUCCESS 3m31s",
+      "PR #1446 reviewThreads totalCount 0",
+      "unresolved reviewThreads totalCount 0",
+      "rendered_source_directory_hybrid_external_export_download_delivery_control",
+      "frontend durable authority remains blocked",
+      "current-main sync introduces no additional runtime behavior",
+      "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "next_posture": "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync"
+  },
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_branch": "codex/l3-840-rendered-delivery-current-main-sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/841_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_pr": "#1446",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_merge_commit": "1b71c4aa7c5f8792abfa6242cec0315e9d687367",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_next_posture": "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_summary": "Doc 841 proof records current-main sync for PR #1446 merge commit 1b71c4aa7c5f8792abfa6242cec0315e9d687367 with green backend-layer3-api and test checks, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync."
 }

@@ -2290,6 +2290,10 @@ LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPO
     PLANNING_DOCS
     / "840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md"
 )
+LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "841_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -71938,6 +71942,80 @@ def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_
                 )
 
 
+def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime`.",
+        "841_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC.md",
+        "840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md",
+        "PR `#1446`",
+        "ba3948e9",
+        "1b71c4aa7c5f8792abfa6242cec0315e9d687367",
+        "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+        "Runtime behavior introduced by this sync: `false`.",
+        "rendered_source_directory_hybrid_external_export_download_delivery_control",
+        "`backend-layer3-api`: `SUCCESS`, `3m35s`",
+        "`test`: `SUCCESS`, `3m31s`",
+        "reviewThreads totalCount: `0`",
+        "unresolved reviewThreads totalCount: `0`",
+        "Additional same-family package/export/active-authority proof loops without a named defect or downstream reader.",
+        "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory hybrid rendered delivery-control sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Hybrid Context Qualitative Analysis External Export Download Rendered Delivery Control Current-Main Sync",
+            "841_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC.md",
+            "PR `#1446`",
+            "1b71c4aa7c5f8792abfa6242cec0315e9d687367",
+            "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+            "Runtime behavior introduced by this sync: `false`.",
+            "reviewThreads totalCount `0`",
+            "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+        ),
+        MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync",
+            "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+            '"runtime_pr": "#1446"',
+            "1b71c4aa7c5f8792abfa6242cec0315e9d687367",
+            '"runtime_behavior_in_this_sync": false',
+            '"pr_1446_backend_layer3_api": "SUCCESS"',
+            '"pr_1446_test": "SUCCESS"',
+            '"pr_1446_reviewThreads": 0',
+            '"frontend_rendered_controls_enabled": true',
+            '"frontend_durable_authority_enabled": false',
+            "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_proof",
+            "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+            "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+            '"runtime_pr": "#1446"',
+            "1b71c4aa7c5f8792abfa6242cec0315e9d687367",
+            "backend-layer3-api SUCCESS 3m35s",
+            "PR #1446 reviewThreads totalCount 0",
+            "current-main sync introduces no additional runtime behavior",
+            "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory hybrid rendered delivery-control sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -72647,6 +72725,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry(
+        errors
+    )
+    _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync(
         errors
     )
 
