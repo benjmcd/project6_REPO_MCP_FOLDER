@@ -372,3 +372,10 @@ Current Layer 3 internal webhook rendered status runtime proof to preserve when 
 - preserve headed in-app browser proof and headless Chromium proof with console errors 0
 - do not treat as dispatch rerun/retry/cancel/queue/background-worker behavior, rendered dispatch/submit controls, URL/credential inputs, destination selection, operator-supplied destination URL authority, raw URL/token/header/local-path/package exposure, ConnectorRun/ConnectorRunTarget creation, provider URL behavior, optional-tool runtime, or frontend-only durable authority
 - preserve next posture as `current_main_sync_internal_webhook_rendered_status_runtime`
+
+Current Layer 3 internal webhook rendered status runtime current-main sync to preserve when present:
+- `875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md` records PR `#1490` merge commit `61bb8338176e704877b1883dfaa1b0ee04874ffc`
+- classify current main as `current_main_synced_internal_webhook_rendered_status_runtime`
+- preserve the live behavior as only the bounded read-only `internal_webhook_dispatch: dict[str, Any]` session-summary projection and `/review/layer3` `#internal-webhook-dispatch-panel` rendered status surface from `State.sessionSummary.internal_webhook_dispatch`
+- do not treat the sync as dispatch rerun/retry/cancel/queue/background-worker behavior, rendered dispatch/submit controls, URL/credential inputs, destination selection, operator-supplied destination URL authority, raw URL/token/header/local-path/package exposure, ConnectorRun/ConnectorRunTarget creation, provider URL behavior, optional-tool runtime, frontend-only durable authority, or any runtime beyond PR `#1490`
+- preserve next posture as `select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync`

@@ -2409,6 +2409,10 @@ LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_SYNC = (
 LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF = (
     PLANNING_DOCS / "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md"
 )
+LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_SYNC = (
+    PLANNING_DOCS
+    / "875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -77203,6 +77207,206 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in proof_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_runtime_proof.proof_terms missing {term}"
+                        )
+
+    internal_webhook_rendered_status_runtime_sync_text = _read_required_text(
+        LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `implement_internal_webhook_rendered_read_only_status_projection` runtime.",
+        "875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+        "Runtime PR: `#1490`.",
+        "572f147781433ffe920410f5c77ba7ea5ba9ecd4",
+        "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+        "Synced result: `current_main_synced_internal_webhook_rendered_status_runtime`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "Dispatch behavior introduced by this sync: `false`.",
+        "`backend-layer3-api`: `SUCCESS`, `3m24s`",
+        "`test`: `SUCCESS`, `3m30s`",
+        "reviewThreads totalCount: `0`",
+        "Post-merge local validation passed on current main at `61bb8338176e704877b1883dfaa1b0ee04874ffc`",
+        "Layer3SessionSummaryResponse.internal_webhook_dispatch",
+        "State.sessionSummary.internal_webhook_dispatch",
+        "rendered_internal_webhook_dispatch_read_only_status_surface",
+        "The next exact posture is `select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync`.",
+    ):
+        if term not in internal_webhook_rendered_status_runtime_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_SYNC)} "
+                f"missing internal webhook rendered status runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Internal Webhook Rendered Status Runtime Current-Main Sync",
+            "875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1490`",
+            "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+            "current_main_synced_internal_webhook_rendered_status_runtime",
+            "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 internal webhook rendered status runtime current-main sync to preserve when present",
+            "875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+            "current_main_synced_internal_webhook_rendered_status_runtime",
+            "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+        ),
+        REFRESH_SPEC: (
+            "875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1490` only as current-main sync",
+            "current_main_synced_internal_webhook_rendered_status_runtime",
+            "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+        ),
+        MANIFEST: (
+            '"internal_webhook_rendered_status_runtime_current_main_sync"',
+            '"status": "current_main_synced_internal_webhook_rendered_status_runtime"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md"',
+            '"runtime_pr": "#1490"',
+            '"runtime_merge_commit": "61bb8338176e704877b1883dfaa1b0ee04874ffc"',
+            '"runtime_behavior_introduced_by_sync": false',
+            '"rendered_behavior_introduced_by_sync": false',
+            '"dispatch_behavior_introduced_by_sync": false',
+            '"next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync"',
+        ),
+        PROOF_MANIFEST: (
+            '"internal_webhook_rendered_status_runtime_current_main_sync_proof"',
+            '"proof_kind": "current_main_synced_internal_webhook_rendered_status_runtime"',
+            '"PR #1490 merged"',
+            '"backend-layer3-api SUCCESS 3m24s"',
+            '"test SUCCESS 3m30s"',
+            '"reviewThreads totalCount 0"',
+            '"post-merge validation passed"',
+            '"select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing internal webhook rendered status runtime sync term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        sync_entry = manifest.get("internal_webhook_rendered_status_runtime_current_main_sync")
+        if not isinstance(sync_entry, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing internal_webhook_rendered_status_runtime_current_main_sync object"
+            )
+        else:
+            expected_sync_scalars = {
+                "status": "current_main_synced_internal_webhook_rendered_status_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-runtime-sync",
+                "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+                "runtime_pr": "#1490",
+                "runtime_branch": "codex/l3-internal-webhook-rendered-status-runtime",
+                "runtime_branch_commit": "572f147781433ffe920410f5c77ba7ea5ba9ecd4",
+                "runtime_merge_commit": "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+                "synced_result": "current_main_synced_internal_webhook_rendered_status_runtime",
+                "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+                "runtime_behavior_introduced_by_runtime": True,
+                "rendered_behavior_introduced_by_runtime": True,
+                "dispatch_behavior_introduced_by_runtime": False,
+                "runtime_behavior_introduced_by_sync": False,
+                "rendered_behavior_introduced_by_sync": False,
+                "dispatch_behavior_introduced_by_sync": False,
+                "session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+                "response_authority": "State.sessionSummary.internal_webhook_dispatch",
+                "rendered_panel": "#internal-webhook-dispatch-panel",
+                "rendered_route": "/review/layer3",
+                "next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+            }
+            for key, value in expected_sync_scalars.items():
+                if sync_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} internal_webhook_rendered_status_runtime_current_main_sync.{key} must be {value!r}"
+                    )
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_internal_webhook_rendered_status_runtime_current_main_sync_status": "current_main_synced_internal_webhook_rendered_status_runtime",
+                    "latest_internal_webhook_rendered_status_runtime_current_main_sync_pr": "#1490",
+                    "latest_internal_webhook_rendered_status_runtime_current_main_sync_merge_commit": "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+                    "latest_internal_webhook_rendered_status_runtime_current_main_sync_runtime_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_runtime_current_main_sync_rendered_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_runtime_current_main_sync_dispatch_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_runtime_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(
+            "internal_webhook_rendered_status_runtime_current_main_sync_proof"
+        )
+        if not isinstance(proof_entry, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing internal_webhook_rendered_status_runtime_current_main_sync_proof object"
+            )
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "current_main_synced_internal_webhook_rendered_status_runtime",
+                "status": "current_main_synced_internal_webhook_rendered_status_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-runtime-sync",
+                "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+                "runtime_pr": "#1490",
+                "runtime_branch": "codex/l3-internal-webhook-rendered-status-runtime",
+                "runtime_branch_commit": "572f147781433ffe920410f5c77ba7ea5ba9ecd4",
+                "runtime_merge_commit": "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+                "synced_result": "current_main_synced_internal_webhook_rendered_status_runtime",
+                "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+                "runtime_behavior_introduced_by_runtime": True,
+                "rendered_behavior_introduced_by_runtime": True,
+                "dispatch_behavior_introduced_by_runtime": False,
+                "runtime_behavior_introduced_by_sync": False,
+                "rendered_behavior_introduced_by_sync": False,
+                "dispatch_behavior_introduced_by_sync": False,
+                "session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+                "response_authority": "State.sessionSummary.internal_webhook_dispatch",
+                "rendered_panel": "#internal-webhook-dispatch-panel",
+                "rendered_route": "/review/layer3",
+                "next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_runtime_current_main_sync_proof.{key} must be {value!r}"
+                    )
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_runtime_current_main_sync_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+                    "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+                    "PR #1490 merged",
+                    "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+                    "backend-layer3-api SUCCESS 3m24s",
+                    "test SUCCESS 3m30s",
+                    "reviewThreads totalCount 0",
+                    "post-merge validation passed",
+                    "current_main_synced_internal_webhook_rendered_status_runtime",
+                    "internal_webhook_dispatch: dict[str, Any]",
+                    "State.sessionSummary.internal_webhook_dispatch",
+                    "#internal-webhook-dispatch-panel",
+                    "rendered_internal_webhook_dispatch_read_only_status_surface",
+                    "no runtime behavior introduced by sync",
+                    "no rendered behavior introduced by sync",
+                    "no dispatch behavior introduced by sync",
+                    "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_runtime_current_main_sync_proof.proof_terms missing {term}"
                         )
 
 
