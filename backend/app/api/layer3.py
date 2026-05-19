@@ -2436,6 +2436,19 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisHandoffExportPrepareR
     operator_decision: Literal["authorize_prepare", "hold", "decline", "blocked"]
 
 
+class Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadPrepareRequest(
+    Layer3SourceDirectoryHybridContextQualitativeAnalysisHandoffExportPrepareRequest
+):
+    prepare_record_ref: str = Field(min_length=1)
+    handoff_export_state: Literal["handoff_export_prepared"]
+    handoff_export_envelope_ref: str = Field(min_length=1)
+    external_export_download_target: Literal[
+        "source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference"
+    ]
+    download_mode: Literal["reference_only_prepare"]
+    operator_decision: Literal["prepare_source_directory_hybrid_external_export_download"]
+
+
 class Layer3SourceDirectoryQualitativeAnalysisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -2811,6 +2824,7 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisStatusResponse(Layer3
     source_directory_hybrid_package_commit_available: bool
     source_directory_hybrid_package_review_submit_available: bool
     source_directory_hybrid_handoff_export_prepare_available: bool
+    source_directory_hybrid_external_export_download_prepare_available: bool
     reconciliation_record_id: str | None
     construction_basis_hash: str | None
     output_packages: list[dict[str, Any]]
@@ -2824,6 +2838,11 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisStatusResponse(Layer3
     handoff_export_prepare_record_ref: str | None
     handoff_target: str | None
     export_mode: str | None
+    external_export_download_record_ref: str | None
+    external_export_download_state: str | None
+    external_export_download_target: str | None
+    export_download_descriptor_ref: str | None
+    download_mode: str | None
     package_review_submit_enabled: bool
     handoff_enabled: bool
     export_enabled: bool
@@ -2977,6 +2996,64 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisHandoffExportPrepareR
     connector_dispatch_enabled: bool
     provider_public_delivery_enabled: bool
     provider_private_signed_url_enabled: bool
+    network_egress_enabled: bool
+    frontend_durable_authority_enabled: bool
+    prompt_model_provider_runtime_enabled: bool
+    package_review_submit_source_gate: str
+    package_construction_source_gate: str
+    source_gate: str
+    downstream_unavailable: list[str]
+    next_state: str
+    next_allowed_actions: list[str]
+    negative_invariants: dict[str, bool]
+
+
+class Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadPrepareResponse(
+    Layer3BaseResponse
+):
+    mode: str
+    operator_decision: str
+    decision_notes: str | None
+    session_id: str
+    selection_manifest_id: str
+    material_snapshot_id: str
+    source_ingestion_batch_id: str
+    source_ingestion_file_id: str
+    content_sha256: str
+    file_identity_hash: str
+    authority_basis_hash: str
+    payload_hash: str
+    index_authority_hash: str
+    embedding_index_authority_hash: str
+    lexical_context_packet_hash: str
+    hybrid_context_packet_hash: str
+    qualitative_analysis_hash: str
+    source_directory_hybrid_package_review_preview_hash: str
+    construction_basis_hash: str
+    reconciliation_record_id: str
+    output_packages: list[dict[str, Any]]
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_hashes: list[str]
+    payload_refs_redacted: bool
+    package_review_state: str
+    package_review_submit_record_ref: str
+    handoff_export_state: str
+    prepare_record_ref: str
+    handoff_export_envelope_ref: str
+    handoff_target: str
+    export_mode: str
+    external_export_download_state: str
+    external_export_download_record_ref: str
+    export_download_descriptor_ref: str
+    external_export_download_target: str
+    download_mode: str
+    external_export_download_descriptor: dict[str, Any]
+    same_origin_delivery_enabled: bool
+    browser_download_enabled: bool
+    provider_public_delivery_enabled: bool
+    provider_private_signed_url_enabled: bool
+    connector_dispatch_enabled: bool
     network_egress_enabled: bool
     frontend_durable_authority_enabled: bool
     prompt_model_provider_runtime_enabled: bool
@@ -8008,6 +8085,36 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_handoff_exp
         layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
         layer3_source_directory_hybrid_analysis.SourceDirectoryHybridAnalysisError,
         layer3_source_directory_hybrid_analysis.SourceDirectoryHybridHandoffExportPrepareError,
+        layer3_source_directory_hybrid_context.SourceDirectoryHybridContextError,
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
+        layer3_source_directory_vector_index.SourceDirectoryVectorIndexError,
+        layer3_source_directory_vector_retrieval.SourceDirectoryVectorRetrievalError,
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/prepare",
+    response_model=Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadPrepareResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare(
+    payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadPrepareRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return (
+            layer3_source_directory_hybrid_analysis
+            .source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
+        layer3_source_directory_hybrid_analysis.SourceDirectoryHybridAnalysisError,
+        layer3_source_directory_hybrid_analysis.SourceDirectoryHybridExternalExportDownloadPrepareError,
         layer3_source_directory_hybrid_context.SourceDirectoryHybridContextError,
         layer3_source_directory_text_index.SourceDirectoryTextIndexError,
         layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
