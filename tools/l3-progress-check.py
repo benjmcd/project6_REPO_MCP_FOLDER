@@ -2363,6 +2363,10 @@ LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION = (
 LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE = (
     PLANNING_DOCS / "861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md"
 )
+LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_SYNC = (
+    PLANNING_DOCS
+    / "862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -74773,6 +74777,165 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in freeze_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_freeze_proof.proof_terms missing {term}"
+                        )
+
+    analysis_environment_freeze_sync_text = _read_required_text(
+        LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `downstream_analysis_environment_authority_projection` freeze.",
+        "862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "Synced freeze doc: `861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md`.",
+        "Freeze PR: `#1477`.",
+        "Freeze branch commit: `3a674eb5a28737b62e6ad68855b9475b2cf8c721`.",
+        "Freeze merge commit: `9bb024d66be2b8fa8699403b063795feecc8aa94`.",
+        "Synced result: `current_main_synced_downstream_analysis_environment_authority_projection_freeze`.",
+        "Implementation-entry allowed next: true, for only `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`.",
+        "`backend-layer3-api`: `SUCCESS`, `3m22s`",
+        "`test`: `SUCCESS`, `3m44s`",
+        "reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "Runtime behavior introduced by this sync: `false`.",
+        "The next exact posture is `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`.",
+    ):
+        if term not in analysis_environment_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_SYNC)} "
+                f"missing downstream Analysis Environment freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Analysis Environment Authority Projection Freeze Current-Main Sync",
+            "862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1477`",
+            "9bb024d66be2b8fa8699403b063795feecc8aa94",
+            "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+            "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+        ),
+        PROGRESS_PROMPT: (
+            "862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "#1477",
+            "9bb024d66be2b8fa8699403b063795feecc8aa94",
+            "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+        ),
+        REFRESH_SPEC: (
+            "862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "current-main sync for the no-runtime downstream Analysis Environment authority projection freeze",
+            "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+        ),
+        MANIFEST: (
+            '"downstream_analysis_environment_authority_projection_freeze_current_main_sync"',
+            '"status": "current_main_synced_downstream_analysis_environment_authority_projection_freeze"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md"',
+            '"freeze_pr": "#1477"',
+            '"freeze_merge_commit": "9bb024d66be2b8fa8699403b063795feecc8aa94"',
+            '"next_posture": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary"',
+        ),
+        PROOF_MANIFEST: (
+            '"downstream_analysis_environment_authority_projection_freeze_current_main_sync_proof"',
+            '"proof_kind": "current_main_synced_downstream_analysis_environment_authority_projection_freeze"',
+            '"freeze_pr": "#1477"',
+            '"freeze_merge_commit": "9bb024d66be2b8fa8699403b063795feecc8aa94"',
+            '"next_posture": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing downstream Analysis Environment freeze sync term: {term}"
+                )
+
+    if isinstance(manifest_data, dict):
+        freeze_sync = manifest_data.get(
+            "downstream_analysis_environment_authority_projection_freeze_current_main_sync"
+        )
+        if not isinstance(freeze_sync, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing downstream_analysis_environment_authority_projection_freeze_current_main_sync object"
+            )
+        else:
+            expected_freeze_sync_scalars = {
+                "status": "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+                "doc": "next_milestone_plans/Layer3_planning_docs/862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-analysis-environment-freeze-sync",
+                "freeze_doc": "next_milestone_plans/Layer3_planning_docs/861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md",
+                "freeze_pr": "#1477",
+                "freeze_branch": "codex/l3-analysis-environment-authority-freeze",
+                "freeze_branch_commit": "3a674eb5a28737b62e6ad68855b9475b2cf8c721",
+                "freeze_merge_commit": "9bb024d66be2b8fa8699403b063795feecc8aa94",
+                "synced_result": "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+                "runtime_behavior_introduced_by_freeze": False,
+                "runtime_behavior_change": False,
+                "implementation_entry_allowed_next": True,
+                "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+                "api_surface": "GET /api/v1/layer3/session/{session_id}",
+                "response_model": "backend/app/api/layer3.py::Layer3SessionSummaryResponse",
+                "response_field": "analysis_environment_projection",
+                "schema_id": "layer3.analysis_environment_projection.v1",
+                "authority_source": "read_only_session_summary_projection",
+                "next_posture": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+            }
+            for key, value in expected_freeze_sync_scalars.items():
+                if freeze_sync.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} downstream_analysis_environment_authority_projection_freeze_current_main_sync.{key} must be {value!r}"
+                    )
+
+    if isinstance(proof_data, dict):
+        freeze_sync_proof = proof_data.get(
+            "downstream_analysis_environment_authority_projection_freeze_current_main_sync_proof"
+        )
+        if not isinstance(freeze_sync_proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing downstream_analysis_environment_authority_projection_freeze_current_main_sync_proof object"
+            )
+        else:
+            expected_freeze_sync_proof_scalars = {
+                "proof_kind": "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+                "status": "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+                "doc": "next_milestone_plans/Layer3_planning_docs/862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-analysis-environment-freeze-sync",
+                "runtime_behavior_change": False,
+                "freeze_pr": "#1477",
+                "freeze_branch_commit": "3a674eb5a28737b62e6ad68855b9475b2cf8c721",
+                "freeze_merge_commit": "9bb024d66be2b8fa8699403b063795feecc8aa94",
+                "synced_result": "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+                "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                "implementation_entry_allowed_next": True,
+                "next_posture": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+            }
+            for key, value in expected_freeze_sync_proof_scalars.items():
+                if freeze_sync_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_freeze_current_main_sync_proof.{key} must be {value!r}"
+                    )
+            freeze_sync_terms = freeze_sync_proof.get("proof_terms")
+            if not isinstance(freeze_sync_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_freeze_current_main_sync_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "PR #1477 merged",
+                    "9bb024d66be2b8fa8699403b063795feecc8aa94",
+                    "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+                    "backend-layer3-api SUCCESS 3m22s",
+                    "test SUCCESS 3m44s",
+                    "reviewThreads totalCount 0",
+                    "post-merge validation passed",
+                    "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                    "backend/app/services/layer3_analysis_environment_projection.py",
+                    "analysis_environment_projection: dict[str, Any]",
+                    "read_only_session_summary_projection",
+                    "no runtime behavior introduced by sync",
+                ):
+                    if term not in freeze_sync_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_freeze_current_main_sync_proof.proof_terms missing {term}"
                         )
 
 

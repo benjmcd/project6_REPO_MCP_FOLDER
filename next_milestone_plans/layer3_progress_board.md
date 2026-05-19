@@ -206,8 +206,8 @@ As of `2026-05-06`:
 
 ## Program State Summary
 
-- Done now on `main`: current `project6-origin/main` is synced through the bounded recursive source-directory runtime current-main sync in doc `859`, the downstream Analysis Environment authority gap selection in doc `860`, the downstream Analysis Environment authority projection freeze in doc `861`, plus the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
-- Current focus: no new runtime implementation lane is admitted by default. The active posture is `current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation`; recursive source-ingestion polish remains blocked unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, or operator-flow blocker.
+- Done now on `main`: current `project6-origin/main` is synced through the bounded recursive source-directory runtime current-main sync in doc `859`, the downstream Analysis Environment authority gap selection in doc `860`, the downstream Analysis Environment authority projection freeze in doc `861`, the freeze current-main sync in doc `862`, plus the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
+- Current focus: the active admitted implementation posture is `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`; recursive source-ingestion polish remains blocked unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, or operator-flow blocker.
 - Candidate next consumers: future work must start from current-main evidence for a named Layer 3 gap. The selected next gap is downstream Analysis Environment authority projection; optional-tool fixture/query-set selection still requires exact product/use-case authority. Candidate history below remains boundary evidence, not a current implementation recommendation.
 - Deferred but not active: deferred platform lanes remain out until later freezes or authority packets admit them; see the activation-criteria section below for candidate-next and current-focus gates.
 - Current theme synthesis reference pack: `next_milestone_plans/Layer3_planning_docs/238_LAYER3_THEME_TO_FULL_PIPELINE_SYNTHESIS.md` consolidates the live `/review/layer3` admitted themes with the static Claude prototype boundary and the deferred category ladder; it is planning/reference-only and does not admit runtime behavior by itself
@@ -476,25 +476,26 @@ flowchart LR
 
 ## Current Focus
 
-Current `main` is synced through `859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md`, `860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md`, `861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md`, and the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
+Current `main` is synced through `859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md`, `860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md`, `861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md`, `862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md`, and the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
 
-Current focus is a current-main-sync-before-implementation posture, not an implementation lane: `current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation`.
+Current focus is the admitted implementation lane: `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`.
 
 Current-main recursive source-directory ingestion is live only under `recursive_server_configured_directory_text_table_policy_v1`: server-configured `LAYER3_SOURCE_INGESTION_DIR`, `.csv`/`.json`/`.txt`/`.md`, maximum recursion depth `2`, maximum normalized relative path segments `3` including filename, maximum file count `100`, deterministic normalized relative path ordering, no caller-selected recursive flag, redacted relative path authority, and existing source-directory material-preview/text-index compatibility.
 
-Still blocked from the current focus: runtime implementation before current-main sync, caller-provided paths/URLs/globs/file bytes/recursive flags, rendered controls, source authority promotion, package/handoff/export/download reruns, connector dispatch changes, provider URL behavior, credentials or network behavior, semantic/vector RAG widening, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, broad auth/security behavior, PDFs/OCR/Office/images/archives/arbitrary binaries, browser uploads, web connectors, and database connectors.
+Still blocked from the current focus: implementation outside the read-only session-summary projection boundary, caller-provided paths/URLs/globs/file bytes/recursive flags, rendered controls, source authority promotion, package/handoff/export/download reruns, connector dispatch changes, provider URL behavior, credentials or network behavior, semantic/vector RAG widening, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, broad auth/security behavior, PDFs/OCR/Office/images/archives/arbitrary binaries, browser uploads, web connectors, and database connectors.
 
 Optional-tool fixture/query-set authority remains a local blocked posture under docs `849` through `851`, not the global current-main focus. It can become actionable only after product authority selects exact TabPFN supervised fixture authority or NRC RAG regulatory grounding query-set authority.
 
 Hard rule:
 - do not continue recursive source-ingestion polish or create a new runtime implementation lane unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, named downstream operator-flow blocker, or exact product/use-case authority for a deferred lane.
-- do not implement downstream Analysis Environment projection runtime until the doc `861` freeze is current-main synced; after that sync, only `implement_downstream_analysis_environment_authority_projection_read_only_session_summary` is admitted.
+- downstream Analysis Environment projection implementation is admitted only as `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`; keep it read-only over existing session-summary state and preserve all adjacent no-go boundaries.
 
 ## Candidate Next Consumers
 
 Near-term direction after docs `859`/`860` and the current docs/control posture corrections:
 
 - freeze downstream Analysis Environment authority projection before runtime; do not infer implementation from the gap-selection doc alone
+- doc `862` current-main sync admits only `implement_downstream_analysis_environment_authority_projection_read_only_session_summary` as the next implementation posture
 - optional-tool progression remains blocked until product authority selects exact fixture/query-set authority
 - recursive source-ingestion runtime is already current-main synced and should not be extended without a named defect, failed check, stale sync, unresolved review item, or operator-flow blocker
 - historical candidate/deferred entries below remain useful boundary records, not near-term implementation recommendations
@@ -7206,3 +7207,19 @@ No new write route, route family, model, migration, package mutation, source pro
 Rendered behavior is not admitted by this freeze. If a later implementation changes rendered code, the only admitted rendered reader is the existing `/review/layer3` Sublayer 3C Analysis Execution Environments surface through `State.sessionSummary`, `currentSublayerVisualizationModel()`, and `renderAnalysisPlane()`, with headed and headless Chromium proof required.
 
 Next exact posture: `current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation`. After that sync, the only admitted implementation action is `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`.
+
+## Downstream Analysis Environment Authority Projection Freeze Current-Main Sync
+
+Current-main proof/control sync: PR `#1477` merged at merge commit `9bb024d66be2b8fa8699403b063795feecc8aa94`.
+
+Sync doc: `862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+The merge gate passed: `backend-layer3-api` succeeded in `3m22s`, `test` succeeded in `3m44s`, PR comments/reviews were empty, reviewThreads totalCount was `0`, unresolved reviewThreads totalCount was `0`, and merge state before merge was `CLEAN`.
+
+Post-merge validation passed for `python -m py_compile .\tools\l3-progress-check.py`, `python .\tools\l3-progress-check.py`, `python .\tools\l3-target-selection-validate.py --expect frozen`, pending fixture validation, checkpoint fixture validation, and `git diff --check`.
+
+The downstream Analysis Environment authority projection freeze is now current-main synced as `current_main_synced_downstream_analysis_environment_authority_projection_freeze`.
+
+Runtime behavior introduced by this sync: `false`.
+
+Next exact posture: `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`. Keep implementation inside the existing session-summary route, future owner service `backend/app/services/layer3_analysis_environment_projection.py`, field `analysis_environment_projection: dict[str, Any]`, schema `layer3.analysis_environment_projection.v1`, and authority source `read_only_session_summary_projection`.
