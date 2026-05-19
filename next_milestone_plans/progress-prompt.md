@@ -364,3 +364,11 @@ Current Layer 3 internal webhook rendered status freeze current-main sync to pre
 - preserve the next implementation as only `implement_internal_webhook_rendered_read_only_status_projection`
 - do not treat the sync as runtime behavior, rendered behavior, dispatch rerun, rendered dispatch/submit control, URL or credential input, connector run creation, provider/public/signed URL behavior, package/source/auth/security widening, optional-tool runtime, browser-storage authority, or frontend-only durable authority
 - preserve the next posture as `implement_internal_webhook_rendered_read_only_status_projection`
+
+Current Layer 3 internal webhook rendered status runtime proof to preserve when present:
+- `874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md` implements only `implement_internal_webhook_rendered_read_only_status_projection` on branch `codex/l3-internal-webhook-rendered-status-runtime`
+- classify as a bounded read-only session-summary runtime/status projection plus rendered behavior: `internal_webhook_dispatch: dict[str, Any]` on existing `GET /api/v1/layer3/session/{session_id}` and `#internal-webhook-dispatch-panel` in `/review/layer3`
+- canonical authority remains durable `L3InternalWebhookDispatchReceipt` and `L3InternalWebhookDispatchAuditEvent`; rendered authority is `State.sessionSummary.internal_webhook_dispatch`
+- preserve headed in-app browser proof and headless Chromium proof with console errors 0
+- do not treat as dispatch rerun/retry/cancel/queue/background-worker behavior, rendered dispatch/submit controls, URL/credential inputs, destination selection, operator-supplied destination URL authority, raw URL/token/header/local-path/package exposure, ConnectorRun/ConnectorRunTarget creation, provider URL behavior, optional-tool runtime, or frontend-only durable authority
+- preserve next posture as `current_main_sync_internal_webhook_rendered_status_runtime`

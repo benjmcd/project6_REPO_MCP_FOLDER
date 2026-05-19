@@ -6167,6 +6167,25 @@ def test_layer3_api_internal_webhook_dispatch_success_idempotent_and_redacted(
         write_body=write_body,
         readiness_body=readiness_body,
     )
+    ready_summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert ready_summary.status_code == 200, ready_summary.json()
+    ready_status = ready_summary.json()["internal_webhook_dispatch"]
+    assert ready_status["schema_id"] == "layer3.internal_webhook.status.v1"
+    assert ready_status["state"] == "internal_webhook_dispatch_ready"
+    assert ready_status["available"] is True
+    assert ready_status["internal_webhook_post_performed"] is False
+    assert ready_status["server_owned_local_outbox_write_receipt_id"] == (
+        write_body["server_owned_local_outbox_write_receipt_id"]
+    )
+    assert ready_status["package_artifact_hash"] == write_body["outbox_artifact_hash"]
+    assert ready_status["status_surface_mode"] == "read_only_server_session_summary_projection"
+    assert ready_status["response_authority"] == "durable_server_owned_local_outbox_write_receipt_authority"
+    assert ready_status["operator_destination_url_enabled"] is False
+    assert ready_status["raw_target_url_exposed"] is False
+    assert ready_status["raw_package_payload_exposed"] is False
+    assert ready_status["rendered_write_submit_control_enabled"] is False
+    assert ready_status["internal_webhook_dispatch_history_count"] == 0
+
     dispatch = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
     assert dispatch.status_code == 200, dispatch.json()
     body = dispatch.json()
@@ -6223,6 +6242,41 @@ def test_layer3_api_internal_webhook_dispatch_success_idempotent_and_redacted(
     assert status.status_code == 200, status.json()
     assert status.json()["schema_id"] == "layer3.internal_webhook.status.v1"
     assert status.json()["internal_webhook_dispatch_state"] == "internal_webhook_dispatched"
+
+    summary_response = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary_response.status_code == 200, summary_response.json()
+    dispatch_status = summary_response.json()["internal_webhook_dispatch"]
+    assert dispatch_status["schema_id"] == "layer3.internal_webhook.status.v1"
+    assert dispatch_status["state"] == "internal_webhook_dispatched"
+    assert dispatch_status["internal_webhook_dispatch_state"] == "internal_webhook_dispatched"
+    assert dispatch_status["internal_webhook_dispatch_receipt_id"] == body["internal_webhook_dispatch_receipt_id"]
+    assert dispatch_status["server_owned_local_outbox_write_receipt_id"] == (
+        write_body["server_owned_local_outbox_write_receipt_id"]
+    )
+    assert dispatch_status["response_status_code"] == 202
+    assert dispatch_status["redacted_response_summary"]["response_keys"] == ["accepted", "receipt"]
+    assert dispatch_status["status_surface_mode"] == "read_only_server_session_summary_projection"
+    assert dispatch_status["response_authority"] == "durable_internal_webhook_dispatch_receipt_row"
+    assert dispatch_status["internal_webhook_post_performed"] is True
+    assert dispatch_status["operator_destination_url_enabled"] is False
+    assert dispatch_status["raw_target_url_exposed"] is False
+    assert dispatch_status["raw_token_exposed"] is False
+    assert dispatch_status["raw_headers_exposed"] is False
+    assert dispatch_status["raw_package_payload_exposed"] is False
+    assert dispatch_status["raw_package_bytes_exposed"] is False
+    assert dispatch_status["connector_run_created"] is False
+    assert dispatch_status["connector_run_target_created"] is False
+    assert dispatch_status["rendered_write_submit_control_enabled"] is False
+    assert dispatch_status["internal_webhook_dispatch_history_count"] == 1
+    assert dispatch_status["audit_event_history_count"] == 2
+    assert dispatch_status["lifecycle_status_surface"]["schema_id"] == "layer3.internal_webhook.lifecycle.v1"
+    assert dispatch_status["latest_internal_webhook_dispatch_receipt"][
+        "internal_webhook_dispatch_receipt_id"
+    ] == body["internal_webhook_dispatch_receipt_id"]
+    dispatch_status_text = json.dumps(dispatch_status, sort_keys=True)
+    assert "http://127.0.0.1/layer3-internal-webhook" not in dispatch_status_text
+    assert str(Path(settings.storage_dir)) not in dispatch_status_text
+    assert readiness_body["source_artifact_ref"] not in dispatch_status_text
 
     replay = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
     assert replay.status_code == 200, replay.json()
