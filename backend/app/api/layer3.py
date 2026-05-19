@@ -7861,6 +7861,7 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     external_local_export: dict[str, Any]
     pdf_location_projection: dict[str, Any]
     sublayer_visualization: dict[str, Any]
+    analysis_environment_projection: dict[str, Any]
     state_action_contract: dict[str, Any]
     downstream_unavailable: list[str]
     authority_rail: dict[str, Any]
