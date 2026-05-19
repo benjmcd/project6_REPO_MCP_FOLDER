@@ -7237,7 +7237,14 @@
     "latest_recursive_source_ingestion_runtime_current_main_sync_pr": "#1468",
     "latest_recursive_source_ingestion_runtime_current_main_sync_merge_commit": "2fa84f5f",
     "latest_recursive_source_ingestion_runtime_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
-    "latest_recursive_source_ingestion_runtime_current_main_sync_summary": "Doc 859 syncs PR #1468 to current main as the exact recursive source-directory runtime implementation. Current main now records recursive normalized relative file authority under recursive_server_configured_directory_text_table_policy_v1 while keeping caller-controlled paths, rendered controls, package/export/connector/provider/vector/model/optional-tool/auth behavior, credentials, network, and broader ingestion blocked."
+    "latest_recursive_source_ingestion_runtime_current_main_sync_summary": "Doc 859 syncs PR #1468 to current main as the exact recursive source-directory runtime implementation. Current main now records recursive normalized relative file authority under recursive_server_configured_directory_text_table_policy_v1 while keeping caller-controlled paths, rendered controls, package/export/connector/provider/vector/model/optional-tool/auth behavior, credentials, network, and broader ingestion blocked.",
+    "latest_sublayer3c_optional_tool_authority_revalidation_selection_branch": "codex/l3-optional-tool-authority-selection",
+    "latest_sublayer3c_optional_tool_authority_revalidation_selection_doc": "next_milestone_plans/Layer3_planning_docs/870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+    "latest_sublayer3c_optional_tool_authority_revalidation_selection_status": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked",
+    "latest_sublayer3c_optional_tool_authority_revalidation_selection_decision": "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+    "latest_sublayer3c_optional_tool_authority_revalidation_selection_runtime_behavior_change": false,
+    "latest_sublayer3c_optional_tool_authority_revalidation_selection_next_posture": "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+    "latest_sublayer3c_optional_tool_authority_revalidation_selection_summary": "Doc 870 revalidates optional-tool authority after the rendered Analysis Environment projection runtime sync. Optional-tool benchmark/runtime progression remains blocked because current main still lacks selected TabPFN supervised micro-fixture authority or NRC RAG query-set authority."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -36471,5 +36478,37 @@
     ],
     "next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_rendered_projection_runtime_sync",
     "summary": "Doc 869 syncs PR #1484 merge commit 9862fe1eb09925889926bfb79febd9f7abe585ee to current main. The bounded read-only /review/layer3 Analysis Environment projection panel over State.sessionSummary.analysis_environment_projection is now current-main synced; no backend runtime behavior is introduced by the sync."
+  },
+  "sublayer3c_optional_tool_authority_revalidation_selection": {
+    "status": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked",
+    "doc": "next_milestone_plans/Layer3_planning_docs/870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+    "branch": "codex/l3-optional-tool-authority-selection",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/869_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint": "cbf084839573b70880a478eea43705770170ef8a",
+    "selected_gap": "sublayer3c_optional_tool_fixture_authority_revalidation_after_analysis_environment_sync",
+    "decision": "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+    "canonical_authority": [
+      "next_milestone_plans/Layer3_planning_docs/850_FIXTURE_VALIDATE_ONLY.md",
+      "next_milestone_plans/Layer3_planning_docs/851_FIXTURE_CHECKPOINT.md",
+      "tools/l3-fixture-validate.py",
+      "backend/tests/test_layer3_fixture_validate.py"
+    ],
+    "pending_record_validation": "python .\\tools\\l3-fixture-validate.py --expect pending",
+    "checkpoint_record_validation": "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint",
+    "runtime_behavior_change": false,
+    "benchmark_execution_change": false,
+    "fixture_materialization_change": false,
+    "fixture_authority_selection_change": false,
+    "dependency_provider_network_admission": false,
+    "rendered_optional_tool_controls": false,
+    "package_handoff_export_download_integration": false,
+    "gate_c_pass_entry_admission": false,
+    "implementation_entry_allowed_next": false,
+    "required_future_validator_states": [
+      "selected",
+      "frozen"
+    ],
+    "next_posture": "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+    "summary": "Doc 870 revalidates optional-tool authority after the rendered Analysis Environment projection runtime sync. The pending and checkpoint fixture-authority records remain fail-closed, no TabPFN supervised micro-fixture or NRC RAG query set is selected, and optional-tool benchmark/runtime progression stays blocked until product authority supplies a selected or frozen validator-backed record."
   }
 }
